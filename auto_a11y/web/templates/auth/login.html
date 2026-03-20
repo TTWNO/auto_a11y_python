@@ -38,6 +38,10 @@
                         <div class="mb-3">
                             <label for="password" class="form-label">{{ _('Password') }}</label>
                             <input type="password" class="form-control" id="password" name="password" required autocomplete="current-password">
+                            <div class="form-check mt-1">
+                                <input type="checkbox" class="form-check-input" id="show-password">
+                                <label class="form-check-label" for="show-password">{{ _('Show password') }}</label>
+                            </div>
                         </div>
                         <div class="mb-3 form-check">
                             <input type="checkbox" class="form-check-input" id="remember" name="remember">
@@ -55,4 +59,12 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('show-password').addEventListener('change', function () {
+    document.getElementById('password').type = this.checked ? 'text' : 'password';
+});
+</script>
 {% endblock %}

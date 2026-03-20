@@ -97,6 +97,37 @@ MAX_DEPTH = 3
 MAX_PAGES_PER_WEBSITE = 100
 ```
 
+### SMTP Email / Password Reset (Optional)
+
+Password reset via email is optional. If the SMTP environment variables are left blank, the "Forgot your password?" link is hidden from the login page and the reset routes return 404. Admins will still see the "Email Password Reset" card on the user edit page, but the button is disabled with a configuration hint.
+
+Add the following to your `.env`:
+
+```bash
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USERNAME=your-smtp-username
+SMTP_PASSWORD=your-smtp-password
+SMTP_USE_TLS=True
+SMTP_FROM_EMAIL=noreply@example.com
+SMTP_FROM_NAME=CNIB Access Labs | AutoA11y
+```
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `SMTP_HOST` | Yes | *(empty)* | SMTP server hostname |
+| `SMTP_PORT` | No | `587` | SMTP server port |
+| `SMTP_USERNAME` | No | *(empty)* | SMTP auth username (skip if relay needs no auth) |
+| `SMTP_PASSWORD` | No | *(empty)* | SMTP auth password |
+| `SMTP_USE_TLS` | No | `True` | Use STARTTLS |
+| `SMTP_FROM_EMAIL` | Yes | *(empty)* | Sender email address |
+| `SMTP_FROM_NAME` | No | `CNIB Access Labs \| AutoA11y` | Sender display name |
+
+Both `SMTP_HOST` and `SMTP_FROM_EMAIL` must be set for email to be enabled. Once configured:
+
+- A **"Forgot your password?"** link appears on the login page, allowing users to request a reset link (valid for 15 minutes).
+- Admins can send a reset email from the **user edit page** (`/auth/users/<id>/edit`).
+
 ### Microsoft 365 SSO (Optional)
 
 The login page supports "Sign in with Microsoft" for client users. This is optional -- if the environment variables are left blank, the SSO button is hidden and only email/password login is available.

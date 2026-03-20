@@ -10,6 +10,7 @@ from bson import ObjectId
 from datetime import datetime
 import logging
 import re
+import certifi
 
 from auto_a11y.models import (
     Project, Website, Page, TestResult,
@@ -37,7 +38,7 @@ class Database:
             connection_uri: MongoDB connection URI
             database_name: Name of database to use
         """
-        self.client = MongoClient(connection_uri)
+        self.client = MongoClient(connection_uri, tlsCAFile=certifi.where())
         self.db: MongoDatabase = self.client[database_name]
         
         # Collections

@@ -59,7 +59,9 @@
                 </form>
             </div>
             <div class="card-footer text-center">
+                {% if smtp_enabled %}
                 <a href="{{ url_for('auth.forgot_password') }}" class="d-block mb-1">{{ _('Forgot your password?') }}</a>
+                {% endif %}
                 <a href="{{ url_for('auth.register') }}">{{ _("Don't have an account? Register") }}</a>
             </div>
         </div>

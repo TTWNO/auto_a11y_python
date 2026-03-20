@@ -633,6 +633,8 @@ def register():
 @auth_bp.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():
     """Self-service password reset -- sends a reset link via email."""
+    if not current_app.app_config.SMTP_ENABLED:
+        abort(404)
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
 
@@ -657,6 +659,8 @@ def forgot_password():
 @auth_bp.route('/reset-password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
     """Set a new password using a valid reset token."""
+    if not current_app.app_config.SMTP_ENABLED:
+        abort(404)
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
 

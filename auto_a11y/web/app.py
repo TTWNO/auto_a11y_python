@@ -177,6 +177,7 @@ def create_app(config):
             issue_fr=issue_fr,  # French issue description translations
             microsoft_sso_enabled=config.MICROSOFT_SSO_ENABLED,
             google_sso_enabled=config.GOOGLE_SSO_ENABLED,
+            smtp_enabled=config.SMTP_ENABLED,
         )
     
     # Store config for access in routes

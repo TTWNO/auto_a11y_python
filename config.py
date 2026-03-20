@@ -87,6 +87,15 @@ class Config:
     # Rate limiting for public routes
     RATELIMIT_DEFAULT: str = os.getenv('RATELIMIT_DEFAULT', '60/minute')
 
+    # SMTP email (optional -- leave blank to disable password reset emails)
+    SMTP_HOST: str = os.getenv('SMTP_HOST', '')
+    SMTP_PORT: int = int(os.getenv('SMTP_PORT', 587))
+    SMTP_USERNAME: str = os.getenv('SMTP_USERNAME', '')
+    SMTP_PASSWORD: str = os.getenv('SMTP_PASSWORD', '')
+    SMTP_USE_TLS: bool = os.getenv('SMTP_USE_TLS', 'True').lower() == 'true'
+    SMTP_FROM_EMAIL: str = os.getenv('SMTP_FROM_EMAIL', '')
+    SMTP_FROM_NAME: str = os.getenv('SMTP_FROM_NAME', 'CNIB Access Labs | AutoA11y')
+
     # Microsoft SSO (optional -- leave blank to disable)
     MICROSOFT_CLIENT_ID: str = os.getenv('MICROSOFT_CLIENT_ID', '')
     MICROSOFT_CLIENT_SECRET: str = os.getenv('MICROSOFT_CLIENT_SECRET', '')
@@ -123,6 +132,10 @@ class Config:
     @property
     def SSO_ENABLED(self) -> bool:
         return self.MICROSOFT_SSO_ENABLED or self.GOOGLE_SSO_ENABLED
+
+    @property
+    def SMTP_ENABLED(self) -> bool:
+        return bool(self.SMTP_HOST and self.SMTP_FROM_EMAIL)
 
     def validate(self) -> bool:
         """Validate configuration"""

@@ -9,10 +9,11 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_user, logout_user, login_required, current_user
 from flask_babel import _
 from functools import wraps
-from itsdangerous import URLSafeSerializer, BadSignature
+from itsdangerous import URLSafeSerializer, URLSafeTimedSerializer, BadSignature, SignatureExpired
 
 from auto_a11y.models import AppUser, UserRole
 from auto_a11y.core.permissions import permission_required
+from auto_a11y.core.email import send_email
 
 logger = logging.getLogger(__name__)
 
@@ -266,6 +267,61 @@ def check_scope(scope_type, scope_id):
                 return
 
     abort(403)
+
+
+# ------------------------------------------------------------------
+# Password reset helpers
+# ------------------------------------------------------------------
+
+PASSWORD_RESET_SALT = 'password-reset'
+PASSWORD_RESET_MAX_AGE = 900  # 15 minutes
+
+
+def generate_reset_token(email):
+    """Generate a signed, time-limited password reset token."""
+    serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+    return serializer.dumps(email, salt=PASSWORD_RESET_SALT)
+
+
+def verify_reset_token(token):
+    """
+    Verify a password reset token.
+    Returns the email on success, None on failure.
+    """
+    serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+    try:
+        email = serializer.loads(token, salt=PASSWORD_RESET_SALT, max_age=PASSWORD_RESET_MAX_AGE)
+    except (BadSignature, SignatureExpired):
+        return None
+    return email
+
+
+def send_password_reset_email(user):
+    """Send a password reset email to the given user."""
+    config = current_app.app_config
+    token = generate_reset_token(user.email)
+    reset_url = url_for('auth.reset_password', token=token, _external=True)
+
+    text_body = render_template(
+        'email/password_reset.txt',
+        user_name=user.display_name,
+        reset_url=reset_url,
+        from_name=config.SMTP_FROM_NAME,
+    )
+    html_body = render_template(
+        'email/password_reset.html',
+        user_name=user.display_name,
+        reset_url=reset_url,
+        from_name=config.SMTP_FROM_NAME,
+    )
+
+    return send_email(
+        config,
+        to=user.email,
+        subject=_('Password Reset Request'),
+        text_body=text_body,
+        html_body=html_body,
+    )
 
 
 # ------------------------------------------------------------------
@@ -574,6 +630,86 @@ def register():
     return render_template('auth/register.html', is_first_user=is_first_user)
 
 
+@auth_bp.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    """Self-service password reset -- sends a reset link via email."""
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip().lower()
+
+        if email:
+            user = current_app.db.get_app_user_by_email(email)
+            if user and user.is_active:
+                if current_app.app_config.SMTP_ENABLED:
+                    send_password_reset_email(user)
+                else:
+                    logger.warning('Password reset requested but SMTP is not configured')
+
+        # Always show the same message to prevent email enumeration
+        flash(_('If that email address is in our system, we have sent a password reset link.'), 'info')
+        return redirect(url_for('auth.forgot_password'))
+
+    return render_template('auth/forgot_password.html')
+
+
+@auth_bp.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    """Set a new password using a valid reset token."""
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+
+    email = verify_reset_token(token)
+    if email is None:
+        flash(_('This password reset link is invalid or has expired.'), 'danger')
+        return redirect(url_for('auth.forgot_password'))
+
+    user = current_app.db.get_app_user_by_email(email)
+    if user is None or not user.is_active:
+        flash(_('This password reset link is invalid or has expired.'), 'danger')
+        return redirect(url_for('auth.forgot_password'))
+
+    # Reject token if it was generated before the last reset
+    if user.password_reset_at:
+        serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+        try:
+            _email, timestamp = serializer.loads_unsafe(token, salt=PASSWORD_RESET_SALT)
+        except Exception:
+            flash(_('This password reset link is invalid or has expired.'), 'danger')
+            return redirect(url_for('auth.forgot_password'))
+        from datetime import datetime
+        token_created = datetime.utcfromtimestamp(timestamp)
+        if token_created < user.password_reset_at:
+            flash(_('This password reset link has already been used.'), 'danger')
+            return redirect(url_for('auth.forgot_password'))
+
+    if request.method == 'POST':
+        password = request.form.get('password', '')
+        confirm_password = request.form.get('confirm_password', '')
+
+        if len(password) < 8:
+            flash(_('Password must be at least 8 characters.'), 'danger')
+            return render_template('auth/reset_password.html', token=token)
+
+        if password != confirm_password:
+            flash(_('Passwords do not match.'), 'danger')
+            return render_template('auth/reset_password.html', token=token)
+
+        from datetime import datetime
+        user.set_password(password)
+        user.password_reset_at = datetime.now()
+        user.failed_login_count = 0
+        user.locked_until = None
+        user.update_timestamp()
+        current_app.db.update_app_user(user)
+
+        flash(_('Your password has been reset. Please log in.'), 'success')
+        return redirect(url_for('auth.login'))
+
+    return render_template('auth/reset_password.html', token=token)
+
+
 @auth_bp.route('/profile', methods=['GET', 'POST'])
 @login_required
 def profile():
@@ -708,6 +844,15 @@ def user_edit(user_id):
             current_app.db.update_app_user(user)
             flash(_('Account unlocked.'), 'success')
 
+        elif action == 'send_reset_email':
+            if current_app.app_config.SMTP_ENABLED:
+                if send_password_reset_email(user):
+                    flash(_('Password reset email sent to %(email)s.', email=user.email), 'success')
+                else:
+                    flash(_('Failed to send password reset email. Check SMTP configuration.'), 'danger')
+            else:
+                flash(_('SMTP is not configured. Cannot send email.'), 'danger')
+
         return redirect(url_for('auth.user_edit', user_id=user_id))
 
     # Build project membership data for display
@@ -723,7 +868,8 @@ def user_edit(user_id):
                 'id': p.id, 'name': p.name, 'group_names': group_names
             })
 
-    return render_template('auth/user_edit.html', user=user, user_projects=user_projects)
+    return render_template('auth/user_edit.html', user=user, user_projects=user_projects,
+                           smtp_enabled=current_app.app_config.SMTP_ENABLED)
 
 
 @auth_bp.route('/users/<user_id>/delete', methods=['POST'])

@@ -43,6 +43,11 @@
                                 <label class="form-check-label" for="show-password">{{ _('Show password') }}</label>
                             </div>
                         </div>
+                        {% if password_hint %}
+                        <div class="alert alert-info" role="alert">
+                            <i class="bi bi-lightbulb" aria-hidden="true"></i> <strong>{{ _('Password hint:') }}</strong> {{ password_hint }}
+                        </div>
+                        {% endif %}
                         <div class="mb-3 form-check">
                             <input type="checkbox" class="form-check-input" id="remember" name="remember">
                             <label class="form-check-label" for="remember">{{ _('Remember me') }}</label>

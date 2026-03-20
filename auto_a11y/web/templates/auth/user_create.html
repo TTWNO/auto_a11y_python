@@ -26,6 +26,11 @@
                             <input type="password" class="form-control" id="password" name="password" required minlength="8" autocomplete="new-password" aria-describedby="password_help">
                             <div class="form-text" id="password_help">{{ _('Minimum 8 characters.') }}</div>
                         </div>
+                        <div class="mb-3">
+                            <label for="password_hint" class="form-label">{{ _('Password Hint') }}</label>
+                            <input type="text" class="form-control" id="password_hint" name="password_hint" aria-describedby="password_hint_help">
+                            <div class="form-text" id="password_hint_help">{{ _('Optional. A hint to help the user remember their password.') }}</div>
+                        </div>
                         <div class="form-text mb-3">
                             <i class="bi bi-info-circle" aria-hidden="true"></i> {{ _('Users get permissions through group membership in projects. Add this user to a project after creation to grant access.') }}
                         </div>

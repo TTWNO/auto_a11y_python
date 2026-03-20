@@ -84,6 +84,11 @@
                             <input type="password" class="form-control" id="new_password" name="new_password" required minlength="8" autocomplete="new-password" aria-describedby="new_password_help">
                             <div class="form-text" id="new_password_help">{{ _('Minimum 8 characters.') }}</div>
                         </div>
+                        <div class="mb-3">
+                            <label for="password_hint" class="form-label">{{ _('Password Hint') }}</label>
+                            <input type="text" class="form-control" id="password_hint" name="password_hint" value="{{ user.password_hint or '' }}" aria-describedby="password_hint_help">
+                            <div class="form-text" id="password_hint_help">{{ _('Optional. A hint to help the user remember their password.') }}</div>
+                        </div>
                         <button type="submit" class="btn btn-warning">
                             <i class="bi bi-key" aria-hidden="true"></i> {{ _('Reset Password') }}
                         </button>

@@ -39,6 +39,8 @@ class AppUser:
 
     is_superadmin: bool = False
 
+    password_hint: Optional[str] = None
+
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
 
@@ -148,6 +150,7 @@ class AppUser:
             'sso_provider': self.sso_provider,
             'sso_id': self.sso_id,
             'is_superadmin': self.is_superadmin,
+            'password_hint': self.password_hint,
             'created_at': self.created_at,
             'updated_at': self.updated_at
         }
@@ -176,6 +179,7 @@ class AppUser:
             sso_provider=data.get('sso_provider'),
             sso_id=data.get('sso_id'),
             is_superadmin=data.get('is_superadmin', False),
+            password_hint=data.get('password_hint'),
             created_at=data.get('created_at', datetime.now()),
             updated_at=data.get('updated_at', datetime.now()),
             _id=data.get('_id')

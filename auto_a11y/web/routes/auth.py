@@ -481,7 +481,7 @@ def login():
             user.record_login(success=False)
             current_app.db.update_app_user(user)
             flash(_('Invalid email or password.'), 'danger')
-            return render_template('auth/login.html')
+            return render_template('auth/login.html', password_hint=user.password_hint)
         
         user.record_login(success=True)
         current_app.db.update_app_user(user)
@@ -520,9 +520,10 @@ def register():
         password = request.form.get('password', '')
         confirm_password = request.form.get('confirm_password', '')
         display_name = request.form.get('display_name', '').strip()
-        
+        password_hint = request.form.get('password_hint', '').strip()
+
         errors = []
-        
+
         if not email:
             errors.append(_('Email is required.'))
         elif '@' not in email:
@@ -552,6 +553,7 @@ def register():
             role=role,
             display_name=display_name or None
         )
+        user.password_hint = password_hint or None
         if is_first_user:
             user.is_superadmin = True
 
@@ -590,7 +592,8 @@ def profile():
             current_password = request.form.get('current_password', '')
             new_password = request.form.get('new_password', '')
             confirm_password = request.form.get('confirm_password', '')
-            
+            password_hint = request.form.get('password_hint', '').strip()
+
             if not current_user.check_password(current_password):
                 flash(_('Current password is incorrect.'), 'danger')
             elif len(new_password) < 8:
@@ -599,6 +602,7 @@ def profile():
                 flash(_('New passwords do not match.'), 'danger')
             else:
                 current_user.set_password(new_password)
+                current_user.password_hint = password_hint or None
                 current_user.update_timestamp()
                 current_app.db.update_app_user(current_user)
                 flash(_('Password changed successfully.'), 'success')
@@ -624,6 +628,7 @@ def user_create():
         email = request.form.get('email', '').strip().lower()
         password = request.form.get('password', '')
         display_name = request.form.get('display_name', '').strip()
+        password_hint = request.form.get('password_hint', '').strip()
 
         errors = []
 
@@ -647,6 +652,7 @@ def user_create():
             role=UserRole.CLIENT,
             display_name=display_name or None
         )
+        user.password_hint = password_hint or None
         user.is_verified = True
 
         try:
@@ -683,10 +689,12 @@ def user_edit(user_id):
 
         elif action == 'reset_password':
             new_password = request.form.get('new_password', '')
+            password_hint = request.form.get('password_hint', '').strip()
             if len(new_password) < 8:
                 flash(_('Password must be at least 8 characters.'), 'danger')
             else:
                 user.set_password(new_password)
+                user.password_hint = password_hint or None
                 user.failed_login_count = 0
                 user.locked_until = None
                 user.update_timestamp()

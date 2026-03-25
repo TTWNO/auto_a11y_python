@@ -7,7 +7,6 @@ from auto_a11y.models import Website, ScrapingConfig, Page, PageStatus
 from datetime import datetime
 import asyncio
 import logging
-import os
 
 logger = logging.getLogger(__name__)
 websites_bp = Blueprint('websites', __name__)
@@ -219,51 +218,9 @@ def discover_pages(website_id):
             max_pages = None
     
     try:
-        # Check if Playwright Chromium is available
-        from pathlib import Path
+        # Browser availability is checked at launch time by BrowserManager,
+        # which auto-detects the executable and can install it at runtime.
 
-        try:
-            # Check PLAYWRIGHT_BROWSERS_PATH env var first (used on Render),
-            # then fall back to default cache locations
-            custom_path = os.environ.get('PLAYWRIGHT_BROWSERS_PATH')
-            playwright_cache = None
-            if custom_path:
-                candidate = Path(custom_path)
-                if candidate.exists():
-                    playwright_cache = candidate
-            if not playwright_cache:
-                # Default: ~/.cache/ms-playwright on Unix
-                playwright_cache = Path.home() / '.cache' / 'ms-playwright'
-                if not playwright_cache.exists():
-                    # Try macOS location
-                    playwright_cache = Path.home() / 'Library' / 'Caches' / 'ms-playwright'
-
-            chromium_path = None
-            if playwright_cache and playwright_cache.exists():
-                # Look for chromium installation
-                for item in playwright_cache.iterdir():
-                    if item.is_dir() and 'chromium' in item.name.lower():
-                        chromium_path = item
-                        break
-
-            if not chromium_path:
-                logger.warning("Playwright Chromium not found")
-                return jsonify({
-                    'success': False,
-                    'error': 'Playwright Chromium browser not found. Please run: python -m playwright install chromium',
-                    'message': 'Browser required for page discovery'
-                }), 500
-
-            logger.info(f"Playwright Chromium found at: {chromium_path}")
-
-        except Exception as chrome_error:
-            logger.error(f"Error checking Playwright Chromium: {chrome_error}")
-            return jsonify({
-                'success': False,
-                'error': f'Error checking Playwright browser: {chrome_error}',
-                'message': 'Failed to verify browser installation'
-            }), 500
-        
         # Get project to access stealth_mode setting
         project = current_app.db.get_project(website.project_id)
 

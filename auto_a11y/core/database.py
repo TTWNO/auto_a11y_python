@@ -1344,27 +1344,27 @@ class Database:
         """Create multiple pages with discovery run tracking"""
         if not pages:
             return 0
-        
+
         # Get existing pages for this website
         website_id = pages[0].website_id
         existing_urls = set()
         for doc in self.pages.find({'website_id': website_id}, {'url': 1}):
             existing_urls.add(doc['url'])
-        
+
         # Mark all existing pages as not in latest discovery
         self.pages.update_many(
             {'website_id': website_id},
             {'$set': {'is_in_latest_discovery': False}}
         )
-        
+
         # Process new and existing pages
         new_pages = []
         updated_count = 0
-        
+
         for page in pages:
             page.discovery_run_id = discovery_run_id
             page.is_in_latest_discovery = True
-            
+
             if page.url in existing_urls:
                 # Update existing page
                 self.pages.update_one(
@@ -1383,21 +1383,85 @@ class Database:
             else:
                 # New page
                 new_pages.append(page.to_dict())
-        
+
         # Insert new pages
         if new_pages:
             insert_result = self.pages.insert_many(new_pages)
-            
+
             # Update website page count
             self.websites.update_one(
                 {"_id": ObjectId(website_id)},
                 {"$inc": {"page_count": len(new_pages)}}
             )
             logger.info(f"Added {len(new_pages)} new pages, updated {updated_count} existing pages")
-            
+
             return len(insert_result.inserted_ids) + updated_count
-        
+
         return updated_count
+
+    def mark_pages_not_in_latest_discovery(self, website_id: str) -> int:
+        """Mark all existing pages for a website as not in the latest discovery.
+
+        Call this once at the start of a discovery run so that pages
+        can be individually marked back as is_in_latest_discovery=True
+        as they are found.
+
+        Returns:
+            Number of pages updated
+        """
+        result = self.pages.update_many(
+            {'website_id': website_id},
+            {'$set': {'is_in_latest_discovery': False}}
+        )
+        return result.modified_count
+
+    def save_discovered_page(self, page: Page, discovery_run_id: str) -> str:
+        """Save a single discovered page immediately (upsert).
+
+        If the page URL already exists for the website, update it.
+        Otherwise insert a new page.
+
+        Args:
+            page: The discovered Page object
+            discovery_run_id: The current discovery run ID
+
+        Returns:
+            The page ID (str)
+        """
+        page.discovery_run_id = discovery_run_id
+        page.is_in_latest_discovery = True
+
+        existing = self.pages.find_one(
+            {'website_id': page.website_id, 'url': page.url},
+            {'_id': 1}
+        )
+
+        if existing:
+            # Update existing page
+            self.pages.update_one(
+                {'_id': existing['_id']},
+                {'$set': {
+                    'discovery_run_id': discovery_run_id,
+                    'is_in_latest_discovery': True,
+                    'discovered_at': page.discovered_at,
+                    'title': page.title,
+                    'depth': page.depth,
+                    'status': page.status.value if hasattr(page.status, 'value') else page.status,
+                    'error_reason': page.error_reason
+                }}
+            )
+            page._id = existing['_id']
+            return str(existing['_id'])
+        else:
+            # Insert new page
+            result = self.pages.insert_one(page.to_dict())
+            page._id = result.inserted_id
+            # Update website page count
+            self.websites.update_one(
+                {"_id": ObjectId(page.website_id)},
+                {"$inc": {"page_count": 1}}
+            )
+            return str(result.inserted_id)
     
     def get_pages_for_testing(self, website_id: str, status: Optional[PageStatus] = None) -> List[Page]:
         """Get pages for testing (only from latest discovery)"""

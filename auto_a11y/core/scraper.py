@@ -198,6 +198,10 @@ class ScrapingEngine:
             except Exception as e:
                 logger.warning(f"Error capturing post-login page: {e}")
 
+        # Mark all existing pages as not in latest discovery up front
+        # so each page can be individually saved as it's found
+        self.db.mark_pages_not_in_latest_discovery(website.id)
+
         try:
             depth = 0
             max_pages_reached = False
@@ -349,7 +353,8 @@ class ScrapingEngine:
                                 max_pages_reached = True
                                 break
                         else:
-                            # Only add successful pages to discovered_pages
+                            # Save page to database immediately
+                            self.db.save_discovered_page(page, discovery_run_id)
                             discovered_pages.append(page)
                             # Reset consecutive counter on success
                             consecutive_failures = 0
@@ -410,14 +415,8 @@ class ScrapingEngine:
             was_cancelled = job and job.is_cancelled()
             
             # Log final statistics (discovered_pages now only contains successful ones)
+            # Pages were already saved individually during discovery
             logger.info(f"Discovery finished: {len(discovered_pages)} successful, {len(failed_pages)} failed")
-            
-            # Save discovered pages to database with discovery run tracking
-            # Only successful pages are saved - failed pages are tracked separately for error reporting
-            saved_count = 0
-            if discovered_pages:
-                saved_count = self.db.bulk_create_pages_with_discovery(discovered_pages, discovery_run_id)
-                logger.info(f"Saved/updated {saved_count} pages in database")
             
             # Compare with previous discovery if it exists
             if previous_run:
@@ -450,12 +449,8 @@ class ScrapingEngine:
             
         except Exception as e:
             logger.error(f"Error during discovery: {e}", exc_info=True)
-            
-            # Save what we got so far (only successful pages)
-            if discovered_pages:
-                saved_count = self.db.bulk_create_pages_with_discovery(discovered_pages, discovery_run_id)
-                logger.info(f"Saved {saved_count} pages before error")
-            
+            # Pages already saved individually during discovery
+
             # Update discovery run with error
             discovery_run.completed_at = datetime.now()
             discovery_run.status = DiscoveryStatus.FAILED

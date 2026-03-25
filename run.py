@@ -71,12 +71,19 @@ def download_browser():
     try:
         import subprocess
 
-        # Check if playwright browsers are already installed
-        # Playwright stores browsers in ~/.cache/ms-playwright on Unix
-        playwright_cache = Path.home() / '.cache' / 'ms-playwright'
-        chromium_path = None
+        # Check PLAYWRIGHT_BROWSERS_PATH env var first (used on Render),
+        # then fall back to default cache location
+        custom_path = os.environ.get('PLAYWRIGHT_BROWSERS_PATH')
+        playwright_cache = None
+        if custom_path:
+            candidate = Path(custom_path)
+            if candidate.exists():
+                playwright_cache = candidate
+        if not playwright_cache:
+            playwright_cache = Path.home() / '.cache' / 'ms-playwright'
 
-        if playwright_cache.exists():
+        chromium_path = None
+        if playwright_cache and playwright_cache.exists():
             # Look for chromium installation
             for item in playwright_cache.iterdir():
                 if item.is_dir() and 'chromium' in item.name.lower():

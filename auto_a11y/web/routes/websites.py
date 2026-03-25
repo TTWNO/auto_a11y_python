@@ -7,6 +7,7 @@ from auto_a11y.models import Website, ScrapingConfig, Page, PageStatus
 from datetime import datetime
 import asyncio
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 websites_bp = Blueprint('websites', __name__)
@@ -222,15 +223,23 @@ def discover_pages(website_id):
         from pathlib import Path
 
         try:
-            # Playwright stores browsers in ~/.cache/ms-playwright on Unix
-            # or ~/Library/Caches/ms-playwright on macOS
-            playwright_cache = Path.home() / '.cache' / 'ms-playwright'
-            if not playwright_cache.exists():
-                # Try macOS location
-                playwright_cache = Path.home() / 'Library' / 'Caches' / 'ms-playwright'
+            # Check PLAYWRIGHT_BROWSERS_PATH env var first (used on Render),
+            # then fall back to default cache locations
+            custom_path = os.environ.get('PLAYWRIGHT_BROWSERS_PATH')
+            playwright_cache = None
+            if custom_path:
+                candidate = Path(custom_path)
+                if candidate.exists():
+                    playwright_cache = candidate
+            if not playwright_cache:
+                # Default: ~/.cache/ms-playwright on Unix
+                playwright_cache = Path.home() / '.cache' / 'ms-playwright'
+                if not playwright_cache.exists():
+                    # Try macOS location
+                    playwright_cache = Path.home() / 'Library' / 'Caches' / 'ms-playwright'
 
             chromium_path = None
-            if playwright_cache.exists():
+            if playwright_cache and playwright_cache.exists():
                 # Look for chromium installation
                 for item in playwright_cache.iterdir():
                     if item.is_dir() and 'chromium' in item.name.lower():

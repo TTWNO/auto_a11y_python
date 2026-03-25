@@ -25,10 +25,15 @@ def download():
             print("\n✓ Playwright Chromium installed successfully!")
 
             # Show installation location
-            playwright_cache = Path.home() / '.cache' / 'ms-playwright'
-            if not playwright_cache.exists():
-                # Try macOS location
-                playwright_cache = Path.home() / 'Library' / 'Caches' / 'ms-playwright'
+            import os
+            custom_path = os.environ.get('PLAYWRIGHT_BROWSERS_PATH')
+            if custom_path:
+                playwright_cache = Path(custom_path)
+            else:
+                playwright_cache = Path.home() / '.cache' / 'ms-playwright'
+                if not playwright_cache.exists():
+                    # Try macOS location
+                    playwright_cache = Path.home() / 'Library' / 'Caches' / 'ms-playwright'
 
             if playwright_cache.exists():
                 print(f"Location: {playwright_cache}")

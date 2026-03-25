@@ -14,6 +14,9 @@ Key improvements over Pyppeteer:
 """
 
 import asyncio
+import os
+import subprocess
+import sys
 from typing import Optional, Dict, Any, List, Union
 from pathlib import Path
 import logging
@@ -31,6 +34,55 @@ from playwright.async_api import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _find_chromium_executable() -> Optional[str]:
+    """
+    Find the Chromium executable installed by Playwright.
+
+    Checks PLAYWRIGHT_BROWSERS_PATH first, then the default cache locations.
+    Returns the path to the actual binary, or None if not found.
+    """
+    search_dirs = []
+
+    # 1. PLAYWRIGHT_BROWSERS_PATH env var (Render, CI, etc.)
+    custom = os.environ.get('PLAYWRIGHT_BROWSERS_PATH')
+    if custom:
+        search_dirs.append(Path(custom))
+
+    # 2. Default locations
+    search_dirs.append(Path.home() / '.cache' / 'ms-playwright')
+    search_dirs.append(Path.home() / 'Library' / 'Caches' / 'ms-playwright')
+
+    for base in search_dirs:
+        if not base.exists():
+            continue
+        # Playwright stores browsers as chromium-<revision>/chrome-linux/chrome
+        for item in sorted(base.iterdir(), reverse=True):
+            if not item.is_dir() or 'chromium' not in item.name.lower():
+                continue
+            # Linux
+            candidate = item / 'chrome-linux' / 'chrome'
+            if candidate.exists() and os.access(str(candidate), os.X_OK):
+                logger.info(f"Found Chromium executable: {candidate}")
+                return str(candidate)
+            # macOS
+            candidate = item / 'chrome-mac' / 'Chromium.app' / 'Contents' / 'MacOS' / 'Chromium'
+            if candidate.exists() and os.access(str(candidate), os.X_OK):
+                logger.info(f"Found Chromium executable: {candidate}")
+                return str(candidate)
+
+    logger.warning("Chromium executable not found in any search path")
+    for base in search_dirs:
+        if base.exists():
+            try:
+                contents = list(base.iterdir())
+                logger.warning(f"  {base}: {[c.name for c in contents]}")
+            except Exception:
+                logger.warning(f"  {base}: (unreadable)")
+        else:
+            logger.warning(f"  {base}: (does not exist)")
+    return None
 
 
 class BrowserManager:
@@ -110,9 +162,10 @@ class BrowserManager:
             'timeout': self.config.get('timeout', 60000),
         }
 
-        # Add executable path if specified
-        if self.config.get('executable_path'):
-            launch_options['executable_path'] = self.config['executable_path']
+        # Resolve executable path: explicit config > auto-detect > Playwright default
+        exec_path = self.config.get('executable_path') or _find_chromium_executable()
+        if exec_path:
+            launch_options['executable_path'] = exec_path
 
         try:
             self._playwright = await async_playwright().start()
@@ -120,6 +173,22 @@ class BrowserManager:
             logger.info("Playwright browser started successfully")
         except Exception as e:
             logger.error(f"Failed to start browser: {e}")
+            # If no explicit path was set, try installing Chromium and retrying once
+            if not exec_path:
+                logger.info("Attempting runtime Chromium install...")
+                try:
+                    subprocess.run(
+                        [sys.executable, '-m', 'playwright', 'install', '--with-deps', 'chromium'],
+                        check=True, capture_output=True, text=True, timeout=300,
+                    )
+                    retry_path = _find_chromium_executable()
+                    if retry_path:
+                        launch_options['executable_path'] = retry_path
+                    self._browser = await self._playwright.chromium.launch(**launch_options)
+                    logger.info("Playwright browser started after runtime install")
+                    return
+                except Exception as retry_err:
+                    logger.error(f"Runtime install also failed: {retry_err}")
             await self._cleanup_playwright()
             raise
 

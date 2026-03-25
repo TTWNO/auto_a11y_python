@@ -25,4 +25,4 @@ services:
       - key: BROWSER_HEADLESS
         value: "True"
       - key: PLAYWRIGHT_BROWSERS_PATH
-        value: /opt/render/project/.playwright
+        value: /opt/render/project/src/.playwright

@@ -33,24 +33,15 @@ else:
 # Install Playwright + Chromium only when BROWSER_MODE is "local"
 if [ "${BROWSER_MODE:-local}" = "local" ]; then
     echo "==> Installing Playwright Chromium (BROWSER_MODE=local)..."
-    # Store browsers in a known, persistent location
-    export PLAYWRIGHT_BROWSERS_PATH=/opt/render/project/.playwright
-    python -m playwright install --with-deps chromium
+    # Store browsers INSIDE the source tree so they persist to runtime.
+    # Files outside /opt/render/project/src/ do NOT survive on Render.
+    export PLAYWRIGHT_BROWSERS_PATH="$PWD/.playwright"
+    python -m playwright install --with-deps chromium chromium-headless-shell
 
     echo "==> Chromium install diagnostics:"
     echo "    PLAYWRIGHT_BROWSERS_PATH=$PLAYWRIGHT_BROWSERS_PATH"
-    ls -laR "$PLAYWRIGHT_BROWSERS_PATH" 2>/dev/null | head -40 || echo "    WARNING: $PLAYWRIGHT_BROWSERS_PATH not found!"
-
-    # Verify the binary is executable
-    CHROME_BIN=$(find "$PLAYWRIGHT_BROWSERS_PATH" -name "chrome" -type f 2>/dev/null | head -1)
-    if [ -n "$CHROME_BIN" ]; then
-        echo "    Chromium binary: $CHROME_BIN"
-        echo "    Executable: $(test -x "$CHROME_BIN" && echo 'yes' || echo 'NO')"
-        echo "    Shared libs check:"
-        ldd "$CHROME_BIN" 2>/dev/null | grep "not found" || echo "    All shared libraries found."
-    else
-        echo "    WARNING: Chromium binary not found under $PLAYWRIGHT_BROWSERS_PATH"
-    fi
+    echo "    PWD=$PWD"
+    find "$PLAYWRIGHT_BROWSERS_PATH" -maxdepth 3 -type f -name "chrome*" 2>/dev/null || echo "    WARNING: no chrome binary found"
 else
     echo "==> Skipping Playwright install (BROWSER_MODE=${BROWSER_MODE})"
 fi

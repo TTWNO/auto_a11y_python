@@ -16,7 +16,7 @@ def download():
 
         # Use playwright install command
         result = subprocess.run(
-            [sys.executable, '-m', 'playwright', 'install', 'chromium'],
+            [sys.executable, '-m', 'playwright', 'install', 'chromium', 'chromium-headless-shell'],
             capture_output=False,  # Show output in real-time
             text=True
         )

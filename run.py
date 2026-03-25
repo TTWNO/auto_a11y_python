@@ -99,7 +99,7 @@ def download_browser():
 
         # Use playwright install command
         result = subprocess.run(
-            [sys.executable, '-m', 'playwright', 'install', 'chromium'],
+            [sys.executable, '-m', 'playwright', 'install', 'chromium', 'chromium-headless-shell'],
             capture_output=True,
             text=True
         )

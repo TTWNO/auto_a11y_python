@@ -21,6 +21,6 @@ services:
       - key: RUN_AI_ANALYSIS
         value: "True"
       - key: BROWSER_MODE
-        value: remote  # default to remote on Render; change to local if needed
+        value: local
       - key: BROWSER_HEADLESS
         value: "True"

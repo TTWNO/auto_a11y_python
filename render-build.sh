@@ -28,8 +28,11 @@ else:
 # Install Playwright + Chromium only when BROWSER_MODE is "local"
 if [ "${BROWSER_MODE:-local}" = "local" ]; then
     echo "==> Installing Playwright Chromium (BROWSER_MODE=local)..."
-    # Playwright's own deps installer handles the remaining OS libraries
+    # Store browsers in a known, persistent location
+    export PLAYWRIGHT_BROWSERS_PATH=/opt/render/project/.playwright
     python -m playwright install --with-deps chromium
+    echo "==> Chromium installed at: $PLAYWRIGHT_BROWSERS_PATH"
+    ls -la "$PLAYWRIGHT_BROWSERS_PATH" || true
 else
     echo "==> Skipping Playwright install (BROWSER_MODE=${BROWSER_MODE})"
 fi

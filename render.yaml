@@ -24,3 +24,5 @@ services:
         value: local
       - key: BROWSER_HEADLESS
         value: "True"
+      - key: PLAYWRIGHT_BROWSERS_PATH
+        value: /opt/render/project/.playwright

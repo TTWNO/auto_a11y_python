@@ -542,10 +542,22 @@ def test_all_pages(website_id):
     # Keep the old variable name for compatibility with existing code paths
     website_user_ids = user_ids
 
-    pages = current_app.db.get_pages(website_id)
+    # Filter to untested pages only if requested
+    untested_only = data.get('untested_only', False)
+
+    # Use latest_only=False and limit=0 to get all pages (consistent with stats shown in UI)
+    pages = current_app.db.get_pages(website_id, latest_only=False, limit=0)
     # Allow testing of all pages, not just untested ones
     # Users may want to re-test pages to check for improvements
     testable_pages = [p for p in pages if p.status != PageStatus.TESTING]  # Exclude currently testing pages
+
+    if untested_only:
+        testable_pages = [p for p in testable_pages if p.status != PageStatus.TESTED]
+
+    # Limit number of pages if max_pages specified
+    max_pages = data.get('max_pages')
+    if max_pages and isinstance(max_pages, int) and max_pages > 0:
+        testable_pages = testable_pages[:max_pages]
 
     if not testable_pages:
         return jsonify({

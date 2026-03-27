@@ -1,75 +1,114 @@
-# Core dependencies
-python-dotenv>=1.0.0
-
-# Web automation
-playwright>=1.40.0  # Browser automation (Chromium-based)
-beautifulsoup4>=4.12.0
-nest-asyncio>=1.5.6  # For async in threads
-
-# Web framework
-Flask>=3.0.0
-Flask-CORS>=4.0.0
-Flask-Babel>=4.0.0
-Flask-Login>=0.6.3
-Flask-Limiter>=3.5.0
-
-# Database
-pymongo>=4.0.0
-motor>=3.0.0  # Async MongoDB driver
-certifi>=2023.0.0  # CA certificates for MongoDB Atlas TLS
-
-# AI Integration
-anthropic>=0.25.0
-
-# Data processing
-pandas>=2.0.0
-numpy>=1.24.0
-openpyxl>=3.1.0  # Excel file handling
-XlsxWriter>=3.1.0
-
-# PDF generation
-weasyprint>=60.0  # HTML to PDF conversion
-
-# Microsoft SSO
-msal>=1.28.0
-
-# Google SSO
-google-auth>=2.0.0
-google-auth-oauthlib>=1.0.0
-
-# HTTP clients
-requests>=2.31.0
-aiohttp>=3.9.0
-httpx>=0.25.0
-
-# Image processing
-Pillow>=10.0.0
-
-# Utilities
-python-dotenv>=1.0.0
-click>=8.1.0  # Command-line interface
-colorama>=0.4.6  # Colored terminal output
-tqdm>=4.66.0  # Progress bars
-
-# Data validation
-pydantic>=2.0.0
-jsonschema>=4.20.0
-
-# Testing
-pytest>=7.4.0
-pytest-asyncio>=0.21.0
-pytest-cov>=4.1.0
-
-# Code quality
-black>=23.0.0
-flake8>=6.1.0
-mypy>=1.7.0
-
-# Logging
-loguru>=0.7.0
-
-# Scheduling
-APScheduler>=3.10.0
-
-# Production server
-gunicorn>=21.2.0
+aiohappyeyeballs==2.6.1
+aiohttp==3.13.3
+aiosignal==1.4.0
+annotated-types==0.7.0
+anthropic==0.86.0
+anyio==4.13.0
+apscheduler==3.11.2
+attrs==26.1.0
+babel==2.18.0
+beautifulsoup4==4.14.3
+black==26.3.1
+blinker==1.9.0
+brotli==1.2.0
+certifi==2026.2.25
+cffi==2.0.0
+charset-normalizer==3.4.6
+click==8.3.1
+colorama==0.4.6
+coverage==7.13.5
+cryptography==46.0.6
+cssselect2==0.9.0
+deprecated==1.3.1
+distro==1.9.0
+dnspython==2.8.0
+docstring-parser==0.17.0
+et-xmlfile==2.0.0
+flake8==7.3.0
+flask==3.1.3
+flask-babel==4.0.0
+flask-cors==6.0.2
+flask-limiter==4.1.1
+flask-login==0.6.3
+fonttools==4.62.1
+frozenlist==1.8.0
+google-auth==2.49.1
+google-auth-oauthlib==1.3.0
+greenlet==3.3.2
+gunicorn==25.3.0
+h11==0.16.0
+httpcore==1.0.9
+httpx==0.28.1
+idna==3.11
+iniconfig==2.3.0
+itsdangerous==2.2.0
+jinja2==3.1.6
+jiter==0.13.0
+jsonschema==4.26.0
+jsonschema-specifications==2025.9.1
+librt==0.8.1
+limits==5.8.0
+loguru==0.7.3
+markupsafe==3.0.3
+mccabe==0.7.0
+motor==3.7.1
+msal==1.35.1
+multidict==6.7.1
+mypy==1.19.1
+mypy-extensions==1.1.0
+nest-asyncio==1.6.0
+numpy==2.4.3
+oauthlib==3.3.1
+openpyxl==3.1.5
+ordered-set==4.1.0
+packaging==26.0
+pandas==3.0.1
+pathspec==1.0.4
+pillow==12.1.1
+pip==25.0.1
+platformdirs==4.9.4
+playwright==1.58.0
+pluggy==1.6.0
+propcache==0.4.1
+pyasn1==0.6.3
+pyasn1-modules==0.4.2
+pycodestyle==2.14.0
+pycparser==3.0
+pydantic==2.12.5
+pydantic-core==2.41.5
+pydyf==0.12.1
+pyee==13.0.1
+pyflakes==3.4.0
+pygments==2.19.2
+pyjwt==2.12.1
+pymongo==4.16.0
+pyphen==0.17.2
+pytest==9.0.2
+pytest-asyncio==1.3.0
+pytest-cov==7.1.0
+python-dateutil==2.9.0.post0
+python-dotenv==1.2.2
+pytokens==0.4.1
+pytz==2026.1.post1
+referencing==0.37.0
+requests==2.33.0
+requests-oauthlib==2.0.0
+rpds-py==0.30.0
+six==1.17.0
+sniffio==1.3.1
+soupsieve==2.8.3
+tinycss2==1.5.1
+tinyhtml5==2.1.0
+tqdm==4.67.3
+typing-extensions==4.15.0
+typing-inspection==0.4.2
+typst==0.14.7
+tzlocal==5.3.1
+urllib3==2.6.3
+weasyprint==68.1
+webencodings==0.5.1
+werkzeug==3.1.7
+wrapt==2.1.2
+xlsxwriter==3.2.9
+yarl==1.23.0
+zopfli==0.4.1

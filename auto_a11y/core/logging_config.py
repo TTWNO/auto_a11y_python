@@ -15,10 +15,14 @@ DEBUG_MODE = os.getenv('DEBUG', 'False').lower() == 'true'
 if DEBUG_MODE:
     LOG_LEVEL = 'INFO'
 
-# Create logs directory if it doesn't exist (skip in desktop mode — run.py handles it)
-LOGS_DIR = Path(__file__).parent.parent.parent / 'logs'
-if os.getenv('DESKTOP_MODE', 'False').lower() != 'true':
-    LOGS_DIR.mkdir(exist_ok=True, parents=True)
+# Resolve log directory — in desktop mode, use USER_DATA_DIR (writable);
+# otherwise use the project-relative logs/ directory.
+_user_data_dir = os.getenv('USER_DATA_DIR', '')
+if os.getenv('DESKTOP_MODE', 'False').lower() == 'true' and _user_data_dir:
+    LOGS_DIR = Path(_user_data_dir) / 'logs'
+else:
+    LOGS_DIR = Path(__file__).parent.parent.parent / 'logs'
+LOGS_DIR.mkdir(exist_ok=True, parents=True)
 
 LOGGING_CONFIG = {
     'version': 1,

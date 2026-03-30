@@ -37,8 +37,11 @@ def init_directories():
         Path(config.REPORTS_DIR),
         log_dir,
         temp_dir,
-        Path('static/screenshots'),
     ]
+
+    # static/screenshots is only needed in non-desktop mode (filesystem is writable)
+    if not config.DESKTOP_MODE:
+        directories.append(Path('static/screenshots'))
 
     for directory in directories:
         directory.mkdir(exist_ok=True, parents=True)

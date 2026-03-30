@@ -736,6 +736,30 @@ table caption {
     }
 }
 
+/* --- B2. Navbar Dark Mode --- */
+[data-theme="dark"] .navbar.bg-primary {
+    background-color: var(--color-bg-header) !important;
+}
+[data-theme="dark"] .navbar.bg-primary .nav-link {
+    color: var(--color-text-inverse) !important;
+}
+[data-theme="dark"] .navbar.bg-primary .nav-link:hover,
+[data-theme="dark"] .navbar.bg-primary .nav-link:focus {
+    color: var(--color-border) !important;
+}
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .navbar.bg-primary {
+        background-color: var(--color-bg-header) !important;
+    }
+    :root:not([data-theme="light"]) .navbar.bg-primary .nav-link {
+        color: var(--color-text-inverse) !important;
+    }
+    :root:not([data-theme="light"]) .navbar.bg-primary .nav-link:hover,
+    :root:not([data-theme="light"]) .navbar.bg-primary .nav-link:focus {
+        color: var(--color-border) !important;
+    }
+}
+
 /* --- C. Text Utilities --- */
 [data-theme="dark"] .text-muted {
     color: var(--color-text-muted) !important;

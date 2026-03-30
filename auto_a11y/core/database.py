@@ -38,7 +38,11 @@ class Database:
             connection_uri: MongoDB connection URI
             database_name: Name of database to use
         """
-        self.client = MongoClient(connection_uri, tlsCAFile=certifi.where())
+        # Use TLS for remote MongoDB connections, skip for local
+        if 'localhost' in connection_uri or '127.0.0.1' in connection_uri:
+            self.client = MongoClient(connection_uri)
+        else:
+            self.client = MongoClient(connection_uri, tlsCAFile=certifi.where())
         self.db: MongoDatabase = self.client[database_name]
         
         # Collections

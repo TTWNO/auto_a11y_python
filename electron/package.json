@@ -1,0 +1,42 @@
+{
+  "name": "auto-a11y",
+  "version": "1.0.0",
+  "description": "Auto A11y - Web Accessibility Testing Platform",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev"
+  },
+  "dependencies": {
+    "electron-log": "^5.3.0"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.cnib.auto-a11y",
+    "productName": "Auto A11y",
+    "directories": {
+      "output": "dist"
+    },
+    "extraResources": [
+      {
+        "from": "../python",
+        "to": "python"
+      },
+      {
+        "from": "../app",
+        "to": "app"
+      },
+      {
+        "from": "../mongodb",
+        "to": "mongodb"
+      },
+      {
+        "from": "../chromium",
+        "to": "chromium"
+      }
+    ]
+  }
+}

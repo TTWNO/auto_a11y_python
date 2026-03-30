@@ -1,0 +1,410 @@
+const { spawn, execSync } = require('child_process');
+const path = require('path');
+const fs = require('fs');
+const net = require('net');
+const http = require('http');
+const { app } = require('electron');
+const log = require('electron-log');
+
+class ProcessManager {
+  constructor(settingsManager) {
+    this.settings = settingsManager;
+    this.mongoProcess = null;
+    this.flaskProcess = null;
+    this.resolvedPorts = { mongo: null, flask: null };
+    this.isShuttingDown = false;
+  }
+
+  /**
+   * Get paths to bundled binaries.
+   * In development, these may not exist — callers check and fall back.
+   */
+  getPaths() {
+    const resourcesPath = process.resourcesPath || path.join(__dirname, '..');
+    const projectRoot = path.join(__dirname, '..');
+    return {
+      mongod: path.join(resourcesPath, 'mongodb', 'bin', 'mongod'),
+      python: path.join(resourcesPath, 'python', 'bin', 'python3.12'),
+      pythonDev: path.join(projectRoot, '.venv', 'bin', 'python'),
+      appDir: path.join(resourcesPath, 'app'),
+      appDirDev: projectRoot,
+      chromium: path.join(resourcesPath, 'chromium'),
+    };
+  }
+
+  /**
+   * Check if a TCP port is available.
+   */
+  isPortAvailable(port) {
+    return new Promise((resolve) => {
+      const server = net.createServer();
+      server.once('error', () => resolve(false));
+      server.once('listening', () => {
+        server.close();
+        resolve(true);
+      });
+      server.listen(port, '127.0.0.1');
+    });
+  }
+
+  /**
+   * Find an available port starting from basePort, trying up to maxAttempts.
+   */
+  async findAvailablePort(basePort, maxAttempts = 3) {
+    for (let i = 0; i < maxAttempts; i++) {
+      const port = basePort + i;
+      if (await this.isPortAvailable(port)) {
+        return port;
+      }
+      log.warn(`Port ${port} is in use, trying ${port + 1}...`);
+    }
+    throw new Error(`No available port found (tried ${basePort}-${basePort + maxAttempts - 1})`);
+  }
+
+  /**
+   * Poll a URL until it returns a successful response or timeout.
+   */
+  pollUrl(url, timeoutMs = 30000, intervalMs = 500) {
+    return new Promise((resolve, reject) => {
+      const deadline = Date.now() + timeoutMs;
+
+      const check = () => {
+        if (Date.now() > deadline) {
+          reject(new Error(`Timeout waiting for ${url}`));
+          return;
+        }
+
+        http.get(url, (res) => {
+          let body = '';
+          res.on('data', (chunk) => { body += chunk; });
+          res.on('end', () => {
+            try {
+              const data = JSON.parse(body);
+              if (data.status === 'healthy') {
+                resolve(data);
+              } else {
+                setTimeout(check, intervalMs);
+              }
+            } catch {
+              setTimeout(check, intervalMs);
+            }
+          });
+        }).on('error', () => {
+          setTimeout(check, intervalMs);
+        });
+      };
+
+      check();
+    });
+  }
+
+  /**
+   * Clean up stale MongoDB lock file if no mongod process is running.
+   */
+  cleanStaleLock() {
+    const dbPath = path.join(this.settings.userDataDir, 'mongodb', 'data');
+    const lockFile = path.join(dbPath, 'mongod.lock');
+
+    if (!fs.existsSync(lockFile)) return;
+
+    const content = fs.readFileSync(lockFile, 'utf8').trim();
+    if (!content) return; // Empty lock = clean shutdown
+
+    log.warn(`Found stale mongod.lock with PID ${content}, cleaning up...`);
+    try {
+      // Check if the PID is still running
+      process.kill(parseInt(content), 0);
+      // If no error, process is still running — don't clean
+      log.warn('mongod process is still running, skipping lock cleanup');
+    } catch {
+      // Process not running — safe to clean
+      fs.writeFileSync(lockFile, '', 'utf8');
+      log.info('Cleaned stale mongod.lock');
+    }
+  }
+
+  /**
+   * Start MongoDB sidecar process.
+   */
+  async startMongoDB(onProgress) {
+    if (!this.settings.useInternalMongo) {
+      log.info('Using external MongoDB, skipping internal start');
+      return;
+    }
+
+    onProgress && onProgress('Starting database...');
+
+    this.cleanStaleLock();
+
+    const paths = this.getPaths();
+    const dbPath = path.join(this.settings.userDataDir, 'mongodb', 'data');
+    const logPath = path.join(this.settings.userDataDir, 'logs', 'mongod.log');
+    const basePort = this.settings.settings.database.internal_port;
+
+    // Find available port
+    const port = await this.findAvailablePort(basePort);
+    this.resolvedPorts.mongo = port;
+    log.info(`Starting mongod on port ${port}, dbpath: ${dbPath}`);
+
+    // Determine mongod path: bundled binary or system-installed
+    let mongodPath = paths.mongod;
+    if (!fs.existsSync(mongodPath)) {
+      // Fall back to system mongod (for development)
+      mongodPath = 'mongod';
+      log.warn('Bundled mongod not found, falling back to system mongod');
+    }
+
+    this.mongoProcess = spawn(mongodPath, [
+      '--dbpath', dbPath,
+      '--port', String(port),
+      '--bind_ip', '127.0.0.1',
+      '--logpath', logPath,
+      '--logappend',
+      '--logRotate', 'reopen',
+    ], {
+      stdio: 'ignore',
+      detached: false,
+    });
+
+    this.mongoProcess.on('error', (err) => {
+      log.error('mongod failed to start:', err.message);
+    });
+
+    this.mongoProcess.on('exit', (code, signal) => {
+      if (!this.isShuttingDown) {
+        log.error(`mongod exited unexpectedly: code=${code}, signal=${signal}`);
+      }
+    });
+
+    // Poll until MongoDB is accepting connections
+    await this.pollMongoReady(port, 15000);
+    log.info(`MongoDB is ready on port ${port}`);
+  }
+
+  /**
+   * Poll MongoDB by attempting a TCP connection.
+   */
+  pollMongoReady(port, timeoutMs = 15000) {
+    return new Promise((resolve, reject) => {
+      const deadline = Date.now() + timeoutMs;
+
+      const check = () => {
+        if (Date.now() > deadline) {
+          reject(new Error(`MongoDB did not start within ${timeoutMs}ms`));
+          return;
+        }
+
+        const socket = net.createConnection({ port, host: '127.0.0.1' }, () => {
+          socket.destroy();
+          resolve();
+        });
+        socket.on('error', () => {
+          setTimeout(check, 500);
+        });
+      };
+
+      check();
+    });
+  }
+
+  /**
+   * Start Flask/Python sidecar process.
+   */
+  async startFlask(onProgress) {
+    if (!this.settings.useInternalServer) {
+      log.info('Using external server, skipping internal start');
+      return;
+    }
+
+    onProgress && onProgress('Starting server...');
+
+    const paths = this.getPaths();
+    const basePort = this.settings.settings.server.internal_port;
+
+    // Find available port
+    const port = await this.findAvailablePort(basePort);
+    this.resolvedPorts.flask = port;
+
+    // Build environment variables
+    const env = this.settings.getFlaskEnv(this.resolvedPorts);
+    env.PORT = String(port);
+
+    // Set Playwright browsers path if bundled chromium exists
+    if (fs.existsSync(paths.chromium)) {
+      env.PLAYWRIGHT_BROWSERS_PATH = paths.chromium;
+    }
+
+    // Determine python path: bundled → project venv → system
+    let pythonPath = paths.python;
+    if (!fs.existsSync(pythonPath)) {
+      if (fs.existsSync(paths.pythonDev)) {
+        pythonPath = paths.pythonDev;
+        log.info('Using project venv Python:', pythonPath);
+      } else {
+        pythonPath = 'python3';
+        log.warn('No bundled or venv Python, falling back to system python3');
+      }
+    }
+
+    // Determine app entry point: bundled → project root
+    let runPy = path.join(paths.appDir, 'run.py');
+    if (!fs.existsSync(runPy)) {
+      runPy = path.join(paths.appDirDev, 'run.py');
+      log.info('Using project root run.py:', runPy);
+    }
+
+    log.info(`Starting Flask: ${pythonPath} ${runPy} --port ${port}`);
+
+    this.flaskProcess = spawn(pythonPath, [runPy, '--desktop', '--port', String(port)], {
+      env,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      detached: false,
+      cwd: path.dirname(runPy),
+    });
+
+    // Pipe Flask stdout/stderr to electron-log
+    this.flaskProcess.stdout.on('data', (data) => {
+      log.info('[flask]', data.toString().trim());
+    });
+    this.flaskProcess.stderr.on('data', (data) => {
+      log.warn('[flask]', data.toString().trim());
+    });
+
+    this.flaskProcess.on('error', (err) => {
+      log.error('Flask process failed to start:', err.message);
+    });
+
+    this.flaskProcess.on('exit', (code, signal) => {
+      if (!this.isShuttingDown) {
+        log.error(`Flask exited unexpectedly: code=${code}, signal=${signal}`);
+      }
+    });
+
+    // Poll /health until ready
+    const healthUrl = `http://127.0.0.1:${port}/health`;
+    onProgress && onProgress('Waiting for server...');
+    await this.pollUrl(healthUrl, 30000);
+    log.info(`Flask is ready on port ${port}`);
+  }
+
+  /**
+   * Start all internal services in order.
+   */
+  async startAll(onProgress) {
+    await this.startMongoDB(onProgress);
+    await this.startFlask(onProgress);
+    onProgress && onProgress('Ready');
+  }
+
+  /**
+   * Graceful ordered shutdown: Flask first, then MongoDB.
+   */
+  async stopAll() {
+    if (this.isShuttingDown) return;
+    this.isShuttingDown = true;
+    log.info('Shutting down all services...');
+
+    // 1. Stop Flask via /shutdown endpoint
+    if (this.flaskProcess && !this.flaskProcess.killed) {
+      try {
+        const port = this.resolvedPorts.flask;
+        await this.postShutdown(port);
+        log.info('Flask shutdown request sent');
+      } catch (err) {
+        log.warn('Flask shutdown request failed:', err.message);
+      }
+
+      // Wait for process to exit, then force kill
+      await this.waitForExit(this.flaskProcess, 5000);
+    }
+
+    // 2. Stop MongoDB via mongod --shutdown
+    if (this.mongoProcess && !this.mongoProcess.killed) {
+      try {
+        const dbPath = path.join(this.settings.userDataDir, 'mongodb', 'data');
+        const paths = this.getPaths();
+        let mongodPath = paths.mongod;
+        if (!fs.existsSync(mongodPath)) {
+          mongodPath = 'mongod';
+        }
+
+        log.info('Sending mongod --shutdown...');
+        execSync(`"${mongodPath}" --shutdown --dbpath "${dbPath}"`, {
+          timeout: 10000,
+          stdio: 'ignore',
+        });
+        log.info('MongoDB shut down cleanly');
+      } catch (err) {
+        log.warn('mongod --shutdown failed:', err.message);
+        // Force kill as last resort
+        this.forceKill(this.mongoProcess);
+      }
+    }
+
+    log.info('All services stopped');
+  }
+
+  /**
+   * Send POST /shutdown to Flask.
+   */
+  postShutdown(port) {
+    return new Promise((resolve, reject) => {
+      const req = http.request({
+        hostname: '127.0.0.1',
+        port,
+        path: '/shutdown',
+        method: 'POST',
+        timeout: 3000,
+      }, (res) => {
+        resolve(res.statusCode);
+      });
+      req.on('error', reject);
+      req.on('timeout', () => {
+        req.destroy();
+        reject(new Error('Shutdown request timed out'));
+      });
+      req.end();
+    });
+  }
+
+  /**
+   * Wait for a child process to exit, force kill after timeout.
+   */
+  waitForExit(proc, timeoutMs) {
+    return new Promise((resolve) => {
+      if (!proc || proc.killed) {
+        resolve();
+        return;
+      }
+
+      const timer = setTimeout(() => {
+        log.warn('Process did not exit in time, force killing...');
+        this.forceKill(proc);
+        resolve();
+      }, timeoutMs);
+
+      proc.on('exit', () => {
+        clearTimeout(timer);
+        resolve();
+      });
+    });
+  }
+
+  /**
+   * Force kill a child process (cross-platform).
+   */
+  forceKill(proc) {
+    if (!proc || proc.killed) return;
+    try {
+      if (process.platform === 'win32') {
+        execSync(`taskkill /pid ${proc.pid} /T /F`, { stdio: 'ignore' });
+      } else {
+        proc.kill('SIGKILL');
+      }
+    } catch (err) {
+      log.warn('Force kill failed:', err.message);
+    }
+  }
+}
+
+module.exports = { ProcessManager };

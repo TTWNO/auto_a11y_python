@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auto A11y</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a2e;
+      color: #e0e0e0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+      -webkit-app-region: drag;
+    }
+    .logo {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.5px;
+    }
+    .logo span { color: #4a9eff; }
+    .version {
+      font-size: 0.8rem;
+      color: #888;
+      margin-bottom: 2rem;
+    }
+    .progress-container {
+      width: 300px;
+      height: 4px;
+      background: #2a2a4a;
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+    .progress-bar {
+      height: 100%;
+      width: 30%;
+      background: linear-gradient(90deg, #4a9eff, #7b61ff);
+      border-radius: 2px;
+      animation: indeterminate 1.5s ease-in-out infinite;
+    }
+    .progress-bar.done {
+      width: 100%;
+      animation: none;
+      transition: width 0.3s ease;
+    }
+    @keyframes indeterminate {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(400%); }
+    }
+    .status {
+      font-size: 0.85rem;
+      color: #aaa;
+      min-height: 1.2em;
+    }
+    .error {
+      color: #ff6b6b;
+      font-size: 0.85rem;
+      margin-top: 1rem;
+      max-width: 400px;
+      text-align: center;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="logo">Auto <span>A11y</span></div>
+  <div class="version">Accessibility Testing Platform</div>
+  <div class="progress-container">
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+  <div class="status" id="status">Initializing...</div>
+  <div class="error" id="error"></div>
+
+  <script>
+    const statusEl = document.getElementById('status');
+    const progressBar = document.getElementById('progressBar');
+    const errorEl = document.getElementById('error');
+
+    if (window.electronAPI) {
+      window.electronAPI.onProgress((message) => {
+        statusEl.textContent = message;
+        if (message === 'Ready') {
+          progressBar.classList.add('done');
+        }
+      });
+
+      window.electronAPI.onError((message) => {
+        statusEl.textContent = 'Error';
+        errorEl.textContent = message;
+        errorEl.style.display = 'block';
+        progressBar.style.background = '#ff6b6b';
+      });
+    }
+  </script>
+</body>
+</html>

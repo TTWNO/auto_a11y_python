@@ -22,14 +22,24 @@ from auto_a11y.core.logging_config import setup_logging as configure_logging
 
 def init_directories():
     """Initialize required directories"""
+    if config.DESKTOP_MODE and config.USER_DATA_DIR:
+        user_data = Path(config.USER_DATA_DIR)
+        config.SCREENSHOTS_DIR = user_data / 'screenshots'
+        config.REPORTS_DIR = user_data / 'reports'
+        log_dir = user_data / 'logs'
+        temp_dir = user_data / 'temp'
+    else:
+        log_dir = Path('logs')
+        temp_dir = Path('temp')
+
     directories = [
         Path(config.SCREENSHOTS_DIR),
         Path(config.REPORTS_DIR),
-        Path('logs'),
-        Path('temp'),
-        Path('static/screenshots')
+        log_dir,
+        temp_dir,
+        Path('static/screenshots'),
     ]
-    
+
     for directory in directories:
         directory.mkdir(exist_ok=True, parents=True)
         logging.info(f"Ensured directory exists: {directory}")
@@ -127,9 +137,14 @@ def main():
     parser.add_argument('--test-db', action='store_true', help='Test database connection')
     parser.add_argument('--download-browser', action='store_true', help='Download Chromium browser')
     parser.add_argument('--skip-browser', action='store_true', help='Skip browser download during setup')
-    
+    parser.add_argument('--desktop', action='store_true', help='Enable desktop mode (Electron distribution)')
+
     args = parser.parse_args()
-    
+
+    # Desktop mode
+    if args.desktop:
+        config.DESKTOP_MODE = True
+
     # Override config with command line arguments
     if args.debug:
         config.DEBUG = True
@@ -148,7 +163,12 @@ def main():
     
     # Initialize directories
     init_directories()
-    
+
+    # In desktop mode, redirect log file to USER_DATA_DIR
+    if config.DESKTOP_MODE and config.USER_DATA_DIR:
+        from auto_a11y.core.logging_config import reconfigure_log_path
+        reconfigure_log_path(Path(config.USER_DATA_DIR) / 'logs')
+
     # Test database if requested
     if args.test_db:
         logger.info("Testing database connection...")

@@ -15,9 +15,10 @@ DEBUG_MODE = os.getenv('DEBUG', 'False').lower() == 'true'
 if DEBUG_MODE:
     LOG_LEVEL = 'INFO'
 
-# Create logs directory if it doesn't exist
+# Create logs directory if it doesn't exist (skip in desktop mode — run.py handles it)
 LOGS_DIR = Path(__file__).parent.parent.parent / 'logs'
-LOGS_DIR.mkdir(exist_ok=True, parents=True)
+if os.getenv('DESKTOP_MODE', 'False').lower() != 'true':
+    LOGS_DIR.mkdir(exist_ok=True, parents=True)
 
 LOGGING_CONFIG = {
     'version': 1,
@@ -102,3 +103,19 @@ def setup_logging():
         logger.info(f"Logging configured - Level: {LOG_LEVEL}, Debug: {DEBUG_MODE}")
     
     return logger
+
+
+def reconfigure_log_path(log_dir):
+    """Redirect log file to a different directory (for desktop mode).
+    Call after setup_logging() has been called."""
+    log_dir = Path(log_dir)
+    log_dir.mkdir(exist_ok=True, parents=True)
+    new_log_path = str(log_dir / 'auto_a11y.log')
+
+    root_logger = logging.getLogger()
+    for handler in root_logger.handlers:
+        if isinstance(handler, logging.handlers.RotatingFileHandler):
+            handler.close()
+            handler.baseFilename = new_log_path
+            handler.stream = handler._open()
+            break

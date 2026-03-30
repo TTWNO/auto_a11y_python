@@ -18,9 +18,10 @@ DATA_DIR = BASE_DIR / 'data'
 REPORTS_DIR = BASE_DIR / 'reports'
 SCREENSHOTS_DIR = BASE_DIR / 'screenshots'
 
-# Create directories if they don't exist
-for directory in [DATA_DIR, REPORTS_DIR, SCREENSHOTS_DIR]:
-    directory.mkdir(exist_ok=True, parents=True)
+# Create directories if they don't exist (skip in desktop mode — run.py handles it)
+if os.getenv('DESKTOP_MODE', 'False').lower() != 'true':
+    for directory in [DATA_DIR, REPORTS_DIR, SCREENSHOTS_DIR]:
+        directory.mkdir(exist_ok=True, parents=True)
 
 
 @dataclass
@@ -81,6 +82,12 @@ class Config:
     SCHEDULER_MISFIRE_GRACE_TIME: int = int(os.getenv('SCHEDULER_MISFIRE_GRACE_TIME', 3600))  # 1 hour
     SCHEDULER_COALESCE: bool = os.getenv('SCHEDULER_COALESCE', 'True').lower() == 'true'
 
+    # Desktop mode (Electron distribution)
+    DESKTOP_MODE: bool = os.getenv('DESKTOP_MODE', 'False').lower() == 'true'
+    USER_DATA_DIR: str = os.getenv('USER_DATA_DIR', '')
+    SETTINGS_FILE: str = os.getenv('SETTINGS_FILE', '')
+    AUTH_ENABLED: bool = os.getenv('AUTH_ENABLED', 'True').lower() == 'true'
+
     # Share token salt (must match between token creation and validation)
     TOKEN_SALT: str = 'public-share-token'
 
@@ -140,7 +147,11 @@ class Config:
     def validate(self) -> bool:
         """Validate configuration"""
         if self.RUN_AI_ANALYSIS and not self.CLAUDE_API_KEY:
-            raise ValueError("CLAUDE_API_KEY is required when RUN_AI_ANALYSIS is True")
+            if self.DESKTOP_MODE:
+                # In desktop mode, silently disable AI instead of crashing
+                self.RUN_AI_ANALYSIS = False
+            else:
+                raise ValueError("CLAUDE_API_KEY is required when RUN_AI_ANALYSIS is True")
         return True
 
 

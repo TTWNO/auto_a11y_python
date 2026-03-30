@@ -254,20 +254,23 @@ def create_app(config):
         def desktop_auto_login():
             """In desktop mode with auth disabled, auto-login as a superadmin user."""
             if not config.AUTH_ENABLED and not current_user.is_authenticated:
-                from auto_a11y.models.user import User
+                from auto_a11y.models.app_user import AppUser, UserRole
                 from flask_login import login_user
-                desktop_user = app.db.get_user_by_email('desktop@auto-a11y.local')
+                desktop_user = app.db.get_app_user_by_email('desktop@auto-a11y.local')
                 if not desktop_user:
-                    app.db.create_user({
-                        'email': 'desktop@auto-a11y.local',
-                        'name': 'Desktop User',
-                        'role': 'superadmin',
-                        'is_superadmin': True,
-                    })
-                    desktop_user = app.db.get_user_by_email('desktop@auto-a11y.local')
+                    new_user = AppUser(
+                        email='desktop@auto-a11y.local',
+                        password_hash='',
+                        role=UserRole.ADMIN,
+                        display_name='Desktop User',
+                        is_active=True,
+                        is_verified=True,
+                        is_superadmin=True,
+                    )
+                    app.db.create_app_user(new_user)
+                    desktop_user = app.db.get_app_user_by_email('desktop@auto-a11y.local')
                 if desktop_user:
-                    user_obj = User(desktop_user)
-                    login_user(user_obj)
+                    login_user(desktop_user)
 
     # Global login requirement - protect all routes except auth, static, demo, and health
     @app.before_request

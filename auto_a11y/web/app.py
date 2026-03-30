@@ -29,7 +29,8 @@ from auto_a11y.web.routes import (
     schedules_bp,
     share_tokens_bp,
     public_bp,
-    members_bp
+    members_bp,
+    desktop_bp
 )
 from auto_a11y.web.routes.demo import demo_bp
 from auto_a11y.reporting.issue_translations_inline import ISSUE_DESCRIPTION_TRANSLATIONS_FR
@@ -245,6 +246,29 @@ def create_app(config):
     from auto_a11y.web.routes.groups import groups_bp
     app.register_blueprint(groups_bp, url_prefix='/groups')
 
+    # Desktop-mode blueprint and auto-login (only active when DESKTOP_MODE env var is set)
+    if config.DESKTOP_MODE:
+        app.register_blueprint(desktop_bp)
+
+        @app.before_request
+        def desktop_auto_login():
+            """In desktop mode with auth disabled, auto-login as a superadmin user."""
+            if not config.AUTH_ENABLED and not current_user.is_authenticated:
+                from auto_a11y.models.user import User
+                from flask_login import login_user
+                desktop_user = app.db.get_user_by_email('desktop@auto-a11y.local')
+                if not desktop_user:
+                    app.db.create_user({
+                        'email': 'desktop@auto-a11y.local',
+                        'name': 'Desktop User',
+                        'role': 'superadmin',
+                        'is_superadmin': True,
+                    })
+                    desktop_user = app.db.get_user_by_email('desktop@auto-a11y.local')
+                if desktop_user:
+                    user_obj = User(desktop_user)
+                    login_user(user_obj)
+
     # Global login requirement - protect all routes except auth, static, demo, and health
     @app.before_request
     def require_login():
@@ -253,7 +277,8 @@ def create_app(config):
             'auth.login', 'auth.register', 'auth.logout',
             'auth.microsoft_login', 'auth.microsoft_callback',
             'auth.google_login', 'auth.google_callback',
-            'static', 'health', 'set_language'
+            'static', 'health', 'set_language',
+            'desktop.shutdown'
         ]
         if request.endpoint and request.endpoint in allowed_endpoints:
             return None

@@ -407,6 +407,52 @@ POST /api/websites/{website_id}/discover
    - Check API rate limits
    - Ensure `RUN_AI_ANALYSIS = True` in config
 
+## Migration
+
+Export and import the MongoDB database between environments (e.g. cloud ↔ local) using `mongodump` and `mongorestore`.
+
+### Export (dump) from source
+
+```bash
+# From local MongoDB (default)
+mongodump --db auto_a11y --out ./dump
+
+# From a remote/cloud MongoDB (with connection string)
+mongodump --uri "mongodb+srv://user:password@cluster.example.net/" --db auto_a11y --out ./dump
+```
+
+This creates a `./dump/auto_a11y/` directory containing BSON files for every collection.
+
+### Import (restore) to target
+
+```bash
+# To local MongoDB (default)
+mongorestore --db auto_a11y --drop ./dump/auto_a11y
+
+# To a remote/cloud MongoDB
+mongorestore --uri "mongodb+srv://user:password@cluster.example.net/" --db auto_a11y --drop ./dump/auto_a11y
+```
+
+The `--drop` flag drops each collection before restoring, ensuring a clean import. Omit it to merge into existing data.
+
+### Common workflows
+
+```bash
+# Cloud → Local
+mongodump --uri "$CLOUD_MONGODB_URI" --db auto_a11y --out ./dump
+mongorestore --db auto_a11y --drop ./dump/auto_a11y
+
+# Local → Cloud
+mongodump --db auto_a11y --out ./dump
+mongorestore --uri "$CLOUD_MONGODB_URI" --db auto_a11y --drop ./dump/auto_a11y
+```
+
+If your database name differs from the default `auto_a11y`, replace it with the value of `DATABASE_NAME` from your `.env` or `config.py`.
+
+### Prerequisites
+
+Install the [MongoDB Database Tools](https://www.mongodb.com/docs/database-tools/installation/installation/) (`mongodump` and `mongorestore`). These are separate from the MongoDB server and must be installed individually on most systems.
+
 ## Contributing
 
 Contributions are welcome! Please:

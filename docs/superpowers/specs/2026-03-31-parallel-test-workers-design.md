@@ -34,7 +34,7 @@ num_workers = min(MAX_TEST_WORKERS, len(testable_pages))
 
 ### Staggered Startup
 
-Workers start `WORKER_STAGGER_SECONDS` apart (default: 1.5s) to avoid thundering herd on Chromium launch. Small upfront cost, prevents N simultaneous browser spawns competing for CPU.
+Workers stagger their browser launch by sleeping `worker_id * WORKER_STAGGER_SECONDS` at the top of their body. This is inside the worker coroutine so that `asyncio.gather` starts all workers immediately but each waits its turn before launching Chromium. Default: 1.5s between launches.
 
 ## Integration with TestingJob
 
@@ -55,8 +55,18 @@ queue = asyncio.Queue()
 for page in testable_pages:
     queue.put_nowait(page)
 
-async def worker(worker_id, runner, queue, ...):
+async def worker(worker_id, queue, ...):
+    runner = None
     try:
+        # Stagger browser launches to avoid thundering herd
+        if worker_id > 0:
+            await asyncio.sleep(worker_id * WORKER_STAGGER_SECONDS)
+        # Check cancellation after stagger wait
+        if self.is_cancelled():
+            return
+
+        runner = TestRunner(database, browser_config)
+
         while not queue.empty():
             if self.is_cancelled():
                 return
@@ -68,18 +78,15 @@ async def worker(worker_id, runner, queue, ...):
             # Per-page try/except for error isolation
             ...
     finally:
-        await runner.cleanup()
+        if runner:
+            await runner.cleanup()
 
-workers = []
-for i in range(num_workers):
-    runner = TestRunner(database, browser_config)
-    if i > 0:
-        await asyncio.sleep(WORKER_STAGGER_SECONDS)
-    workers.append(worker(i, runner, queue, ...))
-
+workers = [worker(i, queue, ...) for i in range(num_workers)]
 results = await asyncio.gather(*workers, return_exceptions=True)
 # Log any worker-level exceptions from results
 ```
+
+**Removed:** The `await asyncio.sleep(0.5)` inter-page delay from the serial loop is intentionally dropped. Each worker has its own browser, so there is no need to let a shared browser "stabilize" between pages.
 
 ### Progress Tracking
 
@@ -125,7 +132,8 @@ No separate AI concurrency setting needed — AI calls are gated by worker count
 
 ### Browser recovery
 
-- If a worker's browser disconnects mid-test, worker catches `PlaywrightError`, marks current page as `ERROR`, attempts one restart (new `TestRunner`). If restart fails, worker exits.
+- If a worker's browser disconnects mid-test (e.g., crash, not OOM), worker catches `PlaywrightError`, marks current page as `ERROR`, attempts one restart (new `TestRunner`). If restart fails, worker exits.
+- Recovery is skipped if the failure looks like resource exhaustion (e.g., Chromium killed by OOM) — restarting would likely fail and worsen the situation.
 
 ### Graceful cancellation
 
@@ -133,17 +141,37 @@ No separate AI concurrency setting needed — AI calls are gated by worker count
 - On cancel: workers stop pulling from queue, current in-flight pages finish, then all workers exit.
 - Remaining pages in queue keep their pre-test status (not marked as ERROR).
 
+## Concurrency Hazards to Fix
+
+### 1. `website.last_tested` lost-update race (Medium)
+
+`test_runner.py` does a read-modify-write on the website document after each page test:
+```python
+website = self.db.get_website(page.website_id)
+website.last_tested = datetime.now()
+self.db.update_website(website)  # replace_one — replaces entire document
+```
+With parallel workers, one worker's `get_website()` reads stale data, then `replace_one` overwrites the other's update. **Fix:** Change `test_runner.py` to use an atomic `$set` operation for `last_tested` instead of a full document replace.
+
+### 2. Redundant page status writes (Medium)
+
+Both `testing_job.py` (the worker loop) and `test_runner.test_page()` set `page.status = TESTING` and call `database.update_page()` (full `replace_one`). With parallel workers, two concurrent `replace_one` calls on different pages are fine, but the redundant write within `test_runner.test_page()` could clobber fields updated by the worker loop. **Fix:** Remove the redundant `page.status = TESTING` + `update_page()` from `test_runner.test_page()` — the worker loop in `testing_job.py` is the single owner of page status transitions.
+
+### 3. AI analysis memory (Low)
+
+With N workers doing AI concurrently, N screenshots are held in memory simultaneously (~1-5MB each). At 4-8 workers this is negligible (~40MB max), but worth noting. No fix needed.
+
 ## Files Changed
 
 | File | Change |
 |------|--------|
 | `auto_a11y/core/testing_job.py` | Replace serial loop (lines 340-460) with worker pool. Add worker function, staggered startup, lock-protected progress. |
 | `auto_a11y/core/browser_manager.py` | Remove unused `BrowserPool` class (lines 744-792). |
+| `auto_a11y/testing/test_runner.py` | Remove redundant `page.status = TESTING` + `update_page()` (concurrency hazard #2). Change `website.last_tested` update to atomic `$set` (concurrency hazard #1). |
 | `config.py` | Add `MAX_TEST_WORKERS` and `WORKER_STAGGER_SECONDS`. |
 
 ### Unchanged files
 
 - `auto_a11y/web/routes/websites.py` — job submission unchanged, parallelism is invisible from this layer.
 - `auto_a11y/core/website_manager.py` — no changes.
-- `auto_a11y/testing/test_runner.py` — each worker creates its own instance; class works in isolation as-is.
 - Web UI progress polling — already works with `update_progress()` calls.

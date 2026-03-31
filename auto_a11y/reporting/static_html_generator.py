@@ -7,12 +7,15 @@ Packages everything into a downloadable ZIP file.
 """
 
 import json
+import logging
 import shutil
 import zipfile
 from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 import jinja2
+
+logger = logging.getLogger(__name__)
 from flask_babel import force_locale, lazy_gettext, pgettext
 
 from auto_a11y.core.database import Database
@@ -323,6 +326,14 @@ class StaticHTMLReportGenerator:
                 'search_pages': 'Search pages...',
                 'no_common_components': 'No common components found',
 
+                # Common Issues section
+                'common_issues': 'Common Issues',
+                'common_issues_description': 'Issues appearing on multiple pages across the site',
+                'no_common_issues': 'No common issues found',
+                'appears_on': 'Appears on',
+                'of_pages': 'of pages',
+                'instances': 'instances',
+
                 # Component detail page
                 'component_deduplicated_issues': 'Component Deduplicated Issues',
                 'back_to_index': 'Back to Index',
@@ -495,6 +506,14 @@ class StaticHTMLReportGenerator:
                 'issues_not_in_components': 'Problèmes non associés aux composants communs, organisés par page',
                 'search_pages': 'Rechercher des pages...',
                 'no_common_components': 'Aucun composant commun trouvé',
+
+                # Common Issues section
+                'common_issues': 'Problèmes communs',
+                'common_issues_description': 'Problèmes apparaissant sur plusieurs pages du site',
+                'no_common_issues': 'Aucun problème commun trouvé',
+                'appears_on': 'Apparaît sur',
+                'of_pages': 'des pages',
+                'instances': 'instances',
 
                 # Component detail page
                 'component_deduplicated_issues': 'Problèmes dédupliqués du composant',
@@ -2025,6 +2044,12 @@ class StaticHTMLReportGenerator:
                 project_data, issues_by_component.get('unassigned', []), common_components
             )
 
+            # Extract common issues from unassigned issues
+            # These are violations/warnings appearing on multiple pages but not inside components
+            common_issues = self._extract_common_issues(
+                issues_by_component.get('unassigned', []), total_pages
+            )
+
             # Calculate statistics based on actual deduplicated issues that will be displayed
             # Count issues in components
             total_violations = 0
@@ -2054,7 +2079,7 @@ class StaticHTMLReportGenerator:
             # Generate index page
             self._generate_dedup_index(
                 temp_dir, project, project_name, common_components,
-                issues_by_component, pages_with_unassigned,
+                issues_by_component, pages_with_unassigned, common_issues,
                 total_violations, total_warnings, total_info, total_discovery, total_pages,
                 overall_accessibility_score, overall_compliance_score
             )
@@ -2150,6 +2175,14 @@ class StaticHTMLReportGenerator:
                         signature = metadata.get('headerSignature')
                         component_type = 'Header'
                         label = metadata.get('headerLabel', 'Header')
+                    elif issue_id in ['DiscoFooterFound', 'landmarks_DiscoFooterFound']:
+                        signature = metadata.get('footerSignature')
+                        component_type = 'Footer'
+                        label = metadata.get('footerLabel', 'Footer')
+                    elif issue_id in ['DiscoSearchFound', 'landmarks_DiscoSearchFound']:
+                        signature = metadata.get('searchSignature')
+                        component_type = 'Search'
+                        label = metadata.get('searchLabel', 'Search')
 
                     if signature and signature != 'unknown':
                         # Get component language (default to 'en' if not specified)
@@ -2185,6 +2218,53 @@ class StaticHTMLReportGenerator:
             for sig, comp_data in common_components.items()
             if len(comp_data['pages']) >= 2
         }
+
+        # Fallback: if exact signatures didn't match across pages (e.g., old XPath-based
+        # signatures that differ per page), merge components of the same type+label+user_context
+        # that each appear on only 1 page. This handles legacy data where signatures included
+        # the XPath, making them unique per page even for identical structural components.
+        if not filtered_components:
+            single_page_components = {
+                sig: comp_data
+                for sig, comp_data in common_components.items()
+                if len(comp_data['pages']) == 1
+            }
+
+            if single_page_components:
+                # Group single-page components by (type, label, user_context)
+                merge_groups = {}
+                for sig, comp_data in single_page_components.items():
+                    merge_key = (comp_data['type'], comp_data.get('user_context', 'Guest'))
+                    if merge_key not in merge_groups:
+                        merge_groups[merge_key] = []
+                    merge_groups[merge_key].append((sig, comp_data))
+
+                # Merge groups with 2+ components into single combined components
+                for merge_key, group in merge_groups.items():
+                    if len(group) >= 2:
+                        # Use the first component as the base, merge pages and xpaths
+                        base_sig, base_data = group[0]
+                        merged = {
+                            'type': base_data['type'],
+                            'label': base_data['label'],
+                            'signature': base_data['signature'],
+                            'xpaths_by_page': dict(base_data['xpaths_by_page']),
+                            'pages': set(base_data['pages']),
+                            'lang': base_data.get('lang', 'en'),
+                            'user_context': base_data.get('user_context', 'Guest')
+                        }
+                        for _, comp_data in group[1:]:
+                            merged['xpaths_by_page'].update(comp_data['xpaths_by_page'])
+                            merged['pages'].update(comp_data['pages'])
+
+                        merged_key = f"merged_{merge_key[0]}|{merge_key[1]}"
+                        filtered_components[merged_key] = merged
+
+                if filtered_components:
+                    logger.info(
+                        f"Signature-based matching found 0 common components; "
+                        f"fallback merge by type found {len(filtered_components)}"
+                    )
 
         return filtered_components
 
@@ -2405,6 +2485,79 @@ class StaticHTMLReportGenerator:
 
         return grouped
 
+    def _extract_common_issues(
+        self,
+        unassigned_issues: List[Dict[str, Any]],
+        total_pages: int
+    ) -> List[Dict[str, Any]]:
+        """
+        Extract common issues from unassigned (non-component) issues.
+
+        Groups unassigned issues by rule_id and identifies those appearing on
+        multiple pages. These are issues like heading hierarchy violations,
+        missing skip links, etc. that appear across many pages but aren't
+        inside any structural component.
+
+        Args:
+            unassigned_issues: List of deduplicated issues not assigned to components
+            total_pages: Total number of pages tested
+
+        Returns:
+            List of common issue dictionaries, sorted by page count descending
+        """
+        # Group unassigned issues by rule_id, collecting all pages
+        issues_by_rule = {}
+
+        for issue in unassigned_issues:
+            rule_id = issue.get('rule_id', '')
+            if not rule_id:
+                continue
+
+            if rule_id not in issues_by_rule:
+                issues_by_rule[rule_id] = {
+                    'rule_id': rule_id,
+                    'type': issue.get('type', 'violation'),
+                    'impact': issue.get('impact', 'medium'),
+                    'touchpoint': issue.get('touchpoint', ''),
+                    'description_en': issue.get('description_en', ''),
+                    'description_fr': issue.get('description_fr', ''),
+                    'why_en': issue.get('why_en', ''),
+                    'why_fr': issue.get('why_fr', ''),
+                    'who_en': issue.get('who_en', ''),
+                    'who_fr': issue.get('who_fr', ''),
+                    'full_remediation_en': issue.get('full_remediation_en', ''),
+                    'full_remediation_fr': issue.get('full_remediation_fr', ''),
+                    'wcag': issue.get('wcag', ''),
+                    'wcag_full': issue.get('wcag_full', []),
+                    'pages': set(),
+                    'instance_count': 0  # Total instances across all pages
+                }
+
+            # Add all pages from this deduplicated entry
+            for page_url in issue.get('pages', []):
+                issues_by_rule[rule_id]['pages'].add(page_url)
+            issues_by_rule[rule_id]['instance_count'] += 1
+
+        # Filter to issues appearing on 2+ pages
+        common_issues = []
+        for rule_id, issue_data in issues_by_rule.items():
+            page_count = len(issue_data['pages'])
+            if page_count >= 2:
+                issue_data['pages'] = sorted(list(issue_data['pages']))
+                issue_data['page_count'] = page_count
+                issue_data['percentage'] = round((page_count / total_pages) * 100) if total_pages > 0 else 0
+                common_issues.append(issue_data)
+
+        # Sort by type (violations first), then by page count descending
+        type_order = {'violation': 0, 'warning': 1, 'info': 2}
+        common_issues.sort(key=lambda x: (
+            type_order.get(x['type'], 99),
+            -x['page_count'],
+            x['rule_id']
+        ))
+
+        return common_issues
+
     def _copy_dedup_assets(self, report_dir: Path):
         """Copy CSS and JS assets to report directory"""
         static_dir = Path(__file__).parent.parent / 'web' / 'static'
@@ -2436,6 +2589,7 @@ class StaticHTMLReportGenerator:
         common_components: Dict[str, Dict],
         issues_by_component: Dict[str, List[Dict[str, Any]]],
         pages_with_unassigned: List[Dict[str, Any]],
+        common_issues: List[Dict[str, Any]],
         total_violations: int,
         total_warnings: int,
         total_info: int,
@@ -2480,7 +2634,7 @@ class StaticHTMLReportGenerator:
             })
 
         # Sort by type then by violation count
-        type_order = {'Navigation': 0, 'Header': 1, 'Footer': 2, 'Form': 3, 'Aside': 4, 'Section': 5}
+        type_order = {'Navigation': 0, 'Header': 1, 'Footer': 2, 'Search': 3, 'Form': 4, 'Aside': 5, 'Section': 6}
         components_with_issues.sort(
             key=lambda x: (type_order.get(x['type'], 99), -x['violations'], -x['total_issues'])
         )
@@ -2503,6 +2657,7 @@ class StaticHTMLReportGenerator:
                 project=project,
                 project_name=project_name,
                 components_with_issues=components_with_issues,
+                common_issues=common_issues,
                 pages_with_unassigned=pages_with_unassigned,
                 total_violations=total_violations,
                 total_warnings=total_warnings,

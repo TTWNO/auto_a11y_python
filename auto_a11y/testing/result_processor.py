@@ -404,7 +404,7 @@ class ResultProcessor:
             discovery=sorted_discovery,
             passes=passes,
             screenshot_path=screenshot_path,
-            js_test_results=raw_results,
+            js_test_results={},  # Raw results not stored in memory; data already decomposed into violations/warnings/info/discovery/passes
             metadata={
                 'test_count': len(raw_results),
                 'tests_run': list(raw_results.keys()),

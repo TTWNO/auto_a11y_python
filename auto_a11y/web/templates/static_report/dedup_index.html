@@ -94,6 +94,7 @@
     .component-badge.form { background-color: #ffe5d0; color: #984c0c; }
     .component-badge.aside { background-color: #f8d7da; color: #842029; }
     .component-badge.section { background-color: #d3f9d8; color: #0a3622; }
+    .component-badge.search { background-color: #fff3cd; color: #664d03; }
 
     .issue-summary {
         display: flex;
@@ -117,6 +118,15 @@
         text-align: center;
         padding: 3rem;
         color: #6c757d;
+    }
+
+    .common-issue-card {
+        cursor: default;
+    }
+
+    .common-issue-card:hover {
+        box-shadow: none;
+        transform: none;
     }
 
     /* Language Switcher */
@@ -300,6 +310,74 @@
         </div>
     </div>
 
+    <!-- Common Issues (appearing on multiple pages, not in components) -->
+    {% if common_issues %}
+    <div class="card mt-4">
+        <div class="card-header">
+            <h2 class="mb-0" data-i18n="common_issues">{{ t.get('common_issues', 'Common Issues') }}</h2>
+            <small class="text-muted" data-i18n="common_issues_description">{{ t.get('common_issues_description', 'Issues appearing on multiple pages across the site') }}</small>
+        </div>
+        <div class="card-body">
+            {% for issue in common_issues %}
+            <div class="component-card common-issue-card">
+                <div class="component-info">
+                    <div class="component-type">
+                        {% if issue.type == 'violation' %}
+                        <span class="issue-count violations" style="font-size: 0.75rem;">
+                            <span data-i18n="violations">{{ t.get('violations', 'Violation') }}</span>
+                        </span>
+                        {% elif issue.type == 'warning' %}
+                        <span class="issue-count warnings" style="font-size: 0.75rem;">
+                            <span data-i18n="warnings">{{ t.get('warnings', 'Warning') }}</span>
+                        </span>
+                        {% else %}
+                        <span class="issue-count info" style="font-size: 0.75rem;">
+                            <span data-i18n="info">{{ t.get('info', 'Info') }}</span>
+                        </span>
+                        {% endif %}
+
+                        {% if show_error_codes %}
+                        <code class="ms-2 small text-muted">{{ issue.rule_id }}</code>
+                        {% endif %}
+                    </div>
+                    <div class="mt-1">
+                        <span class="lang-{{ 'active' if language == 'en' else 'inactive' }}" data-lang="en">{{ issue.description_en }}</span>
+                        <span class="lang-{{ 'active' if language == 'fr' else 'inactive' }}" data-lang="fr">{{ issue.description_fr }}</span>
+                    </div>
+                    <div class="component-meta mt-1">
+                        <span>
+                            <i class="bi bi-files" aria-hidden="true"></i>
+                            <span data-i18n="appears_on">{{ t.get('appears_on', 'Appears on') }}</span>
+                            <strong>{{ issue.page_count }}</strong>
+                            <span data-i18n="page_s">{{ t['page_s'] }}</span>
+                            ({{ issue.percentage }}% <span data-i18n="of_pages">{{ t.get('of_pages', 'of pages') }}</span>)
+                        </span>
+                        {% if issue.touchpoint %}
+                        <span>
+                            <i class="bi bi-tag" aria-hidden="true"></i>
+                            <span data-i18n="{{ issue.touchpoint|lower|replace(' ', '_') }}">{{ t.get(issue.touchpoint|lower|replace(' ', '_'), issue.touchpoint) }}</span>
+                        </span>
+                        {% endif %}
+                        {% if issue.impact %}
+                        <span>
+                            <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+                            <span data-i18n="{{ issue.impact|lower }}">{{ t.get(issue.impact|lower, issue.impact) }}</span>
+                        </span>
+                        {% endif %}
+                        {% if issue.wcag %}
+                        <span>
+                            <i class="bi bi-check-circle" aria-hidden="true"></i>
+                            WCAG {{ issue.wcag }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Pages with Non-Component Issues -->
     {% if pages_with_unassigned %}
     <div class="card mt-4">
@@ -401,6 +479,17 @@ function switchLanguage(lang) {
         document.title = translations[lang]['deduplicated_report'];
     }
 
+    // Toggle bilingual content (data-lang spans)
+    document.querySelectorAll('[data-lang]').forEach(element => {
+        if (element.getAttribute('data-lang') === lang) {
+            element.classList.remove('lang-inactive');
+            element.classList.add('lang-active');
+        } else {
+            element.classList.remove('lang-active');
+            element.classList.add('lang-inactive');
+        }
+    });
+
     // Filter components by language
     filterComponentsByLanguage(lang);
 }
@@ -408,10 +497,22 @@ function switchLanguage(lang) {
 // Function to filter components by language
 function filterComponentsByLanguage(lang) {
     const componentLinks = document.querySelectorAll('.component-link');
+    // Count how many components match the current language
+    let matchCount = 0;
     componentLinks.forEach(link => {
         const componentLang = link.getAttribute('data-component-lang');
-        // Show component if its language matches current lang, or if lang is not specified
         if (!componentLang || componentLang === lang) {
+            matchCount++;
+        }
+    });
+
+    // If no components match, show ALL (don't hide everything)
+    // This handles sites where page lang differs from report lang
+    const showAll = (matchCount === 0);
+
+    componentLinks.forEach(link => {
+        const componentLang = link.getAttribute('data-component-lang');
+        if (showAll || !componentLang || componentLang === lang) {
             link.style.display = '';
         } else {
             link.style.display = 'none';

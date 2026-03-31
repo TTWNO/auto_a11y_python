@@ -804,7 +804,7 @@ def get_page_test_sessions(page_id):
             return jsonify({'error': 'Page not found'}), 404
 
         # Get all test results for page
-        all_results = current_app.db.get_test_results(page_id=page_id, limit=1000)
+        all_results = current_app.db.get_test_results(page_id=page_id)
 
         # Group by session
         sessions = {}

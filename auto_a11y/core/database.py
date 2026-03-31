@@ -246,9 +246,9 @@ class Database:
         return Project.from_dict(doc) if doc else None
     
     def get_projects(
-        self, 
+        self,
         status: Optional[ProjectStatus] = None,
-        limit: int = 100,
+        limit: int = 0,
         skip: int = 0
     ) -> List[Project]:
         """Get projects with optional filtering"""
@@ -418,7 +418,7 @@ class Database:
         self,
         website_id: str,
         status: Optional[PageStatus] = None,
-        limit: int = 1000,
+        limit: int = 0,
         skip: int = 0,
         latest_only: bool = True
     ) -> List[Page]:
@@ -867,7 +867,7 @@ class Database:
         page_ids: Optional[set] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
-        limit: int = 100,
+        limit: int = 0,
         skip: int = 0,
         summary_only: bool = False
     ) -> List[TestResult]:
@@ -2130,7 +2130,7 @@ class Database:
         self,
         project_id: Optional[str] = None,
         recording_type: Optional[RecordingType] = None,
-        limit: int = 100,
+        limit: int = 0,
         skip: int = 0
     ) -> List[Recording]:
         """Get recordings with optional filtering"""
@@ -2210,7 +2210,7 @@ class Database:
         recording_id: Optional[str] = None,
         project_id: Optional[str] = None,
         status: Optional[str] = None,
-        limit: int = 1000,
+        limit: int = 0,
         skip: int = 0
     ) -> List[RecordingIssue]:
         """Get recording issues with optional filtering"""
@@ -2543,7 +2543,7 @@ class Database:
         self,
         role: Optional[UserRole] = None,
         is_active: Optional[bool] = None,
-        limit: int = 100,
+        limit: int = 0,
         skip: int = 0
     ) -> List[AppUser]:
         """Get app users with optional filtering"""

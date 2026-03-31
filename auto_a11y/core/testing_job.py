@@ -397,9 +397,13 @@ class TestingJob:
                     else:
                         page.status = PageStatus.ERROR
                         pages_failed += 1
-                    
+
                     pages_tested += 1
-                    
+
+                    # Free test results from memory - they are already persisted to DB
+                    del test_results_list
+                    del test_results
+
                     # Update progress AFTER testing to show correct count
                     self.update_progress(
                         pages_tested=pages_tested,

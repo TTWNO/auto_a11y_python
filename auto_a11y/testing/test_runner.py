@@ -413,10 +413,14 @@ class TestRunner:
                                 await analyzer.client.aclose()
                             except Exception as cleanup_error:
                                 logger.debug(f"Error cleaning up AI analyzer: {cleanup_error}")
-                
+
+                # Free screenshot bytes and page HTML now that AI analysis is done
+                del screenshot_bytes
+                screenshot_bytes = None
+
                 # Calculate duration
                 duration_ms = int((time.time() - start_time) * 1000)
-                
+
                 # Process results (including AI findings)
                 test_result = self.result_processor.process_test_results(
                     page_id=page.id,
@@ -427,7 +431,10 @@ class TestRunner:
                     ai_analysis_results=ai_analysis_results
                 )
 
-                # AI findings are now merged in result_processor.process_test_results()
+                # Free raw results and AI data now that they've been processed
+                del raw_results
+                del ai_findings
+                del ai_analysis_results
 
                 # Add script violations to test result
                 if script_violations:
@@ -474,7 +481,11 @@ class TestRunner:
                 # Save test result to database
                 result_id = self.db.create_test_result(test_result)
                 test_result._id = result_id
-                
+
+                # Free heavy data from memory now that it's persisted to DB
+                test_result.js_test_results = {}
+                test_result.ai_analysis_results = {}
+
                 # Update page with test results
                 page.status = PageStatus.TESTED
                 page.last_tested = datetime.now()
@@ -826,6 +837,10 @@ class TestRunner:
                             except Exception:
                                 pass
 
+                # Free screenshot bytes and page HTML now that AI analysis is done
+                del screenshot_bytes
+                screenshot_bytes = None
+
                 # Process results
                 duration_ms = 0  # Will be set by caller
                 test_result = self.result_processor.process_test_results(
@@ -836,6 +851,11 @@ class TestRunner:
                     ai_findings=ai_findings,
                     ai_analysis_results=ai_analysis_results
                 )
+
+                # Free raw results and AI data now that they've been processed
+                del raw_results
+                del ai_findings
+                del ai_analysis_results
 
                 return test_result
 
@@ -889,10 +909,12 @@ class TestRunner:
                 for discovery in result.discovery:
                     discovery.metadata['authenticated_user'] = user_info
 
-            # Save all results to database
+            # Save all results to database and free heavy data from memory
             for result in results:
                 result_id = self.db.create_test_result(result)
                 result._id = result_id
+                result.js_test_results = {}
+                result.ai_analysis_results = {}
 
             # Update page with results from final state
             if results:
@@ -945,11 +967,15 @@ class TestRunner:
             return [test_result]
         
         finally:
-            # Clean up: the multi_state_runner manages its own browser lifecycle via
-            # _prepare_browser_for_state, so we don't need to close browser_page here.
-            # The browser is stopped/restarted between states and the final page is
-            # managed by the multi_state_runner. Just ensure browser is stopped.
-            pass
+            # Close the initial browser page created at the top of this method.
+            # The multi_state_runner closes contexts it creates internally, but the
+            # initial browser_page from create_page() must be closed here to avoid
+            # leaking a Chromium renderer process per page tested.
+            if browser_page is not None:
+                try:
+                    await self.browser_manager.close_page(browser_page)
+                except Exception as e:
+                    logger.debug(f"Error closing browser page after multi-state test: {e}")
 
     async def test_pages(
         self,
@@ -958,9 +984,13 @@ class TestRunner:
         take_screenshots: bool = True,
         progress_callback: Optional[callable] = None,
         website_user_id: Optional[str] = None
-    ) -> List[TestResult]:
+    ) -> Dict[str, Any]:
         """
-        Test multiple pages with multi-state support
+        Test multiple pages with multi-state support.
+
+        Results are saved to the database as each page completes. This method
+        returns a lightweight summary instead of accumulating all TestResult
+        objects in memory, which is critical for large runs (10,000+ pages).
 
         Args:
             pages: Pages to test
@@ -970,11 +1000,18 @@ class TestRunner:
             website_user_id: Optional user ID for authenticated testing
 
         Returns:
-            List of test results (flattened from all states)
+            Summary dict with pages_tested, total_violations, total_warnings,
+            total_passes, total_duration_ms counts
         """
-        results = []
         total = len(pages)
         completed = 0
+
+        # Track summary stats incrementally instead of accumulating results
+        total_results = 0
+        total_violations = 0
+        total_warnings = 0
+        total_passes = 0
+        total_duration_ms = 0
 
         # Process pages in batches
         for i in range(0, total, parallel):
@@ -990,22 +1027,32 @@ class TestRunner:
                 )
                 for page in batch
             ]
-            
+
             batch_results = await asyncio.gather(*tasks, return_exceptions=True)
 
-            # Process results - test_page_multi_state returns List[TestResult]
+            # Accumulate summary stats, then discard result objects
             for result_list in batch_results:
                 if isinstance(result_list, Exception):
                     logger.error(f"Test failed with exception: {result_list}")
                 elif isinstance(result_list, list):
-                    # Flatten the list of results from multi-state testing
-                    results.extend(result_list)
-                else:
-                    # Single result (shouldn't happen with multi_state, but handle it)
-                    results.append(result_list)
-            
+                    for result in result_list:
+                        total_results += 1
+                        total_violations += result.violation_count
+                        total_warnings += result.warning_count
+                        total_passes += result.pass_count
+                        total_duration_ms += result.duration_ms
+                elif result_list is not None:
+                    total_results += 1
+                    total_violations += result_list.violation_count
+                    total_warnings += result_list.warning_count
+                    total_passes += result_list.pass_count
+                    total_duration_ms += result_list.duration_ms
+
+            # Explicitly free batch results
+            del batch_results
+
             completed += len(batch)
-            
+
             # Update progress
             if progress_callback:
                 await progress_callback({
@@ -1013,8 +1060,14 @@ class TestRunner:
                     'total': total,
                     'percentage': (completed / total) * 100
                 })
-        
-        return results
+
+        return {
+            'pages_tested': total_results,
+            'total_violations': total_violations,
+            'total_warnings': total_warnings,
+            'total_passes': total_passes,
+            'average_duration_ms': total_duration_ms / total_results if total_results else 0
+        }
     
     async def test_website(
         self,
@@ -1055,27 +1108,16 @@ class TestRunner:
             }
         
         logger.info(f"Testing {len(pages)} pages for website {website_id}")
-        
-        # Test pages
-        results = await self.test_pages(pages, parallel=parallel)
-        
+
+        # Test pages - returns summary dict (results are saved to DB as each page completes)
+        summary = await self.test_pages(pages, parallel=parallel)
+
         # Update website last_tested
         website.last_tested = datetime.now()
         self.db.update_website(website)
-        
-        # Calculate summary
-        total_violations = sum(r.violation_count for r in results)
-        total_warnings = sum(r.warning_count for r in results)
-        total_passes = sum(r.pass_count for r in results)
-        
-        return {
-            'website_id': website_id,
-            'pages_tested': len(results),
-            'total_violations': total_violations,
-            'total_warnings': total_warnings,
-            'total_passes': total_passes,
-            'average_duration_ms': sum(r.duration_ms for r in results) / len(results) if results else 0
-        }
+
+        summary['website_id'] = website_id
+        return summary
     
     async def _take_screenshot(self, browser_page, page_id: str) -> str:
         """

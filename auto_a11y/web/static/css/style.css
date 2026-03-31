@@ -790,7 +790,7 @@ table caption {
 
 /* --- D. Card Component --- */
 /* Only set bg-elevated on cards that don't have an explicit bg-* colour class */
-[data-theme="dark"] .card:not(.bg-primary):not(.bg-secondary):not(.bg-success):not(.bg-danger):not(.bg-warning):not(.bg-info):not(.bg-dark) {
+[data-theme="dark"] .card:not(.bg-primary):not(.bg-secondary):not(.bg-success):not(.bg-danger):not(.bg-warning):not(.bg-info):not(.bg-dark):not(.bg-discovery) {
     background-color: var(--color-bg-elevated) !important;
 }
 [data-theme="dark"] .card {
@@ -815,7 +815,7 @@ table caption {
     color: var(--color-text) !important;
 }
 @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .card:not(.bg-primary):not(.bg-secondary):not(.bg-success):not(.bg-danger):not(.bg-warning):not(.bg-info):not(.bg-dark) {
+    :root:not([data-theme="light"]) .card:not(.bg-primary):not(.bg-secondary):not(.bg-success):not(.bg-danger):not(.bg-warning):not(.bg-info):not(.bg-dark):not(.bg-discovery) {
         background-color: var(--color-bg-elevated) !important;
     }
     :root:not([data-theme="light"]) .card {
@@ -1868,4 +1868,351 @@ table caption {
     text-align: center;
     color: var(--color-text-muted, var(--bs-secondary-color));
     font-style: italic;
+}
+
+/* ============================================================
+   REPORT CARDS
+   Styles for the reports dashboard card grid.
+   ============================================================ */
+.report-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+    border-color: var(--color-border-table);
+}
+.report-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 20px var(--color-shadow-medium);
+}
+@media (prefers-reduced-motion: reduce) {
+    .report-card { transition: none; }
+    .report-card:hover { transform: none; box-shadow: none; }
+}
+.report-card .card-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 280px;
+}
+.report-card .icon-wrapper {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.report-card .content-wrapper {
+    flex-grow: 0;
+}
+.report-card .btn-wrapper {
+    margin-top: auto;
+    padding-top: 15px;
+}
+
+/* Report card icon colours (light mode) */
+.icon-html { color: #b8860b !important; }
+.icon-pdf { color: #c82333 !important; }
+.icon-excel { color: #1e7e34 !important; }
+.icon-json { color: #117a8b !important; }
+.icon-summary { color: #004085 !important; }
+
+/* Report card custom outline buttons (light mode) */
+.btn-html {
+    color: #856404;
+    border-color: #856404;
+    background-color: transparent;
+}
+.btn-html:hover, .btn-html:focus {
+    background-color: #856404;
+    border-color: #856404;
+    color: white;
+}
+.btn-html:focus {
+    box-shadow: 0 0 0 0.2rem rgba(133, 100, 4, 0.25);
+}
+
+.btn-json {
+    color: #0c525d;
+    border-color: #0c525d;
+    background-color: transparent;
+}
+.btn-json:hover, .btn-json:focus {
+    background-color: #0c525d;
+    border-color: #0c525d;
+    color: white;
+}
+.btn-json:focus {
+    box-shadow: 0 0 0 0.2rem rgba(12, 82, 93, 0.25);
+}
+
+.btn-pdf {
+    color: #721c24;
+    border-color: #721c24;
+    background-color: transparent;
+}
+.btn-pdf:hover, .btn-pdf:focus {
+    background-color: #721c24;
+    border-color: #721c24;
+    color: white;
+}
+.btn-pdf:focus {
+    box-shadow: 0 0 0 0.2rem rgba(114, 28, 36, 0.25);
+}
+
+.btn-excel {
+    color: #155724;
+    border-color: #155724;
+    background-color: transparent;
+}
+.btn-excel:hover, .btn-excel:focus {
+    background-color: #155724;
+    border-color: #155724;
+    color: white;
+}
+.btn-excel:focus {
+    box-shadow: 0 0 0 0.2rem rgba(21, 87, 36, 0.25);
+}
+
+.btn-summary {
+    color: #004085;
+    border-color: #004085;
+    background-color: transparent;
+}
+.btn-summary:hover, .btn-summary:focus {
+    background-color: #004085;
+    border-color: #004085;
+    color: white;
+}
+.btn-summary:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0, 64, 133, 0.25);
+}
+
+/* Report card dark mode — icons, headings, buttons */
+[data-theme="dark"] .icon-html { color: #f9a825 !important; }
+[data-theme="dark"] .icon-pdf { color: #f28b82 !important; }
+[data-theme="dark"] .icon-excel { color: #81c784 !important; }
+[data-theme="dark"] .icon-json { color: #64b5f6 !important; }
+[data-theme="dark"] .icon-summary { color: #6db3f2 !important; }
+
+[data-theme="dark"] .report-card .card-title {
+    color: var(--color-text-heading) !important;
+}
+
+[data-theme="dark"] .btn-summary {
+    color: #6db3f2;
+    border-color: #6db3f2;
+}
+[data-theme="dark"] .btn-summary:hover,
+[data-theme="dark"] .btn-summary:focus {
+    background-color: #6db3f2;
+    border-color: #6db3f2;
+    color: #0e1525;
+}
+[data-theme="dark"] .btn-summary:focus {
+    box-shadow: 0 0 0 0.2rem rgba(109, 179, 242, 0.4);
+}
+
+[data-theme="dark"] .btn-html {
+    color: #f9a825;
+    border-color: #f9a825;
+}
+[data-theme="dark"] .btn-html:hover,
+[data-theme="dark"] .btn-html:focus {
+    background-color: #f9a825;
+    border-color: #f9a825;
+    color: #0e1525;
+}
+[data-theme="dark"] .btn-html:focus {
+    box-shadow: 0 0 0 0.2rem rgba(249, 168, 37, 0.4);
+}
+
+[data-theme="dark"] .btn-json {
+    color: #64b5f6;
+    border-color: #64b5f6;
+}
+[data-theme="dark"] .btn-json:hover,
+[data-theme="dark"] .btn-json:focus {
+    background-color: #64b5f6;
+    border-color: #64b5f6;
+    color: #0e1525;
+}
+[data-theme="dark"] .btn-json:focus {
+    box-shadow: 0 0 0 0.2rem rgba(100, 181, 246, 0.4);
+}
+
+[data-theme="dark"] .btn-pdf {
+    color: #f28b82;
+    border-color: #f28b82;
+}
+[data-theme="dark"] .btn-pdf:hover,
+[data-theme="dark"] .btn-pdf:focus {
+    background-color: #f28b82;
+    border-color: #f28b82;
+    color: #0e1525;
+}
+[data-theme="dark"] .btn-pdf:focus {
+    box-shadow: 0 0 0 0.2rem rgba(242, 139, 130, 0.4);
+}
+
+[data-theme="dark"] .btn-excel {
+    color: #81c784;
+    border-color: #81c784;
+}
+[data-theme="dark"] .btn-excel:hover,
+[data-theme="dark"] .btn-excel:focus {
+    background-color: #81c784;
+    border-color: #81c784;
+    color: #0e1525;
+}
+[data-theme="dark"] .btn-excel:focus {
+    box-shadow: 0 0 0 0.2rem rgba(129, 199, 132, 0.4);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .icon-html { color: #f9a825 !important; }
+    :root:not([data-theme="light"]) .icon-pdf { color: #f28b82 !important; }
+    :root:not([data-theme="light"]) .icon-excel { color: #81c784 !important; }
+    :root:not([data-theme="light"]) .icon-json { color: #64b5f6 !important; }
+    :root:not([data-theme="light"]) .icon-summary { color: #6db3f2 !important; }
+
+    :root:not([data-theme="light"]) .report-card .card-title {
+        color: var(--color-text-heading) !important;
+    }
+
+    :root:not([data-theme="light"]) .btn-summary {
+        color: #6db3f2;
+        border-color: #6db3f2;
+    }
+    :root:not([data-theme="light"]) .btn-summary:hover,
+    :root:not([data-theme="light"]) .btn-summary:focus {
+        background-color: #6db3f2;
+        border-color: #6db3f2;
+        color: #0e1525;
+    }
+    :root:not([data-theme="light"]) .btn-summary:focus {
+        box-shadow: 0 0 0 0.2rem rgba(109, 179, 242, 0.4);
+    }
+
+    :root:not([data-theme="light"]) .btn-html {
+        color: #f9a825;
+        border-color: #f9a825;
+    }
+    :root:not([data-theme="light"]) .btn-html:hover,
+    :root:not([data-theme="light"]) .btn-html:focus {
+        background-color: #f9a825;
+        border-color: #f9a825;
+        color: #0e1525;
+    }
+    :root:not([data-theme="light"]) .btn-html:focus {
+        box-shadow: 0 0 0 0.2rem rgba(249, 168, 37, 0.4);
+    }
+
+    :root:not([data-theme="light"]) .btn-json {
+        color: #64b5f6;
+        border-color: #64b5f6;
+    }
+    :root:not([data-theme="light"]) .btn-json:hover,
+    :root:not([data-theme="light"]) .btn-json:focus {
+        background-color: #64b5f6;
+        border-color: #64b5f6;
+        color: #0e1525;
+    }
+    :root:not([data-theme="light"]) .btn-json:focus {
+        box-shadow: 0 0 0 0.2rem rgba(100, 181, 246, 0.4);
+    }
+
+    :root:not([data-theme="light"]) .btn-pdf {
+        color: #f28b82;
+        border-color: #f28b82;
+    }
+    :root:not([data-theme="light"]) .btn-pdf:hover,
+    :root:not([data-theme="light"]) .btn-pdf:focus {
+        background-color: #f28b82;
+        border-color: #f28b82;
+        color: #0e1525;
+    }
+    :root:not([data-theme="light"]) .btn-pdf:focus {
+        box-shadow: 0 0 0 0.2rem rgba(242, 139, 130, 0.4);
+    }
+
+    :root:not([data-theme="light"]) .btn-excel {
+        color: #81c784;
+        border-color: #81c784;
+    }
+    :root:not([data-theme="light"]) .btn-excel:hover,
+    :root:not([data-theme="light"]) .btn-excel:focus {
+        background-color: #81c784;
+        border-color: #81c784;
+        color: #0e1525;
+    }
+    :root:not([data-theme="light"]) .btn-excel:focus {
+        box-shadow: 0 0 0 0.2rem rgba(129, 199, 132, 0.4);
+    }
+}
+
+/* ============================================================
+   DASHBOARD STAT CARDS
+   Dark-mode overrides for coloured stat cards so white text
+   maintains WCAG AA 4.5 : 1 contrast.
+   ============================================================ */
+
+/* Discovery colour utility (replaces inline style on Discovery card) */
+.bg-discovery {
+    background-color: var(--color-discovery);
+}
+
+/* Manual toggle */
+[data-theme="dark"] .stat-card.bg-primary {
+    background-color: #2563a0 !important;  /* white 6.3:1 */
+}
+[data-theme="dark"] .stat-card.bg-success {
+    background-color: #1a6b38 !important;  /* white 6.6:1 */
+}
+[data-theme="dark"] .stat-card.bg-secondary {
+    background-color: #4a535e !important;  /* white 5.8:1 */
+}
+[data-theme="dark"] .stat-card.bg-danger {
+    background-color: #9b2335 !important;  /* white 7.8:1 */
+}
+[data-theme="dark"] .stat-card.bg-info {
+    background-color: #1a6b8a !important;  /* white 6.0:1 */
+}
+[data-theme="dark"] .stat-card.bg-warning {
+    background-color: #f9a825 !important;  /* dark text 7.6:1 */
+}
+/* Keep dark text on the warning card (override global .text-dark flip) */
+[data-theme="dark"] .stat-card.bg-warning,
+[data-theme="dark"] .stat-card.bg-warning .card-subtitle,
+[data-theme="dark"] .stat-card.bg-warning .card-title {
+    color: #212529 !important;
+}
+[data-theme="dark"] .stat-card.bg-discovery {
+    background-color: #5a3580 !important;  /* white 9.3:1 */
+}
+
+/* OS preference */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .stat-card.bg-primary {
+        background-color: #2563a0 !important;
+    }
+    :root:not([data-theme="light"]) .stat-card.bg-success {
+        background-color: #1a6b38 !important;
+    }
+    :root:not([data-theme="light"]) .stat-card.bg-secondary {
+        background-color: #4a535e !important;
+    }
+    :root:not([data-theme="light"]) .stat-card.bg-danger {
+        background-color: #9b2335 !important;
+    }
+    :root:not([data-theme="light"]) .stat-card.bg-info {
+        background-color: #1a6b8a !important;
+    }
+    :root:not([data-theme="light"]) .stat-card.bg-warning {
+        background-color: #f9a825 !important;
+    }
+    :root:not([data-theme="light"]) .stat-card.bg-warning,
+    :root:not([data-theme="light"]) .stat-card.bg-warning .card-subtitle,
+    :root:not([data-theme="light"]) .stat-card.bg-warning .card-title {
+        color: #212529 !important;
+    }
+    :root:not([data-theme="light"]) .stat-card.bg-discovery {
+        background-color: #5a3580 !important;
+    }
 }

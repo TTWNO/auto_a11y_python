@@ -744,10 +744,16 @@ async def test_landmarks(page) -> Dict[str, Any]:
                         }
                     }
 
-                    // Generate signature from nav structure
-                    const navStructure = links.map(link => link.textContent.trim()).join('|');
+                    // Generate signature from nav structure (content-based, NOT xpath-based)
+                    // XPaths vary between pages due to DOM differences above the nav,
+                    // so we use link hrefs + structure for cross-page matching
+                    const navStructure = links.map(link => {
+                        const href = (link.getAttribute('href') || '').replace(/^https?:\/\/[^\/]+/, '');
+                        return href + ':' + link.textContent.trim();
+                    }).sort().join('|');
                     const navXPath = getFullXPath(nav);
-                    const signatureString = navStructure + '|' + navXPath;
+                    const navLabel_sig = nav.getAttribute('aria-label') || '';
+                    const signatureString = navStructure + '|' + navLabel_sig;
 
                     // Simple hash function (same as forms)
                     let hash = 0;
@@ -795,9 +801,10 @@ async def test_landmarks(page) -> Dict[str, Any]:
                         }
                     }
 
-                    const textContent = aside.textContent.trim().substring(0, 200);
+                    // Use label + child structure for cross-page matching (NOT xpath or text content)
                     const asideXPath = getFullXPath(aside);
-                    const signatureString = textContent + '|' + asideXPath;
+                    const asideChildren = Array.from(aside.children).map(c => c.tagName.toLowerCase()).join(',');
+                    const signatureString = 'aside|' + asideLabel + '|' + asideChildren;
 
                     // Simple hash function
                     let hash = 0;
@@ -836,9 +843,10 @@ async def test_landmarks(page) -> Dict[str, Any]:
                         }
                     }
 
-                    const textContent = section.textContent.trim().substring(0, 200);
+                    // Use label + child structure for cross-page matching (NOT xpath or text content)
                     const sectionXPath = getFullXPath(section);
-                    const signatureString = textContent + '|' + sectionLabel + '|' + sectionXPath;
+                    const sectionChildren = Array.from(section.children).map(c => c.tagName.toLowerCase()).join(',');
+                    const signatureString = 'section|' + sectionLabel + '|' + sectionChildren;
 
                     // Simple hash function
                     let hash = 0;
@@ -885,9 +893,10 @@ async def test_landmarks(page) -> Dict[str, Any]:
                             }
                         }
 
-                        const textContent = header.textContent.trim().substring(0, 200);
+                        // Use label + child element structure for cross-page matching (NOT xpath or text content)
                         const headerXPath = getFullXPath(header);
-                        const signatureString = textContent + '|' + headerXPath;
+                        const headerChildren = Array.from(header.children).map(c => c.tagName.toLowerCase()).join(',');
+                        const signatureString = 'header|' + headerLabel + '|' + headerChildren;
 
                         // Simple hash function
                         let hash = 0;
@@ -935,9 +944,10 @@ async def test_landmarks(page) -> Dict[str, Any]:
                             }
                         }
 
-                        const textContent = footer.textContent.trim().substring(0, 200);
+                        // Use label + child element structure for cross-page matching (NOT xpath or text content)
                         const footerXPath = getFullXPath(footer);
-                        const signatureString = textContent + '|' + footerXPath;
+                        const footerChildren = Array.from(footer.children).map(c => c.tagName.toLowerCase()).join(',');
+                        const signatureString = 'footer|' + footerLabel + '|' + footerChildren;
 
                         // Simple hash function
                         let hash = 0;
@@ -980,9 +990,10 @@ async def test_landmarks(page) -> Dict[str, Any]:
                         }
                     }
 
-                    const textContent = search.textContent.trim().substring(0, 200);
+                    // Use label + child element structure for cross-page matching (NOT xpath or text content)
                     const searchXPath = getFullXPath(search);
-                    const signatureString = textContent + '|' + searchLabel + '|' + searchXPath;
+                    const searchChildren = Array.from(search.children).map(c => c.tagName.toLowerCase()).join(',');
+                    const signatureString = 'search|' + searchLabel + '|' + searchChildren;
 
                     // Simple hash function
                     let hash = 0;

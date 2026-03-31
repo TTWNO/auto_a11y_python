@@ -535,7 +535,7 @@ class WebsiteManager:
         self,
         website_id: str,
         status: Optional[PageStatus] = None,
-        limit: int = 1000
+        limit: int = 0
     ) -> List[Page]:
         """
         List pages in website

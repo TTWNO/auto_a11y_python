@@ -85,6 +85,9 @@ class BrowserManager:
         self._contexts: List[BrowserContext] = []
         self._pages: List[Page] = []
         self._semaphore = asyncio.Semaphore(config.get('max_concurrent_pages', 5))
+        # Track pages created in default context to trigger periodic recycling
+        self._default_context_page_count = 0
+        self._default_context_max_pages = config.get('context_recycle_after', 50)
 
     @property
     def pages(self) -> List[Page]:
@@ -121,6 +124,10 @@ class BrowserManager:
             '--disable-renderer-backgrounding',
             '--disable-backgrounding-occluded-windows',
             '--disable-component-update',
+            # Memory management: prevent cache/renderer bloat during long test runs
+            '--disk-cache-size=0',              # Disable HTTP disk cache (not needed for testing)
+            '--aggressive-cache-discard',       # Aggressively discard cached data
+            '--disable-application-cache',      # Disable application cache
         ]
 
         launch_options = {
@@ -242,7 +249,9 @@ class BrowserManager:
                 'height': self.config.get('viewport_height', self.config.get('BROWSER_VIEWPORT_HEIGHT', 1080))
             },
             'user_agent': user_agent or self.config.get('user_agent') or self.config.get('USER_AGENT') or
-                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            # Block service workers to prevent memory accumulation across tested pages
+            'service_workers': 'block',
         }
 
         # Load saved authentication state if provided
@@ -357,16 +366,29 @@ class BrowserManager:
             if not self._browser:
                 await self.start()
 
+            using_default = context is None
             # Use provided context or create/use default
             if context is None:
+                # Recycle default context periodically
+                if (self._default_context is not None and
+                        self._default_context_page_count >= self._default_context_max_pages):
+                    logger.info(
+                        f"Recycling default context after {self._default_context_page_count} pages"
+                    )
+                    await self.close_context(self._default_context)
+                    self._default_context = None
+                    self._default_context_page_count = 0
                 if self._default_context is None:
                     self._default_context = await self.create_context()
+                    self._default_context_page_count = 0
                 context = self._default_context
 
             page = None
             try:
                 page = await context.new_page()
                 self._pages.append(page)
+                if using_default:
+                    self._default_context_page_count += 1
                 yield page
 
             finally:
@@ -391,14 +413,30 @@ class BrowserManager:
         if not self._browser:
             await self.start()
 
+        using_default = context is None
         # Use provided context or create/use default
         if context is None:
+            # Recycle default context periodically to free accumulated cache/cookies/storage
+            if (self._default_context is not None and
+                    self._default_context_page_count >= self._default_context_max_pages):
+                logger.info(
+                    f"Recycling default context after {self._default_context_page_count} pages "
+                    f"to free accumulated browser memory"
+                )
+                await self.close_context(self._default_context)
+                self._default_context = None
+                self._default_context_page_count = 0
             if self._default_context is None:
                 self._default_context = await self.create_context()
+                self._default_context_page_count = 0
             context = self._default_context
 
         page = await context.new_page()
         self._pages.append(page)
+
+        if using_default:
+            self._default_context_page_count += 1
+
         return page
 
     async def close_page(self, page: Page) -> None:
@@ -409,6 +447,13 @@ class BrowserManager:
             page: Page instance to close
         """
         try:
+            # Clean up any CSS capture cache for this page
+            try:
+                from auto_a11y.testing.css_focus_capture import clear_css_capture_for_page
+                clear_css_capture_for_page(page)
+            except ImportError:
+                pass
+
             if not page.is_closed():
                 await page.close()
             if page in self._pages:

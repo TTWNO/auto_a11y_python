@@ -67,7 +67,11 @@ class Config:
     PARALLEL_TESTS: int = int(os.getenv('PARALLEL_TESTS', 5))
     TEST_TIMEOUT: int = int(os.getenv('TEST_TIMEOUT', 60000))
     RUN_AI_ANALYSIS: bool = os.getenv('RUN_AI_ANALYSIS', 'True').lower() == 'true'
-    
+
+    # Parallel testing workers
+    MAX_TEST_WORKERS: int = int(os.getenv('MAX_TEST_WORKERS', 4))
+    WORKER_STAGGER_SECONDS: float = float(os.getenv('WORKER_STAGGER_SECONDS', 1.5))
+
     # Developer mode - show error codes in reports (useful for debugging)
     SHOW_ERROR_CODES: bool = os.getenv('SHOW_ERROR_CODES', 'False').lower() == 'true'
 

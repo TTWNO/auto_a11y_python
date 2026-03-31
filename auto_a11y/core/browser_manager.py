@@ -85,6 +85,7 @@ class BrowserManager:
         self._contexts: List[BrowserContext] = []
         self._pages: List[Page] = []
         self._semaphore = asyncio.Semaphore(config.get('max_concurrent_pages', 5))
+        self._start_lock = asyncio.Lock()
         # Track pages created in default context to trigger periodic recycling
         self._default_context_page_count = 0
         self._default_context_max_pages = config.get('context_recycle_after', 50)
@@ -100,72 +101,73 @@ class BrowserManager:
         return self._browser
 
     async def start(self) -> None:
-        """Start browser instance"""
-        if self._browser and self._browser.is_connected():
-            return  # Browser already running
+        """Start browser instance (safe for concurrent callers)"""
+        async with self._start_lock:
+            if self._browser and self._browser.is_connected():
+                return  # Browser already running
 
-        # Get headless setting (check both uppercase and lowercase keys)
-        is_headless = self.config.get('headless', self.config.get('BROWSER_HEADLESS', True))
+            # Get headless setting (check both uppercase and lowercase keys)
+            is_headless = self.config.get('headless', self.config.get('BROWSER_HEADLESS', True))
 
-        # Build args list (similar to Pyppeteer for consistency)
-        browser_args = [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-accelerated-2d-canvas',
-            '--no-first-run',
-            '--disable-gpu',
-            f'--window-size={self.config.get("viewport_width", 1920)},{self.config.get("viewport_height", 1080)}',
-            '--disable-extensions',
-            '--disable-background-networking',
-            '--disable-blink-features=AutomationControlled',
-            '--disable-features=TranslateUI',
-            '--disable-ipc-flooding-protection',
-            '--disable-renderer-backgrounding',
-            '--disable-backgrounding-occluded-windows',
-            '--disable-component-update',
-            # Memory management: prevent cache/renderer bloat during long test runs
-            '--disk-cache-size=0',              # Disable HTTP disk cache (not needed for testing)
-            '--aggressive-cache-discard',       # Aggressively discard cached data
-            '--disable-application-cache',      # Disable application cache
-        ]
+            # Build args list (similar to Pyppeteer for consistency)
+            browser_args = [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-accelerated-2d-canvas',
+                '--no-first-run',
+                '--disable-gpu',
+                f'--window-size={self.config.get("viewport_width", 1920)},{self.config.get("viewport_height", 1080)}',
+                '--disable-extensions',
+                '--disable-background-networking',
+                '--disable-blink-features=AutomationControlled',
+                '--disable-features=TranslateUI',
+                '--disable-ipc-flooding-protection',
+                '--disable-renderer-backgrounding',
+                '--disable-backgrounding-occluded-windows',
+                '--disable-component-update',
+                # Memory management: prevent cache/renderer bloat during long test runs
+                '--disk-cache-size=0',              # Disable HTTP disk cache (not needed for testing)
+                '--aggressive-cache-discard',       # Aggressively discard cached data
+                '--disable-application-cache',      # Disable application cache
+            ]
 
-        launch_options = {
-            'headless': is_headless,
-            'args': browser_args,
-            'timeout': self.config.get('timeout', 60000),
-        }
+            launch_options = {
+                'headless': is_headless,
+                'args': browser_args,
+                'timeout': self.config.get('timeout', 60000),
+            }
 
-        # Add explicit executable path only if one was passed in config
-        if self.config.get('executable_path'):
-            launch_options['executable_path'] = self.config['executable_path']
+            # Add explicit executable path only if one was passed in config
+            if self.config.get('executable_path'):
+                launch_options['executable_path'] = self.config['executable_path']
 
-        # Make sure PLAYWRIGHT_BROWSERS_PATH points to .playwright inside the
-        # source tree (critical on Render where /opt/render/project/.playwright
-        # does not survive from build to runtime).
-        _ensure_playwright_browsers_path()
+            # Make sure PLAYWRIGHT_BROWSERS_PATH points to .playwright inside the
+            # source tree (critical on Render where /opt/render/project/.playwright
+            # does not survive from build to runtime).
+            _ensure_playwright_browsers_path()
 
-        try:
-            self._playwright = await async_playwright().start()
-            self._browser = await self._playwright.chromium.launch(**launch_options)
-            logger.info("Playwright browser started successfully")
-        except Exception as e:
-            logger.error(f"Failed to start browser: {e}")
-            logger.info("Attempting runtime Chromium install...")
             try:
-                result = subprocess.run(
-                    [sys.executable, '-m', 'playwright', 'install', 'chromium', 'chromium-headless-shell'],
-                    check=True, capture_output=True, text=True, timeout=300,
-                )
-                logger.info(f"Playwright install output: {result.stdout}")
-                _ensure_playwright_browsers_path()
+                self._playwright = await async_playwright().start()
                 self._browser = await self._playwright.chromium.launch(**launch_options)
-                logger.info("Playwright browser started after runtime install")
-                return
-            except Exception as retry_err:
-                logger.error(f"Runtime install also failed: {retry_err}")
-            await self._cleanup_playwright()
-            raise
+                logger.info("Playwright browser started successfully")
+            except Exception as e:
+                logger.error(f"Failed to start browser: {e}")
+                logger.info("Attempting runtime Chromium install...")
+                try:
+                    result = subprocess.run(
+                        [sys.executable, '-m', 'playwright', 'install', 'chromium', 'chromium-headless-shell'],
+                        check=True, capture_output=True, text=True, timeout=300,
+                    )
+                    logger.info(f"Playwright install output: {result.stdout}")
+                    _ensure_playwright_browsers_path()
+                    self._browser = await self._playwright.chromium.launch(**launch_options)
+                    logger.info("Playwright browser started after runtime install")
+                    return
+                except Exception as retry_err:
+                    logger.error(f"Runtime install also failed: {retry_err}")
+                await self._cleanup_playwright()
+                raise
 
     async def _cleanup_playwright(self) -> None:
         """Clean up Playwright resources"""
@@ -737,53 +739,3 @@ class BrowserManager:
     def pages(self) -> List[Page]:
         """Get list of open pages (for compatibility)."""
         return self._pages
-
-
-class BrowserPool:
-    """Pool of browser instances for parallel processing."""
-
-    def __init__(self, config: Dict[str, Any], pool_size: int = 3):
-        """
-        Initialize browser pool.
-
-        Args:
-            config: Browser configuration
-            pool_size: Number of browser instances
-        """
-        self.config = config
-        self.pool_size = pool_size
-        self.browsers: List[BrowserManager] = []
-        self._lock = asyncio.Lock()
-        self._available: asyncio.Queue = asyncio.Queue()
-
-    async def start(self) -> None:
-        """Start browser pool."""
-        for _ in range(self.pool_size):
-            browser = BrowserManager(self.config)
-            await browser.start()
-            self.browsers.append(browser)
-            await self._available.put(browser)
-
-        logger.info(f"Started browser pool with {self.pool_size} instances")
-
-    async def stop(self) -> None:
-        """Stop browser pool."""
-        for browser in self.browsers:
-            await browser.stop()
-
-        self.browsers.clear()
-        logger.info("Stopped browser pool")
-
-    @asynccontextmanager
-    async def acquire(self):
-        """
-        Acquire browser from pool.
-
-        Yields:
-            BrowserManager instance
-        """
-        browser = await self._available.get()
-        try:
-            yield browser
-        finally:
-            await self._available.put(browser)

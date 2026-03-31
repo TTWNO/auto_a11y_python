@@ -69,11 +69,7 @@ class TestRunner:
         """
         # Testing page
         start_time = time.time()
-        
-        # Update page status
-        page.status = PageStatus.TESTING
-        self.db.update_page(page)
-        
+
         # Start browser if needed
         if not await self.browser_manager.is_running():
             await self.browser_manager.start()
@@ -498,12 +494,14 @@ class TestRunner:
                 page.screenshot_path = screenshot_path  # Save screenshot path to page
                 self.db.update_page(page)
                 
-                # Update website's last_tested timestamp
-                website = self.db.get_website(page.website_id)
-                if website:
-                    website.last_tested = datetime.now()
-                    self.db.update_website(website)
-                
+                # Update website's last_tested timestamp atomically
+                # (avoids read-modify-write race with parallel workers)
+                from bson import ObjectId
+                self.db.websites.update_one(
+                    {"_id": ObjectId(page.website_id)},
+                    {"$set": {"last_tested": datetime.now()}}
+                )
+
                 # Page test completed successfully
                 
                 return test_result
@@ -562,10 +560,6 @@ class TestRunner:
             # Fall back to single-state testing
             result = await self.test_page(page, take_screenshot, run_ai_analysis, ai_api_key, website_user_id)
             return [result]
-
-        # Update page status
-        page.status = PageStatus.TESTING
-        self.db.update_page(page)
 
         # Start browser if needed
         if not await self.browser_manager.is_running():
@@ -930,11 +924,13 @@ class TestRunner:
                 page.screenshot_path = final_result.screenshot_path
                 self.db.update_page(page)
 
-            # Update website's last_tested timestamp
-            website = self.db.get_website(page.website_id)
-            if website:
-                website.last_tested = datetime.now()
-                self.db.update_website(website)
+            # Update website's last_tested timestamp atomically
+            # (avoids read-modify-write race with parallel workers)
+            from bson import ObjectId
+            self.db.websites.update_one(
+                {"_id": ObjectId(page.website_id)},
+                {"$set": {"last_tested": datetime.now()}}
+            )
 
             logger.info(f"Multi-state testing complete: {len(results)} test results generated")
 
@@ -1112,9 +1108,12 @@ class TestRunner:
         # Test pages - returns summary dict (results are saved to DB as each page completes)
         summary = await self.test_pages(pages, parallel=parallel)
 
-        # Update website last_tested
-        website.last_tested = datetime.now()
-        self.db.update_website(website)
+        # Update website last_tested timestamp atomically
+        from bson import ObjectId
+        self.db.websites.update_one(
+            {"_id": ObjectId(website._id)},
+            {"$set": {"last_tested": datetime.now()}}
+        )
 
         summary['website_id'] = website_id
         return summary

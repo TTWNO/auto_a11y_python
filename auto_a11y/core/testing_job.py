@@ -9,6 +9,8 @@ from typing import Optional, Dict, Any, List
 from auto_a11y.core.job_manager import JobManager, JobType, JobStatus
 from auto_a11y.core.database import Database
 from auto_a11y.models import Page, PageStatus
+from auto_a11y.testing import TestRunner
+from playwright.async_api import Error as PlaywrightError
 
 logger = logging.getLogger(__name__)
 
@@ -290,8 +292,6 @@ class TestingJob:
             ai_api_key: API key for AI analysis
             skip_completion: If True, don't mark job as completed (for multi-user testing)
         """
-        from auto_a11y.testing import TestRunner
-
         logger.info(f"TestingJob.run started for job {self.job_id}")
 
         browser_mode = browser_config.get('BROWSER_MODE', 'local')
@@ -336,128 +336,188 @@ class TestingJob:
             # Mark as running
             self.set_running(len(testable_pages))
             logger.info(f"Job {self.job_id} marked as running with {len(testable_pages)} pages to test")
-            
-            # Create test runner
-            test_runner = TestRunner(database, browser_config)
-            
-            # Test statistics
-            pages_tested = 0
-            pages_passed = 0
-            pages_failed = 0
-            pages_skipped = 0
-            
-            # Test each page
-            for i, page in enumerate(testable_pages):
-                # Check for cancellation
-                if self.is_cancelled():
-                    logger.info(f"Testing job {self.job_id} was cancelled")
-                    self.set_cancelled()
-                    return
-                
-                # Update progress BEFORE testing to show current page
-                user_label = self._get_user_label()
-                progress_msg = f"[{user_label}] Testing {i+1}/{len(testable_pages)}"
-                self.update_progress(
-                    pages_tested=pages_tested,
-                    total_pages=len(testable_pages),
-                    current_page=page.url,
-                    message=progress_msg,
-                    pages_passed=pages_passed,
-                    pages_failed=pages_failed,
-                    pages_skipped=pages_skipped
-                )
-                
-                # Mark page as testing
-                page.status = PageStatus.TESTING
-                database.update_page(page)
-                
+
+            # Determine worker count
+            max_workers = browser_config.get('MAX_TEST_WORKERS', 4)
+            stagger_seconds = browser_config.get('WORKER_STAGGER_SECONDS', 1.5)
+            num_workers = min(max_workers, len(testable_pages))
+            logger.info(f"Starting {num_workers} parallel test workers (max configured: {max_workers})")
+
+            # Fill queue with pages to test
+            page_queue = asyncio.Queue()
+            for page in testable_pages:
+                page_queue.put_nowait(page)
+
+            # Shared progress counters protected by lock
+            progress_lock = asyncio.Lock()
+            progress = {
+                'tested': 0,
+                'passed': 0,
+                'failed': 0,
+                'skipped': 0,
+            }
+
+            async def _test_worker(worker_id: int):
+                """Worker coroutine: owns a TestRunner, pulls pages from queue."""
+                runner = None
                 try:
-                    # Test the page with multi-state support
-                    logger.info(f"Testing page {i+1}/{len(testable_pages)}: {page.url}")
-                    test_results_list = await test_runner.test_page_multi_state(
-                        page=page,
-                        enable_multi_state=True,
-                        take_screenshot=take_screenshot,
-                        run_ai_analysis=run_ai_analysis,
-                        ai_api_key=ai_api_key,
-                        website_user_id=self.website_user_id
-                    )
+                    # Stagger browser launches to avoid thundering herd
+                    if worker_id > 0:
+                        await asyncio.sleep(worker_id * stagger_seconds)
 
-                    # test_page_multi_state returns List[TestResult]
-                    # Use the last result (final state) for page status
-                    test_results = test_results_list[-1] if test_results_list else None
+                    # Check cancellation after stagger wait
+                    if self.is_cancelled():
+                        logger.info(f"Worker {worker_id}: cancelled before start")
+                        return
 
-                    # Update page status based on results
-                    if test_results:
-                        page.status = PageStatus.TESTED
-                        if page.violation_count > 0:
-                            pages_failed += 1
-                        else:
-                            pages_passed += 1
-                    else:
-                        page.status = PageStatus.ERROR
-                        pages_failed += 1
+                    runner = TestRunner(database, browser_config)
+                    logger.info(f"Worker {worker_id}: browser started")
 
-                    pages_tested += 1
+                    while not page_queue.empty():
+                        # Check for cancellation before each page
+                        if self.is_cancelled():
+                            logger.info(f"Worker {worker_id}: cancelled")
+                            return
 
-                    # Free test results from memory - they are already persisted to DB
-                    del test_results_list
-                    del test_results
+                        try:
+                            page = page_queue.get_nowait()
+                        except asyncio.QueueEmpty:
+                            return
 
-                    # Update progress AFTER testing to show correct count
-                    self.update_progress(
-                        pages_tested=pages_tested,
-                        total_pages=len(testable_pages),
-                        current_page=page.url,
-                        message=f"Completed {pages_tested}/{len(testable_pages)} pages",
-                        pages_passed=pages_passed,
-                        pages_failed=pages_failed,
-                        pages_skipped=pages_skipped
-                    )
-                    
+                        # Mark page as testing
+                        page.status = PageStatus.TESTING
+                        database.update_page(page)
+
+                        try:
+                            logger.info(f"Worker {worker_id}: testing {page.url}")
+                            test_results_list = await runner.test_page_multi_state(
+                                page=page,
+                                enable_multi_state=True,
+                                take_screenshot=take_screenshot,
+                                run_ai_analysis=run_ai_analysis,
+                                ai_api_key=ai_api_key,
+                                website_user_id=self.website_user_id
+                            )
+
+                            test_results = test_results_list[-1] if test_results_list else None
+
+                            if test_results:
+                                page.status = PageStatus.TESTED
+                                is_pass = page.violation_count == 0
+                            else:
+                                page.status = PageStatus.ERROR
+                                is_pass = False
+
+                            del test_results_list
+                            del test_results
+
+                            # Update shared progress under lock
+                            async with progress_lock:
+                                progress['tested'] += 1
+                                if is_pass:
+                                    progress['passed'] += 1
+                                else:
+                                    progress['failed'] += 1
+
+                                user_label = self._get_user_label()
+                                self.update_progress(
+                                    pages_tested=progress['tested'],
+                                    total_pages=len(testable_pages),
+                                    current_page=page.url,
+                                    message=f"[{user_label}] Completed {progress['tested']}/{len(testable_pages)} pages ({num_workers} workers)",
+                                    pages_passed=progress['passed'],
+                                    pages_failed=progress['failed'],
+                                    pages_skipped=progress['skipped'],
+                                )
+
+                        except PlaywrightError as e:
+                            logger.error(f"Worker {worker_id}: browser error testing {page.url}: {e}")
+                            page.status = PageStatus.ERROR
+                            page.error_reason = str(e)
+                            database.update_page(page)
+
+                            async with progress_lock:
+                                progress['failed'] += 1
+                                progress['tested'] += 1
+                                self.update_progress(
+                                    pages_tested=progress['tested'],
+                                    total_pages=len(testable_pages),
+                                    current_page=page.url,
+                                    message=f"[{self._get_user_label()}] Completed {progress['tested']}/{len(testable_pages)} pages (with errors)",
+                                    pages_passed=progress['passed'],
+                                    pages_failed=progress['failed'],
+                                    pages_skipped=progress['skipped'],
+                                )
+
+                            # Attempt browser recovery (skip if OOM-like)
+                            error_str = str(e).lower()
+                            if 'oom' not in error_str and 'out of memory' not in error_str:
+                                try:
+                                    logger.info(f"Worker {worker_id}: attempting browser recovery")
+                                    await runner.cleanup()
+                                    runner = TestRunner(database, browser_config)
+                                    logger.info(f"Worker {worker_id}: browser recovered")
+                                except Exception as recovery_err:
+                                    logger.error(f"Worker {worker_id}: recovery failed: {recovery_err}")
+                                    return  # Worker exits, others absorb remaining pages
+                            else:
+                                logger.warning(f"Worker {worker_id}: OOM detected, exiting")
+                                return
+
+                        except Exception as e:
+                            logger.error(f"Worker {worker_id}: error testing {page.url}: {e}")
+                            page.status = PageStatus.ERROR
+                            page.error_reason = str(e)
+                            database.update_page(page)
+
+                            async with progress_lock:
+                                progress['failed'] += 1
+                                progress['tested'] += 1
+                                self.update_progress(
+                                    pages_tested=progress['tested'],
+                                    total_pages=len(testable_pages),
+                                    current_page=page.url,
+                                    message=f"[{self._get_user_label()}] Completed {progress['tested']}/{len(testable_pages)} pages (with errors)",
+                                    pages_passed=progress['passed'],
+                                    pages_failed=progress['failed'],
+                                    pages_skipped=progress['skipped'],
+                                )
+
                 except Exception as e:
-                    logger.error(f"Error testing page {page.url}: {e}")
-                    page.status = PageStatus.ERROR
-                    page.error_reason = str(e)
-                    database.update_page(page)
-                    pages_failed += 1
-                    pages_tested += 1
-                    
-                    # Update progress after error too
-                    self.update_progress(
-                        pages_tested=pages_tested,
-                        total_pages=len(testable_pages),
-                        current_page=page.url,
-                        message=f"Completed {pages_tested}/{len(testable_pages)} pages (with errors)",
-                        pages_passed=pages_passed,
-                        pages_failed=pages_failed,
-                        pages_skipped=pages_skipped
-                    )
+                    logger.error(f"Worker {worker_id}: fatal error: {e}")
+                finally:
+                    if runner:
+                        try:
+                            await runner.cleanup()
+                        except Exception as cleanup_err:
+                            logger.warning(f"Worker {worker_id}: cleanup error: {cleanup_err}")
 
-                # Small delay between pages to let browser stabilize after multi-state testing
-                if i < len(testable_pages) - 1:  # Don't delay after last page
-                    await asyncio.sleep(0.5)
+            # Launch all workers and wait for completion
+            workers = [_test_worker(i) for i in range(num_workers)]
+            results = await asyncio.gather(*workers, return_exceptions=True)
+
+            # Log any worker-level exceptions
+            for i, result in enumerate(results):
+                if isinstance(result, Exception):
+                    logger.error(f"Worker {i} raised exception: {result}")
 
             # Check final cancellation status
             if self.is_cancelled():
                 logger.info(f"Testing job {self.job_id} was cancelled")
                 self.set_cancelled()
             elif skip_completion:
-                # Don't mark as completed - more users to test
                 user_label = self._get_user_label()
                 logger.info(f"Testing job {self.job_id} finished for user {user_label}, skipping completion (more users pending)")
             else:
-                # Mark as completed
-                self.set_completed(pages_tested, pages_passed, pages_failed, pages_skipped)
+                self.set_completed(
+                    progress['tested'], progress['passed'],
+                    progress['failed'], progress['skipped']
+                )
 
         except Exception as e:
             logger.error(f"Testing job {self.job_id} failed: {e}")
             self.set_failed(str(e))
             raise
-        finally:
-            # Clean up browser resources
-            if test_runner:
-                await test_runner.cleanup()
     
     def get_status(self) -> Dict[str, Any]:
         """

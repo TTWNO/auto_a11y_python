@@ -4,6 +4,7 @@ Database-backed testing job implementation
 
 import asyncio
 import logging
+import time
 from datetime import datetime
 from typing import Optional, Dict, Any, List
 from auto_a11y.core.job_manager import JobManager, JobType, JobStatus
@@ -348,6 +349,12 @@ class TestingJob:
             for page in testable_pages:
                 page_queue.put_nowait(page)
 
+            # Global rate limiter: enforce minimum delay between page navigations
+            # Uses the website's configured request_delay (same as scraping)
+            request_delay = website.scraping_config.request_delay
+            throttle_lock = asyncio.Lock()
+            last_request_time = {'t': 0.0}  # mutable container for closure
+
             # Shared progress counters protected by lock
             progress_lock = asyncio.Lock()
             progress = {
@@ -383,6 +390,14 @@ class TestingJob:
                             page = page_queue.get_nowait()
                         except asyncio.QueueEmpty:
                             return
+
+                        # Respect global rate limit across all workers
+                        async with throttle_lock:
+                            now = time.monotonic()
+                            elapsed = now - last_request_time['t']
+                            if elapsed < request_delay:
+                                await asyncio.sleep(request_delay - elapsed)
+                            last_request_time['t'] = time.monotonic()
 
                         # Mark page as testing
                         page.status = PageStatus.TESTING

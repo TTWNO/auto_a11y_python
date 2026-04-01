@@ -230,7 +230,7 @@ async def test_lists(page) -> Dict[str, Any]:
                         if (parent && parent.firstElementChild === icon) {
                             // Get text after the icon in the same parent
                             const textContent = Array.from(parent.childNodes)
-                                .filter(node => node !== icon && (node.nodeType === 3 || !node.matches('i, span[class*="icon"], span[class*="fa-"], span[class*="material-"]')))
+                                .filter(node => node !== icon && (node.nodeType === 3 || (node.nodeType === 1 && !node.matches('i, span[class*="icon"], span[class*="fa-"], span[class*="material-"]'))))
                                 .map(node => node.textContent)
                                 .join('')
                                 .trim();

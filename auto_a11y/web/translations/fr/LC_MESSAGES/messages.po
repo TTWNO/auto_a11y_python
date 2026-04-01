@@ -8314,11 +8314,11 @@ msgstr "Découvrir les pages"
 
 #: auto_a11y/web/templates/websites/view.html:66
 msgid "Abort"
-msgstr "Les deux"
+msgstr "Abandonner"
 
 #: auto_a11y/web/templates/websites/view.html:74
 msgid "Select users to test:"
-msgstr "Sélectionner les utilisateurs pour la découverte :"
+msgstr "Sélectionner les utilisateurs à tester :"
 
 #: auto_a11y/web/templates/websites/view.html:102
 #: auto_a11y/web/templates/websites/view.html:767
@@ -8327,18 +8327,18 @@ msgstr "Sélectionner les utilisateurs pour la découverte :"
 #: auto_a11y/web/templates/websites/view.html:1402
 #: auto_a11y/web/templates/websites/view.html:1421
 #: auto_a11y/web/templates/websites/view.html:1469
-#, fuzzy
 msgid "Test All Pages"
-msgstr ""
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Tester tous les sites\n"
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Tester toutes les pages"
+msgstr "Tester toutes les pages"
+
+#: auto_a11y/web/templates/websites/view.html:105
+#: auto_a11y/web/templates/websites/view.html:553
+msgid "Test Untested Pages"
+msgstr "Tester les pages non testées"
 
 #: auto_a11y/web/templates/websites/view.html:112
 #: auto_a11y/web/templates/websites/view.html:207
 msgid "Discovery History"
-msgstr "Découverte démarrée"
+msgstr "Historique de découverte"
 
 #: auto_a11y/web/templates/websites/view.html:115
 msgid "Documents"

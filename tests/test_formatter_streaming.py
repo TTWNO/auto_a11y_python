@@ -156,3 +156,88 @@ class TestCSVFormatterStreaming:
         self.formatter.begin(self.outfile, {})
         self.formatter.cleanup()
         assert self.formatter._file.closed
+
+
+# ---------------------------------------------------------------------------
+# Task 4 – JSONFormatter streaming
+# ---------------------------------------------------------------------------
+
+class TestJSONFormatterStreaming:
+    """JSONFormatter.begin / append_page / finalize / cleanup."""
+
+    def setup_method(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.outfile = os.path.join(self.tmpdir, 'report.json')
+        self.formatter = JSONFormatter(config={})
+
+    def teardown_method(self):
+        self.formatter.cleanup()
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def _load_json(self):
+        with open(self.outfile, encoding='utf-8') as f:
+            return json.load(f)
+
+    def test_valid_json_with_summary_and_pages(self):
+        summary = {'total_pages': 1, 'total_violations': 2}
+        page_data = {
+            'page': _FakePage(url='http://a.com', title='A'),
+            'test_result': _FakeTestResult(
+                violations=[_FakeIssue(id='ErrNoAlt')],
+            ),
+        }
+        self.formatter.begin(self.outfile, summary)
+        self.formatter.append_page(self.outfile, page_data)
+        self.formatter.finalize(self.outfile, summary)
+
+        data = self._load_json()
+        assert data['summary']['total_pages'] == 1
+        assert len(data['pages']) == 1
+        assert data['pages'][0]['page']['url'] == 'http://a.com'
+
+    def test_multiple_pages_valid_json(self):
+        summary = {'n': 3}
+        self.formatter.begin(self.outfile, summary)
+        for i in range(3):
+            page_data = {
+                'page': _FakePage(url=f'http://p{i}.com', title=f'P{i}'),
+                'test_result': _FakeTestResult(violations=[_FakeIssue()]),
+            }
+            self.formatter.append_page(self.outfile, page_data)
+        self.formatter.finalize(self.outfile, summary)
+
+        data = self._load_json()
+        assert len(data['pages']) == 3
+        urls = [p['page']['url'] for p in data['pages']]
+        assert urls == ['http://p0.com', 'http://p1.com', 'http://p2.com']
+
+    def test_zero_pages_valid_json(self):
+        summary = {'empty': True}
+        self.formatter.begin(self.outfile, summary)
+        self.formatter.finalize(self.outfile, summary)
+
+        data = self._load_json()
+        assert data['summary'] == {'empty': True}
+        assert data['pages'] == []
+
+    def test_cleanup_closes_file(self):
+        self.formatter.begin(self.outfile, {})
+        self.formatter.cleanup()
+        assert self.formatter._file.closed
+
+    def test_dict_page_data(self):
+        """page_data with plain dicts instead of model objects."""
+        page_data = {
+            'page': {'url': 'http://dict.com', 'title': 'Dict'},
+            'test_result': {
+                'violations': [{'id': 'ErrX', 'description': 'd'}],
+                'warnings': [],
+            },
+        }
+        self.formatter.begin(self.outfile, {})
+        self.formatter.append_page(self.outfile, page_data)
+        self.formatter.finalize(self.outfile, {})
+
+        data = self._load_json()
+        assert len(data['pages']) == 1
+        assert data['pages'][0]['page']['url'] == 'http://dict.com'

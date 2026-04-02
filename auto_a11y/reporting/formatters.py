@@ -808,6 +808,54 @@ class JSONFormatter(BaseFormatter):
         """Generate JSON summary report"""
         return json.dumps(data, indent=2, default=str)
 
+    # --- Streaming interface ---
+
+    def begin(self, output_file: str, summary: dict):
+        """Write the opening envelope: {"summary": ..., "pages": ["""
+        self._file = open(output_file, 'w', encoding='utf-8')
+        self._is_first_page = True
+        self._file.write('{"summary": ')
+        json.dump(summary, self._file, indent=2, default=str)
+        self._file.write(', "pages": [\n')
+
+    def append_page(self, output_file: str, page_data: dict):
+        """Write one page JSON object into the pages array."""
+        if not self._is_first_page:
+            self._file.write(',\n')
+        self._is_first_page = False
+
+        # Serialise page_data; convert model objects to dicts where needed
+        serialisable = self._make_serialisable(page_data)
+        json.dump(serialisable, self._file, indent=2, default=str)
+
+    def finalize(self, output_file: str, summary: dict):
+        """Close the pages array and the root object."""
+        if hasattr(self, '_file') and self._file and not self._file.closed:
+            self._file.write('\n]}')
+            self._file.flush()
+            self._file.close()
+
+    def cleanup(self):
+        """Close the file handle if still open."""
+        if hasattr(self, '_file') and self._file and not self._file.closed:
+            self._file.close()
+
+    # --- helpers ---
+
+    @staticmethod
+    def _make_serialisable(obj):
+        """Recursively convert model objects (with __dict__) to plain dicts."""
+        if isinstance(obj, dict):
+            return {k: JSONFormatter._make_serialisable(v) for k, v in obj.items()}
+        if isinstance(obj, (list, tuple)):
+            return [JSONFormatter._make_serialisable(i) for i in obj]
+        if hasattr(obj, '__dict__') and not isinstance(obj, type):
+            return {k: JSONFormatter._make_serialisable(v)
+                    for k, v in obj.__dict__.items() if not k.startswith('_')}
+        if hasattr(obj, 'value'):  # enum-like
+            return obj.value
+        return obj
+
 
 class CSVFormatter(BaseFormatter):
     """CSV report formatter"""

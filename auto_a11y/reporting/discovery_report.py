@@ -290,6 +290,7 @@ class DiscoveryReportGenerator:
         Args:
             website_id: Website ID
             format: Output format ('html' or 'pdf')
+            progress_callback: Optional callback(current, total, message)
 
         Returns:
             Path to generated report
@@ -301,42 +302,20 @@ class DiscoveryReportGenerator:
         project = self.db.get_project(website.project_id)
         pages = self.db.get_pages(website_id)
 
-        # Collect inspection data for all pages
-        inspection_data = self._collect_inspection_data(pages, progress_callback=progress_callback)
+        if format == 'pdf':
+            # PDF needs full in-memory approach (WeasyPrint requires complete HTML)
+            return self._generate_pdf_discovery_report(
+                website, project, pages, progress_callback
+            )
 
-        if progress_callback:
-            progress_callback(len(pages), len(pages), 'Generating report...')
-
-        # Prepare report data
-        report_data = self._prepare_report_data(
-            website, project, pages, inspection_data
-        )
-
-        # Generate report based on format
-        if format == 'html':
-            content = self._generate_html_report(report_data)
-            extension = 'html'
-        elif format == 'pdf':
-            content = self._generate_pdf_report(report_data)
-            extension = 'pdf'
-        else:
+        if format != 'html':
             raise ValueError(f"Unsupported format: {format}")
 
-        # Save report
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        website_name = self._sanitize_filename(website.name or 'website')
-        filename = f"discovery_{website_name}_{timestamp}.{extension}"
-        filepath = self.report_dir / filename
-
-        if format == 'pdf':
-            with open(filepath, 'wb') as f:
-                f.write(content)
-        else:
-            with open(filepath, 'w', encoding='utf-8') as f:
-                f.write(content)
-
-        logger.info(f"Generated discovery report: {filepath}")
-        return str(filepath)
+        # HTML: use streaming approach for bounded memory
+        return self._generate_streaming_discovery_report(
+            pages=pages, website=website, project=project, websites=None,
+            progress_callback=progress_callback
+        )
 
     def generate_project_discovery_report(
         self,
@@ -350,6 +329,7 @@ class DiscoveryReportGenerator:
         Args:
             project_id: Project ID
             format: Output format ('html' or 'pdf')
+            progress_callback: Optional callback(current, total, message)
 
         Returns:
             Path to generated report
@@ -366,46 +346,919 @@ class DiscoveryReportGenerator:
             pages = self.db.get_pages(website.id)
             all_pages.extend(pages)
 
-        # Collect inspection data
-        inspection_data = self._collect_inspection_data(all_pages, progress_callback=progress_callback)
+        if format == 'pdf':
+            # PDF needs full in-memory approach (WeasyPrint requires complete HTML)
+            return self._generate_pdf_discovery_report(
+                None, project, all_pages, progress_callback, websites=websites
+            )
 
-        if progress_callback:
-            progress_callback(len(all_pages), len(all_pages), 'Generating report...')
+        if format != 'html':
+            raise ValueError(f"Unsupported format: {format}")
 
-        # Prepare report data
-        report_data = self._prepare_report_data(
-            None, project, all_pages, inspection_data, websites=websites
+        # HTML: use streaming approach for bounded memory
+        return self._generate_streaming_discovery_report(
+            pages=all_pages, website=None, project=project, websites=websites,
+            progress_callback=progress_callback
         )
 
-        # Generate report based on format
-        if format == 'html':
-            content = self._generate_html_report(report_data)
-            extension = 'html'
-        elif format == 'pdf':
-            content = self._generate_pdf_report(report_data)
-            extension = 'pdf'
+    # ------------------------------------------------------------------ #
+    #  Streaming report generation (bounded memory)                       #
+    # ------------------------------------------------------------------ #
+
+    def _generate_streaming_discovery_report(self, pages, website, project, websites,
+                                             progress_callback=None) -> str:
+        """Generate discovery report by streaming HTML to file -- bounded memory usage.
+
+        Pass 1 scans every page once, collecting only aggregate counters and
+        component signatures (no per-page issue storage).
+        Pass 2 streams per-page accordion sections to disk, loading one test
+        result at a time from the database.
+
+        Returns:
+            Path to generated ZIP file containing the report HTML.
+        """
+        import shutil
+        import zipfile
+        import tempfile
+
+        total_pages = len(pages)
+        # Two passes over the page list; progress counts both.
+        total_phases = total_pages * 2
+
+        # ------ Pass 1: collect aggregate data only ------
+        aggregate = self._collect_aggregate_data(
+            pages, progress_callback=progress_callback, progress_total=total_phases
+        )
+
+        # Determine common issues (>70% threshold)
+        common_disco, common_info, common_an = self._compute_common_issues(aggregate)
+
+        # Get documents data (small -- only metadata)
+        documents_data = {}
+        if website:
+            documents = self.db.get_document_references(website.id)
+            docs_by_type = {}
+            for doc in documents:
+                doc_type = doc.document_type_display
+                if doc_type not in docs_by_type:
+                    docs_by_type[doc_type] = []
+                docs_by_type[doc_type].append(doc)
+            documents_data = docs_by_type
+
+        # ------ Set up output paths ------
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        scope_name = self._sanitize_filename(
+            (website.name if website else project.name) or 'report'
+        )
+        temp_dir = Path(tempfile.mkdtemp(prefix='discovery_report_'))
+
+        try:
+            html_path = temp_dir / 'index.html'
+
+            with open(html_path, 'w', encoding='utf-8') as f:
+                # Write header + executive summary + site-wide sections
+                self._write_html_header(
+                    f, website, project, websites, aggregate,
+                    common_disco, common_info, common_an, documents_data
+                )
+
+                # ------ Pass 2: stream per-page sections ------
+                page_ids_with_issues = aggregate['page_ids_with_issues']
+                t = self._get_translations()
+
+                if page_ids_with_issues:
+                    f.write('<div class="accordion">\n')
+
+                    for idx, (page_id, _, _, _) in enumerate(page_ids_with_issues):
+                        if progress_callback:
+                            progress_callback(
+                                total_pages + idx, total_phases,
+                                f'Writing page {idx + 1} of {len(page_ids_with_issues)}...'
+                            )
+                        try:
+                            page_html = self._generate_page_html_from_db(
+                                page_id, idx, common_disco, common_info, common_an
+                            )
+                            if page_html:
+                                f.write(page_html)
+                        except Exception as e:
+                            logger.error(f"Error writing page {page_id}: {e}")
+
+                    f.write('</div>\n')
+                else:
+                    f.write(f'<p class="no-issues" data-i18n="no_issues">{t["no_issues"]}</p>\n')
+
+                # Write footer (JS + closing tags)
+                self._write_html_footer(f)
+
+            if progress_callback:
+                progress_callback(total_phases, total_phases, 'Packaging report...')
+
+            # Package as ZIP
+            zip_filename = f"discovery_{scope_name}_{timestamp}.zip"
+            zip_path = self.report_dir / zip_filename
+            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                zipf.write(html_path, 'discovery_report.html')
+
+            logger.info(f"Generated streaming discovery report: {zip_path}")
+            return str(zip_path)
+        finally:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+    # ---------- Pass 1 helpers ----------
+
+    def _collect_aggregate_data(self, pages, progress_callback=None,
+                                progress_total=None) -> Dict[str, Any]:
+        """Scan all pages, collecting only aggregate counters and component
+        signatures.  Does NOT store per-page issue dicts -- only page IDs
+        and issue counts are kept.
+
+        Returns:
+            Dictionary with aggregate stats, frequency maps, component data,
+            and ``page_ids_with_issues`` sorted by total count descending.
+        """
+        total_pages = len(pages)
+        if progress_total is None:
+            progress_total = total_pages
+
+        # Counters
+        total_disco_issues = 0
+        total_info_issues = 0
+        total_accessible_name_issues = 0
+        total_pages_tested = 0
+        total_pages_needing_inspection = 0
+
+        # Frequency maps (issue_id -> count)
+        disco_by_type = defaultdict(int)
+        info_by_type = defaultdict(int)
+        accessible_name_by_type = defaultdict(int)
+
+        # Page frequency (issue_id -> set of page_ids) -- for common issue detection
+        pages_with_disco_issue = defaultdict(set)
+        pages_with_info_issue = defaultdict(set)
+        pages_with_accessible_name_issue = defaultdict(set)
+
+        # Component signatures (small aggregate data)
+        fonts_data = {}
+        forms_data = {}
+        navs_data = {}
+        asides_data = {}
+        sections_data = {}
+        headers_data = {}
+        footers_data = {}
+        searches_data = {}
+
+        # Track which pages have issues: (page_id, disco_count, info_count, an_count)
+        page_ids_with_issues = []
+
+        for i, page in enumerate(pages):
+            if progress_callback:
+                progress_callback(
+                    i, progress_total,
+                    f'Scanning page {i + 1} of {total_pages}...'
+                )
+            try:
+                test_result = self.db.get_latest_test_result(page.id)
+            except Exception as e:
+                logger.error(f"Error loading test result for page {page.id} ({page.url}): {e}")
+                continue
+            if not test_result:
+                continue
+
+            total_pages_tested += 1
+            page_disco_count = 0
+            page_info_count = 0
+            page_an_count = 0
+
+            # --- Discovery issues ---
+            if hasattr(test_result, 'discovery') and test_result.discovery:
+                for issue in test_result.discovery:
+                    issue_dict = issue.to_dict() if hasattr(issue, 'to_dict') else issue
+                    issue_id = issue_dict.get('id', 'Unknown')
+                    disco_by_type[issue_id] += 1
+                    pages_with_disco_issue[issue_id].add(page.id)
+                    total_disco_issues += 1
+                    page_disco_count += 1
+
+                    # Component tracking (same logic as legacy)
+                    self._track_component_from_issue(
+                        issue_id, issue_dict, page.url,
+                        fonts_data, forms_data, navs_data, asides_data,
+                        sections_data, headers_data, footers_data, searches_data
+                    )
+
+            # --- Info issues ---
+            if hasattr(test_result, 'info') and test_result.info:
+                for issue in test_result.info:
+                    issue_dict = issue.to_dict() if hasattr(issue, 'to_dict') else issue
+                    issue_id = issue_dict.get('id', 'Unknown')
+                    info_by_type[issue_id] += 1
+                    pages_with_info_issue[issue_id].add(page.id)
+                    total_info_issues += 1
+                    page_info_count += 1
+
+            # --- Violations/warnings (accessible names, styles, fonts, landmarks) ---
+            for issue_list_name in ['violations', 'warnings']:
+                if hasattr(test_result, issue_list_name):
+                    for issue in getattr(test_result, issue_list_name):
+                        issue_dict = issue.to_dict() if hasattr(issue, 'to_dict') else issue
+                        metadata = issue_dict.get('metadata', {})
+                        category = (issue_dict.get('touchpoint') or
+                                    metadata.get('cat') or
+                                    issue_dict.get('cat') or '').lower()
+
+                        if category in ['accessible names', 'accessible_names', 'accessiblenames']:
+                            iss_id = issue_dict.get('err', issue_dict.get('id', 'Unknown'))
+                            accessible_name_by_type[iss_id] += 1
+                            pages_with_accessible_name_issue[iss_id].add(page.id)
+                            total_accessible_name_issues += 1
+                            page_an_count += 1
+
+                        elif category in ['styles', 'fonts', 'landmarks']:
+                            iss_id = issue_dict.get('err', issue_dict.get('id', 'Unknown'))
+                            disco_by_type[iss_id] += 1
+                            pages_with_disco_issue[iss_id].add(page.id)
+                            total_disco_issues += 1
+                            page_disco_count += 1
+
+                            # Component tracking for fonts/landmarks in violations
+                            if category == 'fonts':
+                                self._track_component_from_issue(
+                                    iss_id, issue_dict, page.url,
+                                    fonts_data, forms_data, navs_data, asides_data,
+                                    sections_data, headers_data, footers_data, searches_data
+                                )
+                            elif category == 'landmarks':
+                                self._track_landmark_from_violation(
+                                    iss_id, issue_dict, page.url,
+                                    navs_data, asides_data, sections_data,
+                                    headers_data, footers_data, searches_data
+                                )
+
+            # Track page if it has any issues
+            if page_disco_count or page_info_count or page_an_count:
+                total_pages_needing_inspection += 1
+                page_ids_with_issues.append(
+                    (page.id, page_disco_count, page_info_count, page_an_count)
+                )
+
+            # Release reference to test_result
+            del test_result
+
+        # Sort by total issue count descending
+        page_ids_with_issues.sort(
+            key=lambda x: x[1] + x[2] + x[3], reverse=True
+        )
+
+        return {
+            'total_pages_tested': total_pages_tested,
+            'total_pages_needing_inspection': total_pages_needing_inspection,
+            'total_disco_issues': total_disco_issues,
+            'total_info_issues': total_info_issues,
+            'total_accessible_name_issues': total_accessible_name_issues,
+            'disco_by_type': dict(disco_by_type),
+            'info_by_type': dict(info_by_type),
+            'accessible_name_by_type': dict(accessible_name_by_type),
+            'pages_with_disco_issue': pages_with_disco_issue,
+            'pages_with_info_issue': pages_with_info_issue,
+            'pages_with_accessible_name_issue': pages_with_accessible_name_issue,
+            'fonts': fonts_data,
+            'forms': forms_data,
+            'navs': navs_data,
+            'asides': asides_data,
+            'sections': sections_data,
+            'headers': headers_data,
+            'footers': footers_data,
+            'searches': searches_data,
+            'page_ids_with_issues': page_ids_with_issues,
+        }
+
+    def _track_component_from_issue(self, issue_id, issue_dict, page_url,
+                                    fonts_data, forms_data, navs_data, asides_data,
+                                    sections_data, headers_data, footers_data,
+                                    searches_data):
+        """Extract component signature data from a discovery issue dict.
+        Mutates the component dicts in place."""
+        metadata = issue_dict.get('metadata', {})
+
+        # Fonts
+        if issue_id in ('fonts_DiscoFontFound', 'DiscoFontFound'):
+            font_name = metadata.get('fontName', issue_dict.get('fontName',
+                        issue_dict.get('found', 'Unknown')))
+            font_sizes = metadata.get('fontSizes', issue_dict.get('fontSizes', []))
+            if font_name and font_name != 'Unknown':
+                if font_name not in fonts_data:
+                    fonts_data[font_name] = {'sizes': set(), 'pages': set()}
+                fonts_data[font_name]['pages'].add(page_url)
+                if font_sizes:
+                    fonts_data[font_name]['sizes'].update(font_sizes)
+
+        # Forms
+        elif issue_id in ('forms_DiscoFormOnPage', 'DiscoFormOnPage'):
+            form_signature = metadata.get('formSignature', 'unknown')
+            if form_signature and form_signature != 'unknown':
+                if form_signature not in forms_data:
+                    forms_data[form_signature] = {
+                        'xpath': metadata.get('xpath', issue_dict.get('xpath', '')),
+                        'fieldCount': metadata.get('fieldCount', 0),
+                        'fieldTypes': metadata.get('fieldTypes', {}),
+                        'isSearchForm': metadata.get('isSearchForm', False),
+                        'searchContext': metadata.get('searchContext', ''),
+                        'formAction': metadata.get('formAction', ''),
+                        'formMethod': metadata.get('formMethod', ''),
+                        'html': metadata.get('html', issue_dict.get('html', '')),
+                        'pages': set()
+                    }
+                forms_data[form_signature]['pages'].add(page_url)
+
+        # Navigations
+        elif issue_id in ('landmarks_DiscoNavFound', 'DiscoNavFound'):
+            nav_signature = metadata.get('navSignature', 'unknown')
+            if nav_signature and nav_signature != 'unknown':
+                if nav_signature not in navs_data:
+                    navs_data[nav_signature] = {
+                        'xpath': metadata.get('xpath', issue_dict.get('xpath', '')),
+                        'linkCount': metadata.get('linkCount', 0),
+                        'navLabel': metadata.get('navLabel', ''),
+                        'html': metadata.get('html', issue_dict.get('html', '')),
+                        'pages': set()
+                    }
+                navs_data[nav_signature]['pages'].add(page_url)
+
+        # Asides
+        elif issue_id in ('landmarks_DiscoAsideFound', 'DiscoAsideFound'):
+            aside_signature = metadata.get('asideSignature', 'unknown')
+            if aside_signature and aside_signature != 'unknown':
+                if aside_signature not in asides_data:
+                    asides_data[aside_signature] = {
+                        'xpath': metadata.get('xpath', issue_dict.get('xpath', '')),
+                        'asideLabel': metadata.get('asideLabel', ''),
+                        'html': metadata.get('html', issue_dict.get('html', '')),
+                        'pages': set()
+                    }
+                asides_data[aside_signature]['pages'].add(page_url)
+
+        # Sections
+        elif issue_id in ('landmarks_DiscoSectionFound', 'DiscoSectionFound'):
+            section_signature = metadata.get('sectionSignature', 'unknown')
+            if section_signature and section_signature != 'unknown':
+                if section_signature not in sections_data:
+                    sections_data[section_signature] = {
+                        'xpath': metadata.get('xpath', issue_dict.get('xpath', '')),
+                        'sectionLabel': metadata.get('sectionLabel', ''),
+                        'html': metadata.get('html', issue_dict.get('html', '')),
+                        'pages': set()
+                    }
+                sections_data[section_signature]['pages'].add(page_url)
+
+        # Headers
+        elif issue_id in ('landmarks_DiscoHeaderFound', 'DiscoHeaderFound'):
+            header_signature = metadata.get('headerSignature', 'unknown')
+            if header_signature and header_signature != 'unknown':
+                if header_signature not in headers_data:
+                    headers_data[header_signature] = {
+                        'xpath': metadata.get('xpath', issue_dict.get('xpath', '')),
+                        'headerLabel': metadata.get('headerLabel', ''),
+                        'html': metadata.get('html', issue_dict.get('html', '')),
+                        'pages': set()
+                    }
+                headers_data[header_signature]['pages'].add(page_url)
+
+        # Footers
+        elif issue_id in ('landmarks_DiscoFooterFound', 'DiscoFooterFound'):
+            footer_signature = metadata.get('footerSignature', 'unknown')
+            if footer_signature and footer_signature != 'unknown':
+                if footer_signature not in footers_data:
+                    footers_data[footer_signature] = {
+                        'xpath': metadata.get('xpath', issue_dict.get('xpath', '')),
+                        'footerLabel': metadata.get('footerLabel', ''),
+                        'html': metadata.get('html', issue_dict.get('html', '')),
+                        'pages': set()
+                    }
+                footers_data[footer_signature]['pages'].add(page_url)
+
+        # Searches
+        elif issue_id in ('landmarks_DiscoSearchFound', 'DiscoSearchFound'):
+            search_signature = metadata.get('searchSignature', 'unknown')
+            if search_signature and search_signature != 'unknown':
+                if search_signature not in searches_data:
+                    searches_data[search_signature] = {
+                        'xpath': metadata.get('xpath', issue_dict.get('xpath', '')),
+                        'searchLabel': metadata.get('searchLabel', ''),
+                        'html': metadata.get('html', issue_dict.get('html', '')),
+                        'pages': set()
+                    }
+                searches_data[search_signature]['pages'].add(page_url)
+
+    def _track_landmark_from_violation(self, issue_id, issue_dict, page_url,
+                                       navs_data, asides_data, sections_data,
+                                       headers_data, footers_data, searches_data):
+        """Track landmark component data from violations/warnings with
+        category='landmarks'.  Mirrors the legacy code path."""
+        metadata = issue_dict.get('metadata', {})
+
+        if issue_id == 'DiscoNavFound':
+            nav_signature = metadata.get('navSignature',
+                            issue_dict.get('navSignature', 'unknown'))
+            if nav_signature and nav_signature != 'unknown':
+                if nav_signature not in navs_data:
+                    navs_data[nav_signature] = {
+                        'xpath': metadata.get('xpath', issue_dict.get('xpath', '')),
+                        'linkCount': metadata.get('linkCount',
+                                     issue_dict.get('linkCount', 0)),
+                        'navLabel': metadata.get('navLabel',
+                                    issue_dict.get('navLabel', '')),
+                        'html': metadata.get('html', issue_dict.get('html', '')),
+                        'pages': set()
+                    }
+                navs_data[nav_signature]['pages'].add(page_url)
+
+        elif issue_id == 'DiscoAsideFound':
+            aside_signature = metadata.get('asideSignature',
+                              issue_dict.get('asideSignature', 'unknown'))
+            if aside_signature and aside_signature != 'unknown':
+                if aside_signature not in asides_data:
+                    asides_data[aside_signature] = {
+                        'xpath': metadata.get('xpath', issue_dict.get('xpath', '')),
+                        'asideLabel': metadata.get('asideLabel',
+                                      issue_dict.get('asideLabel', '')),
+                        'html': metadata.get('html', issue_dict.get('html', '')),
+                        'pages': set()
+                    }
+                asides_data[aside_signature]['pages'].add(page_url)
+
+        elif issue_id == 'DiscoSectionFound':
+            section_signature = metadata.get('sectionSignature',
+                                issue_dict.get('sectionSignature', 'unknown'))
+            if section_signature and section_signature != 'unknown':
+                if section_signature not in sections_data:
+                    sections_data[section_signature] = {
+                        'xpath': metadata.get('xpath', issue_dict.get('xpath', '')),
+                        'sectionLabel': metadata.get('sectionLabel',
+                                        issue_dict.get('sectionLabel', '')),
+                        'html': metadata.get('html', issue_dict.get('html', '')),
+                        'pages': set()
+                    }
+                sections_data[section_signature]['pages'].add(page_url)
+
+        elif issue_id == 'DiscoHeaderFound':
+            header_signature = metadata.get('headerSignature',
+                               issue_dict.get('headerSignature', 'unknown'))
+            if header_signature and header_signature != 'unknown':
+                if header_signature not in headers_data:
+                    headers_data[header_signature] = {
+                        'xpath': metadata.get('xpath', issue_dict.get('xpath', '')),
+                        'headerLabel': metadata.get('headerLabel',
+                                       issue_dict.get('headerLabel', '')),
+                        'html': metadata.get('html', issue_dict.get('html', '')),
+                        'pages': set()
+                    }
+                headers_data[header_signature]['pages'].add(page_url)
+
+        elif issue_id == 'DiscoFooterFound':
+            footer_signature = metadata.get('footerSignature',
+                               issue_dict.get('footerSignature', 'unknown'))
+            if footer_signature and footer_signature != 'unknown':
+                if footer_signature not in footers_data:
+                    footers_data[footer_signature] = {
+                        'xpath': metadata.get('xpath', issue_dict.get('xpath', '')),
+                        'footerLabel': metadata.get('footerLabel',
+                                       issue_dict.get('footerLabel', '')),
+                        'html': metadata.get('html', issue_dict.get('html', '')),
+                        'pages': set()
+                    }
+                footers_data[footer_signature]['pages'].add(page_url)
+
+        elif issue_id == 'DiscoSearchFound':
+            search_signature = metadata.get('searchSignature',
+                               issue_dict.get('searchSignature', 'unknown'))
+            if search_signature and search_signature != 'unknown':
+                if search_signature not in searches_data:
+                    searches_data[search_signature] = {
+                        'xpath': metadata.get('xpath', issue_dict.get('xpath', '')),
+                        'searchLabel': metadata.get('searchLabel',
+                                       issue_dict.get('searchLabel', '')),
+                        'html': metadata.get('html', issue_dict.get('html', '')),
+                        'pages': set()
+                    }
+                searches_data[search_signature]['pages'].add(page_url)
+
+    def _compute_common_issues(self, aggregate):
+        """Compute common issues (appearing on >70% of tested pages).
+
+        Returns:
+            Tuple of (common_disco, common_info, common_an) dicts
+            mapping issue_id -> page_count.
+        """
+        threshold = aggregate['total_pages_tested'] * 0.7
+        common_disco = {
+            issue_id: len(page_set)
+            for issue_id, page_set in aggregate['pages_with_disco_issue'].items()
+            if len(page_set) > threshold
+        }
+        common_info = {
+            issue_id: len(page_set)
+            for issue_id, page_set in aggregate['pages_with_info_issue'].items()
+            if len(page_set) > threshold
+        }
+        common_an = {
+            issue_id: len(page_set)
+            for issue_id, page_set in aggregate['pages_with_accessible_name_issue'].items()
+            if len(page_set) > threshold
+        }
+        return common_disco, common_info, common_an
+
+    # ---------- Pass 2 helpers ----------
+
+    # Issue IDs that get their own dedicated aggregate section
+    _DEDICATED_ISSUE_IDS = frozenset({
+        'fonts_DiscoFontFound', 'DiscoFontFound',
+        'forms_DiscoFormOnPage', 'DiscoFormOnPage',
+        'landmarks_DiscoNavFound', 'DiscoNavFound',
+        'landmarks_DiscoAsideFound', 'DiscoAsideFound',
+        'landmarks_DiscoSectionFound', 'DiscoSectionFound',
+        'landmarks_DiscoHeaderFound', 'DiscoHeaderFound',
+        'landmarks_DiscoFooterFound', 'DiscoFooterFound',
+        'landmarks_DiscoSearchFound', 'DiscoSearchFound',
+    })
+
+    def _extract_page_issues(self, test_result):
+        """Extract categorized issues from a single test result.
+
+        Returns:
+            Tuple of (disco_issues, info_issues, accessible_name_issues) lists.
+        """
+        disco_issues = []
+        info_issues = []
+        an_issues = []
+
+        # Discovery issues
+        if hasattr(test_result, 'discovery') and test_result.discovery:
+            for issue in test_result.discovery:
+                issue_dict = issue.to_dict() if hasattr(issue, 'to_dict') else issue
+                disco_issues.append(issue_dict)
+
+        # Info issues
+        if hasattr(test_result, 'info') and test_result.info:
+            for issue in test_result.info:
+                issue_dict = issue.to_dict() if hasattr(issue, 'to_dict') else issue
+                info_issues.append(issue_dict)
+
+        # Accessible Names, Styles, Fonts, Landmarks from violations/warnings
+        for issue_list_name in ['violations', 'warnings']:
+            if hasattr(test_result, issue_list_name):
+                for issue in getattr(test_result, issue_list_name):
+                    issue_dict = issue.to_dict() if hasattr(issue, 'to_dict') else issue
+                    metadata = issue_dict.get('metadata', {})
+                    category = (issue_dict.get('touchpoint') or
+                                metadata.get('cat') or
+                                issue_dict.get('cat') or '').lower()
+
+                    if category in ['accessible names', 'accessible_names', 'accessiblenames']:
+                        an_issues.append(issue_dict)
+                    elif category in ['styles', 'fonts', 'landmarks']:
+                        disco_issues.append(issue_dict)
+
+        return disco_issues, info_issues, an_issues
+
+    def _generate_page_html_from_db(self, page_id, index,
+                                    common_disco, common_info, common_an):
+        """Load one page's test result from DB, generate its accordion HTML,
+        and return the string.  The test result is released after this call.
+
+        Returns:
+            HTML string, or None if the page has no remaining issues.
+        """
+        page = self.db.get_page(page_id)
+        if not page:
+            return None
+        test_result = self.db.get_latest_test_result(page_id)
+        if not test_result:
+            return None
+
+        t = self._get_translations()
+
+        # Extract all issues
+        disco_issues, info_issues, an_issues = self._extract_page_issues(test_result)
+
+        # Filter out common issues and dedicated-section issues
+        disco_issues = [
+            i for i in disco_issues
+            if i.get('id') not in common_disco and i.get('id') not in self._DEDICATED_ISSUE_IDS
+        ]
+        info_issues = [
+            i for i in info_issues
+            if i.get('id') not in common_info
+        ]
+        an_issues = [
+            i for i in an_issues
+            if i.get('id') not in common_an
+        ]
+
+        if not (disco_issues or info_issues or an_issues):
+            return None
+
+        page_state_desc = ""
+        if hasattr(test_result, 'page_state') and test_result.page_state:
+            if isinstance(test_result.page_state, dict):
+                page_state_desc = test_result.page_state.get('description', '')
+            elif hasattr(test_result.page_state, 'description'):
+                page_state_desc = test_result.page_state.description
+
+        page_data = {
+            'page': page,
+            'url': page.url,
+            'title': page.title or 'Untitled',
+            'page_state': page_state_desc,
+            'disco_issues': disco_issues,
+            'info_issues': info_issues,
+            'accessible_name_issues': an_issues,
+            'issue_summary': [],
+            'requires_inspection': True
+        }
+
+        return self._generate_page_section_html(page_data, index, t)
+
+    # ---------- HTML streaming helpers ----------
+
+    def _write_html_header(self, f, website, project, websites, aggregate,
+                           common_disco, common_info, common_an, documents_data):
+        """Write everything from <!DOCTYPE html> through the pages-section
+        header (just before the accordion).  ``f`` is an open file handle."""
+        t = self._get_translations()
+        generated_at_formatted = datetime.now().strftime('%B %d, %Y at %I:%M %p')
+
+        # Build scope HTML
+        if website:
+            scope_html = f"""
+                <p><strong><span data-i18n="website">{t['website']}</span>:</strong> {html.escape(website.name or '')}</p>
+                <p><strong><span data-i18n="url">{t['url']}</span>:</strong> <a href="{html.escape(website.url or '')}" target="_blank">{html.escape(website.url or '')}</a></p>
+            """
         else:
-            raise ValueError(f"Unsupported format: {format}")
+            scope_html = f"""
+                <p><strong><span data-i18n="project">{t['project']}</span>:</strong> {html.escape(project.name or '')}</p>
+                <p><strong><span data-i18n="websites">{t['websites']}</span>:</strong> {len(websites) if websites else 0}</p>
+            """
+
+        total_pages_tested = aggregate['total_pages_tested']
+        total_pages_needing = aggregate['total_pages_needing_inspection']
+        inspection_pct = (total_pages_needing / total_pages_tested * 100) if total_pages_tested > 0 else 0
+        pages_with_unique = len(aggregate['page_ids_with_issues'])
+
+        # Common issues structure expected by _generate_common_issues_html
+        common_issues = {
+            'disco': common_disco,
+            'info': common_info,
+            'accessible_names': common_an
+        }
+
+        # Issue breakdown structure expected by _generate_issue_breakdown_html
+        issue_breakdown = {
+            'disco': aggregate['disco_by_type'],
+            'info': aggregate['info_by_type'],
+            'accessible_names': aggregate['accessible_name_by_type']
+        }
+
+        # Prepare both-language translations for JS
+        original_lang = self.language
+        self.language = 'en'
+        translations_en = self._get_translations()
+        self.language = 'fr'
+        translations_fr = self._get_translations()
+        self.language = original_lang
+
+        all_translations = {'en': translations_en, 'fr': translations_fr}
+
+        # Generate aggregate section HTML strings (all small data)
+        common_issues_html = self._generate_common_issues_html(common_issues, total_pages_tested, t)
+        fonts_html = self._generate_fonts_html(aggregate.get('fonts', {}), t)
+        forms_html = self._generate_forms_html(aggregate.get('forms', {}), total_pages_tested, t)
+        navs_html = self._generate_navs_html(aggregate.get('navs', {}), total_pages_tested, t)
+        asides_html = self._generate_asides_html(aggregate.get('asides', {}), total_pages_tested, t)
+        sections_html = self._generate_sections_html(aggregate.get('sections', {}), total_pages_tested, t)
+        headers_html = self._generate_headers_html(aggregate.get('headers', {}), total_pages_tested, t)
+        footers_html = self._generate_footers_html(aggregate.get('footers', {}), total_pages_tested, t)
+        searches_html = self._generate_searches_html(aggregate.get('searches', {}), total_pages_tested, t)
+        documents_html = self._generate_documents_html(documents_data, t)
+        issue_breakdown_html = self._generate_issue_breakdown_html(issue_breakdown, t)
+
+        f.write(f"""<!DOCTYPE html>
+<html lang="{self.language}" data-current-lang="{self.language}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="discovery_report">{t['discovery_report']}</title>
+    {self._get_html_css()}
+</head>
+<body>
+    <div class="container">
+        <header style="position: relative;">
+            <div style="position: absolute; top: 10px; right: 10px;">
+                <select id="languageSelector" onchange="switchLanguage(this.value)" style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; background: white; cursor: pointer;">
+                    <option value="en" {'selected' if self.language == 'en' else ''}>English</option>
+                    <option value="fr" {'selected' if self.language == 'fr' else ''}>Fran\u00e7ais</option>
+                </select>
+            </div>
+            <h1 data-i18n="discovery_report">{t['discovery_report']}</h1>
+            <div class="subtitle" data-i18n="content_manual_review">{t['content_manual_review']}</div>
+            <div class="metadata">
+                {scope_html}
+                <p><strong><span data-i18n="generated">{t['generated']}</span>:</strong> {generated_at_formatted}</p>
+            </div>
+        </header>
+
+        <section class="executive-summary">
+            <h2 data-i18n="executive_summary">{t['executive_summary']}</h2>
+            <p data-i18n="exec_summary_text">{t['exec_summary_text']}</p>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number">{total_pages_needing}</div>
+                    <div class="stat-label" data-i18n="pages_needing_inspection">{t['pages_needing_inspection']}</div>
+                    <div class="stat-detail"><span data-i18n="of">{t['of']}</span> {total_pages_tested} <span data-i18n="tested">{t['tested']}</span> ({inspection_pct:.1f}%)</div>
+                </div>
+                <div class="stat-card disco">
+                    <div class="stat-number">{aggregate['total_disco_issues']}</div>
+                    <div class="stat-label" data-i18n="discovery_issues">{t['discovery_issues']}</div>
+                    <div class="stat-detail" data-i18n="require_manual_review">{t['require_manual_review']}</div>
+                </div>
+                <div class="stat-card info">
+                    <div class="stat-number">{aggregate['total_info_issues']}</div>
+                    <div class="stat-label" data-i18n="info_items">{t['info_items']}</div>
+                    <div class="stat-detail" data-i18n="worth_noting">{t['worth_noting']}</div>
+                </div>
+                <div class="stat-card warning">
+                    <div class="stat-number">{aggregate['total_accessible_name_issues']}</div>
+                    <div class="stat-label" data-i18n="accessible_name_issues">{t['accessible_name_issues']}</div>
+                    <div class="stat-detail" data-i18n="forms_links_buttons">{t['forms_links_buttons']}</div>
+                </div>
+            </div>
+        </section>
+
+        {common_issues_html}
+
+        {fonts_html}
+
+        {forms_html}
+
+        {navs_html}
+
+        {asides_html}
+
+        {sections_html}
+
+        {headers_html}
+
+        {footers_html}
+
+        {searches_html}
+
+        {documents_html}
+
+        <section class="issue-breakdown">
+            <h2 data-i18n="issue_breakdown_by_type">{t['issue_breakdown_by_type']}</h2>
+            {issue_breakdown_html}
+        </section>
+
+        <section class="pages-section">
+            <h2 data-i18n="pages_with_unique_issues">{t['pages_with_unique_issues']} ({pages_with_unique} <span data-i18n="of">{t['of']}</span> {pages_with_unique} pages)</h2>
+            <p class="section-intro" data-i18n="pages_section_intro">{t['pages_section_intro']}</p>
+            <div class="accordion-controls">
+                <button onclick="expandAllAccordions()" class="btn-control" data-i18n="expand_all">{t['expand_all']}</button>
+                <button onclick="collapseAllAccordions()" class="btn-control" data-i18n="collapse_all">{t['collapse_all']}</button>
+            </div>
+""")
+
+        # Store translations JSON for the footer JS
+        self._cached_translations_json = json.dumps(all_translations)
+
+    def _write_html_footer(self, f):
+        """Write the closing pages-section tag, JS, footer, and HTML tags.
+        ``f`` is an open file handle."""
+        t = self._get_translations()
+        all_translations_json = getattr(self, '_cached_translations_json', '{}')
+        generated_time = datetime.now().strftime('%B %d, %Y at %I:%M %p')
+
+        f.write(f"""
+        </section>
+
+        <script>
+        // Embedded translations
+        const translations = {all_translations_json};
+        let currentLang = '{self.language}';
+
+        function switchLanguage(lang) {{
+            if (lang === currentLang) return;
+            currentLang = lang;
+
+            // Update HTML lang attribute
+            document.documentElement.lang = lang;
+            document.documentElement.setAttribute('data-current-lang', lang);
+
+            // Update all elements with data-i18n attribute
+            document.querySelectorAll('[data-i18n]').forEach(element => {{
+                const key = element.getAttribute('data-i18n');
+                if (translations[lang] && translations[lang][key]) {{
+                    element.textContent = translations[lang][key];
+                }}
+            }});
+
+            // Update language selector
+            document.getElementById('languageSelector').value = lang;
+        }}
+
+        function toggleAccordion(id) {{
+            const element = document.getElementById(id);
+            const button = document.querySelector('[data-target="#' + id + '"]');
+            const icon = button.querySelector('.accordion-icon');
+
+            if (element.style.display === 'none') {{
+                element.style.display = 'block';
+                button.classList.remove('collapsed');
+                icon.textContent = '\u25b2';
+            }} else {{
+                element.style.display = 'none';
+                button.classList.add('collapsed');
+                icon.textContent = '\u25bc';
+            }}
+        }}
+
+        function expandAllAccordions() {{
+            const accordions = document.querySelectorAll('.accordion-collapse');
+            const buttons = document.querySelectorAll('.accordion-button');
+            const icons = document.querySelectorAll('.accordion-icon');
+
+            accordions.forEach(acc => acc.style.display = 'block');
+            buttons.forEach(btn => btn.classList.remove('collapsed'));
+            icons.forEach(icon => icon.textContent = '\u25b2');
+        }}
+
+        function collapseAllAccordions() {{
+            const accordions = document.querySelectorAll('.accordion-collapse');
+            const buttons = document.querySelectorAll('.accordion-button');
+            const icons = document.querySelectorAll('.accordion-icon');
+
+            accordions.forEach(acc => acc.style.display = 'none');
+            buttons.forEach(btn => btn.classList.add('collapsed'));
+            icons.forEach(icon => icon.textContent = '\u25bc');
+        }}
+        </script>
+
+        <footer>
+            <p data-i18n="generated_by">{t['generated_by']}</p>
+            <p><span data-i18n="report_generated_on">{t['report_generated_on']}</span> {generated_time}</p>
+        </footer>
+    </div>
+</body>
+</html>
+""")
+
+    # ---------- PDF fallback (legacy in-memory) ----------
+
+    def _generate_pdf_discovery_report(self, website, project, pages,
+                                       progress_callback, websites=None):
+        """Generate PDF discovery report using the legacy in-memory approach.
+        WeasyPrint requires the complete HTML string so streaming is not
+        feasible for PDF output."""
+        # Collect inspection data (full in-memory)
+        inspection_data = self._collect_inspection_data_legacy(
+            pages, progress_callback=progress_callback
+        )
+
+        if progress_callback:
+            progress_callback(len(pages), len(pages), 'Generating report...')
+
+        # Prepare report data
+        report_data = self._prepare_report_data_legacy(
+            website, project, pages, inspection_data,
+            websites=websites
+        )
+
+        # Generate PDF
+        content = self._generate_pdf_report(report_data)
 
         # Save report
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        project_name = self._sanitize_filename(project.name or 'project')
-        filename = f"discovery_{project_name}_{timestamp}.{extension}"
+        scope_name = self._sanitize_filename(
+            (website.name if website else project.name) or 'report'
+        )
+        filename = f"discovery_{scope_name}_{timestamp}.pdf"
         filepath = self.report_dir / filename
 
-        if format == 'pdf':
-            with open(filepath, 'wb') as f:
-                f.write(content)
-        else:
-            with open(filepath, 'w', encoding='utf-8') as f:
-                f.write(content)
+        with open(filepath, 'wb') as fout:
+            fout.write(content)
 
-        logger.info(f"Generated discovery report: {filepath}")
+        logger.info(f"Generated PDF discovery report: {filepath}")
         return str(filepath)
 
-    def _collect_inspection_data(self, pages: List[Page], progress_callback=None) -> Dict[str, Any]:
+    # ------------------------------------------------------------------ #
+    #  Legacy methods (used by PDF path)                                  #
+    # ------------------------------------------------------------------ #
+
+    def _collect_inspection_data_legacy(self, pages: List[Page], progress_callback=None) -> Dict[str, Any]:
         """
-        Collect discovery data from pages
+        Collect discovery data from pages (legacy in-memory approach).
+        Used by PDF generation which needs the full dataset in memory.
 
         Args:
             pages: List of pages to analyze
@@ -954,7 +1807,7 @@ class DiscoveryReportGenerator:
             'searches': searches_data
         }
 
-    def _prepare_report_data(
+    def _prepare_report_data_legacy(
         self,
         website: Optional[Website],
         project: Project,
@@ -963,7 +1816,8 @@ class DiscoveryReportGenerator:
         websites: Optional[List[Website]] = None
     ) -> Dict[str, Any]:
         """
-        Prepare data structure for report generation
+        Prepare data structure for report generation (legacy in-memory approach).
+        Used by PDF generation which needs the full dataset in memory.
 
         Args:
             website: Website (None for project reports)
@@ -1039,9 +1893,10 @@ class DiscoveryReportGenerator:
 
         return report_data
 
-    def _generate_html_report(self, data: Dict[str, Any]) -> str:
+    def _generate_html_report_legacy(self, data: Dict[str, Any]) -> str:
         """
-        Generate HTML format report
+        Generate HTML format report (legacy in-memory approach).
+        Used by PDF generation which needs the complete HTML string.
 
         Args:
             data: Report data
@@ -2329,8 +3184,8 @@ class DiscoveryReportGenerator:
             from weasyprint import HTML, CSS
             from io import BytesIO
 
-            # Generate HTML first
-            html_content = self._generate_html_report(data)
+            # Generate HTML first (uses legacy in-memory approach)
+            html_content = self._generate_html_report_legacy(data)
 
             # Convert to PDF
             pdf_bytes = HTML(string=html_content).write_pdf()

@@ -7,7 +7,9 @@ import tempfile
 import shutil
 import pytest
 
-from auto_a11y.reporting.formatters import BaseFormatter, CSVFormatter, JSONFormatter, HTMLFormatter
+from auto_a11y.reporting.formatters import (
+    BaseFormatter, CSVFormatter, JSONFormatter, HTMLFormatter, ExcelFormatter,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -303,3 +305,69 @@ class TestHTMLFormatterStreaming:
 
         assert os.path.exists(self.outfile)
         assert os.path.getsize(self.outfile) > 0
+
+
+# ---------------------------------------------------------------------------
+# Task 6 – ExcelFormatter streaming
+# ---------------------------------------------------------------------------
+
+class TestExcelFormatterStreaming:
+    """ExcelFormatter.begin / append_page / finalize / cleanup."""
+
+    def setup_method(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.outfile = os.path.join(self.tmpdir, 'report.xlsx')
+        self.formatter = ExcelFormatter(config={})
+
+    def teardown_method(self):
+        self.formatter.cleanup()
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    @pytest.mark.skipif(
+        not ExcelFormatter(config={}).has_openpyxl,
+        reason='openpyxl not installed',
+    )
+    def test_produces_valid_xlsx(self):
+        """Produces valid xlsx with at least 2 sheets."""
+        from openpyxl import load_workbook
+
+        summary = {'total_pages': 1, 'total_violations': 2}
+        page_data = {
+            'page': _FakePage(url='http://a.com', title='A'),
+            'test_result': _FakeTestResult(
+                violations=[_FakeIssue(id='ErrNoAlt')],
+                warnings=[_FakeIssue(id='WarnC')],
+            ),
+        }
+        self.formatter.begin(self.outfile, summary)
+        self.formatter.append_page(self.outfile, page_data)
+        self.formatter.finalize(self.outfile, summary)
+
+        wb = load_workbook(self.outfile)
+        assert len(wb.sheetnames) >= 2
+        wb.close()
+
+    @pytest.mark.skipif(
+        not ExcelFormatter(config={}).has_openpyxl,
+        reason='openpyxl not installed',
+    )
+    def test_multiple_pages_add_rows(self):
+        """Violations sheet has header + rows from multiple pages."""
+        from openpyxl import load_workbook
+
+        self.formatter.begin(self.outfile, {})
+        for i in range(3):
+            page_data = {
+                'page': _FakePage(url=f'http://p{i}.com', title=f'P{i}'),
+                'test_result': _FakeTestResult(
+                    violations=[_FakeIssue(id=f'Err{i}')],
+                ),
+            }
+            self.formatter.append_page(self.outfile, page_data)
+        self.formatter.finalize(self.outfile, {})
+
+        wb = load_workbook(self.outfile)
+        ws = wb['Violations']
+        # 1 header row + 3 data rows = 4
+        assert ws.max_row == 4
+        wb.close()

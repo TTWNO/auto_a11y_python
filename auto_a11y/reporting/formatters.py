@@ -2994,6 +2994,120 @@ class ExcelFormatter(BaseFormatter):
             adjusted_width = min(max_length + 2, 50)
             ws.column_dimensions[column_letter].width = adjusted_width
 
+    # --- Streaming interface ---
+
+    _DETAIL_HEADERS = ['Page URL', 'Page Title', 'Code', 'Description',
+                       'Touchpoint', 'Impact', 'XPath', 'HTML', 'WCAG Criteria']
+
+    def begin(self, output_file: str, summary: dict):
+        """Create a Workbook with Summary, Violations, and Warnings sheets."""
+        if not self.has_openpyxl:
+            return
+
+        self._output_file = output_file
+        self._wb = self.Workbook()
+        styles = self._get_styles()
+
+        # --- Summary sheet ---
+        ws_sum = self._wb.active
+        ws_sum.title = 'Summary'
+        ws_sum.merge_cells('A1:D1')
+        hdr_cell = ws_sum.cell(row=1, column=1, value='Accessibility Report Summary')
+        for attr in ('font', 'fill', 'alignment'):
+            setattr(hdr_cell, attr, styles['header'][attr])
+
+        row = 3
+        for key, val in (summary or {}).items():
+            ws_sum.cell(row=row, column=1, value=str(key)).font = self.Font(bold=True)
+            ws_sum.cell(row=row, column=2, value=str(val))
+            row += 1
+
+        # --- Violations detail sheet ---
+        self._ws_violations = self._wb.create_sheet('Violations')
+        for col_idx, hdr in enumerate(self._DETAIL_HEADERS, 1):
+            cell = self._ws_violations.cell(row=1, column=col_idx, value=hdr)
+            for attr in ('font', 'fill', 'alignment'):
+                setattr(cell, attr, styles['header'][attr])
+
+        # --- Warnings detail sheet ---
+        self._ws_warnings = self._wb.create_sheet('Warnings')
+        for col_idx, hdr in enumerate(self._DETAIL_HEADERS, 1):
+            cell = self._ws_warnings.cell(row=1, column=col_idx, value=hdr)
+            for attr in ('font', 'fill', 'alignment'):
+                setattr(cell, attr, styles['header'][attr])
+
+    def append_page(self, output_file: str, page_data: dict):
+        """Append rows for one page to the Violations and Warnings sheets."""
+        if not self.has_openpyxl or not hasattr(self, '_wb'):
+            return
+
+        page = page_data.get('page', {})
+        test_result = page_data.get('test_result')
+        if test_result is None:
+            return
+
+        page_url = page.url if hasattr(page, 'url') else (page.get('url', '') if isinstance(page, dict) else '')
+        page_title = page.title if hasattr(page, 'title') else (page.get('title', '') if isinstance(page, dict) else '')
+
+        violations = (
+            test_result.violations if hasattr(test_result, 'violations')
+            else test_result.get('violations', []) if isinstance(test_result, dict) else []
+        ) or []
+        warnings = (
+            test_result.warnings if hasattr(test_result, 'warnings')
+            else test_result.get('warnings', []) if isinstance(test_result, dict) else []
+        ) or []
+
+        for v in violations:
+            self._append_issue_row(self._ws_violations, page_url, page_title, v)
+        for w in warnings:
+            self._append_issue_row(self._ws_warnings, page_url, page_title, w)
+
+    def finalize(self, output_file: str, summary: dict):
+        """Auto-size columns and save the workbook to *output_file*."""
+        if not self.has_openpyxl or not hasattr(self, '_wb'):
+            return
+
+        for ws in self._wb.worksheets:
+            self._auto_adjust_columns(ws)
+
+        self._wb.save(output_file)
+
+    def cleanup(self):
+        """Close the workbook if still open."""
+        if hasattr(self, '_wb') and self._wb:
+            try:
+                self._wb.close()
+            except Exception:
+                pass
+
+    # --- streaming helpers ---
+
+    def _append_issue_row(self, ws, page_url: str, page_title: str, issue):
+        """Append a single data row to a worksheet."""
+        _get = (lambda k, d='': getattr(issue, k, d)) if not isinstance(issue, dict) \
+            else (lambda k, d='': issue.get(k, d))
+
+        impact = _get('impact', '')
+        if hasattr(impact, 'value'):
+            impact = impact.value
+
+        wcag = _get('wcag_criteria', [])
+        if isinstance(wcag, list):
+            wcag = ', '.join(str(c) for c in wcag)
+
+        ws.append([
+            page_url,
+            page_title,
+            _get('id', ''),
+            _get('description', ''),
+            _get('touchpoint', ''),
+            impact,
+            _get('xpath', ''),
+            _get('html', ''),
+            wcag,
+        ])
+
 
 class PDFFormatter(BaseFormatter):
     """PDF report formatter (uses HTML + conversion)"""

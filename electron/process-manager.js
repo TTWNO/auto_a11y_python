@@ -24,6 +24,7 @@ class ProcessManager {
     const projectRoot = path.join(__dirname, '..');
     return {
       mongod: path.join(resourcesPath, 'mongodb', 'bin', 'mongod'),
+      pythonWrapper: path.join(resourcesPath, 'python', 'bin', 'python3.12-wrapper'),
       python: path.join(resourcesPath, 'python', 'bin', 'python3.12'),
       pythonDev: path.join(projectRoot, '.venv', 'bin', 'python'),
       appDir: path.join(resourcesPath, 'app'),
@@ -234,9 +235,13 @@ class ProcessManager {
       env.PLAYWRIGHT_BROWSERS_PATH = paths.chromium;
     }
 
-    // Determine python path: bundled → project venv → system
+    // Determine python path: wrapper (macOS) → bundled → project venv → system
+    // The wrapper sets DYLD_LIBRARY_PATH for WeasyPrint native libs on macOS
     let pythonPath = paths.python;
-    if (!fs.existsSync(pythonPath)) {
+    if (process.platform === 'darwin' && fs.existsSync(paths.pythonWrapper)) {
+      pythonPath = paths.pythonWrapper;
+      log.info('Using macOS Python wrapper for WeasyPrint dylibs');
+    } else if (!fs.existsSync(pythonPath)) {
       if (fs.existsSync(paths.pythonDev)) {
         pythonPath = paths.pythonDev;
         log.info('Using project venv Python:', pythonPath);

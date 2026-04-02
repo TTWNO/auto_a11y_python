@@ -1,0 +1,38 @@
+name: Build Desktop (macOS)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-mac:
+    runs-on: macos-latest
+    timeout-minutes: 45
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: electron/package-lock.json
+
+    - name: Install Electron dependencies
+      working-directory: electron
+      run: npm ci
+
+    - name: Run macOS build script
+      run: bash build/build-mac.sh
+
+    - name: Upload DMG artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: auto-a11y-macos-dmg
+        path: electron/dist/*.dmg
+        if-no-files-found: error
+        retention-days: 30

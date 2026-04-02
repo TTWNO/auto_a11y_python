@@ -7,7 +7,7 @@ import tempfile
 import shutil
 import pytest
 
-from auto_a11y.reporting.formatters import BaseFormatter, CSVFormatter, JSONFormatter
+from auto_a11y.reporting.formatters import BaseFormatter, CSVFormatter, JSONFormatter, HTMLFormatter
 
 
 # ---------------------------------------------------------------------------
@@ -241,3 +241,65 @@ class TestJSONFormatterStreaming:
         data = self._load_json()
         assert len(data['pages']) == 1
         assert data['pages'][0]['page']['url'] == 'http://dict.com'
+
+
+# ---------------------------------------------------------------------------
+# Task 5 – HTMLFormatter streaming
+# ---------------------------------------------------------------------------
+
+class TestHTMLFormatterStreaming:
+    """HTMLFormatter.begin / append_page / finalize / cleanup."""
+
+    def setup_method(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.outfile = os.path.join(self.tmpdir, 'report.html')
+        self.formatter = HTMLFormatter(config={})
+
+    def teardown_method(self):
+        self.formatter.cleanup()
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def test_produces_valid_html_document(self):
+        """begin/append/finalize produces HTML with <html> and </html>."""
+        summary = {'total_pages': 1, 'total_violations': 1}
+        page_data = {
+            'page': _FakePage(url='http://a.com', title='A'),
+            'test_result': _FakeTestResult(
+                violations=[_FakeIssue(id='ErrNoAlt', description='Missing alt')],
+            ),
+        }
+        self.formatter.begin(self.outfile, summary)
+        self.formatter.append_page(self.outfile, page_data)
+        self.formatter.finalize(self.outfile, summary)
+
+        with open(self.outfile, encoding='utf-8') as f:
+            content = f.read()
+        assert '<html' in content
+        assert '</html>' in content
+
+    def test_cleanup_removes_temp_file(self):
+        """After begin(), temp file exists; after cleanup(), it doesn't."""
+        self.formatter.begin(self.outfile, {})
+        temp_path = self.formatter._body_tempfile.name
+        assert os.path.exists(temp_path)
+
+        self.formatter.cleanup()
+        assert not os.path.exists(temp_path)
+
+    def test_body_content_produces_nonempty_file(self):
+        """Output file exists and is non-empty after full cycle."""
+        summary = {'pages': 2}
+        self.formatter.begin(self.outfile, summary)
+        for i in range(2):
+            page_data = {
+                'page': _FakePage(url=f'http://p{i}.com', title=f'P{i}'),
+                'test_result': _FakeTestResult(
+                    violations=[_FakeIssue()],
+                    warnings=[_FakeIssue(id='WarnC')],
+                ),
+            }
+            self.formatter.append_page(self.outfile, page_data)
+        self.formatter.finalize(self.outfile, summary)
+
+        assert os.path.exists(self.outfile)
+        assert os.path.getsize(self.outfile) > 0

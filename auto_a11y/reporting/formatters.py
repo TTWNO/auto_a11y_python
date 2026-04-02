@@ -784,6 +784,128 @@ class HTMLFormatter(BaseFormatter):
         html += "</section>"
         return html
 
+    # --- Streaming interface ---
+
+    def begin(self, output_file: str, summary: dict):
+        """Open a temp body file for page HTML sections.
+
+        The final output is NOT written yet — only the temp body file is
+        created so that ``append_page`` can write into it.
+        """
+        self._output_file = output_file
+        self._summary = dict(summary) if summary else {}
+        self._body_tempfile = tempfile.NamedTemporaryFile(
+            mode='w', suffix='.html', delete=False, encoding='utf-8'
+        )
+
+    def append_page(self, output_file: str, page_data: dict):
+        """Write one page's violations/warnings as an HTML section to the temp body file."""
+        page = page_data.get('page', {})
+        test_result = page_data.get('test_result')
+        if test_result is None:
+            return
+
+        page_url = page.url if hasattr(page, 'url') else (page.get('url', '') if isinstance(page, dict) else '')
+        page_title = page.title if hasattr(page, 'title') else (page.get('title', '') if isinstance(page, dict) else '')
+
+        violations = (
+            test_result.violations if hasattr(test_result, 'violations')
+            else test_result.get('violations', []) if isinstance(test_result, dict) else []
+        ) or []
+        warnings = (
+            test_result.warnings if hasattr(test_result, 'warnings')
+            else test_result.get('warnings', []) if isinstance(test_result, dict) else []
+        ) or []
+
+        section = f'<div class="page-section"><h3><a href="{page_url}">{page_title or page_url}</a></h3>\n'
+
+        if violations:
+            section += '<table><thead><tr><th>Code</th><th>Description</th><th>Impact</th><th>WCAG</th><th>XPath</th></tr></thead><tbody>\n'
+            for v in violations:
+                section += self._streaming_issue_row(v)
+            section += '</tbody></table>\n'
+
+        if warnings:
+            section += '<h4>Warnings</h4>\n'
+            section += '<table><thead><tr><th>Code</th><th>Description</th><th>Impact</th><th>WCAG</th><th>XPath</th></tr></thead><tbody>\n'
+            for w in warnings:
+                section += self._streaming_issue_row(w)
+            section += '</tbody></table>\n'
+
+        section += '</div>\n'
+        self._body_tempfile.write(section)
+
+    def finalize(self, output_file: str, summary: dict):
+        """Assemble the final HTML document.
+
+        Reads body content from the temp file in 64 KB chunks so the full
+        body is never loaded into memory at once.
+        """
+        # Flush and close the temp body file so we can read it back
+        if hasattr(self, '_body_tempfile') and self._body_tempfile and not self._body_tempfile.closed:
+            self._body_tempfile.flush()
+            self._body_tempfile.close()
+
+        s = summary if summary else {}
+
+        with open(output_file, 'w', encoding='utf-8') as out:
+            out.write('<!DOCTYPE html>\n<html lang="en">\n<head>\n')
+            out.write('<meta charset="UTF-8">\n')
+            out.write('<title>Accessibility Report</title>\n')
+            out.write(self._get_css())
+            out.write('\n</head>\n<body>\n<div class="container">\n')
+            out.write('<header><h1>Accessibility Report</h1></header>\n')
+
+            # Summary dashboard
+            out.write('<section class="summary"><div class="stats-grid">\n')
+            for key, val in s.items():
+                out.write(f'<div class="stat-card"><h3>{val}</h3><p>{key}</p></div>\n')
+            out.write('</div></section>\n')
+
+            # Stream body from temp file in 64KB chunks
+            body_path = getattr(self, '_body_tempfile', None)
+            if body_path and hasattr(body_path, 'name') and os.path.exists(body_path.name):
+                with open(body_path.name, 'r', encoding='utf-8') as body:
+                    while True:
+                        chunk = body.read(65536)
+                        if not chunk:
+                            break
+                        out.write(chunk)
+
+            out.write(self._get_footer())
+            out.write('\n</div>\n</body>\n</html>')
+
+    def cleanup(self):
+        """Delete the temp body file."""
+        if hasattr(self, '_body_tempfile') and self._body_tempfile:
+            path = self._body_tempfile.name
+            if not self._body_tempfile.closed:
+                self._body_tempfile.close()
+            if os.path.exists(path):
+                os.unlink(path)
+
+    # --- streaming helpers ---
+
+    @staticmethod
+    def _streaming_issue_row(issue) -> str:
+        """Return an HTML <tr> for one issue."""
+        _get = (lambda k, d='': getattr(issue, k, d)) if not isinstance(issue, dict) \
+            else (lambda k, d='': issue.get(k, d))
+
+        impact = _get('impact', '')
+        if hasattr(impact, 'value'):
+            impact = impact.value
+
+        wcag = _get('wcag_criteria', [])
+        if isinstance(wcag, list):
+            wcag = ', '.join(str(c) for c in wcag)
+
+        code = _get('id', '')
+        description = _get('description', '')
+        xpath = _get('xpath', '')
+
+        return f'<tr><td>{code}</td><td>{description}</td><td>{impact}</td><td>{wcag}</td><td>{xpath}</td></tr>\n'
+
 
 class JSONFormatter(BaseFormatter):
     """JSON report formatter"""

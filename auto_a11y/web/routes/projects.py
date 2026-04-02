@@ -9,7 +9,11 @@ from flask import g
 from auto_a11y.models import Project, ProjectStatus, ProjectType
 from auto_a11y.models.app_user import UserRole
 from auto_a11y.web.routes.auth import auditor_required, project_role_required, get_effective_role
+from auto_a11y.core.job_manager import JobManager, JobType
+from auto_a11y.core.task_runner import task_runner
+from auto_a11y.core.report_job import ReportJob
 from flask_login import current_user
+from uuid import uuid4
 import logging
 
 logger = logging.getLogger(__name__)
@@ -824,49 +828,45 @@ def test_project(project_id):
 @projects_bp.route('/<project_id>/report', methods=['GET', 'POST'])
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def generate_project_report(project_id):
-    """Generate accessibility report for entire project"""
+    """Generate accessibility report for entire project (background job)"""
     from auto_a11y.reporting.project_report import ProjectReport
-    from flask import send_file
-    from pathlib import Path
-    
+
     project = current_app.db.get_project(project_id)
     if not project:
         flash('Project not found', 'error')
         return redirect(url_for('projects.list_projects'))
-    
+
     format = request.args.get('format', 'html')
-    
-    try:
-        # Get all websites and pages for the project
-        websites = current_app.db.get_websites(project_id)
-        pages_by_website = {}
-        
-        for website in websites:
-            pages = current_app.db.get_pages(website.id)
-            pages_by_website[website.id] = pages
-        
-        # Generate report
-        report = ProjectReport(current_app.db, project, websites, pages_by_website)
-        report.generate()
-        
-        # Save and return report
-        report_path = report.save(format)
-        report_path = Path(report_path)
-        
-        return send_file(
-            report_path,
-            as_attachment=True,
-            download_name=report_path.name,
-            mimetype={
-                'html': 'text/html',
-                'json': 'application/json'
-            }.get(format, 'application/octet-stream')
-        )
-        
-    except Exception as e:
-        logger.error(f"Failed to generate project report: {e}")
-        flash(f'Failed to generate report: {str(e)}', 'error')
-        return redirect(url_for('projects.view_project', project_id=project_id))
+
+    # Capture all data in route handler
+    db = current_app.db
+    app = current_app._get_current_object()
+    reports_dir = str(current_app.app_config.REPORTS_DIR)
+    websites = db.get_websites(project_id)
+    pages_by_website = {}
+    for website in websites:
+        pages_by_website[website.id] = db.get_pages(website.id)
+
+    job_id = f"report_{uuid4().hex[:8]}"
+    job_manager = JobManager(db)
+    job_manager.create_job(
+        job_id=job_id,
+        job_type=JobType.REPORT_GENERATION,
+        project_id=str(project_id),
+        metadata={'report_type': format, 'scope': 'project', 'display_name': f'Project Report - {project.name}'}
+    )
+
+    def wrapper():
+        with app.app_context():
+            def generate_and_save(progress_callback=None):
+                report = ProjectReport(db, project, websites, pages_by_website)
+                report.generate(progress_callback=progress_callback)
+                return report.save(format, reports_dir=reports_dir)
+            job = ReportJob(job_id, job_manager, generate_and_save)
+            job.run()
+
+    task_runner.submit_task(func=wrapper, task_id=job_id)
+    return jsonify({'success': True, 'job_id': job_id})
 
 
 @projects_bp.route('/api/<project_id>/users')

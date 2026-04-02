@@ -375,12 +375,8 @@ class DiscoveryReportGenerator:
         result at a time from the database.
 
         Returns:
-            Path to generated ZIP file containing the report HTML.
+            Path to generated HTML file.
         """
-        import shutil
-        import zipfile
-        import tempfile
-
         total_pages = len(pages)
         # Two passes over the page list; progress counts both.
         total_phases = total_pages * 2
@@ -405,65 +401,55 @@ class DiscoveryReportGenerator:
                 docs_by_type[doc_type].append(doc)
             documents_data = docs_by_type
 
-        # ------ Set up output paths ------
+        # ------ Write HTML incrementally to reports directory ------
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         scope_name = self._sanitize_filename(
             (website.name if website else project.name) or 'report'
         )
-        temp_dir = Path(tempfile.mkdtemp(prefix='discovery_report_'))
+        filename = f"discovery_{scope_name}_{timestamp}.html"
+        filepath = self.report_dir / filename
 
-        try:
-            html_path = temp_dir / 'index.html'
+        with open(filepath, 'w', encoding='utf-8') as f:
+            # Write header + executive summary + site-wide sections
+            self._write_html_header(
+                f, website, project, websites, aggregate,
+                common_disco, common_info, common_an, documents_data
+            )
 
-            with open(html_path, 'w', encoding='utf-8') as f:
-                # Write header + executive summary + site-wide sections
-                self._write_html_header(
-                    f, website, project, websites, aggregate,
-                    common_disco, common_info, common_an, documents_data
-                )
+            # ------ Pass 2: stream per-page sections ------
+            page_ids_with_issues = aggregate['page_ids_with_issues']
+            t = self._get_translations()
 
-                # ------ Pass 2: stream per-page sections ------
-                page_ids_with_issues = aggregate['page_ids_with_issues']
-                t = self._get_translations()
+            if page_ids_with_issues:
+                f.write('<div class="accordion">\n')
 
-                if page_ids_with_issues:
-                    f.write('<div class="accordion">\n')
+                for idx, (page_id, _, _, _) in enumerate(page_ids_with_issues):
+                    if progress_callback:
+                        progress_callback(
+                            total_pages + idx, total_phases,
+                            f'Writing page {idx + 1} of {len(page_ids_with_issues)}...'
+                        )
+                    try:
+                        page_html = self._generate_page_html_from_db(
+                            page_id, idx, common_disco, common_info, common_an
+                        )
+                        if page_html:
+                            f.write(page_html)
+                    except Exception as e:
+                        logger.error(f"Error writing page {page_id}: {e}")
 
-                    for idx, (page_id, _, _, _) in enumerate(page_ids_with_issues):
-                        if progress_callback:
-                            progress_callback(
-                                total_pages + idx, total_phases,
-                                f'Writing page {idx + 1} of {len(page_ids_with_issues)}...'
-                            )
-                        try:
-                            page_html = self._generate_page_html_from_db(
-                                page_id, idx, common_disco, common_info, common_an
-                            )
-                            if page_html:
-                                f.write(page_html)
-                        except Exception as e:
-                            logger.error(f"Error writing page {page_id}: {e}")
+                f.write('</div>\n')
+            else:
+                f.write(f'<p class="no-issues" data-i18n="no_issues">{t["no_issues"]}</p>\n')
 
-                    f.write('</div>\n')
-                else:
-                    f.write(f'<p class="no-issues" data-i18n="no_issues">{t["no_issues"]}</p>\n')
+            # Write footer (JS + closing tags)
+            self._write_html_footer(f)
 
-                # Write footer (JS + closing tags)
-                self._write_html_footer(f)
+        if progress_callback:
+            progress_callback(total_phases, total_phases, 'Report complete')
 
-            if progress_callback:
-                progress_callback(total_phases, total_phases, 'Packaging report...')
-
-            # Package as ZIP
-            zip_filename = f"discovery_{scope_name}_{timestamp}.zip"
-            zip_path = self.report_dir / zip_filename
-            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                zipf.write(html_path, 'discovery_report.html')
-
-            logger.info(f"Generated streaming discovery report: {zip_path}")
-            return str(zip_path)
-        finally:
-            shutil.rmtree(temp_dir, ignore_errors=True)
+        logger.info(f"Generated streaming discovery report: {filepath}")
+        return str(filepath)
 
     # ---------- Pass 1 helpers ----------
 

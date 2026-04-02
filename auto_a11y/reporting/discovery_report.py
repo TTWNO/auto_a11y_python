@@ -281,7 +281,8 @@ class DiscoveryReportGenerator:
     def generate_website_discovery_report(
         self,
         website_id: str,
-        format: str = 'html'
+        format: str = 'html',
+        progress_callback=None
     ) -> str:
         """
         Generate discovery report for a website
@@ -301,7 +302,10 @@ class DiscoveryReportGenerator:
         pages = self.db.get_pages(website_id)
 
         # Collect inspection data for all pages
-        inspection_data = self._collect_inspection_data(pages)
+        inspection_data = self._collect_inspection_data(pages, progress_callback=progress_callback)
+
+        if progress_callback:
+            progress_callback(len(pages), len(pages), 'Generating report...')
 
         # Prepare report data
         report_data = self._prepare_report_data(
@@ -337,7 +341,8 @@ class DiscoveryReportGenerator:
     def generate_project_discovery_report(
         self,
         project_id: str,
-        format: str = 'html'
+        format: str = 'html',
+        progress_callback=None
     ) -> str:
         """
         Generate discovery report for entire project
@@ -362,7 +367,10 @@ class DiscoveryReportGenerator:
             all_pages.extend(pages)
 
         # Collect inspection data
-        inspection_data = self._collect_inspection_data(all_pages)
+        inspection_data = self._collect_inspection_data(all_pages, progress_callback=progress_callback)
+
+        if progress_callback:
+            progress_callback(len(all_pages), len(all_pages), 'Generating report...')
 
         # Prepare report data
         report_data = self._prepare_report_data(
@@ -395,7 +403,7 @@ class DiscoveryReportGenerator:
         logger.info(f"Generated discovery report: {filepath}")
         return str(filepath)
 
-    def _collect_inspection_data(self, pages: List[Page]) -> Dict[str, Any]:
+    def _collect_inspection_data(self, pages: List[Page], progress_callback=None) -> Dict[str, Any]:
         """
         Collect discovery data from pages
 
@@ -460,7 +468,9 @@ class DiscoveryReportGenerator:
         searches_data = {}  # search_signature -> {'xpath': str, 'searchLabel': str,
                            #                       'pages': set(), 'html': str}
 
-        for page in pages:
+        for i, page in enumerate(pages):
+            if progress_callback:
+                progress_callback(i, len(pages), f'Collecting data for page {i + 1} of {len(pages)}...')
             test_result = self.db.get_latest_test_result(page.id)
             if not test_result:
                 continue

@@ -182,17 +182,17 @@ class PageStructureReport:
         }
         return translations.get(self.language, translations['en'])
 
-    def generate(self) -> Dict[str, Any]:
+    def generate(self, progress_callback=None) -> Dict[str, Any]:
         """
         Generate the page structure report
-        
+
         Returns:
             Report data dictionary
         """
         logger.info(f"Generating site structure report for website {self.website.id}")
-        
+
         # Build the tree structure
-        self.root = self._build_tree()
+        self.root = self._build_tree(progress_callback=progress_callback)
         
         # Aggregate statistics
         self.root.aggregate_stats()
@@ -224,10 +224,10 @@ class PageStructureReport:
         logger.info(f"Site structure report generated with {len(self.pages)} pages")
         return self.tree_data
     
-    def _build_tree(self) -> PageNode:
+    def _build_tree(self, progress_callback=None) -> PageNode:
         """
         Build tree structure from pages
-        
+
         Returns:
             Root node of the tree
         """
@@ -235,11 +235,16 @@ class PageStructureReport:
         base_url = urlparse(self.website.url)
         root_name = base_url.netloc or 'Root'
         root = PageNode(root_name, self.website.url, is_directory=True)
-        
+
         # Process each page
-        for page in self.pages:
+        for i, page in enumerate(self.pages):
+            if progress_callback:
+                progress_callback(i, len(self.pages), f'Building tree: page {i + 1} of {len(self.pages)}...')
             self._add_page_to_tree(root, page)
-        
+
+        if progress_callback:
+            progress_callback(len(self.pages), len(self.pages), 'Tree structure complete')
+
         return root
     
     def _add_page_to_tree(self, root: PageNode, page: Page):

@@ -124,7 +124,8 @@ class ReportGenerator:
         self,
         page_id: str,
         format: str = 'html',
-        include_ai: bool = True
+        include_ai: bool = True,
+        progress_callback=None
     ) -> str:
         """
         Generate report for a single page
@@ -148,7 +149,10 @@ class ReportGenerator:
         
         if not test_result:
             raise ValueError(f"No test results found for page {page_id}")
-        
+
+        if progress_callback:
+            progress_callback(0, 1, 'Collecting page data...')
+
         # Prepare report data
         report_data = self._prepare_page_report_data(
             page, website, project, test_result, include_ai
@@ -170,6 +174,9 @@ class ReportGenerator:
         # Generate content
         content = formatter.format_page_report(report_data)
         
+        if progress_callback:
+            progress_callback(1, 1, 'Saving report...')
+
         # Save report
         if format == 'pdf':
             # PDF returns bytes, write in binary mode
@@ -182,15 +189,16 @@ class ReportGenerator:
         else:
             with open(filepath, 'w', encoding='utf-8') as f:
                 f.write(content)
-        
+
         logger.info(f"Generated {format} report: {filepath}")
         return str(filepath)
-    
+
     def generate_website_report(
         self,
         website_id: str,
         format: str = 'html',
-        include_ai: bool = True
+        include_ai: bool = True,
+        progress_callback=None
     ) -> str:
         """
         Generate report for entire website
@@ -212,24 +220,29 @@ class ReportGenerator:
         
         # Get test results for all pages
         page_results = []
-        for page in pages:
+        for i, page in enumerate(pages):
+            if progress_callback:
+                progress_callback(i, len(pages), f'Processing page {i + 1} of {len(pages)}...')
             test_result = self.db.get_latest_test_result(page.id)
             if test_result:
                 page_results.append({
                     'page': page.__dict__ if hasattr(page, '__dict__') else page,
                     'test_result': test_result
                 })
-        
+
+        if progress_callback:
+            progress_callback(len(pages), len(pages), 'Saving report...')
+
         # Prepare report data
         report_data = self._prepare_website_report_data(
             website, project, page_results, include_ai
         )
-        
+
         # Generate report
         formatter = self.formatters.get(format)
         if not formatter:
             raise ValueError(f"Unsupported format: {format}")
-        
+
         # Create filename with website name
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         # Create a safe filename from the website name
@@ -237,10 +250,10 @@ class ReportGenerator:
         website_name = self._sanitize_filename(website_name)
         filename = f"website_{website_name}_{timestamp}.{formatter.extension}"
         filepath = self.report_dir / filename
-        
+
         # Generate content
         content = formatter.format_website_report(report_data)
-        
+
         # Save report
         if format == 'pdf':
             # PDF returns bytes, write in binary mode
@@ -260,7 +273,8 @@ class ReportGenerator:
     def generate_all_projects_report(
         self,
         format: str = 'html',
-        include_ai: bool = True
+        include_ai: bool = True,
+        progress_callback=None
     ) -> str:
         """
         Generate report for all projects
@@ -290,7 +304,15 @@ class ReportGenerator:
             'total_violations': 0,
             'total_warnings': 0
         }
-        
+
+        # Pre-compute total pages for progress tracking
+        total_pages_count = 0
+        if progress_callback:
+            for project in projects:
+                for website in self.db.get_websites(project.id):
+                    total_pages_count += len(self.db.get_pages(website.id))
+        processed_pages = 0
+
         for project in projects:
             websites = self.db.get_websites(project.id)
             project_data = {
@@ -298,8 +320,10 @@ class ReportGenerator:
                 'websites': [],
                 'stats': self.db.get_project_stats(project.id)
             }
-            
+
             for website in websites:
+                if progress_callback:
+                    progress_callback(processed_pages, max(total_pages_count, 1), f'Processing {website.name}...')
                 pages = self.db.get_pages(website.id)
                 website_data = {
                     'website': website.__dict__,
@@ -309,14 +333,15 @@ class ReportGenerator:
                     'warnings': sum(p.warning_count for p in pages)
                 }
                 project_data['websites'].append(website_data)
-                
+
                 # Update totals
                 total_stats['total_websites'] += 1
                 total_stats['total_pages'] += len(pages)
                 total_stats['total_tested'] += website_data['tested']
                 total_stats['total_violations'] += website_data['violations']
                 total_stats['total_warnings'] += website_data['warnings']
-            
+                processed_pages += len(pages)
+
             all_projects_data.append(project_data)
         
         # Prepare report data
@@ -383,7 +408,8 @@ class ReportGenerator:
     def generate_project_report(
         self,
         project_id: str,
-        format: str = 'html'
+        format: str = 'html',
+        progress_callback=None
     ) -> str:
         """
         Generate report for entire project
@@ -400,21 +426,28 @@ class ReportGenerator:
             raise ValueError(f"Project {project_id} not found")
         
         websites = self.db.get_websites(project_id)
-        
+
+        # Pre-compute total pages for progress tracking
+        total_page_count = sum(len(self.db.get_pages(w.id)) for w in websites)
+        page_count = 0
+
         # Collect data for all websites
         website_data = []
         for website in websites:
             pages = self.db.get_pages(website.id)
-            
+
             page_results = []
             for page in pages:
+                if progress_callback:
+                    progress_callback(page_count, total_page_count, f'Processing page {page_count + 1} of {total_page_count}...')
                 test_result = self.db.get_latest_test_result(page.id)
                 if test_result:
                     page_results.append({
                         'page': page.__dict__ if hasattr(page, '__dict__') else page,
                         'test_result': test_result
                     })
-            
+                page_count += 1
+
             website_data.append({
                 'website': website.__dict__ if hasattr(website, '__dict__') else website,
                 'pages': page_results

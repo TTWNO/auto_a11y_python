@@ -734,16 +734,27 @@ class StaticHTMLReportGenerator:
             bootstrap_css = bootstrap_css.replace('/*# sourceMappingURL=bootstrap.min.css.map */', '')
             assets['bootstrap_css'] = bootstrap_css
 
-            # Read Bootstrap Icons CSS
+            # Read Bootstrap Icons CSS with embedded font
             bootstrap_icons_path = static_dir / 'css' / 'bootstrap-icons.css'
             bootstrap_icons_css = bootstrap_icons_path.read_text(encoding='utf-8')
-            # Replace font file URLs with empty string to prevent 404 errors
-            # The icons won't display but there won't be console errors
-            bootstrap_icons_css = re.sub(
-                r'src:\s*url\([^)]+\)(\s*format\([^)]+\))?(,\s*url\([^)]+\)(\s*format\([^)]+\))?)*;',
-                'src: url("");',
-                bootstrap_icons_css
-            )
+            # Embed woff2 font as base64 data URI so icons render in static HTML
+            woff2_path = static_dir / 'css' / 'fonts' / 'bootstrap-icons.woff2'
+            if woff2_path.exists():
+                import base64
+                woff2_b64 = base64.b64encode(woff2_path.read_bytes()).decode('ascii')
+                data_uri = f'url("data:font/woff2;base64,{woff2_b64}") format("woff2")'
+                bootstrap_icons_css = re.sub(
+                    r'src:\s*url\([^)]+\)(\s*format\([^)]+\))?(,\s*url\([^)]+\)(\s*format\([^)]+\))?)*;',
+                    f'src: {data_uri};',
+                    bootstrap_icons_css
+                )
+            else:
+                # Fallback: strip font URLs to avoid 404 errors (icons won't display)
+                bootstrap_icons_css = re.sub(
+                    r'src:\s*url\([^)]+\)(\s*format\([^)]+\))?(,\s*url\([^)]+\)(\s*format\([^)]+\))?)*;',
+                    'src: url("");',
+                    bootstrap_icons_css
+                )
             assets['bootstrap_icons_css'] = bootstrap_icons_css
 
             # Read Bootstrap JS
@@ -789,7 +800,8 @@ class StaticHTMLReportGenerator:
         touchpoints_tested: Optional[List[str]] = None,
         include_screenshots: bool = True,
         include_discovery: bool = True,
-        ai_tests_enabled: bool = True
+        ai_tests_enabled: bool = True,
+        progress_callback=None
     ) -> Path:
         """
         Generate complete static HTML report
@@ -814,7 +826,7 @@ class StaticHTMLReportGenerator:
 
         try:
             # Collect data for all pages
-            pages_data = self._collect_pages_data(page_ids, include_discovery)
+            pages_data = self._collect_pages_data(page_ids, include_discovery, progress_callback=progress_callback)
 
             # Sort pages alphabetically by title for consistent ordering across all reports
             pages_data = sorted(pages_data, key=lambda p: p['title'].lower())
@@ -833,7 +845,8 @@ class StaticHTMLReportGenerator:
                                      website_url, wcag_level, touchpoints_tested)
 
             self._generate_page_detail_htmls(report_dir, pages_data, project_name,
-                                            wcag_level, touchpoints_tested)
+                                            wcag_level, touchpoints_tested,
+                                            progress_callback=progress_callback)
 
             # Create manifest
             self._create_manifest(report_dir, pages_data, summary, project_name,
@@ -849,7 +862,7 @@ class StaticHTMLReportGenerator:
             if report_dir.exists():
                 shutil.rmtree(report_dir)
 
-    def _collect_pages_data(self, page_ids: List[str], include_discovery: bool) -> List[Dict[str, Any]]:
+    def _collect_pages_data(self, page_ids: List[str], include_discovery: bool, progress_callback=None) -> List[Dict[str, Any]]:
         """
         Collect all data for pages to be included in report
 
@@ -862,7 +875,9 @@ class StaticHTMLReportGenerator:
         """
         pages_data = []
 
-        for page_id in page_ids:
+        for i, page_id in enumerate(page_ids):
+            if progress_callback:
+                progress_callback(i, len(page_ids), f'Collecting data for page {i + 1} of {len(page_ids)}...')
             # Get page from database
             page = self.db.get_page(page_id)
             if not page:
@@ -1727,7 +1742,8 @@ class StaticHTMLReportGenerator:
 
     def _generate_page_detail_htmls(self, report_dir: Path, pages_data: List[Dict[str, Any]],
                                     project_name: str, wcag_level: str,
-                                    touchpoints_tested: Optional[List[str]]):
+                                    touchpoints_tested: Optional[List[str]],
+                                    progress_callback=None):
         """Generate individual page detail HTML files with inlined CSS/JS"""
         template = self.template_env.get_template('static_report/page_detail.html')
 
@@ -1761,6 +1777,19 @@ class StaticHTMLReportGenerator:
             except Exception as e:
                 print(f"Warning: Could not fetch Bootstrap Icons CSS from CDN: {e}")
 
+        # Embed woff2 font as base64 data URI so icons render in static HTML
+        import re as _re
+        import base64 as _b64
+        woff2_path = static_dir / 'css' / 'fonts' / 'bootstrap-icons.woff2'
+        if woff2_path.exists() and bootstrap_icons_css:
+            woff2_b64 = _b64.b64encode(woff2_path.read_bytes()).decode('ascii')
+            data_uri = f'url("data:font/woff2;base64,{woff2_b64}") format("woff2")'
+            bootstrap_icons_css = _re.sub(
+                r'src:\s*url\([^)]+\)(\s*format\([^)]+\))?(,\s*url\([^)]+\)(\s*format\([^)]+\))?)*;',
+                f'src: {data_uri};',
+                bootstrap_icons_css
+            )
+
         # Read Bootstrap JS - use CDN if local file doesn't exist
         bootstrap_js = ''
         bootstrap_js_path = static_dir / 'js' / 'bootstrap.bundle.min.js'
@@ -1787,6 +1816,8 @@ class StaticHTMLReportGenerator:
         t = all_translations[self.language]  # Current language translations
 
         for index, page in enumerate(pages_data, start=1):
+            if progress_callback:
+                progress_callback(index - 1, len(pages_data), f'Generating page {index} of {len(pages_data)}...')
             # Collect all unique touchpoints for filters
             all_touchpoints = set()
             for issue_list in [page['violations'], page['warnings'], page['informational'], page['discovery']]:
@@ -1908,7 +1939,8 @@ class StaticHTMLReportGenerator:
     def generate_project_deduplicated_report(
         self,
         project_id: Optional[str] = None,
-        website_id: Optional[str] = None
+        website_id: Optional[str] = None,
+        progress_callback=None
     ) -> Path:
         """
         Generate deduplicated offline HTML report for an entire project or specific website.
@@ -1954,6 +1986,10 @@ class StaticHTMLReportGenerator:
                 websites.extend(self.db.get_websites(p.id))
             project_name = "All_Projects"
 
+        # Pre-compute total pages for progress tracking
+        total_page_count = sum(len(self.db.get_pages(w.id)) for w in websites)
+        page_count = 0
+
         # Collect all data from websites and pages
         project_data = {
             'project': project,
@@ -1970,6 +2006,8 @@ class StaticHTMLReportGenerator:
             pages = self.db.get_pages(website.id)
 
             for page in pages:
+                if progress_callback:
+                    progress_callback(page_count, max(total_page_count, 1), f'Processing page {page_count + 1} of {total_page_count}...')
                 # Get latest test result for this page
                 test_result = self.db.get_latest_test_result(page.id)
                 if test_result:
@@ -1977,6 +2015,7 @@ class StaticHTMLReportGenerator:
                         'page': page,
                         'test_result': test_result
                     })
+                page_count += 1
 
             if website_data['pages']:
                 project_data['websites'].append(website_data)

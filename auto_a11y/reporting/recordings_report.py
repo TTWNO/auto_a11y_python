@@ -212,7 +212,8 @@ class RecordingsReportGenerator:
         include_timecodes: bool = True,
         include_wcag: bool = True,
         group_by_touchpoint: bool = True,
-        language: str = 'en'
+        language: str = 'en',
+        progress_callback=None
     ) -> str:
         """
         Generate a report for all recordings in a project
@@ -246,7 +247,9 @@ class RecordingsReportGenerator:
         issues_by_recording_en = {}
         issues_by_recording_fr = {}
 
-        for recording in recordings:
+        for i, recording in enumerate(recordings):
+            if progress_callback:
+                progress_callback(i, len(recordings), f'Processing recording {i + 1} of {len(recordings)}...')
             all_issues = self.db.get_recording_issues_for_recording(recording.recording_id)
 
             # Separate issues by language

@@ -33,25 +33,31 @@ class ProjectReport:
         self.pages_by_website = pages_by_website
         self.report_data = None
     
-    def generate(self) -> Dict[str, Any]:
+    def generate(self, progress_callback=None) -> Dict[str, Any]:
         """
         Generate the project-level report
-        
+
         Returns:
             Report data dictionary
         """
         logger.info(f"Generating project-level report for {self.project.name}")
-        
+
+        # Pre-compute total pages for progress tracking
+        total_page_count = sum(len(self.pages_by_website.get(w.id, [])) for w in self.websites)
+        page_count = 0
+
         # Calculate aggregate statistics
         total_pages = 0
         tested_pages = 0
         pages_with_issues = 0
         total_violations = 0
         total_warnings = 0
-        
+
         website_summaries = []
-        
+
         for website in self.websites:
+            if progress_callback:
+                progress_callback(page_count, max(total_page_count, 1), f'Processing {website.name}...')
             pages = self.pages_by_website.get(website.id, [])
             
             website_tested = sum(1 for p in pages if p.status == PageStatus.TESTED)
@@ -76,7 +82,8 @@ class ProjectReport:
             pages_with_issues += website_issues
             total_violations += website_violations
             total_warnings += website_warnings
-        
+            page_count += len(pages)
+
         # Generate report data
         self.report_data = {
             'report_type': 'project_accessibility',
@@ -323,32 +330,33 @@ class ProjectReport:
         
         return json.dumps(self.report_data, indent=2, default=str)
     
-    def save(self, format: str = 'html') -> str:
+    def save(self, format: str = 'html', reports_dir: str = None) -> str:
         """
         Save report to file
-        
+
         Args:
             format: Output format (html, json)
-            
+            reports_dir: Optional path to reports directory
+
         Returns:
             Path to saved file
         """
-        # Get reports directory
-        reports_dir = None
-        
-        # Try getting from Flask current_app if available
-        try:
-            from flask import current_app
-            if current_app and hasattr(current_app, 'app_config'):
-                reports_dir = Path(current_app.app_config.REPORTS_DIR)
-        except:
-            pass
-        
-        # Fall back to environment variable or default
-        if not reports_dir:
-            import os
-            reports_dir_str = os.environ.get('REPORTS_DIR', '/Users/bob3/Desktop/auto_a11y_python/reports')
-            reports_dir = Path(reports_dir_str)
+        if reports_dir:
+            reports_dir = Path(reports_dir)
+        else:
+            # Try getting from Flask current_app if available
+            try:
+                from flask import current_app
+                if current_app and hasattr(current_app, 'app_config'):
+                    reports_dir = Path(current_app.app_config.REPORTS_DIR)
+            except:
+                pass
+
+            # Fall back to environment variable or default
+            if not reports_dir:
+                import os
+                reports_dir_str = os.environ.get('REPORTS_DIR', 'reports')
+                reports_dir = Path(reports_dir_str)
         
         # Ensure directory exists
         reports_dir.mkdir(parents=True, exist_ok=True)

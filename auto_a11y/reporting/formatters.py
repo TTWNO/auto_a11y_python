@@ -3194,9 +3194,53 @@ class PDFFormatter(BaseFormatter):
     def save_pdf(self, html_content: str, filepath: Path):
         """
         Save HTML as PDF
-        
+
         This method is deprecated - use the format methods that return bytes instead
         """
         pdf_bytes = self._convert_to_pdf(html_content)
         with open(filepath, 'wb') as f:
             f.write(pdf_bytes)
+
+    # --- Streaming interface ---
+
+    def begin(self, output_file: str, summary: dict):
+        """Create an internal HTMLFormatter and a temp HTML file, then delegate."""
+        self._pdf_output_file = output_file
+        self._internal_html = HTMLFormatter(self.config, self.language)
+        # Temp HTML file that the internal formatter writes to
+        fd, self._temp_html_path = tempfile.mkstemp(suffix='.html')
+        os.close(fd)
+        self._internal_html.begin(self._temp_html_path, summary)
+
+    def append_page(self, output_file: str, page_data: dict):
+        """Delegate to internal HTMLFormatter."""
+        if hasattr(self, '_internal_html') and self._internal_html:
+            self._internal_html.append_page(self._temp_html_path, page_data)
+
+    def finalize(self, output_file: str, summary: dict):
+        """Finalize the internal HTML, then convert to PDF via weasyprint."""
+        if not hasattr(self, '_internal_html') or not self._internal_html:
+            return
+
+        self._internal_html.finalize(self._temp_html_path, summary)
+
+        if self.has_weasyprint:
+            try:
+                self.HTML(filename=self._temp_html_path).write_pdf(output_file)
+            except Exception as e:
+                logger.error(f"PDF streaming conversion failed: {e}")
+                # Fall back: copy HTML as-is
+                import shutil
+                shutil.copy2(self._temp_html_path, output_file)
+        else:
+            # No weasyprint — copy the HTML file as the output
+            import shutil
+            shutil.copy2(self._temp_html_path, output_file)
+
+    def cleanup(self):
+        """Clean up internal HTMLFormatter temps and own temp HTML file."""
+        if hasattr(self, '_internal_html') and self._internal_html:
+            self._internal_html.cleanup()
+        if hasattr(self, '_temp_html_path') and self._temp_html_path:
+            if os.path.exists(self._temp_html_path):
+                os.unlink(self._temp_html_path)

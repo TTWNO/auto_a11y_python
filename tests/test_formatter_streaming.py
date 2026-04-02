@@ -9,6 +9,7 @@ import pytest
 
 from auto_a11y.reporting.formatters import (
     BaseFormatter, CSVFormatter, JSONFormatter, HTMLFormatter, ExcelFormatter,
+    PDFFormatter,
 )
 
 
@@ -371,3 +372,47 @@ class TestExcelFormatterStreaming:
         # 1 header row + 3 data rows = 4
         assert ws.max_row == 4
         wb.close()
+
+
+# ---------------------------------------------------------------------------
+# Task 7 – PDFFormatter streaming
+# ---------------------------------------------------------------------------
+
+def _has_weasyprint():
+    try:
+        import weasyprint  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
+
+class TestPDFFormatterStreaming:
+    """PDFFormatter.begin / append_page / finalize / cleanup."""
+
+    def setup_method(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.outfile = os.path.join(self.tmpdir, 'report.pdf')
+        self.formatter = PDFFormatter(config={})
+
+    def teardown_method(self):
+        self.formatter.cleanup()
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    @pytest.mark.skipif(not _has_weasyprint(), reason='weasyprint not installed')
+    def test_produces_pdf_file(self):
+        """Output starts with %PDF bytes."""
+        summary = {'total_pages': 1}
+        page_data = {
+            'page': _FakePage(url='http://a.com', title='A'),
+            'test_result': _FakeTestResult(
+                violations=[_FakeIssue(id='ErrNoAlt')],
+            ),
+        }
+        self.formatter.begin(self.outfile, summary)
+        self.formatter.append_page(self.outfile, page_data)
+        self.formatter.finalize(self.outfile, summary)
+
+        assert os.path.exists(self.outfile)
+        with open(self.outfile, 'rb') as f:
+            header = f.read(4)
+        assert header == b'%PDF'

@@ -6,6 +6,7 @@ import json
 import csv
 import tempfile
 import os
+import warnings
 from typing import Dict, Any, List
 from datetime import datetime
 from pathlib import Path
@@ -32,10 +33,20 @@ class BaseFormatter:
     
     def format_website_report(self, data: Dict[str, Any]) -> str:
         """Format website report data"""
+        warnings.warn(
+            "format_website_report() is deprecated, use begin/append_page/finalize streaming interface",
+            DeprecationWarning,
+            stacklevel=2
+        )
         raise NotImplementedError
-    
+
     def format_project_report(self, data: Dict[str, Any]) -> str:
         """Format project report data"""
+        warnings.warn(
+            "format_project_report() is deprecated, use begin/append_page/finalize streaming interface",
+            DeprecationWarning,
+            stacklevel=2
+        )
         raise NotImplementedError
     
     def format_summary_report(self, data: Dict[str, Any]) -> str:
@@ -73,7 +84,12 @@ class HTMLFormatter(BaseFormatter):
     
     def format_all_projects_report(self, data: Dict[str, Any]) -> str:
         """Format report for all projects as HTML"""
-        
+        warnings.warn(
+            "format_all_projects_report() is deprecated, use begin/append_page/finalize streaming interface",
+            DeprecationWarning,
+            stacklevel=2
+        )
+
         html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1530,9 +1546,14 @@ class ExcelFormatter(BaseFormatter):
     
     def format_all_projects_report(self, data: Dict[str, Any]) -> bytes:
         """Generate Excel report for all projects"""
+        warnings.warn(
+            "format_all_projects_report() is deprecated, use begin/append_page/finalize streaming interface",
+            DeprecationWarning,
+            stacklevel=2
+        )
         if not self.has_openpyxl:
             return json.dumps(data, indent=2, default=str).encode('utf-8')
-        
+
         wb = self.Workbook()
         styles = self._get_styles()
         
@@ -3144,6 +3165,11 @@ class PDFFormatter(BaseFormatter):
     
     def format_all_projects_report(self, data: Dict[str, Any]) -> bytes:
         """Generate PDF for all projects report"""
+        warnings.warn(
+            "format_all_projects_report() is deprecated, use begin/append_page/finalize streaming interface",
+            DeprecationWarning,
+            stacklevel=2
+        )
         html_content = self.html_formatter.format_all_projects_report(data)
         return self._convert_to_pdf(html_content)
     

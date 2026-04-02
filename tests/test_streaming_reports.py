@@ -496,3 +496,41 @@ class TestGenerateAllProjectsReport:
 
         with pytest.raises(ValueError, match="Unsupported format"):
             rg.generate_all_projects_report(format='docx')
+
+
+class TestDeprecationWarnings:
+    """Tests for deprecation warnings on old methods."""
+
+    def test_base_formatter_format_website_report_emits_warning(self):
+        from auto_a11y.reporting.formatters import BaseFormatter
+        fmt = BaseFormatter.__new__(BaseFormatter)
+        with pytest.warns(DeprecationWarning, match="format_website_report.*deprecated"):
+            with pytest.raises(NotImplementedError):
+                fmt.format_website_report({})
+
+    def test_base_formatter_format_project_report_emits_warning(self):
+        from auto_a11y.reporting.formatters import BaseFormatter
+        fmt = BaseFormatter.__new__(BaseFormatter)
+        with pytest.warns(DeprecationWarning, match="format_project_report.*deprecated"):
+            with pytest.raises(NotImplementedError):
+                fmt.format_project_report({})
+
+    def test_prepare_website_report_data_emits_warning(self):
+        import warnings as w
+        rg = _make_generator()
+        with pytest.warns(DeprecationWarning, match="_prepare_website_report_data.*deprecated"):
+            # Call with minimal mocks to trigger the warning (will likely fail internally)
+            try:
+                rg._prepare_website_report_data(
+                    MagicMock(), MagicMock(), [], True
+                )
+            except Exception:
+                pass
+
+    def test_prepare_project_report_data_emits_warning(self):
+        rg = _make_generator()
+        with pytest.warns(DeprecationWarning, match="_prepare_project_report_data.*deprecated"):
+            try:
+                rg._prepare_project_report_data(MagicMock(), [])
+            except Exception:
+                pass

@@ -4,6 +4,7 @@ Main report generator for accessibility test results
 
 import logging
 import os
+import warnings
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 from pathlib import Path
@@ -455,7 +456,12 @@ class ReportGenerator:
         include_ai: bool
     ) -> Dict[str, Any]:
         """Prepare data for website report"""
-        
+        warnings.warn(
+            "_prepare_website_report_data() is deprecated, use begin/append_page/finalize streaming interface",
+            DeprecationWarning,
+            stacklevel=2
+        )
+
         # Calculate aggregate statistics
         total_violations = sum(pr['test_result'].violation_count for pr in page_results)
         total_warnings = sum(pr['test_result'].warning_count for pr in page_results)
@@ -510,6 +516,11 @@ class ReportGenerator:
         website_data: List[Dict]
     ) -> Dict[str, Any]:
         """Prepare data for project report"""
+        warnings.warn(
+            "_prepare_project_report_data() is deprecated, use begin/append_page/finalize streaming interface",
+            DeprecationWarning,
+            stacklevel=2
+        )
 
         # Calculate aggregate statistics for all categories
         total_websites = len(website_data)

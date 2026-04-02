@@ -202,74 +202,57 @@ class ReportGenerator:
         progress_callback=None
     ) -> str:
         """
-        Generate report for entire website
-        
+        Generate report for entire website using two-pass streaming.
+
         Args:
             website_id: Website ID
             format: Output format
             include_ai: Include AI findings
-            
+
         Returns:
             Path to generated report
         """
         website = self.db.get_website(website_id)
         if not website:
             raise ValueError(f"Website {website_id} not found")
-        
+
         project = self.db.get_project(website.project_id)
-        pages = self.db.get_pages(website_id)
-        
-        # Get test results for all pages
-        page_results = []
-        for i, page in enumerate(pages):
-            if progress_callback:
-                progress_callback(i, len(pages), f'Processing page {i + 1} of {len(pages)}...')
-            test_result = self.db.get_latest_test_result(page.id)
-            if test_result:
-                page_results.append({
-                    'page': page.__dict__ if hasattr(page, '__dict__') else page,
-                    'test_result': test_result
-                })
 
-        if progress_callback:
-            progress_callback(len(pages), len(pages), 'Saving report...')
-
-        # Prepare report data
-        report_data = self._prepare_website_report_data(
-            website, project, page_results, include_ai
-        )
-
-        # Generate report
+        # Select formatter
         formatter = self.formatters.get(format)
         if not formatter:
             raise ValueError(f"Unsupported format: {format}")
 
-        # Create filename with website name
+        # Create filename with website name (preserving existing pattern)
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        # Create a safe filename from the website name
         website_name = website.name or website.url.replace('https://', '').replace('http://', '')
         website_name = self._sanitize_filename(website_name)
         filename = f"website_{website_name}_{timestamp}.{formatter.extension}"
         filepath = self.report_dir / filename
+        output_file = str(filepath)
 
-        # Generate content
-        content = formatter.format_website_report(report_data)
+        # Page generator factory for two-pass streaming
+        def page_generator_fn():
+            return self.db.yield_pages(website_id)
 
-        # Save report
-        if format == 'pdf':
-            # PDF returns bytes, write in binary mode
-            with open(filepath, 'wb') as f:
-                f.write(content)
-        elif format in ['xlsx', 'excel']:
-            # Excel returns bytes, write in binary mode
-            with open(filepath, 'wb') as f:
-                f.write(content)
-        else:
-            with open(filepath, 'w', encoding='utf-8') as f:
-                f.write(content)
-        
+        try:
+            # Pass 1: collect summary stats
+            summary = self._collect_summary(page_generator_fn, progress_callback)
+            summary['website'] = website.__dict__
+            summary['project'] = project.__dict__
+
+            # Pass 2: write detail pages via streaming formatter
+            self._write_details(page_generator_fn, summary, formatter, output_file, progress_callback)
+        except Exception:
+            # Clean up partial output on error
+            if os.path.exists(output_file):
+                os.remove(output_file)
+            raise
+        finally:
+            formatter.cleanup()
+
         logger.info(f"Generated {format} report: {filepath}")
-        return str(filepath)
+        return output_file
     
     def generate_all_projects_report(
         self,

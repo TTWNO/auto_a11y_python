@@ -279,3 +279,95 @@ class TestCollectRecordingsData:
 
         assert result == []
         db.get_recordings.assert_called_once_with(project_id='proj1')
+
+
+class _SimpleObj:
+    """Simple object that supports __dict__ without MagicMock conflicts."""
+    def __init__(self, **kwargs):
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
+
+def _make_full_generator(db):
+    """Create a ReportGenerator with formatters initialised."""
+    rg = ReportGenerator.__new__(ReportGenerator)
+    rg.db = db
+    rg.config = {}
+    rg.language = 'en'
+    rg.report_dir = MagicMock()
+    rg.report_dir.__truediv__ = MagicMock(return_value='fake/path.html')
+    formatter = MagicMock()
+    formatter.extension = 'html'
+    rg.formatters = {'html': formatter}
+    return rg, formatter
+
+
+class TestGenerateWebsiteReport:
+    """Tests for generate_website_report two-pass wiring."""
+
+    def test_calls_collect_summary_and_write_details(self):
+        db = MagicMock()
+        rg, formatter = _make_full_generator(db)
+
+        website = _SimpleObj(name='TestSite', project_id='proj1', id='w1',
+                             url='https://test.com')
+        db.get_website.return_value = website
+
+        project = _SimpleObj(name='TestProject', id='proj1')
+        db.get_project.return_value = project
+
+        with patch.object(rg, '_collect_summary', return_value={
+            'total_pages': 0,
+        }) as mock_collect, \
+             patch.object(rg, '_write_details') as mock_write, \
+             patch('os.path.exists', return_value=False):
+            rg.generate_website_report('w1', format='html')
+
+        mock_collect.assert_called_once()
+        mock_write.assert_called_once()
+        # Summary should have website and project metadata attached
+        summary_arg = mock_write.call_args[0][1]
+        assert summary_arg['website']['name'] == 'TestSite'
+        assert summary_arg['project']['name'] == 'TestProject'
+
+    def test_cleans_up_on_error(self):
+        db = MagicMock()
+        rg, formatter = _make_full_generator(db)
+
+        website = _SimpleObj(name='TestSite', project_id='proj1', id='w1',
+                             url='https://test.com')
+        db.get_website.return_value = website
+
+        project = _SimpleObj(name='TestProject', id='proj1')
+        db.get_project.return_value = project
+
+        with patch.object(rg, '_collect_summary', side_effect=RuntimeError("boom")), \
+             patch('os.path.exists', return_value=True) as mock_exists, \
+             patch('os.remove') as mock_remove:
+            with pytest.raises(RuntimeError):
+                rg.generate_website_report('w1', format='html')
+
+        formatter.cleanup.assert_called_once()
+        mock_remove.assert_called_once()
+
+    def test_raises_for_unknown_website(self):
+        db = MagicMock()
+        rg, _ = _make_full_generator(db)
+        db.get_website.return_value = None
+
+        with pytest.raises(ValueError, match="Website"):
+            rg.generate_website_report('missing')
+
+    def test_raises_for_unsupported_format(self):
+        db = MagicMock()
+        rg, _ = _make_full_generator(db)
+
+        website = _SimpleObj(name='TestSite', project_id='proj1', id='w1',
+                             url='https://test.com')
+        db.get_website.return_value = website
+
+        project = _SimpleObj(name='TestProject', id='proj1')
+        db.get_project.return_value = project
+
+        with pytest.raises(ValueError, match="Unsupported format"):
+            rg.generate_website_report('w1', format='docx')

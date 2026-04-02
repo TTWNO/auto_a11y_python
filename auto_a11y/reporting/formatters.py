@@ -42,6 +42,24 @@ class BaseFormatter:
         """Format summary report data"""
         raise NotImplementedError
 
+    # --- Streaming interface ---
+
+    def begin(self, output_file: str, summary: dict):
+        """Write report header/preamble using summary stats."""
+        raise NotImplementedError
+
+    def append_page(self, output_file: str, page_data: dict):
+        """Write one page's detail section."""
+        raise NotImplementedError
+
+    def finalize(self, output_file: str, summary: dict):
+        """Write report footer/closing."""
+        raise NotImplementedError
+
+    def cleanup(self):
+        """Delete any temp files created during streaming. Default no-op."""
+        pass
+
 
 class HTMLFormatter(BaseFormatter):
     """HTML report formatter"""

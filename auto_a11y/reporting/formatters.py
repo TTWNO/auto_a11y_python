@@ -917,10 +917,86 @@ class CSVFormatter(BaseFormatter):
         
         return output.getvalue()
 
+    # --- Streaming interface ---
+
+    CSV_HEADER = [
+        'URL', 'Page Title', 'Type', 'Code', 'Description',
+        'Touchpoint', 'Impact', 'XPath', 'HTML', 'WCAG Criteria'
+    ]
+
+    def begin(self, output_file: str, summary: dict):
+        """Open *output_file* and write the CSV header row."""
+        self._file = open(output_file, 'w', newline='', encoding='utf-8')
+        self._writer = csv.writer(self._file)
+        self._writer.writerow(self.CSV_HEADER)
+
+    def append_page(self, output_file: str, page_data: dict):
+        """Write rows for every violation and warning on one page."""
+        page = page_data.get('page', {})
+        test_result = page_data.get('test_result')
+        if test_result is None:
+            return
+
+        page_url = page.url if hasattr(page, 'url') else page.get('url', '')
+        page_title = page.title if hasattr(page, 'title') else page.get('title', '')
+
+        violations = (
+            test_result.violations if hasattr(test_result, 'violations')
+            else test_result.get('violations', [])
+        ) or []
+        warnings = (
+            test_result.warnings if hasattr(test_result, 'warnings')
+            else test_result.get('warnings', [])
+        ) or []
+
+        for v in violations:
+            self._write_issue_row('Violation', page_url, page_title, v)
+        for w in warnings:
+            self._write_issue_row('Warning', page_url, page_title, w)
+
+    def finalize(self, output_file: str, summary: dict):
+        """Flush and close the CSV file."""
+        if hasattr(self, '_file') and self._file and not self._file.closed:
+            self._file.flush()
+            self._file.close()
+
+    def cleanup(self):
+        """Close the file handle if still open."""
+        if hasattr(self, '_file') and self._file and not self._file.closed:
+            self._file.close()
+
+    # --- helpers ---
+
+    def _write_issue_row(self, issue_type: str, page_url: str, page_title: str, issue):
+        """Write a single CSV row for an issue (violation or warning)."""
+        _get = (lambda k, d='': getattr(issue, k, d)) if not isinstance(issue, dict) \
+            else (lambda k, d='': issue.get(k, d))
+
+        impact = _get('impact', '')
+        if hasattr(impact, 'value'):
+            impact = impact.value
+
+        wcag = _get('wcag_criteria', [])
+        if isinstance(wcag, list):
+            wcag = ', '.join(str(c) for c in wcag)
+
+        self._writer.writerow([
+            page_url,
+            page_title,
+            issue_type,
+            _get('id', ''),
+            _get('description', ''),
+            _get('touchpoint', ''),
+            impact,
+            _get('xpath', ''),
+            _get('html', ''),
+            wcag,
+        ])
+
 
 class ExcelFormatter(BaseFormatter):
     """Excel report formatter"""
-    
+
     TRANSLATIONS = {
         'en': {
             'summary': 'Summary',

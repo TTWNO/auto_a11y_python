@@ -2,6 +2,19 @@
 
 {% block title %}{{ _('Reports') }} - Auto A11y{% endblock %}
 
+{% block extra_css %}
+<style>
+.spinner-icon {
+    animation: spin 1s linear infinite;
+    display: inline-block;
+}
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -134,7 +147,7 @@
             <h2 class="mb-0" id="recent-reports-heading">{{ _('Recent Reports') }}</h2>
         </div>
         <div class="card-body">
-            {% if reports %}
+            {% if reports or active_jobs or recently_completed %}
             <div class="table-responsive">
                 <table class="table table-hover">
                     <caption class="visually-hidden">{{ _('List of generated accessibility reports') }}</caption>
@@ -149,6 +162,51 @@
                         </tr>
                     </thead>
                     <tbody>
+                    {# Active report generation jobs #}
+                    {% for job in active_jobs %}
+                    <tr data-job-id="{{ job.job_id }}">
+                        <td>
+                            <i class="bi bi-arrow-repeat spinner-icon" aria-hidden="true"></i>
+                            {{ job.metadata.get('display_name', 'Report') }}
+                        </td>
+                        <td colspan="2">
+                            <progress value="{{ job.progress.current|default(0) }}" max="{{ job.progress.total|default(1) }}"></progress>
+                            <span class="progress-text ms-2" role="status" aria-live="polite">{{ job.progress.message|default('Starting...') }}</span>
+                        </td>
+                        <td>{{ _('Just now') }}</td>
+                        <td>—</td>
+                        <td>—</td>
+                    </tr>
+                    {% endfor %}
+                    {# Recently completed jobs #}
+                    {% for job in recently_completed %}
+                    {% if job.status == 'completed' and job.result %}
+                    <tr>
+                        <td>
+                            <i class="bi bi-check-circle text-success" aria-hidden="true"></i>
+                            {{ job.metadata.get('display_name', 'Report') }}
+                        </td>
+                        <td><span class="badge bg-success">{{ _('Complete') }}</span></td>
+                        <td>—</td>
+                        <td>{{ job.completed_at.strftime('%Y-%m-%d %H:%M') if job.completed_at else '' }}</td>
+                        <td>—</td>
+                        <td>
+                            <a href="{{ url_for('reports.download_report', filename=job.result.filename) }}" class="btn btn-sm btn-primary">
+                                <i class="bi bi-download" aria-hidden="true"></i> {{ _('Download') }}
+                            </a>
+                        </td>
+                    </tr>
+                    {% elif job.status == 'failed' %}
+                    <tr>
+                        <td>
+                            <i class="bi bi-x-circle text-danger" aria-hidden="true"></i>
+                            {{ job.metadata.get('display_name', 'Report') }}
+                        </td>
+                        <td colspan="4"><span class="text-danger">{{ _('Failed') }}: {{ job.error|default('Unknown error') }}</span></td>
+                        <td>—</td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
                         {% for report in reports %}
                         <tr>
                             <td>
@@ -313,6 +371,111 @@
 
 {% block extra_js %}
 <script>
+// Report job polling system
+const activePolls = {};
+
+function startJobPoll(jobId, displayName) {
+    // Add row to table if not already there
+    const tbody = document.querySelector('.table tbody');
+    if (tbody && !document.querySelector(`tr[data-job-id="${jobId}"]`)) {
+        const row = document.createElement('tr');
+        row.dataset.jobId = jobId;
+        row.innerHTML = `
+            <td>
+                <i class="bi bi-arrow-repeat spinner-icon" aria-hidden="true"></i>
+                ${displayName}
+            </td>
+            <td colspan="2">
+                <progress value="0" max="1"></progress>
+                <span class="progress-text ms-2" role="status" aria-live="polite">Starting...</span>
+            </td>
+            <td>${new Date().toLocaleString()}</td>
+            <td>\u2014</td>
+            <td>\u2014</td>
+        `;
+        tbody.insertBefore(row, tbody.firstChild);
+    }
+
+    const poll = () => {
+        fetch(`/reports/job/${jobId}/status`)
+            .then(r => r.json())
+            .then(data => {
+                const row = document.querySelector(`tr[data-job-id="${jobId}"]`);
+                if (!row) return;
+
+                if (data.status === 'running' || data.status === 'pending') {
+                    const progress = row.querySelector('progress');
+                    const text = row.querySelector('.progress-text');
+                    if (progress && data.progress) {
+                        progress.value = data.progress.current || 0;
+                        progress.max = data.progress.total || 1;
+                    }
+                    if (text && data.progress) {
+                        text.textContent = data.progress.message || 'Processing...';
+                    }
+                    activePolls[jobId] = setTimeout(poll, 2000);
+                } else if (data.status === 'completed' && data.result) {
+                    const filename = data.result.filename;
+                    const name = (data.metadata && data.metadata.display_name) || 'Report';
+                    row.removeAttribute('data-job-id');
+                    row.innerHTML = `
+                        <td><i class="bi bi-check-circle text-success" aria-hidden="true"></i> ${name}</td>
+                        <td><span class="badge bg-success">Complete</span></td>
+                        <td>\u2014</td>
+                        <td>${new Date().toLocaleString()}</td>
+                        <td>\u2014</td>
+                        <td>
+                            <a href="/reports/download/${encodeURIComponent(filename)}" class="btn btn-sm btn-primary">
+                                <i class="bi bi-download"></i> Download
+                            </a>
+                        </td>
+                    `;
+                    delete activePolls[jobId];
+                } else if (data.status === 'failed') {
+                    const name = (data.metadata && data.metadata.display_name) || 'Report';
+                    row.removeAttribute('data-job-id');
+                    row.innerHTML = `
+                        <td><i class="bi bi-x-circle text-danger" aria-hidden="true"></i> ${name}</td>
+                        <td colspan="4"><span class="text-danger">Failed: ${data.error || 'Unknown error'}</span></td>
+                        <td>\u2014</td>
+                    `;
+                    delete activePolls[jobId];
+                }
+            })
+            .catch(() => {
+                activePolls[jobId] = setTimeout(poll, 5000);
+            });
+    };
+    poll();
+}
+
+function submitReportJob(url, options, displayName) {
+    return fetch(url, options)
+        .then(r => r.json())
+        .then(data => {
+            if (data.success && data.job_id) {
+                startJobPoll(data.job_id, displayName);
+                return data;
+            } else if (data.info) {
+                alert(data.message || data.title);
+                return data;
+            } else {
+                throw new Error(data.error || 'Failed to start report generation');
+            }
+        });
+}
+
+// Start polling for any active jobs on page load
+{% for job in active_jobs %}
+startJobPoll('{{ job.job_id }}', '{{ job.metadata.get("display_name", "Report") }}');
+{% endfor %}
+
+window.addEventListener('beforeunload', () => {
+    Object.values(activePolls).forEach(clearTimeout);
+});
+</script>
+
+<script>
 // Initialize date inputs and report name with today's date
 document.addEventListener('DOMContentLoaded', function() {
     const today = new Date();
@@ -376,51 +539,32 @@ document.getElementById('projectSelect').addEventListener('change', function() {
 // Handle report generation form
 document.getElementById('generateReportForm').addEventListener('submit', function(e) {
     e.preventDefault();
-    
-    const formData = {
-        name: document.getElementById('reportName').value,
-        type: document.getElementById('reportType').value,
-        project_id: document.getElementById('projectSelect').value,
-        website_id: document.getElementById('websiteSelect').value,
-        start_date: document.getElementById('startDate').value,
-        end_date: document.getElementById('endDate').value,
-        include_violations: document.getElementById('includeViolations').checked,
-        include_warnings: document.getElementById('includeWarnings').checked,
-        include_ai: document.getElementById('includeAI').checked,
-        include_screenshots: document.getElementById('includeScreenshots').checked,
-        include_summary: document.getElementById('includeSummary').checked
-    };
-    
-    // Show loading state
-    const submitBtn = e.target.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>' + {{ _("Generating...") | tojson }};
+    const form = e.target;
+    const submitBtn = form.querySelector('button[type="submit"]');
     submitBtn.disabled = true;
-    
-    // Submit request
-    fetch('/reports/generate', {
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>' + {{ _("Generating...") | tojson }};
+
+    const projectSelect = form.querySelector('[name="project_id"]') || document.getElementById('projectSelect');
+    const websiteSelect = form.querySelector('[name="website_id"]') || document.getElementById('websiteSelect');
+    const reportType = document.getElementById('reportType')?.value || 'xlsx';
+    const displayName = projectSelect?.selectedOptions[0]?.text || 'Report';
+
+    const modal = bootstrap.Modal.getInstance(document.getElementById('generateReportModal'));
+    if (modal) modal.hide();
+
+    submitReportJob('/reports/generate', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Close modal and reload page
-            bootstrap.Modal.getInstance(document.getElementById('generateReportModal')).hide();
-            location.reload();
-        } else {
-            alert({{ _("Failed to generate report: ") | tojson }} + (data.error || {{ _("Unknown error") | tojson }}));
-        }
-    })
-    .catch(error => {
-        alert({{ _("Error generating report: ") | tojson }} + error);
-    })
-    .finally(() => {
-        submitBtn.innerHTML = originalText;
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            project_id: projectSelect?.value || null,
+            website_id: websiteSelect?.value || null,
+            type: reportType
+        })
+    }, displayName).catch(err => {
+        alert(err.message);
+    }).finally(() => {
         submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="bi bi-download me-2"></i>' + {{ _("Generate Report") | tojson }};
     });
 });
 
@@ -537,6 +681,7 @@ function loadWebsitesForProject(projectId) {
 }
 
 function generateSiteStructureReport() {
+    const siteStructureForm = document.getElementById('siteStructureForm');
     const websiteId = document.getElementById('structureWebsite').value;
     const format = document.getElementById('structureFormat').value;
 
@@ -545,40 +690,28 @@ function generateSiteStructureReport() {
         return;
     }
 
-    // Show loading state on submit button
     const submitBtn = document.querySelector('#siteStructureForm button[type="submit"]');
     const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>' + {{ _("Generating...") | tojson }};
     submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>' + {{ _("Generating...") | tojson }};
 
-    // Submit request via fetch to add to reports list
-    fetch('/reports/generate/page-structure', {
+    const websiteName = document.getElementById('structureWebsite').selectedOptions[0]?.text || 'Website';
+
+    const modal = bootstrap.Modal.getInstance(document.getElementById('siteStructureModal'));
+    if (modal) modal.hide();
+
+    submitReportJob('/reports/generate/page-structure', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
             website_id: websiteId,
             format: format
         })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Close modal and reload page to show new report
-            const modal = bootstrap.Modal.getInstance(document.getElementById('siteStructureModal'));
-            modal.hide();
-            location.reload();
-        } else {
-            alert({{ _("Failed to generate report: ") | tojson }} + (data.error || {{ _("Unknown error") | tojson }}));
-        }
-    })
-    .catch(error => {
-        alert({{ _("Error generating report: ") | tojson }} + error);
-    })
-    .finally(() => {
-        submitBtn.innerHTML = originalText;
+    }, `Site Structure - ${websiteName}`).catch(err => {
+        alert(err.message);
+    }).finally(() => {
         submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
     });
 }
 
@@ -712,37 +845,33 @@ function generateDiscoveryReport() {
         return;
     }
 
-    let actionUrl;
+    let url, displayName;
+
     if (scope === 'website') {
         const websiteId = document.getElementById('discoveryWebsite').value;
         if (!websiteId) {
             alert({{ _('Please select a website') | tojson }});
             return;
         }
-        actionUrl = `/reports/generate/discovery/website/${websiteId}`;
+        const websiteName = document.getElementById('discoveryWebsite').selectedOptions[0]?.text || 'Website';
+        url = `/reports/generate/discovery/website/${websiteId}`;
+        displayName = `Discovery Report - ${websiteName}`;
     } else {
-        actionUrl = `/reports/generate/discovery/project/${projectId}`;
+        const projectName = document.getElementById('discoveryProject').selectedOptions[0]?.text || 'Project';
+        url = `/reports/generate/discovery/project/${projectId}`;
+        displayName = `Discovery Report - ${projectName}`;
     }
 
-    // Create a form to submit the report request
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = actionUrl;
-
-    const formatInput = document.createElement('input');
-    formatInput.type = 'hidden';
-    formatInput.name = 'format';
-    formatInput.value = format;
-    form.appendChild(formatInput);
-
-    document.body.appendChild(form);
-    form.submit();
-
-    // Close the modal
     const modal = bootstrap.Modal.getInstance(document.getElementById('discoveryModal'));
-    if (modal) {
-        modal.hide();
-    }
+    if (modal) modal.hide();
+
+    submitReportJob(url, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({format: format})
+    }, displayName).catch(err => {
+        alert(err.message);
+    });
 }
 </script>
 
@@ -982,44 +1111,34 @@ if (staticHtmlModal) {
     // Handle form submission
     document.getElementById('staticHtmlForm').addEventListener('submit', function(e) {
         e.preventDefault();
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generating...';
 
         const projectId = document.getElementById('staticHtmlProject').value;
         const websiteId = document.getElementById('staticHtmlWebsite').value;
         const wcagLevel = document.getElementById('staticHtmlWcagLevel').value;
         const includeScreenshots = document.getElementById('staticHtmlIncludeScreenshots').checked;
         const includeDiscovery = document.getElementById('staticHtmlIncludeDiscovery').checked;
+        const projectName = document.getElementById('staticHtmlProject').selectedOptions[0]?.text || 'Report';
 
-        const submitBtn = e.target.querySelector('button[type="submit"]');
-        const originalText = submitBtn.innerHTML;
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generating...';
-
-        // Use FormData to submit as regular form (not JSON)
         const formDataObj = new FormData();
-
-        // Add project_id and website_id if selected (empty string means "All")
-        if (projectId) {
-            formDataObj.append('project_id', projectId);
-        }
-        if (websiteId) {
-            formDataObj.append('website_id', websiteId);
-        }
-
+        if (projectId) formDataObj.append('project_id', projectId);
+        if (websiteId) formDataObj.append('website_id', websiteId);
         formDataObj.append('wcag_level', wcagLevel);
         formDataObj.append('include_screenshots', includeScreenshots);
         formDataObj.append('include_discovery', includeDiscovery);
 
-        fetch('/reports/generate/static-html', {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('staticHtmlModal'));
+        if (modal) modal.hide();
+
+        submitReportJob('/reports/generate/static-html', {
             method: 'POST',
             body: formDataObj
-        })
-        .then(response => {
-            // Flask will redirect, so reload the page to see the new report in the list
-            window.location.reload();
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert({{ _('Error generating report: ') | tojson }} + error.message);
+        }, `Offline Report - ${projectName}`).catch(err => {
+            alert(err.message);
+        }).finally(() => {
             submitBtn.disabled = false;
             submitBtn.innerHTML = originalText;
         });
@@ -1129,37 +1248,28 @@ if (deduplicatedModal) {
     // Handle form submission
     document.getElementById('deduplicatedForm').addEventListener('submit', function(e) {
         e.preventDefault();
-
-        const projectId = document.getElementById('deduplicatedProject').value;
-        const websiteId = document.getElementById('deduplicatedWebsite').value;
-
         const submitBtn = e.target.querySelector('button[type="submit"]');
         const originalText = submitBtn.innerHTML;
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generating...';
 
-        // Use FormData to submit as regular form (not JSON)
+        const projectId = document.getElementById('deduplicatedProject').value;
+        const websiteId = document.getElementById('deduplicatedWebsite').value;
+        const projectName = document.getElementById('deduplicatedProject').selectedOptions[0]?.text || 'Report';
+
         const formDataObj = new FormData();
+        if (projectId) formDataObj.append('project_id', projectId);
+        if (websiteId) formDataObj.append('website_id', websiteId);
 
-        // Add project_id and website_id if selected (empty string means "All")
-        if (projectId) {
-            formDataObj.append('project_id', projectId);
-        }
-        if (websiteId) {
-            formDataObj.append('website_id', websiteId);
-        }
+        const modal = bootstrap.Modal.getInstance(document.getElementById('deduplicatedModal'));
+        if (modal) modal.hide();
 
-        fetch('/reports/generate/deduplicated', {
+        submitReportJob('/reports/generate/deduplicated', {
             method: 'POST',
             body: formDataObj
-        })
-        .then(response => {
-            // Flask will redirect, so reload the page to see the new report in the list
-            window.location.reload();
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert({{ _('Error generating report: ') | tojson }} + error.message);
+        }, `Deduplicated Report - ${projectName}`).catch(err => {
+            alert(err.message);
+        }).finally(() => {
             submitBtn.disabled = false;
             submitBtn.innerHTML = originalText;
         });
@@ -1283,28 +1393,23 @@ if (recordingsModal) {
         e.preventDefault();
 
         const projectId = document.getElementById('recordingsProject').value;
-
         if (!projectId) {
             showMessageDialog({{ _('Validation Error') | tojson }}, {{ _('Please select a project') | tojson }});
             return;
         }
-
-        const format = document.getElementById('recordingsFormat').value;
-        const includeSummary = document.getElementById('recordingsIncludeSummary').checked;
-        const includeTimecodes = document.getElementById('recordingsIncludeTimecodes').checked;
-        const includeWCAG = document.getElementById('recordingsIncludeWCAG').checked;
-        const groupByTouchpoint = document.getElementById('recordingsGroupByTouchpoint').checked;
 
         const submitBtn = e.target.querySelector('button[type="submit"]');
         const originalText = submitBtn.innerHTML;
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>' + {{ _("Generating...") | tojson }};
 
-        // Close the recordings modal first
-        const recordingsModalInstance = bootstrap.Modal.getInstance(recordingsModal);
-        recordingsModalInstance.hide();
+        const format = document.getElementById('recordingsFormat').value;
+        const includeSummary = document.getElementById('recordingsIncludeSummary').checked;
+        const includeTimecodes = document.getElementById('recordingsIncludeTimecodes').checked;
+        const includeWCAG = document.getElementById('recordingsIncludeWCAG').checked;
+        const groupByTouchpoint = document.getElementById('recordingsGroupByTouchpoint').checked;
+        const projectName = document.getElementById('recordingsProject').selectedOptions[0]?.text || 'Project';
 
-        // Use FormData to submit as regular form (not JSON)
         const formDataObj = new FormData();
         formDataObj.append('project_id', projectId);
         formDataObj.append('format', format);
@@ -1313,38 +1418,15 @@ if (recordingsModal) {
         formDataObj.append('include_wcag', includeWCAG);
         formDataObj.append('group_by_touchpoint', groupByTouchpoint);
 
-        fetch('/reports/generate/recordings/' + projectId, {
+        const recordingsModalInstance = bootstrap.Modal.getInstance(recordingsModal);
+        if (recordingsModalInstance) recordingsModalInstance.hide();
+
+        submitReportJob(`/reports/generate/recordings/${projectId}`, {
             method: 'POST',
-            body: formDataObj,
-            headers: {
-                'Accept': 'application/json'
-            }
-        })
-        .then(response => {
-            return response.json().then(data => {
-                if (!response.ok) {
-                    throw new Error(data.error || {{ _('Failed to generate report') | tojson }});
-                }
-                return data;
-            });
-        })
-        .then(data => {
-            if (data.success) {
-                window.location.reload();
-            } else if (data.info) {
-                // Informational message, not an error
-                showMessageDialog(data.title || {{ _('Notice') | tojson }}, data.message);
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalText;
-            } else {
-                showMessageDialog({{ _('Error') | tojson }}, data.error || {{ _('Failed to generate report') | tojson }});
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalText;
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showMessageDialog({{ _('Error') | tojson }}, error.message);
+            body: formDataObj
+        }, `Recordings Report - ${projectName}`).catch(err => {
+            alert(err.message);
+        }).finally(() => {
             submitBtn.disabled = false;
             submitBtn.innerHTML = originalText;
         });

@@ -1,13 +1,53 @@
-deploy:
-  resources:
-    limits:
-      memory: 1000MB
 services:
-    my-mongo-dev:
-        container_name: my-mongo-dev
-        image: mongo:latest
-        command: mongod --port 27017 --auth
-        ports:
-            - 27017:27017
-        volumes:
-            - /auto_a11y_db:/data/db
+  app:
+    build: .
+    container_name: auto-a11y-app
+    command: python run.py --host 0.0.0.0
+    ports:
+      - "5001:5001"
+    env_file:
+      - .env
+    environment:
+      - HOST=0.0.0.0
+      - PORT=5001
+      - MONGODB_URI=mongodb://mongo:27017/auto_a11y
+      - BROWSER_MODE=local
+      - BROWSER_HEADLESS=True
+    volumes:
+      - app-reports:/app/reports
+      - app-screenshots:/app/screenshots
+      - app-data:/app/data
+    depends_on:
+      mongo:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 4g
+        reservations:
+          memory: 1g
+    restart: unless-stopped
+
+  mongo:
+    image: docker.io/library/mongo:8
+    container_name: auto-a11y-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - /auto_a11y_db:/data/db
+    healthcheck:
+      test: mongosh --eval "db.runCommand('ping').ok" --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+    restart: unless-stopped
+
+volumes:
+  app-reports:
+  app-screenshots:
+  app-data:

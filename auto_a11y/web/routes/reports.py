@@ -8,7 +8,11 @@ from auto_a11y.models import PageStatus
 from auto_a11y.reporting import ReportGenerator, PageStructureReport
 from auto_a11y.reporting.discovery_report import DiscoveryReportGenerator
 from auto_a11y.reporting.static_html_generator import StaticHTMLReportGenerator
-from datetime import datetime
+from auto_a11y.core.job_manager import JobManager, JobType
+from auto_a11y.core.task_runner import task_runner
+from auto_a11y.core.report_job import ReportJob
+from datetime import datetime, timedelta
+from uuid import uuid4
 import logging
 import json
 from pathlib import Path
@@ -69,111 +73,106 @@ def reports_dashboard():
                 'project_name': project.name
             })
     
-    return render_template('reports/dashboard.html', 
-                         reports=reports, 
+    # Get active report generation jobs
+    job_manager = JobManager(current_app.db)
+    active_jobs = job_manager.get_active_jobs(job_type=JobType.REPORT_GENERATION)
+
+    # Also get recently completed jobs (last 5 minutes)
+    recently_completed = list(job_manager.collection.find({
+        'job_type': JobType.REPORT_GENERATION.value,
+        'status': {'$in': ['completed', 'failed']},
+        'completed_at': {'$gte': datetime.now() - timedelta(minutes=5)}
+    }).sort('completed_at', -1))
+
+    return render_template('reports/dashboard.html',
+                         reports=reports,
                          projects=projects,
-                         websites=websites)
+                         websites=websites,
+                         active_jobs=active_jobs,
+                         recently_completed=recently_completed)
 
 
 @reports_bp.route('/generate', methods=['POST'])
 def generate_report():
-    """Generate accessibility report"""
+    """Generate accessibility report (background job)"""
     data = request.get_json()
-    
     project_id = data.get('project_id')
     website_id = data.get('website_id')
     report_type = data.get('type', 'xlsx')
-    report_name = data.get('name', f'Accessibility Report {datetime.now().strftime("%Y-%m-%d")}')
-    include_options = {
-        'violations': data.get('include_violations', True),
-        'warnings': data.get('include_warnings', True),
-        'ai': data.get('include_ai', True),
-        'screenshots': data.get('include_screenshots', False),
-        'summary': data.get('include_summary', True)
-    }
-    
-    # Determine scope
+
     scope = 'all'
     scope_id = None
-    
+    display_name = 'All Projects Report'
+
     if project_id:
         project = current_app.db.get_project(project_id)
         if not project:
             return jsonify({'error': 'Project not found'}), 404
         scope = 'project'
         scope_id = project_id
+        display_name = f'Accessibility Report - {project.name}'
     elif website_id:
         website = current_app.db.get_website(website_id)
         if not website:
             return jsonify({'error': 'Website not found'}), 404
         scope = 'website'
         scope_id = website_id
-    
-    try:
-        # Initialize report generator with current language
-        from auto_a11y.reporting import ReportGenerator
-        current_language = str(get_locale()) if get_locale() else 'en'
-        generator = ReportGenerator(current_app.db, current_app.app_config.__dict__, language=current_language)
-        
-        # Generate report based on scope and type
-        if report_type == 'excel' or report_type == 'xlsx':
+        display_name = f'Accessibility Report - {website.name}'
+
+    # Capture Flask context into local variables
+    db = current_app.db
+    config = current_app.app_config.__dict__.copy()
+    language = str(get_locale()) if get_locale() else 'en'
+    app = current_app._get_current_object()
+
+    job_id = f"report_{uuid4().hex[:8]}"
+    job_manager = JobManager(db)
+    job_manager.create_job(
+        job_id=job_id,
+        job_type=JobType.REPORT_GENERATION,
+        project_id=str(scope_id) if scope == 'project' else None,
+        website_id=str(scope_id) if scope == 'website' else None,
+        metadata={'report_type': report_type, 'scope': scope, 'display_name': display_name}
+    )
+
+    def wrapper():
+        with app.app_context():
+            from auto_a11y.reporting import ReportGenerator
+            generator = ReportGenerator(db, config, language=language)
+            format_map = {'excel': 'xlsx'}
+            fmt = format_map.get(report_type, report_type)
             if scope == 'all':
-                # Generate report for all projects
-                report_path = generator.generate_all_projects_report(format='xlsx')
+                func = generator.generate_all_projects_report
+                kwargs = {'format': fmt}
             elif scope == 'project':
-                report_path = generator.generate_project_report(project_id=scope_id, format='xlsx')
+                func = generator.generate_project_report
+                kwargs = {'project_id': scope_id, 'format': fmt}
             else:
-                report_path = generator.generate_website_report(website_id=scope_id, format='xlsx')
-        elif report_type == 'pdf':
-            # Generate PDF report
-            if scope == 'all':
-                report_path = generator.generate_all_projects_report(format='pdf')
-            elif scope == 'project':
-                report_path = generator.generate_project_report(project_id=scope_id, format='pdf')
-            else:
-                report_path = generator.generate_website_report(website_id=scope_id, format='pdf')
-        elif report_type == 'json':
-            # Generate JSON report
-            if scope == 'all':
-                report_path = generator.generate_all_projects_report(format='json')
-            elif scope == 'project':
-                report_path = generator.generate_project_report(project_id=scope_id, format='json')
-            else:
-                report_path = generator.generate_website_report(website_id=scope_id, format='json')
-        else:
-            # HTML report
-            if scope == 'all':
-                report_path = generator.generate_all_projects_report(format='html')
-            elif scope == 'project':
-                report_path = generator.generate_project_report(project_id=scope_id, format='html')
-            else:
-                report_path = generator.generate_website_report(website_id=scope_id, format='html')
-        
-        # Store report metadata (in production, this would be saved to database)
-        report_id = f'report_{scope}_{datetime.now().strftime("%Y%m%d_%H%M%S")}'
-        
-        return jsonify({
-            'success': True,
-            'report_id': report_id,
-            'message': f'Report generated successfully',
-            'download_url': url_for('reports.download_report', filename=Path(report_path).name)
-        })
-        
-    except Exception as e:
-        logger.error(f"Failed to generate report: {e}", exc_info=True)
-        return jsonify({'error': str(e)}), 500
+                func = generator.generate_website_report
+                kwargs = {'website_id': scope_id, 'format': fmt}
+            job = ReportJob(job_id, job_manager, func, generator_kwargs=kwargs)
+            job.run()
+
+    task_runner.submit_task(func=wrapper, task_id=job_id)
+    return jsonify({'success': True, 'job_id': job_id, 'message': 'Report generation started'})
 
 
-@reports_bp.route('/report/<report_id>/status')
-def report_status(report_id):
-    """Check report generation status"""
-    # In production, check actual job status
-    return jsonify({
-        'report_id': report_id,
-        'status': 'generating',
-        'progress': 75,
-        'message': 'Generating report...'
-    })
+@reports_bp.route('/job/<job_id>/status')
+def job_status(job_id):
+    """Get report job status"""
+    job_manager = JobManager(current_app.db)
+    job = job_manager.get_job(job_id)
+    if not job:
+        return jsonify({'error': 'Job not found'}), 404
+    response = {
+        'job_id': job['job_id'],
+        'status': job['status'],
+        'progress': job.get('progress', {}),
+        'result': job.get('result'),
+        'error': job.get('error'),
+        'metadata': job.get('metadata', {})
+    }
+    return jsonify(response)
 
 
 @reports_bp.route('/download/<filename>')
@@ -261,147 +260,160 @@ def export_csv():
 
 @reports_bp.route('/generate/page/<page_id>', methods=['POST'])
 def generate_page_report(page_id):
-    """Generate report for a single page"""
-    format = request.form.get('format', 'html')
+    """Generate report for a single page (background job)"""
+    format = request.form.get('format', request.json.get('format', 'html') if request.is_json else 'html')
     include_ai = request.form.get('include_ai', 'true') == 'true'
-    
-    try:
-        # Initialize report generator
-        generator = ReportGenerator(current_app.db, current_app.app_config.__dict__)
-        
-        # Generate report
-        report_path = generator.generate_page_report(
-            page_id=page_id,
-            format=format,
-            include_ai=include_ai
-        )
-        
-        # Return file for download
-        return send_file(
-            report_path,
-            as_attachment=True,
-            download_name=Path(report_path).name
-        )
-        
-    except Exception as e:
-        logger.error(f"Failed to generate page report: {e}")
-        flash(f'Failed to generate report: {str(e)}', 'error')
-        return redirect(url_for('pages.view_page', page_id=page_id))
+
+    page = current_app.db.get_page(page_id)
+    if not page:
+        return jsonify({'success': False, 'error': 'Page not found'}), 404
+
+    # Capture Flask context into local variables
+    db = current_app.db
+    config = current_app.app_config.__dict__.copy()
+    language = str(get_locale()) if get_locale() else 'en'
+    app = current_app._get_current_object()
+
+    job_id = f"report_{uuid4().hex[:8]}"
+    job_manager = JobManager(db)
+    job_manager.create_job(
+        job_id=job_id,
+        job_type=JobType.REPORT_GENERATION,
+        metadata={'report_type': format, 'scope': 'page', 'display_name': f'Page Report - {page.title or page.url}'}
+    )
+
+    def wrapper():
+        with app.app_context():
+            generator = ReportGenerator(db, config, language=language)
+            job = ReportJob(job_id, job_manager, generator.generate_page_report,
+                           generator_kwargs={'page_id': page_id, 'format': format, 'include_ai': include_ai})
+            job.run()
+
+    task_runner.submit_task(func=wrapper, task_id=job_id)
+    return jsonify({'success': True, 'job_id': job_id})
 
 
 @reports_bp.route('/generate/website/<website_id>', methods=['POST'])
 def generate_website_report(website_id):
-    """Generate report for entire website"""
-    format = request.form.get('format', 'html')
+    """Generate report for entire website (background job)"""
+    format = request.form.get('format', request.json.get('format', 'html') if request.is_json else 'html')
     include_ai = request.form.get('include_ai', 'true') == 'true'
-    
-    try:
-        # Initialize report generator
-        generator = ReportGenerator(current_app.db, current_app.app_config.__dict__)
-        
-        # Generate report
-        report_path = generator.generate_website_report(
-            website_id=website_id,
-            format=format,
-            include_ai=include_ai
-        )
-        
-        # Return file for download
-        return send_file(
-            report_path,
-            as_attachment=True,
-            download_name=Path(report_path).name
-        )
-        
-    except Exception as e:
-        logger.error(f"Failed to generate website report: {e}")
-        flash(f'Failed to generate report: {str(e)}', 'error')
-        return redirect(url_for('websites.view_website', website_id=website_id))
+
+    website = current_app.db.get_website(website_id)
+    if not website:
+        return jsonify({'success': False, 'error': 'Website not found'}), 404
+
+    # Capture Flask context into local variables
+    db = current_app.db
+    config = current_app.app_config.__dict__.copy()
+    language = str(get_locale()) if get_locale() else 'en'
+    app = current_app._get_current_object()
+
+    job_id = f"report_{uuid4().hex[:8]}"
+    job_manager = JobManager(db)
+    job_manager.create_job(
+        job_id=job_id,
+        job_type=JobType.REPORT_GENERATION,
+        website_id=str(website_id),
+        metadata={'report_type': format, 'scope': 'website', 'display_name': f'Website Report - {website.name}'}
+    )
+
+    def wrapper():
+        with app.app_context():
+            generator = ReportGenerator(db, config, language=language)
+            job = ReportJob(job_id, job_manager, generator.generate_website_report,
+                           generator_kwargs={'website_id': website_id, 'format': format, 'include_ai': include_ai})
+            job.run()
+
+    task_runner.submit_task(func=wrapper, task_id=job_id)
+    return jsonify({'success': True, 'job_id': job_id})
 
 
 @reports_bp.route('/generate/project/<project_id>', methods=['POST'])
 def generate_project_report(project_id):
-    """Generate report for entire project"""
-    format = request.form.get('format', 'html')
-    
-    try:
-        # Initialize report generator
-        generator = ReportGenerator(current_app.db, current_app.app_config.__dict__)
-        
-        # Generate report
-        report_path = generator.generate_project_report(
-            project_id=project_id,
-            format=format
-        )
-        
-        # Return file for download
-        return send_file(
-            report_path,
-            as_attachment=True,
-            download_name=Path(report_path).name
-        )
-        
-    except Exception as e:
-        logger.error(f"Failed to generate project report: {e}")
-        flash(f'Failed to generate report: {str(e)}', 'error')
-        return redirect(url_for('projects.view_project', project_id=project_id))
+    """Generate report for entire project (background job)"""
+    format = request.form.get('format', request.json.get('format', 'html') if request.is_json else 'html')
+
+    project = current_app.db.get_project(project_id)
+    if not project:
+        return jsonify({'success': False, 'error': 'Project not found'}), 404
+
+    # Capture Flask context into local variables
+    db = current_app.db
+    config = current_app.app_config.__dict__.copy()
+    language = str(get_locale()) if get_locale() else 'en'
+    app = current_app._get_current_object()
+
+    job_id = f"report_{uuid4().hex[:8]}"
+    job_manager = JobManager(db)
+    job_manager.create_job(
+        job_id=job_id,
+        job_type=JobType.REPORT_GENERATION,
+        project_id=str(project_id),
+        metadata={'report_type': format, 'scope': 'project', 'display_name': f'Project Report - {project.name}'}
+    )
+
+    def wrapper():
+        with app.app_context():
+            generator = ReportGenerator(db, config, language=language)
+            job = ReportJob(job_id, job_manager, generator.generate_project_report,
+                           generator_kwargs={'project_id': project_id, 'format': format})
+            job.run()
+
+    task_runner.submit_task(func=wrapper, task_id=job_id)
+    return jsonify({'success': True, 'job_id': job_id})
 
 
 @reports_bp.route('/generate/page-structure/<website_id>', methods=['POST'])
 def generate_page_structure_report_download(website_id):
-    """Generate and immediately download site structure tree report for website (legacy endpoint)"""
-    format = request.form.get('format', 'html')
+    """Generate site structure tree report for website (background job)"""
+    format = request.form.get('format', request.json.get('format', 'html') if request.is_json else 'html')
 
-    try:
-        # Get current language from session
-        language = session.get('language', 'en')
+    # Validate inputs in route handler
+    website = current_app.db.get_website(website_id)
+    if not website:
+        return jsonify({'error': 'Website not found'}), 404
 
-        # Get website and pages
-        website = current_app.db.get_website(website_id)
-        if not website:
-            return jsonify({'error': 'Website not found'}), 404
+    project = None
+    if website.project_id:
+        project = current_app.db.get_project(website.project_id)
 
-        # Get project if available
-        project = None
-        if website.project_id:
-            project = current_app.db.get_project(website.project_id)
+    pages = current_app.db.get_pages(website_id)
+    if not pages:
+        return jsonify({'error': 'No pages found for website'}), 404
 
-        pages = current_app.db.get_pages(website_id)
-        if not pages:
-            return jsonify({'error': 'No pages found for website'}), 404
+    # Capture Flask context into local variables
+    db = current_app.db
+    language = session.get('language', 'en')
+    app = current_app._get_current_object()
 
-        # Generate report with project information and language
-        report = PageStructureReport(current_app.db, website, pages, project, language=language)
-        report.generate()
+    job_id = f"report_{uuid4().hex[:8]}"
+    job_manager = JobManager(db)
+    job_manager.create_job(
+        job_id=job_id,
+        job_type=JobType.REPORT_GENERATION,
+        website_id=str(website_id),
+        metadata={'report_type': format, 'scope': 'page_structure', 'display_name': f'Page Structure - {website.name}'}
+    )
 
-        # Save report in requested format
-        report_path = report.save(format)
-        report_path = Path(report_path)
+    def wrapper():
+        with app.app_context():
+            def generate_and_save(progress_callback=None):
+                report = PageStructureReport(db, website, pages, project, language=language)
+                report.generate(progress_callback=progress_callback)
+                return report.save(format)
+            job = ReportJob(job_id, job_manager, generate_and_save)
+            job.run()
 
-        # Return file
-        return send_file(
-            report_path,
-            as_attachment=True,
-            download_name=report_path.name,
-            mimetype={
-                'html': 'text/html',
-                'json': 'application/json',
-                'csv': 'text/csv',
-                'pdf': 'application/pdf'
-            }.get(format, 'application/octet-stream')
-        )
-
-    except Exception as e:
-        logger.error(f"Failed to generate page structure report: {e}")
-        return jsonify({'error': str(e)}), 500
+    task_runner.submit_task(func=wrapper, task_id=job_id)
+    return jsonify({'success': True, 'job_id': job_id})
 
 
 @reports_bp.route('/generate/page-structure', methods=['POST'])
 def generate_page_structure_report():
-    """Generate site structure tree report and add to reports list"""
+    """Generate site structure tree report (background job)"""
     # Accept both JSON and form data
-    is_json_request = request.is_json
-    if is_json_request:
+    if request.is_json:
         data = request.get_json()
         website_id = data.get('website_id')
         format = data.get('format', 'html')
@@ -409,119 +421,118 @@ def generate_page_structure_report():
         website_id = request.form.get('website_id')
         format = request.form.get('format', 'html')
 
-    try:
-        # Get current language from session
-        language = session.get('language', 'en')
+    # Validate inputs in route handler
+    website = current_app.db.get_website(website_id)
+    if not website:
+        return jsonify({'success': False, 'error': 'Website not found'}), 404
 
-        # Get website and pages
-        website = current_app.db.get_website(website_id)
-        if not website:
-            if is_json_request:
-                return jsonify({'success': False, 'error': 'Website not found'}), 404
-            flash('Website not found', 'error')
-            return redirect(url_for('reports.reports_dashboard'))
+    project = None
+    if website.project_id:
+        project = current_app.db.get_project(website.project_id)
 
-        # Get project if available
-        project = None
-        if website.project_id:
-            project = current_app.db.get_project(website.project_id)
+    pages = current_app.db.get_pages(website_id)
+    if not pages:
+        return jsonify({'success': False, 'error': 'No pages found for website'}), 404
 
-        pages = current_app.db.get_pages(website_id)
-        if not pages:
-            if is_json_request:
-                return jsonify({'success': False, 'error': 'No pages found for website'}), 404
-            flash('No pages found for website', 'error')
-            return redirect(url_for('reports.reports_dashboard'))
+    # Capture Flask context into local variables
+    db = current_app.db
+    language = session.get('language', 'en')
+    app = current_app._get_current_object()
 
-        # Generate report with project information and language
-        report = PageStructureReport(current_app.db, website, pages, project, language=language)
-        report.generate()
+    job_id = f"report_{uuid4().hex[:8]}"
+    job_manager = JobManager(db)
+    job_manager.create_job(
+        job_id=job_id,
+        job_type=JobType.REPORT_GENERATION,
+        website_id=str(website_id),
+        metadata={'report_type': format, 'scope': 'page_structure', 'display_name': f'Page Structure - {website.name}'}
+    )
 
-        # Save report in requested format (this saves to reports directory)
-        report_path = report.save(format)
+    def wrapper():
+        with app.app_context():
+            def generate_and_save(progress_callback=None):
+                report = PageStructureReport(db, website, pages, project, language=language)
+                report.generate(progress_callback=progress_callback)
+                return report.save(format)
+            job = ReportJob(job_id, job_manager, generate_and_save)
+            job.run()
 
-        logger.info(f"Site structure report generated successfully: {report_path}")
-        
-        if is_json_request:
-            return jsonify({'success': True, 'path': str(report_path)})
-        
-        flash('Site structure report generated successfully!', 'success')
-        return redirect(url_for('reports.reports_dashboard'))
-
-    except Exception as e:
-        logger.error(f"Failed to generate page structure report: {e}")
-        if is_json_request:
-            return jsonify({'success': False, 'error': str(e)}), 500
-        flash(f'Failed to generate report: {str(e)}', 'error')
-        return redirect(url_for('reports.reports_dashboard'))
+    task_runner.submit_task(func=wrapper, task_id=job_id)
+    return jsonify({'success': True, 'job_id': job_id})
 
 
 @reports_bp.route('/generate/discovery/website/<website_id>', methods=['POST'])
 def generate_discovery_website_report(website_id):
-    """Generate discovery report for a website"""
-    format = request.form.get('format', 'html')
+    """Generate discovery report for a website (background job)"""
+    format = request.form.get('format', request.json.get('format', 'html') if request.is_json else 'html')
 
-    try:
-        # Get current language from session
-        language = session.get('language', 'en')
+    website = current_app.db.get_website(website_id)
+    if not website:
+        return jsonify({'success': False, 'error': 'Website not found'}), 404
 
-        # Initialize discovery report generator
-        generator = DiscoveryReportGenerator(
-            current_app.db,
-            current_app.app_config.__dict__,
-            language=language
-        )
+    # Capture Flask context into local variables
+    db = current_app.db
+    config = current_app.app_config.__dict__.copy()
+    language = session.get('language', 'en')
+    app = current_app._get_current_object()
 
-        # Generate report (saves to reports directory)
-        report_path = generator.generate_website_discovery_report(
-            website_id=website_id,
-            format=format
-        )
+    job_id = f"report_{uuid4().hex[:8]}"
+    job_manager = JobManager(db)
+    job_manager.create_job(
+        job_id=job_id,
+        job_type=JobType.REPORT_GENERATION,
+        website_id=str(website_id),
+        metadata={'report_type': format, 'scope': 'discovery_website', 'display_name': f'Discovery Report - {website.name}'}
+    )
 
-        # Flash success message and redirect to dashboard
-        flash(f'Discovery report generated successfully!', 'success')
-        return redirect(url_for('reports.reports_dashboard'))
+    def wrapper():
+        with app.app_context():
+            generator = DiscoveryReportGenerator(db, config, language=language)
+            job = ReportJob(job_id, job_manager, generator.generate_website_discovery_report,
+                           generator_kwargs={'website_id': website_id, 'format': format})
+            job.run()
 
-    except Exception as e:
-        logger.error(f"Failed to generate discovery report: {e}", exc_info=True)
-        flash(f'Failed to generate report: {str(e)}', 'error')
-        return redirect(url_for('reports.reports_dashboard'))
+    task_runner.submit_task(func=wrapper, task_id=job_id)
+    return jsonify({'success': True, 'job_id': job_id})
 
 
 @reports_bp.route('/generate/discovery/project/<project_id>', methods=['POST'])
 def generate_discovery_project_report(project_id):
-    """Generate discovery report for an entire project"""
-    format = request.form.get('format', 'html')
+    """Generate discovery report for an entire project (background job)"""
+    format = request.form.get('format', request.json.get('format', 'html') if request.is_json else 'html')
 
-    try:
-        # Get current language from session
-        language = session.get('language', 'en')
+    project = current_app.db.get_project(project_id)
+    if not project:
+        return jsonify({'success': False, 'error': 'Project not found'}), 404
 
-        # Initialize discovery report generator
-        generator = DiscoveryReportGenerator(
-            current_app.db,
-            current_app.app_config.__dict__,
-            language=language
-        )
+    # Capture Flask context into local variables
+    db = current_app.db
+    config = current_app.app_config.__dict__.copy()
+    language = session.get('language', 'en')
+    app = current_app._get_current_object()
 
-        # Generate report (saves to reports directory)
-        report_path = generator.generate_project_discovery_report(
-            project_id=project_id,
-            format=format
-        )
+    job_id = f"report_{uuid4().hex[:8]}"
+    job_manager = JobManager(db)
+    job_manager.create_job(
+        job_id=job_id,
+        job_type=JobType.REPORT_GENERATION,
+        project_id=str(project_id),
+        metadata={'report_type': format, 'scope': 'discovery_project', 'display_name': f'Discovery Report - {project.name}'}
+    )
 
-        # Flash success message and redirect to dashboard
-        flash(f'Discovery report generated successfully!', 'success')
-        return redirect(url_for('reports.reports_dashboard'))
+    def wrapper():
+        with app.app_context():
+            generator = DiscoveryReportGenerator(db, config, language=language)
+            job = ReportJob(job_id, job_manager, generator.generate_project_discovery_report,
+                           generator_kwargs={'project_id': project_id, 'format': format})
+            job.run()
 
-    except Exception as e:
-        logger.error(f"Failed to generate discovery report: {e}", exc_info=True)
-        flash(f'Failed to generate report: {str(e)}', 'error')
-        return redirect(url_for('reports.reports_dashboard'))
+    task_runner.submit_task(func=wrapper, task_id=job_id)
+    return jsonify({'success': True, 'job_id': job_id})
 
 @reports_bp.route('/generate/static-html', methods=['POST'])
 def generate_static_html_report():
-    """Generate static HTML report (multi-page offline report)"""
+    """Generate static HTML report (background job)"""
     # Get data from form submission
     project_id = request.form.get('project_id')
     website_id = request.form.get('website_id')
@@ -529,208 +540,210 @@ def generate_static_html_report():
     include_discovery = request.form.get('include_discovery', 'true') in ['true', 'True', '1', 'on']
     wcag_level = request.form.get('wcag_level', 'AA')
 
-    try:
-        # Collect all page IDs based on scope
-        page_ids = []
-        project_name = "Accessibility Report"
-        website_url = None
-        touchpoints_tested = None
+    # Collect all page IDs based on scope (data collection stays in route handler)
+    page_ids = []
+    project_name = "Accessibility Report"
+    website_url = None
+    touchpoints_tested = None
+    display_name = 'Static HTML Report'
 
-        if project_id:
-            # Get all pages from all websites in project
-            project = current_app.db.get_project(project_id)
-            if not project:
-                return jsonify({'error': 'Project not found'}), 404
+    if project_id:
+        project = current_app.db.get_project(project_id)
+        if not project:
+            return jsonify({'error': 'Project not found'}), 404
 
-            project_name = project.name
-            websites = current_app.db.get_websites(project_id)
+        project_name = project.name
+        display_name = f'Static HTML Report - {project.name}'
+        websites = current_app.db.get_websites(project_id)
 
-            for website in websites:
-                pages = current_app.db.get_pages(website.id)
-                # Only include tested pages
-                page_ids.extend([str(p.id) for p in pages if p.status == PageStatus.TESTED])
+        for website in websites:
+            pages = current_app.db.get_pages(website.id)
+            page_ids.extend([str(p.id) for p in pages if p.status == PageStatus.TESTED])
+            if not website_url and website.url:
+                website_url = website.url
 
-                # Get website URL from first website
-                if not website_url and website.url:
-                    website_url = website.url
+    elif website_id:
+        website = current_app.db.get_website(website_id)
+        if not website:
+            return jsonify({'error': 'Website not found'}), 404
 
-        elif website_id:
-            # Get all pages from website
-            website = current_app.db.get_website(website_id)
-            if not website:
-                return jsonify({'error': 'Website not found'}), 404
-
-            # Get project name if available
-            if website.project_id:
-                project = current_app.db.get_project(website.project_id)
-                if project:
-                    project_name = f"{project.name} - {website.name}"
-                else:
-                    project_name = website.name
+        if website.project_id:
+            project = current_app.db.get_project(website.project_id)
+            if project:
+                project_name = f"{project.name} - {website.name}"
             else:
                 project_name = website.name
-
-            website_url = website.url
-            pages = current_app.db.get_pages(website_id)
-            # Only include tested pages
-            page_ids = [str(p.id) for p in pages if p.status == PageStatus.TESTED]
         else:
-            # Get all pages from all projects
-            projects = current_app.db.get_projects()
-            project_name = "All Projects Accessibility Report"
+            project_name = website.name
 
-            for project in projects:
-                websites = current_app.db.get_websites(project.id)
-                for website in websites:
-                    pages = current_app.db.get_pages(website.id)
-                    page_ids.extend([str(p.id) for p in pages if p.status == PageStatus.TESTED])
+        display_name = f'Static HTML Report - {project_name}'
+        website_url = website.url
+        pages = current_app.db.get_pages(website_id)
+        page_ids = [str(p.id) for p in pages if p.status == PageStatus.TESTED]
+    else:
+        projects = current_app.db.get_projects()
+        project_name = "All Projects Accessibility Report"
+        display_name = 'Static HTML Report - All Projects'
 
-        if not page_ids:
-            return jsonify({'error': 'No tested pages found to generate report'}), 400
+        for project in projects:
+            websites = current_app.db.get_websites(project.id)
+            for website in websites:
+                pages = current_app.db.get_pages(website.id)
+                page_ids.extend([str(p.id) for p in pages if p.status == PageStatus.TESTED])
 
-        # Get touchpoints from first page's test result
-        if page_ids:
-            first_result = current_app.db.get_latest_test_result(page_ids[0])
-            if first_result and first_result.violations:
-                touchpoints_set = set()
-                for violation in first_result.violations:
-                    if violation.touchpoint:
-                        touchpoints_set.add(violation.touchpoint)
-                touchpoints_tested = sorted(list(touchpoints_set))
+    if not page_ids:
+        return jsonify({'error': 'No tested pages found to generate report'}), 400
 
-        # Get current language from session
-        language = session.get('language', 'en')
+    # Get touchpoints from first page's test result
+    if page_ids:
+        first_result = current_app.db.get_latest_test_result(page_ids[0])
+        if first_result and first_result.violations:
+            touchpoints_set = set()
+            for violation in first_result.violations:
+                if violation.touchpoint:
+                    touchpoints_set.add(violation.touchpoint)
+            touchpoints_tested = sorted(list(touchpoints_set))
 
-        # Initialize static HTML generator
-        generator = StaticHTMLReportGenerator(
-            current_app.db,
-            output_dir=current_app.app_config.REPORTS_DIR,
-            language=language
-        )
+    # Capture Flask context into local variables
+    db = current_app.db
+    language = session.get('language', 'en')
+    output_dir = current_app.app_config.REPORTS_DIR
+    app = current_app._get_current_object()
 
-        # Generate report
-        zip_path = generator.generate_report(
-            page_ids=page_ids,
-            project_name=project_name,
-            website_url=website_url,
-            wcag_level=wcag_level,
-            touchpoints_tested=touchpoints_tested,
-            include_screenshots=include_screenshots,
-            include_discovery=include_discovery,
-            ai_tests_enabled=True
-        )
+    job_id = f"report_{uuid4().hex[:8]}"
+    job_manager = JobManager(db)
+    job_manager.create_job(
+        job_id=job_id,
+        job_type=JobType.REPORT_GENERATION,
+        project_id=str(project_id) if project_id else None,
+        website_id=str(website_id) if website_id else None,
+        metadata={'report_type': 'static_html', 'scope': 'static_html', 'display_name': display_name}
+    )
 
-        # Flash success message and redirect to dashboard
-        flash(f'Static HTML report generated successfully! Download it from the list below.', 'success')
-        return redirect(url_for('reports.reports_dashboard'))
+    def wrapper():
+        with app.app_context():
+            generator = StaticHTMLReportGenerator(db, output_dir=output_dir, language=language)
+            def generate_static(progress_callback=None):
+                return generator.generate_report(
+                    page_ids=page_ids,
+                    project_name=project_name,
+                    website_url=website_url,
+                    wcag_level=wcag_level,
+                    touchpoints_tested=touchpoints_tested,
+                    include_screenshots=include_screenshots,
+                    include_discovery=include_discovery,
+                    ai_tests_enabled=True,
+                    progress_callback=progress_callback
+                )
+            job = ReportJob(job_id, job_manager, generate_static)
+            job.run()
 
-    except Exception as e:
-        logger.error(f"Failed to generate static HTML report: {e}", exc_info=True)
-        flash(f'Failed to generate report: {str(e)}', 'error')
-        return redirect(url_for('reports.reports_dashboard'))
+    task_runner.submit_task(func=wrapper, task_id=job_id)
+    return jsonify({'success': True, 'job_id': job_id})
 
 
 @reports_bp.route('/generate/deduplicated', methods=['POST'])
 def generate_deduplicated_report():
-    """Generate deduplicated offline HTML report for a project or website"""
+    """Generate deduplicated offline HTML report (background job)"""
     project_id = request.form.get('project_id')
     website_id = request.form.get('website_id')
 
-    try:
-        # Get current language from session
-        language = session.get('language', 'en')
+    # Build display name
+    display_name = 'Deduplicated Report'
+    if project_id:
+        project = current_app.db.get_project(project_id)
+        if project:
+            display_name = f'Deduplicated Report - {project.name}'
+    if website_id:
+        website = current_app.db.get_website(website_id)
+        if website:
+            display_name = f'Deduplicated Report - {website.name}'
 
-        # Initialize static HTML generator
-        generator = StaticHTMLReportGenerator(
-            current_app.db,
-            output_dir=current_app.app_config.REPORTS_DIR,
-            language=language
-        )
+    # Capture Flask context into local variables
+    db = current_app.db
+    language = session.get('language', 'en')
+    output_dir = current_app.app_config.REPORTS_DIR
+    app = current_app._get_current_object()
 
-        # Generate deduplicated report (returns ZIP path)
-        # If website_id is provided, pass it along; otherwise generate for all websites in project
-        zip_path = generator.generate_project_deduplicated_report(
-            project_id=project_id,
-            website_id=website_id if website_id else None
-        )
+    job_id = f"report_{uuid4().hex[:8]}"
+    job_manager = JobManager(db)
+    job_manager.create_job(
+        job_id=job_id,
+        job_type=JobType.REPORT_GENERATION,
+        project_id=str(project_id) if project_id else None,
+        website_id=str(website_id) if website_id else None,
+        metadata={'report_type': 'deduplicated', 'scope': 'deduplicated', 'display_name': display_name}
+    )
 
-        # Flash success message and redirect to dashboard
-        flash(f'Deduplicated report generated successfully!', 'success')
-        return redirect(url_for('reports.reports_dashboard'))
+    def wrapper():
+        with app.app_context():
+            generator = StaticHTMLReportGenerator(db, output_dir=output_dir, language=language)
+            def generate_dedup(progress_callback=None):
+                return generator.generate_project_deduplicated_report(
+                    project_id=project_id,
+                    website_id=website_id if website_id else None,
+                    progress_callback=progress_callback
+                )
+            job = ReportJob(job_id, job_manager, generate_dedup)
+            job.run()
 
-    except Exception as e:
-        logger.error(f"Failed to generate deduplicated report: {e}", exc_info=True)
-        flash(f'Failed to generate report: {str(e)}', 'error')
-        return redirect(url_for('reports.reports_dashboard'))
+    task_runner.submit_task(func=wrapper, task_id=job_id)
+    return jsonify({'success': True, 'job_id': job_id})
 
 
 @reports_bp.route('/generate/recordings/<project_id>', methods=['POST'])
 def generate_recordings_report(project_id):
-    """Generate report for recordings in a project"""
-    format = request.form.get('format', 'html')
+    """Generate report for recordings in a project (background job)"""
+    format = request.form.get('format', request.json.get('format', 'html') if request.is_json else 'html')
     include_summary = request.form.get('include_summary', 'true') in ['true', 'True', '1', 'on']
     include_timecodes = request.form.get('include_timecodes', 'true') in ['true', 'True', '1', 'on']
     include_wcag = request.form.get('include_wcag', 'true') in ['true', 'True', '1', 'on']
     group_by_touchpoint = request.form.get('group_by_touchpoint', 'true') in ['true', 'True', '1', 'on']
-    
-    is_ajax = (request.headers.get('X-Requested-With') == 'XMLHttpRequest' or 
-               request.headers.get('Sec-Fetch-Mode') == 'cors' or
-               request.headers.get('Accept', '').startswith('application/json') or
-               'fetch' in request.headers.get('User-Agent', '').lower())
 
-    try:
-        # Get project
-        project = current_app.db.get_project(project_id)
-        if not project:
-            if is_ajax:
-                return jsonify({'success': False, 'error': 'Project not found'}), 404
-            flash('Project not found', 'error')
-            return redirect(url_for('reports.reports_dashboard'))
+    # Validate in route handler
+    project = current_app.db.get_project(project_id)
+    if not project:
+        return jsonify({'success': False, 'error': 'Project not found'}), 404
 
-        # Get all recordings for this project
-        recordings = current_app.db.get_recordings(project_id=project_id)
-        if not recordings:
-            if is_ajax:
-                return jsonify({
-                    'success': False, 
-                    'info': True,
-                    'title': _('No Recordings Available'),
-                    'message': _('There are no recordings for this project yet. Once recordings have been added, you can generate a report.')
-                }), 200
-            flash(_('No recordings found for this project'), 'warning')
-            return redirect(url_for('reports.reports_dashboard'))
+    recordings = current_app.db.get_recordings(project_id=project_id)
+    if not recordings:
+        return jsonify({
+            'success': False,
+            'info': True,
+            'title': _('No Recordings Available'),
+            'message': _('There are no recordings for this project yet. Once recordings have been added, you can generate a report.')
+        }), 200
 
-        # Get current language from session
-        language = session.get('language', 'en')
+    # Capture Flask context into local variables
+    db = current_app.db
+    config = current_app.app_config.__dict__.copy()
+    language = session.get('language', 'en')
+    app = current_app._get_current_object()
 
-        # Initialize recordings report generator
-        from auto_a11y.reporting.recordings_report import RecordingsReportGenerator
-        generator = RecordingsReportGenerator(
-            current_app.db,
-            current_app.app_config.__dict__
-        )
+    job_id = f"report_{uuid4().hex[:8]}"
+    job_manager = JobManager(db)
+    job_manager.create_job(
+        job_id=job_id,
+        job_type=JobType.REPORT_GENERATION,
+        project_id=str(project_id),
+        metadata={'report_type': format, 'scope': 'recordings', 'display_name': f'Recordings Report - {project.name}'}
+    )
 
-        # Generate report
-        report_path = generator.generate_project_recordings_report(
-            project_id=project_id,
-            format=format,
-            include_summary=include_summary,
-            include_timecodes=include_timecodes,
-            include_wcag=include_wcag,
-            group_by_touchpoint=group_by_touchpoint,
-            language=language
-        )
+    def wrapper():
+        with app.app_context():
+            from auto_a11y.reporting.recordings_report import RecordingsReportGenerator
+            generator = RecordingsReportGenerator(db, config)
+            job = ReportJob(job_id, job_manager, generator.generate_project_recordings_report,
+                           generator_kwargs={
+                               'project_id': project_id,
+                               'format': format,
+                               'include_summary': include_summary,
+                               'include_timecodes': include_timecodes,
+                               'include_wcag': include_wcag,
+                               'group_by_touchpoint': group_by_touchpoint,
+                               'language': language
+                           })
+            job.run()
 
-        if is_ajax:
-            return jsonify({'success': True, 'message': 'Recordings report generated successfully!', 'path': report_path})
-        
-        # Flash success message and redirect to dashboard
-        flash('Recordings report generated successfully!', 'success')
-        return redirect(url_for('reports.reports_dashboard'))
-
-    except Exception as e:
-        logger.error(f"Failed to generate recordings report: {e}", exc_info=True)
-        if is_ajax:
-            return jsonify({'success': False, 'error': str(e)}), 500
-        flash(f'Failed to generate report: {str(e)}', 'error')
-        return redirect(url_for('reports.reports_dashboard'))
+    task_runner.submit_task(func=wrapper, task_id=job_id)
+    return jsonify({'success': True, 'job_id': job_id})

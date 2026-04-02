@@ -345,7 +345,16 @@ class Database:
         """Get all websites for a project"""
         docs = self.websites.find({"project_id": project_id})
         return [Website.from_dict(doc) for doc in docs]
-    
+
+    def yield_websites(self, project_id: str):
+        """Yield Website objects one at a time from cursor."""
+        cursor = self.websites.find({"project_id": project_id}, no_cursor_timeout=True)
+        try:
+            for doc in cursor:
+                yield Website.from_dict(doc)
+        finally:
+            cursor.close()
+
     def update_website(self, website: Website) -> bool:
         """Update existing website"""
         result = self.websites.replace_one(
@@ -433,7 +442,21 @@ class Database:
         
         docs = self.pages.find(query).limit(limit).skip(skip)
         return [Page.from_dict(doc) for doc in docs]
-    
+
+    def yield_pages(self, website_id: str, sort_field: str = 'url', sort_order: int = 1, latest_only: bool = True):
+        """Yield Page objects one at a time from cursor.
+        Memory-efficient alternative to get_pages() for report generation.
+        Uses no_cursor_timeout to prevent timeout during long operations."""
+        query = {"website_id": website_id}
+        if latest_only:
+            query["is_in_latest_discovery"] = True
+        cursor = self.pages.find(query, no_cursor_timeout=True).sort(sort_field, sort_order)
+        try:
+            for doc in cursor:
+                yield Page.from_dict(doc)
+        finally:
+            cursor.close()
+
     def update_page(self, page: Page) -> bool:
         """Update existing page"""
         result = self.pages.replace_one(
@@ -732,6 +755,19 @@ class Database:
         items = list(self.test_result_items.find(query))
         return items
 
+    def yield_test_result_items(self, test_result_id, item_type=None):
+        """Yield individual test result items from cursor.
+        Each item is a raw dict from MongoDB."""
+        query = {'test_result_id': test_result_id}
+        if item_type:
+            query['item_type'] = item_type
+        cursor = self.test_result_items.find(query, no_cursor_timeout=True)
+        try:
+            for doc in cursor:
+                yield doc
+        finally:
+            cursor.close()
+
     def get_test_result(self, result_id: str) -> Optional[TestResult]:
         """
         Get test result by ID
@@ -860,7 +896,28 @@ class Database:
 
         # Old schema already has arrays, just use as-is
         return TestResult.from_dict(doc)
-    
+
+    def get_latest_test_result_summary(self, page_id: str):
+        """Get summary counts for the latest test result without loading items.
+        Returns a lightweight dict, NOT a full TestResult object."""
+        doc = self.test_results.find_one(
+            {"page_id": page_id},
+            sort=[("test_date", -1)]
+        )
+        if not doc:
+            return None
+        return {
+            'id': str(doc['_id']),
+            'page_id': page_id,
+            'violation_count': doc.get('violation_count', 0),
+            'warning_count': doc.get('warning_count', 0),
+            'info_count': doc.get('info_count', 0),
+            'discovery_count': doc.get('discovery_count', 0),
+            'pass_count': doc.get('pass_count', 0),
+            'test_date': doc.get('test_date'),
+            'score': doc.get('score'),
+        }
+
     def get_test_results(
         self,
         page_id: Optional[str] = None,

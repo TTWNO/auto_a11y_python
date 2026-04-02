@@ -514,8 +514,8 @@ class TestGroupUnassignedByPageStreaming:
         result = self.gen._group_unassigned_by_page_streaming([], {}, {})
         assert result == []
 
-    def test_reloads_test_result_for_pages_with_unassigned(self):
-        """Should reload test results from DB only for pages with unassigned issues."""
+    def test_groups_issues_by_page_without_db_reload(self):
+        """Should group issues from dedup index without reloading TestResults from DB."""
         unassigned = [{
             'rule_id': 'ErrNoAlt', 'type': 'violation', 'pages': ['http://a.com'],
             'xpath': '//img', 'impact': 'critical'
@@ -525,53 +525,32 @@ class TestGroupUnassignedByPageStreaming:
             'http://b.com': {'page_id': 'p2', 'title': 'Page B', 'page_score': 90, 'website_id': 'w1'},
         }
 
-        issue_obj = _make_mock_issue('ErrNoAlt', xpath='//img')
-        tr = _make_mock_test_result(violations=[issue_obj], metadata={'failed_checks': 1, 'passed_checks': 9})
-        self.gen.db.get_latest_test_result.return_value = tr
-        self.gen._calculate_page_score = MagicMock(return_value=80)
+        result = self.gen._group_unassigned_by_page_streaming(
+            unassigned, {}, page_metadata
+        )
+
+        # Should NOT reload from DB — data comes from dedup index
+        self.gen.db.get_latest_test_result.assert_not_called()
+        assert len(result) == 1
+        assert result[0]['url'] == 'http://a.com'
+        assert result[0]['errors_count'] == 1
+
+    def test_groups_multiple_issue_types_correctly(self):
+        """Should separate violations, warnings, and info by type."""
+        unassigned = [
+            {'rule_id': 'ErrNoAlt', 'type': 'violation', 'pages': ['http://a.com']},
+            {'rule_id': 'WarnLowContrast', 'type': 'warning', 'pages': ['http://a.com']},
+            {'rule_id': 'InfoLang', 'type': 'info', 'pages': ['http://a.com']},
+        ]
+        page_metadata = {
+            'http://a.com': {'page_id': 'p1', 'title': 'Page A', 'page_score': 80, 'website_id': 'w1'},
+        }
 
         result = self.gen._group_unassigned_by_page_streaming(
             unassigned, {}, page_metadata
         )
 
-        # Should only reload for page A (the one with unassigned issues), not page B
-        self.gen.db.get_latest_test_result.assert_called_once_with('p1')
         assert len(result) == 1
-        assert result[0]['url'] == 'http://a.com'
-
-    def test_filters_out_component_issues(self):
-        """Issues inside components should be filtered out from per-page data."""
-        unassigned = [{
-            'rule_id': 'ErrBadLink', 'type': 'violation',
-            'pages': ['http://a.com'], 'xpath': '//body/p/a'
-        }]
-        common_components = {
-            'nav_sig|Guest': {
-                'type': 'Navigation', 'label': 'Nav', 'signature': 'nav_sig',
-                'xpaths_by_page': {'http://a.com': '//nav[1]'},
-                'pages': {'http://a.com', 'http://b.com'},
-                'lang': 'en', 'user_context': 'Guest'
-            }
-        }
-        page_metadata = {
-            'http://a.com': {'page_id': 'p1', 'title': 'Page A', 'page_score': 80, 'website_id': 'w1'},
-        }
-
-        # Two violations: one inside nav (should be filtered), one outside (should remain)
-        nav_issue = _make_mock_issue('ErrNavLink', xpath='//nav[1]/a[1]')
-        body_issue = _make_mock_issue('ErrBadLink', xpath='//body/p/a')
-        tr = _make_mock_test_result(
-            violations=[nav_issue, body_issue],
-            metadata={'failed_checks': 2, 'passed_checks': 8}
-        )
-        self.gen.db.get_latest_test_result.return_value = tr
-        self.gen._calculate_page_score = MagicMock(return_value=90)
-
-        result = self.gen._group_unassigned_by_page_streaming(
-            unassigned, common_components, page_metadata
-        )
-
-        assert len(result) == 1
-        # Only the body issue should be in violations (nav issue filtered out)
         assert result[0]['errors_count'] == 1
-        assert len(result[0]['issues']['violations']) == 1
+        assert result[0]['warnings_count'] == 1
+        assert result[0]['info_count'] == 1

@@ -468,12 +468,20 @@ class DiscoveryReportGenerator:
         searches_data = {}  # search_signature -> {'xpath': str, 'searchLabel': str,
                            #                       'pages': set(), 'html': str}
 
+        total_pages_tested = 0
+
         for i, page in enumerate(pages):
             if progress_callback:
                 progress_callback(i, len(pages), f'Collecting data for page {i + 1} of {len(pages)}...')
-            test_result = self.db.get_latest_test_result(page.id)
+            try:
+                test_result = self.db.get_latest_test_result(page.id)
+            except Exception as e:
+                logger.error(f"Error loading test result for page {page.id} ({page.url}): {e}")
+                continue
             if not test_result:
                 continue
+
+            total_pages_tested += 1
 
             # Initialize page inspection data
             page_state_desc = ""
@@ -832,9 +840,6 @@ class DiscoveryReportGenerator:
                 page_data['requires_inspection'] = True
                 pages_needing_inspection.append(page_data)
 
-        # Calculate total pages tested
-        total_pages_tested = len([p for p in pages if self.db.get_latest_test_result(p.id)])
-
         # Identify common issues (appearing on >70% of pages)
         threshold = total_pages_tested * 0.7
         common_disco_issues = {
@@ -1060,8 +1065,8 @@ class DiscoveryReportGenerator:
         # Get translations for current language
         t = self._get_translations()
 
-        # Generate pages list - ALL pages
-        pages_html = ""
+        # Generate pages list - ALL pages (use list + join for efficiency with large page counts)
+        pages_html_parts = []
         total_pages = len(data['pages'])
 
         # Log for debugging
@@ -1070,8 +1075,13 @@ class DiscoveryReportGenerator:
         for idx, page_data in enumerate(data['pages']):
             if idx % 50 == 0 and idx > 0:
                 logger.info(f"Processing page {idx + 1}/{total_pages}")
-            pages_html += self._generate_page_section_html(page_data, idx, t)
+            try:
+                pages_html_parts.append(self._generate_page_section_html(page_data, idx, t))
+            except Exception as e:
+                logger.error(f"Error generating HTML for page {idx + 1} ({page_data.get('url', 'unknown')}): {e}")
+                pages_html_parts.append(f'<div class="accordion-item"><p class="text-danger">Error rendering page: {html.escape(str(e))}</p></div>')
 
+        pages_html = ''.join(pages_html_parts)
         logger.info(f"Completed generating HTML for all {total_pages} pages")
 
         # Generate issue breakdown
@@ -1331,7 +1341,7 @@ class DiscoveryReportGenerator:
 
         category_class = category.lower().replace(' ', '-')
 
-        issues_html = ""
+        issues_html_parts = []
         for issue in issues:
             issue_id = issue.get('id', 'Unknown')
 
@@ -1342,7 +1352,7 @@ class DiscoveryReportGenerator:
                 why_it_matters = catalog_info.get('why_it_matters', '')
                 how_to_fix = catalog_info.get('how_to_fix', '')
 
-            issues_html += f"""
+            issues_html_parts.append(f"""
             <div class="issue-item">
                 <div class="issue-header">
                     <span class="issue-id">{issue_id}</span>
@@ -1351,7 +1361,8 @@ class DiscoveryReportGenerator:
                 {f'<div class="issue-why"><strong data-i18n="why_it_matters">{t["why_it_matters"]}:</strong> {html.escape(why_it_matters)}</div>' if why_it_matters else ''}
                 {f'<div class="issue-fix"><strong data-i18n="how_to_fix">{t["how_to_fix"]}:</strong> {html.escape(how_to_fix)}</div>' if how_to_fix else ''}
             </div>
-            """
+            """)
+        issues_html = ''.join(issues_html_parts)
 
         return f"""
         <div class="issue-category {category_class}">

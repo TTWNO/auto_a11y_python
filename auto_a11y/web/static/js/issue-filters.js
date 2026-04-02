@@ -86,7 +86,7 @@ class IssueFilterManager {
 
         // Create filter panel HTML
         const filterPanelHTML = `
-            <div class="filter-panel mb-3" style="background: #f8f9fa; border-radius: 8px; padding: 1.5rem;">
+            <div class="filter-panel mb-3" style="background: var(--color-bg-subtle); border-radius: 8px; padding: 1.5rem;">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="mb-0"><i class="bi bi-funnel"></i> ${translate('Filter Test Results')}</h5>
                     <button class="btn btn-sm btn-outline-secondary" id="clearFilters">
@@ -95,13 +95,13 @@ class IssueFilterManager {
                 </div>
 
                 <!-- Active Filters Display -->
-                <div id="activeFilters" class="mb-3" style="display: none; padding: 1rem; background: #e7f3ff; border-radius: 8px;">
+                <div id="activeFilters" class="mb-3" style="display: none; padding: 1rem; background: var(--color-info-bg); border-radius: 8px;">
                     <strong>${translate('Active Filters:')}</strong>
                     <div id="activeFilterTags" class="mt-2"></div>
                 </div>
 
                 <!-- Filter Statistics -->
-                <div class="filter-stats mb-3" style="padding: 0.75rem; background: white; border-radius: 8px; border: 1px solid #dee2e6;">
+                <div class="filter-stats mb-3" style="padding: 0.75rem; background: var(--color-bg); border-radius: 8px; border: 1px solid var(--color-border-table);">
                     <strong>${translate('Showing:')}</strong>
                     <span id="visibleCount">0</span> ${translate('of')} <span id="totalCount">0</span> ${translate('items')}
                     <span class="text-muted mx-2">|</span>

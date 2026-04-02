@@ -396,81 +396,55 @@ class ReportGenerator:
         progress_callback=None
     ) -> str:
         """
-        Generate report for entire project
-        
+        Generate report for entire project using two-pass streaming.
+
         Args:
             project_id: Project ID
             format: Output format
-            
+
         Returns:
             Path to generated report
         """
         project = self.db.get_project(project_id)
         if not project:
             raise ValueError(f"Project {project_id} not found")
-        
-        websites = self.db.get_websites(project_id)
 
-        # Pre-compute total pages for progress tracking
-        total_page_count = sum(len(self.db.get_pages(w.id)) for w in websites)
-        page_count = 0
-
-        # Collect data for all websites
-        website_data = []
-        for website in websites:
-            pages = self.db.get_pages(website.id)
-
-            page_results = []
-            for page in pages:
-                if progress_callback:
-                    progress_callback(page_count, total_page_count, f'Processing page {page_count + 1} of {total_page_count}...')
-                test_result = self.db.get_latest_test_result(page.id)
-                if test_result:
-                    page_results.append({
-                        'page': page.__dict__ if hasattr(page, '__dict__') else page,
-                        'test_result': test_result
-                    })
-                page_count += 1
-
-            website_data.append({
-                'website': website.__dict__ if hasattr(website, '__dict__') else website,
-                'pages': page_results
-            })
-        
-        # Prepare report data
-        report_data = self._prepare_project_report_data(project, website_data)
-        
-        # Generate report
+        # Select formatter
         formatter = self.formatters.get(format)
         if not formatter:
             raise ValueError(f"Unsupported format: {format}")
-        
-        # Create filename with translated prefix and project name
+
+        # Create filename with translated prefix and project name (preserving existing pattern)
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        # Create a safe filename from the project name
         project_prefix = self._sanitize_filename(self._t('project'))
         project_name = self._sanitize_filename(project.name)
         filename = f"{project_prefix}_{project_name}_{timestamp}.{formatter.extension}"
         filepath = self.report_dir / filename
-        
-        # Generate content
-        content = formatter.format_project_report(report_data)
-        
-        # Save report
-        if format == 'pdf':
-            # PDF returns bytes, write in binary mode
-            with open(filepath, 'wb') as f:
-                f.write(content)
-        elif format in ['xlsx', 'excel']:
-            # Excel returns bytes, write in binary mode
-            with open(filepath, 'wb') as f:
-                f.write(content)
-        else:
-            with open(filepath, 'w', encoding='utf-8') as f:
-                f.write(content)
-        
+        output_file = str(filepath)
+
+        # Flattened page generator across all websites
+        def page_generator_fn():
+            for website in self.db.yield_websites(project_id):
+                yield from self.db.yield_pages(website.id)
+
+        try:
+            # Pass 1: collect summary stats
+            summary = self._collect_summary(page_generator_fn, progress_callback)
+            summary['project'] = project.__dict__
+            summary['recordings'] = self._collect_recordings_data(project_id)
+
+            # Pass 2: write detail pages via streaming formatter
+            self._write_details(page_generator_fn, summary, formatter, output_file, progress_callback)
+        except Exception:
+            # Clean up partial output on error
+            if os.path.exists(output_file):
+                os.remove(output_file)
+            raise
+        finally:
+            formatter.cleanup()
+
         logger.info(f"Generated {format} report: {filepath}")
-        return str(filepath)
+        return output_file
     
     def _enrich_issues_with_catalog(self, issues: List[Dict]) -> List[Dict]:
         """Enrich issues with detailed information from the catalog"""

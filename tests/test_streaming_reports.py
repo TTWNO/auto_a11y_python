@@ -371,3 +371,64 @@ class TestGenerateWebsiteReport:
 
         with pytest.raises(ValueError, match="Unsupported format"):
             rg.generate_website_report('w1', format='docx')
+
+
+class TestGenerateProjectReport:
+    """Tests for generate_project_report two-pass wiring."""
+
+    def test_calls_collect_summary_and_write_details(self):
+        db = MagicMock()
+        rg, formatter = _make_full_generator(db)
+
+        project = _SimpleObj(name='TestProject', id='proj1')
+        db.get_project.return_value = project
+
+        with patch.object(rg, '_collect_summary', return_value={
+            'total_pages': 0,
+        }) as mock_collect, \
+             patch.object(rg, '_write_details') as mock_write, \
+             patch.object(rg, '_collect_recordings_data', return_value=[]) as mock_rec, \
+             patch('os.path.exists', return_value=False):
+            rg.generate_project_report('proj1', format='html')
+
+        mock_collect.assert_called_once()
+        mock_write.assert_called_once()
+        mock_rec.assert_called_once_with('proj1')
+        # Summary should have project metadata and recordings attached
+        summary_arg = mock_write.call_args[0][1]
+        assert summary_arg['project']['name'] == 'TestProject'
+        assert summary_arg['recordings'] == []
+
+    def test_cleans_up_on_error(self):
+        db = MagicMock()
+        rg, formatter = _make_full_generator(db)
+
+        project = _SimpleObj(name='TestProject', id='proj1')
+        db.get_project.return_value = project
+
+        with patch.object(rg, '_collect_summary', side_effect=RuntimeError("boom")), \
+             patch('os.path.exists', return_value=True), \
+             patch('os.remove') as mock_remove:
+            with pytest.raises(RuntimeError):
+                rg.generate_project_report('proj1', format='html')
+
+        formatter.cleanup.assert_called_once()
+        mock_remove.assert_called_once()
+
+    def test_raises_for_unknown_project(self):
+        db = MagicMock()
+        rg, _ = _make_full_generator(db)
+        db.get_project.return_value = None
+
+        with pytest.raises(ValueError, match="Project"):
+            rg.generate_project_report('missing')
+
+    def test_raises_for_unsupported_format(self):
+        db = MagicMock()
+        rg, _ = _make_full_generator(db)
+
+        project = _SimpleObj(name='TestProject', id='proj1')
+        db.get_project.return_value = project
+
+        with pytest.raises(ValueError, match="Unsupported format"):
+            rg.generate_project_report('proj1', format='docx')

@@ -70,6 +70,8 @@ main {
 
 .navbar-dark .nav-link {
     color: var(--color-text-inverse) !important;
+    background-color: transparent !important;
+    border: none;
 }
 
 .navbar-dark .nav-link:hover,
@@ -962,6 +964,20 @@ table caption {
 }
 
 /* --- F. Dropdown Component --- */
+/* Light mode: ensure navbar dropdowns have dark text on white background */
+.navbar .dropdown-menu {
+    background-color: var(--color-bg) !important;
+    color: var(--color-text) !important;
+}
+.navbar .dropdown-item {
+    color: var(--color-text) !important;
+}
+.navbar .dropdown-item:hover,
+.navbar .dropdown-item:focus {
+    background-color: var(--color-bg-subtle) !important;
+    color: var(--color-text) !important;
+}
+
 [data-theme="dark"] .dropdown-menu {
     background-color: var(--color-bg-elevated) !important;
     border-color: var(--color-border) !important;
@@ -2156,6 +2172,11 @@ table caption {
 /* Discovery colour utility (replaces inline style on Discovery card) */
 .bg-discovery {
     background-color: var(--color-discovery);
+}
+
+/* Light mode: brighter warning stat card (dark text #1c1c1c → 8.2:1) */
+.stat-card.bg-warning {
+    background-color: #e8a817 !important;
 }
 
 /* Manual toggle */

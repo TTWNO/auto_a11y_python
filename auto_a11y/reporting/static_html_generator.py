@@ -825,31 +825,33 @@ class StaticHTMLReportGenerator:
         report_dir.mkdir(parents=True, exist_ok=True)
 
         try:
-            # Collect data for all pages
-            pages_data = self._collect_pages_data(page_ids, include_discovery, progress_callback=progress_callback)
+            # === Pass 1: Collect summary stats without loading full results ===
+            streaming_stats = self._collect_summary_stats(page_ids, progress_callback=progress_callback)
 
-            # Sort pages alphabetically by title for consistent ordering across all reports
-            pages_data = sorted(pages_data, key=lambda p: p['title'].lower())
+            # Sort page_info alphabetically by title for consistent ordering
+            page_info = sorted(streaming_stats['page_info'], key=lambda p: p['title'].lower())
 
-            # Generate summary statistics
-            summary = self._generate_summary_stats(pages_data)
+            # Build summary dict from streaming stats (same shape as _generate_summary_stats)
+            summary = self._build_summary_from_stats(streaming_stats)
 
             # Create directory structure
             self._create_directory_structure(report_dir)
 
-            # Copy static assets
-            self._copy_assets(report_dir, include_screenshots, pages_data if include_screenshots else None)
+            # Copy static assets (screenshots use lightweight page_info)
+            self._copy_assets(report_dir, include_screenshots, page_info if include_screenshots else None)
 
-            # Generate HTML files
-            self._generate_index_html(report_dir, pages_data, summary, project_name,
+            # Generate index.html using lightweight page_info (no full issue arrays needed)
+            self._generate_index_html(report_dir, page_info, summary, project_name,
                                      website_url, wcag_level, touchpoints_tested)
 
-            self._generate_page_detail_htmls(report_dir, pages_data, project_name,
-                                            wcag_level, touchpoints_tested,
-                                            progress_callback=progress_callback)
+            # === Pass 2: Generate page detail HTMLs one at a time ===
+            self._generate_page_detail_htmls_streaming(
+                report_dir, page_info, include_discovery,
+                project_name, wcag_level, touchpoints_tested,
+                progress_callback=progress_callback)
 
-            # Create manifest
-            self._create_manifest(report_dir, pages_data, summary, project_name,
+            # Create manifest using lightweight page_info
+            self._create_manifest(report_dir, page_info, summary, project_name,
                                 website_url, wcag_level, touchpoints_tested, ai_tests_enabled)
 
             # Package as ZIP
@@ -1465,6 +1467,330 @@ class StaticHTMLReportGenerator:
             })
 
         return pages_data
+
+    def _collect_summary_stats(self, page_ids, progress_callback=None):
+        """Pass 1: Stream pages collecting only aggregate statistics.
+
+        Memory-efficient replacement for _collect_pages_data() + _generate_summary_stats().
+        Does not load full test result item arrays — uses summary counts from DB
+        and streams individual items only for per-issue/per-touchpoint counting.
+
+        Returns:
+            dict with aggregate stats and lightweight page_info list for index/manifest.
+        """
+        from collections import defaultdict
+
+        stats = {
+            'total_pages': len(page_ids),
+            'total_errors': 0,
+            'total_warnings': 0,
+            'total_info': 0,
+            'total_discovery': 0,
+            'pages_with_errors': 0,
+            'pages_with_warnings': 0,
+            'pages_with_info': 0,
+            'pages_with_discovery': 0,
+            'scores': [],
+            'issue_counts': {},       # code -> {count, pages: set, impact, touchpoint}
+            'touchpoint_counts': defaultdict(int),
+            'wcag_counts': defaultdict(int),
+            'page_info': [],          # lightweight per-page info for index/manifest
+        }
+
+        for i, page_id in enumerate(page_ids):
+            if progress_callback:
+                progress_callback(i, len(page_ids),
+                                  f'Collecting summary ({i + 1}/{len(page_ids)})...')
+
+            # Collect lightweight page metadata
+            page = self.db.get_page(page_id)
+            page_title = page.title or 'Untitled Page' if page else 'Untitled Page'
+            page_url = page.url if page else ''
+            page_screenshot = page.screenshot_path if page else None
+
+            result_summary = self.db.get_latest_test_result_summary(page_id)
+            if not result_summary:
+                # Include page in page_info even without results
+                stats['page_info'].append({
+                    'id': page_id,
+                    'title': page_title,
+                    'url': page_url,
+                    'score': 0,
+                    'screenshot_path': page_screenshot,
+                    'test_date': None,
+                    'issues': {'errors': 0, 'warnings': 0, 'info': 0, 'discovery': 0},
+                })
+                continue
+
+            v = result_summary.get('violation_count', 0)
+            w = result_summary.get('warning_count', 0)
+            info_c = result_summary.get('info_count', 0)
+            disc = result_summary.get('discovery_count', 0)
+
+            stats['total_errors'] += v
+            stats['total_warnings'] += w
+            stats['total_info'] += info_c
+            stats['total_discovery'] += disc
+            if v > 0:
+                stats['pages_with_errors'] += 1
+            if w > 0:
+                stats['pages_with_warnings'] += 1
+            if info_c > 0:
+                stats['pages_with_info'] += 1
+            if disc > 0:
+                stats['pages_with_discovery'] += 1
+
+            score = result_summary.get('score')
+            if score is not None:
+                stats['scores'].append(score)
+
+            # Lightweight page info for index and manifest
+            stats['page_info'].append({
+                'id': page_id,
+                'title': page_title,
+                'url': page_url,
+                'score': score if score is not None else 0,
+                'screenshot_path': page_screenshot,
+                'test_date': result_summary.get('test_date'),
+                'issues': {
+                    'errors': v,
+                    'warnings': w,
+                    'info': info_c,
+                    'discovery': disc,
+                },
+            })
+
+            # Stream items for per-issue and per-touchpoint counting
+            for item in self.db.yield_test_result_items(result_summary['id']):
+                code = item.get('issue_id', 'unknown')
+                tp = item.get('touchpoint', 'unknown')
+                impact = item.get('impact', 'medium')
+                wcag = item.get('wcag_criteria', [])
+
+                if code not in stats['issue_counts']:
+                    stats['issue_counts'][code] = {
+                        'count': 0,
+                        'pages': set(),
+                        'impact': impact,
+                        'touchpoint': tp,
+                    }
+                stats['issue_counts'][code]['count'] += 1
+                stats['issue_counts'][code]['pages'].add(page_id)
+                stats['touchpoint_counts'][tp] += 1
+                if isinstance(wcag, list):
+                    for criterion in wcag:
+                        stats['wcag_counts'][criterion] += 1
+
+        return stats
+
+    def _build_summary_from_stats(self, stats: Dict[str, Any]) -> Dict[str, Any]:
+        """Build a summary dict (same shape as _generate_summary_stats) from streaming stats.
+
+        Converts the output of _collect_summary_stats into the summary format
+        expected by index.html template, manifest, and other consumers.
+        """
+        scores = stats['scores']
+        average_score = sum(scores) / len(scores) if scores else 0.0
+
+        total_errors = stats['total_errors']
+        total_warnings = stats['total_warnings']
+
+        # Determine compliance level
+        if total_errors == 0:
+            compliance_level = 'pass'
+        elif average_score >= 70:
+            compliance_level = 'partial'
+        else:
+            compliance_level = 'fail'
+
+        # Build top issues from issue_counts
+        top_issues = sorted(
+            stats['issue_counts'].values(),
+            key=lambda x: x['count'],
+            reverse=True
+        )[:10]
+        # Convert page sets to counts for JSON serialization
+        for issue in top_issues:
+            issue['pages'] = len(issue['pages'])
+
+        # Build by_touchpoint from touchpoint_counts
+        by_touchpoint = {}
+        for tp, count in stats['touchpoint_counts'].items():
+            by_touchpoint[tp] = {'errors': count, 'warnings': 0, 'info': 0}
+
+        # by_wcag placeholder (same as _group_by_wcag)
+        by_wcag = {}
+
+        return {
+            'total_errors': total_errors,
+            'total_warnings': total_warnings,
+            'total_info': stats['total_info'],
+            'total_discovery': stats['total_discovery'],
+            'pages_with_errors': stats['pages_with_errors'],
+            'pages_with_warnings': stats['pages_with_warnings'],
+            'pages_with_info': stats['pages_with_info'],
+            'pages_with_discovery': stats['pages_with_discovery'],
+            'average_score': average_score,
+            'compliance_level': compliance_level,
+            'top_issues': top_issues,
+            'by_touchpoint': by_touchpoint,
+            'by_wcag': by_wcag,
+            'recommendations': self._generate_recommendations(total_errors, total_warnings, average_score),
+        }
+
+    def _generate_page_detail_htmls_streaming(
+        self, report_dir: Path, page_info: List[Dict[str, Any]],
+        include_discovery: bool, project_name: str, wcag_level: str,
+        touchpoints_tested: Optional[List[str]], progress_callback=None
+    ):
+        """Generate individual page detail HTML files one at a time (Pass 2).
+
+        Loads the full test result for each page, processes it via _collect_pages_data
+        for that single page, generates the HTML, then discards the data before
+        moving to the next page. This keeps memory usage proportional to one page
+        at a time instead of all pages simultaneously.
+        """
+        template = self.template_env.get_template('static_report/page_detail.html')
+
+        # Read CSS and JS files to inline them (same as _generate_page_detail_htmls)
+        static_dir = Path(__file__).parent.parent / 'web' / 'static'
+        import urllib.request
+
+        bootstrap_css = ''
+        bootstrap_css_path = static_dir / 'css' / 'bootstrap.min.css'
+        if bootstrap_css_path.exists():
+            bootstrap_css = bootstrap_css_path.read_text(encoding='utf-8')
+        else:
+            try:
+                with urllib.request.urlopen('https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css') as response:
+                    bootstrap_css = response.read().decode('utf-8')
+            except Exception as e:
+                logger.warning(f"Could not fetch Bootstrap CSS from CDN: {e}")
+
+        bootstrap_icons_css = ''
+        bootstrap_icons_path = static_dir / 'css' / 'bootstrap-icons.css'
+        if bootstrap_icons_path.exists():
+            bootstrap_icons_css = bootstrap_icons_path.read_text(encoding='utf-8')
+        else:
+            try:
+                with urllib.request.urlopen('https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css') as response:
+                    bootstrap_icons_css = response.read().decode('utf-8')
+            except Exception as e:
+                logger.warning(f"Could not fetch Bootstrap Icons CSS from CDN: {e}")
+
+        # Embed woff2 font as base64 data URI
+        import re as _re
+        import base64 as _b64
+        woff2_path = static_dir / 'css' / 'fonts' / 'bootstrap-icons.woff2'
+        if woff2_path.exists() and bootstrap_icons_css:
+            woff2_b64 = _b64.b64encode(woff2_path.read_bytes()).decode('ascii')
+            data_uri = f'url("data:font/woff2;base64,{woff2_b64}") format("woff2")'
+            bootstrap_icons_css = _re.sub(
+                r'src:\s*url\([^)]+\)(\s*format\([^)]+\))?(,\s*url\([^)]+\)(\s*format\([^)]+\))?)*;',
+                f'src: {data_uri};',
+                bootstrap_icons_css
+            )
+
+        bootstrap_js = ''
+        bootstrap_js_path = static_dir / 'js' / 'bootstrap.bundle.min.js'
+        if bootstrap_js_path.exists():
+            bootstrap_js = bootstrap_js_path.read_text(encoding='utf-8')
+        else:
+            try:
+                with urllib.request.urlopen('https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js') as response:
+                    bootstrap_js = response.read().decode('utf-8')
+            except Exception as e:
+                logger.warning(f"Could not fetch Bootstrap JS from CDN: {e}")
+
+        filters_js = ''
+        filters_js_path = static_dir / 'js' / 'filters.js'
+        if filters_js_path.exists():
+            filters_js = filters_js_path.read_text(encoding='utf-8')
+
+        # Get translations
+        all_translations = self._get_translations()
+        translations_en = all_translations['en']
+        translations_fr = all_translations['fr']
+        t = all_translations[self.language]
+
+        total_pages = len(page_info)
+
+        for index, pi in enumerate(page_info, start=1):
+            if progress_callback:
+                progress_callback(index - 1, total_pages,
+                                  f'Generating page {index} of {total_pages}...')
+
+            page_id = pi['id']
+
+            # Load full test result data for this ONE page, then discard after writing
+            single_page_data = self._collect_pages_data([page_id], include_discovery)
+            if not single_page_data:
+                continue
+            page = single_page_data[0]
+
+            # Collect all unique touchpoints for filters
+            all_touchpoints = set()
+            for issue_list in [page['violations'], page['warnings'],
+                               page['informational'], page['discovery']]:
+                for issue in issue_list:
+                    all_touchpoints.add(issue.get('touchpoint', 'general'))
+
+            # Create navigation context using lightweight page_info list
+            navigation = {
+                'previous': page_info[index - 2] if index > 1 else None,
+                'next': page_info[index] if index < total_pages else None,
+                'pages': [{'number': i + 1, 'title': p['title'], 'current': i + 1 == index}
+                          for i, p in enumerate(page_info)]
+            }
+
+            if navigation['previous']:
+                navigation['previous'] = dict(navigation['previous'])
+                navigation['previous']['number'] = index - 1
+            if navigation['next']:
+                navigation['next'] = dict(navigation['next'])
+                navigation['next']['number'] = index + 1
+
+            with force_locale(self.language):
+                html = template.render(
+                    page=page,
+                    violations=page['violations'],
+                    warnings=page['warnings'],
+                    informational=page['informational'],
+                    discovery=page['discovery'],
+                    errors_count=page['issues']['errors'],
+                    warnings_count=page['issues']['warnings'],
+                    info_count=page['issues']['info'],
+                    discovery_count=page['issues']['discovery'],
+                    compliance_score=page.get('compliance_score'),
+                    all_touchpoints=sorted(all_touchpoints),
+                    navigation=navigation,
+                    project_name=project_name,
+                    wcag_level=wcag_level,
+                    touchpoints_tested=touchpoints_tested or [],
+                    generation_date=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    asset_path='../assets/',
+                    index_path='../',
+                    # Language support
+                    language=self.language,
+                    translations_en=translations_en,
+                    translations_fr=translations_fr,
+                    translations_json=json.dumps({'en': translations_en, 'fr': translations_fr}),
+                    t=t,
+                    # Inlined CSS and JS
+                    bootstrap_css=bootstrap_css,
+                    bootstrap_icons_css=bootstrap_icons_css,
+                    bootstrap_js=bootstrap_js,
+                    filters_js=filters_js,
+                    inline_mode=True,
+                    show_error_codes=config.SHOW_ERROR_CODES
+                )
+
+            filename = f'page_{str(index).zfill(3)}.html'
+            (report_dir / 'pages' / filename).write_text(html, encoding='utf-8')
+
+            # Explicitly discard the full page data to free memory
+            del single_page_data
+            del page
 
     def _calculate_page_score(self, test_result) -> float:
         """Calculate accessibility score for a page using result_processor's scoring logic"""

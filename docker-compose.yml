@@ -1,0 +1,13 @@
+deploy:
+  resources:
+    limits:
+      memory: 1000MB
+services:
+    my-mongo-dev:
+        container_name: my-mongo-dev
+        image: mongo:latest
+        command: mongod --port 27017 --auth
+        ports:
+            - 27017:27017
+        volumes:
+            - /auto_a11y_db:/data/db

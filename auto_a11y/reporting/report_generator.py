@@ -3,6 +3,7 @@ Main report generator for accessibility test results
 """
 
 import logging
+import os
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 from pathlib import Path
@@ -785,3 +786,104 @@ class ReportGenerator:
         
         logger.info(f"Generated summary report: {filepath}")
         return str(filepath)
+
+    # ---- Two-pass streaming report methods ----
+
+    def _collect_summary(self, page_generator_fn, progress_callback):
+        """
+        Pass 1: Stream pages collecting only aggregate stats.
+        Memory: one counter dict + one item at a time.
+        """
+        from collections import defaultdict, Counter
+
+        summary = {
+            'total_pages': 0,
+            'total_violations': 0,
+            'total_warnings': 0,
+            'total_info': 0,
+            'total_discovery': 0,
+            'total_passes': 0,
+            'touchpoint_counts': defaultdict(int),
+            'wcag_counts': defaultdict(int),
+            'impact_counts': defaultdict(int),
+            'page_scores': [],
+            'top_issue_codes': Counter(),
+        }
+        page_count = 0
+        for page in page_generator_fn():
+            page_count += 1
+            result_summary = self.db.get_latest_test_result_summary(page.id)
+            if not result_summary:
+                if progress_callback:
+                    progress_callback(page_count, 0, f"Collecting summary ({page_count})...")
+                continue
+
+            summary['total_pages'] += 1
+            summary['total_violations'] += result_summary['violation_count']
+            summary['total_warnings'] += result_summary['warning_count']
+            summary['total_info'] += result_summary['info_count']
+            summary['total_discovery'] += result_summary['discovery_count']
+            summary['total_passes'] += result_summary['pass_count']
+
+            if result_summary.get('score') is not None:
+                summary['page_scores'].append((page.id, result_summary['score']))
+
+            for item in self.db.yield_test_result_items(result_summary['id']):
+                tp = item.get('touchpoint', 'unknown')
+                code = item.get('issue_id', item.get('code', 'unknown'))
+                impact = item.get('impact', 'unknown')
+                summary['touchpoint_counts'][tp] += 1
+                summary['top_issue_codes'][code] += 1
+                summary['impact_counts'][impact] += 1
+
+            if progress_callback:
+                progress_callback(page_count, 0, f"Collecting summary ({page_count})...")
+
+        return summary
+
+    def _write_details(self, page_generator_fn, summary, formatter, output_file, progress_callback):
+        """
+        Pass 2: Stream pages, writing detail chunks via formatter.
+        Memory: summary dict + one page at a time.
+        """
+        formatter.begin(output_file, summary)
+        page_count = 0
+        total = summary.get('total_pages', 0)
+        for page in page_generator_fn():
+            page_count += 1
+            test_result = self.db.get_latest_test_result(page.id)
+            if not test_result:
+                if progress_callback:
+                    progress_callback(page_count, total, f"Writing details ({page_count}/{total})...")
+                continue
+
+            page_data = self._prepare_single_page_data(page, test_result)
+            formatter.append_page(output_file, page_data)
+            del page_data
+
+            if progress_callback:
+                progress_callback(page_count, total, f"Writing details ({page_count}/{total})...")
+
+        formatter.finalize(output_file, summary)
+
+    def _prepare_single_page_data(self, page, test_result, include_ai=False):
+        """Prepare data dict for a single page's test result."""
+        return {
+            'page': page,
+            'test_result': test_result,
+        }
+
+    def _collect_recordings_data(self, project_id):
+        """Load recordings + issues for a project (small bounded dataset)."""
+        recordings_data = []
+        recordings = self.db.get_recordings(project_id=project_id)
+        for recording in recordings:
+            recording_issues = self.db.get_recording_issues(recording_id=recording.recording_id)
+            recordings_data.append({
+                'recording': recording,
+                'issues': recording_issues,
+                'key_takeaways': recording.get_key_takeaways('en') if hasattr(recording, 'get_key_takeaways') else [],
+                'user_painpoints': recording.get_user_painpoints('en') if hasattr(recording, 'get_user_painpoints') else [],
+                'user_assertions': recording.get_user_assertions('en') if hasattr(recording, 'get_user_assertions') else [],
+            })
+        return recordings_data

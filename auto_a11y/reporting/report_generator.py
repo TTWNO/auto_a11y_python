@@ -261,109 +261,59 @@ class ReportGenerator:
         progress_callback=None
     ) -> str:
         """
-        Generate report for all projects
-        
+        Generate report for all projects using two-pass streaming.
+
         Args:
             format: Output format (html, xlsx, json)
             include_ai: Include AI analysis results
-            
+
         Returns:
             Path to generated report file
         """
         logger.info(f"Generating all projects report in {format} format")
-        
-        # Get all projects
+
+        # Get all projects (needed for metadata and generator)
         projects = self.db.get_projects()
-        
+
         if not projects:
             raise ValueError("No projects found")
-        
-        # Collect data for all projects
-        all_projects_data = []
-        total_stats = {
-            'total_projects': len(projects),
-            'total_websites': 0,
-            'total_pages': 0,
-            'total_tested': 0,
-            'total_violations': 0,
-            'total_warnings': 0
-        }
 
-        # Pre-compute total pages for progress tracking
-        total_pages_count = 0
-        if progress_callback:
-            for project in projects:
-                for website in self.db.get_websites(project.id):
-                    total_pages_count += len(self.db.get_pages(website.id))
-        processed_pages = 0
-
-        for project in projects:
-            websites = self.db.get_websites(project.id)
-            project_data = {
-                'project': project.__dict__,
-                'websites': [],
-                'stats': self.db.get_project_stats(project.id)
-            }
-
-            for website in websites:
-                if progress_callback:
-                    progress_callback(processed_pages, max(total_pages_count, 1), f'Processing {website.name}...')
-                pages = self.db.get_pages(website.id)
-                website_data = {
-                    'website': website.__dict__,
-                    'pages': len(pages),
-                    'tested': sum(1 for p in pages if p.status.value == 'tested'),
-                    'violations': sum(p.violation_count for p in pages),
-                    'warnings': sum(p.warning_count for p in pages)
-                }
-                project_data['websites'].append(website_data)
-
-                # Update totals
-                total_stats['total_websites'] += 1
-                total_stats['total_pages'] += len(pages)
-                total_stats['total_tested'] += website_data['tested']
-                total_stats['total_violations'] += website_data['violations']
-                total_stats['total_warnings'] += website_data['warnings']
-                processed_pages += len(pages)
-
-            all_projects_data.append(project_data)
-        
-        # Prepare report data
-        report_data = {
-            'title': f"{self._t('all_projects')} {self._t('accessibility_report')}",
-            'projects': all_projects_data,
-            'summary': total_stats,
-            'generated_at': datetime.now().isoformat()
-        }
-        
-        # Generate report
+        # Select formatter
         formatter = self.formatters.get(format)
         if not formatter:
             raise ValueError(f"Unsupported format: {format}")
-        
-        # Create filename with translated prefix
+
+        # Create filename with translated prefix (preserving existing pattern)
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         all_projects_name = self._sanitize_filename(self._t('all_projects'))
         filename = f"{all_projects_name}_{timestamp}.{formatter.extension}"
         filepath = self.report_dir / filename
-        
-        # Generate content based on format  
-        if format in ['xlsx', 'excel']:
-            # For Excel, use the proper Excel formatter
-            content = formatter.format_all_projects_report(report_data)
-        elif format == 'html':
-            # For HTML, use the all projects formatter
-            content = formatter.format_all_projects_report(report_data)
-        elif format == 'pdf':
-            # For PDF, use the PDF formatter
-            content = formatter.format_all_projects_report(report_data)
-        else:
-            content = json.dumps(report_data, indent=2, default=str)
-        
-        self._save_report(filepath, content, format)
-        
+        output_file = str(filepath)
+
+        # Triply-nested page generator across all projects and websites
+        def page_generator_fn():
+            for project in self.db.get_projects():
+                for website in self.db.yield_websites(project.id):
+                    yield from self.db.yield_pages(website.id)
+
+        try:
+            # Pass 1: collect summary stats
+            summary = self._collect_summary(page_generator_fn, progress_callback)
+            summary['title'] = f"{self._t('all_projects')} {self._t('accessibility_report')}"
+            summary['projects'] = [p.__dict__ for p in projects]
+
+            # Pass 2: write detail pages via streaming formatter
+            self._write_details(page_generator_fn, summary, formatter, output_file, progress_callback)
+        except Exception:
+            # Clean up partial output on error
+            if os.path.exists(output_file):
+                os.remove(output_file)
+            raise
+        finally:
+            formatter.cleanup()
+
         logger.info(f"All projects report generated: {filepath}")
-        return str(filepath)
+        return output_file
     
     def _save_report(self, filepath: Path, content, format: str):
         """Save report content to file"""

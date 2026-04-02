@@ -1667,51 +1667,70 @@ function cancelTesting() {
 
 // Report generation functions
 function generateSiteStructureReport(format) {
-    // Create a form to submit the report request
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = `{{ url_for('reports.generate_page_structure_report') }}`;
-    
-    const websiteIdInput = document.createElement('input');
-    websiteIdInput.type = 'hidden';
-    websiteIdInput.name = 'website_id';
-    websiteIdInput.value = '{{ website.id }}';
-    form.appendChild(websiteIdInput);
-    
-    const formatInput = document.createElement('input');
-    formatInput.type = 'hidden';
-    formatInput.name = 'format';
-    formatInput.value = format;
-    form.appendChild(formatInput);
-    
-    document.body.appendChild(form);
-    form.submit();
-    document.body.removeChild(form);
-    
-    if (window.showNotification) {
-        showNotification('{{ _("Report Generation") }}', `{{ _("Generating site structure report in") }} ${format.toUpperCase()} {{ _("format...") }}`, 'info');
+    const btn = event.target.closest('a');
+    const originalText = btn?.innerHTML;
+    if (btn) {
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        btn.classList.add('disabled');
     }
+    fetch('{{ url_for("reports.generate_page_structure_report") }}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            website_id: '{{ website.id }}',
+            format: format
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            if (window.showNotification) {
+                showNotification('{{ _("Report Generation") }}',
+                    '{{ _("Report is being generated. Check the Reports dashboard for progress.") }}', 'info');
+            }
+        } else {
+            alert(data.error || '{{ _("Failed to generate report") }}');
+        }
+    })
+    .catch(() => alert('{{ _("Failed to generate report") }}'))
+    .finally(() => {
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.classList.remove('disabled');
+        }
+    });
 }
 
 function generateAccessibilityReport(format) {
-    // Create a form to submit the report request
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = `{{ url_for('reports.generate_website_report', website_id=website.id) }}`;
-
-    const formatInput = document.createElement('input');
-    formatInput.type = 'hidden';
-    formatInput.name = 'format';
-    formatInput.value = format;
-    form.appendChild(formatInput);
-
-    document.body.appendChild(form);
-    form.submit();
-    document.body.removeChild(form);
-
-    if (window.showNotification) {
-        showNotification('{{ _("Report Generation") }}', `{{ _("Generating accessibility report in") }} ${format.toUpperCase()} {{ _("format...") }}`, 'info');
+    const btn = event.target.closest('a');
+    const originalText = btn?.innerHTML;
+    if (btn) {
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        btn.classList.add('disabled');
     }
+    fetch('{{ url_for("reports.generate_website_report", website_id=website.id) }}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({format: format})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            if (window.showNotification) {
+                showNotification('{{ _("Report Generation") }}',
+                    '{{ _("Report is being generated. Check the Reports dashboard for progress.") }}', 'info');
+            }
+        } else {
+            alert(data.error || '{{ _("Failed to generate report") }}');
+        }
+    })
+    .catch(() => alert('{{ _("Failed to generate report") }}'))
+    .finally(() => {
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.classList.remove('disabled');
+        }
+    });
 }
 
 // Clean up on page unload

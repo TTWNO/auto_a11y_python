@@ -9,7 +9,7 @@ from flask import g
 from auto_a11y.models import Project, ProjectStatus, ProjectType
 from auto_a11y.models.app_user import UserRole
 from auto_a11y.web.routes.auth import auditor_required, project_role_required, get_effective_role
-from auto_a11y.core.job_manager import JobManager, JobType
+from auto_a11y.core.job_manager import JobManager, JobType, JobStatus
 from auto_a11y.core.task_runner import task_runner
 from auto_a11y.core.report_job import ReportJob
 from flask_login import current_user
@@ -857,13 +857,20 @@ def generate_project_report(project_id):
     )
 
     def wrapper():
-        with app.app_context():
-            def generate_and_save(progress_callback=None):
-                report = ProjectReport(db, project, websites, pages_by_website)
-                report.generate(progress_callback=progress_callback)
-                return report.save(format, reports_dir=reports_dir)
-            job = ReportJob(job_id, job_manager, generate_and_save)
-            job.run()
+        try:
+            with app.app_context():
+                def generate_and_save(progress_callback=None):
+                    report = ProjectReport(db, project, websites, pages_by_website)
+                    report.generate(progress_callback=progress_callback)
+                    return report.save(format, reports_dir=reports_dir)
+                job = ReportJob(job_id, job_manager, generate_and_save)
+                job.run()
+        except Exception as e:
+            logger.error(f"Report job {job_id} wrapper failed: {e}", exc_info=True)
+            try:
+                job_manager.update_job_status(job_id, JobStatus.FAILED, error=str(e))
+            except Exception:
+                pass
 
     task_runner.submit_task(func=wrapper, task_id=job_id)
     return jsonify({'success': True, 'job_id': job_id})

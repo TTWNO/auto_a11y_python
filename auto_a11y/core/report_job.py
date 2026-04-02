@@ -73,6 +73,40 @@ class ReportJob:
                 error=str(e)
             )
 
+    @staticmethod
+    def run_in_wrapper(job_id, job_manager, func, *args, **kwargs):
+        """
+        Safe entry point for wrapper closures. Catches ANY exception
+        (including errors in generator construction, app context issues, etc.)
+        and marks the job as FAILED in JobManager.
+
+        Use this instead of calling ReportJob(...).run() directly in wrappers,
+        so that errors outside of run() are still reported to the job.
+
+        Args:
+            job_id: The job ID
+            job_manager: JobManager instance
+            func: The generator function to call
+            *args: Positional args for the generator
+            **kwargs: Keyword args for the generator
+        """
+        try:
+            job = ReportJob(job_id, job_manager, func,
+                           generator_args=args, generator_kwargs=kwargs)
+            job.run()
+        except Exception as e:
+            # This catches errors that happen OUTSIDE run()'s try/except,
+            # e.g. generator constructor fails, app context issues, etc.
+            logger.error(f"Report job {job_id} wrapper failed: {e}", exc_info=True)
+            try:
+                job_manager.update_job_status(
+                    job_id,
+                    JobStatus.FAILED,
+                    error=str(e)
+                )
+            except Exception:
+                logger.error(f"Could not mark job {job_id} as failed in DB")
+
     def _progress_callback(self, current, total, message):
         """Progress callback injected into generators. Also checks cancellation."""
         self.job_manager.update_job_progress(

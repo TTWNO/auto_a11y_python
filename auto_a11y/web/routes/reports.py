@@ -8,7 +8,7 @@ from auto_a11y.models import PageStatus
 from auto_a11y.reporting import ReportGenerator, PageStructureReport
 from auto_a11y.reporting.discovery_report import DiscoveryReportGenerator
 from auto_a11y.reporting.static_html_generator import StaticHTMLReportGenerator
-from auto_a11y.core.job_manager import JobManager, JobType
+from auto_a11y.core.job_manager import JobManager, JobType, JobStatus
 from auto_a11y.core.task_runner import task_runner
 from auto_a11y.core.report_job import ReportJob
 from datetime import datetime, timedelta
@@ -136,22 +136,29 @@ def generate_report():
     )
 
     def wrapper():
-        with app.app_context():
-            from auto_a11y.reporting import ReportGenerator
-            generator = ReportGenerator(db, config, language=language)
-            format_map = {'excel': 'xlsx'}
-            fmt = format_map.get(report_type, report_type)
-            if scope == 'all':
-                func = generator.generate_all_projects_report
-                kwargs = {'format': fmt}
-            elif scope == 'project':
-                func = generator.generate_project_report
-                kwargs = {'project_id': scope_id, 'format': fmt}
-            else:
-                func = generator.generate_website_report
-                kwargs = {'website_id': scope_id, 'format': fmt}
-            job = ReportJob(job_id, job_manager, func, generator_kwargs=kwargs)
-            job.run()
+        try:
+            with app.app_context():
+                from auto_a11y.reporting import ReportGenerator
+                generator = ReportGenerator(db, config, language=language)
+                format_map = {'excel': 'xlsx'}
+                fmt = format_map.get(report_type, report_type)
+                if scope == 'all':
+                    func = generator.generate_all_projects_report
+                    kwargs = {'format': fmt}
+                elif scope == 'project':
+                    func = generator.generate_project_report
+                    kwargs = {'project_id': scope_id, 'format': fmt}
+                else:
+                    func = generator.generate_website_report
+                    kwargs = {'website_id': scope_id, 'format': fmt}
+                job = ReportJob(job_id, job_manager, func, generator_kwargs=kwargs)
+                job.run()
+        except Exception as e:
+            logger.error(f"Report job {job_id} wrapper failed: {e}", exc_info=True)
+            try:
+                job_manager.update_job_status(job_id, JobStatus.FAILED, error=str(e))
+            except Exception:
+                pass
 
     task_runner.submit_task(func=wrapper, task_id=job_id)
     return jsonify({'success': True, 'job_id': job_id, 'message': 'Report generation started'})
@@ -283,11 +290,18 @@ def generate_page_report(page_id):
     )
 
     def wrapper():
-        with app.app_context():
-            generator = ReportGenerator(db, config, language=language)
-            job = ReportJob(job_id, job_manager, generator.generate_page_report,
-                           generator_kwargs={'page_id': page_id, 'format': format, 'include_ai': include_ai})
-            job.run()
+        try:
+            with app.app_context():
+                generator = ReportGenerator(db, config, language=language)
+                job = ReportJob(job_id, job_manager, generator.generate_page_report,
+                               generator_kwargs={'page_id': page_id, 'format': format, 'include_ai': include_ai})
+                job.run()
+        except Exception as e:
+            logger.error(f"Report job {job_id} wrapper failed: {e}", exc_info=True)
+            try:
+                job_manager.update_job_status(job_id, JobStatus.FAILED, error=str(e))
+            except Exception:
+                pass
 
     task_runner.submit_task(func=wrapper, task_id=job_id)
     return jsonify({'success': True, 'job_id': job_id})
@@ -319,11 +333,18 @@ def generate_website_report(website_id):
     )
 
     def wrapper():
-        with app.app_context():
-            generator = ReportGenerator(db, config, language=language)
-            job = ReportJob(job_id, job_manager, generator.generate_website_report,
-                           generator_kwargs={'website_id': website_id, 'format': format, 'include_ai': include_ai})
-            job.run()
+        try:
+            with app.app_context():
+                generator = ReportGenerator(db, config, language=language)
+                job = ReportJob(job_id, job_manager, generator.generate_website_report,
+                               generator_kwargs={'website_id': website_id, 'format': format, 'include_ai': include_ai})
+                job.run()
+        except Exception as e:
+            logger.error(f"Report job {job_id} wrapper failed: {e}", exc_info=True)
+            try:
+                job_manager.update_job_status(job_id, JobStatus.FAILED, error=str(e))
+            except Exception:
+                pass
 
     task_runner.submit_task(func=wrapper, task_id=job_id)
     return jsonify({'success': True, 'job_id': job_id})
@@ -354,11 +375,18 @@ def generate_project_report(project_id):
     )
 
     def wrapper():
-        with app.app_context():
-            generator = ReportGenerator(db, config, language=language)
-            job = ReportJob(job_id, job_manager, generator.generate_project_report,
-                           generator_kwargs={'project_id': project_id, 'format': format})
-            job.run()
+        try:
+            with app.app_context():
+                generator = ReportGenerator(db, config, language=language)
+                job = ReportJob(job_id, job_manager, generator.generate_project_report,
+                               generator_kwargs={'project_id': project_id, 'format': format})
+                job.run()
+        except Exception as e:
+            logger.error(f"Report job {job_id} wrapper failed: {e}", exc_info=True)
+            try:
+                job_manager.update_job_status(job_id, JobStatus.FAILED, error=str(e))
+            except Exception:
+                pass
 
     task_runner.submit_task(func=wrapper, task_id=job_id)
     return jsonify({'success': True, 'job_id': job_id})
@@ -397,13 +425,20 @@ def generate_page_structure_report_download(website_id):
     )
 
     def wrapper():
-        with app.app_context():
-            def generate_and_save(progress_callback=None):
-                report = PageStructureReport(db, website, pages, project, language=language)
-                report.generate(progress_callback=progress_callback)
-                return report.save(format)
-            job = ReportJob(job_id, job_manager, generate_and_save)
-            job.run()
+        try:
+            with app.app_context():
+                def generate_and_save(progress_callback=None):
+                    report = PageStructureReport(db, website, pages, project, language=language)
+                    report.generate(progress_callback=progress_callback)
+                    return report.save(format)
+                job = ReportJob(job_id, job_manager, generate_and_save)
+                job.run()
+        except Exception as e:
+            logger.error(f"Report job {job_id} wrapper failed: {e}", exc_info=True)
+            try:
+                job_manager.update_job_status(job_id, JobStatus.FAILED, error=str(e))
+            except Exception:
+                pass
 
     task_runner.submit_task(func=wrapper, task_id=job_id)
     return jsonify({'success': True, 'job_id': job_id})
@@ -449,13 +484,20 @@ def generate_page_structure_report():
     )
 
     def wrapper():
-        with app.app_context():
-            def generate_and_save(progress_callback=None):
-                report = PageStructureReport(db, website, pages, project, language=language)
-                report.generate(progress_callback=progress_callback)
-                return report.save(format)
-            job = ReportJob(job_id, job_manager, generate_and_save)
-            job.run()
+        try:
+            with app.app_context():
+                def generate_and_save(progress_callback=None):
+                    report = PageStructureReport(db, website, pages, project, language=language)
+                    report.generate(progress_callback=progress_callback)
+                    return report.save(format)
+                job = ReportJob(job_id, job_manager, generate_and_save)
+                job.run()
+        except Exception as e:
+            logger.error(f"Report job {job_id} wrapper failed: {e}", exc_info=True)
+            try:
+                job_manager.update_job_status(job_id, JobStatus.FAILED, error=str(e))
+            except Exception:
+                pass
 
     task_runner.submit_task(func=wrapper, task_id=job_id)
     return jsonify({'success': True, 'job_id': job_id})
@@ -486,11 +528,18 @@ def generate_discovery_website_report(website_id):
     )
 
     def wrapper():
-        with app.app_context():
-            generator = DiscoveryReportGenerator(db, config, language=language)
-            job = ReportJob(job_id, job_manager, generator.generate_website_discovery_report,
-                           generator_kwargs={'website_id': website_id, 'format': format})
-            job.run()
+        try:
+            with app.app_context():
+                generator = DiscoveryReportGenerator(db, config, language=language)
+                job = ReportJob(job_id, job_manager, generator.generate_website_discovery_report,
+                               generator_kwargs={'website_id': website_id, 'format': format})
+                job.run()
+        except Exception as e:
+            logger.error(f"Report job {job_id} wrapper failed: {e}", exc_info=True)
+            try:
+                job_manager.update_job_status(job_id, JobStatus.FAILED, error=str(e))
+            except Exception:
+                pass
 
     task_runner.submit_task(func=wrapper, task_id=job_id)
     return jsonify({'success': True, 'job_id': job_id})
@@ -521,11 +570,18 @@ def generate_discovery_project_report(project_id):
     )
 
     def wrapper():
-        with app.app_context():
-            generator = DiscoveryReportGenerator(db, config, language=language)
-            job = ReportJob(job_id, job_manager, generator.generate_project_discovery_report,
-                           generator_kwargs={'project_id': project_id, 'format': format})
-            job.run()
+        try:
+            with app.app_context():
+                generator = DiscoveryReportGenerator(db, config, language=language)
+                job = ReportJob(job_id, job_manager, generator.generate_project_discovery_report,
+                               generator_kwargs={'project_id': project_id, 'format': format})
+                job.run()
+        except Exception as e:
+            logger.error(f"Report job {job_id} wrapper failed: {e}", exc_info=True)
+            try:
+                job_manager.update_job_status(job_id, JobStatus.FAILED, error=str(e))
+            except Exception:
+                pass
 
     task_runner.submit_task(func=wrapper, task_id=job_id)
     return jsonify({'success': True, 'job_id': job_id})
@@ -621,22 +677,29 @@ def generate_static_html_report():
     )
 
     def wrapper():
-        with app.app_context():
-            generator = StaticHTMLReportGenerator(db, output_dir=output_dir, language=language)
-            def generate_static(progress_callback=None):
-                return generator.generate_report(
-                    page_ids=page_ids,
-                    project_name=project_name,
-                    website_url=website_url,
-                    wcag_level=wcag_level,
-                    touchpoints_tested=touchpoints_tested,
-                    include_screenshots=include_screenshots,
-                    include_discovery=include_discovery,
-                    ai_tests_enabled=True,
-                    progress_callback=progress_callback
-                )
-            job = ReportJob(job_id, job_manager, generate_static)
-            job.run()
+        try:
+            with app.app_context():
+                generator = StaticHTMLReportGenerator(db, output_dir=output_dir, language=language)
+                def generate_static(progress_callback=None):
+                    return generator.generate_report(
+                        page_ids=page_ids,
+                        project_name=project_name,
+                        website_url=website_url,
+                        wcag_level=wcag_level,
+                        touchpoints_tested=touchpoints_tested,
+                        include_screenshots=include_screenshots,
+                        include_discovery=include_discovery,
+                        ai_tests_enabled=True,
+                        progress_callback=progress_callback
+                    )
+                job = ReportJob(job_id, job_manager, generate_static)
+                job.run()
+        except Exception as e:
+            logger.error(f"Report job {job_id} wrapper failed: {e}", exc_info=True)
+            try:
+                job_manager.update_job_status(job_id, JobStatus.FAILED, error=str(e))
+            except Exception:
+                pass
 
     task_runner.submit_task(func=wrapper, task_id=job_id)
     return jsonify({'success': True, 'job_id': job_id})
@@ -676,16 +739,23 @@ def generate_deduplicated_report():
     )
 
     def wrapper():
-        with app.app_context():
-            generator = StaticHTMLReportGenerator(db, output_dir=output_dir, language=language)
-            def generate_dedup(progress_callback=None):
-                return generator.generate_project_deduplicated_report(
-                    project_id=project_id,
-                    website_id=website_id if website_id else None,
-                    progress_callback=progress_callback
-                )
-            job = ReportJob(job_id, job_manager, generate_dedup)
-            job.run()
+        try:
+            with app.app_context():
+                generator = StaticHTMLReportGenerator(db, output_dir=output_dir, language=language)
+                def generate_dedup(progress_callback=None):
+                    return generator.generate_project_deduplicated_report(
+                        project_id=project_id,
+                        website_id=website_id if website_id else None,
+                        progress_callback=progress_callback
+                    )
+                job = ReportJob(job_id, job_manager, generate_dedup)
+                job.run()
+        except Exception as e:
+            logger.error(f"Report job {job_id} wrapper failed: {e}", exc_info=True)
+            try:
+                job_manager.update_job_status(job_id, JobStatus.FAILED, error=str(e))
+            except Exception:
+                pass
 
     task_runner.submit_task(func=wrapper, task_id=job_id)
     return jsonify({'success': True, 'job_id': job_id})
@@ -730,20 +800,27 @@ def generate_recordings_report(project_id):
     )
 
     def wrapper():
-        with app.app_context():
-            from auto_a11y.reporting.recordings_report import RecordingsReportGenerator
-            generator = RecordingsReportGenerator(db, config)
-            job = ReportJob(job_id, job_manager, generator.generate_project_recordings_report,
-                           generator_kwargs={
-                               'project_id': project_id,
-                               'format': format,
-                               'include_summary': include_summary,
-                               'include_timecodes': include_timecodes,
-                               'include_wcag': include_wcag,
-                               'group_by_touchpoint': group_by_touchpoint,
-                               'language': language
-                           })
-            job.run()
+        try:
+            with app.app_context():
+                from auto_a11y.reporting.recordings_report import RecordingsReportGenerator
+                generator = RecordingsReportGenerator(db, config)
+                job = ReportJob(job_id, job_manager, generator.generate_project_recordings_report,
+                               generator_kwargs={
+                                   'project_id': project_id,
+                                   'format': format,
+                                   'include_summary': include_summary,
+                                   'include_timecodes': include_timecodes,
+                                   'include_wcag': include_wcag,
+                                   'group_by_touchpoint': group_by_touchpoint,
+                                   'language': language
+                               })
+                job.run()
+        except Exception as e:
+            logger.error(f"Report job {job_id} wrapper failed: {e}", exc_info=True)
+            try:
+                job_manager.update_job_status(job_id, JobStatus.FAILED, error=str(e))
+            except Exception:
+                pass
 
     task_runner.submit_task(func=wrapper, task_id=job_id)
     return jsonify({'success': True, 'job_id': job_id})

@@ -201,15 +201,15 @@
         --color-score-good: #3dd9a8;
         --color-score-poor: #ff9940;
 
-        /* Badge/gradient backgrounds — darker for white text contrast */
-        --color-severity-high-badge: #c0392b;
+        /* Badge/gradient backgrounds — darker for white text AAA contrast (7:1+) */
+        --color-severity-high-badge: #9e2c21;
         --color-severity-medium-badge: #8b6d08;
-        --color-severity-low-badge: #5a5a6a;
-        --color-severity-pass-badge: #2d7a4a;
+        --color-severity-low-badge: #4d4d5c;
+        --color-severity-pass-badge: #1a5c32;
 
         --color-severity-high-gradient-end: #a83232;
         --color-severity-medium-gradient-end: #d4a020;
-        --color-severity-pass-gradient-end: #2d7a4a;
+        --color-severity-pass-gradient-end: #1a5c32;
         --color-info-gradient-end: #509dbf;
         --color-discovery-gradient-end: #9070c0;
 
@@ -292,15 +292,15 @@
     --color-score-good: #3dd9a8;
     --color-score-poor: #ff9940;
 
-    /* Badge/gradient backgrounds — darker for white text contrast */
-    --color-severity-high-badge: #c0392b;
+    /* Badge/gradient backgrounds — darker for white text AAA contrast (7:1+) */
+    --color-severity-high-badge: #9e2c21;
     --color-severity-medium-badge: #8b6d08;
-    --color-severity-low-badge: #5a5a6a;
-    --color-severity-pass-badge: #2d7a4a;
+    --color-severity-low-badge: #4d4d5c;
+    --color-severity-pass-badge: #1a5c32;
 
     --color-severity-high-gradient-end: #a83232;
     --color-severity-medium-gradient-end: #d4a020;
-    --color-severity-pass-gradient-end: #2d7a4a;
+    --color-severity-pass-gradient-end: #1a5c32;
     --color-info-gradient-end: #509dbf;
     --color-discovery-gradient-end: #9070c0;
 

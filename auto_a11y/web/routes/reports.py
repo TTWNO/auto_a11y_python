@@ -177,9 +177,210 @@ def job_status(job_id):
         'progress': job.get('progress', {}),
         'result': job.get('result'),
         'error': job.get('error'),
-        'metadata': job.get('metadata', {})
+        'metadata': job.get('metadata', {}),
+        'updated_at': job['updated_at'].isoformat() if job.get('updated_at') else None
     }
     return jsonify(response)
+
+
+@reports_bp.route('/job/<job_id>/drop', methods=['POST'])
+def drop_job(job_id):
+    """Drop/delete a stalled or in-progress report job"""
+    job_manager = JobManager(current_app.db)
+    job = job_manager.get_job(job_id)
+    if not job:
+        return jsonify({'error': 'Job not found'}), 404
+
+    # Request cancellation if still active (so thread stops gracefully)
+    if job.get('status') in (JobStatus.PENDING.value, JobStatus.RUNNING.value):
+        job_manager.request_cancellation(job_id)
+
+    job_manager.collection.delete_one({'job_id': job_id})
+    return jsonify({'success': True})
+
+
+@reports_bp.route('/job/<job_id>/restart', methods=['POST'])
+def restart_job(job_id):
+    """Restart a stalled report job from scratch"""
+    job_manager = JobManager(current_app.db)
+    old_job = job_manager.get_job(job_id)
+    if not old_job:
+        return jsonify({'error': 'Job not found'}), 404
+
+    metadata = old_job.get('metadata', {})
+    scope = metadata.get('scope')
+    report_type = metadata.get('report_type', 'xlsx')
+    display_name = metadata.get('display_name', 'Report')
+    project_id = old_job.get('project_id')
+    website_id = old_job.get('website_id')
+
+    # Cancel and remove old job
+    if old_job.get('status') in (JobStatus.PENDING.value, JobStatus.RUNNING.value):
+        job_manager.request_cancellation(job_id)
+    job_manager.collection.delete_one({'job_id': job_id})
+
+    # Capture context for background thread
+    db = current_app.db
+    config = current_app.app_config.__dict__.copy()
+    language = str(get_locale()) if get_locale() else 'en'
+    app = current_app._get_current_object()
+    output_dir = current_app.app_config.REPORTS_DIR
+
+    new_job_id = f"report_{uuid4().hex[:8]}"
+    job_manager.create_job(
+        job_id=new_job_id,
+        job_type=JobType.REPORT_GENERATION,
+        project_id=project_id,
+        website_id=website_id,
+        metadata=metadata
+    )
+
+    def wrapper():
+        try:
+            with app.app_context():
+                func, kwargs = _build_restart_generator(
+                    scope, report_type, project_id, website_id,
+                    db, config, language, output_dir
+                )
+                job = ReportJob(new_job_id, job_manager, func, generator_kwargs=kwargs)
+                job.run()
+        except Exception as e:
+            logger.error(f"Report job {new_job_id} wrapper failed: {e}", exc_info=True)
+            try:
+                job_manager.update_job_status(new_job_id, JobStatus.FAILED, error=str(e))
+            except Exception:
+                pass
+
+    task_runner.submit_task(func=wrapper, task_id=new_job_id)
+    return jsonify({'success': True, 'job_id': new_job_id, 'display_name': display_name})
+
+
+def _build_restart_generator(scope, report_type, project_id, website_id, db, config, language, output_dir):
+    """
+    Build generator function and kwargs for restarting a report job.
+    Must be called inside a Flask app context.
+
+    Returns:
+        (func, kwargs) — func is the generator callable, kwargs are passed
+        to it by ReportJob (which also injects progress_callback).
+    """
+    if scope in ('all', 'project', 'website'):
+        from auto_a11y.reporting import ReportGenerator
+        generator = ReportGenerator(db, config, language=language)
+        fmt_map = {'excel': 'xlsx'}
+        fmt = fmt_map.get(report_type, report_type)
+        if scope == 'all':
+            return generator.generate_all_projects_report, {'format': fmt}
+        elif scope == 'project':
+            return generator.generate_project_report, {'project_id': project_id, 'format': fmt}
+        else:
+            return generator.generate_website_report, {'website_id': website_id, 'format': fmt}
+
+    elif scope == 'page_structure':
+        website = db.get_website(website_id)
+        pages = db.get_pages(website_id)
+        project = db.get_project(website.project_id) if website and website.project_id else None
+
+        def generate_and_save(progress_callback=None):
+            report = PageStructureReport(db, website, pages, project, language=language)
+            report.generate(progress_callback=progress_callback)
+            return report.save(report_type)
+        return generate_and_save, {}
+
+    elif scope == 'discovery_website':
+        generator = DiscoveryReportGenerator(db, config, language=language)
+        return generator.generate_website_discovery_report, {'website_id': website_id, 'format': report_type}
+
+    elif scope == 'discovery_project':
+        generator = DiscoveryReportGenerator(db, config, language=language)
+        return generator.generate_project_discovery_report, {'project_id': project_id, 'format': report_type}
+
+    elif scope == 'static_html':
+        page_ids = []
+        project_name = "Accessibility Report"
+        website_url = None
+
+        if project_id:
+            project = db.get_project(project_id)
+            if project:
+                project_name = project.name
+            websites = db.get_websites(project_id)
+            for w in websites:
+                pages = db.get_pages(w.id)
+                page_ids.extend([str(p.id) for p in pages if p.status == PageStatus.TESTED])
+                if not website_url and w.url:
+                    website_url = w.url
+        elif website_id:
+            website = db.get_website(website_id)
+            if website:
+                if website.project_id:
+                    project = db.get_project(website.project_id)
+                    project_name = f"{project.name} - {website.name}" if project else website.name
+                else:
+                    project_name = website.name
+                website_url = website.url
+            pages = db.get_pages(website_id)
+            page_ids = [str(p.id) for p in pages if p.status == PageStatus.TESTED]
+        else:
+            projects = db.get_projects()
+            project_name = "All Projects Accessibility Report"
+            for proj in projects:
+                websites = db.get_websites(proj.id)
+                for w in websites:
+                    pages = db.get_pages(w.id)
+                    page_ids.extend([str(p.id) for p in pages if p.status == PageStatus.TESTED])
+
+        if not page_ids:
+            raise ValueError('No tested pages found to generate report')
+
+        touchpoints_tested = None
+        first_result = db.get_latest_test_result(page_ids[0])
+        if first_result and first_result.violations:
+            touchpoints_tested = sorted(set(
+                v.touchpoint for v in first_result.violations if v.touchpoint
+            ))
+
+        generator = StaticHTMLReportGenerator(db, output_dir=output_dir, language=language)
+
+        def generate_static(progress_callback=None):
+            return generator.generate_report(
+                page_ids=page_ids,
+                project_name=project_name,
+                website_url=website_url,
+                wcag_level='AA',
+                touchpoints_tested=touchpoints_tested,
+                include_screenshots=True,
+                include_discovery=True,
+                ai_tests_enabled=True,
+                progress_callback=progress_callback
+            )
+        return generate_static, {}
+
+    elif scope == 'deduplicated':
+        generator = StaticHTMLReportGenerator(db, output_dir=output_dir, language=language)
+
+        def generate_dedup(progress_callback=None):
+            return generator.generate_project_deduplicated_report(
+                project_id=project_id,
+                website_id=website_id,
+                progress_callback=progress_callback
+            )
+        return generate_dedup, {}
+
+    elif scope == 'recordings':
+        from auto_a11y.reporting.recordings_report import RecordingsReportGenerator
+        generator = RecordingsReportGenerator(db, config)
+        return generator.generate_project_recordings_report, {
+            'project_id': project_id,
+            'format': report_type,
+            'language': language
+        }
+
+    elif scope == 'page':
+        raise ValueError('Single page reports cannot be restarted (page ID not stored in job)')
+
+    else:
+        raise ValueError(f'Unknown report scope: {scope}')
 
 
 @reports_bp.route('/download/<filename>')
@@ -200,6 +401,27 @@ def download_report(filename):
         as_attachment=True,
         download_name=filename
     )
+
+
+@reports_bp.route('/<filename>/delete', methods=['POST'])
+def delete_report(filename):
+    """Delete a generated report"""
+    reports_dir = current_app.app_config.REPORTS_DIR
+    file_path = reports_dir / filename
+
+    if not file_path.exists():
+        return jsonify({'error': 'Report not found'}), 404
+
+    # Security check - ensure file is in reports directory
+    if not file_path.resolve().parent == reports_dir.resolve():
+        return jsonify({'error': 'Invalid file path'}), 403
+
+    try:
+        file_path.unlink()
+        return jsonify({'success': True})
+    except OSError as e:
+        logger.error(f"Failed to delete report {filename}: {e}")
+        return jsonify({'error': 'Failed to delete report'}), 500
 
 
 @reports_bp.route('/project/<project_id>/summary')

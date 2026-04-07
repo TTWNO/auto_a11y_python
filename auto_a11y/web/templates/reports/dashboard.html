@@ -15,6 +15,43 @@
 </style>
 {% endblock %}
 
+{# ── Row-fragment macros (single source of truth for every row state) ── #}
+
+{% macro report_actions(filename) %}
+<div class="btn-group" role="group">
+    <a href="{{ url_for('reports.download_report', filename=filename) }}"
+       class="btn btn-sm btn-primary" title="{{ _('Download') }}">
+        <i class="bi bi-download" aria-hidden="true"></i>
+    </a>
+    <button class="btn btn-sm btn-danger"
+            onclick="deleteReport('{{ filename }}')" title="{{ _('Delete') }}">
+        <i class="bi bi-trash" aria-hidden="true"></i>
+    </button>
+</div>
+{% endmacro %}
+
+{% macro completed_job_row(name, filename, date_str) %}
+<tr>
+    <td><i class="bi bi-check-circle text-success" aria-hidden="true"></i> {{ name }}</td>
+    <td><span class="badge bg-success">{{ _('Complete') }}</span></td>
+    <td>—</td>
+    <td>{{ date_str }}</td>
+    <td>—</td>
+    <td>{{ report_actions(filename) }}</td>
+</tr>
+{% endmacro %}
+
+{% macro failed_job_row(name, error) %}
+<tr>
+    <td>
+        <i class="bi bi-x-circle text-danger" aria-hidden="true"></i>
+        {{ name }}
+    </td>
+    <td colspan="4"><span class="text-danger">{{ _('Failed') }}: {{ error }}</span></td>
+    <td>—</td>
+</tr>
+{% endmacro %}
+
 {% block content %}
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -175,36 +212,31 @@
                         </td>
                         <td>{{ _('Just now') }}</td>
                         <td>—</td>
-                        <td>—</td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-sm btn-warning" onclick="restartJob('{{ job.job_id }}')" title="{{ _('Restart') }}">
+                                    <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="dropJob('{{ job.job_id }}')" title="{{ _('Drop') }}">
+                                    <i class="bi bi-x-circle" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </td>
                     </tr>
                     {% endfor %}
                     {# Recently completed jobs #}
                     {% for job in recently_completed %}
                     {% if job.status == 'completed' and job.result %}
-                    <tr>
-                        <td>
-                            <i class="bi bi-check-circle text-success" aria-hidden="true"></i>
-                            {{ job.metadata.get('display_name', 'Report') }}
-                        </td>
-                        <td><span class="badge bg-success">{{ _('Complete') }}</span></td>
-                        <td>—</td>
-                        <td>{{ job.completed_at.strftime('%Y-%m-%d %H:%M') if job.completed_at else '' }}</td>
-                        <td>—</td>
-                        <td>
-                            <a href="{{ url_for('reports.download_report', filename=job.result.filename) }}" class="btn btn-sm btn-primary">
-                                <i class="bi bi-download" aria-hidden="true"></i> {{ _('Download') }}
-                            </a>
-                        </td>
-                    </tr>
+                    {{ completed_job_row(
+                        job.metadata.get('display_name', 'Report'),
+                        job.result.filename,
+                        job.completed_at.strftime('%Y-%m-%d %H:%M') if job.completed_at else ''
+                    ) }}
                     {% elif job.status == 'failed' %}
-                    <tr>
-                        <td>
-                            <i class="bi bi-x-circle text-danger" aria-hidden="true"></i>
-                            {{ job.metadata.get('display_name', 'Report') }}
-                        </td>
-                        <td colspan="4"><span class="text-danger">{{ _('Failed') }}: {{ job.error|default('Unknown error') }}</span></td>
-                        <td>—</td>
-                    </tr>
+                    {{ failed_job_row(
+                        job.metadata.get('display_name', 'Report'),
+                        job.error|default('Unknown error')
+                    ) }}
                     {% endif %}
                     {% endfor %}
                         {% for report in reports %}
@@ -231,18 +263,7 @@
                             <td>{{ report.project_name or _('All Projects') }}</td>
                             <td>{{ report.created_at.strftime('%Y-%m-%d %H:%M') if report.created_at else _('Unknown') }}</td>
                             <td>{{ report.size_kb|filesizeformat if report.size_kb else _('N/A') }}</td>
-                            <td>
-                                <div class="btn-group" role="group">
-                                    <a href="{{ url_for('reports.download_report', filename=report.filename) }}"
-                                       class="btn btn-sm btn-primary" title="{{ _('Download') }}">
-                                        <i class="bi bi-download" aria-hidden="true"></i>
-                                    </a>
-                                    <button class="btn btn-sm btn-danger"
-                                            onclick="deleteReport('{{ report.filename }}')" title="{{ _('Delete') }}">
-                                        <i class="bi bi-trash" aria-hidden="true"></i>
-                                    </button>
-                                </div>
-                            </td>
+                            <td>{{ report_actions(report.filename) }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -256,6 +277,14 @@
         </div>
     </div>
     </section>
+
+    {# Hidden templates for JS — single source via macros #}
+    <template id="tmpl-completed-row">
+        {{ completed_job_row('__NAME__', '__FILENAME__', '__DATE__') }}
+    </template>
+    <template id="tmpl-failed-row">
+        {{ failed_job_row('__NAME__', '__ERROR__') }}
+    </template>
 </div>
 
 <!-- Generate Report Modal -->
@@ -382,8 +411,29 @@ const _i18n = {
     project: {{ _('Project') | tojson }},
     generated: {{ _('Generated') | tojson }},
     size: {{ _('Size') | tojson }},
-    actions: {{ _('Actions') | tojson }}
+    actions: {{ _('Actions') | tojson }},
+    restart: {{ _('Restart') | tojson }},
+    drop: {{ _('Drop') | tojson }},
+    stalled: {{ _('Stalled') | tojson }},
+    confirmDrop: {{ _('Are you sure you want to drop this report job?') | tojson }},
+    confirmRestart: {{ _('Are you sure you want to restart this report job from scratch?') | tojson }}
 };
+
+function cloneRowTemplate(templateId, replacements) {
+    const tmpl = document.getElementById(templateId);
+    const clone = tmpl.content.cloneNode(true);
+    const tr = clone.querySelector('tr');
+    // Replace placeholder tokens in the cloned HTML
+    let html = tr.outerHTML;
+    for (const [token, value] of Object.entries(replacements)) {
+        // Escape HTML to prevent injection from user-controlled values
+        const safe = value.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        html = html.replaceAll(token, safe);
+    }
+    const temp = document.createElement('tbody');
+    temp.innerHTML = html;
+    return temp.firstElementChild;
+}
 
 function ensureReportTable() {
     // Return existing tbody if the table is already rendered
@@ -439,7 +489,16 @@ function startJobPoll(jobId, displayName) {
             </td>
             <td>${new Date().toLocaleString()}</td>
             <td>\u2014</td>
-            <td>\u2014</td>
+            <td>
+                <div class="btn-group" role="group">
+                    <button class="btn btn-sm btn-warning" onclick="restartJob('${jobId}')" title="${_i18n.restart}">
+                        <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="dropJob('${jobId}')" title="${_i18n.drop}">
+                        <i class="bi bi-x-circle" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </td>
         `;
         tbody.insertBefore(row, tbody.firstChild);
     }
@@ -452,6 +511,25 @@ function startJobPoll(jobId, displayName) {
                 if (!row) return;
 
                 if (data.status === 'running' || data.status === 'pending') {
+                    // Check if stalled (no update for 2+ minutes)
+                    const updatedAt = data.updated_at ? new Date(data.updated_at) : null;
+                    const isStalled = updatedAt && (Date.now() - updatedAt.getTime() > 2 * 60 * 1000);
+
+                    if (isStalled) {
+                        const spinner = row.querySelector('.spinner-icon');
+                        if (spinner) {
+                            spinner.classList.remove('spinner-icon', 'bi-arrow-repeat');
+                            spinner.classList.add('bi-exclamation-triangle', 'text-warning');
+                        }
+                        if (!row.querySelector('.badge-stalled')) {
+                            const nameCell = row.querySelector('td:first-child');
+                            const badge = document.createElement('span');
+                            badge.className = 'badge bg-warning text-dark ms-2 badge-stalled';
+                            badge.textContent = _i18n.stalled;
+                            nameCell.appendChild(badge);
+                        }
+                    }
+
                     const progress = row.querySelector('progress');
                     const text = row.querySelector('.progress-text');
                     if (progress && data.progress) {
@@ -461,32 +539,25 @@ function startJobPoll(jobId, displayName) {
                     if (text && data.progress) {
                         text.textContent = data.progress.message || 'Processing...';
                     }
-                    activePolls[jobId] = setTimeout(poll, 2000);
+                    // Poll less frequently if stalled
+                    activePolls[jobId] = setTimeout(poll, isStalled ? 10000 : 2000);
                 } else if (data.status === 'completed' && data.result) {
                     const filename = data.result.filename;
                     const name = (data.metadata && data.metadata.display_name) || 'Report';
-                    row.removeAttribute('data-job-id');
-                    row.innerHTML = `
-                        <td><i class="bi bi-check-circle text-success" aria-hidden="true"></i> ${name}</td>
-                        <td><span class="badge bg-success">Complete</span></td>
-                        <td>\u2014</td>
-                        <td>${new Date().toLocaleString()}</td>
-                        <td>\u2014</td>
-                        <td>
-                            <a href="/reports/download/${encodeURIComponent(filename)}" class="btn btn-sm btn-primary">
-                                <i class="bi bi-download"></i> Download
-                            </a>
-                        </td>
-                    `;
+                    const newRow = cloneRowTemplate('tmpl-completed-row', {
+                        '__NAME__': name,
+                        '__FILENAME__': filename,
+                        '__DATE__': new Date().toLocaleString()
+                    });
+                    row.replaceWith(newRow);
                     delete activePolls[jobId];
                 } else if (data.status === 'failed') {
                     const name = (data.metadata && data.metadata.display_name) || 'Report';
-                    row.removeAttribute('data-job-id');
-                    row.innerHTML = `
-                        <td><i class="bi bi-x-circle text-danger" aria-hidden="true"></i> ${name}</td>
-                        <td colspan="4"><span class="text-danger">Failed: ${data.error || 'Unknown error'}</span></td>
-                        <td>\u2014</td>
-                    `;
+                    const newRow = cloneRowTemplate('tmpl-failed-row', {
+                        '__NAME__': name,
+                        '__ERROR__': data.error || 'Unknown error'
+                    });
+                    row.replaceWith(newRow);
                     delete activePolls[jobId];
                 }
             })
@@ -517,6 +588,51 @@ function submitReportJob(url, options, displayName) {
 {% for job in active_jobs %}
 startJobPoll('{{ job.job_id }}', '{{ job.metadata.get("display_name", "Report") }}');
 {% endfor %}
+
+function dropJob(jobId) {
+    if (!confirm(_i18n.confirmDrop)) return;
+
+    fetch(`/reports/job/${jobId}/drop`, { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                const row = document.querySelector(`tr[data-job-id="${jobId}"]`);
+                if (row) row.remove();
+                if (activePolls[jobId]) {
+                    clearTimeout(activePolls[jobId]);
+                    delete activePolls[jobId];
+                }
+            } else {
+                alert(data.error || 'Failed to drop job');
+            }
+        })
+        .catch(err => alert('Error: ' + err.message));
+}
+
+function restartJob(jobId) {
+    if (!confirm(_i18n.confirmRestart)) return;
+
+    // Stop polling old job
+    if (activePolls[jobId]) {
+        clearTimeout(activePolls[jobId]);
+        delete activePolls[jobId];
+    }
+
+    fetch(`/reports/job/${jobId}/restart`, { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success && data.job_id) {
+                // Remove old row
+                const oldRow = document.querySelector(`tr[data-job-id="${jobId}"]`);
+                if (oldRow) oldRow.remove();
+                // Start polling new job
+                startJobPoll(data.job_id, data.display_name);
+            } else {
+                alert(data.error || 'Failed to restart job');
+            }
+        })
+        .catch(err => alert('Error: ' + err.message));
+}
 
 window.addEventListener('beforeunload', () => {
     Object.values(activePolls).forEach(clearTimeout);

@@ -467,11 +467,11 @@
 </div>
 
 <!-- Add Website Modal -->
-<div class="modal fade" id="addWebsiteModal" tabindex="-1">
+<div class="modal fade" id="addWebsiteModal" tabindex="-1" aria-labelledby="addWebsiteModalLabel">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title">{{ _('Add Website') }}</h2>
+                <h2 class="modal-title" id="addWebsiteModalLabel">{{ _('Add Website') }}</h2>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form method="POST" action="{{ url_for('projects.add_website', project_id=project.id) }}">
@@ -497,11 +497,11 @@
 </div>
 
 <!-- Discovery Options Modal -->
-<div class="modal fade" id="discoveryModal" tabindex="-1">
+<div class="modal fade" id="discoveryModal" tabindex="-1" aria-labelledby="discoveryModalLabel">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title">{{ _('Discovery Options') }}</h2>
+                <h2 class="modal-title" id="discoveryModalLabel">{{ _('Discovery Options') }}</h2>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form id="discoveryForm">
@@ -563,11 +563,11 @@
 </div>
 
 <!-- Test All Websites Modal -->
-<div class="modal fade" id="testAllModal" tabindex="-1">
+<div class="modal fade" id="testAllModal" tabindex="-1" aria-labelledby="testAllModalLabel">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title">{{ _('Test All Websites in Project') }}</h2>
+                <h2 class="modal-title" id="testAllModalLabel">{{ _('Test All Websites in Project') }}</h2>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form id="testAllForm" method="POST" action="{{ url_for('projects.test_project', project_id=project.id) }}">
@@ -612,11 +612,11 @@
 </div>
 
 <!-- Delete Project Modal -->
-<div class="modal fade" id="deleteModal" tabindex="-1">
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title">{{ _('Delete Project') }}</h2>
+                <h2 class="modal-title" id="deleteModalLabel">{{ _('Delete Project') }}</h2>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">

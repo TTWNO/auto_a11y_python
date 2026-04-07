@@ -3,7 +3,6 @@ Simple async task runner for background jobs
 In production, this would be replaced with Celery or similar
 """
 
-import asyncio
 import logging
 from typing import Dict, Any, Optional, Callable
 from datetime import datetime
@@ -29,21 +28,13 @@ class TaskRunner:
         """Initialize task runner"""
         if self._initialized:
             return
-        
+
         self.tasks: Dict[str, Task] = {}
-        self.loop: Optional[asyncio.AbstractEventLoop] = None
         self.executor = ThreadPoolExecutor(max_workers=5)
         self._initialized = True
-    
+
     def start(self):
         """Start task runner"""
-        if not self.loop:
-            try:
-                self.loop = asyncio.get_running_loop()
-            except RuntimeError:
-                self.loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(self.loop)
-        
         logger.info("Task runner started")
     
     def stop(self):
@@ -86,31 +77,11 @@ class TaskRunner:
         task = Task(task_id, func, args, kwargs)
         self.tasks[task_id] = task
         
-        # Run task
-        if asyncio.iscoroutinefunction(func):
-            # Async function
-            asyncio.create_task(self._run_async_task(task))
-        else:
-            # Sync function - run in thread pool
-            self.loop.run_in_executor(self.executor, self._run_sync_task, task)
+        # Run task in thread pool (all report/test tasks are synchronous)
+        self.executor.submit(self._run_sync_task, task)
         
         logger.info(f"Submitted task: {task_id}")
         return task_id
-    
-    async def _run_async_task(self, task: 'Task'):
-        """Run async task"""
-        task.status = 'running'
-        task.started_at = datetime.now()
-        
-        try:
-            task.result = await task.func(*task.args, **task.kwargs)
-            task.status = 'completed'
-        except Exception as e:
-            logger.error(f"Task {task.task_id} failed: {e}")
-            task.status = 'failed'
-            task.error = str(e)
-        finally:
-            task.completed_at = datetime.now()
     
     def _run_sync_task(self, task: 'Task'):
         """Run sync task"""

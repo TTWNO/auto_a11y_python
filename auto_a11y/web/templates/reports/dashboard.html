@@ -374,9 +374,57 @@
 // Report job polling system
 const activePolls = {};
 
+// Pre-computed i18n strings for dynamic table creation
+const _i18n = {
+    caption: {{ _('List of generated accessibility reports') | tojson }},
+    reportName: {{ _('Report Name') | tojson }},
+    type: {{ _('Type') | tojson }},
+    project: {{ _('Project') | tojson }},
+    generated: {{ _('Generated') | tojson }},
+    size: {{ _('Size') | tojson }},
+    actions: {{ _('Actions') | tojson }}
+};
+
+function ensureReportTable() {
+    // Return existing tbody if the table is already rendered
+    const existing = document.querySelector('.table tbody');
+    if (existing) return existing;
+
+    // Table was not rendered (no reports existed on page load).
+    // Replace the "no reports" placeholder with a full table.
+    const cardBody = document.querySelector('#recent-reports-heading')
+        ?.closest('.card')
+        ?.querySelector('.card-body');
+    if (!cardBody) return null;
+
+    const placeholder = cardBody.querySelector('p.text-muted');
+    if (placeholder) placeholder.remove();
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'table-responsive';
+    wrapper.innerHTML = `
+        <table class="table table-hover">
+            <caption class="visually-hidden">${_i18n.caption}</caption>
+            <thead>
+                <tr>
+                    <th scope="col">${_i18n.reportName}</th>
+                    <th scope="col">${_i18n.type}</th>
+                    <th scope="col">${_i18n.project}</th>
+                    <th scope="col">${_i18n.generated}</th>
+                    <th scope="col">${_i18n.size}</th>
+                    <th scope="col">${_i18n.actions}</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    `;
+    cardBody.appendChild(wrapper);
+    return wrapper.querySelector('tbody');
+}
+
 function startJobPoll(jobId, displayName) {
-    // Add row to table if not already there
-    const tbody = document.querySelector('.table tbody');
+    // Add row to table if not already there — creating the table if needed
+    const tbody = ensureReportTable();
     if (tbody && !document.querySelector(`tr[data-job-id="${jobId}"]`)) {
         const row = document.createElement('tr');
         row.dataset.jobId = jobId;

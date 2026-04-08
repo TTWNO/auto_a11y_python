@@ -18,6 +18,9 @@ echo "==> Installing Python dependencies..."
 pip install --upgrade pip
 pip install -r requirements.txt
 
+echo "==> Compiling translations..."
+pybabel compile -f -d auto_a11y/web/translations
+
 echo "==> Running database setup..."
 python -c "
 from config import config

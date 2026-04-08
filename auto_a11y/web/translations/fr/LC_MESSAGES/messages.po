@@ -4316,12 +4316,7 @@ msgstr "Utilisateurs de test"
 #: auto_a11y/web/templates/pages/view.html:3652
 #, fuzzy
 msgid "Historical test results for this page"
-msgstr ""
-"Cela supprimera également tous les résultats de test pour cette page.Cela"
-" supprimera également tous les résultats de test pour cette page.Cela "
-"supprimera également tous les résultats de test pour cette page.Cela "
-"supprimera définitivement tous les sites web, pages et résultats de tests"
-" associés à ce projet."
+msgstr "Cela supprimera également tous les résultats de test pour cette page."
 
 #: auto_a11y/web/templates/pages/view.html:3655
 #: auto_a11y/web/templates/projects/view.html:281
@@ -4461,10 +4456,7 @@ msgstr "Testées"
 msgid "The accessibility test is running. The page will refresh when complete."
 msgstr ""
 "Le test d'accessibilité est en cours. La page se rafraîchira une fois "
-"terminé.Le test d'accessibilité est en cours. La page se rafraîchira une "
-"fois terminé.Le test d'accessibilité est en cours. La page se rafraîchira"
-" une fois terminé.Le test d'accessibilité est en cours. La page se "
-"rafraîchira une fois terminé."
+"terminé."
 
 #: auto_a11y/web/templates/pages/view.html:3765
 msgid "Test failed:"
@@ -5929,26 +5921,16 @@ msgstr "Niveau AAA (Amélioré)"
 #: auto_a11y/web/templates/projects/edit.html:101
 msgid "Standard compliance (4.5:1 contrast for normal text, 3:1 for large text)"
 msgstr ""
-"Conformité standard (contraste 4.5:1 pour le texte normal, 3:1 pour le "
-"texte large)Conformité standard (contraste 4.5:1 pour le texte normal, "
-"3:1 pour le texte large)Conformité standard (contraste 4.5:1 pour le "
-"texte normal, 3:1 pour le texte large)Conformité standard (contraste "
-"4.5:1 pour le texte normal, 3:1 pour le texte large)Conformité standard "
-"(contraste 4.5:1 pour le texte normal, 3:1 pour le texte large)Conformité"
-" standard (contraste 4.5:1 pour le texte normal, 3:1 pour le texte large)"
+"Conformité standard (contraste 4.5:1 pour le texte normal, 3:1 pour "
+"le texte large)Conformité standard (contraste 4.5:1 pour le texte "
+"normal, 3:1 pour le texte large)"
 
 #: auto_a11y/web/templates/projects/create.html:161
 #: auto_a11y/web/templates/projects/edit.html:102
 msgid "Enhanced compliance (7:1 contrast for normal text, 4.5:1 for large text)"
 msgstr ""
-"Conformité renforcée (contraste 7:1 pour le texte normal, 4.5:1 pour le "
-"texte large)Conformité renforcée (contraste 7:1 pour le texte normal, "
-"4.5:1 pour le texte large)Conformité renforcée (contraste 7:1 pour le "
-"texte normal, 4.5:1 pour le texte large)Conformité renforcée (contraste "
-"7:1 pour le texte normal, 4.5:1 pour le texte large)Conformité renforcée "
-"(contraste 7:1 pour le texte normal, 4.5:1 pour le texte large)Conformité"
-" améliorée (contraste 7:1 pour le texte normal, 4.5:1 pour le texte "
-"large)"
+"Conformité renforcée (contraste 7:1 pour le texte normal, 4.5:1 pour "
+"le texte large)Conformité "
 
 #: auto_a11y/web/templates/projects/create.html:166
 #: auto_a11y/web/templates/projects/edit.html:107
@@ -5969,11 +5951,8 @@ msgstr "Network Idle 0 (Très complet, le plus lent)"
 #: auto_a11y/web/templates/projects/edit.html:111
 msgid "DOM Content Loaded (Fast, for sites with heavy background activity)"
 msgstr ""
-"Contenu DOM chargé (rapide, pour les sites avec beaucoup d'activité en "
-"arrière-plan)Contenu DOM chargé (rapide, pour les sites avec beaucoup "
-"d'activité en arrière-plan)Contenu DOM chargé (rapide, pour les sites "
-"avec beaucoup d'activité en arrière-plan)DOM Content Loaded (Rapide, pour"
-" les sites avec beaucoup d'activité en arrière-plan)"
+"Contenu DOM chargé (rapide, pour les sites avec beaucoup d'activité "
+"en arrière-plan)"
 
 #: auto_a11y/web/templates/projects/create.html:171
 #: auto_a11y/web/templates/projects/edit.html:112
@@ -5994,14 +5973,8 @@ msgstr "Network Idle 2"
 #: auto_a11y/web/templates/projects/edit.html:116
 msgid "Wait until network has ≤2 connections (best for dynamic sites)"
 msgstr ""
-"Attendre jusqu'à ce que le réseau ait ≤2 connexions (idéal pour les sites"
-" dynamiques)Attendre jusqu'à ce que le réseau ait ≤2 connexions (idéal "
-"pour les sites dynamiques)Attendre jusqu'à ce que le réseau ait ≤2 "
-"connexions (idéal pour les sites dynamiques)Attendre jusqu'à ce que le "
-"réseau ait ≤2 connexions (idéal pour les sites dynamiques)Attendre "
-"jusqu'à ce que le réseau ait ≤2 connexions (idéal pour les sites "
-"dynamiques)Attendre que le réseau ait ≤2 connexions (optimal pour les "
-"sites dynamiques)"
+"Attendre jusqu'à ce que le réseau ait ≤2 connexions (idéal pour les "
+"sites dynamiques)Attendre "
 
 #: auto_a11y/web/templates/projects/create.html:176
 #: auto_a11y/web/templates/projects/edit.html:117
@@ -6064,11 +6037,7 @@ msgid "Run browser invisibly (faster, less resource intensive)"
 msgstr ""
 "Exécuter le navigateur de manière invisible (plus rapide, moins de "
 "ressources)Exécuter le navigateur de manière invisible (plus rapide, "
-"moins de ressources)Exécuter le navigateur de manière invisible (plus "
-"rapide, moins de ressources)Exécuter le navigateur de manière invisible "
-"(plus rapide, moins de ressources)Exécuter le navigateur de manière "
-"invisible (plus rapide, moins de ressources)Exécuter le navigateur de "
-"manière invisible (plus rapide, moins gourmand en ressources)"
+"moins "
 
 #: auto_a11y/web/templates/projects/create.html:190
 #: auto_a11y/web/templates/projects/edit.html:131
@@ -6211,11 +6180,8 @@ msgstr "Ordre de lecture"
 #: auto_a11y/web/templates/projects/edit.html:393
 msgid "Verifies logical reading sequence matches visual layout"
 msgstr ""
-"Vérifie que la séquence de lecture logique correspond à la disposition "
-"visuelleVérifie que la séquence de lecture logique correspond à la "
-"disposition visuelleVérifie que la séquence de lecture logique correspond"
-" à la disposition visuelleVérifie que la séquence de lecture logique "
-"correspond à la mise en page visuelle"
+"Vérifie que la séquence de lecture logique correspond à la "
+"disposition visuelle"
 
 #: auto_a11y/web/templates/projects/create.html:353
 #: auto_a11y/web/templates/projects/edit.html:401
@@ -6411,12 +6377,7 @@ msgstr "Chargement des détails du test..."
 msgid "An error occurred while loading the test details. Please try again."
 msgstr ""
 "Une erreur s'est produite lors du chargement des détails du test. "
-"Veuillez réessayer.Une erreur s'est produite lors du chargement des "
-"détails du test. Veuillez réessayer.Une erreur s'est produite lors du "
-"chargement des détails du test. Veuillez réessayer.Une erreur s'est "
-"produite lors du chargement des détails du test. Veuillez réessayer.Une "
-"erreur s'est produite lors du chargement des détails du test. Veuillez "
-"réessayer."
+"Veuillez réessayer."
 
 #: auto_a11y/web/templates/projects/create.html:684
 msgid "Updating..."
@@ -6553,10 +6514,7 @@ msgstr "Polices supplémentaires à signaler"
 msgid "Enter font names, one per line (e.g., 'Custom Font Name')"
 msgstr ""
 "Entrez les noms de police, un par ligne (par ex., 'Nom de police "
-"personnalisée')Entrez les noms de police, un par ligne (par ex., 'Nom de "
-"police personnalisée')Entrez les noms de police, un par ligne (par ex., "
-"'Nom de police personnalisée')Entrez les noms de police, un par ligne "
-"(par ex., 'Nom de police personnalisée')"
+"personnalisée')"
 
 #: auto_a11y/web/templates/projects/edit.html:193
 msgid ""
@@ -6757,13 +6715,9 @@ msgstr "Découvrir"
 #: auto_a11y/web/templates/projects/view.html:128
 msgid "No websites added yet. Add a website to start testing."
 msgstr ""
-"Aucun site web ajouté pour le moment. Ajoutez un site web pour commencer "
-"les tests.Aucun site web ajouté pour le moment. Ajoutez un site web pour "
-"commencer les tests.Aucun site web ajouté pour le moment. Ajoutez un site"
-" web pour commencer les tests.Aucun site web ajouté pour le moment. "
-"Ajoutez un site web pour commencer les tests.Aucun site web ajouté pour "
-"le moment. Ajoutez un site web pour commencer les tests.Aucun site web "
-"ajouté pour le moment. Ajoutez un site web pour commencer les tests."
+"Aucun site web ajouté pour le moment. Ajoutez un site web pour "
+"commencer les tests.Aucun site web ajouté pour le moment. Ajoutez un "
+"site web pour commencer les tests."
 
 #: auto_a11y/web/templates/projects/view.html:149
 #: auto_a11y/web/templates/projects/view.html:278
@@ -7040,11 +6994,7 @@ msgstr "La découverte est déjà en cours pour ce site web. Voulez-vous l'annul
 msgid "Please select at least one user for discovery (or Guest)."
 msgstr ""
 "Veuillez sélectionner au moins un utilisateur pour la découverte (ou "
-"Invité).Veuillez sélectionner au moins un utilisateur pour la découverte "
-"(ou Invité).Veuillez sélectionner au moins un utilisateur pour la "
-"découverte (ou Invité).Veuillez sélectionner au moins un utilisateur pour"
-" la découverte (ou Invité).Veuillez sélectionner au moins un utilisateur "
-"pour la découverte (ou Invité)."
+"Invité)."
 
 #: auto_a11y/web/templates/projects/view.html:1092
 #: auto_a11y/web/templates/reports/dashboard.html:420
@@ -7485,10 +7435,7 @@ msgstr "Comment les critères sont déterminés"
 msgid "The compliance score is calculated based on WCAG 2.2 Level AA criteria"
 msgstr ""
 "Le score de conformité est calculé sur la base des critères WCAG 2.2 "
-"niveau AALe score de conformité est calculé sur la base des critères WCAG"
-" 2.2 niveau AALe score de conformité est calculé sur la base des critères"
-" WCAG 2.2 niveau AALe score de conformité est calculé sur la base des "
-"critères WCAG 2.2 niveau AA"
+"niveau AA"
 
 #: auto_a11y/web/templates/recordings/detail.html:705
 msgid "total"
@@ -8062,13 +8009,7 @@ msgstr "Gérer les utilisateurs du projet"
 
 #: auto_a11y/web/templates/recordings/upload.html:462
 msgid "No test users configured for this project."
-msgstr ""
-"Aucun utilisateur de test configuré pour ce projet.Aucun utilisateur de "
-"test configuré. Les tests s'exécuteront en tant qu'invité.Aucun "
-"utilisateur de test configuré. Les tests s'exécuteront en tant "
-"qu'invité.Aucun utilisateur de test configuré. Les tests s'exécuteront en"
-" tant qu'invité.Aucun utilisateur de test configuré. Les tests "
-"s'exécuteront en tant qu'invité."
+msgstr "Aucun utilisateur de test configuré"
 
 #: auto_a11y/web/templates/recordings/upload.html:467
 msgid "Optional: Select the test account used during this audit."
@@ -9328,9 +9269,7 @@ msgstr "Tester APRÈS l'exécution du script"
 msgid "Usually checked - test the page in its final state after setup"
 msgstr ""
 "Généralement coché - tester la page dans son état final après la "
-"configurationGénéralement coché - tester la page dans son état final "
-"après la configurationGénéralement coché - tester la page dans son état "
-"final après la configuration"
+"configuration"
 
 #: auto_a11y/web/templates/scripts/create.html:158
 #: auto_a11y/web/templates/scripts/create.html:160
@@ -9399,10 +9338,8 @@ msgstr "Options d'état propre"
 #: auto_a11y/web/templates/scripts/create.html:241
 msgid "Clear cookies and storage before testing to ensure a clean starting state"
 msgstr ""
-"Effacer les cookies et le stockage avant les tests pour garantir un état "
-"de départ propreEffacer les cookies et le stockage avant les tests pour "
-"garantir un état de départ propreEffacer les cookies et le stockage avant"
-" les tests pour garantir un état de départ propre"
+"Effacer les cookies et le stockage avant les tests pour garantir un "
+"état de départ propre"
 
 #: auto_a11y/web/templates/scripts/create.html:248
 msgid "Clear Cookies Before Script"
@@ -9411,10 +9348,8 @@ msgstr "Effacer les cookies avant le script"
 #: auto_a11y/web/templates/scripts/create.html:252
 msgid "Recommended for cookie banner testing - ensures banner appears"
 msgstr ""
-"Recommandé pour les tests de bannière de cookies - garantit l'apparition "
-"de la bannièreRecommandé pour les tests de bannière de cookies - garantit"
-" l'apparition de la bannièreRecommandé pour les tests de bannière de "
-"cookies - garantit l'apparition de la bannière"
+"Recommandé pour les tests de bannière de cookies - garantit "
+"l'apparition de la bannière"
 
 #: auto_a11y/web/templates/scripts/create.html:260
 msgid "Clear Local Storage Before Script"
@@ -9475,10 +9410,8 @@ msgstr "Aucune description"
 #: auto_a11y/web/templates/scripts/create.html:309
 msgid "Define the actions to perform. Steps execute in order from top to bottom."
 msgstr ""
-"Définir les actions à effectuer. Les étapes s'exécutent dans l'ordre de "
-"haut en bas.Définir les actions à effectuer. Les étapes s'exécutent dans "
-"l'ordre de haut en bas.Définir les actions à effectuer. Les étapes "
-"s'exécutent dans l'ordre de haut en bas."
+"Définir les actions à effectuer. Les étapes s'exécutent dans l'ordre "
+"de haut en bas."
 
 #: auto_a11y/web/templates/scripts/create.html:317
 msgid "Add Step"
@@ -9615,12 +9548,7 @@ msgstr "Attente après (ms)"
 
 #: auto_a11y/web/templates/scripts/create.html:575
 msgid "Please add at least one step to the script."
-msgstr ""
-"Veuillez ajouter au moins une étape au script.Veuillez ajouter au moins "
-"une étape au script.Veuillez ajouter au moins une étape au "
-"script.Veuillez sélectionner au moins un utilisateur pour la découverte "
-"(ou Invité).Veuillez sélectionner au moins un utilisateur pour la "
-"découverte (ou Invité)."
+msgstr "Veuillez ajouter au moins une étape au script."
 
 #: auto_a11y/web/templates/scripts/edit.html:3
 #, python-format
@@ -10371,11 +10299,8 @@ msgstr "Pseudo-classe :"
 #: auto_a11y/web/templates/testing/result.html:185
 msgid "No violations found! The page passes all automated accessibility checks."
 msgstr ""
-"Aucune violation trouvée ! La page réussit tous les tests d'accessibilité"
-" automatisés.Aucune violation trouvée ! La page réussit tous les tests "
-"d'accessibilité automatisés.Aucune violation trouvée ! La page réussit "
-"tous les tests d'accessibilité automatisés.Aucune violation trouvée ! La "
-"page réussit tous les tests d'accessibilité automatisés."
+"Aucune violation trouvée ! La page réussit tous les tests "
+"d'accessibilité automatisés."
 
 #: auto_a11y/web/templates/testing/result.html:195
 msgid "Test Information"
@@ -11104,9 +11029,9 @@ msgid "Start Testing"
 msgstr "Tests"
 
 #: auto_a11y/web/templates/websites/view.html:561
-#, fuzzy, python-format
+#, python-format
 msgid "There are %(count)s untested pages."
-msgstr "Tester les pages non testées"
+msgstr "Il y a %(count)s pages non testées."
 
 #: auto_a11y/web/templates/websites/view.html:564
 #, fuzzy
@@ -11156,11 +11081,7 @@ msgid ""
 "dropdown."
 msgstr ""
 "Veuillez sélectionner au moins un utilisateur pour la découverte (ou "
-"Invité).Veuillez sélectionner au moins un utilisateur pour la découverte "
-"(ou Invité).Veuillez sélectionner au moins un utilisateur pour la "
-"découverte (ou Invité).Veuillez sélectionner au moins un utilisateur pour"
-" la découverte (ou Invité).Veuillez sélectionner au moins un utilisateur "
-"pour la découverte (ou Invité)."
+"Invité)."
 
 #: auto_a11y/web/templates/websites/view.html:938
 msgid "Starting discovery..."
@@ -11170,12 +11091,8 @@ msgstr "Commencer la découverte"
 #: auto_a11y/web/templates/websites/view.html:1096
 msgid "Please select at least one test user using the Test Users dropdown."
 msgstr ""
-"Veuillez sélectionner au moins un utilisateur de test (ou Invité) pour "
-"continuer.Veuillez sélectionner au moins un utilisateur de test (ou "
-"Invité) pour continuer.Veuillez sélectionner au moins un utilisateur de "
-"test (ou Invité) pour continuer.Veuillez sélectionner au moins un "
-"utilisateur pour la découverte (ou Invité).Veuillez sélectionner au moins"
-" un utilisateur pour la découverte (ou Invité)."
+"Veuillez sélectionner au moins un utilisateur de test (ou Invité) "
+"pour continuer."
 
 #: auto_a11y/web/templates/websites/view.html:1061
 #: auto_a11y/web/templates/websites/view.html:1142
@@ -11227,12 +11144,7 @@ msgstr "Êtes-vous sûr de vouloir supprimer le projet"
 
 #: auto_a11y/web/templates/websites/view.html:1294
 msgid "This will also delete all test results for this page."
-msgstr ""
-"Cela supprimera également tous les résultats de test pour cette page.Cela"
-" supprimera également tous les résultats de test pour cette page.Cela "
-"supprimera également tous les résultats de test pour cette page.Cela "
-"supprimera définitivement tous les sites web, pages et résultats de tests"
-" associés à ce projet."
+msgstr "Cela supprimera également tous les résultats de test pour cette page."
 
 #: auto_a11y/web/templates/websites/view.html:1306
 msgid "Page Deleted"

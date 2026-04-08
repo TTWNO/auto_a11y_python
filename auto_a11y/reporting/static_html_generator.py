@@ -1501,7 +1501,7 @@ class StaticHTMLReportGenerator:
         for i, page_id in enumerate(page_ids):
             if progress_callback:
                 progress_callback(i, len(page_ids),
-                                  f'Collecting summary ({i + 1}/{len(page_ids)})...')
+                                  _('Collecting summary (%(current)s/%(total)s)...', current=i + 1, total=len(page_ids)))
 
             # Collect lightweight page metadata
             page = self.db.get_page(page_id)

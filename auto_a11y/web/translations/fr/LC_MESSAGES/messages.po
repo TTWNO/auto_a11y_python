@@ -6868,6 +6868,19 @@ msgstr "Construction de l'arborescence : page %(current)s de %(total)s..."
 msgid "Tree structure complete"
 msgstr "Arborescence terminée"
 
+#: auto_a11y/reporting/report_generator.py
+msgid "Collecting summary (%(count)s)..."
+msgstr "Collecte du résumé (%(count)s)..."
+
+#: auto_a11y/reporting/report_generator.py
+#: auto_a11y/reporting/static_html_generator.py
+msgid "Collecting summary (%(current)s/%(total)s)..."
+msgstr "Collecte du résumé (%(current)s/%(total)s)..."
+
+#: auto_a11y/reporting/report_generator.py
+msgid "Writing details (%(current)s/%(total)s)..."
+msgstr "Écriture des détails (%(current)s/%(total)s)..."
+
 #: auto_a11y/web/templates/reports/dashboard.html:519
 #: auto_a11y/web/templates/reports/dashboard.html:677
 msgid "Failed to generate report: "

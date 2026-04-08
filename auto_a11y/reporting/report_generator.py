@@ -11,6 +11,8 @@ from pathlib import Path
 import json
 import re
 
+from flask_babel import gettext as _
+
 from auto_a11y.models import TestResult, Page, Website, Project, ImpactLevel
 from auto_a11y.core.database import Database
 from auto_a11y.reporting.formatters import (
@@ -733,7 +735,7 @@ class ReportGenerator:
             result_summary = self.db.get_latest_test_result_summary(page.id)
             if not result_summary:
                 if progress_callback:
-                    progress_callback(page_count, 0, f"Collecting summary ({page_count})...")
+                    progress_callback(page_count, 0, _('Collecting summary (%(count)s)...', count=page_count))
                 continue
 
             summary['total_pages'] += 1
@@ -755,7 +757,7 @@ class ReportGenerator:
                 summary['impact_counts'][impact] += 1
 
             if progress_callback:
-                progress_callback(page_count, 0, f"Collecting summary ({page_count})...")
+                progress_callback(page_count, 0, _('Collecting summary (%(count)s)...', count=page_count))
 
         return summary
 
@@ -772,7 +774,7 @@ class ReportGenerator:
             test_result = self.db.get_latest_test_result(page.id)
             if not test_result:
                 if progress_callback:
-                    progress_callback(page_count, total, f"Writing details ({page_count}/{total})...")
+                    progress_callback(page_count, total, _('Writing details (%(current)s/%(total)s)...', current=page_count, total=total))
                 continue
 
             page_data = self._prepare_single_page_data(page, test_result)
@@ -780,7 +782,7 @@ class ReportGenerator:
             del page_data
 
             if progress_callback:
-                progress_callback(page_count, total, f"Writing details ({page_count}/{total})...")
+                progress_callback(page_count, total, _('Writing details (%(current)s/%(total)s)...', current=page_count, total=total))
 
         formatter.finalize(output_file, summary)
 

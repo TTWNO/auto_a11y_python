@@ -3,7 +3,7 @@ Report generation routes
 """
 
 from flask import Blueprint, render_template, request, jsonify, send_file, current_app, url_for, flash, redirect, session, g
-from flask_babel import get_locale, gettext as _
+from flask_babel import get_locale, gettext as _, force_locale
 from auto_a11y.models import PageStatus
 from auto_a11y.reporting import ReportGenerator, PageStructureReport
 from auto_a11y.reporting.discovery_report import DiscoveryReportGenerator
@@ -137,7 +137,7 @@ def generate_report():
 
     def wrapper():
         try:
-            with app.app_context():
+            with app.app_context(), force_locale(language):
                 from auto_a11y.reporting import ReportGenerator
                 generator = ReportGenerator(db, config, language=language)
                 format_map = {'excel': 'xlsx'}
@@ -237,7 +237,7 @@ def restart_job(job_id):
 
     def wrapper():
         try:
-            with app.app_context():
+            with app.app_context(), force_locale(language):
                 func, kwargs = _build_restart_generator(
                     scope, report_type, project_id, website_id,
                     db, config, language, output_dir
@@ -513,7 +513,7 @@ def generate_page_report(page_id):
 
     def wrapper():
         try:
-            with app.app_context():
+            with app.app_context(), force_locale(language):
                 generator = ReportGenerator(db, config, language=language)
                 job = ReportJob(job_id, job_manager, generator.generate_page_report,
                                generator_kwargs={'page_id': page_id, 'format': format, 'include_ai': include_ai})
@@ -556,7 +556,7 @@ def generate_website_report(website_id):
 
     def wrapper():
         try:
-            with app.app_context():
+            with app.app_context(), force_locale(language):
                 generator = ReportGenerator(db, config, language=language)
                 job = ReportJob(job_id, job_manager, generator.generate_website_report,
                                generator_kwargs={'website_id': website_id, 'format': format, 'include_ai': include_ai})
@@ -598,7 +598,7 @@ def generate_project_report(project_id):
 
     def wrapper():
         try:
-            with app.app_context():
+            with app.app_context(), force_locale(language):
                 generator = ReportGenerator(db, config, language=language)
                 job = ReportJob(job_id, job_manager, generator.generate_project_report,
                                generator_kwargs={'project_id': project_id, 'format': format})
@@ -648,7 +648,7 @@ def generate_page_structure_report_download(website_id):
 
     def wrapper():
         try:
-            with app.app_context():
+            with app.app_context(), force_locale(language):
                 def generate_and_save(progress_callback=None):
                     report = PageStructureReport(db, website, pages, project, language=language)
                     report.generate(progress_callback=progress_callback)
@@ -707,7 +707,7 @@ def generate_page_structure_report():
 
     def wrapper():
         try:
-            with app.app_context():
+            with app.app_context(), force_locale(language):
                 def generate_and_save(progress_callback=None):
                     report = PageStructureReport(db, website, pages, project, language=language)
                     report.generate(progress_callback=progress_callback)
@@ -751,7 +751,7 @@ def generate_discovery_website_report(website_id):
 
     def wrapper():
         try:
-            with app.app_context():
+            with app.app_context(), force_locale(language):
                 generator = DiscoveryReportGenerator(db, config, language=language)
                 job = ReportJob(job_id, job_manager, generator.generate_website_discovery_report,
                                generator_kwargs={'website_id': website_id, 'format': format})
@@ -793,7 +793,7 @@ def generate_discovery_project_report(project_id):
 
     def wrapper():
         try:
-            with app.app_context():
+            with app.app_context(), force_locale(language):
                 generator = DiscoveryReportGenerator(db, config, language=language)
                 job = ReportJob(job_id, job_manager, generator.generate_project_discovery_report,
                                generator_kwargs={'project_id': project_id, 'format': format})
@@ -900,7 +900,7 @@ def generate_static_html_report():
 
     def wrapper():
         try:
-            with app.app_context():
+            with app.app_context(), force_locale(language):
                 generator = StaticHTMLReportGenerator(db, output_dir=output_dir, language=language)
                 def generate_static(progress_callback=None):
                     return generator.generate_report(
@@ -962,7 +962,7 @@ def generate_deduplicated_report():
 
     def wrapper():
         try:
-            with app.app_context():
+            with app.app_context(), force_locale(language):
                 generator = StaticHTMLReportGenerator(db, output_dir=output_dir, language=language)
                 def generate_dedup(progress_callback=None):
                     return generator.generate_project_deduplicated_report(
@@ -1023,7 +1023,7 @@ def generate_recordings_report(project_id):
 
     def wrapper():
         try:
-            with app.app_context():
+            with app.app_context(), force_locale(language):
                 from auto_a11y.reporting.recordings_report import RecordingsReportGenerator
                 generator = RecordingsReportGenerator(db, config, language=language)
                 job = ReportJob(job_id, job_manager, generator.generate_project_recordings_report,

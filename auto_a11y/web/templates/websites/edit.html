@@ -106,8 +106,38 @@
                                 <i class="bi bi-x-circle" aria-hidden="true"></i> {{ _('Cancel') }}
                             </a>
                         </div>
+
+                        <hr class="my-4">
+
+                        <div class="d-grid">
+                            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteWebsiteModal">
+                                <i class="bi bi-trash" aria-hidden="true"></i> {{ _('Delete Website') }}
+                            </button>
+                        </div>
                     </form>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Website Modal -->
+<div class="modal fade" id="deleteWebsiteModal" tabindex="-1" aria-labelledby="deleteWebsiteModalLabel">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="deleteWebsiteModalLabel">{{ _('Delete Website') }}</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ _('Close') }}"></button>
+            </div>
+            <div class="modal-body">
+                <p>{{ _('Are you sure you want to delete the website') }} "{{ website.display_name }}"?</p>
+                <p class="text-danger">{{ _('This will permanently delete all pages and test results associated with this website.') }}</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+                <form method="POST" action="{{ url_for('websites.delete_website', website_id=website.id) }}" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">{{ _('Delete Website') }}</button>
+                </form>
             </div>
         </div>
     </div>

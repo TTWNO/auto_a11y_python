@@ -20,12 +20,295 @@ logger = logging.getLogger(__name__)
 
 class BaseFormatter:
     """Base class for report formatters"""
-    
+
+    TRANSLATIONS = {
+        'en': {
+            # Section headings
+            'summary': 'Summary',
+            'violations': 'Violations',
+            'warnings': 'Warnings',
+            'information_notes': 'Information Notes',
+            'discovery_items': 'Discovery Items',
+            'ai_analysis_findings': 'AI Analysis Findings',
+            'passes': 'Passes',
+            'overview': 'Overview',
+            'projects_breakdown': 'Projects Breakdown',
+            'violation_types': 'Violation Types',
+            'pages': 'Pages',
+            'websites': 'Websites',
+            'projects': 'Projects',
+            # Report titles
+            'accessibility_report': 'Accessibility Report',
+            'all_projects_accessibility_report': 'All Projects Accessibility Report',
+            'accessibility_executive_summary': 'Accessibility Executive Summary',
+            'website_report': 'Website Report',
+            'project_report': 'Project Report',
+            'accessibility_report_summary': 'Accessibility Report Summary',
+            # Labels
+            'page': 'Page',
+            'website': 'Website',
+            'project': 'Project',
+            'generated': 'Generated',
+            'description': 'Description',
+            'category': 'Category',
+            'location': 'Location',
+            'impact': 'Impact',
+            'confidence': 'Confidence',
+            'type': 'Type',
+            'severity': 'Severity',
+            'code': 'Code',
+            'rule': 'Rule',
+            'count': 'Count',
+            'url': 'URL',
+            'id': 'ID',
+            'element': 'Element',
+            'label': 'Label',
+            'signature': 'Signature',
+            'fix': 'Fix',
+            # Compound labels
+            'rule_id': 'Rule ID',
+            'wcag_criteria': 'WCAG Criteria',
+            'elements_affected': 'Elements Affected',
+            'suggested_fix': 'Suggested Fix',
+            'page_url': 'Page URL',
+            'page_title': 'Page Title',
+            'page_state': 'Page State',
+            'session_id': 'Session ID',
+            'test_duration': 'Test Duration',
+            'total_projects': 'Total Projects',
+            'total_websites': 'Total Websites',
+            'total_pages': 'Total Pages',
+            'pages_tested': 'Pages Tested',
+            'total_violations': 'Total Violations',
+            'total_warnings': 'Total Warnings',
+            'pages_affected': 'Pages Affected',
+            'last_tested': 'Last Tested',
+            'test_date': 'Test Date',
+            'website_name': 'Website Name',
+            'project_name': 'Project Name',
+            'tested_pages': 'Tested Pages',
+            'coverage_pct': 'Coverage %',
+            'breakpoint_label': 'Breakpoint',
+            'css_state': 'CSS State',
+            'touchpoint': 'Touchpoint',
+            'xpath': 'XPath',
+            'html': 'HTML',
+            # Excel/sheet-specific
+            'website_summary': 'Website Summary',
+            'project_summary': 'Project Summary',
+            'overall_summary': 'Overall Summary',
+            'executive_summary': 'Executive Summary',
+            'page_states': 'Page States',
+            'all_issues': 'All Issues',
+            'info': 'Info',
+            'discovery': 'Discovery',
+            'ai_findings': 'AI Findings',
+            'all_issues_deduplicated': 'All Issues (Deduplicated)',
+            'common_components': 'Common Components',
+            'test_user': 'Test User',
+            'user_roles': 'User Roles',
+            'manual_check_required': 'Manual Check Required',
+            'what': 'What',
+            'why_important': 'Why Important',
+            'who_affected': 'Who Affected',
+            'how_to_remediate': 'How to Remediate',
+            'location_xpath': 'Location (XPath)',
+            'breakpoint_px': 'Breakpoint (px)',
+            'pseudoclass': 'Pseudoclass',
+            'component_type': 'Component Type',
+            'page_count': 'Page Count',
+            'pages_found': 'Pages Found',
+            'example_xpath': 'Example XPath',
+            'state_sequence': 'State Sequence',
+            'state_description': 'State Description',
+            'errors': 'Errors',
+            'common_component_s': 'Common Component(s)',
+            'pages_with_issue': 'Pages with Issue',
+            'breakpoints': 'Breakpoints',
+            'pseudoclasses': 'Pseudoclasses',
+            'test_users': 'Test Users',
+            # Stat card labels
+            'passed': 'Passed',
+            'errors_violations': 'Errors (Violations)',
+            # Phrases
+            'manual_inspection_note': 'These items require manual inspection to ensure accessibility.',
+            'no_websites_in_project': 'No websites in this project',
+            'generated_by': 'Generated by Auto A11y Python',
+            'generated_by_tool': 'Generated by Auto A11y - Accessibility Testing Tool',
+            'report_generated_on': 'Report generated on',
+            'unknown': 'Unknown',
+            'no_description': 'No description',
+            'not_specified': 'Not specified',
+            'ai_finding': 'AI Finding',
+            'violation': 'Violation',
+            'warning': 'Warning',
+            'guest': 'Guest',
+            'no_login': 'no login',
+            # Summary sheet labels
+            'summary_statistics': 'Summary Statistics',
+            'overall_statistics': 'Overall Statistics',
+            'average_violations_per_page': 'Average Violations/Page',
+            'page_state_information': 'Page State Information',
+            'state_details': 'State Details',
+            'scripts_executed': 'Scripts Executed',
+            'elements_clicked': 'Elements Clicked',
+            'note': 'Note',
+            'multistate_testing': 'Multi-State Testing',
+            'multistate_note': 'This report shows results for a single page state. If multiple states were tested during the same session, each state will have its own test result with a different state_sequence value.',
+            'breakpoint_testing': 'Breakpoint Testing',
+            'breakpoint_note': "Some issues may have been detected at specific breakpoints (viewport widths). Check the 'Breakpoint (px)' column in the 'All Issues' sheet for breakpoint-specific issues.",
+            'context_information': 'Context Information',
+            'context_note': "Check the 'All Issues' sheet for complete context including Page State, Breakpoint, and Pseudoclass information for each issue.",
+        },
+        'fr': {
+            # Section headings
+            'summary': 'Résumé',
+            'violations': 'Violations',
+            'warnings': 'Avertissements',
+            'information_notes': "Notes d'information",
+            'discovery_items': 'Éléments de découverte',
+            'ai_analysis_findings': "Résultats de l'analyse IA",
+            'passes': 'Réussites',
+            'overview': "Vue d'ensemble",
+            'projects_breakdown': 'Détail des projets',
+            'violation_types': 'Types de violations',
+            'pages': 'Pages',
+            'websites': 'Sites web',
+            'projects': 'Projets',
+            # Report titles
+            'accessibility_report': "Rapport d'accessibilité",
+            'all_projects_accessibility_report': "Rapport d'accessibilité de tous les projets",
+            'accessibility_executive_summary': "Résumé exécutif de l'accessibilité",
+            'website_report': 'Rapport du site web',
+            'project_report': 'Rapport du projet',
+            'accessibility_report_summary': "Résumé du rapport d'accessibilité",
+            # Labels
+            'page': 'Page',
+            'website': 'Site web',
+            'project': 'Projet',
+            'generated': 'Généré',
+            'description': 'Description',
+            'category': 'Catégorie',
+            'location': 'Emplacement',
+            'impact': 'Impact',
+            'confidence': 'Confiance',
+            'type': 'Type',
+            'severity': 'Sévérité',
+            'code': 'Code',
+            'rule': 'Règle',
+            'count': 'Nombre',
+            'url': 'URL',
+            'id': 'ID',
+            'element': 'Élément',
+            'label': 'Libellé',
+            'signature': 'Signature',
+            'fix': 'Correction',
+            # Compound labels
+            'rule_id': 'ID de règle',
+            'wcag_criteria': 'Critères WCAG',
+            'elements_affected': 'Éléments affectés',
+            'suggested_fix': 'Correction suggérée',
+            'page_url': 'URL de la page',
+            'page_title': 'Titre de la page',
+            'page_state': 'État de la page',
+            'session_id': 'ID de session',
+            'test_duration': 'Durée du test',
+            'total_projects': 'Total des projets',
+            'total_websites': 'Total des sites web',
+            'total_pages': 'Total des pages',
+            'pages_tested': 'Pages testées',
+            'total_violations': 'Total des violations',
+            'total_warnings': 'Total des avertissements',
+            'pages_affected': 'Pages affectées',
+            'last_tested': 'Dernier test',
+            'test_date': 'Date de test',
+            'website_name': 'Nom du site web',
+            'project_name': 'Nom du projet',
+            'tested_pages': 'Pages testées',
+            'coverage_pct': 'Couverture %',
+            'breakpoint_label': 'Point de rupture',
+            'css_state': 'État CSS',
+            'touchpoint': 'Point de contact',
+            'xpath': 'XPath',
+            'html': 'HTML',
+            # Excel/sheet-specific
+            'website_summary': 'Résumé du site web',
+            'project_summary': 'Résumé du projet',
+            'overall_summary': 'Résumé général',
+            'executive_summary': 'Résumé exécutif',
+            'page_states': 'États de la page',
+            'all_issues': 'Tous les problèmes',
+            'info': 'Infos',
+            'discovery': 'Découverte',
+            'ai_findings': 'Résultats IA',
+            'all_issues_deduplicated': 'Problèmes (dédupliqués)',
+            'common_components': 'Composants communs',
+            'test_user': 'Utilisateur de test',
+            'user_roles': 'Rôles utilisateur',
+            'manual_check_required': 'Vérification manuelle requise',
+            'what': 'Quoi',
+            'why_important': "Pourquoi c'est important",
+            'who_affected': 'Qui est affecté',
+            'how_to_remediate': 'Comment corriger',
+            'location_xpath': 'Emplacement (XPath)',
+            'breakpoint_px': 'Point de rupture (px)',
+            'pseudoclass': 'Pseudoclasse',
+            'component_type': 'Type de composant',
+            'page_count': 'Nombre de pages',
+            'pages_found': 'Pages trouvées',
+            'example_xpath': 'XPath exemple',
+            'state_sequence': "Séquence d'état",
+            'state_description': "Description de l'état",
+            'errors': 'Erreurs',
+            'common_component_s': 'Composant(s) commun(s)',
+            'pages_with_issue': 'Pages avec problème',
+            'breakpoints': 'Points de rupture',
+            'pseudoclasses': 'Pseudoclasses',
+            'test_users': 'Utilisateurs de test',
+            # Stat card labels
+            'passed': 'Réussites',
+            'errors_violations': 'Erreurs (Violations)',
+            # Phrases
+            'manual_inspection_note': "Ces éléments nécessitent une vérification manuelle pour assurer l'accessibilité.",
+            'no_websites_in_project': 'Aucun site web dans ce projet',
+            'generated_by': 'Généré par Auto A11y Python',
+            'generated_by_tool': "Généré par Auto A11y - Outil de test d'accessibilité",
+            'report_generated_on': 'Rapport généré le',
+            'unknown': 'Inconnu',
+            'no_description': 'Aucune description',
+            'not_specified': 'Non spécifié',
+            'ai_finding': 'Résultat IA',
+            'violation': 'Violation',
+            'warning': 'Avertissement',
+            'guest': 'Invité',
+            'no_login': 'aucune connexion',
+            # Summary sheet labels
+            'summary_statistics': 'Statistiques résumées',
+            'overall_statistics': 'Statistiques générales',
+            'average_violations_per_page': 'Violations moyennes/page',
+            'page_state_information': "Information sur l'état de la page",
+            'state_details': "Détails de l'état",
+            'scripts_executed': 'Scripts exécutés',
+            'elements_clicked': 'Éléments cliqués',
+            'note': 'Remarque',
+            'multistate_testing': 'Test multi-états',
+            'multistate_note': "Ce rapport affiche les résultats pour un seul état de page. Si plusieurs états ont été testés au cours de la même session, chaque état aura son propre résultat de test avec une valeur state_sequence différente.",
+            'breakpoint_testing': 'Test de points de rupture',
+            'breakpoint_note': "Certains problèmes peuvent avoir été détectés à des points de rupture spécifiques (largeurs de fenêtre). Vérifiez la colonne « Point de rupture (px) » dans la feuille « Tous les problèmes » pour les problèmes spécifiques aux points de rupture.",
+            'context_information': 'Informations contextuelles',
+            'context_note': "Consultez la feuille « Tous les problèmes » pour le contexte complet, y compris l'état de la page, le point de rupture et les informations de pseudoclasse pour chaque problème.",
+        },
+    }
+
     def __init__(self, config: Dict[str, Any], language: str = 'en'):
         """Initialize formatter with config"""
         self.config = config
         self.language = language if language in ['en', 'fr'] else 'en'
         self.extension = 'txt'
+
+    def _t(self, key: str) -> str:
+        """Get translated string for current language"""
+        return self.TRANSLATIONS.get(self.language, self.TRANSLATIONS['en']).get(key, key)
     
     def format_page_report(self, data: Dict[str, Any]) -> str:
         """Format page report data"""
@@ -90,59 +373,60 @@ class HTMLFormatter(BaseFormatter):
             stacklevel=2
         )
 
+        report_title = data.get('title', self._t('all_projects_accessibility_report'))
         html = f"""<!DOCTYPE html>
-<html lang="en">
+<html lang="{self.language}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{data.get('title', 'All Projects Accessibility Report')}</title>
+    <title>{report_title}</title>
     {self._get_css()}
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>{data.get('title', 'All Projects Accessibility Report')}</h1>
+            <h1>{report_title}</h1>
             <div class="metadata">
-                <p><strong>Total Projects:</strong> {data['summary']['total_projects']}</p>
-                <p><strong>Generated:</strong> {data['generated_at']}</p>
+                <p><strong>{self._t('total_projects')}:</strong> {data['summary']['total_projects']}</p>
+                <p><strong>{self._t('generated')}:</strong> {data['generated_at']}</p>
             </div>
         </header>
-        
+
         <section class="summary">
-            <h2>Overall Summary</h2>
+            <h2>{self._t('overall_summary')}</h2>
             <div class="stats-grid">
                 <div class="stat-card">
                     <h3>{data['summary']['total_projects']}</h3>
-                    <p>Projects</p>
+                    <p>{self._t('projects')}</p>
                 </div>
                 <div class="stat-card">
                     <h3>{data['summary']['total_websites']}</h3>
-                    <p>Websites</p>
+                    <p>{self._t('websites')}</p>
                 </div>
                 <div class="stat-card">
                     <h3>{data['summary']['total_pages']}</h3>
-                    <p>Total Pages</p>
+                    <p>{self._t('total_pages')}</p>
                 </div>
                 <div class="stat-card">
                     <h3>{data['summary']['total_tested']}</h3>
-                    <p>Pages Tested</p>
+                    <p>{self._t('pages_tested')}</p>
                 </div>
                 <div class="stat-card violation">
                     <h3>{data['summary']['total_violations']}</h3>
-                    <p>Total Violations</p>
+                    <p>{self._t('total_violations')}</p>
                 </div>
                 <div class="stat-card warning">
                     <h3>{data['summary']['total_warnings']}</h3>
-                    <p>Total Warnings</p>
+                    <p>{self._t('total_warnings')}</p>
                 </div>
             </div>
         </section>
-        
+
         <section class="projects">
-            <h2>Projects Breakdown</h2>
+            <h2>{self._t('projects_breakdown')}</h2>
             {"".join(self._format_project_section(p) for p in data['projects'])}
         </section>
-        
+
         {self._get_footer()}
     </div>
 </body>
@@ -160,24 +444,24 @@ class HTMLFormatter(BaseFormatter):
             website = website_data['website']
             websites_html += f"""
             <div class="website-item">
-                <h4>{website.get('name', website.get('url', 'Unknown'))}</h4>
-                <p>Pages: {website_data['pages']} | Tested: {website_data['tested']} | 
-                   Violations: {website_data['violations']} | Warnings: {website_data['warnings']}</p>
+                <h4>{website.get('name', website.get('url', self._t('unknown')))}</h4>
+                <p>{self._t('pages')}: {website_data['pages']} | {self._t('tested_pages')}: {website_data['tested']} |
+                   {self._t('violations')}: {website_data['violations']} | {self._t('warnings')}: {website_data['warnings']}</p>
             </div>
             """
-        
+
         return f"""
         <div class="project-section">
-            <h3>{project.get('name', 'Unnamed Project')}</h3>
+            <h3>{project.get('name', self._t('unknown'))}</h3>
             <p>{project.get('description', '')}</p>
             <div class="project-stats">
-                <span>Websites: {stats['website_count']}</span>
-                <span>Pages: {stats['total_pages']}</span>
-                <span>Tested: {stats['tested_pages']}</span>
-                <span>Coverage: {stats['test_coverage']:.1f}%</span>
+                <span>{self._t('websites')}: {stats['website_count']}</span>
+                <span>{self._t('pages')}: {stats['total_pages']}</span>
+                <span>{self._t('tested_pages')}: {stats['tested_pages']}</span>
+                <span>{self._t('coverage_pct')}: {stats['test_coverage']:.1f}%</span>
             </div>
             <div class="websites-list">
-                {websites_html if websites_html else '<p>No websites in this project</p>'}
+                {websites_html if websites_html else f'<p>{self._t("no_websites_in_project")}</p>'}
             </div>
         </div>
         """
@@ -197,27 +481,27 @@ class HTMLFormatter(BaseFormatter):
 
             if state_desc:
                 page_state_info = f"""
-                <p><strong>Page State:</strong> {state_desc}</p>
-                <p><strong>Session ID:</strong> {test_result.get('session_id', '')}</p>
+                <p><strong>{self._t('page_state')}:</strong> {state_desc}</p>
+                <p><strong>{self._t('session_id')}:</strong> {test_result.get('session_id', '')}</p>
                 """
 
         html = f"""<!DOCTYPE html>
-<html lang="en">
+<html lang="{self.language}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Accessibility Report - {data['page']['url']}</title>
+    <title>{self._t('accessibility_report')} - {data['page']['url']}</title>
     {self._get_css()}
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Accessibility Report</h1>
+            <h1>{self._t('accessibility_report')}</h1>
             <div class="metadata">
-                <p><strong>Page:</strong> <a href="{data['page']['url']}" target="_blank">{data['page']['url']}</a></p>
-                <p><strong>Website:</strong> {data['website']['name']}</p>
-                <p><strong>Project:</strong> {data['project']['name']}</p>
-                <p><strong>Generated:</strong> {data['generated_at']}</p>
+                <p><strong>{self._t('page')}:</strong> <a href="{data['page']['url']}" target="_blank">{data['page']['url']}</a></p>
+                <p><strong>{self._t('website')}:</strong> {data['website']['name']}</p>
+                <p><strong>{self._t('project')}:</strong> {data['project']['name']}</p>
+                <p><strong>{self._t('generated')}:</strong> {data['generated_at']}</p>
                 {page_state_info}
             </div>
         </header>
@@ -237,7 +521,7 @@ class HTMLFormatter(BaseFormatter):
         {self._format_passes_section(data.get('passes', []))}
 
         <footer>
-            <p>Generated by Auto A11y Python - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+            <p>{self._t('generated_by')} - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
         </footer>
     </div>
 </body>
@@ -280,47 +564,47 @@ class HTMLFormatter(BaseFormatter):
             </tr>"""
         
         html = f"""<!DOCTYPE html>
-<html lang="en">
+<html lang="{self.language}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Accessibility Executive Summary</title>
+    <title>{self._t('accessibility_executive_summary')}</title>
     {self._get_css()}
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Accessibility Executive Summary</h1>
-            <p class="generated">Generated: {data['generated_at']}</p>
+            <h1>{self._t('accessibility_executive_summary')}</h1>
+            <p class="generated">{self._t('generated')}: {data['generated_at']}</p>
         </header>
-        
+
         <section class="overview">
-            <h2>Overview</h2>
+            <h2>{self._t('overview')}</h2>
             <div class="stats-grid">
                 <div class="stat-card">
                     <h3>{len(data['projects'])}</h3>
-                    <p>Projects</p>
+                    <p>{self._t('projects')}</p>
                 </div>
                 <div class="stat-card">
                     <h3>{data['total_pages_tested']}</h3>
-                    <p>Pages Tested</p>
+                    <p>{self._t('pages_tested')}</p>
                 </div>
                 <div class="stat-card violations">
                     <h3>{data['total_violations']}</h3>
-                    <p>Total Violations</p>
+                    <p>{self._t('total_violations')}</p>
                 </div>
             </div>
         </section>
-        
+
         <section class="projects">
-            <h2>Projects</h2>
+            <h2>{self._t('projects')}</h2>
             <table>
                 <thead>
                     <tr>
-                        <th>Project</th>
-                        <th>Websites</th>
-                        <th>Pages Tested</th>
-                        <th>Violations</th>
+                        <th>{self._t('project')}</th>
+                        <th>{self._t('websites')}</th>
+                        <th>{self._t('pages_tested')}</th>
+                        <th>{self._t('violations')}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -328,9 +612,9 @@ class HTMLFormatter(BaseFormatter):
                 </tbody>
             </table>
         </section>
-        
+
         <footer>
-            <p>Generated by Auto A11y Python - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+            <p>{self._t('generated_by')} - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
         </footer>
     </div>
 </body>
@@ -340,10 +624,10 @@ class HTMLFormatter(BaseFormatter):
     
     def _get_footer(self) -> str:
         """Get footer for HTML reports"""
-        return """
+        return f"""
         <footer>
-            <p>Generated by Auto A11y - Accessibility Testing Tool</p>
-            <p>Report generated on """ + datetime.now().strftime('%Y-%m-%d %H:%M:%S') + """</p>
+            <p>{self._t('generated_by_tool')}</p>
+            <p>{self._t('report_generated_on')} {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
         </footer>
         """
     
@@ -479,23 +763,23 @@ class HTMLFormatter(BaseFormatter):
         """Format summary statistics section"""
         return f"""
         <section class="summary">
-            <h2>Summary</h2>
+            <h2>{self._t('summary')}</h2>
             <div class="stats-grid">
                 <div class="stat-card violations">
                     <h3>{stats['violations']}</h3>
-                    <p>Violations</p>
+                    <p>{self._t('violations')}</p>
                 </div>
                 <div class="stat-card warnings">
                     <h3>{stats['warnings']}</h3>
-                    <p>Warnings</p>
+                    <p>{self._t('warnings')}</p>
                 </div>
                 <div class="stat-card passes">
                     <h3>{stats['passes']}</h3>
-                    <p>Passes</p>
+                    <p>{self._t('passes')}</p>
                 </div>
                 <div class="stat-card">
                     <h3>{stats['duration_ms']}ms</h3>
-                    <p>Test Duration</p>
+                    <p>{self._t('test_duration')}</p>
                 </div>
             </div>
         </section>"""
@@ -505,7 +789,7 @@ class HTMLFormatter(BaseFormatter):
         if not violations:
             return ""
 
-        html = "<section class='violations'><h2>Violations</h2>"
+        html = f"<section class='violations'><h2>{self._t('violations')}</h2>"
         for v in violations:
             impact_class = v.get('impact', 'moderate').lower()
             metadata = v.get('metadata', {})
@@ -513,18 +797,18 @@ class HTMLFormatter(BaseFormatter):
             # Build metadata display
             metadata_html = ""
             if metadata.get('breakpoint'):
-                metadata_html += f"<p><strong>Breakpoint:</strong> {metadata.get('breakpoint')}px width</p>"
+                metadata_html += f"<p><strong>{self._t('breakpoint_label')}:</strong> {metadata.get('breakpoint')}px</p>"
             if metadata.get('pseudoclass'):
-                metadata_html += f"<p><strong>CSS State:</strong> {metadata.get('pseudoclass')}</p>"
+                metadata_html += f"<p><strong>{self._t('css_state')}:</strong> {metadata.get('pseudoclass')}</p>"
 
             html += f"""
             <div class="violation">
-                <h4>{v.get('rule_id', 'Unknown')}
+                <h4>{v.get('rule_id', self._t('unknown'))}
                     <span class="impact {impact_class}">{v.get('impact', 'moderate').upper()}</span>
                 </h4>
-                <p><strong>Description:</strong> {v.get('description', 'No description')}</p>
-                <p><strong>WCAG:</strong> {', '.join(v.get('wcag_criteria', []))}</p>
-                <p><strong>Elements:</strong> {v.get('node_count', 0)} affected</p>
+                <p><strong>{self._t('description')}:</strong> {v.get('description', self._t('no_description'))}</p>
+                <p><strong>{self._t('wcag_criteria')}:</strong> {', '.join(v.get('wcag_criteria', []))}</p>
+                <p><strong>{self._t('elements_affected')}:</strong> {v.get('node_count', 0)}</p>
                 {metadata_html}
                 {self._format_fix(v.get('suggested_fix'))}
             </div>"""
@@ -536,21 +820,21 @@ class HTMLFormatter(BaseFormatter):
         if not warnings:
             return ""
 
-        html = "<section class='warnings'><h2>Warnings</h2>"
+        html = f"<section class='warnings'><h2>{self._t('warnings')}</h2>"
         for w in warnings:
             metadata = w.get('metadata', {})
 
             # Build metadata display
             metadata_html = ""
             if metadata.get('breakpoint'):
-                metadata_html += f"<p><strong>Breakpoint:</strong> {metadata.get('breakpoint')}px width</p>"
+                metadata_html += f"<p><strong>{self._t('breakpoint_label')}:</strong> {metadata.get('breakpoint')}px</p>"
             if metadata.get('pseudoclass'):
-                metadata_html += f"<p><strong>CSS State:</strong> {metadata.get('pseudoclass')}</p>"
+                metadata_html += f"<p><strong>{self._t('css_state')}:</strong> {metadata.get('pseudoclass')}</p>"
 
             html += f"""
             <div class="warning">
-                <h4>{w.get('rule_id', 'Unknown')}</h4>
-                <p>{w.get('description', 'No description')}</p>
+                <h4>{w.get('rule_id', self._t('unknown'))}</h4>
+                <p>{w.get('description', self._t('no_description'))}</p>
                 {metadata_html}
             </div>"""
         html += "</section>"
@@ -561,23 +845,23 @@ class HTMLFormatter(BaseFormatter):
         if not info_items:
             return ""
 
-        html = "<section class='info'><h2>Information Notes</h2>"
+        html = f"<section class='info'><h2>{self._t('information_notes')}</h2>"
         for item in info_items:
             metadata = item.get('metadata', {})
 
             # Build metadata display
             metadata_html = ""
             if metadata.get('breakpoint'):
-                metadata_html += f"<p><strong>Breakpoint:</strong> {metadata.get('breakpoint')}px width</p>"
+                metadata_html += f"<p><strong>{self._t('breakpoint_label')}:</strong> {metadata.get('breakpoint')}px</p>"
             if metadata.get('pseudoclass'):
-                metadata_html += f"<p><strong>CSS State:</strong> {metadata.get('pseudoclass')}</p>"
+                metadata_html += f"<p><strong>{self._t('css_state')}:</strong> {metadata.get('pseudoclass')}</p>"
 
             html += f"""
             <div class="info-item">
-                <h4>{item.get('id', 'Unknown')}</h4>
-                <p><strong>Description:</strong> {item.get('description', 'No description')}</p>
-                <p><strong>Category:</strong> {item.get('category', 'General')}</p>
-                {f"<p><strong>WCAG:</strong> {', '.join(item.get('wcag_criteria', []))}</p>" if item.get('wcag_criteria') else ""}
+                <h4>{item.get('id', self._t('unknown'))}</h4>
+                <p><strong>{self._t('description')}:</strong> {item.get('description', self._t('no_description'))}</p>
+                <p><strong>{self._t('category')}:</strong> {item.get('category', 'General')}</p>
+                {f"<p><strong>{self._t('wcag_criteria')}:</strong> {', '.join(item.get('wcag_criteria', []))}</p>" if item.get('wcag_criteria') else ""}
                 {metadata_html}
             </div>"""
         html += "</section>"
@@ -588,24 +872,24 @@ class HTMLFormatter(BaseFormatter):
         if not discovery_items:
             return ""
 
-        html = "<section class='discovery'><h2>Discovery Items</h2>"
-        html += "<p><em>These items require manual inspection to ensure accessibility.</em></p>"
+        html = f"<section class='discovery'><h2>{self._t('discovery_items')}</h2>"
+        html += f"<p><em>{self._t('manual_inspection_note')}</em></p>"
         for item in discovery_items:
             metadata = item.get('metadata', {})
 
             # Build metadata display
             metadata_html = ""
             if metadata.get('breakpoint'):
-                metadata_html += f"<p><strong>Breakpoint:</strong> {metadata.get('breakpoint')}px width</p>"
+                metadata_html += f"<p><strong>{self._t('breakpoint_label')}:</strong> {metadata.get('breakpoint')}px</p>"
             if metadata.get('pseudoclass'):
-                metadata_html += f"<p><strong>CSS State:</strong> {metadata.get('pseudoclass')}</p>"
+                metadata_html += f"<p><strong>{self._t('css_state')}:</strong> {metadata.get('pseudoclass')}</p>"
 
             html += f"""
             <div class="discovery-item">
-                <h4>{item.get('id', 'Unknown')}</h4>
-                <p><strong>Description:</strong> {item.get('description', 'No description')}</p>
-                <p><strong>Category:</strong> {item.get('category', 'General')}</p>
-                {f"<p><strong>Location:</strong> <code>{item.get('xpath', 'Not specified')}</code></p>" if item.get('xpath') else ""}
+                <h4>{item.get('id', self._t('unknown'))}</h4>
+                <p><strong>{self._t('description')}:</strong> {item.get('description', self._t('no_description'))}</p>
+                <p><strong>{self._t('category')}:</strong> {item.get('category', 'General')}</p>
+                {f"<p><strong>{self._t('location')}:</strong> <code>{item.get('xpath', self._t('not_specified'))}</code></p>" if item.get('xpath') else ""}
                 {metadata_html}
             </div>"""
         html += "</section>"
@@ -616,16 +900,16 @@ class HTMLFormatter(BaseFormatter):
         if not findings:
             return ""
         
-        html = "<section class='ai-findings'><h2>AI Analysis Findings</h2>"
+        html = f"<section class='ai-findings'><h2>{self._t('ai_analysis_findings')}</h2>"
         for f in findings:
             severity_class = f.severity.value.lower() if hasattr(f, 'severity') else 'moderate'
             html += f"""
             <div class="ai-finding">
-                <h4>{f.type if hasattr(f, 'type') else 'AI Finding'}
+                <h4>{f.type if hasattr(f, 'type') else self._t('ai_finding')}
                     <span class="impact {severity_class}">{f.severity.value.upper() if hasattr(f, 'severity') else 'MODERATE'}</span>
                 </h4>
-                <p><strong>Description:</strong> {f.description if hasattr(f, 'description') else 'No description'}</p>
-                <p><strong>Confidence:</strong> {f.confidence * 100 if hasattr(f, 'confidence') else 85:.0f}%</p>
+                <p><strong>{self._t('description')}:</strong> {f.description if hasattr(f, 'description') else self._t('no_description')}</p>
+                <p><strong>{self._t('confidence')}:</strong> {f.confidence * 100 if hasattr(f, 'confidence') else 85:.0f}%</p>
                 {self._format_fix(f.suggested_fix if hasattr(f, 'suggested_fix') else None)}
             </div>"""
         html += "</section>"
@@ -636,11 +920,12 @@ class HTMLFormatter(BaseFormatter):
         if not passes:
             return ""
         
-        html = "<section class='passes'><h2>Passes</h2><ul>"
+        html = f"<section class='passes'><h2>{self._t('passes')}</h2><ul>"
         for p in passes[:10]:  # Show first 10 passes
-            html += f"<li>{p.get('rule_id', 'Unknown')}: {p.get('description', 'Passed')}</li>"
+            html += f"<li>{p.get('rule_id', self._t('unknown'))}: {p.get('description', self._t('passed'))}</li>"
         if len(passes) > 10:
-            html += f"<li>... and {len(passes) - 10} more</li>"
+            remaining = len(passes) - 10
+            html += f"<li>... {remaining} more</li>"
         html += "</ul></section>"
         return html
     
@@ -648,12 +933,12 @@ class HTMLFormatter(BaseFormatter):
         """Format suggested fix"""
         if not fix:
             return ""
-        return f'<p><strong>Suggested Fix:</strong> {fix}</p>'
+        return f'<p><strong>{self._t("suggested_fix")}:</strong> {fix}</p>'
     
     def _format_violation_types_section(self, violation_types: Dict) -> str:
         """Format violation types section"""
-        html = "<section class='violation-types'><h2>Violation Types</h2><table>"
-        html += "<thead><tr><th>Rule</th><th>Count</th><th>Description</th><th>Pages Affected</th></tr></thead><tbody>"
+        html = f"<section class='violation-types'><h2>{self._t('violation_types')}</h2><table>"
+        html += f"<thead><tr><th>{self._t('rule')}</th><th>{self._t('count')}</th><th>{self._t('description')}</th><th>{self._t('pages_affected')}</th></tr></thead><tbody>"
         
         sorted_types = sorted(violation_types.items(), key=lambda x: x[1]['count'], reverse=True)
         for rule_id, info in sorted_types[:20]:  # Show top 20
@@ -671,8 +956,8 @@ class HTMLFormatter(BaseFormatter):
     
     def _format_pages_table(self, page_results: List[Dict]) -> str:
         """Format pages table"""
-        html = "<section class='pages'><h2>Pages</h2><table>"
-        html += "<thead><tr><th>Page</th><th>Violations</th><th>Warnings</th><th>Last Tested</th></tr></thead><tbody>"
+        html = f"<section class='pages'><h2>{self._t('pages')}</h2><table>"
+        html += f"<thead><tr><th>{self._t('page')}</th><th>{self._t('violations')}</th><th>{self._t('warnings')}</th><th>{self._t('last_tested')}</th></tr></thead><tbody>"
         
         for pr in page_results:
             page = pr['page']
@@ -690,7 +975,7 @@ class HTMLFormatter(BaseFormatter):
     
     def _format_websites_section(self, websites: List[Dict]) -> str:
         """Format websites section with detailed test results"""
-        html = "<section class='websites'><h2>Websites</h2>"
+        html = f"<section class='websites'><h2>{self._t('websites')}</h2>"
         
         for wd in websites:
             website = wd['website']
@@ -735,64 +1020,68 @@ class HTMLFormatter(BaseFormatter):
                 <div class="stats-grid" style="margin: 20px 0;">
                     <div class="stat-card violations">
                         <h4>{total_violations}</h4>
-                        <p>Errors</p>
+                        <p>{self._t('errors')}</p>
                     </div>
                     <div class="stat-card warnings">
                         <h4>{total_warnings}</h4>
-                        <p>Warnings</p>
+                        <p>{self._t('warnings')}</p>
                     </div>
                     <div class="stat-card info">
                         <h4>{total_info}</h4>
-                        <p>Info</p>
+                        <p>{self._t('info')}</p>
                     </div>
                     <div class="stat-card discovery">
                         <h4>{total_discovery}</h4>
-                        <p>Discovery</p>
+                        <p>{self._t('discovery')}</p>
                     </div>
                     <div class="stat-card passes">
                         <h4>{total_passes}</h4>
-                        <p>Passed</p>
+                        <p>{self._t('passed')}</p>
                     </div>
                 </div>
-                
-                <p><strong>Pages Tested:</strong> {len(pages)}</p>
+
+                <p><strong>{self._t('pages_tested')}:</strong> {len(pages)}</p>
                 """
             
             # Add detailed issues if they exist
             if all_violations:
-                html += "<h4>Errors (Violations)</h4><ul>"
+                html += f"<h4>{self._t('errors_violations')}</h4><ul>"
                 for item in all_violations[:10]:  # Show first 10
                     issue = item['issue']
-                    html += f"<li><strong>{issue.id if hasattr(issue, 'id') else 'Unknown'}:</strong> {issue.description if hasattr(issue, 'description') else 'No description'} - <em>{item['page']}</em></li>"
+                    html += f"<li><strong>{issue.id if hasattr(issue, 'id') else self._t('unknown')}:</strong> {issue.description if hasattr(issue, 'description') else self._t('no_description')} - <em>{item['page']}</em></li>"
                 if len(all_violations) > 10:
-                    html += f"<li><em>... and {len(all_violations) - 10} more errors</em></li>"
+                    remaining = len(all_violations) - 10
+                    html += f"<li><em>... {remaining} more</em></li>"
                 html += "</ul>"
-            
+
             if all_warnings:
-                html += "<h4>Warnings</h4><ul>"
+                html += f"<h4>{self._t('warnings')}</h4><ul>"
                 for item in all_warnings[:10]:  # Show first 10
                     issue = item['issue']
-                    html += f"<li><strong>{issue.id if hasattr(issue, 'id') else 'Unknown'}:</strong> {issue.description if hasattr(issue, 'description') else 'No description'} - <em>{item['page']}</em></li>"
+                    html += f"<li><strong>{issue.id if hasattr(issue, 'id') else self._t('unknown')}:</strong> {issue.description if hasattr(issue, 'description') else self._t('no_description')} - <em>{item['page']}</em></li>"
                 if len(all_warnings) > 10:
-                    html += f"<li><em>... and {len(all_warnings) - 10} more warnings</em></li>"
+                    remaining = len(all_warnings) - 10
+                    html += f"<li><em>... {remaining} more</em></li>"
                 html += "</ul>"
-            
+
             if all_info:
-                html += "<h4>Information Notes</h4><ul>"
+                html += f"<h4>{self._t('information_notes')}</h4><ul>"
                 for item in all_info[:5]:  # Show first 5
                     issue = item['issue']
-                    html += f"<li><strong>{issue.id if hasattr(issue, 'id') else 'Unknown'}:</strong> {issue.description if hasattr(issue, 'description') else 'No description'} - <em>{item['page']}</em></li>"
+                    html += f"<li><strong>{issue.id if hasattr(issue, 'id') else self._t('unknown')}:</strong> {issue.description if hasattr(issue, 'description') else self._t('no_description')} - <em>{item['page']}</em></li>"
                 if len(all_info) > 5:
-                    html += f"<li><em>... and {len(all_info) - 5} more info notes</em></li>"
+                    remaining = len(all_info) - 5
+                    html += f"<li><em>... {remaining} more</em></li>"
                 html += "</ul>"
-            
+
             if all_discovery:
-                html += "<h4>Discovery Items</h4><ul>"
+                html += f"<h4>{self._t('discovery_items')}</h4><ul>"
                 for item in all_discovery[:5]:  # Show first 5
                     issue = item['issue']
-                    html += f"<li><strong>{issue.id if hasattr(issue, 'id') else 'Unknown'}:</strong> {issue.description if hasattr(issue, 'description') else 'No description'} - <em>{item['page']}</em></li>"
+                    html += f"<li><strong>{issue.id if hasattr(issue, 'id') else self._t('unknown')}:</strong> {issue.description if hasattr(issue, 'description') else self._t('no_description')} - <em>{item['page']}</em></li>"
                 if len(all_discovery) > 5:
-                    html += f"<li><em>... and {len(all_discovery) - 5} more discovery items</em></li>"
+                    remaining = len(all_discovery) - 5
+                    html += f"<li><em>... {remaining} more</em></li>"
                 html += "</ul>"
             
             html += "</div>"
@@ -836,14 +1125,14 @@ class HTMLFormatter(BaseFormatter):
         section = f'<div class="page-section"><h3><a href="{page_url}">{page_title or page_url}</a></h3>\n'
 
         if violations:
-            section += '<table><thead><tr><th>Code</th><th>Description</th><th>Impact</th><th>WCAG</th><th>XPath</th></tr></thead><tbody>\n'
+            section += f'<table><thead><tr><th>{self._t("code")}</th><th>{self._t("description")}</th><th>{self._t("impact")}</th><th>{self._t("wcag_criteria")}</th><th>{self._t("xpath")}</th></tr></thead><tbody>\n'
             for v in violations:
                 section += self._streaming_issue_row(v)
             section += '</tbody></table>\n'
 
         if warnings:
-            section += '<h4>Warnings</h4>\n'
-            section += '<table><thead><tr><th>Code</th><th>Description</th><th>Impact</th><th>WCAG</th><th>XPath</th></tr></thead><tbody>\n'
+            section += f'<h4>{self._t("warnings")}</h4>\n'
+            section += f'<table><thead><tr><th>{self._t("code")}</th><th>{self._t("description")}</th><th>{self._t("impact")}</th><th>{self._t("wcag_criteria")}</th><th>{self._t("xpath")}</th></tr></thead><tbody>\n'
             for w in warnings:
                 section += self._streaming_issue_row(w)
             section += '</tbody></table>\n'
@@ -865,12 +1154,12 @@ class HTMLFormatter(BaseFormatter):
         s = summary if summary else {}
 
         with open(output_file, 'w', encoding='utf-8') as out:
-            out.write('<!DOCTYPE html>\n<html lang="en">\n<head>\n')
+            out.write(f'<!DOCTYPE html>\n<html lang="{self.language}">\n<head>\n')
             out.write('<meta charset="UTF-8">\n')
-            out.write('<title>Accessibility Report</title>\n')
+            out.write(f'<title>{self._t("accessibility_report")}</title>\n')
             out.write(self._get_css())
             out.write('\n</head>\n<body>\n<div class="container">\n')
-            out.write('<header><h1>Accessibility Report</h1></header>\n')
+            out.write(f'<header><h1>{self._t("accessibility_report")}</h1></header>\n')
 
             # Summary dashboard
             out.write('<section class="summary"><div class="stats-grid">\n')
@@ -1006,14 +1295,14 @@ class CSVFormatter(BaseFormatter):
         """Generate CSV report for a page"""
         output = StringIO()
         writer = csv.writer(output)
-        
+
         # Write header
-        writer.writerow(['Type', 'Rule ID', 'Description', 'Impact', 'WCAG', 'Elements', 'Fix'])
-        
+        writer.writerow([self._t('type'), self._t('rule_id'), self._t('description'), self._t('impact'), self._t('wcag_criteria'), self._t('elements_affected'), self._t('fix')])
+
         # Write violations
         for v in data['violations']:
             writer.writerow([
-                'Violation',
+                self._t('violation'),
                 v.get('rule_id', ''),
                 v.get('description', ''),
                 v.get('impact', ''),
@@ -1021,11 +1310,11 @@ class CSVFormatter(BaseFormatter):
                 v.get('node_count', 0),
                 v.get('suggested_fix', '')
             ])
-        
+
         # Write warnings
         for w in data['warnings']:
             writer.writerow([
-                'Warning',
+                self._t('warning'),
                 w.get('rule_id', ''),
                 w.get('description', ''),
                 '',
@@ -1033,16 +1322,16 @@ class CSVFormatter(BaseFormatter):
                 w.get('node_count', 0),
                 ''
             ])
-        
+
         return output.getvalue()
-    
+
     def format_website_report(self, data: Dict[str, Any]) -> str:
         """Generate CSV report for a website"""
         output = StringIO()
         writer = csv.writer(output)
-        
+
         # Write header
-        writer.writerow(['Page URL', 'Violations', 'Warnings', 'Passes', 'Last Tested'])
+        writer.writerow([self._t('page_url'), self._t('violations'), self._t('warnings'), self._t('passes'), self._t('last_tested')])
         
         # Write page data
         for pr in data['pages']:
@@ -1064,7 +1353,7 @@ class CSVFormatter(BaseFormatter):
         writer = csv.writer(output)
         
         # Write header
-        writer.writerow(['Website', 'URL', 'Pages', 'Total Violations', 'Total Warnings'])
+        writer.writerow([self._t('website'), self._t('url'), self._t('pages'), self._t('total_violations'), self._t('total_warnings')])
         
         # Write website data
         for wd in data['websites']:
@@ -1090,7 +1379,7 @@ class CSVFormatter(BaseFormatter):
         writer = csv.writer(output)
         
         # Write header
-        writer.writerow(['Project', 'Websites', 'Pages Tested', 'Violations'])
+        writer.writerow([self._t('project'), self._t('websites'), self._t('pages_tested'), self._t('violations')])
         
         # Write project data
         for project in data['projects']:
@@ -1105,16 +1394,16 @@ class CSVFormatter(BaseFormatter):
 
     # --- Streaming interface ---
 
-    CSV_HEADER = [
-        'URL', 'Page Title', 'Type', 'Code', 'Description',
-        'Touchpoint', 'Impact', 'XPath', 'HTML', 'WCAG Criteria'
-    ]
+    def _csv_header(self):
+        """Get translated CSV header row"""
+        return [self._t('url'), self._t('page_title'), self._t('type'), self._t('code'), self._t('description'),
+                self._t('touchpoint'), self._t('impact'), self._t('xpath'), self._t('html'), self._t('wcag_criteria')]
 
     def begin(self, output_file: str, summary: dict):
         """Open *output_file* and write the CSV header row."""
         self._file = open(output_file, 'w', newline='', encoding='utf-8')
         self._writer = csv.writer(self._file)
-        self._writer.writerow(self.CSV_HEADER)
+        self._writer.writerow(self._csv_header())
 
     def append_page(self, output_file: str, page_data: dict):
         """Write rows for every violation and warning on one page."""
@@ -1181,167 +1470,8 @@ class CSVFormatter(BaseFormatter):
 
 
 class ExcelFormatter(BaseFormatter):
-    """Excel report formatter"""
+    """Excel report formatter - inherits TRANSLATIONS and _t() from BaseFormatter"""
 
-    TRANSLATIONS = {
-        'en': {
-            'summary': 'Summary',
-            'website_summary': 'Website Summary',
-            'project_summary': 'Project Summary',
-            'overall_summary': 'Overall Summary',
-            'executive_summary': 'Executive Summary',
-            'page_states': 'Page States',
-            'all_issues': 'All Issues',
-            'violations': 'Violations',
-            'warnings': 'Warnings',
-            'info': 'Info',
-            'discovery': 'Discovery',
-            'ai_findings': 'AI Findings',
-            'passes': 'Passes',
-            'pages': 'Pages',
-            'violation_types': 'Violation Types',
-            'websites': 'Websites',
-            'all_issues_deduplicated': 'All Issues (Deduplicated)',
-            'common_components': 'Common Components',
-            'project': 'Project',
-            'pages_tested': 'Pages Tested',
-            'rule_id': 'Rule ID',
-            'description': 'Description',
-            'impact': 'Impact',
-            'wcag_criteria': 'WCAG Criteria',
-            'elements_affected': 'Elements Affected',
-            'suggested_fix': 'Suggested Fix',
-            'test_user': 'Test User',
-            'user_roles': 'User Roles',
-            'id': 'ID',
-            'category': 'Category',
-            'location': 'Location',
-            'manual_check_required': 'Manual Check Required',
-            'type': 'Type',
-            'severity': 'Severity',
-            'confidence': 'Confidence',
-            'touchpoint': 'Touchpoint',
-            'what': 'What',
-            'why_important': 'Why Important',
-            'who_affected': 'Who Affected',
-            'how_to_remediate': 'How to Remediate',
-            'location_xpath': 'Location (XPath)',
-            'element': 'Element',
-            'page_url': 'Page URL',
-            'breakpoint_px': 'Breakpoint (px)',
-            'pseudoclass': 'Pseudoclass',
-            'page_state': 'Page State',
-            'website': 'Website',
-            'component_type': 'Component Type',
-            'signature': 'Signature',
-            'label': 'Label',
-            'page_count': 'Page Count',
-            'pages_found': 'Pages Found',
-            'example_xpath': 'Example XPath',
-            'last_tested': 'Last Tested',
-            'state_sequence': 'State Sequence',
-            'session_id': 'Session ID',
-            'count': 'Count',
-            'pages_affected': 'Pages Affected',
-            'website_name': 'Website Name',
-            'url': 'URL',
-            'total_violations': 'Total Violations',
-            'total_warnings': 'Total Warnings',
-            'project_name': 'Project Name',
-            'total_pages': 'Total Pages',
-            'tested_pages': 'Tested Pages',
-            'coverage_pct': 'Coverage %',
-            'state_description': 'State Description',
-            'errors': 'Errors',
-            'test_date': 'Test Date',
-            'projects_breakdown': 'Projects Breakdown',
-            'common_component_s': 'Common Component(s)',
-            'pages_with_issue': 'Pages with Issue',
-            'breakpoints': 'Breakpoints',
-            'pseudoclasses': 'Pseudoclasses',
-            'page_states': 'Page States',
-            'test_users': 'Test Users',
-        },
-        'fr': {
-            'summary': 'Résumé',
-            'website_summary': 'Résumé du site web',
-            'project_summary': 'Résumé du projet',
-            'overall_summary': 'Résumé général',
-            'executive_summary': 'Résumé exécutif',
-            'page_states': 'États de la page',
-            'all_issues': 'Tous les problèmes',
-            'violations': 'Violations',
-            'warnings': 'Avertissements',
-            'info': 'Infos',
-            'discovery': 'Découverte',
-            'ai_findings': 'Résultats IA',
-            'passes': 'Réussites',
-            'pages': 'Pages',
-            'violation_types': 'Types de violations',
-            'websites': 'Sites web',
-            'all_issues_deduplicated': 'Problèmes (dédupliqués)',
-            'common_components': 'Composants communs',
-            'project': 'Projet',
-            'pages_tested': 'Pages testées',
-            'rule_id': 'ID de règle',
-            'description': 'Description',
-            'impact': 'Impact',
-            'wcag_criteria': 'Critères WCAG',
-            'elements_affected': 'Éléments affectés',
-            'suggested_fix': 'Correction suggérée',
-            'test_user': 'Utilisateur de test',
-            'user_roles': 'Rôles utilisateur',
-            'id': 'ID',
-            'category': 'Catégorie',
-            'location': 'Emplacement',
-            'manual_check_required': 'Vérification manuelle requise',
-            'type': 'Type',
-            'severity': 'Sévérité',
-            'confidence': 'Confiance',
-            'touchpoint': 'Point de contact',
-            'what': 'Quoi',
-            'why_important': 'Pourquoi c\'est important',
-            'who_affected': 'Qui est affecté',
-            'how_to_remediate': 'Comment corriger',
-            'location_xpath': 'Emplacement (XPath)',
-            'element': 'Élément',
-            'page_url': 'URL de la page',
-            'breakpoint_px': 'Point de rupture (px)',
-            'pseudoclass': 'Pseudoclasse',
-            'page_state': 'État de la page',
-            'website': 'Site web',
-            'component_type': 'Type de composant',
-            'signature': 'Signature',
-            'label': 'Libellé',
-            'page_count': 'Nombre de pages',
-            'pages_found': 'Pages trouvées',
-            'example_xpath': 'XPath exemple',
-            'last_tested': 'Dernier test',
-            'state_sequence': 'Séquence d\'état',
-            'session_id': 'ID de session',
-            'count': 'Nombre',
-            'pages_affected': 'Pages affectées',
-            'website_name': 'Nom du site web',
-            'url': 'URL',
-            'total_violations': 'Total des violations',
-            'total_warnings': 'Total des avertissements',
-            'project_name': 'Nom du projet',
-            'total_pages': 'Total des pages',
-            'tested_pages': 'Pages testées',
-            'coverage_pct': 'Couverture %',
-            'state_description': 'Description de l\'état',
-            'errors': 'Erreurs',
-            'test_date': 'Date de test',
-            'projects_breakdown': 'Détail des projets',
-            'common_component_s': 'Composant(s) commun(s)',
-            'pages_with_issue': 'Pages avec problème',
-            'breakpoints': 'Points de rupture',
-            'pseudoclasses': 'Pseudoclasses',
-            'page_states': 'États de page',
-            'test_users': 'Utilisateurs de test',
-        }
-    }
-    
     def __init__(self, config: Dict[str, Any], language: str = 'en'):
         super().__init__(config, language)
         self.extension = 'xlsx'
@@ -1361,10 +1491,6 @@ class ExcelFormatter(BaseFormatter):
         except ImportError:
             logger.warning("openpyxl not installed - Excel export will return JSON")
             self.has_openpyxl = False
-    
-    def _t(self, key: str) -> str:
-        """Get translated string for current language"""
-        return self.TRANSLATIONS.get(self.language, self.TRANSLATIONS['en']).get(key, key)
     
     def _get_styles(self):
         """Get common Excel styles"""
@@ -1624,45 +1750,45 @@ class ExcelFormatter(BaseFormatter):
         # Title
         ws.merge_cells('A1:E1')
         title_cell = ws['A1']
-        title_cell.value = f"Accessibility Report - {data.get('page', {}).get('url', 'Unknown')}"
+        title_cell.value = f"{self._t('accessibility_report')} - {data.get('page', {}).get('url', self._t('unknown'))}"
         title_cell.font = self.Font(bold=True, size=14)
         title_cell.alignment = self.Alignment(horizontal="center")
-        
+
         # Metadata
         row = 3
-        ws.cell(row=row, column=1, value="Website:").font = self.Font(bold=True)
+        ws.cell(row=row, column=1, value=f"{self._t('website')}:").font = self.Font(bold=True)
         ws.cell(row=row, column=2, value=data.get('website', {}).get('name', ''))
         row += 1
-        ws.cell(row=row, column=1, value="Project:").font = self.Font(bold=True)
+        ws.cell(row=row, column=1, value=f"{self._t('project')}:").font = self.Font(bold=True)
         ws.cell(row=row, column=2, value=data.get('project', {}).get('name', ''))
         row += 1
-        ws.cell(row=row, column=1, value="Generated:").font = self.Font(bold=True)
+        ws.cell(row=row, column=1, value=f"{self._t('generated')}:").font = self.Font(bold=True)
         ws.cell(row=row, column=2, value=data.get('generated_at', ''))
-        
+
         # Statistics
         row = 7
-        ws.cell(row=row, column=1, value="Summary Statistics").font = self.Font(bold=True, size=12)
+        ws.cell(row=row, column=1, value=self._t('summary_statistics')).font = self.Font(bold=True, size=12)
         row += 1
-        
+
         stats = data.get('statistics', {})
-        ws.cell(row=row, column=1, value="Violations:")
+        ws.cell(row=row, column=1, value=f"{self._t('violations')}:")
         ws.cell(row=row, column=2, value=stats.get('violations', 0))
         if stats.get('violations', 0) > 0:
             ws.cell(row=row, column=2).fill = styles['violation']['fill']
         row += 1
-        
-        ws.cell(row=row, column=1, value="Warnings:")
+
+        ws.cell(row=row, column=1, value=f"{self._t('warnings')}:")
         ws.cell(row=row, column=2, value=stats.get('warnings', 0))
         if stats.get('warnings', 0) > 0:
             ws.cell(row=row, column=2).fill = styles['warning']['fill']
         row += 1
-        
-        ws.cell(row=row, column=1, value="Passes:")
+
+        ws.cell(row=row, column=1, value=f"{self._t('passes')}:")
         ws.cell(row=row, column=2, value=stats.get('passes', 0))
         ws.cell(row=row, column=2).fill = styles['pass']['fill']
         row += 1
-        
-        ws.cell(row=row, column=1, value="Test Duration (ms):")
+
+        ws.cell(row=row, column=1, value=f"{self._t('test_duration')} (ms):")
         ws.cell(row=row, column=2, value=stats.get('duration_ms', 0))
         
         self._auto_adjust_columns(ws)
@@ -2664,29 +2790,29 @@ class ExcelFormatter(BaseFormatter):
         # Title
         ws.merge_cells('A1:D1')
         title_cell = ws['A1']
-        title_cell.value = f"Website Report - {data.get('website', {}).get('name', 'Unknown')}"
+        title_cell.value = f"{self._t('website_report')} - {data.get('website', {}).get('name', self._t('unknown'))}"
         title_cell.font = self.Font(bold=True, size=14)
         title_cell.alignment = self.Alignment(horizontal="center")
-        
+
         # Statistics
         row = 3
         stats = data.get('statistics', {})
-        
-        ws.cell(row=row, column=1, value="Total Pages:").font = self.Font(bold=True)
+
+        ws.cell(row=row, column=1, value=f"{self._t('total_pages')}:").font = self.Font(bold=True)
         ws.cell(row=row, column=2, value=stats.get('total_pages', 0))
         row += 1
-        
-        ws.cell(row=row, column=1, value="Total Violations:").font = self.Font(bold=True)
+
+        ws.cell(row=row, column=1, value=f"{self._t('total_violations')}:").font = self.Font(bold=True)
         ws.cell(row=row, column=2, value=stats.get('total_violations', 0))
         ws.cell(row=row, column=2).fill = styles['violation']['fill']
         row += 1
-        
-        ws.cell(row=row, column=1, value="Total Warnings:").font = self.Font(bold=True)
+
+        ws.cell(row=row, column=1, value=f"{self._t('total_warnings')}:").font = self.Font(bold=True)
         ws.cell(row=row, column=2, value=stats.get('total_warnings', 0))
         ws.cell(row=row, column=2).fill = styles['warning']['fill']
         row += 1
-        
-        ws.cell(row=row, column=1, value="Average Violations/Page:").font = self.Font(bold=True)
+
+        ws.cell(row=row, column=1, value=f"{self._t('average_violations_per_page')}:").font = self.Font(bold=True)
         ws.cell(row=row, column=2, value=f"{stats.get('average_violations', 0):.1f}")
         
         self._auto_adjust_columns(ws)
@@ -2760,28 +2886,28 @@ class ExcelFormatter(BaseFormatter):
         # Title
         ws.merge_cells('A1:D1')
         title_cell = ws['A1']
-        title_cell.value = f"Project Report - {data.get('project', {}).get('name', 'Unknown')}"
+        title_cell.value = f"{self._t('project_report')} - {data.get('project', {}).get('name', self._t('unknown'))}"
         title_cell.font = self.Font(bold=True, size=14)
         title_cell.alignment = self.Alignment(horizontal="center")
-        
+
         # Statistics
         row = 3
         stats = data.get('statistics', {})
-        
-        ws.cell(row=row, column=1, value="Total Websites:").font = self.Font(bold=True)
+
+        ws.cell(row=row, column=1, value=f"{self._t('total_websites')}:").font = self.Font(bold=True)
         ws.cell(row=row, column=2, value=stats.get('total_websites', 0))
         row += 1
-        
-        ws.cell(row=row, column=1, value="Total Pages:").font = self.Font(bold=True)
+
+        ws.cell(row=row, column=1, value=f"{self._t('total_pages')}:").font = self.Font(bold=True)
         ws.cell(row=row, column=2, value=stats.get('total_pages', 0))
         row += 1
-        
-        ws.cell(row=row, column=1, value="Total Violations:").font = self.Font(bold=True)
+
+        ws.cell(row=row, column=1, value=f"{self._t('total_violations')}:").font = self.Font(bold=True)
         ws.cell(row=row, column=2, value=stats.get('total_violations', 0))
         ws.cell(row=row, column=2).fill = styles['violation']['fill']
         row += 1
-        
-        ws.cell(row=row, column=1, value="Average Violations/Page:").font = self.Font(bold=True)
+
+        ws.cell(row=row, column=1, value=f"{self._t('average_violations_per_page')}:").font = self.Font(bold=True)
         ws.cell(row=row, column=2, value=f"{stats.get('average_violations_per_page', 0):.1f}")
         
         self._auto_adjust_columns(ws)
@@ -2842,39 +2968,39 @@ class ExcelFormatter(BaseFormatter):
         # Title
         ws.merge_cells('A1:F1')
         title_cell = ws['A1']
-        title_cell.value = "All Projects Accessibility Report"
+        title_cell.value = self._t('all_projects_accessibility_report')
         title_cell.font = self.Font(bold=True, size=14)
         title_cell.alignment = self.Alignment(horizontal="center")
-        
+
         # Overall Statistics
         row = 3
         summary = data.get('summary', {})
-        
-        ws.cell(row=row, column=1, value="Overall Statistics").font = self.Font(bold=True, size=12)
+
+        ws.cell(row=row, column=1, value=self._t('overall_statistics')).font = self.Font(bold=True, size=12)
         row += 1
-        
-        ws.cell(row=row, column=1, value="Total Projects:").font = self.Font(bold=True)
+
+        ws.cell(row=row, column=1, value=f"{self._t('total_projects')}:").font = self.Font(bold=True)
         ws.cell(row=row, column=2, value=summary.get('total_projects', 0))
         row += 1
-        
-        ws.cell(row=row, column=1, value="Total Websites:").font = self.Font(bold=True)
+
+        ws.cell(row=row, column=1, value=f"{self._t('total_websites')}:").font = self.Font(bold=True)
         ws.cell(row=row, column=2, value=summary.get('total_websites', 0))
         row += 1
-        
-        ws.cell(row=row, column=1, value="Total Pages:").font = self.Font(bold=True)
+
+        ws.cell(row=row, column=1, value=f"{self._t('total_pages')}:").font = self.Font(bold=True)
         ws.cell(row=row, column=2, value=summary.get('total_pages', 0))
         row += 1
-        
-        ws.cell(row=row, column=1, value="Pages Tested:").font = self.Font(bold=True)
+
+        ws.cell(row=row, column=1, value=f"{self._t('pages_tested')}:").font = self.Font(bold=True)
         ws.cell(row=row, column=2, value=summary.get('total_tested', 0))
         row += 1
-        
-        ws.cell(row=row, column=1, value="Total Violations:").font = self.Font(bold=True)
+
+        ws.cell(row=row, column=1, value=f"{self._t('total_violations')}:").font = self.Font(bold=True)
         ws.cell(row=row, column=2, value=summary.get('total_violations', 0))
         ws.cell(row=row, column=2).fill = styles['violation']['fill']
         row += 1
-        
-        ws.cell(row=row, column=1, value="Total Warnings:").font = self.Font(bold=True)
+
+        ws.cell(row=row, column=1, value=f"{self._t('total_warnings')}:").font = self.Font(bold=True)
         ws.cell(row=row, column=2, value=summary.get('total_warnings', 0))
         ws.cell(row=row, column=2).fill = styles['warning']['fill']
         
@@ -2924,7 +3050,7 @@ class ExcelFormatter(BaseFormatter):
         # Title
         ws.merge_cells('A1:G1')
         title_cell = ws['A1']
-        title_cell.value = "Page State Information"
+        title_cell.value = self._t('page_state_information')
         title_cell.font = self.Font(bold=True, size=14)
         title_cell.alignment = self.Alignment(horizontal="center")
 
@@ -2964,21 +3090,21 @@ class ExcelFormatter(BaseFormatter):
 
         # Add state details section
         row += 2
-        ws.cell(row=row, column=1, value="State Details:").font = self.Font(bold=True, size=12)
+        ws.cell(row=row, column=1, value=f"{self._t('state_details')}:").font = self.Font(bold=True, size=12)
         row += 1
 
         if session_id:
-            ws.cell(row=row, column=1, value="Session ID:").font = self.Font(bold=True)
+            ws.cell(row=row, column=1, value=f"{self._t('session_id')}:").font = self.Font(bold=True)
             ws.cell(row=row, column=2, value=session_id)
             row += 1
 
         if scripts_executed:
-            ws.cell(row=row, column=1, value="Scripts Executed:").font = self.Font(bold=True)
+            ws.cell(row=row, column=1, value=f"{self._t('scripts_executed')}:").font = self.Font(bold=True)
             ws.cell(row=row, column=2, value=', '.join(scripts_executed) if isinstance(scripts_executed, list) else str(scripts_executed))
             row += 1
 
         if elements_clicked:
-            ws.cell(row=row, column=1, value="Elements Clicked:").font = self.Font(bold=True)
+            ws.cell(row=row, column=1, value=f"{self._t('elements_clicked')}:").font = self.Font(bold=True)
             if isinstance(elements_clicked, list) and len(elements_clicked) > 0:
                 click_desc = ', '.join([str(el.get('description', el.get('selector', str(el)))) if isinstance(el, dict) else str(el) for el in elements_clicked])
                 ws.cell(row=row, column=2, value=click_desc)
@@ -2986,16 +3112,16 @@ class ExcelFormatter(BaseFormatter):
 
         # Add note about multi-state testing
         row += 1
-        ws.cell(row=row, column=1, value="Note:").font = self.Font(bold=True)
+        ws.cell(row=row, column=1, value=f"{self._t('note')}:").font = self.Font(bold=True)
         row += 1
-        ws.cell(row=row, column=1, value="Multi-State Testing:")
-        ws.cell(row=row, column=2, value="This report shows results for a single page state. If multiple states were tested during the same session, each state will have its own test result with a different state_sequence value.")
+        ws.cell(row=row, column=1, value=f"{self._t('multistate_testing')}:")
+        ws.cell(row=row, column=2, value=self._t('multistate_note'))
         row += 1
-        ws.cell(row=row, column=1, value="Breakpoint Testing:")
-        ws.cell(row=row, column=2, value="Some issues may have been detected at specific breakpoints (viewport widths). Check the 'Breakpoint (px)' column in the 'All Issues' sheet for breakpoint-specific issues.")
+        ws.cell(row=row, column=1, value=f"{self._t('breakpoint_testing')}:")
+        ws.cell(row=row, column=2, value=self._t('breakpoint_note'))
         row += 1
-        ws.cell(row=row, column=1, value="Context Information:")
-        ws.cell(row=row, column=2, value="Check the 'All Issues' sheet for complete context including Page State, Breakpoint, and Pseudoclass information for each issue.")
+        ws.cell(row=row, column=1, value=f"{self._t('context_information')}:")
+        ws.cell(row=row, column=2, value=self._t('context_note'))
 
         self._auto_adjust_columns(ws)
 
@@ -3017,8 +3143,10 @@ class ExcelFormatter(BaseFormatter):
 
     # --- Streaming interface ---
 
-    _DETAIL_HEADERS = ['Page URL', 'Page Title', 'Code', 'Description',
-                       'Touchpoint', 'Impact', 'XPath', 'HTML', 'WCAG Criteria']
+    def _detail_headers(self):
+        """Get translated detail headers for streaming sheets"""
+        return [self._t('page_url'), self._t('page_title'), self._t('code'), self._t('description'),
+                self._t('touchpoint'), self._t('impact'), self._t('xpath'), self._t('html'), self._t('wcag_criteria')]
 
     def begin(self, output_file: str, summary: dict):
         """Create a Workbook with Summary, Violations, and Warnings sheets."""
@@ -3031,9 +3159,9 @@ class ExcelFormatter(BaseFormatter):
 
         # --- Summary sheet ---
         ws_sum = self._wb.active
-        ws_sum.title = 'Summary'
+        ws_sum.title = self._t('summary')
         ws_sum.merge_cells('A1:D1')
-        hdr_cell = ws_sum.cell(row=1, column=1, value='Accessibility Report Summary')
+        hdr_cell = ws_sum.cell(row=1, column=1, value=self._t('accessibility_report_summary'))
         for attr in ('font', 'fill', 'alignment'):
             setattr(hdr_cell, attr, styles['header'][attr])
 
@@ -3044,15 +3172,15 @@ class ExcelFormatter(BaseFormatter):
             row += 1
 
         # --- Violations detail sheet ---
-        self._ws_violations = self._wb.create_sheet('Violations')
-        for col_idx, hdr in enumerate(self._DETAIL_HEADERS, 1):
+        self._ws_violations = self._wb.create_sheet(self._t('violations'))
+        for col_idx, hdr in enumerate(self._detail_headers(), 1):
             cell = self._ws_violations.cell(row=1, column=col_idx, value=hdr)
             for attr in ('font', 'fill', 'alignment'):
                 setattr(cell, attr, styles['header'][attr])
 
         # --- Warnings detail sheet ---
-        self._ws_warnings = self._wb.create_sheet('Warnings')
-        for col_idx, hdr in enumerate(self._DETAIL_HEADERS, 1):
+        self._ws_warnings = self._wb.create_sheet(self._t('warnings'))
+        for col_idx, hdr in enumerate(self._detail_headers(), 1):
             cell = self._ws_warnings.cell(row=1, column=col_idx, value=hdr)
             for attr in ('font', 'fill', 'alignment'):
                 setattr(cell, attr, styles['header'][attr])

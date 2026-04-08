@@ -158,7 +158,7 @@
             <div class="card text-center flex-fill" style="min-width: 140px;">
                 <div class="card-body py-3">
                     <h3 class="card-title text-muted mb-1">{{ _('Total Pages') }}</h3>
-                    <p class="display-6 mb-0">{{ stats.total_pages }}</p>
+                    <p class="display-6 mb-0" id="totalPagesCount">{{ stats.total_pages }}</p>
                 </div>
             </div>
             <div class="card text-center flex-fill" style="min-width: 140px;">
@@ -1428,7 +1428,7 @@ function startDiscoveryPolling() {
                 }
 
                 // Update page count in statistics if available
-                const pageCountElement = document.querySelector('.card-title:contains("Total Pages") + .display-6');
+                const pageCountElement = document.getElementById('totalPagesCount');
                 if (pageCountElement) {
                     pageCountElement.textContent = data.pages_found;
                 }

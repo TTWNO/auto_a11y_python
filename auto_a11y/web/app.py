@@ -87,6 +87,15 @@ def create_app(config):
 
     babel = Babel(app, locale_selector=get_locale)
 
+    # Auto-escape i18n strings so that apostrophes in French translations
+    # (e.g. l'annuler, d'attente) are rendered as &#39; and cannot break
+    # JavaScript single-quoted strings or HTML attributes.
+    from markupsafe import escape as _markup_escape
+    from flask_babel import gettext as _babel_gettext
+    def _escaped_gettext(*args, **kwargs):
+        return _markup_escape(_babel_gettext(*args, **kwargs))
+    app.jinja_env.globals['_'] = _escaped_gettext
+
     # Add datetime format filter for templates
     @app.template_filter('datetimeformat')
     def datetimeformat_filter(value, format='medium'):

@@ -187,7 +187,7 @@ function renderSyncStatus() {
             <div class="stat-box text-center p-3 border rounded flex-fill" style="min-width: 140px;">
                 <div class="stat-label">{{ _('Last Sync') }}</div>
                 <div class="stat-value small">
-                    ${syncStatus.last_sync_time ? new Date(syncStatus.last_sync_time).toLocaleString() : '{{ _("Never") }}'}
+                    ${syncStatus.last_sync_time ? new Date(syncStatus.last_sync_time).toLocaleString() : '{{ _("Never") | replace("\'", "\\\'") }}'}
                 </div>
             </div>
         </div>
@@ -293,7 +293,7 @@ function renderRecordingsList() {
                 ${recording.drupal_sync_status === 'sync_failed' ? '<span class="badge bg-danger ms-2">{{ _("Failed") }}</span>' : ''}
                 <br>
                 <small class="text-muted">
-                    ${recording.duration || '{{ _("Unknown duration") }}'}
+                    ${recording.duration || '{{ _("Unknown duration") | replace("\'", "\\\'") }}'}
                     ${recording.auditor_name ? `• ${recording.auditor_name}` : ''}
                     ${recording.total_issues > 0 ? `• ${recording.total_issues} {{ _("issues") }}` : ''}
                 </small>

@@ -1,21 +1,21 @@
 {% extends "base.html" %}
 
-{% block title %}Automated Tests - {{ project.name }}{% endblock %}
+{% block title %}{{ _('Automated Tests') }} - {{ project.name }}{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
-    <nav aria-label="breadcrumb">
+    <nav aria-label="{{ _('breadcrumb') }}">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{{ url_for('projects.list_projects') }}">Projects</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('projects.list_projects') }}">{{ _('Projects') }}</a></li>
             <li class="breadcrumb-item"><a href="{{ url_for('projects.view_project', project_id=project.id) }}">{{ project.name }}</a></li>
-            <li class="breadcrumb-item active" aria-current="page">Automated Tests</li>
+            <li class="breadcrumb-item active" aria-current="page">{{ _('Automated Tests') }}</li>
         </ol>
     </nav>
 
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>Automated Tests</h1>
+        <h1>{{ _('Automated Tests') }}</h1>
         <button id="uploadBtn" class="btn btn-primary" disabled>
-            <i class="bi bi-cloud-upload" aria-hidden="true"></i> Upload to Drupal
+            <i class="bi bi-cloud-upload" aria-hidden="true"></i> {{ _('Upload to Drupal') }}
         </button>
     </div>
 
@@ -23,7 +23,7 @@
     <div class="card mb-4">
         <div class="card-header">
             <h2 class="mb-0">
-                <i class="bi bi-funnel" aria-hidden="true"></i> Filters
+                <i class="bi bi-funnel" aria-hidden="true"></i> {{ _('Filters') }}
             </h2>
         </div>
         <div class="card-body">
@@ -31,61 +31,61 @@
                 <div class="row">
                     <!-- Page URL Filter -->
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">Page URLs</label>
+                        <label class="form-label">{{ _('Page URLs') }}</label>
                         <select id="pageUrlsFilter" class="form-select" multiple size="5">
-                            <option value="">All Pages</option>
+                            <option value="">{{ _('All Pages') }}</option>
                             {% for result in test_results_data %}
                             <option value="{{ result.page.url }}">{{ result.page.title or result.page.url }}</option>
                             {% endfor %}
                         </select>
-                        <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple</small>
+                        <small class="form-text text-muted">{{ _('Hold Ctrl/Cmd to select multiple') }}</small>
                     </div>
 
                     <!-- Touchpoint Filter -->
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">Touchpoints</label>
+                        <label class="form-label">{{ _('Touchpoints') }}</label>
                         <select id="touchpointsFilter" class="form-select" multiple size="5">
-                            <option value="">All Touchpoints</option>
+                            <option value="">{{ _('All Touchpoints') }}</option>
                             {% for touchpoint in touchpoints %}
                             <option value="{{ touchpoint }}">{{ touchpoint }}</option>
                             {% endfor %}
                         </select>
-                        <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple</small>
+                        <small class="form-text text-muted">{{ _('Hold Ctrl/Cmd to select multiple') }}</small>
                     </div>
 
                     <!-- WCAG Criteria Filter -->
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">WCAG Success Criteria</label>
+                        <label class="form-label">{{ _('WCAG Success Criteria') }}</label>
                         <select id="wcagFilter" class="form-select" multiple size="5">
-                            <option value="">All WCAG Criteria</option>
+                            <option value="">{{ _('All WCAG Criteria') }}</option>
                             {% for criterion in wcag_criteria %}
                             <option value="{{ criterion }}">{{ criterion }}</option>
                             {% endfor %}
                         </select>
-                        <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple</small>
+                        <small class="form-text text-muted">{{ _('Hold Ctrl/Cmd to select multiple') }}</small>
                     </div>
 
                     <!-- Impact Level Filter -->
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">Impact Level</label>
+                        <label class="form-label">{{ _('Impact Level') }}</label>
                         <select id="impactFilter" class="form-select" multiple size="5">
-                            <option value="">All Impact Levels</option>
-                            <option value="critical">Critical</option>
-                            <option value="high">High</option>
-                            <option value="med">Medium</option>
-                            <option value="low">Low</option>
+                            <option value="">{{ _('All Impact Levels') }}</option>
+                            <option value="critical">{{ _('Critical') }}</option>
+                            <option value="high">{{ _('High') }}</option>
+                            <option value="med">{{ _('Medium') }}</option>
+                            <option value="low">{{ _('Low') }}</option>
                         </select>
-                        <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple</small>
+                        <small class="form-text text-muted">{{ _('Hold Ctrl/Cmd to select multiple') }}</small>
                     </div>
                 </div>
 
                 <!-- Filter Actions -->
                 <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-search" aria-hidden="true"></i> Apply Filters
+                        <i class="bi bi-search" aria-hidden="true"></i> {{ _('Apply Filters') }}
                     </button>
                     <button type="button" id="clearFiltersBtn" class="btn btn-secondary">
-                        <i class="bi bi-x-circle" aria-hidden="true"></i> Clear Filters
+                        <i class="bi bi-x-circle" aria-hidden="true"></i> {{ _('Clear Filters') }}
                     </button>
                 </div>
             </form>
@@ -94,27 +94,27 @@
 
     <!-- Results Summary -->
     <div id="resultsSummary" class="alert alert-info">
-        <strong>Total:</strong> {{ test_results_data|length }} pages with {{ test_results_data|sum(attribute='total_issues') }} issues
+        <strong>{{ _('Total:') }}</strong> {{ _('%(num_pages)s pages with %(num_issues)s issues', num_pages=test_results_data|length, num_issues=test_results_data|sum(attribute='total_issues')) }}
     </div>
 
     <!-- Test Results Table -->
     <div class="card">
         <div class="card-header">
-            <h2 class="mb-0">Test Results</h2>
+            <h2 class="mb-0">{{ _('Test Results') }}</h2>
         </div>
         <div class="card-body">
             <div id="resultsContainer">
                 <table class="table table-striped" id="resultsTable">
-                    <caption class="visually-hidden">Automated Test Results</caption>
+                    <caption class="visually-hidden">{{ _('Automated Test Results') }}</caption>
                     <thead>
                         <tr>
-                            <th scope="col">Page</th>
-                            <th scope="col">Website</th>
-                            <th scope="col" class="text-center">Violations</th>
-                            <th scope="col" class="text-center">Warnings</th>
-                            <th scope="col" class="text-center">Info</th>
-                            <th scope="col" class="text-center">Total</th>
-                            <th scope="col">Actions</th>
+                            <th scope="col">{{ _('Page') }}</th>
+                            <th scope="col">{{ _('Website') }}</th>
+                            <th scope="col" class="text-center">{{ _('Violations') }}</th>
+                            <th scope="col" class="text-center">{{ _('Warnings') }}</th>
+                            <th scope="col" class="text-center">{{ _('Info') }}</th>
+                            <th scope="col" class="text-center">{{ _('Total') }}</th>
+                            <th scope="col">{{ _('Actions') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -141,7 +141,7 @@
                             <td>
                                 <a href="{{ url_for('testing.view_test_result', result_id=result.test_result.id) }}"
                                    class="btn btn-sm btn-outline-primary">
-                                    View Details
+                                    {{ _('View Details') }}
                                 </a>
                             </td>
                         </tr>
@@ -152,9 +152,9 @@
 
             <div id="loadingSpinner" class="text-center d-none">
                 <div class="spinner-border" role="status">
-                    <span class="visually-hidden">Loading...</span>
+                    <span class="visually-hidden">{{ _('Loading...') }}</span>
                 </div>
-                <p>Loading filtered results...</p>
+                <p>{{ _('Loading filtered results...') }}</p>
             </div>
         </div>
     </div>
@@ -165,16 +165,16 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title" id="uploadModalTitle">Uploading to Drupal</h2>
+                <h2 class="modal-title" id="uploadModalTitle">{{ _('Uploading to Drupal') }}</h2>
             </div>
             <div class="modal-body">
                 <div id="uploadProgress">
                     <div class="text-center mb-3">
                         <div class="spinner-border" role="status">
-                            <span class="visually-hidden">Uploading...</span>
+                            <span class="visually-hidden">{{ _('Uploading...') }}</span>
                         </div>
                     </div>
-                    <p id="uploadStatus">Preparing upload...</p>
+                    <p id="uploadStatus">{{ _('Preparing upload...') }}</p>
                     <div class="progress">
                         <div id="uploadProgressBar" class="progress-bar progress-bar-striped progress-bar-animated"
                              role="progressbar" style="width: 0%"></div>
@@ -182,19 +182,19 @@
                 </div>
                 <div id="uploadComplete" class="d-none">
                     <div class="alert alert-success">
-                        <h3>Upload Complete!</h3>
+                        <h3>{{ _('Upload Complete!') }}</h3>
                         <ul id="uploadResultsList" class="mb-0"></ul>
                     </div>
                 </div>
                 <div id="uploadError" class="d-none">
                     <div class="alert alert-danger">
-                        <h3>Upload Failed</h3>
+                        <h3>{{ _('Upload Failed') }}</h3>
                         <p id="uploadErrorMessage"></p>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Close') }}</button>
             </div>
         </div>
     </div>
@@ -203,6 +203,25 @@
 <script>
     const projectId = "{{ project.id }}";
     let currentFilters = {};
+
+    // i18n strings for JavaScript
+    const i18n = {
+        filteredResults: '{{ _("Filtered Results:") }}',
+        pagesWithIssues: '{{ _("%(num_pages)s pages with %(num_issues)s issues") }}',
+        errorFiltering: '{{ _("Error filtering results. Please try again.") }}',
+        noResultsMatch: '{{ _("No results match the current filters") }}',
+        viewDetails: '{{ _("View Details") }}',
+        deduplicating: '{{ _("Deduplicating test results...") }}',
+        commonComponents: '{{ _("Common Components:") }}',
+        componentDiscoveredPages: '{{ _("Component Discovered Pages:") }}',
+        urlDiscoveredPages: '{{ _("URL Discovered Pages:") }}',
+        violationsLinked: '{{ _("Violations Linked:") }}',
+        discoveredPagesSynced: '{{ _("Discovered Pages Synced:") }}',
+        issuesCreated: '{{ _("Issues Created:") }}',
+        issuesUpdated: '{{ _("Issues Updated:") }}',
+        issuesFailed: '{{ _("Issues Failed:") }}',
+        viewViolationsFor: '{{ _("View violations for:") }}'
+    };
 
     // Filter form submission
     document.getElementById('filterForm').addEventListener('submit', async (e) => {
@@ -260,8 +279,11 @@
             const data = await response.json();
 
             // Update results summary
+            const pagesWithIssues = i18n.pagesWithIssues
+                .replace('%(num_pages)s', data.total_pages)
+                .replace('%(num_issues)s', data.total_violations);
             document.getElementById('resultsSummary').innerHTML = `
-                <strong>Filtered Results:</strong> ${data.total_pages} pages with ${data.total_violations} issues
+                <strong>${i18n.filteredResults}</strong> ${pagesWithIssues}
             `;
 
             // Update table
@@ -272,7 +294,7 @@
 
         } catch (error) {
             console.error('Error filtering results:', error);
-            alert('Error filtering results. Please try again.');
+            alert(i18n.errorFiltering);
         } finally {
             // Hide loading spinner
             document.getElementById('loadingSpinner').classList.add('d-none');
@@ -285,7 +307,7 @@
         tbody.innerHTML = '';
 
         if (results.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center">No results match the current filters</td></tr>';
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center">${i18n.noResultsMatch}</td></tr>`;
             return;
         }
 
@@ -300,7 +322,7 @@
                 <td class="text-center"><strong>${result.violation_count}</strong></td>
                 <td>
                     <button class="btn btn-sm btn-outline-primary" onclick="viewViolations('${result.page_url}')">
-                        View Details
+                        ${i18n.viewDetails}
                     </button>
                 </td>
             `;
@@ -321,7 +343,7 @@
 
         try {
             // Update status
-            document.getElementById('uploadStatus').textContent = 'Deduplicating test results...';
+            document.getElementById('uploadStatus').textContent = i18n.deduplicating;
             document.getElementById('uploadProgressBar').style.width = '20%';
 
             const response = await fetch(`/automated_tests/projects/${projectId}/upload`, {
@@ -346,14 +368,14 @@
             // Show results
             const resultsList = document.getElementById('uploadResultsList');
             resultsList.innerHTML = `
-                <li>Common Components: ${data.common_components}</li>
-                <li>Component Discovered Pages: ${data.component_discovered_pages}</li>
-                <li>URL Discovered Pages: ${data.url_discovered_pages}</li>
-                <li>Violations Linked: ${data.violations_linked}</li>
-                <li>Discovered Pages Synced: ${data.discovered_pages_synced}</li>
-                <li>Issues Created: ${data.issues_created}</li>
-                <li>Issues Updated: ${data.issues_updated}</li>
-                ${data.issues_failed > 0 ? `<li class="text-danger">Issues Failed: ${data.issues_failed}</li>` : ''}
+                <li>${i18n.commonComponents} ${data.common_components}</li>
+                <li>${i18n.componentDiscoveredPages} ${data.component_discovered_pages}</li>
+                <li>${i18n.urlDiscoveredPages} ${data.url_discovered_pages}</li>
+                <li>${i18n.violationsLinked} ${data.violations_linked}</li>
+                <li>${i18n.discoveredPagesSynced} ${data.discovered_pages_synced}</li>
+                <li>${i18n.issuesCreated} ${data.issues_created}</li>
+                <li>${i18n.issuesUpdated} ${data.issues_updated}</li>
+                ${data.issues_failed > 0 ? `<li class="text-danger">${i18n.issuesFailed} ${data.issues_failed}</li>` : ''}
             `;
 
         } catch (error) {
@@ -366,7 +388,7 @@
 
     function viewViolations(pageUrl) {
         // TODO: Implement violation details view
-        alert('View violations for: ' + pageUrl);
+        alert(i18n.viewViolationsFor + ' ' + pageUrl);
     }
 </script>
 {% endblock %}

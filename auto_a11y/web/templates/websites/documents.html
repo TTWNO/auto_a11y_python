@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}Documents - {{ website.name }} - Auto A11y{% endblock %}
+{% block title %}{{ _('Documents') }} - {{ website.name }} - Auto A11y{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
     <!-- Page Header -->
-    <nav aria-label="breadcrumb">
+    <nav aria-label="{{ _('breadcrumb') }}">
         <ol class="breadcrumb">
             <li class="breadcrumb-item">
                 <a href="{{ url_for('projects.view_project', project_id=project.id) }}">{{ project.name }}</a>
@@ -13,19 +13,19 @@
             <li class="breadcrumb-item">
                 <a href="{{ url_for('websites.view_website', website_id=website.id) }}">{{ website.display_name }}</a>
             </li>
-            <li class="breadcrumb-item active" aria-current="page">Documents</li>
+            <li class="breadcrumb-item active" aria-current="page">{{ _('Documents') }}</li>
         </ol>
     </nav>
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h1>Electronic Documents</h1>
-            <p class="text-muted">Documents found during website discovery</p>
+            <h1>{{ _('Electronic Documents') }}</h1>
+            <p class="text-muted">{{ _('Documents found during website discovery') }}</p>
         </div>
         <div>
-            <span class="badge bg-primary me-2">Total: {{ total_docs }}</span>
-            <span class="badge bg-success me-2">Internal: {{ internal_docs|length }}</span>
-            <span class="badge bg-warning">External: {{ external_docs|length }}</span>
+            <span class="badge bg-primary me-2">{{ _('Total:') }} {{ total_docs }}</span>
+            <span class="badge bg-success me-2">{{ _('Internal:') }} {{ internal_docs|length }}</span>
+            <span class="badge bg-warning">{{ _('External:') }} {{ external_docs|length }}</span>
         </div>
     </div>
 
@@ -34,7 +34,7 @@
         <div class="card mb-4">
             <div class="card-header">
                 <h2 id="internal-docs-heading" class="mb-0">
-                    <i class="bi bi-house-door" aria-hidden="true"></i> Internal Documents
+                    <i class="bi bi-house-door" aria-hidden="true"></i> {{ _('Internal Documents') }}
                     <span class="badge bg-secondary ms-2">{{ internal_docs|length }}</span>
                 </h2>
             </div>
@@ -42,17 +42,17 @@
             {% if internal_docs %}
             <div class="table-responsive">
                 <table class="table table-hover">
-                    <caption class="visually-hidden">Internal documents found during website discovery</caption>
+                    <caption class="visually-hidden">{{ _('Internal documents found during website discovery') }}</caption>
                     <thead>
                         <tr>
-                            <th scope="col">Document URL</th>
-                            <th scope="col">Type</th>
-                            <th scope="col">Language</th>
-                            <th scope="col">Link Text</th>
-                            <th scope="col">Found On Page</th>
-                            <th scope="col">First Seen</th>
-                            <th scope="col">References</th>
-                            <th scope="col">Actions</th>
+                            <th scope="col">{{ _('Document URL') }}</th>
+                            <th scope="col">{{ _('Type') }}</th>
+                            <th scope="col">{{ _('Language') }}</th>
+                            <th scope="col">{{ _('Link Text') }}</th>
+                            <th scope="col">{{ _('Found On Page') }}</th>
+                            <th scope="col">{{ _('First Seen') }}</th>
+                            <th scope="col">{{ _('References') }}</th>
+                            <th scope="col">{{ _('Actions') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -69,8 +69,8 @@
                             </td>
                             <td>
                                 {% if doc.language %}
-                                    <span class="badge bg-secondary" 
-                                          title="Confidence: {{ (doc.language_confidence * 100)|round(0)|int }}%">
+                                    <span class="badge bg-secondary"
+                                          title="{{ _('Confidence:') }} {{ (doc.language_confidence * 100)|round(0)|int }}%">
                                         {{ doc.language_display }}
                                     </span>
                                 {% else %}
@@ -102,7 +102,7 @@
                 </table>
             </div>
             {% else %}
-            <p class="text-muted">No internal documents found.</p>
+            <p class="text-muted">{{ _('No internal documents found.') }}</p>
             {% endif %}
         </div>
     </section>
@@ -112,7 +112,7 @@
         <div class="card">
             <div class="card-header">
                 <h2 id="external-docs-heading" class="mb-0">
-                    <i class="bi bi-globe" aria-hidden="true"></i> External Documents
+                    <i class="bi bi-globe" aria-hidden="true"></i> {{ _('External Documents') }}
                     <span class="badge bg-secondary ms-2">{{ external_docs|length }}</span>
                 </h2>
             </div>
@@ -120,17 +120,17 @@
             {% if external_docs %}
             <div class="table-responsive">
                 <table class="table table-hover">
-                    <caption class="visually-hidden">External documents found during website discovery</caption>
+                    <caption class="visually-hidden">{{ _('External documents found during website discovery') }}</caption>
                     <thead>
                         <tr>
-                            <th scope="col">Document URL</th>
-                            <th scope="col">Type</th>
-                            <th scope="col">Language</th>
-                            <th scope="col">Link Text</th>
-                            <th scope="col">Found On Page</th>
-                            <th scope="col">First Seen</th>
-                            <th scope="col">References</th>
-                            <th scope="col">Via Redirect</th>
+                            <th scope="col">{{ _('Document URL') }}</th>
+                            <th scope="col">{{ _('Type') }}</th>
+                            <th scope="col">{{ _('Language') }}</th>
+                            <th scope="col">{{ _('Link Text') }}</th>
+                            <th scope="col">{{ _('Found On Page') }}</th>
+                            <th scope="col">{{ _('First Seen') }}</th>
+                            <th scope="col">{{ _('References') }}</th>
+                            <th scope="col">{{ _('Via Redirect') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -147,8 +147,8 @@
                             </td>
                             <td>
                                 {% if doc.language %}
-                                    <span class="badge bg-secondary" 
-                                          title="Confidence: {{ (doc.language_confidence * 100)|round(0)|int }}%">
+                                    <span class="badge bg-secondary"
+                                          title="{{ _('Confidence:') }} {{ (doc.language_confidence * 100)|round(0)|int }}%">
                                         {{ doc.language_display }}
                                     </span>
                                 {% else %}
@@ -171,11 +171,11 @@
                             </td>
                             <td>
                                 {% if doc.via_redirect %}
-                                <span class="badge bg-warning" title="Found through address rewriting/redirect">
-                                    <i class="bi bi-arrow-right-circle" aria-hidden="true"></i> Yes
+                                <span class="badge bg-warning" title="{{ _('Found through address rewriting/redirect') }}">
+                                    <i class="bi bi-arrow-right-circle" aria-hidden="true"></i> {{ _('Yes') }}
                                 </span>
                                 {% else %}
-                                <span class="text-muted">No</span>
+                                <span class="text-muted">{{ _('No') }}</span>
                                 {% endif %}
                             </td>
                         </tr>
@@ -184,7 +184,7 @@
                 </table>
             </div>
             {% else %}
-            <p class="text-muted">No external documents found.</p>
+            <p class="text-muted">{{ _('No external documents found.') }}</p>
             {% endif %}
         </div>
     </section>
@@ -193,7 +193,7 @@
     <section aria-labelledby="doc-type-summary-heading">
         <div class="card mt-4">
             <div class="card-header">
-                <h2 id="doc-type-summary-heading" class="mb-0">Document Type Summary</h2>
+                <h2 id="doc-type-summary-heading" class="mb-0">{{ _('Document Type Summary') }}</h2>
             </div>
         <div class="card-body">
             <div class="row">
@@ -205,7 +205,7 @@
                         {% set _ = doc_types.update({doc.document_type_display: 1}) %}
                     {% endif %}
                 {% endfor %}
-                
+
                 {% for doc_type, count in doc_types.items() %}
                 <div class="col-md-3 mb-2">
                     <div class="d-flex justify-content-between align-items-center">
@@ -222,7 +222,7 @@
     <section aria-labelledby="doc-language-summary-heading">
         <div class="card mt-4">
             <div class="card-header">
-                <h2 id="doc-language-summary-heading" class="mb-0">Document Language Summary</h2>
+                <h2 id="doc-language-summary-heading" class="mb-0">{{ _('Document Language Summary') }}</h2>
             </div>
         <div class="card-body">
             <div class="row">
@@ -237,7 +237,7 @@
                         {% endif %}
                     {% endif %}
                 {% endfor %}
-                
+
                 {% if doc_languages %}
                     {% for language, count in doc_languages.items() %}
                     <div class="col-md-3 mb-2">
@@ -249,7 +249,7 @@
                     {% endfor %}
                 {% else %}
                     <div class="col-12">
-                        <p class="text-muted mb-0">No language information available yet.</p>
+                        <p class="text-muted mb-0">{{ _('No language information available yet.') }}</p>
                     </div>
                 {% endif %}
             </div>

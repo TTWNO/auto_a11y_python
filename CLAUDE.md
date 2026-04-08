@@ -337,6 +337,10 @@ pybabel compile -f -d auto_a11y/web/translations
 - **WCAG criteria:** `auto_a11y/reporting/wcag_translations_fr.py`
 - **Typst reports:** `auto_a11y/reporting/typst_templates/lib/i18n.typ`
 
+### README
+
+The project maintains a French README (`README.fr.md`) alongside the English `README.md`. **Any change to `README.md` MUST be reflected in `README.fr.md`** — they must stay in sync. When editing the README, update both files in the same change.
+
 ## Common Gotchas
 
 1. **Port Conflict:** macOS AirPlay Receiver uses 5000 → We use 5001

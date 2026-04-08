@@ -453,6 +453,132 @@ If your database name differs from the default `auto_a11y`, replace it with the 
 
 Install the [MongoDB Database Tools](https://www.mongodb.com/docs/database-tools/installation/installation/) (`mongodump` and `mongorestore`). These are separate from the MongoDB server and must be installed individually on most systems.
 
+## Desktop Application Builds
+
+Auto A11y can be packaged as a standalone desktop application using Electron. The desktop build bundles a portable Python runtime, a sidecar MongoDB instance, and Playwright Chromium — no external dependencies required on the target machine.
+
+### Architecture
+
+The Electron shell (`electron/main.js`) acts as a thin wrapper:
+
+1. Starts an embedded **MongoDB** sidecar (`mongod`)
+2. Starts the **Flask** server using a bundled portable Python
+3. Opens a BrowserWindow pointing at the local Flask server
+4. Gracefully shuts down both services on exit
+
+All four components (server, database, browser, LLM) are switchable between internal (bundled) and external (user-provided) via an in-app settings panel. Settings are stored in the platform's standard user data directory.
+
+### Prerequisites (all platforms)
+
+- **Node.js 18+** and **npm**
+- **curl** (for downloading portable Python and MongoDB)
+- An internet connection during the build (to download dependencies)
+
+### Linux (AppImage)
+
+```bash
+# 1. Install Electron dependencies (first time only)
+cd electron
+npm install
+cd ..
+
+# 2. Run the build script
+chmod +x build/build-linux.sh
+./build/build-linux.sh
+```
+
+The script:
+1. Downloads [portable Python 3.12](https://github.com/indygreg/python-build-standalone) (x86_64)
+2. Installs pip dependencies from `requirements.txt` into the portable Python
+3. Downloads MongoDB 7.0 Community (just the `mongod` binary)
+4. Downloads Playwright Chromium via the portable Python
+5. Copies application source to `build/staging/`
+6. Packages everything with `electron-builder` into an AppImage
+
+**Output:** `electron/dist/Auto A11y-<version>.AppImage`
+
+Run the AppImage directly — no installation needed:
+```bash
+chmod +x "electron/dist/Auto A11y-1.0.0.AppImage"
+./"electron/dist/Auto A11y-1.0.0.AppImage"
+```
+
+### macOS (DMG)
+
+```bash
+# 1. Install native dependencies for WeasyPrint PDF generation
+brew install cairo pango gdk-pixbuf gobject-introspection libffi
+
+# 2. Install Electron dependencies (first time only)
+cd electron
+npm install
+cd ..
+
+# 3. Run the build script
+chmod +x build/build-mac.sh
+./build/build-mac.sh
+```
+
+The macOS build has an additional step compared to Linux: it bundles the WeasyPrint native libraries (dylibs) from Homebrew into the app and rewrites their install names with `@loader_path` so the app works without Homebrew on the target machine. A `python3.12-wrapper` script sets `DYLD_LIBRARY_PATH` at runtime.
+
+The script auto-detects the architecture (`arm64` for Apple Silicon, `x86_64` for Intel).
+
+**Output:** `electron/dist/Auto A11y-<version>.dmg`
+
+### Windows
+
+There is no Windows build script yet. The Electron shell and process manager already handle Windows paths (including `taskkill` for process cleanup), but the build pipeline has not been implemented.
+
+A Windows build script would need to:
+1. Download [portable Python for Windows](https://github.com/indygreg/python-build-standalone) (`x86_64-pc-windows-msvc`)
+2. Install pip dependencies
+3. Download [MongoDB Community for Windows](https://www.mongodb.com/try/download/community) (just `mongod.exe`)
+4. Download Playwright Chromium
+5. Handle WeasyPrint's GTK3 runtime dependency on Windows (e.g., bundle from MSYS2/vcpkg or use the `weasyprint` wheel with bundled DLLs)
+6. Package with `electron-builder --win` (produces NSIS installer or portable EXE)
+
+### Development Mode
+
+To run the Electron shell in development mode (using your system's MongoDB and the project's Python venv instead of bundled binaries):
+
+```bash
+cd electron
+npm install   # first time only
+./dev-start.sh
+# or: npx electron . --dev
+```
+
+This requires MongoDB and the Python venv (`.venv/`) to already be set up on your machine. The process manager falls back to system-installed `mongod` and `.venv/bin/python` when bundled binaries are not found.
+
+### Build Output Structure
+
+The packaged app bundles these resources alongside the Electron binary:
+
+```
+resources/
+├── app/            # Application source (auto_a11y/, config.py, run.py, Fixtures/)
+├── python/         # Portable Python 3.12 + pip dependencies
+│   └── bin/
+│       ├── python3.12
+│       └── python3.12-wrapper  # macOS only: sets DYLD_LIBRARY_PATH
+├── mongodb/
+│   └── bin/
+│       └── mongod              # MongoDB 7.0 server binary
+└── chromium/                   # Playwright-managed Chromium browser
+```
+
+### User Data
+
+At runtime, the app stores its data in the platform's user data directory:
+
+| Platform | Location |
+|----------|----------|
+| Linux | `~/.config/auto-a11y/` |
+| macOS | `~/Library/Application Support/auto-a11y/` |
+| Windows | `%APPDATA%\auto-a11y\` |
+
+Contents: `settings.json`, `mongodb/data/` (database files), `logs/`, `reports/`, `screenshots/`.
+
 ## Contributing
 
 Contributions are welcome! Please:
@@ -481,7 +607,3 @@ Bob Dodd
 ## Support
 
 For issues, questions, or contributions, please use the GitHub issue tracker.
-
-## Contributing
-
-Contributions are welcome! Please read our contributing guidelines before submitting PRs.

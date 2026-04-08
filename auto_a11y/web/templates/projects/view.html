@@ -733,19 +733,19 @@ async function updateMemberGroups(userId) {
     });
     if (!resp.ok) {
         const data = await resp.json();
-        alert(data.error || 'Failed to update groups');
+        alert(data.error || '{{ _("Failed to update groups") }}');
         loadMembers();
     }
 }
 
 async function removeMember(userId) {
-    if (!confirm('Remove this member from the project?')) return;
+    if (!confirm('{{ _("Remove this member from the project?") }}')) return;
     const resp = await fetch(`/projects/${PROJECT_ID}/members/${userId}`, {
         method: 'DELETE'
     });
     if (!resp.ok) {
         const data = await resp.json();
-        alert(data.error || 'Failed to remove member');
+        alert(data.error || '{{ _("Failed to remove member") }}');
     }
     loadMembers();
 }

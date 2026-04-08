@@ -162,16 +162,16 @@ msgstr "Page non trouvée"
 
 #: auto_a11y/web/routes/pages.py:756
 msgid "Test matrix updated successfully"
-msgstr "La page a été supprimée avec succès"
+msgstr "La matrice de test a été mise à jour avec succès"
 
 #: auto_a11y/web/routes/pages.py:759
 msgid "Test matrix created successfully"
-msgstr "La page a été supprimée avec succès"
+msgstr "La matrice de test a été créée avec succès"
 
 #: auto_a11y/web/routes/pages.py:765
 #, python-format
 msgid "Failed to save test matrix: %(error)s"
-msgstr "Échec de l'annulation de la découverte :"
+msgstr "Impossible d'enregistrer la matrice de test : %(error)s"
 
 #: auto_a11y/web/routes/reports.py:697
 msgid "No Recordings Available"
@@ -203,7 +203,7 @@ msgstr "Accueil"
 
 #: auto_a11y/web/templates/500.html:3
 msgid "Server Error"
-msgstr "Erreurs :"
+msgstr "Erreur du serveur"
 
 #: auto_a11y/web/templates/500.html:10
 msgid "Internal Server Error"
@@ -238,7 +238,7 @@ msgstr "Fonctionnalités"
 
 #: auto_a11y/web/templates/about.html:23 auto_a11y/web/templates/help.html:443
 msgid "Automated WCAG 2.2 compliance testing"
-msgstr "Conformité WCAG"
+msgstr "Tests automatisés de conformité WCAG 2.2"
 
 #: auto_a11y/web/templates/about.html:24 auto_a11y/web/templates/help.html:444
 msgid "Lived experience testing with real users"
@@ -353,16 +353,16 @@ msgstr "Aide rapide"
 
 #: auto_a11y/web/templates/about.html:119
 msgid "Version Information"
-msgstr "Configuration"
+msgstr "Informations sur la version"
 
 #: auto_a11y/web/templates/about.html:121
 msgid "WCAG Version:"
-msgstr "Malvoyant"
+msgstr "Version WCAG :"
 
 #: auto_a11y/web/templates/about.html:122
 #: auto_a11y/web/templates/website_users/view.html:82
 msgid "Last Updated:"
-msgstr "Date"
+msgstr "Dernière mise à jour :"
 
 #: auto_a11y/web/templates/about.html:122
 msgid "October 2023"
@@ -378,7 +378,7 @@ msgstr "Auto A11y teste les trois niveaux de conformité WCAG :"
 
 #: auto_a11y/web/templates/about.html:130
 msgid "Level A:"
-msgstr "Niveau AA :"
+msgstr "Niveau A :"
 
 #: auto_a11y/web/templates/about.html:130
 msgid "Minimum level of conformance"
@@ -422,7 +422,7 @@ msgstr "Utilisant le moteur axe-core"
 
 #: auto_a11y/web/templates/about.html:141
 msgid "Manual Audits:"
-msgstr "Télécharger un enregistrement"
+msgstr "Audits manuels :"
 
 #: auto_a11y/web/templates/about.html:141
 msgid "Human expert evaluation"
@@ -430,15 +430,15 @@ msgstr "Évaluation par un expert humain"
 
 #: auto_a11y/web/templates/about.html:142
 msgid "Lived Experience:"
-msgstr "Expérience vécue - Application"
+msgstr "Expérience vécue :"
 
 #: auto_a11y/web/templates/about.html:142
 msgid "Testing by people with disabilities"
-msgstr "Handicaps multiples"
+msgstr "Tests par des personnes en situation de handicap"
 
 #: auto_a11y/web/templates/about.html:149
 msgid "View Help"
-msgstr "Détails du test"
+msgstr "Voir l'aide"
 
 #: auto_a11y/web/templates/about.html:152 auto_a11y/web/templates/base.html:33
 #: auto_a11y/web/templates/base.html:170
@@ -586,7 +586,7 @@ msgstr "Institut national canadien pour les aveugles"
 
 #: auto_a11y/web/templates/base.html:165
 msgid "Mobile navigation"
-msgstr "Actions"
+msgstr "Navigation mobile"
 
 #: auto_a11y/web/templates/dashboard.html:30
 #: auto_a11y/web/templates/websites/view.html:148
@@ -595,7 +595,7 @@ msgstr "Total des pages"
 
 #: auto_a11y/web/templates/dashboard.html:43
 msgid "Tested Pages"
-msgstr "Page d\\'index avec toutes les pages testées"
+msgstr "Pages testées"
 
 #: auto_a11y/web/templates/dashboard.html:56
 #: auto_a11y/web/templates/recordings/detail.html:255
@@ -621,7 +621,7 @@ msgstr "Erreurs"
 #: auto_a11y/web/templates/testing/result.html:59
 #: auto_a11y/web/templates/websites/view.html:166
 msgid "Warnings"
-msgstr "Problèmes de noms accessibles (formulaires, liens, boutons)"
+msgstr "Avertissements"
 
 #: auto_a11y/web/templates/dashboard.html:99
 #: auto_a11y/web/templates/pages/view.html:2523
@@ -672,13 +672,8 @@ msgstr "Couverture des tests"
 #: auto_a11y/web/templates/projects/view.html:59
 #: auto_a11y/web/templates/websites/view.html:154
 #: auto_a11y/web/templates/websites/view.html:1377
-#, fuzzy
 msgid "Tested"
-msgstr ""
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Testées\n"
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Teste"
+msgstr "Testées"
 
 #: auto_a11y/web/templates/dashboard.html:161
 #: auto_a11y/web/templates/pages/view.html:3831
@@ -755,15 +750,15 @@ msgstr "Documents"
 
 #: auto_a11y/web/templates/help.html:71
 msgid "Understanding Scores"
-msgstr "Comprendre les chiffres"
+msgstr "Comprendre les scores"
 
 #: auto_a11y/web/templates/help.html:72 auto_a11y/web/templates/help.html:212
 msgid "WCAG Standards"
-msgstr "Standard"
+msgstr "Normes WCAG"
 
 #: auto_a11y/web/templates/help.html:73
 msgid "Impact Levels"
-msgstr "Niveau AA :"
+msgstr "Niveaux d'impact"
 
 #: auto_a11y/web/templates/help.html:74 auto_a11y/web/templates/help.html:319
 msgid "Testing Process"
@@ -941,7 +936,7 @@ msgstr "1 étiquette manquante ✗"
 
 #: auto_a11y/web/templates/help.html:169
 msgid "Accessibility Score:"
-msgstr "Plateforme de tests d'accessibilité automatisés"
+msgstr "Score d'accessibilité :"
 
 #: auto_a11y/web/templates/help.html:170
 #, python-format
@@ -950,7 +945,7 @@ msgstr "90%% (9/10 réussis)"
 
 #: auto_a11y/web/templates/help.html:171
 msgid "Good progress!"
-msgstr "Tests"
+msgstr "Bon progrès !"
 
 #: auto_a11y/web/templates/help.html:174
 msgid "Compliance Score:"
@@ -959,11 +954,11 @@ msgstr "Conformité WCAG"
 #: auto_a11y/web/templates/help.html:175
 #, python-format
 msgid "0%% (test has violations)"
-msgstr "Options de test de toutes les pages"
+msgstr "0 %% (le test présente des violations)"
 
 #: auto_a11y/web/templates/help.html:176 auto_a11y/web/templates/help.html:204
 msgid "Not compliant"
-msgstr "Conformité WCAG"
+msgstr "Non conforme"
 
 #: auto_a11y/web/templates/help.html:184
 msgid "Accessibility Score Formula"
@@ -1100,15 +1095,15 @@ msgstr "Niveau AAA"
 
 #: auto_a11y/web/templates/help.html:238
 msgid "Enhanced"
-msgstr "Tout activer"
+msgstr "Amélioré"
 
 #: auto_a11y/web/templates/help.html:240
 msgid "Highest level"
-msgstr "Sites web"
+msgstr "Niveau le plus élevé"
 
 #: auto_a11y/web/templates/help.html:241
 msgid "Not always required"
-msgstr "Non audité"
+msgstr "Pas toujours requis"
 
 #: auto_a11y/web/templates/help.html:242
 msgid "7:1 contrast ratio"
@@ -1132,7 +1127,7 @@ msgstr "Texte alternatif manquant sur les images"
 
 #: auto_a11y/web/templates/help.html:262
 msgid "No keyboard navigation"
-msgstr "Actions"
+msgstr "Aucune navigation au clavier"
 
 #: auto_a11y/web/templates/help.html:263
 msgid "Missing form labels"
@@ -1197,7 +1192,7 @@ msgstr "Corriger quand c'est pratique"
 
 #: auto_a11y/web/templates/help.html:303
 msgid "ℹ️ Info/Discovery"
-msgstr "Découvrir"
+msgstr "ℹ️ Info/Découverte"
 
 #: auto_a11y/web/templates/help.html:304
 msgid "Best practices and recommendations"
@@ -1213,11 +1208,11 @@ msgstr "Pourquoi une révision manuelle est nécessaire :"
 
 #: auto_a11y/web/templates/help.html:308
 msgid "Not counted in scoring"
-msgstr "Aucun problème trouvé dans cet enregistrement."
+msgstr "Non comptabilisé dans le score"
 
 #: auto_a11y/web/templates/help.html:310
 msgid "Review for improvements"
-msgstr "Voir les projets"
+msgstr "Vérifier pour améliorations"
 
 #: auto_a11y/web/templates/help.html:323
 msgid "Test Applicability"
@@ -1275,15 +1270,15 @@ msgstr ""
 
 #: auto_a11y/web/templates/help.html:347
 msgid "Test Component"
-msgstr "Vient de se terminer"
+msgstr "Composant du test"
 
 #: auto_a11y/web/templates/help.html:348
 msgid "What It Tracks"
-msgstr "Qui cela affecte :"
+msgstr "Ce qu'il suit"
 
 #: auto_a11y/web/templates/help.html:353
 msgid "Elements Found"
-msgstr "éléments"
+msgstr "Éléments trouvés"
 
 #: auto_a11y/web/templates/help.html:354
 msgid "Total elements that could be tested"
@@ -1291,7 +1286,7 @@ msgstr "Total des éléments testables"
 
 #: auto_a11y/web/templates/help.html:357
 msgid "Elements Passed"
-msgstr "éléments"
+msgstr "Éléments réussis"
 
 #: auto_a11y/web/templates/help.html:358
 msgid "Elements meeting accessibility standards"
@@ -1299,7 +1294,7 @@ msgstr "Génération du rapport d'accessibilité en"
 
 #: auto_a11y/web/templates/help.html:361
 msgid "Elements Failed"
-msgstr "éléments"
+msgstr "Éléments échoués"
 
 #: auto_a11y/web/templates/help.html:362
 msgid "Elements with violations"
@@ -1307,11 +1302,11 @@ msgstr "Éléments avec violations"
 
 #: auto_a11y/web/templates/help.html:365
 msgid "Checks Performed"
-msgstr "Plateforme de tests d'accessibilité automatisés"
+msgstr "Vérifications effectuées"
 
 #: auto_a11y/web/templates/help.html:366
 msgid "Individual accessibility criteria tested"
-msgstr "Plateforme de tests d'accessibilité automatisés"
+msgstr "Critères d'accessibilité individuels testés"
 
 #: auto_a11y/web/templates/help.html:376
 msgid "Frequently Asked Questions"
@@ -1412,14 +1407,7 @@ msgstr "Tests de navigateur"
 
 #: auto_a11y/web/templates/index.html:47
 msgid "Real browser testing with Puppeteer ensures accurate DOM-based results"
-msgstr ""
-"Les tests avec un navigateur réel via Puppeteer garantissent des résultats "
-"précis basés sur le DOMLes tests avec un navigateur réel via Puppeteer "
-"garantissent des résultats précis basés sur le DOMLes tests avec un "
-"navigateur réel via Puppeteer garantissent des résultats précis basés sur le "
-"DOMLes tests avec un navigateur réel via Puppeteer garantissent des "
-"résultats précis basés sur le DOMLes tests de navigateur réels avec "
-"Puppeteer garantissent des résultats précis basés sur le DOM"
+msgstr "Les tests avec un navigateur réel via Playwright garantissent des résultats précis basés sur le DOM"
 
 #: auto_a11y/web/templates/index.html:56
 msgid "WCAG Compliance"
@@ -1773,13 +1761,8 @@ msgstr "Synchronisation du portail Access Labs"
 #: auto_a11y/web/templates/projects/edit.html:456
 #: auto_a11y/web/templates/projects/edit.html:611
 #: auto_a11y/web/templates/testing/configure.html:158
-#, fuzzy
 msgid "Loading..."
-msgstr ""
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Démarrage...\n"
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Chargement..."
+msgstr "Chargement..."
 
 #: auto_a11y/web/templates/drupal_sync/sync_card.html:30
 msgid "Upload to Access Labs Portal"
@@ -1924,7 +1907,7 @@ msgstr "Échoué"
 #: auto_a11y/web/templates/drupal_sync/sync_card.html:277
 #: auto_a11y/web/templates/recordings/list.html:139
 msgid "No recordings found."
-msgstr "Nouveau projet"
+msgstr "Aucun enregistrement trouvé."
 
 #: auto_a11y/web/templates/drupal_sync/sync_card.html:292
 msgid "Unknown duration"
@@ -1955,11 +1938,11 @@ msgstr "Page"
 
 #: auto_a11y/web/templates/pages/edit.html:23
 msgid "Edit Page"
-msgstr "pages"
+msgstr "Modifier la page"
 
 #: auto_a11y/web/templates/pages/edit.html:31
 msgid "Page Title"
-msgstr "Stratégie de chargement de page"
+msgstr "Titre de la page"
 
 #: auto_a11y/web/templates/pages/edit.html:33
 msgid "Enter page title"
@@ -1997,7 +1980,7 @@ msgstr "Élevé"
 #: auto_a11y/web/templates/pages/view.html:199
 #: auto_a11y/web/templates/websites/view.html:492
 msgid "Normal"
-msgstr "Minimal"
+msgstr "Normal"
 
 #: auto_a11y/web/templates/pages/edit.html:49
 #: auto_a11y/web/templates/pages/view.html:201
@@ -2062,12 +2045,12 @@ msgstr "Dernier test"
 
 #: auto_a11y/web/templates/pages/edit.html:98
 msgid "Violations:"
-msgstr "Actions"
+msgstr "Violations :"
 
 #: auto_a11y/web/templates/pages/edit.html:103
 #: auto_a11y/web/templates/pages/view.html:600
 msgid "Warnings:"
-msgstr "avertissements"
+msgstr "Avertissements :"
 
 #: auto_a11y/web/templates/pages/test_matrix.html:3
 #: auto_a11y/web/templates/pages/test_matrix.html:181
@@ -2075,7 +2058,7 @@ msgstr "avertissements"
 #: auto_a11y/web/templates/pages/test_matrix_v2.html:89
 #: auto_a11y/web/templates/scripts/list.html:35
 msgid "Configure Test Matrix"
-msgstr "Configuration"
+msgstr "Configurer la matrice de test"
 
 #: auto_a11y/web/templates/pages/test_matrix.html:172
 #: auto_a11y/web/templates/pages/test_matrix_v2.html:80
@@ -2083,22 +2066,22 @@ msgstr "Configuration"
 #: auto_a11y/web/templates/scripts/list.html:21
 #: auto_a11y/web/templates/scripts/view.html:21
 msgid "Scripts"
-msgstr "Aucune description"
+msgstr "Scripts"
 
 #: auto_a11y/web/templates/pages/test_matrix.html:174
 #: auto_a11y/web/templates/pages/test_matrix_v2.html:82
 msgid "Test Matrix"
-msgstr "Date du test"
+msgstr "Matrice de test"
 
 #: auto_a11y/web/templates/pages/test_matrix.html:187
 #: auto_a11y/web/templates/pages/test_matrix_v2.html:95
 msgid "Back to Scripts"
-msgstr "Retour à la page"
+msgstr "Retour aux scripts"
 
 #: auto_a11y/web/templates/pages/test_matrix.html:206
 #: auto_a11y/web/templates/pages/test_matrix_v2.html:114
 msgid "No Testable Scripts"
-msgstr "Descriptions détaillées :"
+msgstr "Aucun script testable"
 
 #: auto_a11y/web/templates/pages/test_matrix.html:207
 msgid ""
@@ -2111,12 +2094,12 @@ msgstr ""
 #: auto_a11y/web/templates/scripts/list.html:38
 #: auto_a11y/web/templates/scripts/list.html:42
 msgid "Create New Script"
-msgstr "Nouveau projet"
+msgstr "Créer un nouveau script"
 
 #: auto_a11y/web/templates/pages/test_matrix.html:218
 #: auto_a11y/web/templates/pages/test_matrix_v2.html:126
 msgid "About Test Combinations"
-msgstr "Configuration"
+msgstr "À propos des combinaisons de test"
 
 #: auto_a11y/web/templates/pages/test_matrix.html:220
 msgid ""
@@ -2497,16 +2480,16 @@ msgstr "ignorées"
 
 #: auto_a11y/web/templates/pages/view.html:565
 msgid "Latest Test Results"
-msgstr "Dernier test"
+msgstr "Résultats du dernier test"
 
 #: auto_a11y/web/templates/pages/view.html:567
 #: auto_a11y/web/templates/testing/result.html:29
 msgid "Tested on"
-msgstr "Testées"
+msgstr "Testé le"
 
 #: auto_a11y/web/templates/pages/view.html:574
 msgid "Page States Tested"
-msgstr "Dernier test"
+msgstr "États de page testés"
 
 #: auto_a11y/web/templates/pages/view.html:576
 msgid ""
@@ -2518,7 +2501,7 @@ msgstr ""
 
 #: auto_a11y/web/templates/pages/view.html:578
 msgid "Page states"
-msgstr "Stratégie de chargement de page"
+msgstr "États de page"
 
 #: auto_a11y/web/templates/pages/view.html:582
 msgid "Initial page state (before script execution)"
@@ -3258,13 +3241,8 @@ msgstr "Modifier"
 
 #: auto_a11y/web/templates/pages/view.html:3842
 #: auto_a11y/web/templates/reports/dashboard.html:1335
-#, fuzzy
 msgid "WCAG Criteria"
-msgstr ""
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Critères WCAG :\n"
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Critères WCAG"
+msgstr "Critères WCAG"
 
 #: auto_a11y/web/templates/pages/view.html:3843
 msgid "Touchpoint"
@@ -3283,13 +3261,8 @@ msgid "Hearing"
 msgstr "Audition"
 
 #: auto_a11y/web/templates/pages/view.html:3848
-#, fuzzy
 msgid "Motor"
-msgstr ""
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Motricité\n"
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Moteur"
+msgstr "Motricité"
 
 #: auto_a11y/web/templates/pages/view.html:3849
 msgid "Cognitive"
@@ -4349,13 +4322,8 @@ msgstr "Créez votre premier projet"
 
 #: auto_a11y/web/templates/project_users/list.html:189
 #: auto_a11y/web/templates/project_users/list.html:211
-#, fuzzy
 msgid "Error: "
-msgstr ""
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Erreurs :\n"
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Erreur : "
+msgstr "Erreur : "
 
 #: auto_a11y/web/templates/project_users/list.html:193
 msgid "Error toggling user: "
@@ -5319,13 +5287,8 @@ msgid "Impact"
 msgstr "Impact"
 
 #: auto_a11y/web/templates/projects/list.html:19
-#, fuzzy
 msgid "All"
-msgstr ""
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Tous\n"
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Tout"
+msgstr "Tous"
 
 #: auto_a11y/web/templates/projects/list.html:57
 #: auto_a11y/web/templates/projects/view.html:17
@@ -5486,7 +5449,7 @@ msgstr "Ajouter un enregistrement"
 #: auto_a11y/web/templates/projects/view.html:265
 #: auto_a11y/web/templates/websites/view.html:274
 msgid "Add"
-msgstr "Audité"
+msgstr "Ajouter"
 
 #: auto_a11y/web/templates/projects/view.html:275
 #: auto_a11y/web/templates/scripts/create.html:312
@@ -5678,13 +5641,8 @@ msgstr ""
 
 #: auto_a11y/web/templates/projects/view.html:685
 #: auto_a11y/web/templates/websites/view.html:964
-#, fuzzy
 msgid "Starting..."
-msgstr ""
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Démarrage...\n"
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Demarrage..."
+msgstr "Démarrage..."
 
 #: auto_a11y/web/templates/projects/view.html:699
 msgid "Discovering pages for"
@@ -5752,9 +5710,49 @@ msgstr "Découverte terminée"
 msgid "Discovery failed:"
 msgstr "Échec de la découverte :"
 
+#: auto_a11y/web/templates/projects/view.html:394
+msgid "Members"
+msgstr "Membres"
+
+#: auto_a11y/web/templates/projects/view.html:463
+msgid "No members assigned yet."
+msgstr "Aucun membre assigné pour l'instant."
+
+#: auto_a11y/web/templates/projects/view.html:422
+msgid "Search by email or name..."
+msgstr "Rechercher par courriel ou nom..."
+
+#: auto_a11y/web/templates/projects/view.html:423
+msgid "Type at least 2 characters to search"
+msgstr "Saisissez au moins 2 caractères pour rechercher"
+
+#: auto_a11y/web/templates/projects/view.html:412
+msgid "Clear selection"
+msgstr "Effacer la sélection"
+
+#: auto_a11y/web/templates/projects/view.html:710
+msgid "Please select at least one group."
+msgstr "Veuillez sélectionner au moins un groupe."
+
+#: auto_a11y/web/templates/projects/view.html:725
+msgid "At least one group is required."
+msgstr "Au moins un groupe est requis."
+
+#: auto_a11y/web/templates/projects/view.html:736
+msgid "Failed to update groups"
+msgstr "Échec de la mise à jour des groupes"
+
+#: auto_a11y/web/templates/projects/view.html:742
+msgid "Remove this member from the project?"
+msgstr "Retirer ce membre du projet ?"
+
+#: auto_a11y/web/templates/projects/view.html:748
+msgid "Failed to remove member"
+msgstr "Échec du retrait du membre"
+
 #: auto_a11y/web/templates/recordings/detail.html:25
 msgid "Save"
-msgstr "Actions"
+msgstr "Enregistrer"
 
 #: auto_a11y/web/templates/recordings/detail.html:31
 #: auto_a11y/web/templates/recordings/list.html:126
@@ -6154,13 +6152,8 @@ msgid "Test Account"
 msgstr "Testées"
 
 #: auto_a11y/web/templates/recordings/list.html:123
-#, fuzzy
 msgid "View Details"
-msgstr ""
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Détails du test\n"
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Voir les details"
+msgstr "Voir les détails"
 
 #: auto_a11y/web/templates/recordings/list.html:140
 msgid "Upload your first recording"
@@ -6774,13 +6767,8 @@ msgstr "Rapports"
 #: auto_a11y/web/templates/reports/dashboard.html:475
 #: auto_a11y/web/templates/reports/dashboard.html:1003
 #: auto_a11y/web/templates/reports/dashboard.html:1173
-#, fuzzy
 msgid "Select a project first..."
-msgstr ""
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Sélectionnez d'abord un projet...\n"
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Selectionnez d'abord un projet..."
+msgstr "Sélectionnez d'abord un projet..."
 
 #: auto_a11y/web/templates/reports/dashboard.html:361
 msgid "Date Range"
@@ -6813,46 +6801,26 @@ msgstr "Résumé exécutif"
 #: auto_a11y/web/templates/reports/dashboard.html:783
 #: auto_a11y/web/templates/reports/dashboard.html:1058
 #: auto_a11y/web/templates/reports/dashboard.html:1205
-#, fuzzy
 msgid "Loading websites..."
-msgstr ""
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Chargement des sites Web...\n"
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Chargement des sites web..."
+msgstr "Chargement des sites web..."
 
 #: auto_a11y/web/templates/reports/dashboard.html:455
 #: auto_a11y/web/templates/reports/dashboard.html:1064
 #: auto_a11y/web/templates/reports/dashboard.html:1211
-#, fuzzy
 msgid "All Websites"
-msgstr ""
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Tous les sites Web\n"
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Tous les sites web"
+msgstr "Tous les sites web"
 
 #: auto_a11y/web/templates/reports/dashboard.html:466
 #: auto_a11y/web/templates/reports/dashboard.html:634
 #: auto_a11y/web/templates/reports/dashboard.html:800
-#, fuzzy
 msgid "No websites in this project"
-msgstr ""
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Aucun site Web dans ce projet\n"
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Aucun site web dans ce projet"
+msgstr "Aucun site web dans ce projet"
 
 #: auto_a11y/web/templates/reports/dashboard.html:471
 #: auto_a11y/web/templates/reports/dashboard.html:639
 #: auto_a11y/web/templates/reports/dashboard.html:805
-#, fuzzy
 msgid "Error loading websites"
-msgstr ""
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Erreur lors du chargement des sites Web\n"
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Erreur lors du chargement des sites web"
+msgstr "Erreur lors du chargement des sites web"
 
 #: auto_a11y/web/templates/reports/dashboard.html:501
 #: auto_a11y/web/templates/reports/dashboard.html:655
@@ -7070,15 +7038,8 @@ msgid "WCAG Level"
 msgstr "Niveau AA :"
 
 #: auto_a11y/web/templates/reports/dashboard.html:1017
-#, fuzzy
 msgid "Options"
-msgstr ""
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Options\n"
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Options\n"
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Actions"
+msgstr "Options"
 
 #: auto_a11y/web/templates/reports/dashboard.html:1021
 msgid "Include Screenshots"
@@ -7231,13 +7192,8 @@ msgstr ""
 
 #: auto_a11y/web/templates/scripts/create.html:89
 #: auto_a11y/web/templates/websites/edit.html:24
-#, fuzzy
 msgid "Basic Information"
-msgstr ""
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Configuration\n"
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Informations de base"
+msgstr "Informations de base"
 
 #: auto_a11y/web/templates/scripts/create.html:92
 msgid "Script Name"
@@ -8659,13 +8615,8 @@ msgstr "Horaires de tests"
 msgid "Schedule"
 msgstr "Horaire"
 
-#, fuzzy
 msgid "Create Schedule"
-msgstr ""
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Créer un horaire\n"
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Creer un horaire"
+msgstr "Créer un horaire"
 
 msgid "Edit Schedule"
 msgstr "Modifier l'horaire"
@@ -8834,13 +8785,8 @@ msgstr "Exécuter les tests JavaScript"
 msgid "Run Python Tests"
 msgstr "Exécuter les tests Python"
 
-#, fuzzy
 msgid "Take Screenshots"
-msgstr ""
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Prendre des captures d'écran\n"
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Prendre des captures d'ecran"
+msgstr "Prendre des captures d'écran"
 
 msgid "Select which users to test with. Leave unchecked to test as guest only."
 msgstr ""
@@ -9154,13 +9100,8 @@ msgstr "Gestion des événements"
 msgid "Focus Management"
 msgstr "Gestion du focus"
 
-#, fuzzy
 msgid "Headings"
-msgstr ""
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Titres\n"
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"En-têtes"
+msgstr "En-têtes"
 
 msgid "Iframes"
 msgstr "Iframes"
@@ -9174,13 +9115,8 @@ msgstr "Images"
 msgid "Keyboard Navigation"
 msgstr "Navigation au clavier"
 
-#, fuzzy
 msgid "Landmarks"
-msgstr ""
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Points de repère\n"
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Régions"
+msgstr "Points de repère"
 
 msgid "Language"
 msgstr "Langue"
@@ -9206,21 +9142,11 @@ msgstr "Structure sémantique"
 msgid "Tables"
 msgstr "Tableaux"
 
-#, fuzzy
 msgid "Timing"
-msgstr ""
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Minuterie\n"
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Temporisation"
+msgstr "Temporisation"
 
-#, fuzzy
 msgid "Title Attributes"
-msgstr ""
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Attributs de titre\n"
-"#-#-#-#-#  messages.po (PROJECT VERSION)  #-#-#-#-#\n"
-"Attributs title"
+msgstr "Attributs title"
 
 msgid "Fonts"
 msgstr "Polices"

@@ -9,6 +9,7 @@ from datetime import datetime
 import json
 from pathlib import Path
 
+from flask_babel import force_locale, gettext as _
 from auto_a11y.models import Project, Website, Page, PageStatus
 
 logger = logging.getLogger(__name__)
@@ -17,7 +18,7 @@ logger = logging.getLogger(__name__)
 class ProjectReport:
     """Generates project-level accessibility reports"""
     
-    def __init__(self, database, project: Project, websites: List[Website], pages_by_website: Dict[str, List[Page]]):
+    def __init__(self, database, project: Project, websites: List[Website], pages_by_website: Dict[str, List[Page]], language: str = 'en'):
         """
         Initialize project report
         
@@ -31,6 +32,7 @@ class ProjectReport:
         self.project = project
         self.websites = websites
         self.pages_by_website = pages_by_website
+        self.language = language
         self.report_data = None
     
     def generate(self, progress_callback=None) -> Dict[str, Any]:
@@ -57,7 +59,8 @@ class ProjectReport:
 
         for website in self.websites:
             if progress_callback:
-                progress_callback(page_count, max(total_page_count, 1), f'Processing {website.name}...')
+                with force_locale(self.language):
+                    progress_callback(page_count, max(total_page_count, 1), _('Processing %(name)s...', name=website.name))
             pages = self.pages_by_website.get(website.id, [])
             
             website_tested = sum(1 for p in pages if p.status == PageStatus.TESTED)

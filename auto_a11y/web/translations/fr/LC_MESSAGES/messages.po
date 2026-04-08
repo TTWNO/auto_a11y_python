@@ -6828,6 +6828,46 @@ msgstr "Erreur lors du chargement des sites web"
 msgid "Generating..."
 msgstr "Génération en cours..."
 
+#: auto_a11y/web/templates/reports/dashboard.html
+msgid "Processing..."
+msgstr "Traitement en cours..."
+
+#: auto_a11y/reporting/static_html_generator.py
+msgid "Collecting data for page %(current)s of %(total)s..."
+msgstr "Collecte des données pour la page %(current)s de %(total)s..."
+
+#: auto_a11y/reporting/static_html_generator.py
+msgid "Generating page %(current)s of %(total)s..."
+msgstr "Génération de la page %(current)s de %(total)s..."
+
+#: auto_a11y/reporting/discovery_report.py
+msgid "Writing page %(current)s of %(total)s..."
+msgstr "Écriture de la page %(current)s de %(total)s..."
+
+#: auto_a11y/reporting/discovery_report.py
+msgid "Report complete"
+msgstr "Rapport terminé"
+
+#: auto_a11y/reporting/discovery_report.py
+msgid "Generating report..."
+msgstr "Génération du rapport..."
+
+#: auto_a11y/reporting/project_report.py
+msgid "Processing %(name)s..."
+msgstr "Traitement de %(name)s..."
+
+#: auto_a11y/reporting/recordings_report.py
+msgid "Processing recording %(current)s of %(total)s..."
+msgstr "Traitement de l'enregistrement %(current)s de %(total)s..."
+
+#: auto_a11y/reporting/page_structure_report.py
+msgid "Building tree: page %(current)s of %(total)s..."
+msgstr "Construction de l'arborescence : page %(current)s de %(total)s..."
+
+#: auto_a11y/reporting/page_structure_report.py
+msgid "Tree structure complete"
+msgstr "Arborescence terminée"
+
 #: auto_a11y/web/templates/reports/dashboard.html:519
 #: auto_a11y/web/templates/reports/dashboard.html:677
 msgid "Failed to generate report: "

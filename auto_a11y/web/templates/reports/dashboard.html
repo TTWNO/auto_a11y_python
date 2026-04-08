@@ -416,7 +416,10 @@ const _i18n = {
     drop: {{ _('Drop') | tojson }},
     stalled: {{ _('Stalled') | tojson }},
     confirmDrop: {{ _('Are you sure you want to drop this report job?') | tojson }},
-    confirmRestart: {{ _('Are you sure you want to restart this report job from scratch?') | tojson }}
+    confirmRestart: {{ _('Are you sure you want to restart this report job from scratch?') | tojson }},
+    starting: {{ _('Starting...') | tojson }},
+    processing: {{ _('Processing...') | tojson }},
+    generating: {{ _('Generating...') | tojson }}
 };
 
 function cloneRowTemplate(templateId, replacements) {
@@ -485,7 +488,7 @@ function startJobPoll(jobId, displayName) {
             </td>
             <td colspan="2">
                 <progress value="0" max="1"></progress>
-                <span class="progress-text ms-2" role="status" aria-live="polite">Starting...</span>
+                <span class="progress-text ms-2" role="status" aria-live="polite">${_i18n.starting}</span>
             </td>
             <td>${new Date().toLocaleString()}</td>
             <td>\u2014</td>
@@ -537,7 +540,7 @@ function startJobPoll(jobId, displayName) {
                         progress.max = data.progress.total || 1;
                     }
                     if (text && data.progress) {
-                        text.textContent = data.progress.message || 'Processing...';
+                        text.textContent = data.progress.message || _i18n.processing;
                     }
                     // Poll less frequently if stalled
                     activePolls[jobId] = setTimeout(poll, isStalled ? 10000 : 2000);
@@ -1278,7 +1281,7 @@ if (staticHtmlModal) {
         const submitBtn = e.target.querySelector('button[type="submit"]');
         const originalText = submitBtn.innerHTML;
         submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generating...';
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>' + _i18n.generating;
 
         const projectId = document.getElementById('staticHtmlProject').value;
         const websiteId = document.getElementById('staticHtmlWebsite').value;
@@ -1415,7 +1418,7 @@ if (deduplicatedModal) {
         const submitBtn = e.target.querySelector('button[type="submit"]');
         const originalText = submitBtn.innerHTML;
         submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generating...';
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>' + _i18n.generating;
 
         const projectId = document.getElementById('deduplicatedProject').value;
         const websiteId = document.getElementById('deduplicatedWebsite').value;

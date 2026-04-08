@@ -17,7 +17,7 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 from pathlib import Path
 from collections import defaultdict
-from flask_babel import force_locale
+from flask_babel import force_locale, gettext as _
 
 from auto_a11y.models import TestResult, Page, Website, Project
 from auto_a11y.core.database import Database
@@ -425,10 +425,11 @@ class DiscoveryReportGenerator:
 
                 for idx, (page_id, _, _, _) in enumerate(page_ids_with_issues):
                     if progress_callback:
-                        progress_callback(
-                            total_pages + idx, total_phases,
-                            f'Writing page {idx + 1} of {len(page_ids_with_issues)}...'
-                        )
+                        with force_locale(self.language):
+                            progress_callback(
+                                total_pages + idx, total_phases,
+                                _('Writing page %(current)s of %(total)s...', current=idx + 1, total=len(page_ids_with_issues))
+                            )
                     try:
                         page_html = self._generate_page_html_from_db(
                             page_id, idx, common_disco, common_info, common_an
@@ -446,7 +447,8 @@ class DiscoveryReportGenerator:
             self._write_html_footer(f)
 
         if progress_callback:
-            progress_callback(total_phases, total_phases, 'Report complete')
+            with force_locale(self.language):
+                progress_callback(total_phases, total_phases, _('Report complete'))
 
         logger.info(f"Generated streaming discovery report: {filepath}")
         return str(filepath)
@@ -1212,7 +1214,8 @@ class DiscoveryReportGenerator:
         )
 
         if progress_callback:
-            progress_callback(len(pages), len(pages), 'Generating report...')
+            with force_locale(self.language):
+                progress_callback(len(pages), len(pages), _('Generating report...'))
 
         # Prepare report data
         report_data = self._prepare_report_data_legacy(

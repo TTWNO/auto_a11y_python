@@ -16,7 +16,7 @@ from typing import List, Dict, Any, Optional
 import jinja2
 
 logger = logging.getLogger(__name__)
-from flask_babel import force_locale, lazy_gettext, pgettext
+from flask_babel import force_locale, gettext as _, lazy_gettext, pgettext
 
 from auto_a11y.core.database import Database
 from auto_a11y.reporting.issue_catalog import IssueCatalog
@@ -879,7 +879,8 @@ class StaticHTMLReportGenerator:
 
         for i, page_id in enumerate(page_ids):
             if progress_callback:
-                progress_callback(i, len(page_ids), f'Collecting data for page {i + 1} of {len(page_ids)}...')
+                with force_locale(self.language):
+                    progress_callback(i, len(page_ids), _('Collecting data for page %(current)s of %(total)s...', current=i + 1, total=len(page_ids)))
             # Get page from database
             page = self.db.get_page(page_id)
             if not page:
@@ -1717,8 +1718,9 @@ class StaticHTMLReportGenerator:
 
         for index, pi in enumerate(page_info, start=1):
             if progress_callback:
-                progress_callback(index - 1, total_pages,
-                                  f'Generating page {index} of {total_pages}...')
+                with force_locale(self.language):
+                    progress_callback(index - 1, total_pages,
+                                      _('Generating page %(current)s of %(total)s...', current=index, total=total_pages))
 
             page_id = pi['id']
 
@@ -2143,7 +2145,8 @@ class StaticHTMLReportGenerator:
 
         for index, page in enumerate(pages_data, start=1):
             if progress_callback:
-                progress_callback(index - 1, len(pages_data), f'Generating page {index} of {len(pages_data)}...')
+                with force_locale(self.language):
+                    progress_callback(index - 1, len(pages_data), _('Generating page %(current)s of %(total)s...', current=index, total=len(pages_data)))
             # Collect all unique touchpoints for filters
             all_touchpoints = set()
             for issue_list in [page['violations'], page['warnings'], page['informational'], page['discovery']]:

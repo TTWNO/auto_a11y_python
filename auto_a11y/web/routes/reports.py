@@ -369,7 +369,7 @@ def _build_restart_generator(scope, report_type, project_id, website_id, db, con
 
     elif scope == 'recordings':
         from auto_a11y.reporting.recordings_report import RecordingsReportGenerator
-        generator = RecordingsReportGenerator(db, config)
+        generator = RecordingsReportGenerator(db, config, language=language)
         return generator.generate_project_recordings_report, {
             'project_id': project_id,
             'format': report_type,
@@ -1025,7 +1025,7 @@ def generate_recordings_report(project_id):
         try:
             with app.app_context():
                 from auto_a11y.reporting.recordings_report import RecordingsReportGenerator
-                generator = RecordingsReportGenerator(db, config)
+                generator = RecordingsReportGenerator(db, config, language=language)
                 job = ReportJob(job_id, job_manager, generator.generate_project_recordings_report,
                                generator_kwargs={
                                    'project_id': project_id,

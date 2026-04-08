@@ -10,6 +10,7 @@ from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Optional
 from collections import defaultdict
+from flask_babel import force_locale, gettext as _
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 logger = logging.getLogger(__name__)
@@ -18,16 +19,18 @@ logger = logging.getLogger(__name__)
 class RecordingsReportGenerator:
     """Generate reports from accessibility recordings"""
 
-    def __init__(self, db, config: dict):
+    def __init__(self, db, config: dict, language: str = 'en'):
         """
         Initialize report generator
 
         Args:
             db: Database connection
             config: Configuration dictionary
+            language: Locale for UI strings (default 'en')
         """
         self.db = db
         self.config = config
+        self.language = language
         self.reports_dir = Path(config.get('REPORTS_DIR', 'reports'))
         self.reports_dir.mkdir(exist_ok=True)
 
@@ -249,7 +252,8 @@ class RecordingsReportGenerator:
 
         for i, recording in enumerate(recordings):
             if progress_callback:
-                progress_callback(i, len(recordings), f'Processing recording {i + 1} of {len(recordings)}...')
+                with force_locale(self.language):
+                    progress_callback(i, len(recordings), _('Processing recording %(current)s of %(total)s...', current=i + 1, total=len(recordings)))
             all_issues = self.db.get_recording_issues_for_recording(recording.recording_id)
 
             # Separate issues by language

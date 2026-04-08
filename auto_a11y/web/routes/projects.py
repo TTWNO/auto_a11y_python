@@ -3,7 +3,7 @@ Project management routes
 """
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
-from flask_babel import gettext as _, lazy_gettext
+from flask_babel import gettext as _, get_locale, lazy_gettext
 from flask_login import login_required
 from flask import g
 from auto_a11y.models import Project, ProjectStatus, ProjectType
@@ -847,6 +847,7 @@ def generate_project_report(project_id):
     for website in websites:
         pages_by_website[website.id] = db.get_pages(website.id)
 
+    language = str(get_locale()) if get_locale() else 'en'
     job_id = f"report_{uuid4().hex[:8]}"
     job_manager = JobManager(db)
     job_manager.create_job(
@@ -860,7 +861,7 @@ def generate_project_report(project_id):
         try:
             with app.app_context():
                 def generate_and_save(progress_callback=None):
-                    report = ProjectReport(db, project, websites, pages_by_website)
+                    report = ProjectReport(db, project, websites, pages_by_website, language=language)
                     report.generate(progress_callback=progress_callback)
                     return report.save(format, reports_dir=reports_dir)
                 job = ReportJob(job_id, job_manager, generate_and_save)

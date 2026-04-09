@@ -645,6 +645,7 @@
     (function() {
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
         if (csrfToken) {
+            // Patch native fetch
             const originalFetch = window.fetch;
             window.fetch = function(url, options = {}) {
                 options = options || {};
@@ -661,6 +662,17 @@
                 }
                 return originalFetch.call(this, url, options);
             };
+
+            // Patch jQuery AJAX ($.ajax, $.post, $.get, etc.)
+            if (window.jQuery) {
+                $.ajaxSetup({
+                    beforeSend: function(xhr, settings) {
+                        if (/^(POST|PUT|DELETE|PATCH)$/i.test(settings.type)) {
+                            xhr.setRequestHeader('X-CSRFToken', csrfToken);
+                        }
+                    }
+                });
+            }
         }
     })();
     </script>

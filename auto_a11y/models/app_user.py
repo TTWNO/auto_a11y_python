@@ -127,6 +127,9 @@ class AppUser:
 
     def is_locked(self) -> bool:
         """Check if account is locked"""
+        from config import Config
+        if Config.DISABLE_ACCOUNT_LOCKOUT:
+            return False
         if self.locked_until and self.locked_until > datetime.now():
             return True
         return False

@@ -248,13 +248,13 @@
                                                 {% set available_count = test_ids|select('in', passing_tests)|list|length %}
                                                 {% set total_count = test_ids|length %}
                                                 {% if debug_mode %}
-                                                    <span class="badge bg-warning ms-2" title="Debug mode - all tests available">{{ total_count }}</span>
+                                                    <span class="badge bg-warning ms-2" title="{{ _('Debug mode - all tests available') }}">{{ total_count }}</span>
                                                 {% elif available_count == total_count %}
-                                                    <span class="badge bg-success ms-2" title="All tests passed fixtures">{{ available_count }}</span>
+                                                    <span class="badge bg-success ms-2" title="{{ _('All tests passed fixtures') }}">{{ available_count }}</span>
                                                 {% elif available_count == 0 %}
-                                                    <span class="badge bg-danger ms-2" title="No tests available">0/{{ total_count }}</span>
+                                                    <span class="badge bg-danger ms-2" title="{{ _('No tests available') }}">0/{{ total_count }}</span>
                                                 {% else %}
-                                                    <span class="badge bg-warning ms-2" title="{{ available_count }} of {{ total_count }} tests available">{{ available_count }}/{{ total_count }}</span>
+                                                    <span class="badge bg-warning ms-2" title="{{ _('%(available)s of %(total)s tests available', available=available_count, total=total_count) }}">{{ available_count }}/{{ total_count }}</span>
                                                 {% endif %}
                                             </label>
                                         </div>
@@ -282,20 +282,20 @@
                                             </div>
                                             <button type="button" class="btn btn-sm btn-outline-info test-help-btn"
                                                     onclick="showTestDetails('{{ test_id }}')"
-                                                    title="View test details">
+                                                    title="{{ _('View test details') }}">
                                                 <i class="bi bi-question-circle" aria-hidden="true"></i>
                                             </button>
                                             {% if not test_passed %}
                                                 {% if test_status %}
-                                                    <span class="badge bg-danger fixture-status-badge" title="Failed fixture test">✗</span>
+                                                    <span class="badge bg-danger fixture-status-badge" title="{{ _('Failed fixture test') }}">✗</span>
                                                 {% else %}
-                                                    <span class="badge bg-warning fixture-status-badge" title="No fixture test">?</span>
+                                                    <span class="badge bg-warning fixture-status-badge" title="{{ _('No fixture test') }}">?</span>
                                                 {% endif %}
                                                 {% if is_debug_override %}
-                                                    <span class="badge bg-info fixture-status-badge" title="Enabled in debug mode">DEBUG</span>
+                                                    <span class="badge bg-info fixture-status-badge" title="{{ _('Enabled in debug mode') }}">{{ _('DEBUG') }}</span>
                                                 {% endif %}
                                             {% else %}
-                                                <span class="badge bg-success fixture-status-badge" title="Passed fixture test">✓</span>
+                                                <span class="badge bg-success fixture-status-badge" title="{{ _('Passed fixture test') }}">✓</span>
                                             {% endif %}
                                             {% set is_production_ready = production_ready_statuses.get(test_id, False) %}
                                             <div class="form-check ms-2">
@@ -303,9 +303,9 @@
                                                        id="prod_ready_{{ test_id }}"
                                                        {% if is_production_ready %}checked{% endif %}
                                                        onclick="toggleProductionReadyInline('{{ test_id }}', this.checked)"
-                                                       title="Production ready documentation">
-                                                <label class="form-check-label small text-muted" for="prod_ready_{{ test_id }}" title="Production ready">
-                                                    <small>Prod Ready</small>
+                                                       title="{{ _('Production ready documentation') }}">
+                                                <label class="form-check-label small text-muted" for="prod_ready_{{ test_id }}" title="{{ _('Production ready') }}">
+                                                    <small>{{ _('Prod Ready') }}</small>
                                                 </label>
                                             </div>
                                         </div>

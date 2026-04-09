@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Discovery History - {{ website.name }} - Auto A11y{% endblock %}
+{% block title %}{{ _('Discovery History') }} - {{ website.name }} - {{ _('Auto A11y') }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -13,18 +13,18 @@
             <li class="breadcrumb-item">
                 <a href="{{ url_for('websites.view_website', website_id=website.id) }}">{{ website.display_name }}</a>
             </li>
-            <li class="breadcrumb-item active" aria-current="page">Discovery History</li>
+            <li class="breadcrumb-item active" aria-current="page">{{ _('Discovery History') }}</li>
         </ol>
     </nav>
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h1>Discovery History</h1>
-            <p class="text-muted">All discovery runs for {{ website.name }}</p>
+            <h1>{{ _('Discovery History') }}</h1>
+            <p class="text-muted">{{ _('All discovery runs for %(name)s', name=website.name) }}</p>
         </div>
         <div>
             <button class="btn btn-primary" onclick="startDiscovery()">
-                <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Start New Discovery
+                <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> {{ _('Start New Discovery') }}
             </button>
         </div>
     </div>
@@ -35,17 +35,17 @@
             {% if discovery_runs %}
             <div class="table-responsive">
                 <table class="table table-hover">
-                    <caption class="visually-hidden">Discovery run history for this website</caption>
+                    <caption class="visually-hidden">{{ _('Discovery run history for this website') }}</caption>
                     <thead>
                         <tr>
-                            <th scope="col">Started</th>
-                            <th scope="col">Status</th>
-                            <th scope="col">Pages Found</th>
-                            <th scope="col">Failed</th>
-                            <th scope="col">Changes</th>
-                            <th scope="col">Duration</th>
-                            <th scope="col">Triggered By</th>
-                            <th scope="col">Actions</th>
+                            <th scope="col">{{ _('Started') }}</th>
+                            <th scope="col">{{ _('Status') }}</th>
+                            <th scope="col">{{ _('Pages Found') }}</th>
+                            <th scope="col">{{ _('Failed') }}</th>
+                            <th scope="col">{{ _('Changes') }}</th>
+                            <th scope="col">{{ _('Duration') }}</th>
+                            <th scope="col">{{ _('Triggered By') }}</th>
+                            <th scope="col">{{ _('Actions') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -54,18 +54,18 @@
                             <td>
                                 {{ run.started_at.strftime('%Y-%m-%d %H:%M') }}
                                 {% if run.is_latest %}
-                                <span class="badge bg-primary ms-2">Latest</span>
+                                <span class="badge bg-primary ms-2">{{ _('Latest') }}</span>
                                 {% endif %}
                             </td>
                             <td>
                                 {% if run.status.value == 'completed' %}
-                                <span class="badge bg-success">Completed</span>
+                                <span class="badge bg-success">{{ _('Completed') }}</span>
                                 {% elif run.status.value == 'running' %}
-                                <span class="badge bg-warning">Running</span>
+                                <span class="badge bg-warning">{{ _('Running') }}</span>
                                 {% elif run.status.value == 'failed' %}
-                                <span class="badge bg-danger">Failed</span>
+                                <span class="badge bg-danger">{{ _('Failed') }}</span>
                                 {% elif run.status.value == 'cancelled' %}
-                                <span class="badge bg-secondary">Cancelled</span>
+                                <span class="badge bg-secondary">{{ _('Cancelled') }}</span>
                                 {% else %}
                                 <span class="badge bg-secondary">{{ run.status.value }}</span>
                                 {% endif %}
@@ -87,16 +87,16 @@
                                 {% endif %}
                             </td>
                             <td>{{ run.duration_display }}</td>
-                            <td>{{ run.triggered_by or 'Manual' }}</td>
+                            <td>{{ run.triggered_by or _('Manual') }}</td>
                             <td>
                                 <a href="{{ url_for('websites.view_discovery_run', website_id=website.id, discovery_run_id=run.id) }}" 
                                    class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-eye" aria-hidden="true"></i> View
+                                    <i class="bi bi-eye" aria-hidden="true"></i> {{ _('View') }}
                                 </a>
                                 {% if not run.is_latest and run.status.value == 'completed' %}
                                 <button class="btn btn-sm btn-outline-info" 
                                         onclick="compareWithLatest('{{ run.id }}')">
-                                    <i class="bi bi-arrow-left-right" aria-hidden="true"></i> Compare
+                                    <i class="bi bi-arrow-left-right" aria-hidden="true"></i> {{ _('Compare') }}
                                 </button>
                                 {% endif %}
                             </td>
@@ -107,7 +107,7 @@
             </div>
             {% else %}
             <div class="alert alert-info">
-                <i class="bi bi-info-circle" aria-hidden="true"></i> No discovery runs found. Click "Start New Discovery" to begin.
+                <i class="bi bi-info-circle" aria-hidden="true"></i> {{ _('No discovery runs found. Click "Start New Discovery" to begin.') }}
             </div>
             {% endif %}
         </div>
@@ -116,12 +116,12 @@
     <!-- Statistics Summary -->
     {% if discovery_runs %}
     <section aria-labelledby="statistics-heading">
-        <h2 id="statistics-heading" class="visually-hidden">Statistics Summary</h2>
+        <h2 id="statistics-heading" class="visually-hidden">{{ _('Statistics Summary') }}</h2>
         <div class="row mt-4">
             <div class="col-md-3">
                 <div class="card">
                     <div class="card-body text-center">
-                        <h3 class="card-title">Total Runs</h3>
+                        <h3 class="card-title">{{ _('Total Runs') }}</h3>
                         <p class="h2">{{ discovery_runs|length }}</p>
                     </div>
                 </div>
@@ -129,7 +129,7 @@
             <div class="col-md-3">
                 <div class="card">
                     <div class="card-body text-center">
-                        <h3 class="card-title">Successful</h3>
+                        <h3 class="card-title">{{ _('Successful') }}</h3>
                         <p class="h2 text-success">{{ discovery_runs|selectattr('status.value', 'equalto', 'completed')|list|length }}</p>
                     </div>
                 </div>
@@ -137,7 +137,7 @@
             <div class="col-md-3">
                 <div class="card">
                     <div class="card-body text-center">
-                        <h3 class="card-title">Failed</h3>
+                        <h3 class="card-title">{{ _('Failed') }}</h3>
                         <p class="h2 text-danger">{{ discovery_runs|selectattr('status.value', 'equalto', 'failed')|list|length }}</p>
                     </div>
                 </div>
@@ -145,7 +145,7 @@
             <div class="col-md-3">
                 <div class="card">
                     <div class="card-body text-center">
-                        <h3 class="card-title">Average Duration</h3>
+                        <h3 class="card-title">{{ _('Average Duration') }}</h3>
                         {% set completed_runs = discovery_runs|selectattr('duration_seconds')|list %}
                         {% if completed_runs %}
                         {% set avg_duration = (completed_runs|map(attribute='duration_seconds')|sum) / completed_runs|length %}
@@ -163,7 +163,7 @@
 
 <script>
 function startDiscovery() {
-    if (confirm('Start a new discovery run for this website?')) {
+    if (confirm('{{ _("Start a new discovery run for this website?") }}')) {
         fetch(`/websites/{{ website.id }}/discover`, {
             method: 'POST',
             headers: {
@@ -179,15 +179,15 @@ function startDiscovery() {
         })
         .then(data => {
             if (data.success) {
-                alert('Discovery started successfully');
+                alert('{{ _("Discovery started successfully") }}');
                 window.location.reload();
             } else {
-                alert('Error: ' + (data.error || 'Unknown error'));
+                alert('{{ _("Error:") }} ' + (data.error || '{{ _("Unknown error") }}'));
             }
         })
         .catch(error => {
             console.error('Error starting discovery:', error);
-            alert('Error starting discovery: ' + error.message);
+            alert('{{ _("Error starting discovery:") }} ' + error.message);
         });
     }
 }

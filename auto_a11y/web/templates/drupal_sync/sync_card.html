@@ -379,7 +379,7 @@ async function startUpload() {
         console.error('Upload error:', error);
         document.getElementById('uploadLog').innerHTML += `
             <div class="text-danger">
-                <strong>Error:</strong> ${error.message}
+                <strong>{{ _("Error:") }}</strong> ${error.message}
             </div>
         `;
     }

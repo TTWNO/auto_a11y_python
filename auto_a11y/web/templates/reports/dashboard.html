@@ -204,7 +204,7 @@
                     <tr data-job-id="{{ job.job_id }}">
                         <td>
                             <i class="bi bi-arrow-repeat spinner-icon" aria-hidden="true"></i>
-                            {{ job.metadata.get('display_name', 'Report') }}
+                            {{ job.metadata.get('display_name', _('Report')) }}
                         </td>
                         <td colspan="2">
                             <progress value="{{ job.progress.current|default(0) }}" max="{{ job.progress.total|default(1) }}"></progress>
@@ -228,14 +228,14 @@
                     {% for job in recently_completed %}
                     {% if job.status == 'completed' and job.result %}
                     {{ completed_job_row(
-                        job.metadata.get('display_name', 'Report'),
+                        job.metadata.get('display_name', _('Report')),
                         job.result.filename,
                         job.completed_at.strftime('%Y-%m-%d %H:%M') if job.completed_at else ''
                     ) }}
                     {% elif job.status == 'failed' %}
                     {{ failed_job_row(
-                        job.metadata.get('display_name', 'Report'),
-                        job.error|default('Unknown error')
+                        job.metadata.get('display_name', _('Report')),
+                        job.error|default(_('Unknown error'))
                     ) }}
                     {% endif %}
                     {% endfor %}
@@ -419,7 +419,13 @@ const _i18n = {
     confirmRestart: {{ _('Are you sure you want to restart this report job from scratch?') | tojson }},
     starting: {{ _('Starting...') | tojson }},
     processing: {{ _('Processing...') | tojson }},
-    generating: {{ _('Generating...') | tojson }}
+    generating: {{ _('Generating...') | tojson }},
+    unknownError: {{ _('Unknown error') | tojson }},
+    failedToStartReport: {{ _('Failed to start report generation') | tojson }},
+    failedToDropJob: {{ _('Failed to drop job') | tojson }},
+    failedToRestartJob: {{ _('Failed to restart job') | tojson }},
+    errorPrefix: {{ _('Error:') | tojson }},
+    report: {{ _('Report') | tojson }}
 };
 
 function cloneRowTemplate(templateId, replacements) {
@@ -546,7 +552,7 @@ function startJobPoll(jobId, displayName) {
                     activePolls[jobId] = setTimeout(poll, isStalled ? 10000 : 2000);
                 } else if (data.status === 'completed' && data.result) {
                     const filename = data.result.filename;
-                    const name = (data.metadata && data.metadata.display_name) || 'Report';
+                    const name = (data.metadata && data.metadata.display_name) || _i18n.report;
                     const newRow = cloneRowTemplate('tmpl-completed-row', {
                         '__NAME__': name,
                         '__FILENAME__': filename,
@@ -555,10 +561,10 @@ function startJobPoll(jobId, displayName) {
                     row.replaceWith(newRow);
                     delete activePolls[jobId];
                 } else if (data.status === 'failed') {
-                    const name = (data.metadata && data.metadata.display_name) || 'Report';
+                    const name = (data.metadata && data.metadata.display_name) || _i18n.report;
                     const newRow = cloneRowTemplate('tmpl-failed-row', {
                         '__NAME__': name,
-                        '__ERROR__': data.error || 'Unknown error'
+                        '__ERROR__': data.error || _i18n.unknownError
                     });
                     row.replaceWith(newRow);
                     delete activePolls[jobId];
@@ -582,7 +588,7 @@ function submitReportJob(url, options, displayName) {
                 alert(data.message || data.title);
                 return data;
             } else {
-                throw new Error(data.error || 'Failed to start report generation');
+                throw new Error(data.error || _i18n.failedToStartReport);
             }
         });
 }
@@ -606,10 +612,10 @@ function dropJob(jobId) {
                     delete activePolls[jobId];
                 }
             } else {
-                alert(data.error || 'Failed to drop job');
+                alert(data.error || _i18n.failedToDropJob);
             }
         })
-        .catch(err => alert('Error: ' + err.message));
+        .catch(err => alert(_i18n.errorPrefix + ' ' + err.message));
 }
 
 function restartJob(jobId) {
@@ -631,10 +637,10 @@ function restartJob(jobId) {
                 // Start polling new job
                 startJobPoll(data.job_id, data.display_name);
             } else {
-                alert(data.error || 'Failed to restart job');
+                alert(data.error || _i18n.failedToRestartJob);
             }
         })
-        .catch(err => alert('Error: ' + err.message));
+        .catch(err => alert(_i18n.errorPrefix + ' ' + err.message));
 }
 
 window.addEventListener('beforeunload', () => {
@@ -714,7 +720,7 @@ document.getElementById('generateReportForm').addEventListener('submit', functio
     const projectSelect = form.querySelector('[name="project_id"]') || document.getElementById('projectSelect');
     const websiteSelect = form.querySelector('[name="website_id"]') || document.getElementById('websiteSelect');
     const reportType = document.getElementById('reportType')?.value || 'xlsx';
-    const displayName = projectSelect?.selectedOptions[0]?.text || 'Report';
+    const displayName = projectSelect?.selectedOptions[0]?.text || _i18n.report;
 
     const modal = bootstrap.Modal.getInstance(document.getElementById('generateReportModal'));
     if (modal) modal.hide();
@@ -862,7 +868,7 @@ function generateSiteStructureReport() {
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>' + {{ _("Generating...") | tojson }};
 
-    const websiteName = document.getElementById('structureWebsite').selectedOptions[0]?.text || 'Website';
+    const websiteName = document.getElementById('structureWebsite').selectedOptions[0]?.text || {{ _('Website') | tojson }};
 
     const modal = bootstrap.Modal.getInstance(document.getElementById('siteStructureModal'));
     if (modal) modal.hide();
@@ -1020,11 +1026,11 @@ function generateDiscoveryReport() {
             alert({{ _('Please select a website') | tojson }});
             return;
         }
-        const websiteName = document.getElementById('discoveryWebsite').selectedOptions[0]?.text || 'Website';
+        const websiteName = document.getElementById('discoveryWebsite').selectedOptions[0]?.text || {{ _('Website') | tojson }};
         url = `/reports/generate/discovery/website/${websiteId}`;
         displayName = `Discovery Report - ${websiteName}`;
     } else {
-        const projectName = document.getElementById('discoveryProject').selectedOptions[0]?.text || 'Project';
+        const projectName = document.getElementById('discoveryProject').selectedOptions[0]?.text || {{ _('Project') | tojson }};
         url = `/reports/generate/discovery/project/${projectId}`;
         displayName = `Discovery Report - ${projectName}`;
     }
@@ -1262,15 +1268,15 @@ if (staticHtmlModal) {
                         });
                         websiteSelect.disabled = false;
                     } else {
-                        websiteSelect.innerHTML = '<option value="">No websites in this project</option>';
+                        websiteSelect.innerHTML = '<option value="">' + {{ _("No websites in this project") | tojson }} + '</option>';
                     }
                 })
                 .catch(error => {
                     console.error('Error loading websites:', error);
-                    websiteSelect.innerHTML = '<option value="">Error loading websites</option>';
+                    websiteSelect.innerHTML = '<option value="">' + {{ _("Error loading websites") | tojson }} + '</option>';
                 });
         } else {
-            websiteSelect.innerHTML = '<option value="">Select a project first...</option>';
+            websiteSelect.innerHTML = '<option value="">' + {{ _("Select a project first...") | tojson }} + '</option>';
             websiteSelect.disabled = true;
         }
     });
@@ -1288,7 +1294,7 @@ if (staticHtmlModal) {
         const wcagLevel = document.getElementById('staticHtmlWcagLevel').value;
         const includeScreenshots = document.getElementById('staticHtmlIncludeScreenshots').checked;
         const includeDiscovery = document.getElementById('staticHtmlIncludeDiscovery').checked;
-        const projectName = document.getElementById('staticHtmlProject').selectedOptions[0]?.text || 'Report';
+        const projectName = document.getElementById('staticHtmlProject').selectedOptions[0]?.text || _i18n.report;
 
         const formDataObj = new FormData();
         if (projectId) formDataObj.append('project_id', projectId);
@@ -1399,15 +1405,15 @@ if (deduplicatedModal) {
                         });
                         websiteSelect.disabled = false;
                     } else {
-                        websiteSelect.innerHTML = '<option value="">No websites in this project</option>';
+                        websiteSelect.innerHTML = '<option value="">' + {{ _("No websites in this project") | tojson }} + '</option>';
                     }
                 })
                 .catch(error => {
                     console.error('Error loading websites:', error);
-                    websiteSelect.innerHTML = '<option value="">Error loading websites</option>';
+                    websiteSelect.innerHTML = '<option value="">' + {{ _("Error loading websites") | tojson }} + '</option>';
                 });
         } else {
-            websiteSelect.innerHTML = '<option value="">Select a project first...</option>';
+            websiteSelect.innerHTML = '<option value="">' + {{ _("Select a project first...") | tojson }} + '</option>';
             websiteSelect.disabled = true;
         }
     });
@@ -1422,7 +1428,7 @@ if (deduplicatedModal) {
 
         const projectId = document.getElementById('deduplicatedProject').value;
         const websiteId = document.getElementById('deduplicatedWebsite').value;
-        const projectName = document.getElementById('deduplicatedProject').selectedOptions[0]?.text || 'Report';
+        const projectName = document.getElementById('deduplicatedProject').selectedOptions[0]?.text || _i18n.report;
 
         const formDataObj = new FormData();
         if (projectId) formDataObj.append('project_id', projectId);
@@ -1575,7 +1581,7 @@ if (recordingsModal) {
         const includeTimecodes = document.getElementById('recordingsIncludeTimecodes').checked;
         const includeWCAG = document.getElementById('recordingsIncludeWCAG').checked;
         const groupByTouchpoint = document.getElementById('recordingsGroupByTouchpoint').checked;
-        const projectName = document.getElementById('recordingsProject').selectedOptions[0]?.text || 'Project';
+        const projectName = document.getElementById('recordingsProject').selectedOptions[0]?.text || {{ _('Project') | tojson }};
 
         const formDataObj = new FormData();
         formDataObj.append('project_id', projectId);

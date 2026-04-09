@@ -85,8 +85,8 @@
 {% if greeting_only %}
 <div class="container-fluid">
     <div class="mt-4">
-        <h1><i class="bi bi-hand-wave text-primary" aria-hidden="true"></i> Hello, {{ display_name }}!</h1>
-        <p class="text-muted">Use the <a href="{{ url_for('projects.list_projects') }}">Projects</a> page to view your assigned projects.</p>
+        <h1><i class="bi bi-hand-wave text-primary" aria-hidden="true"></i> {{ _('Hello, %(name)s!', name=display_name) }}</h1>
+        <p class="text-muted">{{ _('Use the %(link_start)sProjects%(link_end)s page to view your assigned projects.', link_start='<a href="' + url_for('projects.list_projects') + '">', link_end='</a>') }}</p>
     </div>
 </div>
 {% else %}
@@ -427,7 +427,7 @@
                         {% for job in active_jobs %}
                         <div class="active-test-item p-2 mb-2 rounded">
                             <div class="d-flex justify-content-between align-items-center mb-1">
-                                <strong class="small">{{ job.get('website_name', 'Unknown') }}</strong>
+                                <strong class="small">{{ job.get('website_name', _('Unknown')) }}</strong>
                                 <span class="badge bg-info">{{ job.get('progress', 0) }}%</span>
                             </div>
                             <div class="progress progress-thin mb-1">

@@ -3,6 +3,7 @@ Page Setup Scripts Management Routes
 """
 
 from flask import Blueprint, render_template, request, jsonify, current_app, redirect, url_for, flash
+from flask_babel import gettext as _
 from auto_a11y.models import PageSetupScript, ScriptStep, ActionType, ScriptScope, ExecutionTrigger
 from datetime import datetime
 import logging
@@ -16,7 +17,7 @@ def list_page_scripts(page_id):
     """List all scripts for a page"""
     page = current_app.db.get_page(page_id)
     if not page:
-        flash('Page not found', 'error')
+        flash(_('Page not found'), 'error')
         return redirect(url_for('index'))
 
     # Get website and project for context
@@ -46,7 +47,7 @@ def create_page_script(page_id):
     """Create a new page setup script"""
     page = current_app.db.get_page(page_id)
     if not page:
-        flash('Page not found', 'error')
+        flash(_('Page not found'), 'error')
         return redirect(url_for('index'))
 
     if request.method == 'POST':
@@ -98,12 +99,12 @@ def create_page_script(page_id):
             # Save to database
             script_id = current_app.db.create_page_setup_script(script)
 
-            flash(f'Script "{script.name}" created successfully', 'success')
+            flash(_('Script "%(name)s" created successfully', name=script.name), 'success')
             return redirect(url_for('scripts.edit_script', script_id=script_id))
 
         except Exception as e:
             logger.error(f"Error creating script: {e}")
-            flash(f'Error creating script: {str(e)}', 'error')
+            flash(_('Error creating script: %(error)s', error=str(e)), 'error')
 
     # GET request - show form
     website = current_app.db.get_website(page.website_id)
@@ -148,7 +149,7 @@ def create_website_script(website_id):
     """Create a new website-level setup script"""
     website = current_app.db.get_website(website_id)
     if not website:
-        flash('Website not found', 'error')
+        flash(_('Website not found'), 'error')
         return redirect(url_for('index'))
 
     if request.method == 'POST':
@@ -201,12 +202,12 @@ def create_website_script(website_id):
             # Save to database
             script_id = current_app.db.create_page_setup_script(script)
 
-            flash(f'Website script "{script.name}" created successfully', 'success')
+            flash(_('Website script "%(name)s" created successfully', name=script.name), 'success')
             return redirect(url_for('scripts.edit_script', script_id=script_id))
 
         except Exception as e:
             logger.error(f"Error creating website script: {e}")
-            flash(f'Error creating script: {str(e)}', 'error')
+            flash(_('Error creating script: %(error)s', error=str(e)), 'error')
 
     # GET request - show form
     project = current_app.db.get_project(website.project_id)
@@ -255,7 +256,7 @@ def list_website_scripts(website_id):
     """List all scripts for a website"""
     website = current_app.db.get_website(website_id)
     if not website:
-        flash('Website not found', 'error')
+        flash(_('Website not found'), 'error')
         return redirect(url_for('index'))
 
     # Get project for context
@@ -281,7 +282,7 @@ def view_script(script_id):
     """View script details"""
     script = current_app.db.get_page_setup_script(script_id)
     if not script:
-        flash('Script not found', 'error')
+        flash(_('Script not found'), 'error')
         return redirect(url_for('index'))
 
     # Get related page/website/project
@@ -301,7 +302,7 @@ def edit_script(script_id):
     """Edit an existing script"""
     script = current_app.db.get_page_setup_script(script_id)
     if not script:
-        flash('Script not found', 'error')
+        flash(_('Script not found'), 'error')
         return redirect(url_for('index'))
 
     if request.method == 'POST':
@@ -352,12 +353,12 @@ def edit_script(script_id):
             # Save changes
             current_app.db.update_page_setup_script(script)
 
-            flash(f'Script "{script.name}" updated successfully', 'success')
+            flash(_('Script "%(name)s" updated successfully', name=script.name), 'success')
             return redirect(url_for('scripts.view_script', script_id=script_id))
 
         except Exception as e:
             logger.error(f"Error updating script: {e}")
-            flash(f'Error updating script: {str(e)}', 'error')
+            flash(_('Error updating script: %(error)s', error=str(e)), 'error')
 
     # GET request - show form
     page = current_app.db.get_page(script.page_id) if script.page_id else None
@@ -419,11 +420,11 @@ def delete_script(script_id):
     """Delete a script"""
     script = current_app.db.get_page_setup_script(script_id)
     if not script:
-        return jsonify({'error': 'Script not found'}), 404
+        return jsonify({'error': _('Script not found')}), 404
 
     try:
         current_app.db.delete_page_setup_script(script_id)
-        flash(f'Script "{script.name}" deleted successfully', 'success')
+        flash(_('Script "%(name)s" deleted successfully', name=script.name), 'success')
 
         # Return redirect URL
         if script.page_id:
@@ -451,7 +452,7 @@ def toggle_script(script_id):
     script = current_app.db.get_page_setup_script(script_id)
     if not script:
         logger.warning(f"ERROR: Script not found: {script_id}")
-        return jsonify({'error': 'Script not found'}), 404
+        return jsonify({'error': _('Script not found')}), 404
 
     try:
         old_state = script.enabled
@@ -471,7 +472,7 @@ def toggle_script(script_id):
         return jsonify({
             'success': success,
             'enabled': script.enabled,
-            'message': f'Script {"enabled" if script.enabled else "disabled"}',
+            'message': _('Script enabled') if script.enabled else _('Script disabled'),
             'old_state': old_state,
             'new_state': new_state
         })
@@ -487,12 +488,12 @@ def test_script(script_id):
     """Test a script (dry run)"""
     script = current_app.db.get_page_setup_script(script_id)
     if not script:
-        return jsonify({'error': 'Script not found'}), 404
+        return jsonify({'error': _('Script not found')}), 404
 
     # TODO: Implement script testing functionality
     # This would run the script without affecting test results
 
     return jsonify({
         'success': True,
-        'message': 'Script test feature coming soon'
+        'message': _('Script test feature coming soon')
     })

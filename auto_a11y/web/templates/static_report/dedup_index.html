@@ -188,7 +188,7 @@
     </style>
 </head>
 <body>
-<a href="#main-content" class="visually-hidden-focusable">Skip to main content</a>
+<a href="#main-content" class="visually-hidden-focusable">{{ _('Skip to main content') }}</a>
 <main id="main-content" class="container py-4">
     <!-- Header with Language Switcher -->
     <div class="d-flex justify-content-between align-items-start mb-4">
@@ -199,8 +199,8 @@
             </p>
         </div>
         <div class="lang-switcher">
-            <button onclick="switchLanguage('en')" id="lang-en" class="{{ 'active' if language == 'en' else '' }}" lang="en" aria-label="Switch to English">EN</button>
-            <button onclick="switchLanguage('fr')" id="lang-fr" class="{{ 'active' if language == 'fr' else '' }}" lang="fr" aria-label="Switch to French">FR</button>
+            <button onclick="switchLanguage('en')" id="lang-en" class="{{ 'active' if language == 'en' else '' }}" lang="en" aria-label="{{ _('Switch to English') }}">EN</button>
+            <button onclick="switchLanguage('fr')" id="lang-fr" class="{{ 'active' if language == 'fr' else '' }}" lang="fr" aria-label="{{ _('Switch to French') }}">FR</button>
         </div>
     </div>
 

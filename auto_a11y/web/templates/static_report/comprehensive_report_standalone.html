@@ -157,7 +157,7 @@
     </script>
 </head>
 <body style="background-color: var(--color-bg-subtle); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-    <a class="skip-link" href="#main-content" style="position:absolute;top:-40px;left:0;background:var(--color-brand);color:var(--color-text-inverse);padding:8px;text-decoration:none;z-index:1100;">Skip to main content</a>
+    <a class="skip-link" href="#main-content" style="position:absolute;top:-40px;left:0;background:var(--color-brand);color:var(--color-text-inverse);padding:8px;text-decoration:none;z-index:1100;">{{ _('Skip to main content') }}</a>
     <div class="container-fluid py-4" id="main-content">
         <!-- Header with Language Switcher -->
         <header class="bg-white rounded shadow-sm p-4 mb-4">
@@ -171,8 +171,8 @@
                 </div>
                 <div class="text-end">
                     <div class="lang-switcher">
-                        <button id="lang-en" class="{{ 'active' if language == 'en' else '' }}" onclick="switchLanguage('en')" lang="en" aria-label="Switch to English">English</button>
-                        <button id="lang-fr" class="{{ 'active' if language == 'fr' else '' }}" onclick="switchLanguage('fr')" lang="fr" aria-label="Passer au français">Français</button>
+                        <button id="lang-en" class="{{ 'active' if language == 'en' else '' }}" onclick="switchLanguage('en')" lang="en" aria-label="{{ _('Switch to English') }}">English</button>
+                        <button id="lang-fr" class="{{ 'active' if language == 'fr' else '' }}" onclick="switchLanguage('fr')" lang="fr" aria-label="{{ _('Switch to French') }}">Français</button>
                     </div>
                     <small class="text-muted d-block mt-2">{{ report_date }}</small>
                 </div>
@@ -497,7 +497,7 @@
                         <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.issues_by_impact }}</span>
                         <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.issues_by_impact }}</span>
                     </h3>
-                    <canvas id="impactChart" style="max-height: 300px;" role="img" aria-label="Issues by impact level chart"></canvas>
+                    <canvas id="impactChart" style="max-height: 300px;" role="img" aria-label="{{ _('Issues by impact level chart') }}"></canvas>
                 </div>
 
                 <!-- Impact Breakdown Table -->
@@ -507,7 +507,7 @@
                         <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.impact_breakdown }}</span>
                     </h3>
                     <table class="table table-striped">
-                        <caption class="visually-hidden">Impact breakdown table</caption>
+                        <caption class="visually-hidden">{{ _('Impact breakdown table') }}</caption>
                         <thead>
                             <tr>
                                 <th scope="col">
@@ -578,7 +578,7 @@
                         <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.wcag_criteria_violations }}</span>
                         <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.wcag_criteria_violations }}</span>
                     </h3>
-                    <canvas id="wcagChart" style="max-height: 400px;" role="img" aria-label="WCAG criteria violations chart"></canvas>
+                    <canvas id="wcagChart" style="max-height: 400px;" role="img" aria-label="{{ _('WCAG criteria violations chart') }}"></canvas>
                 </div>
 
                 <!-- WCAG Details Table -->
@@ -679,7 +679,7 @@
                     </h3>
                     <div style="max-height: 400px; overflow-y: auto;">
                         <table class="table table-sm">
-                            <caption class="visually-hidden">Top WCAG criteria details</caption>
+                            <caption class="visually-hidden">{{ _('Top WCAG criteria details') }}</caption>
                             <thead style="position: sticky; top: 0; background: white;">
                                 <tr>
                                     <th scope="col">
@@ -737,7 +737,7 @@
                         <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.findings_by_type }}</span>
                         <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.findings_by_type }}</span>
                     </h3>
-                    <canvas id="categoryChart" style="max-height: 300px;" role="img" aria-label="Findings by category type chart"></canvas>
+                    <canvas id="categoryChart" style="max-height: 300px;" role="img" aria-label="{{ _('Findings by category type chart') }}"></canvas>
                 </div>
 
                 <!-- Category Cards -->
@@ -875,7 +875,7 @@
                 </h3>
                 <div class="table-responsive">
                     <table class="table table-striped">
-                        <caption class="visually-hidden">Distribution by touchpoint</caption>
+                        <caption class="visually-hidden">{{ _('Distribution by touchpoint') }}</caption>
                         <thead>
                             <tr>
                                 <th scope="col">
@@ -962,7 +962,7 @@
 
             <div class="table-responsive">
                 <table class="table table-striped">
-                    <caption class="visually-hidden">Top issues details</caption>
+                    <caption class="visually-hidden">{{ _('Top issues details') }}</caption>
                     <thead>
                         <tr>
                             <th>
@@ -1036,7 +1036,7 @@
 
             <div class="table-responsive">
                 <table class="table table-striped">
-                    <caption class="visually-hidden">Page-by-page analysis</caption>
+                    <caption class="visually-hidden">{{ _('Page-by-page analysis') }}</caption>
                     <thead>
                         <tr>
                             <th>

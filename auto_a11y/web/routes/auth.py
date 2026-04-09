@@ -121,8 +121,8 @@ def project_role_required(*roles):
         def decorated_function(*args, **kwargs):
             if not current_user.is_authenticated:
                 if request.is_json:
-                    return jsonify({'error': 'Authentication required'}), 401
-                flash('Please log in to access this page.', 'warning')
+                    return jsonify({'error': _('Authentication required')}), 401
+                flash(_('Please log in to access this page.'), 'warning')
                 return redirect(url_for('auth.login', next=request.url))
 
             if getattr(current_user, 'is_superadmin', False):
@@ -139,8 +139,8 @@ def project_role_required(*roles):
 
             if effective_role not in roles:
                 if request.is_json:
-                    return jsonify({'error': 'Insufficient permissions'}), 403
-                flash('You do not have permission to access this resource.', 'danger')
+                    return jsonify({'error': _('Insufficient permissions')}), 403
+                flash(_('You do not have permission to access this resource.'), 'danger')
                 abort(403)
 
             g.effective_role = effective_role
@@ -155,8 +155,8 @@ def project_admin_required(f):
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated:
             if request.is_json:
-                return jsonify({'error': 'Authentication required'}), 401
-            flash('Please log in to access this page.', 'warning')
+                return jsonify({'error': _('Authentication required')}), 401
+            flash(_('Please log in to access this page.'), 'warning')
             return redirect(url_for('auth.login', next=request.url))
 
         if getattr(current_user, 'is_superadmin', False):
@@ -169,8 +169,8 @@ def project_admin_required(f):
             return f(*args, **kwargs)
 
         if request.is_json:
-            return jsonify({'error': 'Project admin access required'}), 403
-        flash('Project administrator access required.', 'danger')
+            return jsonify({'error': _('Project admin access required')}), 403
+        flash(_('Project administrator access required.'), 'danger')
         abort(403)
     return decorated_function
 

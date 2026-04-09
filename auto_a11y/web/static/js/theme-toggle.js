@@ -8,6 +8,8 @@
 
     var STORAGE_KEY = 'theme-preference';
     var STATES = ['auto', 'light', 'dark'];
+
+    // Default labels (English fallback); overridden by data attributes from template
     var LABELS = {
         auto: 'Color theme: automatic. Switch to light.',
         light: 'Color theme: light. Switch to dark.',
@@ -18,6 +20,15 @@
         light: 'Color theme changed to light.',
         dark: 'Color theme changed to dark.'
     };
+
+    function loadTranslations(btn) {
+        if (btn.dataset.labelAuto) LABELS.auto = btn.dataset.labelAuto;
+        if (btn.dataset.labelLight) LABELS.light = btn.dataset.labelLight;
+        if (btn.dataset.labelDark) LABELS.dark = btn.dataset.labelDark;
+        if (btn.dataset.announceAuto) ANNOUNCEMENTS.auto = btn.dataset.announceAuto;
+        if (btn.dataset.announceLight) ANNOUNCEMENTS.light = btn.dataset.announceLight;
+        if (btn.dataset.announceDark) ANNOUNCEMENTS.dark = btn.dataset.announceDark;
+    }
 
     function getPreference() {
         try {
@@ -62,6 +73,8 @@
     function init() {
         var btn = document.getElementById('theme-toggle');
         if (!btn) return;
+
+        loadTranslations(btn);
 
         var currentPref = getPreference();
         updateButton(btn, currentPref);

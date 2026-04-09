@@ -3,6 +3,7 @@ Routes for managing project participants (lived experience testers and test supe
 """
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify
+from flask_babel import gettext as _
 from auto_a11y.models import LivedExperienceTester, TestSupervisor
 import logging
 
@@ -16,7 +17,7 @@ def list_participants(project_id):
     """List all lived experience testers and supervisors for a project"""
     project = current_app.db.get_project(project_id)
     if not project:
-        flash('Project not found', 'error')
+        flash(_('Project not found'), 'error')
         return redirect(url_for('index'))
 
     return render_template('project_participants/list.html',
@@ -32,7 +33,7 @@ def create_tester(project_id):
     """Create a new lived experience tester"""
     project = current_app.db.get_project(project_id)
     if not project:
-        flash('Project not found', 'error')
+        flash(_('Project not found'), 'error')
         return redirect(url_for('index'))
 
     if request.method == 'POST':
@@ -56,12 +57,12 @@ def create_tester(project_id):
             project.add_tester(tester)
             current_app.db.update_project(project)
 
-            flash(f'Lived experience tester "{tester.name}" added successfully', 'success')
+            flash(_('Lived experience tester "%(name)s" added successfully', name=tester.name), 'success')
             return redirect(url_for('project_participants.list_participants', project_id=project_id))
 
         except Exception as e:
             logger.error(f"Error creating tester: {e}")
-            flash(f'Error creating tester: {str(e)}', 'error')
+            flash(_('Error creating tester: %(error)s', error=str(e)), 'error')
 
     return render_template('project_participants/create_tester.html', project=project)
 
@@ -71,12 +72,12 @@ def edit_tester(project_id, tester_id):
     """Edit a lived experience tester"""
     project = current_app.db.get_project(project_id)
     if not project:
-        flash('Project not found', 'error')
+        flash(_('Project not found'), 'error')
         return redirect(url_for('index'))
 
     tester = project.get_tester(tester_id)
     if not tester:
-        flash('Tester not found', 'error')
+        flash(_('Tester not found'), 'error')
         return redirect(url_for('project_participants.list_participants', project_id=project_id))
 
     if request.method == 'POST':
@@ -98,12 +99,12 @@ def edit_tester(project_id, tester_id):
             project.update_tester(tester)
             current_app.db.update_project(project)
 
-            flash(f'Tester "{tester.name}" updated successfully', 'success')
+            flash(_('Tester "%(name)s" updated successfully', name=tester.name), 'success')
             return redirect(url_for('project_participants.list_participants', project_id=project_id))
 
         except Exception as e:
             logger.error(f"Error updating tester: {e}")
-            flash(f'Error updating tester: {str(e)}', 'error')
+            flash(_('Error updating tester: %(error)s', error=str(e)), 'error')
 
     return render_template('project_participants/edit_tester.html',
                          project=project,
@@ -115,7 +116,7 @@ def delete_tester(project_id, tester_id):
     """Delete a lived experience tester"""
     project = current_app.db.get_project(project_id)
     if not project:
-        return jsonify({'error': 'Project not found'}), 404
+        return jsonify({'error': _('Project not found')}), 404
 
     try:
         success = project.remove_tester(tester_id)
@@ -123,11 +124,11 @@ def delete_tester(project_id, tester_id):
             current_app.db.update_project(project)
             return jsonify({
                 'success': True,
-                'message': 'Tester deleted successfully',
+                'message': _('Tester deleted successfully'),
                 'redirect': url_for('project_participants.list_participants', project_id=project_id)
             })
         else:
-            return jsonify({'error': 'Tester not found'}), 404
+            return jsonify({'error': _('Tester not found')}), 404
 
     except Exception as e:
         logger.error(f"Error deleting tester: {e}")
@@ -141,7 +142,7 @@ def create_supervisor(project_id):
     """Create a new test supervisor"""
     project = current_app.db.get_project(project_id)
     if not project:
-        flash('Project not found', 'error')
+        flash(_('Project not found'), 'error')
         return redirect(url_for('index'))
 
     if request.method == 'POST':
@@ -161,12 +162,12 @@ def create_supervisor(project_id):
             project.add_supervisor(supervisor)
             current_app.db.update_project(project)
 
-            flash(f'Test supervisor "{supervisor.name}" added successfully', 'success')
+            flash(_('Test supervisor "%(name)s" added successfully', name=supervisor.name), 'success')
             return redirect(url_for('project_participants.list_participants', project_id=project_id))
 
         except Exception as e:
             logger.error(f"Error creating supervisor: {e}")
-            flash(f'Error creating supervisor: {str(e)}', 'error')
+            flash(_('Error creating supervisor: %(error)s', error=str(e)), 'error')
 
     return render_template('project_participants/create_supervisor.html', project=project)
 
@@ -176,12 +177,12 @@ def edit_supervisor(project_id, supervisor_id):
     """Edit a test supervisor"""
     project = current_app.db.get_project(project_id)
     if not project:
-        flash('Project not found', 'error')
+        flash(_('Project not found'), 'error')
         return redirect(url_for('index'))
 
     supervisor = project.get_supervisor(supervisor_id)
     if not supervisor:
-        flash('Supervisor not found', 'error')
+        flash(_('Supervisor not found'), 'error')
         return redirect(url_for('project_participants.list_participants', project_id=project_id))
 
     if request.method == 'POST':
@@ -199,12 +200,12 @@ def edit_supervisor(project_id, supervisor_id):
             project.update_supervisor(supervisor)
             current_app.db.update_project(project)
 
-            flash(f'Supervisor "{supervisor.name}" updated successfully', 'success')
+            flash(_('Supervisor "%(name)s" updated successfully', name=supervisor.name), 'success')
             return redirect(url_for('project_participants.list_participants', project_id=project_id))
 
         except Exception as e:
             logger.error(f"Error updating supervisor: {e}")
-            flash(f'Error updating supervisor: {str(e)}', 'error')
+            flash(_('Error updating supervisor: %(error)s', error=str(e)), 'error')
 
     return render_template('project_participants/edit_supervisor.html',
                          project=project,
@@ -216,7 +217,7 @@ def delete_supervisor(project_id, supervisor_id):
     """Delete a test supervisor"""
     project = current_app.db.get_project(project_id)
     if not project:
-        return jsonify({'error': 'Project not found'}), 404
+        return jsonify({'error': _('Project not found')}), 404
 
     try:
         success = project.remove_supervisor(supervisor_id)
@@ -224,11 +225,11 @@ def delete_supervisor(project_id, supervisor_id):
             current_app.db.update_project(project)
             return jsonify({
                 'success': True,
-                'message': 'Supervisor deleted successfully',
+                'message': _('Supervisor deleted successfully'),
                 'redirect': url_for('project_participants.list_participants', project_id=project_id)
             })
         else:
-            return jsonify({'error': 'Supervisor not found'}), 404
+            return jsonify({'error': _('Supervisor not found')}), 404
 
     except Exception as e:
         logger.error(f"Error deleting supervisor: {e}")

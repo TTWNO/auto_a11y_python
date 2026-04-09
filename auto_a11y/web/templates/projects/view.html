@@ -102,7 +102,7 @@
                     </div>
                     
                     <div class="d-flex flex-wrap gap-3 mb-3 small text-muted">
-                        <span><i class="bi bi-files" aria-hidden="true"></i> {{ website.page_count }} {{ _('pages') }}</span>
+                        <span><i class="bi bi-files" aria-hidden="true"></i> {{ website.page_count }} {{ ngettext('page', 'pages', website.page_count) }}</span>
                         <span class="website-status" data-website-id="{{ website.id }}">
                             <span class="status-content">
                                 <i class="bi bi-clock" aria-hidden="true"></i> {{ website.last_tested.strftime('%Y-%m-%d %H:%M') if website.last_tested else _('Never tested') }}

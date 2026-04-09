@@ -116,10 +116,45 @@ def create_app(config):
     # (e.g. l'annuler, d'attente) are rendered as &#39; and cannot break
     # JavaScript single-quoted strings or HTML attributes.
     from markupsafe import escape as _markup_escape
-    from flask_babel import gettext as _babel_gettext
+    from flask_babel import gettext as _babel_gettext, ngettext as _babel_ngettext, get_translations
+
+    def _has_translation(msgid):
+        """Check if a msgid has an entry in the active translation catalog."""
+        try:
+            catalog = get_translations()
+            # GNUTranslations stores entries in _catalog dict
+            return str(msgid) in catalog._catalog
+        except Exception:
+            return False
+
     def _escaped_gettext(*args, **kwargs):
-        return _markup_escape(_babel_gettext(*args, **kwargs))
+        original = args[0] if args else ''
+        translated = _babel_gettext(*args, **kwargs)
+        # Append (FR) suffix when locale is French and the catalog has this entry
+        # (handles cases like "Pages" where FR translation == EN original)
+        if get_locale() == 'fr' and _has_translation(original):
+            translated = str(translated) + ' (FR)'
+        return _markup_escape(translated)
     app.jinja_env.globals['_'] = _escaped_gettext
+
+    def _escaped_ngettext(singular, plural, num, **kwargs):
+        translated = _babel_ngettext(singular, plural, num, **kwargs)
+        if get_locale() == 'fr':
+            translated = str(translated) + ' (FR)'
+        return _markup_escape(translated)
+    app.jinja_env.globals['ngettext'] = _escaped_ngettext
+
+    # Monkey-patch flask_babel.gettext so Python-side _() calls in route files
+    # also get the (FR) debug suffix (they bypass the Jinja2 wrapper above).
+    import flask_babel as _flask_babel_module
+    _original_gettext = _flask_babel_module.gettext
+    def _debug_gettext(*args, **kwargs):
+        original = args[0] if args else ''
+        translated = _original_gettext(*args, **kwargs)
+        if get_locale() == 'fr' and _has_translation(original):
+            return str(translated) + ' (FR)'
+        return translated
+    _flask_babel_module.gettext = _debug_gettext
 
     # Add datetime format filter for templates
     @app.template_filter('datetimeformat')
@@ -157,7 +192,8 @@ def create_app(config):
     login_manager = LoginManager()
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
-    login_manager.login_message = 'Please log in to access this page.'
+    from flask_babel import lazy_gettext
+    login_manager.login_message = lazy_gettext('Please log in to access this page.')
     login_manager.login_message_category = 'warning'
 
     @login_manager.user_loader

@@ -292,20 +292,20 @@ function renderTable() {
             // Add "None" option (always available)
             const noneOpt = document.createElement('option');
             noneOpt.value = 'none';
-            noneOpt.textContent = 'None';
+            noneOpt.textContent = {{ _('None') | tojson }};
             select.appendChild(noneOpt);
 
             if (script.test_before) {
                 const beforeOpt = document.createElement('option');
                 beforeOpt.value = 'before';
-                beforeOpt.textContent = 'Before';
+                beforeOpt.textContent = {{ _('Before') | tojson }};
                 select.appendChild(beforeOpt);
             }
 
             if (script.test_after) {
                 const afterOpt = document.createElement('option');
                 afterOpt.value = 'after';
-                afterOpt.textContent = 'After';
+                afterOpt.textContent = {{ _('After') | tojson }};
                 select.appendChild(afterOpt);
             }
 
@@ -324,7 +324,7 @@ function renderTable() {
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'btn btn-sm btn-outline-danger';
         deleteBtn.innerHTML = '<i class="bi bi-trash" aria-hidden="true"></i>';
-        deleteBtn.title = 'Delete';
+        deleteBtn.title = {{ _('Delete') | tojson }};
         deleteBtn.onclick = () => deleteCombination(index);
         actionsCell.appendChild(deleteBtn);
         row.appendChild(actionsCell);
@@ -349,7 +349,7 @@ function addCombination() {
 // Delete a combination
 function deleteCombination(index) {
     if (combinations.length <= 1) {
-        alert('You must have at least one combination');
+        alert({{ _('You must have at least one combination') | tojson }});
         return;
     }
     combinations.splice(index, 1);

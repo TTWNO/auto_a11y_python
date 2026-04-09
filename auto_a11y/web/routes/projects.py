@@ -79,7 +79,7 @@ def api_test_details(test_id):
         if not test_info:
             return jsonify({
                 'success': False,
-                'error': f'Test {test_id} not found in catalog'
+                'error': _('Test %(test_id)s not found in catalog', test_id=test_id)
             }), 404
 
         # Get production_ready status from database
@@ -136,7 +136,7 @@ def api_set_test_production_ready(test_id):
         if not test_info:
             return jsonify({
                 'success': False,
-                'error': f'Test {test_id} not found in catalog'
+                'error': _('Test %(test_id)s not found in catalog', test_id=test_id)
             }), 404
 
         # Get the new value from request
@@ -153,13 +153,13 @@ def api_set_test_production_ready(test_id):
         if success:
             return jsonify({
                 'success': True,
-                'message': f'Production ready status updated for {test_id}',
+                'message': _('Production ready status updated for %(test_id)s', test_id=test_id),
                 'production_ready': production_ready
             })
         else:
             return jsonify({
                 'success': False,
-                'error': 'Failed to update production ready status'
+                'error': _('Failed to update production ready status')
             }), 500
 
     except Exception as e:
@@ -255,14 +255,14 @@ def create_project():
         drupal_audit_name = request.form.get('drupal_audit_name', '').strip() or None
 
         if not name:
-            flash('Project name is required', 'error')
+            flash(_('Project name is required'), 'error')
             # Redirect to GET handler which will populate everything
             return redirect(url_for('projects.create_project'))
-        
+
         # Check if project name exists
         existing = current_app.db.projects.find_one({'name': name})
         if existing:
-            flash(f'Project "{name}" already exists', 'error')
+            flash(_('Project "%(name)s" already exists', name=name), 'error')
             # Redirect to GET handler which will populate everything
             return redirect(url_for('projects.create_project'))
         
@@ -340,7 +340,7 @@ def create_project():
         admin_group = current_app.db.get_group_by_name('Admin')
         if admin_group:
             current_app.db.add_project_member(project_id, str(current_user.get_id()), [admin_group.id])
-        flash(f'Project "{name}" created successfully', 'success')
+        flash(_('Project "%(name)s" created successfully', name=name), 'success')
         
         return redirect(url_for('projects.view_project', project_id=project_id))
     
@@ -490,13 +490,13 @@ def view_project(project_id):
     """View project details"""
     project = current_app.db.get_project(project_id)
     if not project:
-        flash('Project not found', 'error')
+        flash(_('Project not found'), 'error')
         return redirect(url_for('projects.list_projects'))
 
     websites = current_app.db.get_websites(project_id)
     stats = current_app.db.get_project_stats(project_id)
 
-    # Calculate stats for each website (violations and warnings)
+    # Calculate stats for each website (violations, warnings, and actual page count)
     website_stats = {}
     for website in websites:
         pages = current_app.db.get_pages(website.id)
@@ -506,6 +506,8 @@ def view_project(project_id):
             'violations': violations,
             'warnings': warnings
         }
+        # Use actual page count from DB rather than the cached counter
+        website.page_count = len(pages)
 
     # Get available test users for this project (for discovery modal)
     project_users = current_app.db.get_project_users(project_id, enabled_only=True)
@@ -540,7 +542,7 @@ def edit_project(project_id):
     """Edit project"""
     project = current_app.db.get_project(project_id)
     if not project:
-        flash('Project not found', 'error')
+        flash(_('Project not found'), 'error')
         return redirect(url_for('projects.list_projects'))
 
     # Import TOUCHPOINT_TEST_MAPPING for rendering the form
@@ -688,10 +690,10 @@ def edit_project(project_id):
         }
 
         if current_app.db.update_project(project):
-            flash('Project updated successfully', 'success')
+            flash(_('Project updated successfully'), 'success')
             return redirect(url_for('projects.view_project', project_id=project_id))
         else:
-            flash('Failed to update project', 'error')
+            flash(_('Failed to update project'), 'error')
 
     return render_template('projects/edit.html',
                          project=project,
@@ -704,13 +706,13 @@ def delete_project(project_id):
     """Delete project"""
     project = current_app.db.get_project(project_id)
     if not project:
-        flash('Project not found', 'error')
+        flash(_('Project not found'), 'error')
         return redirect(url_for('projects.list_projects'))
-    
+
     if current_app.db.delete_project(project_id):
-        flash(f'Project "{project.name}" deleted successfully', 'success')
+        flash(_('Project "%(name)s" deleted successfully', name=project.name), 'success')
     else:
-        flash('Failed to delete project', 'error')
+        flash(_('Failed to delete project'), 'error')
     
     return redirect(url_for('projects.list_projects'))
 
@@ -723,13 +725,13 @@ def add_website(project_id):
     
     project = current_app.db.get_project(project_id)
     if not project:
-        return jsonify({'error': 'Project not found'}), 404
-    
+        return jsonify({'error': _('Project not found')}), 404
+
     url = request.form.get('url')
     name = request.form.get('name', '')
-    
+
     if not url:
-        return jsonify({'error': 'URL is required'}), 400
+        return jsonify({'error': _('URL is required')}), 400
     
     # Create website
     website = Website(
@@ -750,7 +752,7 @@ def add_website(project_id):
         })
     else:
         # Regular form submission - redirect directly
-        flash(f'Website "{name or url}" added successfully', 'success')
+        flash(_('Website "%(name)s" added successfully', name=name or url), 'success')
         return redirect(url_for('websites.view_website', website_id=website_id))
 
 
@@ -762,9 +764,9 @@ def test_project(project_id):
     
     project = current_app.db.get_project(project_id)
     if not project:
-        flash('Project not found', 'error')
+        flash(_('Project not found'), 'error')
         return redirect(url_for('projects.list_projects'))
-    
+
     # Get test parameters
     take_screenshot = request.form.get('take_screenshot', 'true') == 'true'
     run_ai = request.form.get('run_ai', 'false') == 'true'
@@ -814,13 +816,13 @@ def test_project(project_id):
                 pass
         
         if jobs:
-            flash(f'Started testing {len(jobs)} websites in project "{project.name}"', 'success')
+            flash(_('Started testing %(count)s websites in project "%(name)s"', count=len(jobs), name=project.name), 'success')
         else:
-            flash('No websites found to test in this project', 'warning')
+            flash(_('No websites found to test in this project'), 'warning')
         
     except Exception as e:
         logger.error(f"Failed to start project testing: {e}")
-        flash(f'Failed to start testing: {str(e)}', 'error')
+        flash(_('Failed to start testing: %(error)s', error=str(e)), 'error')
     
     return redirect(url_for('projects.view_project', project_id=project_id))
 
@@ -833,7 +835,7 @@ def generate_project_report(project_id):
 
     project = current_app.db.get_project(project_id)
     if not project:
-        flash('Project not found', 'error')
+        flash(_('Project not found'), 'error')
         return redirect(url_for('projects.list_projects'))
 
     format = request.args.get('format', 'html')
@@ -905,7 +907,7 @@ def api_get_project(project_id):
     try:
         project = current_app.db.get_project(project_id)
         if not project:
-            return jsonify({'success': False, 'error': 'Project not found'}), 404
+            return jsonify({'success': False, 'error': _('Project not found')}), 404
 
         return jsonify({
             'success': True,

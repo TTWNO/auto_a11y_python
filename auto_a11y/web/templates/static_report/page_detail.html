@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ page.title }} - Page Report - Auto A11y</title>
+    <title>{{ page.title }} - {{ _('Page Report') }} - Auto A11y</title>
 
     <!-- Inlined Bootstrap CSS -->
     <style>
@@ -467,7 +467,7 @@
     <code>{{ violation.xpath }}</code>
     <button class="btn btn-sm btn-link p-0 ms-2"
             onclick="copyXpathToClipboard('{{ violation.xpath|e }}', this)"
-            title="Copy XPath to clipboard">
+            title="{{ _('Copy XPath to clipboard') }}">
         <i class="bi bi-clipboard" aria-hidden="true"></i>
     </button>
 </p>
@@ -551,8 +551,8 @@
             </p>
         </div>
         <div class="lang-switcher">
-            <button onclick="switchLanguage('en')" id="lang-en" class="{{ 'active' if language == 'en' else '' }}" lang="en" aria-label="Switch to English">EN</button>
-            <button onclick="switchLanguage('fr')" id="lang-fr" class="{{ 'active' if language == 'fr' else '' }}" lang="fr" aria-label="Switch to French">FR</button>
+            <button onclick="switchLanguage('en')" id="lang-en" class="{{ 'active' if language == 'en' else '' }}" lang="en" aria-label="{{ _('Switch to English') }}">EN</button>
+            <button onclick="switchLanguage('fr')" id="lang-fr" class="{{ 'active' if language == 'fr' else '' }}" lang="fr" aria-label="{{ _('Switch to French') }}">FR</button>
         </div>
     </div>
 
@@ -896,7 +896,7 @@
                 <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">This page was tested in multiple states. Select a state below to view its test results.</span>
                 <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Cette page a été testée dans plusieurs états. Sélectionnez un état ci-dessous pour voir ses résultats de test.</span>
             </p>
-            <div class="btn-group flex-wrap" role="group" aria-label="Page states">
+            <div class="btn-group flex-wrap" role="group" aria-label="{{ _('Page states') }}">
                 {% for state in page.states %}
                     <button type="button"
                             class="btn btn-outline-primary state-selector {% if loop.index0 == 0 %}active{% endif %}"
@@ -1064,10 +1064,10 @@
                                             {% endif %}
                                             
                                             {% if first_violation.html_snippet %}
-                                            <p><strong>HTML:</strong> <code>{{ first_violation.html_snippet }}</code></p>
+                                            <p><strong>{{ _('HTML:') }}</strong> <code>{{ first_violation.html_snippet }}</code></p>
                                             {% endif %}
                                             {% if first_violation.xpath %}
-                                            <p><strong>XPath:</strong> <code>{{ first_violation.xpath }}</code></p>
+                                            <p><strong>{{ _('XPath:') }}</strong> <code>{{ first_violation.xpath }}</code></p>
                                             {% endif %}
                                         </div>
                                     </div>
@@ -1206,10 +1206,10 @@
                                             {% endif %}
                                             
                                             {% if first_warning.html_snippet %}
-                                            <p><strong>HTML:</strong> <code>{{ first_warning.html_snippet }}</code></p>
+                                            <p><strong>{{ _('HTML:') }}</strong> <code>{{ first_warning.html_snippet }}</code></p>
                                             {% endif %}
                                             {% if first_warning.xpath %}
-                                            <p><strong>XPath:</strong> <code>{{ first_warning.xpath }}</code></p>
+                                            <p><strong>{{ _('XPath:') }}</strong> <code>{{ first_warning.xpath }}</code></p>
                                             {% endif %}
                                         </div>
                                     </div>
@@ -1273,10 +1273,10 @@
                                         <div class="accordion-body">
                                             <p>{{ first_info.description }}</p>
                                             {% if first_info.html_snippet %}
-                                            <p><strong>HTML:</strong> <code>{{ first_info.html_snippet }}</code></p>
+                                            <p><strong>{{ _('HTML:') }}</strong> <code>{{ first_info.html_snippet }}</code></p>
                                             {% endif %}
                                             {% if first_info.xpath %}
-                                            <p><strong>XPath:</strong> <code>{{ first_info.xpath }}</code></p>
+                                            <p><strong>{{ _('XPath:') }}</strong> <code>{{ first_info.xpath }}</code></p>
                                             {% endif %}
                                         </div>
                                     </div>
@@ -1340,10 +1340,10 @@
                                         <div class="accordion-body">
                                             <p>{{ first_disco.description }}</p>
                                             {% if first_disco.html_snippet %}
-                                            <p><strong>HTML:</strong> <code>{{ first_disco.html_snippet }}</code></p>
+                                            <p><strong>{{ _('HTML:') }}</strong> <code>{{ first_disco.html_snippet }}</code></p>
                                             {% endif %}
                                             {% if first_disco.xpath %}
-                                            <p><strong>XPath:</strong> <code>{{ first_disco.xpath }}</code></p>
+                                            <p><strong>{{ _('XPath:') }}</strong> <code>{{ first_disco.xpath }}</code></p>
                                             {% endif %}
                                         </div>
                                     </div>
@@ -1833,7 +1833,7 @@
             </h2>
             <a href="../assets/images/screenshots/{{ page.screenshot_path.split('/')[-1] }}" target="_blank">
                 <img src="../assets/images/screenshots/{{ page.screenshot_path.split('/')[-1] }}"
-                     alt="Screenshot of {{ page.url }}"
+                     alt="{{ _('Screenshot of') }} {{ page.url }}"
                      class="img-thumbnail"
                      style="max-width: 300px; height: auto; cursor: pointer;"
                      onerror="this.parentElement.innerHTML='<span class=\'text-muted\'><span data-lang=\'en\' class=\'lang-active\'>Screenshot not available</span><span data-lang=\'fr\' class=\'lang-inactive\'>Capture d\'écran non disponible</span></span>'">
@@ -1907,7 +1907,7 @@ function copyXpathToClipboard(xpath, button) {
                 button.classList.remove('text-success');
             }, 2000);
         }).catch(function(err) {
-            alert('Could not copy to clipboard');
+            alert('{{ _("Could not copy to clipboard") }}');
         });
     } else {
         // Fallback for older browsers
@@ -1917,9 +1917,9 @@ function copyXpathToClipboard(xpath, button) {
         textArea.select();
         try {
             document.execCommand('copy');
-            alert('XPath copied to clipboard');
+            alert('{{ _("XPath copied to clipboard") }}');
         } catch (err) {
-            alert('Could not copy to clipboard');
+            alert('{{ _("Could not copy to clipboard") }}');
         }
         document.body.removeChild(textArea);
     }

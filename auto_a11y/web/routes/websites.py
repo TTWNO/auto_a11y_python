@@ -3,6 +3,7 @@ Website management routes
 """
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app, session
+from flask_babel import gettext as _
 from auto_a11y.models import Website, ScrapingConfig, Page, PageStatus
 from datetime import datetime
 import asyncio
@@ -38,7 +39,7 @@ def view_website(website_id):
     """View website details"""
     website = current_app.db.get_website(website_id)
     if not website:
-        flash('Website not found', 'error')
+        flash(_('Website not found'), 'error')
         return redirect(url_for('projects.list_projects'))
 
     project = current_app.db.get_project(website.project_id)
@@ -135,9 +136,9 @@ def edit_website(website_id):
     """Edit website configuration"""
     website = current_app.db.get_website(website_id)
     if not website:
-        flash('Website not found', 'error')
+        flash(_('Website not found'), 'error')
         return redirect(url_for('projects.list_projects'))
-    
+
     if request.method == 'POST':
         website.name = request.form.get('name', website.name)
         website.url = request.form.get('url', website.url)
@@ -151,10 +152,10 @@ def edit_website(website_id):
         website.scraping_config.request_delay = float(request.form.get('request_delay', 1.0))
         
         if current_app.db.update_website(website):
-            flash('Website updated successfully', 'success')
+            flash(_('Website updated successfully'), 'success')
             return redirect(url_for('websites.view_website', website_id=website_id))
         else:
-            flash('Failed to update website', 'error')
+            flash(_('Failed to update website'), 'error')
     
     project = current_app.db.get_project(website.project_id)
     return render_template('websites/edit.html', website=website, project=project)
@@ -165,15 +166,15 @@ def delete_website(website_id):
     """Delete website"""
     website = current_app.db.get_website(website_id)
     if not website:
-        flash('Website not found', 'error')
+        flash(_('Website not found'), 'error')
         return redirect(url_for('projects.list_projects'))
-    
+
     project_id = website.project_id
     
     if current_app.db.delete_website(website_id):
-        flash(f'Website "{website.display_name}" deleted successfully', 'success')
+        flash(_('Website "%(name)s" deleted successfully', name=website.display_name), 'success')
     else:
-        flash('Failed to delete website', 'error')
+        flash(_('Failed to delete website'), 'error')
     
     return redirect(url_for('projects.view_project', project_id=project_id))
 
@@ -186,8 +187,8 @@ def discover_pages(website_id):
     
     website = current_app.db.get_website(website_id)
     if not website:
-        return jsonify({'error': 'Website not found'}), 404
-    
+        return jsonify({'error': _('Website not found')}), 404
+
     # Get parameters from request
     data = request.get_json() if request.is_json else {}
     max_pages = data.get('max_pages') if request.is_json else request.form.get('max_pages')
@@ -325,7 +326,7 @@ def discover_pages(website_id):
         return jsonify({
             'success': False,
             'error': str(e),
-            'message': 'Failed to start page discovery'
+            'message': _('Failed to start page discovery')
         }), 500
 
 
@@ -446,8 +447,8 @@ def cancel_discovery(website_id):
     
     if not job_id:
         logger.error("No job_id provided in cancel request")
-        return jsonify({'error': 'Job ID required'}), 400
-    
+        return jsonify({'error': _('Job ID required')}), 400
+
     try:
         logger.info(f"Attempting to cancel discovery job {job_id} for website {website_id}")
         
@@ -468,20 +469,20 @@ def cancel_discovery(website_id):
             logger.info(f"Successfully cancelled discovery job {job_id} for website {website_id}")
             return jsonify({
                 'success': True,
-                'message': 'Discovery cancelled successfully'
+                'message': _('Discovery cancelled successfully')
             })
         else:
             logger.warning(f"Could not cancel discovery job {job_id} - job not found or not cancellable")
             return jsonify({
                 'success': False,
-                'message': 'Job not found or already completed'
+                'message': _('Job not found or already completed')
             })
     except Exception as e:
         logger.error(f"Error cancelling discovery job: {e}", exc_info=True)
         return jsonify({
             'success': False,
             'error': str(e),
-            'message': 'Failed to cancel discovery'
+            'message': _('Failed to cancel discovery')
         }), 500
 
 
@@ -490,11 +491,11 @@ def add_page(website_id):
     """Manually add a page to website"""
     website = current_app.db.get_website(website_id)
     if not website:
-        return jsonify({'error': 'Website not found'}), 404
-    
+        return jsonify({'error': _('Website not found')}), 404
+
     url = request.form.get('url')
     if not url:
-        return jsonify({'error': 'URL is required'}), 400
+        return jsonify({'error': _('URL is required')}), 400
     
     # Create page
     page = Page(
@@ -509,7 +510,7 @@ def add_page(website_id):
     return jsonify({
         'success': True,
         'page_id': page_id,
-        'message': f'Page added successfully'
+        'message': _('Page added successfully')
     })
 
 
@@ -522,7 +523,7 @@ def test_all_pages(website_id):
 
     website = current_app.db.get_website(website_id)
     if not website:
-        return jsonify({'error': 'Website not found'}), 404
+        return jsonify({'error': _('Website not found')}), 404
 
     # Extract user IDs from request (array of user IDs, empty string for guest)
     data = request.get_json() if request.is_json else {}
@@ -562,7 +563,7 @@ def test_all_pages(website_id):
     if not testable_pages:
         return jsonify({
             'success': False,
-            'message': 'No pages available for testing (some may be currently testing)'
+            'message': _('No pages available for testing (some may be currently testing)')
         })
 
     try:
@@ -708,7 +709,7 @@ def test_all_pages(website_id):
         return jsonify({
             'success': False,
             'error': str(e),
-            'message': 'Failed to start testing'
+            'message': _('Failed to start testing')
         }), 500
 
 
@@ -733,8 +734,8 @@ def cancel_testing(website_id):
     
     if not job_id:
         logger.error("No job_id provided in cancel testing request")
-        return jsonify({'error': 'Job ID required'}), 400
-    
+        return jsonify({'error': _('Job ID required')}), 400
+
     try:
         logger.info(f"Attempting to cancel testing job {job_id} for website {website_id}")
         
@@ -751,20 +752,20 @@ def cancel_testing(website_id):
             logger.info(f"Successfully cancelled testing job {job_id} for website {website_id}")
             return jsonify({
                 'success': True,
-                'message': 'Testing cancelled successfully'
+                'message': _('Testing cancelled successfully')
             })
         else:
             logger.warning(f"Could not cancel testing job {job_id} - job not found or not cancellable")
             return jsonify({
                 'success': False,
-                'message': 'Job not found or already completed'
+                'message': _('Job not found or already completed')
             })
     except Exception as e:
         logger.error(f"Error cancelling testing job: {e}", exc_info=True)
         return jsonify({
             'success': False,
             'error': str(e),
-            'message': 'Failed to cancel testing'
+            'message': _('Failed to cancel testing')
         }), 500
 
 
@@ -773,11 +774,11 @@ def view_documents(website_id):
     """View document references for a website"""
     website = current_app.db.get_website(website_id)
     if not website:
-        flash('Website not found', 'error')
+        flash(_('Website not found'), 'error')
         return redirect(url_for('projects.list_projects'))
-    
+
     project = current_app.db.get_project(website.project_id)
-    
+
     # Get document references
     documents = current_app.db.get_document_references(website_id)
     
@@ -809,8 +810,8 @@ def test_status(website_id):
     website = current_app.db.get_website(website_id)
     if not website:
         logger.warning(f"DEBUG test_status: website not found!")
-        return jsonify({'error': 'Website not found'}), 404
-    
+        return jsonify({'error': _('Website not found')}), 404
+
     logger.warning(f"DEBUG test_status: website found, job_id={job_id}")
     
     # If a specific job_id is provided, get its status
@@ -898,11 +899,11 @@ def view_discovery_history(website_id):
     """View discovery history for a website"""
     website = current_app.db.get_website(website_id)
     if not website:
-        flash('Website not found', 'error')
+        flash(_('Website not found'), 'error')
         return redirect(url_for('projects.list_projects'))
-    
+
     project = current_app.db.get_project(website.project_id)
-    
+
     # Get all discovery runs for this website
     discovery_runs = current_app.db.get_discovery_runs(website_id)
     
@@ -917,15 +918,15 @@ def view_discovery_run(website_id, discovery_run_id):
     """View details of a specific discovery run"""
     website = current_app.db.get_website(website_id)
     if not website:
-        flash('Website not found', 'error')
+        flash(_('Website not found'), 'error')
         return redirect(url_for('projects.list_projects'))
-    
+
     project = current_app.db.get_project(website.project_id)
-    
+
     # Get the discovery run
     discovery_run = current_app.db.get_discovery_run(discovery_run_id)
     if not discovery_run:
-        flash('Discovery run not found', 'error')
+        flash(_('Discovery run not found'), 'error')
         return redirect(url_for('websites.view_discovery_history', website_id=website_id))
     
     # Get pages from this discovery run

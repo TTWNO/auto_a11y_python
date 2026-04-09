@@ -142,7 +142,7 @@ def view_page(page_id):
     """View page details and test results"""
     page = current_app.db.get_page(page_id)
     if not page:
-        flash('Page not found', 'error')
+        flash(_('Page not found'), 'error')
         return redirect(url_for('projects.list_projects'))
 
     website = current_app.db.get_website(page.website_id)
@@ -288,23 +288,23 @@ def edit_page(page_id):
     """Edit page details"""
     page = current_app.db.get_page(page_id)
     if not page:
-        flash('Page not found', 'error')
+        flash(_('Page not found'), 'error')
         return redirect(url_for('projects.list_projects'))
-    
+
     website = current_app.db.get_website(page.website_id)
     project = current_app.db.get_project(website.project_id)
-    
+
     if request.method == 'POST':
         # Update page details
         page.title = request.form.get('title', page.title)
         page.priority = request.form.get('priority', page.priority)
         page.notes = request.form.get('notes', page.notes)
-        
+
         if current_app.db.update_page(page):
-            flash('Page updated successfully', 'success')
+            flash(_('Page updated successfully'), 'success')
             return redirect(url_for('pages.view_page', page_id=page_id))
         else:
-            flash('Failed to update page', 'error')
+            flash(_('Failed to update page'), 'error')
     
     return render_template('pages/edit.html',
                          page=page,
@@ -321,13 +321,13 @@ def test_page(page_id):
 
     browser_mode = getattr(current_app.app_config, 'BROWSER_MODE', 'local')
     if browser_mode == 'disabled':
-        return jsonify({'error': 'Browser testing is disabled on this server.'}), 503
+        return jsonify({'error': _('Browser testing is disabled on this server.')}), 503
     if browser_mode == 'remote':
-        return jsonify({'error': 'This server is configured for remote browser testing only. Submit tests via the remote worker.'}), 503
+        return jsonify({'error': _('This server is configured for remote browser testing only. Submit tests via the remote worker.')}), 503
 
     page = current_app.db.get_page(page_id)
     if not page:
-        return jsonify({'error': 'Page not found'}), 404
+        return jsonify({'error': _('Page not found')}), 404
 
     # Check if multi-state testing requested
     data = request.get_json() if request.is_json else {}
@@ -407,7 +407,7 @@ def test_page(page_id):
 
     return jsonify({
         'success': True,
-        'message': 'Page queued for testing' + (' (multi-state enabled)' if enable_multi_state else ''),
+        'message': _('Page queued for testing (multi-state enabled)') if enable_multi_state else _('Page queued for testing'),
         'job_id': job_id,
         'multi_state': enable_multi_state,
         'status_url': url_for('pages.test_status', page_id=page_id)
@@ -419,11 +419,11 @@ def test_status(page_id):
     """Check test job status"""
     page = current_app.db.get_page(page_id)
     if not page:
-        return jsonify({'error': 'Page not found'}), 404
-    
+        return jsonify({'error': _('Page not found')}), 404
+
     return jsonify({
         'status': page.status.value,
-        'message': f'Page is {page.status.value}'
+        'message': _('Page is %(status)s', status=page.status.value)
     })
 
 
@@ -434,13 +434,13 @@ def cancel_test(page_id):
     
     page = current_app.db.get_page(page_id)
     if not page:
-        return jsonify({'error': 'Page not found'}), 404
-    
+        return jsonify({'error': _('Page not found')}), 404
+
     # Check if page is actually queued or testing
     if page.status not in [PageStatus.QUEUED, PageStatus.TESTING]:
         return jsonify({
             'success': False,
-            'message': f'Page is not being tested (status: {page.status.value})'
+            'message': _('Page is not being tested (status: %(status)s)', status=page.status.value)
         })
     
     # Try to cancel the task
@@ -478,13 +478,13 @@ def cancel_test(page_id):
         
         return jsonify({
             'success': True,
-            'message': 'Test cancelled successfully',
+            'message': _('Test cancelled successfully'),
             'new_status': page.status.value
         })
     else:
         return jsonify({
             'success': False,
-            'message': 'Could not cancel test - it may have already started'
+            'message': _('Could not cancel test - it may have already started')
         })
 
 
@@ -493,15 +493,15 @@ def delete_page(page_id):
     """Delete page"""
     page = current_app.db.get_page(page_id)
     if not page:
-        flash('Page not found', 'error')
+        flash(_('Page not found'), 'error')
         return redirect(url_for('projects.list_projects'))
-    
+
     website_id = page.website_id
-    
+
     if current_app.db.delete_page(page_id):
-        flash(f'Page deleted successfully', 'success')
+        flash(_('Page deleted successfully'), 'success')
     else:
-        flash('Failed to delete page', 'error')
+        flash(_('Failed to delete page'), 'error')
     
     return redirect(url_for('websites.view_website', website_id=website_id))
 
@@ -511,11 +511,11 @@ def view_violations(page_id):
     """View detailed violations for page"""
     page = current_app.db.get_page(page_id)
     if not page:
-        return jsonify({'error': 'Page not found'}), 404
+        return jsonify({'error': _('Page not found')}), 404
 
     test_result = current_app.db.get_latest_test_result(page_id)
     if not test_result:
-        return jsonify({'error': 'No test results found'}), 404
+        return jsonify({'error': _('No test results found')}), 404
 
     return render_template('pages/violations.html',
                          page=page,

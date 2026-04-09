@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ page.title or 'Page' }} - {{ website.display_name }} - Auto A11y{% endblock %}
+{% block title %}{{ page.title or _('Page') }} - {{ website.display_name }} - Auto A11y{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -109,13 +109,13 @@
             <li class="breadcrumb-item">
                 <a href="{{ url_for('websites.view_website', website_id=website.id) }}">{{ website.display_name }}</a>
             </li>
-            <li class="breadcrumb-item active" aria-current="page">{{ page.title or 'Page' }}</li>
+            <li class="breadcrumb-item active" aria-current="page">{{ page.title or _('Page') }}</li>
         </ol>
     </nav>
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h1>{{ page.title or 'Untitled Page' }}</h1>
+            <h1>{{ page.title or _('Untitled Page') }}</h1>
             <p class="text-muted mb-0">
                 <a href="{{ page.url }}" target="_blank" rel="noopener noreferrer">
                     {{ page.url }} <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
@@ -124,13 +124,13 @@
         </div>
         <div>
             <button id="runTestBtn" class="btn btn-primary">
-                <i class="bi bi-play-circle" aria-hidden="true"></i> Run Test
+                <i class="bi bi-play-circle" aria-hidden="true"></i> {{ _('Run Test') }}
             </button>
             <a href="{{ url_for('pages.edit_page', page_id=page.id) }}" class="btn btn-outline-primary">
-                <i class="bi bi-pencil" aria-hidden="true"></i> Edit
+                <i class="bi bi-pencil" aria-hidden="true"></i> {{ _('Edit') }}
             </a>
             <a href="{{ url_for('scripts.list_page_scripts', page_id=page.id) }}" class="btn btn-outline-success">
-                <i class="bi bi-code-square" aria-hidden="true"></i> Scripts
+                <i class="bi bi-code-square" aria-hidden="true"></i> {{ _('Scripts') }}
             </a>
         </div>
     </div>
@@ -140,7 +140,7 @@
         <div class="col-6 col-lg">
             <div class="card border-danger">
                 <div class="card-body text-center">
-                    <h2 class="card-title text-danger">Errors</h2>
+                    <h2 class="card-title text-danger">{{ _('Errors') }}</h2>
                     <p class="display-6 mb-0">{{ page.violation_count }}</p>
                 </div>
             </div>
@@ -148,7 +148,7 @@
         <div class="col-6 col-lg">
             <div class="card border-warning">
                 <div class="card-body text-center">
-                    <h2 class="card-title text-warning">Warnings</h2>
+                    <h2 class="card-title text-warning">{{ _('Warnings') }}</h2>
                     <p class="display-6 mb-0">{{ page.warning_count }}</p>
                 </div>
             </div>
@@ -156,7 +156,7 @@
         <div class="col-6 col-lg">
             <div class="card border-info">
                 <div class="card-body text-center">
-                    <h2 class="card-title text-info">Info</h2>
+                    <h2 class="card-title text-info">{{ _('Info') }}</h2>
                     <p class="display-6 mb-0">{{ page.info_count|default(0) }}</p>
                 </div>
             </div>
@@ -164,7 +164,7 @@
         <div class="col-6 col-lg">
             <div class="card border-discovery">
                 <div class="card-body text-center">
-                    <h2 class="card-title text-discovery">Discovery</h2>
+                    <h2 class="card-title text-discovery">{{ _('Discovery') }}</h2>
                     <p class="display-6 mb-0">{{ page.discovery_count|default(0) }}</p>
                 </div>
             </div>
@@ -172,7 +172,7 @@
         <div class="col-6 col-lg">
             <div class="card border-success">
                 <div class="card-body text-center">
-                    <h2 class="card-title text-success">Passed</h2>
+                    <h2 class="card-title text-success">{{ _('Passed') }}</h2>
                     <p class="display-6 mb-0">{{ page.pass_count }}</p>
                 </div>
             </div>
@@ -184,22 +184,22 @@
     <section aria-labelledby="filter-heading">
         <div class="filter-panel">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2 id="filter-heading" class="mb-0"><i class="bi bi-funnel" aria-hidden="true"></i> Filter Test Results</h2>
+                <h2 id="filter-heading" class="mb-0"><i class="bi bi-funnel" aria-hidden="true"></i> {{ _('Filter Test Results') }}</h2>
             <button class="btn btn-sm btn-outline-secondary" id="clearFilters">
-                <i class="bi bi-x-circle" aria-hidden="true"></i> Clear All Filters
+                <i class="bi bi-x-circle" aria-hidden="true"></i> {{ _('Clear All Filters') }}
             </button>
         </div>
 
         <!-- Active Filters Display -->
         <div id="activeFilters" class="active-filters" style="display: none;">
-            <strong>Active Filters:</strong>
+            <strong>{{ _('Active Filters:') }}</strong>
             <div id="activeFilterTags"></div>
         </div>
 
         <!-- Filter Statistics -->
         <div class="filter-stats">
-            <strong>Showing:</strong> 
-            <span id="visibleCount">0</span> of <span id="totalCount">0</span> items
+            <strong>{{ _('Showing:') }}</strong>
+            <span id="visibleCount">0</span> {{ _('of') }} <span id="totalCount">0</span> {{ _('items') }}
             | <span id="filterSummary"></span>
         </div>
 
@@ -208,19 +208,19 @@
             <!-- Issue Type Filter -->
             <div class="col-md-3">
                 <div class="filter-group">
-                    <label class="form-label fw-bold">Issue Type</label>
+                    <label class="form-label fw-bold">{{ _('Issue Type') }}</label>
                     <div class="filter-chips">
                         <div class="filter-chip" data-filter-type="type" data-filter-value="error">
-                            Errors ({{ latest_result.violations|length if latest_result.violations else 0 }})
+                            {{ _('Errors') }} ({{ latest_result.violations|length if latest_result.violations else 0 }})
                         </div>
                         <div class="filter-chip" data-filter-type="type" data-filter-value="warning">
-                            Warnings ({{ latest_result.warnings|length if latest_result.warnings else 0 }})
+                            {{ _('Warnings') }} ({{ latest_result.warnings|length if latest_result.warnings else 0 }})
                         </div>
                         <div class="filter-chip" data-filter-type="type" data-filter-value="info">
-                            Info ({{ latest_result.info|length if latest_result.info else 0 }})
+                            {{ _('Info') }} ({{ latest_result.info|length if latest_result.info else 0 }})
                         </div>
                         <div class="filter-chip" data-filter-type="type" data-filter-value="discovery">
-                            Discovery ({{ latest_result.discovery|length if latest_result.discovery else 0 }})
+                            {{ _('Discovery') }} ({{ latest_result.discovery|length if latest_result.discovery else 0 }})
                         </div>
                     </div>
                 </div>
@@ -229,18 +229,18 @@
             <!-- Impact Level Filter -->
             <div class="col-md-3">
                 <div class="filter-group">
-                    <label class="form-label fw-bold">Impact Level</label>
+                    <label class="form-label fw-bold">{{ _('Impact Level') }}</label>
                     <div class="filter-chips">
                         <div class="filter-chip" data-filter-type="impact" data-filter-value="high">
-                            <span class="badge bg-danger me-1">High</span>
+                            <span class="badge bg-danger me-1">{{ _('High') }}</span>
                             <span id="highImpactCount">0</span>
                         </div>
                         <div class="filter-chip" data-filter-type="impact" data-filter-value="medium">
-                            <span class="badge bg-warning text-dark me-1">Medium</span>
+                            <span class="badge bg-warning text-dark me-1">{{ _('Medium') }}</span>
                             <span id="mediumImpactCount">0</span>
                         </div>
                         <div class="filter-chip" data-filter-type="impact" data-filter-value="low">
-                            <span class="badge bg-info me-1">Low</span>
+                            <span class="badge bg-info me-1">{{ _('Low') }}</span>
                             <span id="lowImpactCount">0</span>
                         </div>
                     </div>
@@ -250,9 +250,9 @@
             <!-- WCAG Criteria Filter -->
             <div class="col-md-3">
                 <div class="filter-group">
-                    <label class="form-label fw-bold" for="wcagFilter">WCAG Success Criteria</label>
+                    <label class="form-label fw-bold" for="wcagFilter">{{ _('WCAG Success Criteria') }}</label>
                     <select class="form-select form-select-sm" id="wcagFilter" multiple size="3">
-                        <option value="">All Criteria</option>
+                        <option value="">{{ _('All Criteria') }}</option>
                         <!-- Will be populated dynamically -->
                     </select>
                 </div>
@@ -261,9 +261,9 @@
             <!-- Touchpoint Filter -->
             <div class="col-md-3">
                 <div class="filter-group">
-                    <label class="form-label fw-bold" for="touchpointFilter">Issue Touchpoint</label>
+                    <label class="form-label fw-bold" for="touchpointFilter">{{ _('Issue Touchpoint') }}</label>
                     <select class="form-select form-select-sm" id="touchpointFilter" multiple size="3">
-                        <option value="">All Touchpoints</option>
+                        <option value="">{{ _('All Touchpoints') }}</option>
                         <!-- Will be populated dynamically -->
                     </select>
                 </div>
@@ -274,22 +274,22 @@
         <div class="row mt-3">
             <div class="col-12">
                 <div class="filter-group">
-                    <label class="form-label fw-bold">Affected User Groups</label>
+                    <label class="form-label fw-bold">{{ _('Affected User Groups') }}</label>
                     <div class="filter-chips">
                         <div class="filter-chip" data-filter-type="user" data-filter-value="vision">
-                            <i class="bi bi-eye-slash" aria-hidden="true"></i> Vision Impairments
+                            <i class="bi bi-eye-slash" aria-hidden="true"></i> {{ _('Vision Impairments') }}
                         </div>
                         <div class="filter-chip" data-filter-type="user" data-filter-value="hearing">
-                            <i class="bi bi-ear" aria-hidden="true"></i> Hearing Impairments
+                            <i class="bi bi-ear" aria-hidden="true"></i> {{ _('Hearing Impairments') }}
                         </div>
                         <div class="filter-chip" data-filter-type="user" data-filter-value="motor">
-                            <i class="bi bi-hand-index" aria-hidden="true"></i> Motor Impairments
+                            <i class="bi bi-hand-index" aria-hidden="true"></i> {{ _('Motor Impairments') }}
                         </div>
                         <div class="filter-chip" data-filter-type="user" data-filter-value="cognitive">
-                            <i class="bi bi-brain" aria-hidden="true"></i> Cognitive Impairments
+                            <i class="bi bi-brain" aria-hidden="true"></i> {{ _('Cognitive Impairments') }}
                         </div>
                         <div class="filter-chip" data-filter-type="user" data-filter-value="seizure">
-                            <i class="bi bi-lightning" aria-hidden="true"></i> Seizure Disorders
+                            <i class="bi bi-lightning" aria-hidden="true"></i> {{ _('Seizure Disorders') }}
                         </div>
                     </div>
                 </div>
@@ -301,8 +301,8 @@
             <div class="col-12">
                 <div class="input-group">
                     <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
-                    <input type="text" class="form-control" id="quickSearch" 
-                           placeholder="Search in issue descriptions, IDs, or HTML...">
+                    <input type="text" class="form-control" id="quickSearch"
+                           placeholder="{{ _('Search in issue descriptions, IDs, or HTML...') }}">
                 </div>
             </div>
         </div>
@@ -315,14 +315,14 @@
     <section aria-labelledby="results-heading">
         <div class="card">
             <div class="card-header">
-                <h2 id="results-heading" class="mb-0">Detailed Test Results</h2>
+                <h2 id="results-heading" class="mb-0">{{ _('Detailed Test Results') }}</h2>
             </div>
             <div class="card-body">
                 <!-- Errors (Violations) -->
                 {% if latest_result.violations %}
                 <section aria-labelledby="errors-heading">
                     <h3 id="errors-heading" class="text-danger mb-3">
-                        <i class="bi bi-x-circle" aria-hidden="true"></i> Errors (<span class="type-count" data-type="error">{{ latest_result.violations|length }}</span>)
+                        <i class="bi bi-x-circle" aria-hidden="true"></i> {{ _('Errors') }} (<span class="type-count" data-type="error">{{ latest_result.violations|length }}</span>)
                     </h3>
                     <div class="accordion mb-4" id="violationsAccordion">
                         {% for violation in latest_result.violations %}
@@ -626,7 +626,7 @@ class IssueFilterManager {
                     // Search filter
                     const tag = document.createElement('span');
                     tag.className = 'active-filter-tag';
-                    tag.innerHTML = `Search: "${values}" <span class="remove-filter" data-type="${type}">×</span>`;
+                    tag.innerHTML = `{{ _("Search:") }} "${values}" <span class="remove-filter" data-type="${type}">×</span>`;
                     activeFilterTags.appendChild(tag);
                 } else if (values.size > 0) {
                     // Other filters
@@ -680,12 +680,12 @@ class IssueFilterManager {
         
         // Update filter summary
         const summary = [];
-        if (typeCounts.error) summary.push(`${typeCounts.error} errors`);
-        if (typeCounts.warning) summary.push(`${typeCounts.warning} warnings`);
-        if (typeCounts.info) summary.push(`${typeCounts.info} info`);
-        if (typeCounts.discovery) summary.push(`${typeCounts.discovery} discovery`);
-        
-        document.getElementById('filterSummary').textContent = summary.join(', ') || 'No items';
+        if (typeCounts.error) summary.push(`${typeCounts.error} {{ _("errors") }}`);
+        if (typeCounts.warning) summary.push(`${typeCounts.warning} {{ _("warnings") }}`);
+        if (typeCounts.info) summary.push(`${typeCounts.info} {{ _("info") }}`);
+        if (typeCounts.discovery) summary.push(`${typeCounts.discovery} {{ _("discovery") }}`);
+
+        document.getElementById('filterSummary').textContent = summary.join(', ') || '{{ _("No items") }}';
     }
     
     updateCounts() {
@@ -738,8 +738,8 @@ document.addEventListener('DOMContentLoaded', () => {
 document.getElementById('runTestBtn')?.addEventListener('click', function() {
     const btn = this;
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Testing...';
-    
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>{{ _("Testing...") }}';
+
     fetch("{{ url_for('testing.test_page', page_id=page.id) }}", {
         method: 'POST',
         headers: {
@@ -751,15 +751,15 @@ document.getElementById('runTestBtn')?.addEventListener('click', function() {
         if (data.success) {
             location.reload();
         } else {
-            alert('Test failed: ' + (data.error || 'Unknown error'));
+            alert('{{ _("Test failed:") }} ' + (data.error || '{{ _("Unknown error") }}'));
             btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-play-circle" aria-hidden="true"></i> Run Test';
+            btn.innerHTML = '<i class="bi bi-play-circle" aria-hidden="true"></i> {{ _("Run Test") }}';
         }
     })
     .catch(error => {
-        alert('Error running test: ' + error);
+        alert('{{ _("Error running test:") }} ' + error);
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-play-circle" aria-hidden="true"></i> Run Test';
+        btn.innerHTML = '<i class="bi bi-play-circle" aria-hidden="true"></i> {{ _("Run Test") }}';
     });
 });
 </script>

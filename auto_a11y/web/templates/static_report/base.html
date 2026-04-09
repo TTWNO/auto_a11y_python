@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Static Accessibility Test Report">
+    <meta name="description" content="{{ _('Static Accessibility Test Report') }}">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline'; img-src 'self' data:; style-src 'self' 'unsafe-inline';">
-    <title>{% block title %}Accessibility Report{% endblock %} - Auto A11y</title>
+    <title>{% block title %}{{ _('Accessibility Report') }}{% endblock %} - Auto A11y</title>
 
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="{{ asset_path }}css/bootstrap.min.css">
@@ -173,7 +173,7 @@
     </style>
 </head>
 <body>
-    <a class="skip-link" href="#main-content" style="position:absolute;top:-40px;left:0;background:var(--color-brand);color:var(--color-text-inverse);padding:8px;text-decoration:none;z-index:1100;">Skip to main content</a>
+    <a class="skip-link" href="#main-content" style="position:absolute;top:-40px;left:0;background:var(--color-brand);color:var(--color-text-inverse);padding:8px;text-decoration:none;z-index:1100;">{{ _('Skip to main content') }}</a>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary no-print" aria-label="{{ _('Report navigation') }}">
         <div class="container-fluid">
             <a class="navbar-brand" href="{{ index_path }}index.html">
@@ -181,7 +181,7 @@
                 <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['auto_a11y_report'] }}</span>
                 <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['auto_a11y_report'] }}</span>
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="{{ _('Toggle navigation') }}">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
@@ -213,8 +213,8 @@
                     {% endif %}
                 </ul>
                 <div class="lang-switcher">
-                    <button onclick="switchLanguage('en')" id="lang-en" class="{{ 'active' if language == 'en' else '' }}" lang="en" aria-label="Switch to English">EN</button>
-                    <button onclick="switchLanguage('fr')" id="lang-fr" class="{{ 'active' if language == 'fr' else '' }}" lang="fr" aria-label="Switch to French">FR</button>
+                    <button onclick="switchLanguage('en')" id="lang-en" class="{{ 'active' if language == 'en' else '' }}" lang="en" aria-label="{{ _('Switch to English') }}">EN</button>
+                    <button onclick="switchLanguage('fr')" id="lang-fr" class="{{ 'active' if language == 'fr' else '' }}" lang="fr" aria-label="{{ _('Switch to French') }}">FR</button>
                 </div>
             </div>
         </div>
@@ -344,7 +344,7 @@
                         button.classList.remove('text-success');
                     }, 2000);
                 }).catch(function(err) {
-                    alert('Could not copy to clipboard');
+                    alert('{{ _("Could not copy to clipboard") }}');
                 });
             } else {
                 // Fallback for older browsers
@@ -354,9 +354,9 @@
                 textArea.select();
                 try {
                     document.execCommand('copy');
-                    alert('XPath copied to clipboard');
+                    alert('{{ _("XPath copied to clipboard") }}');
                 } catch (err) {
-                    alert('Could not copy to clipboard');
+                    alert('{{ _("Could not copy to clipboard") }}');
                 }
                 document.body.removeChild(textArea);
             }

@@ -34,7 +34,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary" aria-label="{{ _('Main navigation') }}">
         <div class="container-fluid">
             <a class="navbar-brand" href="{{ url_for('index') }}">
-                <i class="bi bi-universal-access-circle" aria-hidden="true"></i> Auto A11y
+                <i class="bi bi-universal-access-circle" aria-hidden="true"></i> {{ _('Auto A11y') }}
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="{{ _('Toggle navigation') }}">
                 <span class="navbar-toggler-icon"></span>
@@ -174,8 +174,8 @@
                         <span class="visually-hidden">{{ _('Loading...') }}</span>
                     </div>
                     <div>
-                        <strong id="global-activity-title">Activity in Progress</strong> - <span id="global-test-message">Checking status...</span>
-                        <a href="#" id="global-test-link" class="ms-2">View Details</a>
+                        <strong id="global-activity-title">{{ _('Activity in Progress') }}</strong> - <span id="global-test-message">{{ _('Checking status...') }}</span>
+                        <a href="#" id="global-test-link" class="ms-2">{{ _('View Details') }}</a>
                     </div>
                 </div>
                 <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert" aria-label="{{ _('Dismiss') }}" onclick="pauseGlobalTestTracking()"></button>
@@ -475,13 +475,13 @@
                 
                 // Update title based on activity types
                 if (discoveryCount > 0 && testCount === 0) {
-                    titleElement.textContent = 'Discovery Running';
+                    titleElement.textContent = '{{ _("Discovery Running") }}';
                 } else if (discoveryCount === 0 && testCount > 0) {
-                    titleElement.textContent = 'Tests Running';
+                    titleElement.textContent = '{{ _("Tests Running") }}';
                 } else if (discoveryCount > 0 && testCount > 0) {
-                    titleElement.textContent = 'Discovery & Tests Running';
+                    titleElement.textContent = '{{ _("Discovery & Tests Running") }}';
                 } else {
-                    titleElement.textContent = 'Activity in Progress';
+                    titleElement.textContent = '{{ _("Activity in Progress") }}';
                 }
                 
                 if (activeCount === 1) {
@@ -497,12 +497,12 @@
                     // Build message based on activity types
                     let messages = [];
                     if (discoveryCount > 0) {
-                        messages.push(`${discoveryCount} discover${discoveryCount > 1 ? 'ies' : 'y'}`);
+                        messages.push(discoveryCount > 1 ? `${discoveryCount} {{ _("discoveries") }}` : `${discoveryCount} {{ _("discovery") }}`);
                     }
                     if (testCount > 0) {
-                        messages.push(`${testCount} test${testCount > 1 ? 's' : ''}`);
+                        messages.push(testCount > 1 ? `${testCount} {{ _("tests") }}` : `${testCount} {{ _("test") }}`);
                     }
-                    message.textContent = messages.join(' and ') + ' running';
+                    message.textContent = messages.join(' {{ _("and") }} ') + ' {{ _("running") }}';
                     link.href = '/testing';
                 }
             }
@@ -511,8 +511,8 @@
             if (completedInThisCheck.length > 0) {
                 for (const test of completedInThisCheck) {
                     if (window.showNotification) {
-                        const title = test.type === 'discovery' ? 'Discovery Complete' : 'Test Complete';
-                        const message = test.type === 'discovery' ? `${test.description} has finished` : `${test.description} has finished testing`;
+                        const title = test.type === 'discovery' ? '{{ _("Discovery Complete") }}' : '{{ _("Test Complete") }}';
+                        const message = test.type === 'discovery' ? `${test.description} {{ _("has finished") }}` : `${test.description} {{ _("has finished testing") }}`;
                         showNotification(title, message, 'success');
                     }
                     
@@ -544,12 +544,12 @@
     
     // Helper function to add a page test
     function trackPageTest(pageId, pageName) {
-        TestTracker.addTest('page', pageId, `Testing ${pageName || 'page'}`);
+        TestTracker.addTest('page', pageId, `{{ _("Testing") }} ${pageName || '{{ _("page") }}'}`);
     }
-    
+
     // Helper function to add a website test
     function trackWebsiteTest(websiteId, websiteName) {
-        TestTracker.addTest('website', websiteId, `Testing ${websiteName || 'website'}`);
+        TestTracker.addTest('website', websiteId, `{{ _("Testing") }} ${websiteName || '{{ _("website") }}'}`);
     }
     
     // Show notification helper (if not already defined)
@@ -562,7 +562,7 @@
             alertDiv.setAttribute('role', 'alert');
             alertDiv.innerHTML = `
                 <strong>${title}</strong> ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Dismiss"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ _('Dismiss') }}"></button>
             `;
             document.body.appendChild(alertDiv);
 

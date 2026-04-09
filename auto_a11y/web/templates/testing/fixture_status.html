@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Fixture Test Status - Auto A11y{% endblock %}
+{% block title %}{{ _('Fixture Test Status') }} - {{ _('Auto A11y') }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -78,9 +78,9 @@
     <div class="row mb-4">
         <div class="col-12">
             <h1 class="display-4">
-                <i class="bi bi-check2-square text-primary" aria-hidden="true"></i> Fixture Test Status
+                <i class="bi bi-check2-square text-primary" aria-hidden="true"></i> {{ _('Fixture Test Status') }}
             </h1>
-            <p class="lead">View which accessibility tests have passing fixtures</p>
+            <p class="lead">{{ _('View which accessibility tests have passing fixtures') }}</p>
         </div>
     </div>
 
@@ -91,56 +91,56 @@
         <div class="col-12 col-sm-6 col-xl-2">
             <div class="card h-100">
                 <div class="card-body">
-                    <h3 class="card-title fs-6">Debug Mode</h3>
+                    <h3 class="card-title fs-6">{{ _('Debug Mode') }}</h3>
                     <p class="card-text">
-                        <span id="debug-mode-badge" class="badge bg-secondary">Loading...</span>
+                        <span id="debug-mode-badge" class="badge bg-secondary">{{ _('Loading...') }}</span>
                     </p>
-                    <small class="text-muted">All tests available in debug mode</small>
+                    <small class="text-muted">{{ _('All tests available in debug mode') }}</small>
                 </div>
             </div>
         </div>
         <div class="col-12 col-sm-6 col-xl-2">
             <div class="card h-100">
                 <div class="card-body">
-                    <h3 class="card-title fs-6">Total Error Codes</h3>
+                    <h3 class="card-title fs-6">{{ _('Total Error Codes') }}</h3>
                     <p class="card-text display-6" id="total-tests">-</p>
-                    <small class="text-muted">Error codes with fixtures</small>
+                    <small class="text-muted">{{ _('Error codes with fixtures') }}</small>
                 </div>
             </div>
         </div>
         <div class="col-12 col-sm-6 col-xl-2">
             <div class="card h-100 border-success">
                 <div class="card-body">
-                    <h3 class="card-title fs-6">All Pass <i class="bi bi-question-circle-fill text-primary" aria-hidden="true" style="cursor: pointer;" onclick="showHelp('all-pass')"></i></h3>
+                    <h3 class="card-title fs-6">{{ _('All Pass') }} <i class="bi bi-question-circle-fill text-primary" aria-hidden="true" style="cursor: pointer;" onclick="showHelp('all-pass')"></i></h3>
                     <p class="card-text display-6 text-success" id="all-pass-tests">-</p>
-                    <small class="text-muted">All fixtures passing</small>
+                    <small class="text-muted">{{ _('All fixtures passing') }}</small>
                 </div>
             </div>
         </div>
         <div class="col-12 col-sm-6 col-xl-2">
             <div class="card h-100 border-warning">
                 <div class="card-body">
-                    <h3 class="card-title fs-6">Partial Pass <i class="bi bi-question-circle-fill text-primary" aria-hidden="true" style="cursor: pointer;" onclick="showHelp('partial-pass')"></i></h3>
+                    <h3 class="card-title fs-6">{{ _('Partial Pass') }} <i class="bi bi-question-circle-fill text-primary" aria-hidden="true" style="cursor: pointer;" onclick="showHelp('partial-pass')"></i></h3>
                     <p class="card-text display-6 text-warning" id="partial-pass-tests">-</p>
-                    <small class="text-muted">Some fixtures passing</small>
+                    <small class="text-muted">{{ _('Some fixtures passing') }}</small>
                 </div>
             </div>
         </div>
         <div class="col-12 col-sm-6 col-xl-2">
             <div class="card h-100 border-danger">
                 <div class="card-body">
-                    <h3 class="card-title fs-6">All Fail <i class="bi bi-question-circle-fill text-primary" aria-hidden="true" style="cursor: pointer;" onclick="showHelp('all-fail')"></i></h3>
+                    <h3 class="card-title fs-6">{{ _('All Fail') }} <i class="bi bi-question-circle-fill text-primary" aria-hidden="true" style="cursor: pointer;" onclick="showHelp('all-fail')"></i></h3>
                     <p class="card-text display-6 text-danger" id="all-fail-tests">-</p>
-                    <small class="text-muted">No fixtures passing</small>
+                    <small class="text-muted">{{ _('No fixtures passing') }}</small>
                 </div>
             </div>
         </div>
         <div class="col-12 col-sm-6 col-xl-2">
             <div class="card h-100 bg-light">
                 <div class="card-body">
-                    <h3 class="card-title fs-6">Enabled</h3>
+                    <h3 class="card-title fs-6">{{ _('Enabled') }}</h3>
                     <p class="card-text display-6 text-primary" id="enabled-tests">-</p>
-                    <small class="text-muted">Available for scanning</small>
+                    <small class="text-muted">{{ _('Available for scanning') }}</small>
                 </div>
             </div>
         </div>
@@ -152,11 +152,11 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h2 class="mb-0">Latest Fixture Test Run</h2>
+                    <h2 class="mb-0">{{ _('Latest Fixture Test Run') }}</h2>
                 </div>
                 <div class="card-body" id="test-run-info">
                     <div class="spinner-border" role="status">
-                        <span class="visually-hidden">Loading...</span>
+                        <span class="visually-hidden">{{ _('Loading...') }}</span>
                     </div>
                 </div>
             </div>
@@ -168,44 +168,44 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h2 class="mb-0">Individual Test Status</h2>
-                    <small class="text-muted">Tests are automatically enabled/disabled based on fixture results</small>
+                    <h2 class="mb-0">{{ _('Individual Test Status') }}</h2>
+                    <small class="text-muted">{{ _('Tests are automatically enabled/disabled based on fixture results') }}</small>
                     <div class="alert alert-info mt-2 mb-0" role="alert">
-                        <i class="bi bi-info-circle" aria-hidden="true"></i> <strong>Understanding Test Status:</strong>
+                        <i class="bi bi-info-circle" aria-hidden="true"></i> <strong>{{ _('Understanding Test Status:') }}</strong>
                         <ul class="mb-0 mt-2">
-                            <li><strong>Error Code:</strong> Each accessibility issue type (e.g., ErrNoAltText)</li>
-                            <li><strong>Fixtures:</strong> Individual HTML test files for each error code (typically 2-3 per code)</li>
-                            <li><strong>All Pass:</strong> Every fixture for this error code passes - <span class="badge bg-success">Enabled for scanning</span></li>
-                            <li><strong>Partial Pass:</strong> Some fixtures pass, others fail - <span class="badge bg-danger">Disabled</span> (needs fixing)</li>
-                            <li><strong>All Fail:</strong> No fixtures pass - <span class="badge bg-danger">Disabled</span> (needs implementation or fixing)</li>
+                            <li><strong>{{ _('Error Code:') }}</strong> {{ _('Each accessibility issue type (e.g., ErrNoAltText)') }}</li>
+                            <li><strong>{{ _('Fixtures:') }}</strong> {{ _('Individual HTML test files for each error code (typically 2-3 per code)') }}</li>
+                            <li><strong>{{ _('All Pass:') }}</strong> {{ _('Every fixture for this error code passes') }} - <span class="badge bg-success">{{ _('Enabled for scanning') }}</span></li>
+                            <li><strong>{{ _('Partial Pass:') }}</strong> {{ _('Some fixtures pass, others fail') }} - <span class="badge bg-danger">{{ _('Disabled') }}</span> {{ _('(needs fixing)') }}</li>
+                            <li><strong>{{ _('All Fail:') }}</strong> {{ _('No fixtures pass') }} - <span class="badge bg-danger">{{ _('Disabled') }}</span> {{ _('(needs implementation or fixing)') }}</li>
                         </ul>
                     </div>
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
-                        <input type="text" class="form-control" id="search-tests" placeholder="Search error codes...">
+                        <input type="text" class="form-control" id="search-tests" placeholder="{{ _('Search error codes...') }}">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Filter by Status:</label>
-                        <div class="btn-group" role="group" aria-label="Status filter">
+                        <label class="form-label fw-bold">{{ _('Filter by Status:') }}</label>
+                        <div class="btn-group" role="group" aria-label="{{ _('Status filter') }}">
                             <input type="radio" class="btn-check" name="status-filter" id="filter-all" value="all" checked autocomplete="off">
-                            <label class="btn btn-outline-primary" for="filter-all">All</label>
+                            <label class="btn btn-outline-primary" for="filter-all">{{ _('All') }}</label>
 
                             <input type="radio" class="btn-check" name="status-filter" id="filter-all-pass" value="all_pass" autocomplete="off">
-                            <label class="btn btn-outline-success" for="filter-all-pass">All Pass</label>
+                            <label class="btn btn-outline-success" for="filter-all-pass">{{ _('All Pass') }}</label>
 
                             <input type="radio" class="btn-check" name="status-filter" id="filter-partial" value="partial_pass" autocomplete="off">
-                            <label class="btn btn-outline-warning" for="filter-partial">Partial Pass</label>
+                            <label class="btn btn-outline-warning" for="filter-partial">{{ _('Partial Pass') }}</label>
 
                             <input type="radio" class="btn-check" name="status-filter" id="filter-fail" value="all_fail" autocomplete="off">
-                            <label class="btn btn-outline-danger" for="filter-fail">All Fail</label>
+                            <label class="btn btn-outline-danger" for="filter-fail">{{ _('All Fail') }}</label>
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Filter by Type:</label>
-                        <div class="btn-group" role="group" aria-label="Type filter">
+                        <label class="form-label fw-bold">{{ _('Filter by Type:') }}</label>
+                        <div class="btn-group" role="group" aria-label="{{ _('Type filter') }}">
                             <input type="radio" class="btn-check" name="type-filter" id="type-all" value="all" checked autocomplete="off">
-                            <label class="btn btn-outline-secondary" for="type-all">All</label>
+                            <label class="btn btn-outline-secondary" for="type-all">{{ _('All') }}</label>
 
                             <input type="radio" class="btn-check" name="type-filter" id="type-err" value="Err" autocomplete="off">
                             <label class="btn btn-outline-danger" for="type-err">Err</label>
@@ -225,18 +225,18 @@
                             <caption class="visually-hidden">{{ _('Fixture test status for all error codes') }}</caption>
                             <thead class="table-light">
                                 <tr>
-                                    <th scope="col" style="width: 25%;">Error Code</th>
-                                    <th scope="col" style="width: 10%;">Status</th>
-                                    <th scope="col" style="width: 15%;" class="d-none d-md-table-cell">Fixtures</th>
-                                    <th scope="col" style="width: 25%;" class="d-none d-lg-table-cell">Notes</th>
-                                    <th scope="col" style="width: 15%;" class="d-none d-sm-table-cell">Tested At</th>
+                                    <th scope="col" style="width: 25%;">{{ _('Error Code') }}</th>
+                                    <th scope="col" style="width: 10%;">{{ _('Status') }}</th>
+                                    <th scope="col" style="width: 15%;" class="d-none d-md-table-cell">{{ _('Fixtures') }}</th>
+                                    <th scope="col" style="width: 25%;" class="d-none d-lg-table-cell">{{ _('Notes') }}</th>
+                                    <th scope="col" style="width: 15%;" class="d-none d-sm-table-cell">{{ _('Tested At') }}</th>
                                 </tr>
                             </thead>
                             <tbody id="test-status-tbody">
                                 <tr>
                                     <td colspan="5" class="text-center">
                                         <div class="spinner-border" role="status">
-                                            <span class="visually-hidden">Loading...</span>
+                                            <span class="visually-hidden">{{ _('Loading...') }}</span>
                                         </div>
                                     </td>
                                 </tr>
@@ -246,7 +246,7 @@
                     <!-- Mobile-friendly view hint -->
                     <div class="d-md-none mt-2">
                         <small class="text-muted">
-                            <i class="bi bi-info-circle" aria-hidden="true"></i> Swipe table horizontally for more details
+                            <i class="bi bi-info-circle" aria-hidden="true"></i> {{ _('Swipe table horizontally for more details') }}
                         </small>
                     </div>
                 </div>
@@ -259,18 +259,18 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-body">
-                    <h2 class="card-title">Actions</h2>
-                    <p class="text-muted mb-2">Run the fixture test script to update test availability</p>
+                    <h2 class="card-title">{{ _('Actions') }}</h2>
+                    <p class="text-muted mb-2">{{ _('Run the fixture test script to update test availability') }}</p>
                     <div class="bg-light p-2 rounded mb-3">
                         <code>python test_fixtures.py</code>
                     </div>
                     <hr>
                     <div class="d-flex flex-wrap gap-2">
                         <a href="{{ url_for('testing.configure_testing') }}" class="btn btn-secondary">
-                            <i class="bi bi-gear" aria-hidden="true"></i> Settings
+                            <i class="bi bi-gear" aria-hidden="true"></i> {{ _('Settings') }}
                         </a>
                         <button class="btn btn-primary" onclick="refreshStatus()">
-                            <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Refresh Status
+                            <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> {{ _('Refresh Status') }}
                         </button>
                     </div>
                 </div>
@@ -317,12 +317,12 @@ function loadFixtureStatus() {
                 updateTestTable(data.test_statuses);
                 allTestStatuses = data.test_statuses;
             } else {
-                showError('Failed to load fixture test status');
+                showError({{ _('Failed to load fixture test status') | tojson }});
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            showError('Error loading fixture test status');
+            showError({{ _('Error loading fixture test status') | tojson }});
         });
 }
 
@@ -330,10 +330,10 @@ function updateSummary(data) {
     // Update debug mode badge
     const debugBadge = document.getElementById('debug-mode-badge');
     if (data.debug_mode) {
-        debugBadge.textContent = 'ON';
+        debugBadge.textContent = {{ _('ON') | tojson }};
         debugBadge.className = 'badge bg-warning';
     } else {
-        debugBadge.textContent = 'OFF';
+        debugBadge.textContent = {{ _('OFF') | tojson }};
         debugBadge.className = 'badge bg-secondary';
     }
 
@@ -351,8 +351,8 @@ function updateTestRunInfo(summary) {
     if (!summary) {
         container.innerHTML = `
             <div class="alert alert-warning mb-0">
-                <i class="bi bi-exclamation-triangle" aria-hidden="true"></i> No fixture test runs found. 
-                Run <code>python test_fixtures.py</code> to test fixtures.
+                <i class="bi bi-exclamation-triangle" aria-hidden="true"></i> ` + {{ _('No fixture test runs found.') | tojson }} + `
+                ` + {{ _('Run <code>python test_fixtures.py</code> to test fixtures.') | tojson }} + `
             </div>
         `;
         return;
@@ -365,16 +365,16 @@ function updateTestRunInfo(summary) {
     container.innerHTML = `
         <div class="row g-3">
             <div class="col-12 col-lg-6">
-                <p class="mb-2"><strong>Run ID:</strong> <code class="text-break">${summary.run_id}</code></p>
-                <p class="mb-2"><strong>Completed:</strong> ${completedAt.toLocaleString()}</p>
+                <p class="mb-2"><strong>` + {{ _('Run ID:') | tojson }} + `</strong> <code class="text-break">${summary.run_id}</code></p>
+                <p class="mb-2"><strong>` + {{ _('Completed:') | tojson }} + `</strong> ${completedAt.toLocaleString()}</p>
             </div>
             <div class="col-12 col-lg-6">
-                <p class="mb-2"><strong>Total Fixtures:</strong> ${summary.total}</p>
+                <p class="mb-2"><strong>` + {{ _('Total Fixtures:') | tojson }} + `</strong> ${summary.total}</p>
                 <p class="mb-2">
-                    <strong>Results:</strong> 
-                    <span class="badge bg-success">${summary.passed} passed</span>
-                    <span class="badge bg-danger ms-1">${summary.failed} failed</span>
-                    <span class="badge bg-${badgeClass} ms-2">${successRate.toFixed(1)}% success rate</span>
+                    <strong>` + {{ _('Results:') | tojson }} + `</strong>
+                    <span class="badge bg-success">${summary.passed} ` + {{ _('passed') | tojson }} + `</span>
+                    <span class="badge bg-danger ms-1">${summary.failed} ` + {{ _('failed') | tojson }} + `</span>
+                    <span class="badge bg-${badgeClass} ms-2">${successRate.toFixed(1)}% ` + {{ _('success rate') | tojson }} + `</span>
                 </p>
             </div>
         </div>
@@ -388,7 +388,7 @@ function updateTestTable(statuses) {
         tbody.innerHTML = `
             <tr>
                 <td colspan="5" class="text-center text-muted">
-                    No test results found
+                    ` + {{ _('No test results found') | tojson }} + `
                 </td>
             </tr>
         `;
@@ -403,11 +403,11 @@ function updateTestTable(statuses) {
         // Create status badge based on category
         let statusBadge;
         if (category === 'all_pass') {
-            statusBadge = '<span class="badge bg-success">✓ All Pass</span>';
+            statusBadge = '<span class="badge bg-success">' + {{ _('All Pass') | tojson }} + '</span>';
         } else if (category === 'partial_pass') {
-            statusBadge = '<span class="badge bg-warning text-dark">⚠ Partial Pass</span>';
+            statusBadge = '<span class="badge bg-warning text-dark">' + {{ _('Partial Pass') | tojson }} + '</span>';
         } else {
-            statusBadge = '<span class="badge bg-danger">✗ All Fail</span>';
+            statusBadge = '<span class="badge bg-danger">' + {{ _('All Fail') | tojson }} + '</span>';
         }
 
         // Show fixture count and pass/fail ratio
@@ -417,7 +417,7 @@ function updateTestTable(statuses) {
 
         const notes = status.notes && status.notes.length > 0
             ? status.notes.join('<br>')
-            : (success ? 'All fixtures passed' : '-');
+            : (success ? {{ _('All fixtures passed') | tojson }} : '-');
 
         const testedAt = status.tested_at
             ? new Date(status.tested_at).toLocaleString()
@@ -480,13 +480,13 @@ function filterTests(searchTerm) {
 function refreshStatus() {
     const btn = event.target;
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Refreshing...';
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> ' + {{ _('Refreshing...') | tojson }};
     
     loadFixtureStatus();
     
     setTimeout(() => {
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Refresh Status';
+        btn.innerHTML = '<i class="bi bi-arrow-clockwise" aria-hidden="true"></i> ' + {{ _('Refresh Status') | tojson }};
     }, 1000);
 }
 
@@ -502,51 +502,51 @@ function showError(message) {
 function showHelp(topic) {
     const helpContent = {
         'all-pass': {
-            title: 'All Pass Status',
+            title: {{ _('All Pass Status') | tojson }},
             content: `
-                <p><strong>What it means:</strong> Every fixture file for this error code passes its test.</p>
-                <p><strong>Example:</strong> If <code>ErrNoAltText</code> has 3 fixtures:</p>
+                <p><strong>` + {{ _('What it means:') | tojson }} + `</strong> ` + {{ _('Every fixture file for this error code passes its test.') | tojson }} + `</p>
+                <p><strong>` + {{ _('Example:') | tojson }} + `</strong> ` + {{ _('If <code>ErrNoAltText</code> has 3 fixtures:') | tojson }} + `</p>
                 <ul>
-                    <li>✅ ErrNoAltText_001_violations_basic.html (passes)</li>
-                    <li>✅ ErrNoAltText_002_violations_decorative.html (passes)</li>
-                    <li>✅ ErrNoAltText_003_correct_with_alt.html (passes)</li>
+                    <li>ErrNoAltText_001_violations_basic.html (` + {{ _('passes') | tojson }} + `)</li>
+                    <li>ErrNoAltText_002_violations_decorative.html (` + {{ _('passes') | tojson }} + `)</li>
+                    <li>ErrNoAltText_003_correct_with_alt.html (` + {{ _('passes') | tojson }} + `)</li>
                 </ul>
-                <p><strong>Result:</strong> <span class="badge bg-success">Enabled for scanning</span></p>
-                <p>This error code will be used to detect accessibility issues in real websites.</p>
+                <p><strong>` + {{ _('Result:') | tojson }} + `</strong> <span class="badge bg-success">` + {{ _('Enabled for scanning') | tojson }} + `</span></p>
+                <p>` + {{ _('This error code will be used to detect accessibility issues in real websites.') | tojson }} + `</p>
             `
         },
         'partial-pass': {
-            title: 'Partial Pass Status',
+            title: {{ _('Partial Pass Status') | tojson }},
             content: `
-                <p><strong>What it means:</strong> Some fixtures pass, but others fail. The test implementation is incomplete or has bugs.</p>
-                <p><strong>Example:</strong> If <code>ErrColorContrast</code> has 3 fixtures:</p>
+                <p><strong>` + {{ _('What it means:') | tojson }} + `</strong> ` + {{ _('Some fixtures pass, but others fail. The test implementation is incomplete or has bugs.') | tojson }} + `</p>
+                <p><strong>` + {{ _('Example:') | tojson }} + `</strong> ` + {{ _('If <code>ErrColorContrast</code> has 3 fixtures:') | tojson }} + `</p>
                 <ul>
-                    <li>✅ ErrColorContrast_001_violations_low_contrast.html (passes)</li>
-                    <li>❌ ErrColorContrast_002_violations_gradients.html (fails - not detected)</li>
-                    <li>✅ ErrColorContrast_003_correct_high_contrast.html (passes)</li>
+                    <li>ErrColorContrast_001_violations_low_contrast.html (` + {{ _('passes') | tojson }} + `)</li>
+                    <li>ErrColorContrast_002_violations_gradients.html (` + {{ _('fails - not detected') | tojson }} + `)</li>
+                    <li>ErrColorContrast_003_correct_high_contrast.html (` + {{ _('passes') | tojson }} + `)</li>
                 </ul>
-                <p><strong>Result:</strong> <span class="badge bg-danger">Disabled</span> - Not ready for production</p>
-                <p><strong>Action needed:</strong> Fix the test implementation so all fixtures pass. The test should detect violations in _002 without false positives on _003.</p>
+                <p><strong>` + {{ _('Result:') | tojson }} + `</strong> <span class="badge bg-danger">` + {{ _('Disabled') | tojson }} + `</span> - ` + {{ _('Not ready for production') | tojson }} + `</p>
+                <p><strong>` + {{ _('Action needed:') | tojson }} + `</strong> ` + {{ _('Fix the test implementation so all fixtures pass.') | tojson }} + `</p>
                 <hr>
-                <p><strong>Why is this important?</strong> Partial passes mean the test is unreliable. It might miss real issues (false negatives) or report false positives. All fixtures must pass before enabling.</p>
+                <p><strong>` + {{ _('Why is this important?') | tojson }} + `</strong> ` + {{ _('Partial passes mean the test is unreliable. It might miss real issues (false negatives) or report false positives. All fixtures must pass before enabling.') | tojson }} + `</p>
             `
         },
         'all-fail': {
-            title: 'All Fail Status',
+            title: {{ _('All Fail Status') | tojson }},
             content: `
-                <p><strong>What it means:</strong> None of the fixtures pass. This usually means:</p>
+                <p><strong>` + {{ _('What it means:') | tojson }} + `</strong> ` + {{ _('None of the fixtures pass. This usually means:') | tojson }} + `</p>
                 <ul>
-                    <li>The test isn't implemented yet</li>
-                    <li>The test has a critical bug</li>
-                    <li>The test is detecting the wrong issues</li>
+                    <li>` + {{ _('The test is not implemented yet') | tojson }} + `</li>
+                    <li>` + {{ _('The test has a critical bug') | tojson }} + `</li>
+                    <li>` + {{ _('The test is detecting the wrong issues') | tojson }} + `</li>
                 </ul>
-                <p><strong>Example:</strong> If <code>AI_ErrMissingAria</code> has 2 fixtures:</p>
+                <p><strong>` + {{ _('Example:') | tojson }} + `</strong> ` + {{ _('If <code>AI_ErrMissingAria</code> has 2 fixtures:') | tojson }} + `</p>
                 <ul>
-                    <li>❌ AI_ErrMissingAria_001_violations.html (fails - not detected)</li>
-                    <li>❌ AI_ErrMissingAria_002_correct.html (fails - false positive)</li>
+                    <li>AI_ErrMissingAria_001_violations.html (` + {{ _('fails - not detected') | tojson }} + `)</li>
+                    <li>AI_ErrMissingAria_002_correct.html (` + {{ _('fails - false positive') | tojson }} + `)</li>
                 </ul>
-                <p><strong>Result:</strong> <span class="badge bg-danger">Disabled</span> - Not implemented or broken</p>
-                <p><strong>Action needed:</strong> Implement the test logic or fix critical bugs. The test must correctly identify violations and avoid false positives.</p>
+                <p><strong>` + {{ _('Result:') | tojson }} + `</strong> <span class="badge bg-danger">` + {{ _('Disabled') | tojson }} + `</span> - ` + {{ _('Not implemented or broken') | tojson }} + `</p>
+                <p><strong>` + {{ _('Action needed:') | tojson }} + `</strong> ` + {{ _('Implement the test logic or fix critical bugs. The test must correctly identify violations and avoid false positives.') | tojson }} + `</p>
             `
         }
     };
@@ -561,15 +561,15 @@ function showHelp(topic) {
                 <div class="modal-content">
                     <div class="modal-header">
                         <h2 class="modal-title" id="helpModalLabel">${help.title}</h2>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="` + {{ _('Close') | tojson }} + `"></button>
                     </div>
                     <div class="modal-body">
                         ${help.content}
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">` + {{ _('Close') | tojson }} + `</button>
                         <a href="https://github.com/yourusername/auto_a11y_python/blob/main/FIXTURE_TESTING_GUIDE.md" target="_blank" class="btn btn-primary">
-                            View Full Documentation
+                            ` + {{ _('View Full Documentation') | tojson }} + `
                         </a>
                     </div>
                 </div>

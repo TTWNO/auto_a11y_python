@@ -114,9 +114,9 @@
                             <dd class="mb-0">
                                 {% for lang in recording.available_languages %}
                                     {% if lang == 'en' %}
-                                    <span class="badge bg-secondary">English</span>
+                                    <span class="badge bg-secondary">{{ _('English') }}</span>
                                     {% elif lang == 'fr' %}
-                                    <span class="badge bg-secondary">Français (French)</span>
+                                    <span class="badge bg-secondary">{{ _('French') }}</span>
                                     {% endif %}
                                 {% endfor %}
                             </dd>

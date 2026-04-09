@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ project.name }} - Deduplicated Report - Auto A11y</title>
+    <title>{{ project.name }} - {{ _('Deduplicated Report') }} - Auto A11y</title>
 
     <!-- Inlined Bootstrap CSS -->
     <style>
@@ -217,14 +217,14 @@
     </style>
 </head>
 <body>
-    <a href="#main-content" class="visually-hidden-focusable">Skip to main content</a>
+    <a href="#main-content" class="visually-hidden-focusable">{{ _('Skip to main content') }}</a>
     <main id="main-content" class="container-fluid py-4">
         <!-- Header -->
         <div class="row mb-4">
             <div class="col-12">
                 <h1><i class="bi bi-collection" aria-hidden="true"></i> {{ project.name }}</h1>
-                <p class="text-muted">Deduplicated Accessibility Report - Generated {{ report_date }}</p>
-                <p class="lead">Issues grouped by common components across {{ websites|length }} website(s) and {{ total_pages }} pages</p>
+                <p class="text-muted">{{ _('Deduplicated Accessibility Report') }} - {{ _('Generated') }} {{ report_date }}</p>
+                <p class="lead">{{ _('Issues grouped by common components across') }} {{ websites|length }} {{ _('website(s) and') }} {{ total_pages }} {{ _('pages') }}</p>
             </div>
         </div>
 
@@ -234,7 +234,7 @@
                 <div class="stats-card">
                     <div class="stat-item">
                         <div class="stat-number text-danger">{{ total_violations }}</div>
-                        <div class="stat-label">Violations</div>
+                        <div class="stat-label">{{ _('Violations') }}</div>
                     </div>
                 </div>
             </div>
@@ -242,7 +242,7 @@
                 <div class="stats-card">
                     <div class="stat-item">
                         <div class="stat-number text-warning">{{ total_warnings }}</div>
-                        <div class="stat-label">Warnings</div>
+                        <div class="stat-label">{{ _('Warnings') }}</div>
                     </div>
                 </div>
             </div>
@@ -250,7 +250,7 @@
                 <div class="stats-card">
                     <div class="stat-item">
                         <div class="stat-number text-info">{{ total_info }}</div>
-                        <div class="stat-label">Info</div>
+                        <div class="stat-label">{{ _('Info') }}</div>
                     </div>
                 </div>
             </div>
@@ -258,7 +258,7 @@
                 <div class="stats-card">
                     <div class="stat-item">
                         <div class="stat-number text-primary">{{ common_components|length }}</div>
-                        <div class="stat-label">Common Components</div>
+                        <div class="stat-label">{{ _('Common Components') }}</div>
                     </div>
                 </div>
             </div>
@@ -266,33 +266,33 @@
 
         <!-- Filter Panel -->
         <div class="filter-panel">
-            <h2 class="mb-3"><i class="bi bi-funnel" aria-hidden="true"></i> Filter Issues</h2>
+            <h2 class="mb-3"><i class="bi bi-funnel" aria-hidden="true"></i> {{ _('Filter Issues') }}</h2>
 
             <!-- Issue Type Filter -->
             <div class="filter-group">
-                <label class="form-label fw-bold small">Issue Type</label>
+                <label class="form-label fw-bold small">{{ _('Issue Type') }}</label>
                 <div class="filter-chips">
                     <button class="btn btn-sm btn-outline-danger filter-chip" data-filter-type="type" data-filter-value="violation">
-                        <i class="bi bi-x-circle me-1" aria-hidden="true"></i>Violations
+                        <i class="bi bi-x-circle me-1" aria-hidden="true"></i>{{ _('Violations') }}
                     </button>
                     <button class="btn btn-sm btn-outline-warning filter-chip" data-filter-type="type" data-filter-value="warning">
-                        <i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>Warnings
+                        <i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>{{ _('Warnings') }}
                     </button>
                     <button class="btn btn-sm btn-outline-info filter-chip" data-filter-type="type" data-filter-value="info">
-                        <i class="bi bi-info-circle me-1" aria-hidden="true"></i>Info
+                        <i class="bi bi-info-circle me-1" aria-hidden="true"></i>{{ _('Info') }}
                     </button>
                     <button class="btn btn-sm btn-outline-secondary filter-chip" data-filter-type="type" data-filter-value="discovery">
-                        <i class="bi bi-search me-1" aria-hidden="true"></i>Discovery
+                        <i class="bi bi-search me-1" aria-hidden="true"></i>{{ _('Discovery') }}
                     </button>
                 </div>
             </div>
 
             <!-- Component Filter -->
             <div class="filter-group">
-                <label class="form-label fw-bold small">Component</label>
+                <label class="form-label fw-bold small">{{ _('Component') }}</label>
                 <div class="filter-chips" id="componentFilterChips">
                     <button class="btn btn-sm btn-outline-secondary filter-chip" data-filter-type="component" data-filter-value="none">
-                        <i class="bi bi-file-earmark me-1" aria-hidden="true"></i>No Component
+                        <i class="bi bi-file-earmark me-1" aria-hidden="true"></i>{{ _('No Component') }}
                     </button>
                     {% for signature, comp_data in common_components.items() %}
                     <button class="btn btn-sm btn-outline-secondary filter-chip"
@@ -306,16 +306,16 @@
 
             <!-- Impact Filter -->
             <div class="filter-group">
-                <label class="form-label fw-bold small">Impact</label>
+                <label class="form-label fw-bold small">{{ _('Impact') }}</label>
                 <div class="filter-chips">
                     <button class="btn btn-sm btn-outline-danger filter-chip" data-filter-type="impact" data-filter-value="high">
-                        High
+                        {{ _('High') }}
                     </button>
                     <button class="btn btn-sm btn-outline-warning filter-chip" data-filter-type="impact" data-filter-value="medium">
-                        Medium
+                        {{ _('Medium') }}
                     </button>
                     <button class="btn btn-sm btn-outline-info filter-chip" data-filter-type="impact" data-filter-value="low">
-                        Low
+                        {{ _('Low') }}
                     </button>
                 </div>
             </div>
@@ -323,7 +323,7 @@
             <!-- Clear Filters -->
             <div class="mt-3">
                 <button class="btn btn-sm btn-outline-secondary" id="clearFilters">
-                    <i class="bi bi-x-circle me-1" aria-hidden="true"></i>Clear All Filters
+                    <i class="bi bi-x-circle me-1" aria-hidden="true"></i>{{ _('Clear All Filters') }}
                 </button>
             </div>
         </div>
@@ -333,20 +333,20 @@
             <div class="col-12">
                 <div class="card">
                     <div class="card-header bg-primary text-white">
-                        <h2 class="mb-0"><i class="bi bi-boxes" aria-hidden="true"></i> Common Components Found</h2>
+                        <h2 class="mb-0"><i class="bi bi-boxes" aria-hidden="true"></i> {{ _('Common Components Found') }}</h2>
                     </div>
                     <div class="card-body">
-                        <p class="text-muted">These components appear across multiple pages. Issues within these components affect multiple pages.</p>
+                        <p class="text-muted">{{ _('These components appear across multiple pages. Issues within these components affect multiple pages.') }}</p>
                         {% if common_components %}
                         <div class="table-responsive">
                             <table class="table table-hover">
-                                <caption class="visually-hidden">Common components found across pages</caption>
+                                <caption class="visually-hidden">{{ _('Common components found across pages') }}</caption>
                                 <thead>
                                     <tr>
-                                        <th scope="col">Component Type</th>
-                                        <th scope="col">Label</th>
-                                        <th scope="col">Pages</th>
-                                        <th scope="col">Issues</th>
+                                        <th scope="col">{{ _('Component Type') }}</th>
+                                        <th scope="col">{{ _('Label') }}</th>
+                                        <th scope="col">{{ _('Pages') }}</th>
+                                        <th scope="col">{{ _('Issues') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -358,15 +358,15 @@
                                             </span>
                                         </td>
                                         <td>{{ comp_data.label }}</td>
-                                        <td>{{ comp_data.pages|length }} pages</td>
-                                        <td>{{ comp_data.issue_count|default(0) }} issues</td>
+                                        <td>{{ comp_data.pages|length }} {{ _('pages') }}</td>
+                                        <td>{{ comp_data.issue_count|default(0) }} {{ _('issues') }}</td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
                             </table>
                         </div>
                         {% else %}
-                        <p class="text-muted">No common components detected across pages.</p>
+                        <p class="text-muted">{{ _('No common components detected across pages.') }}</p>
                         {% endif %}
                     </div>
                 </div>
@@ -378,8 +378,8 @@
             <div class="col-12">
                 <div class="card test-results-card">
                     <div class="card-header">
-                        <h2 class="mb-0"><i class="bi bi-list-check" aria-hidden="true"></i> Deduplicated Issues</h2>
-                        <small class="text-muted">Issues grouped by component and deduplicated across pages</small>
+                        <h2 class="mb-0"><i class="bi bi-list-check" aria-hidden="true"></i> {{ _('Deduplicated Issues') }}</h2>
+                        <small class="text-muted">{{ _('Issues grouped by component and deduplicated across pages') }}</small>
                     </div>
                     <div class="card-body">
                         {% if deduplicated_issues %}
@@ -399,15 +399,15 @@
                                         {{ issue_data.component_type }}: {{ issue_data.component_label }}
                                     </span>
                                     {% else %}
-                                    <span class="component-badge none">No Component</span>
+                                    <span class="component-badge none">{{ _('No Component') }}</span>
                                     {% endif %}
                                     <div class="flex-grow-1 ms-2">
                                         <h3 class="mb-0">
                                             <code>{{ issue_data.rule_id }}</code> - {{ issue_data.description }}
                                         </h3>
                                         <small class="text-muted">
-                                            Found on {{ issue_data.page_count }} page(s)
-                                            {% if issue_data.test_users %} | Tested by: {{ issue_data.test_users|join(', ') }}{% endif %}
+                                            {{ _('Found on') }} {{ issue_data.page_count }} {{ _('page(s)') }}
+                                            {% if issue_data.test_users %} | {{ _('Tested by:') }} {{ issue_data.test_users|join(', ') }}{% endif %}
                                         </small>
                                     </div>
                                 </div>
@@ -415,16 +415,16 @@
                                 <!-- Issue Details -->
                                 <div class="ms-4">
                                     {% if issue_data.wcag_criteria %}
-                                    <p class="mb-1"><strong>WCAG:</strong> {{ issue_data.wcag_criteria|join(', ') }}</p>
+                                    <p class="mb-1"><strong>{{ _('WCAG:') }}</strong> {{ issue_data.wcag_criteria|join(', ') }}</p>
                                     {% endif %}
 
                                     {% if issue_data.how_to_fix %}
-                                    <p class="mb-1"><strong>How to Fix:</strong> {{ issue_data.how_to_fix }}</p>
+                                    <p class="mb-1"><strong>{{ _('How to Fix:') }}</strong> {{ issue_data.how_to_fix }}</p>
                                     {% endif %}
 
                                     <!-- Pages Affected (count only - URLs in detailed page reports) -->
                                     <p class="mb-1 mt-2 text-muted">
-                                        <i class="bi bi-file-earmark-text me-1" aria-hidden="true"></i>{{ issue_data.page_count }} affected page(s)
+                                        <i class="bi bi-file-earmark-text me-1" aria-hidden="true"></i>{{ issue_data.page_count }} {{ _('affected page(s)') }}
                                     </p>
                                 </div>
 
@@ -433,7 +433,7 @@
                             {% endfor %}
                         {% else %}
                         <div class="alert alert-success">
-                            <i class="bi bi-check-circle" aria-hidden="true"></i> No issues found!
+                            <i class="bi bi-check-circle" aria-hidden="true"></i> {{ _('No issues found!') }}
                         </div>
                         {% endif %}
                     </div>

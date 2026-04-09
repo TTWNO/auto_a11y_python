@@ -1,4 +1,11 @@
-<button type="button" id="theme-toggle" class="theme-toggle" aria-label="Color theme: automatic. Switch to light.">
+<button type="button" id="theme-toggle" class="theme-toggle"
+    aria-label="{{ _('Color theme: automatic. Switch to light.') }}"
+    data-label-auto="{{ _('Color theme: automatic. Switch to light.') }}"
+    data-label-light="{{ _('Color theme: light. Switch to dark.') }}"
+    data-label-dark="{{ _('Color theme: dark. Switch to automatic.') }}"
+    data-announce-auto="{{ _('Color theme changed to automatic.') }}"
+    data-announce-light="{{ _('Color theme changed to light.') }}"
+    data-announce-dark="{{ _('Color theme changed to dark.') }}">
     <span data-theme-icon="auto" aria-hidden="true">&#x25D0;</span>
     <span data-theme-icon="light" aria-hidden="true" hidden>&#x2600;</span>
     <span data-theme-icon="dark" aria-hidden="true" hidden>&#x263D;</span>

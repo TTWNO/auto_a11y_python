@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Drupal Sync - {{ project.name }} - Auto A11y{% endblock %}
+{% block title %}{{ _('Drupal Sync') }} - {{ project.name }} - Auto A11y{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -8,15 +8,15 @@
         <div class="col">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{ url_for('projects.list_projects') }}">Projects</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('projects.list_projects') }}">{{ _('Projects') }}</a></li>
                     <li class="breadcrumb-item"><a href="{{ url_for('projects.view_project', project_id=project.id) }}">{{ project.name }}</a></li>
-                    <li class="breadcrumb-item active">Drupal Sync</li>
+                    <li class="breadcrumb-item active">{{ _('Drupal Sync') }}</li>
                 </ol>
             </nav>
             <h1>
-                <i class="bi bi-cloud-arrow-up-down" aria-hidden="true"></i> Drupal Synchronization
+                <i class="bi bi-cloud-arrow-up-down" aria-hidden="true"></i> {{ _('Drupal Synchronization') }}
             </h1>
-            <p class="text-muted">Manage synchronization between Auto A11y and Drupal for {{ project.name }}</p>
+            <p class="text-muted">{{ _('Manage synchronization between Auto A11y and Drupal for') }} {{ project.name }}</p>
         </div>
     </div>
 
@@ -26,8 +26,8 @@
             <div class="card">
                 <div class="card-body text-center">
                     <dl class="mb-0">
-                        <dt class="text-muted">Drupal Audit</dt>
-                        <dd class="mb-0" id="drupalAuditName">Loading...</dd>
+                        <dt class="text-muted">{{ _('Drupal Audit') }}</dt>
+                        <dd class="mb-0" id="drupalAuditName">{{ _('Loading...') }}</dd>
                     </dl>
                 </div>
             </div>
@@ -36,10 +36,10 @@
             <div class="card">
                 <div class="card-body text-center">
                     <dl class="mb-0">
-                        <dt class="text-muted">Discovered Pages</dt>
+                        <dt class="text-muted">{{ _('Discovered Pages') }}</dt>
                         <dd class="mb-0"><span class="text-success" id="pagesSynced">0</span> / <span id="pagesTotal">0</span></dd>
                     </dl>
-                    <small class="text-muted"><span id="pagesPending">0</span> pending</small>
+                    <small class="text-muted"><span id="pagesPending">0</span> {{ _('pending') }}</small>
                 </div>
             </div>
         </div>
@@ -47,10 +47,10 @@
             <div class="card">
                 <div class="card-body text-center">
                     <dl class="mb-0">
-                        <dt class="text-muted">Recordings</dt>
+                        <dt class="text-muted">{{ _('Recordings') }}</dt>
                         <dd class="mb-0"><span class="text-success" id="recordingsSynced">0</span> / <span id="recordingsTotal">0</span></dd>
                     </dl>
-                    <small class="text-muted"><span id="recordingsPending">0</span> pending</small>
+                    <small class="text-muted"><span id="recordingsPending">0</span> {{ _('pending') }}</small>
                 </div>
             </div>
         </div>
@@ -58,8 +58,8 @@
             <div class="card">
                 <div class="card-body text-center">
                     <dl class="mb-0">
-                        <dt class="text-muted">Last Sync</dt>
-                        <dd class="mb-0" id="lastSyncTime">Never</dd>
+                        <dt class="text-muted">{{ _('Last Sync') }}</dt>
+                        <dd class="mb-0" id="lastSyncTime">{{ _('Never') }}</dd>
                     </dl>
                 </div>
             </div>
@@ -71,13 +71,13 @@
         <div class="col">
             <div class="btn-group" role="group">
                 <button type="button" class="btn btn-primary" onclick="showPullTab()">
-                    <i class="bi bi-cloud-arrow-down" aria-hidden="true"></i> Pull from Drupal
+                    <i class="bi bi-cloud-arrow-down" aria-hidden="true"></i> {{ _('Pull from Drupal') }}
                 </button>
                 <button type="button" class="btn btn-success" onclick="showPushTab()">
-                    <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i> Push to Drupal
+                    <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i> {{ _('Push to Drupal') }}
                 </button>
                 <button type="button" class="btn btn-outline-secondary" onclick="loadSyncStatus()">
-                    <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Refresh
+                    <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> {{ _('Refresh') }}
                 </button>
             </div>
         </div>
@@ -87,17 +87,17 @@
     <ul class="nav nav-tabs mb-4" id="syncTabs" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link active" id="pull-tab" data-bs-toggle="tab" data-bs-target="#pull" type="button" role="tab">
-                <i class="bi bi-cloud-arrow-down" aria-hidden="true"></i> Pull from Drupal
+                <i class="bi bi-cloud-arrow-down" aria-hidden="true"></i> {{ _('Pull from Drupal') }}
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="push-tab" data-bs-toggle="tab" data-bs-target="#push" type="button" role="tab">
-                <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i> Push to Drupal
+                <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i> {{ _('Push to Drupal') }}
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab">
-                <i class="bi bi-clock-history" aria-hidden="true"></i> Sync History
+                <i class="bi bi-clock-history" aria-hidden="true"></i> {{ _('Sync History') }}
             </button>
         </li>
     </ul>
@@ -107,7 +107,7 @@
         <div class="tab-pane fade show active" id="pull" role="tabpanel">
             <div class="card">
                 <div class="card-header">
-                    <h2 class="mb-0">Pull Discovered Pages from Drupal</h2>
+                    <h2 class="mb-0">{{ _('Pull Discovered Pages from Drupal') }}</h2>
                 </div>
                 <div class="card-body">
                     <div id="importAlert" class="alert alert-info" style="display: none;">
@@ -115,16 +115,16 @@
                         <span id="importAlertMessage"></span>
                     </div>
 
-                    <h3>What this will do:</h3>
+                    <h3>{{ _('What this will do:') }}</h3>
                     <ul>
-                        <li>Fetch all discovered pages associated with this audit in Drupal</li>
-                        <li>Import them into your local Auto A11y project</li>
-                        <li>Preserve page metadata (URL, title, description, etc.)</li>
-                        <li>Update existing pages if they already exist locally</li>
+                        <li>{{ _('Fetch all discovered pages associated with this audit in Drupal') }}</li>
+                        <li>{{ _('Import them into your local Auto A11y project') }}</li>
+                        <li>{{ _('Preserve page metadata (URL, title, description, etc.)') }}</li>
+                        <li>{{ _('Update existing pages if they already exist locally') }}</li>
                     </ul>
 
                     <button type="button" class="btn btn-primary" id="importPagesBtn" onclick="importDiscoveredPages()">
-                        <i class="bi bi-cloud-arrow-down" aria-hidden="true"></i> Pull Discovered Pages
+                        <i class="bi bi-cloud-arrow-down" aria-hidden="true"></i> {{ _('Pull Discovered Pages') }}
                     </button>
 
                     <!-- Progress Display -->
@@ -134,18 +134,18 @@
                                  role="progressbar" style="width: 0%"></div>
                         </div>
                         <div class="mt-2">
-                            <small id="importProgressText" class="text-muted">Starting import...</small>
+                            <small id="importProgressText" class="text-muted">{{ _('Starting import...') }}</small>
                         </div>
                     </div>
 
                     <!-- Results Display -->
                     <div id="importResults" class="mt-3" style="display: none;">
                         <div class="alert alert-success">
-                            <h3><i class="bi bi-check-circle" aria-hidden="true"></i> Import Complete</h3>
+                            <h3><i class="bi bi-check-circle" aria-hidden="true"></i> {{ _('Import Complete') }}</h3>
                             <ul class="mb-0">
-                                <li><strong>Imported:</strong> <span id="importedCount">0</span> new pages</li>
-                                <li><strong>Updated:</strong> <span id="updatedCount">0</span> existing pages</li>
-                                <li><strong>Total:</strong> <span id="totalCount">0</span> pages processed</li>
+                                <li><strong>{{ _('Imported:') }}</strong> <span id="importedCount">0</span> {{ _('new pages') }}</li>
+                                <li><strong>{{ _('Updated:') }}</strong> <span id="updatedCount">0</span> {{ _('existing pages') }}</li>
+                                <li><strong>{{ _('Total:') }}</strong> <span id="totalCount">0</span> {{ _('pages processed') }}</li>
                             </ul>
                         </div>
                     </div>
@@ -157,7 +157,7 @@
         <div class="tab-pane fade" id="push" role="tabpanel">
             <div class="card">
                 <div class="card-header">
-                    <h2 class="mb-0">Push Content to Drupal</h2>
+                    <h2 class="mb-0">{{ _('Push Content to Drupal') }}</h2>
                 </div>
                 <div class="card-body">
                     <!-- Discovered Pages -->
@@ -165,17 +165,17 @@
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <div>
                                 <input type="checkbox" id="selectAllPages" checked>
-                                <strong class="ms-2">Discovered Pages (<span id="pushPagesCount">0</span>)</strong>
+                                <strong class="ms-2">{{ _('Discovered Pages') }} (<span id="pushPagesCount">0</span>)</strong>
                             </div>
                             <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshPushLists()">
-                                <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Refresh
+                                <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> {{ _('Refresh') }}
                             </button>
                         </div>
                         <div class="card-body" style="max-height: 400px; overflow-y: auto;">
                             <div id="pushPagesList">
                                 <div class="text-center py-3">
                                     <div class="spinner-border text-primary" role="status">
-                                        <span class="visually-hidden">Loading...</span>
+                                        <span class="visually-hidden">{{ _('Loading...') }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -186,13 +186,13 @@
                     <div class="card mb-3">
                         <div class="card-header">
                             <input type="checkbox" id="selectAllRecordings" checked>
-                            <strong class="ms-2">Recordings (<span id="pushRecordingsCount">0</span>)</strong>
+                            <strong class="ms-2">{{ _('Recordings') }} (<span id="pushRecordingsCount">0</span>)</strong>
                         </div>
                         <div class="card-body" style="max-height: 400px; overflow-y: auto;">
                             <div id="pushRecordingsList">
                                 <div class="text-center py-3">
                                     <div class="spinner-border text-primary" role="status">
-                                        <span class="visually-hidden">Loading...</span>
+                                        <span class="visually-hidden">{{ _('Loading...') }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -202,17 +202,16 @@
                     <!-- Upload Options -->
                     <div class="card mb-3">
                         <div class="card-header">
-                            <strong><i class="bi bi-gear" aria-hidden="true"></i> Upload Options</strong>
+                            <strong><i class="bi bi-gear" aria-hidden="true"></i> {{ _('Upload Options') }}</strong>
                         </div>
                         <div class="card-body">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="includeFrenchContent">
                                 <label class="form-check-label" for="includeFrenchContent">
-                                    <strong>Include French Content</strong>
+                                    <strong>{{ _('Include French Content') }}</strong>
                                     <br>
                                     <small class="text-muted">
-                                        Include French translations in recording uploads (if available).
-                                        Defaults to English-only. French content will only be included if available for each recording.
+                                        {{ _('Include French translations in recording uploads (if available). Defaults to English-only. French content will only be included if available for each recording.') }}
                                     </small>
                                 </label>
                             </div>
@@ -223,56 +222,56 @@
                     <div class="card mb-3">
                         <div class="card-header">
                             <input type="checkbox" id="includeAutomatedTests" checked>
-                            <strong class="ms-2"><i class="bi bi-lightning-charge" aria-hidden="true"></i> Automated Test Results</strong>
+                            <strong class="ms-2"><i class="bi bi-lightning-charge" aria-hidden="true"></i> {{ _('Automated Test Results') }}</strong>
                         </div>
                         <div class="card-body">
                             <!-- Filters -->
                             <div class="row mb-3">
                                 <div class="col-md-4">
-                                    <label class="form-label">Filter by Page</label>
+                                    <label class="form-label">{{ _('Filter by Page') }}</label>
                                     <select id="automatedTestPageFilter" class="form-select" multiple size="4">
-                                        <option value="">All Pages</option>
+                                        <option value="">{{ _('All Pages') }}</option>
                                     </select>
-                                    <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple</small>
+                                    <small class="form-text text-muted">{{ _('Hold Ctrl/Cmd to select multiple') }}</small>
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label">Filter by Touchpoint</label>
+                                    <label class="form-label">{{ _('Filter by Touchpoint') }}</label>
                                     <select id="automatedTestTouchpointFilter" class="form-select" multiple size="4">
-                                        <option value="">All Touchpoints</option>
+                                        <option value="">{{ _('All Touchpoints') }}</option>
                                     </select>
-                                    <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple</small>
+                                    <small class="form-text text-muted">{{ _('Hold Ctrl/Cmd to select multiple') }}</small>
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label">Filter by WCAG SC</label>
+                                    <label class="form-label">{{ _('Filter by WCAG SC') }}</label>
                                     <select id="automatedTestWcagFilter" class="form-select" multiple size="4">
-                                        <option value="">All WCAG Criteria</option>
+                                        <option value="">{{ _('All WCAG Criteria') }}</option>
                                     </select>
-                                    <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple</small>
+                                    <small class="form-text text-muted">{{ _('Hold Ctrl/Cmd to select multiple') }}</small>
                                 </div>
                             </div>
 
                             <!-- Filter Actions -->
                             <div class="d-flex gap-2 mb-3">
                                 <button type="button" class="btn btn-primary btn-sm" onclick="applyAutomatedTestFilters()">
-                                    <i class="bi bi-funnel" aria-hidden="true"></i> Apply Filters
+                                    <i class="bi bi-funnel" aria-hidden="true"></i> {{ _('Apply Filters') }}
                                 </button>
                                 <button type="button" class="btn btn-secondary btn-sm" onclick="clearAutomatedTestFilters()">
-                                    <i class="bi bi-x-circle" aria-hidden="true"></i> Clear Filters
+                                    <i class="bi bi-x-circle" aria-hidden="true"></i> {{ _('Clear Filters') }}
                                 </button>
                             </div>
 
                             <!-- Summary -->
                             <div id="automatedTestSummary" class="alert alert-info">
                                 <div class="spinner-border spinner-border-sm" role="status">
-                                    <span class="visually-hidden">Loading...</span>
+                                    <span class="visually-hidden">{{ _('Loading...') }}</span>
                                 </div>
-                                <span class="ms-2">Loading automated test results...</span>
+                                <span class="ms-2">{{ _('Loading automated test results...') }}</span>
                             </div>
                         </div>
                     </div>
 
                     <button type="button" class="btn btn-success btn-lg" onclick="startPush()">
-                        <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i> Push Selected Items to Drupal
+                        <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i> {{ _('Push Selected Items to Drupal') }}
                     </button>
                 </div>
             </div>
@@ -280,7 +279,7 @@
             <!-- Push Progress (hidden initially) -->
             <div class="card mt-4" id="pushProgressCard" style="display: none;">
                 <div class="card-header">
-                    <h2 class="mb-0">Upload Progress</h2>
+                    <h2 class="mb-0">{{ _('Upload Progress') }}</h2>
                 </div>
                 <div class="card-body">
                     <div class="progress mb-3" style="height: 30px;">
@@ -292,7 +291,7 @@
 
                     <div class="card">
                         <div class="card-header">
-                            <strong>Upload Log</strong>
+                            <strong>{{ _('Upload Log') }}</strong>
                         </div>
                         <div class="card-body" style="max-height: 400px; overflow-y: auto;">
                             <div id="pushLog" class="font-monospace small">
@@ -308,12 +307,12 @@
         <div class="tab-pane fade" id="history" role="tabpanel">
             <div class="card">
                 <div class="card-header">
-                    <h2 class="mb-0">Synchronization History</h2>
+                    <h2 class="mb-0">{{ _('Synchronization History') }}</h2>
                 </div>
                 <div class="card-body">
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle" aria-hidden="true"></i>
-                        <strong>Coming Soon:</strong> This will show a detailed history of all synchronization operations for this project.
+                        <strong>{{ _('Coming Soon:') }}</strong> {{ _('This will show a detailed history of all synchronization operations for this project.') }}
                     </div>
                 </div>
             </div>
@@ -388,7 +387,7 @@ function renderPushPagesList() {
     document.getElementById('pushPagesCount').textContent = discoveredPages.length;
 
     if (discoveredPages.length === 0) {
-        container.innerHTML = '<p class="text-muted">No discovered pages found.</p>';
+        container.innerHTML = '<p class="text-muted">{{ _("No discovered pages found.") }}</p>';
         return;
     }
 
@@ -399,8 +398,8 @@ function renderPushPagesList() {
                    ${page.needs_sync ? 'checked' : ''}>
             <label class="form-check-label" for="page_${page.id}">
                 <strong>${page.title}</strong>
-                ${page.is_synced ? '<span class="badge bg-success ms-2">Synced</span>' : ''}
-                ${page.drupal_sync_status === 'sync_failed' ? '<span class="badge bg-danger ms-2">Failed</span>' : ''}
+                ${page.is_synced ? '<span class="badge bg-success ms-2">{{ _("Synced") }}</span>' : ''}
+                ${page.drupal_sync_status === 'sync_failed' ? '<span class="badge bg-danger ms-2">{{ _("Failed") }}</span>' : ''}
                 <br>
                 <small class="text-muted">${page.url}</small>
             </label>
@@ -419,7 +418,7 @@ function renderPushRecordingsList() {
     document.getElementById('pushRecordingsCount').textContent = recordings.length;
 
     if (recordings.length === 0) {
-        container.innerHTML = '<p class="text-muted">No recordings found.</p>';
+        container.innerHTML = '<p class="text-muted">{{ _("No recordings found.") }}</p>';
         return;
     }
 
@@ -430,13 +429,13 @@ function renderPushRecordingsList() {
                    ${recording.needs_sync ? 'checked' : ''}>
             <label class="form-check-label" for="recording_${recording.id}">
                 <strong>${recording.title}</strong>
-                ${recording.is_synced ? '<span class="badge bg-success ms-2">Synced</span>' : ''}
-                ${recording.drupal_sync_status === 'sync_failed' ? '<span class="badge bg-danger ms-2">Failed</span>' : ''}
+                ${recording.is_synced ? '<span class="badge bg-success ms-2">{{ _("Synced") }}</span>' : ''}
+                ${recording.drupal_sync_status === 'sync_failed' ? '<span class="badge bg-danger ms-2">{{ _("Failed") }}</span>' : ''}
                 <br>
                 <small class="text-muted">
-                    ${recording.duration || 'Unknown duration'}
+                    ${recording.duration || '{{ _("Unknown duration") }}'}
                     ${recording.auditor_name ? `• ${recording.auditor_name}` : ''}
-                    ${recording.total_issues > 0 ? `• ${recording.total_issues} issues` : ''}
+                    ${recording.total_issues > 0 ? `• ${recording.total_issues} {{ _("issues") }}` : ''}
                 </small>
             </label>
         </div>
@@ -462,7 +461,7 @@ async function startPush() {
     const includeFrenchContent = document.getElementById('includeFrenchContent').checked;
 
     if (selectedPageIds.length === 0 && selectedRecordingIds.length === 0 && !includeAutomatedTests) {
-        alert('Please select at least one item to upload.');
+        alert('{{ _("Please select at least one item to upload.") }}');
         return;
     }
 
@@ -523,7 +522,7 @@ async function startPush() {
         console.error('Push error:', error);
         document.getElementById('pushLog').innerHTML += `
             <div class="text-danger">
-                <strong>Error:</strong> ${error.message}
+                <strong>{{ _("Error:") }}</strong> ${error.message}
             </div>
         `;
     }
@@ -550,7 +549,7 @@ function handlePushMessage(data, totalItems) {
     } else if (data.type === 'error') {
         log.innerHTML += `<div class="text-danger">[${data.current}/${data.total}] ✗ ${data.item}: ${data.error}</div>`;
     } else if (data.type === 'complete') {
-        log.innerHTML += `<div class="text-success mt-3"><strong>✓ Upload complete!</strong></div>`;
+        log.innerHTML += `<div class="text-success mt-3"><strong>{{ _("Upload complete!") }}</strong></div>`;
     }
 
     log.scrollTop = log.scrollHeight;
@@ -578,7 +577,7 @@ async function importDiscoveredPages() {
 
     // Disable button and show progress
     btn.disabled = true;
-    btn.innerHTML = '<i class="bi bi-hourglass-split" aria-hidden="true"></i> Importing...';
+    btn.innerHTML = '<i class="bi bi-hourglass-split" aria-hidden="true"></i> {{ _("Importing...") }}';
     progress.style.display = 'block';
 
     try {
@@ -647,19 +646,19 @@ async function importDiscoveredPages() {
 
         // Re-enable button
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-cloud-arrow-down" aria-hidden="true"></i> Pull Discovered Pages';
+        btn.innerHTML = '<i class="bi bi-cloud-arrow-down" aria-hidden="true"></i> {{ _("Pull Discovered Pages") }}';
 
     } catch (error) {
         console.error('Import error:', error);
 
         // Show error alert
         alert.className = 'alert alert-danger';
-        alert.querySelector('#importAlertMessage').textContent = `Import failed: ${error.message}`;
+        alert.querySelector('#importAlertMessage').textContent = `{{ _("Import failed:") }} ${error.message}`;
         alert.style.display = 'block';
 
         progress.style.display = 'none';
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-cloud-arrow-down" aria-hidden="true"></i> Pull Discovered Pages';
+        btn.innerHTML = '<i class="bi bi-cloud-arrow-down" aria-hidden="true"></i> {{ _("Pull Discovered Pages") }}';
     }
 }
 
@@ -692,7 +691,7 @@ async function loadAutomatedTestFilters() {
         const data = await response.json();
 
         // Populate page filter
-        pageFilter.innerHTML = '<option value="">All Pages</option>';
+        pageFilter.innerHTML = '<option value="">{{ _("All Pages") }}</option>';
         data.pages.forEach(page => {
             const option = document.createElement('option');
             option.value = page.url;
@@ -701,7 +700,7 @@ async function loadAutomatedTestFilters() {
         });
 
         // Populate touchpoint filter
-        touchpointFilter.innerHTML = '<option value="">All Touchpoints</option>';
+        touchpointFilter.innerHTML = '<option value="">{{ _("All Touchpoints") }}</option>';
         data.touchpoints.forEach(tp => {
             const option = document.createElement('option');
             option.value = tp;
@@ -710,7 +709,7 @@ async function loadAutomatedTestFilters() {
         });
 
         // Populate WCAG filter
-        wcagFilter.innerHTML = '<option value="">All WCAG Criteria</option>';
+        wcagFilter.innerHTML = '<option value="">{{ _("All WCAG Criteria") }}</option>';
         data.wcag_criteria.forEach(wc => {
             const option = document.createElement('option');
             option.value = wc;
@@ -725,14 +724,14 @@ async function loadAutomatedTestFilters() {
         automatedTestStats.filteredIssues = data.total_issues;
 
         summaryDiv.innerHTML = `
-            <strong>Total:</strong> ${data.total_pages} pages with ${data.total_issues} issues
+            <strong>{{ _("Total:") }}</strong> ${data.total_pages} {{ _("pages with") }} ${data.total_issues} {{ _("issues") }}
             <br>
-            <strong>Filtered:</strong> <span id="filteredCount">${data.total_pages} pages with ${data.total_issues} issues</span>
+            <strong>{{ _("Filtered:") }}</strong> <span id="filteredCount">${data.total_pages} {{ _("pages with") }} ${data.total_issues} {{ _("issues") }}</span>
         `;
 
     } catch (error) {
         console.error('Error loading automated test filters:', error);
-        summaryDiv.innerHTML = `<span class="text-danger">Error loading test results: ${error.message}</span>`;
+        summaryDiv.innerHTML = `<span class="text-danger">{{ _("Error loading test results:") }} ${error.message}</span>`;
     }
 }
 
@@ -756,9 +755,9 @@ async function applyAutomatedTestFilters() {
     // Show loading
     summaryDiv.innerHTML = `
         <div class="spinner-border spinner-border-sm" role="status">
-            <span class="visually-hidden">Loading...</span>
+            <span class="visually-hidden">{{ _("Loading...") }}</span>
         </div>
-        <span class="ms-2">Applying filters...</span>
+        <span class="ms-2">{{ _("Applying filters...") }}</span>
     `;
 
     try {
@@ -776,14 +775,14 @@ async function applyAutomatedTestFilters() {
         automatedTestStats.filteredIssues = data.total_violations;
 
         summaryDiv.innerHTML = `
-            <strong>Total:</strong> ${automatedTestStats.totalPages} pages with ${automatedTestStats.totalIssues} issues
+            <strong>{{ _("Total:") }}</strong> ${automatedTestStats.totalPages} {{ _("pages with") }} ${automatedTestStats.totalIssues} {{ _("issues") }}
             <br>
-            <strong>Filtered:</strong> <span class="text-primary">${data.total_pages} pages with ${data.total_violations} issues</span>
+            <strong>{{ _("Filtered:") }}</strong> <span class="text-primary">${data.total_pages} {{ _("pages with") }} ${data.total_violations} {{ _("issues") }}</span>
         `;
 
     } catch (error) {
         console.error('Error applying filters:', error);
-        summaryDiv.innerHTML = `<span class="text-danger">Error applying filters: ${error.message}</span>`;
+        summaryDiv.innerHTML = `<span class="text-danger">{{ _("Error applying filters:") }} ${error.message}</span>`;
     }
 }
 
@@ -801,9 +800,9 @@ function clearAutomatedTestFilters() {
 
     const summaryDiv = document.getElementById('automatedTestSummary');
     summaryDiv.innerHTML = `
-        <strong>Total:</strong> ${automatedTestStats.totalPages} pages with ${automatedTestStats.totalIssues} issues
+        <strong>{{ _("Total:") }}</strong> ${automatedTestStats.totalPages} {{ _("pages with") }} ${automatedTestStats.totalIssues} {{ _("issues") }}
         <br>
-        <strong>Filtered:</strong> ${automatedTestStats.totalPages} pages with ${automatedTestStats.totalIssues} issues
+        <strong>{{ _("Filtered:") }}</strong> ${automatedTestStats.totalPages} {{ _("pages with") }} ${automatedTestStats.totalIssues} {{ _("issues") }}
     `;
 }
 

@@ -1,5 +1,6 @@
 """Membership management routes for project access control."""
 from flask import Blueprint, request, jsonify, current_app
+from flask_babel import gettext as _
 from flask_login import current_user
 
 from auto_a11y.core.permissions import permission_required
@@ -13,7 +14,7 @@ def list_project_members(project_id):
     """List members of a project with their groups."""
     project = current_app.db.get_project(project_id)
     if not project:
-        return jsonify({'error': 'Project not found'}), 404
+        return jsonify({'error': _('Project not found')}), 404
 
     all_groups = current_app.db.get_all_groups()
     group_map = {g.id: g for g in all_groups}
@@ -45,24 +46,24 @@ def add_project_member(project_id):
     """Add a member to a project with group assignments."""
     project = current_app.db.get_project(project_id)
     if not project:
-        return jsonify({'error': 'Project not found'}), 404
+        return jsonify({'error': _('Project not found')}), 404
 
     data = request.get_json() or request.form
     user_id = data.get('user_id')
     group_ids = data.getlist('group_ids') if hasattr(data, 'getlist') else data.get('group_ids', [])
 
     if not user_id:
-        return jsonify({'error': 'user_id is required'}), 400
+        return jsonify({'error': _('user_id is required')}), 400
 
     user = current_app.db.get_app_user(user_id)
     if not user:
-        return jsonify({'error': 'User not found'}), 404
+        return jsonify({'error': _('User not found')}), 404
 
     if not group_ids:
-        return jsonify({'error': 'At least one group is required'}), 400
+        return jsonify({'error': _('At least one group is required')}), 400
 
     current_app.db.add_project_member(project_id, user_id, group_ids)
-    return jsonify({'success': True, 'message': f'Added {user.email}'})
+    return jsonify({'success': True, 'message': _('Added %(email)s', email=user.email)})
 
 
 @members_bp.route('/projects/<project_id>/members/<user_id>', methods=['PUT'])
@@ -71,13 +72,13 @@ def update_project_member(project_id, user_id):
     """Update a member's group assignments."""
     project = current_app.db.get_project(project_id)
     if not project:
-        return jsonify({'error': 'Project not found'}), 404
+        return jsonify({'error': _('Project not found')}), 404
 
     data = request.get_json() or request.form
     group_ids = data.getlist('group_ids') if hasattr(data, 'getlist') else data.get('group_ids', [])
 
     if not group_ids:
-        return jsonify({'error': 'At least one group is required'}), 400
+        return jsonify({'error': _('At least one group is required')}), 400
 
     current_app.db.update_project_member_groups(project_id, user_id, group_ids)
     return jsonify({'success': True})
@@ -88,11 +89,11 @@ def update_project_member(project_id, user_id):
 def remove_project_member(project_id, user_id):
     """Remove a member from a project."""
     if user_id == str(current_user.get_id()):
-        return jsonify({'error': 'Cannot remove yourself'}), 400
+        return jsonify({'error': _('Cannot remove yourself')}), 400
 
     project = current_app.db.get_project(project_id)
     if not project:
-        return jsonify({'error': 'Project not found'}), 404
+        return jsonify({'error': _('Project not found')}), 404
 
     current_app.db.remove_project_member(project_id, user_id)
     return jsonify({'success': True})

@@ -367,28 +367,42 @@ class PageStructureReport:
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
     <style>
+        /* Tree structure - uses <ul>/<li> with ARIA tree roles */
         .tree {{
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             line-height: 1.8;
         }}
-        .tree-node {{
+        .tree[role="tree"],
+        .tree [role="group"] {{
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }}
+        .tree [role="group"] {{
+            margin-left: 35px;
+            padding-left: 10px;
+            border-left: 1px solid #e0e0e0;
+        }}
+        .tree[role="tree"] > [role="treeitem"] > [role="group"] {{
+            margin-left: 0;
+            padding-left: 0;
+            border-left: none;
+        }}
+        .tree-node-content {{
             padding: 4px 0;
             margin: 2px 0;
             border-radius: 4px;
             transition: background-color 0.2s;
         }}
-        .tree-node:hover {{
+        .tree-node-content:hover {{
             background-color: rgba(0, 123, 255, 0.05);
         }}
-        .tree-children {{
-            margin-left: 35px;
-            padding-left: 10px;
-            border-left: 1px solid #e0e0e0;
+        [role="treeitem"]:focus > .tree-node-content {{
+            outline: 2px solid #0d6efd;
+            outline-offset: 1px;
         }}
-        .tree-root > .tree-children {{
-            margin-left: 0;
-            padding-left: 0;
-            border-left: none;
+        [role="treeitem"]:focus {{
+            outline: none;
         }}
         .node-toggle {{
             cursor: pointer;
@@ -403,7 +417,7 @@ class PageStructureReport:
             transition: transform 0.2s ease;
             transform-origin: center;
         }}
-        .node-toggle.expanded {{
+        [role="treeitem"][aria-expanded="true"] > .tree-node-content > .node-toggle {{
             transform: rotate(90deg);
         }}
         .node-toggle:hover {{
@@ -444,8 +458,8 @@ class PageStructureReport:
             margin-left: 6px;
             padding: 2px 6px;
         }}
-        .tree-collapsed {{
-            display: none !important;
+        [role="treeitem"][aria-expanded="false"] > [role="group"] {{
+            display: none;
         }}
         .legend {{
             border: 1px solid #ddd;
@@ -458,12 +472,8 @@ class PageStructureReport:
             margin: 5px 0;
         }}
         /* Directory nodes should be bold */
-        .tree-node.is-directory > .node-name {{
+        [role="treeitem"].is-directory > .tree-node-content > .node-name {{
             font-weight: 600;
-        }}
-        /* Add some visual hierarchy */
-        .tree-children .tree-children {{
-            opacity: 0.95;
         }}
         /* Improve button styling */
         .btn-outline-primary, .btn-outline-secondary {{
@@ -542,10 +552,10 @@ class PageStructureReport:
             <div class="col-md-8">
                 <div class="card">
                     <div class="card-body">
-                        <h5 class="card-title" data-i18n="site_structure_tree">{t['site_structure_tree']}</h5>
-                        <div class="tree tree-root" id="tree-container">
+                        <h5 class="card-title" id="tree-label" data-i18n="site_structure_tree">{t['site_structure_tree']}</h5>
+                        <ul class="tree" role="tree" aria-labelledby="tree-label" id="tree-container">
                             {self._generate_tree_html(self.root, t=t)}
-                        </div>
+                        </ul>
                     </div>
                 </div>
             </div>
@@ -586,37 +596,146 @@ class PageStructureReport:
             }}
         }}
 
-        function toggleNode(nodeId) {{
-            const node = document.getElementById(nodeId);
-            const toggleId = nodeId.replace('-children', '');
-            const toggle = document.getElementById('toggle-' + toggleId);
+        // --- Accessible Tree View (WAI-ARIA Tree View Pattern) ---
 
-            if (node.classList.contains('tree-collapsed')) {{
-                // Expanding
-                node.classList.remove('tree-collapsed');
-                toggle.classList.add('expanded');
-            }} else {{
-                // Collapsing
-                node.classList.add('tree-collapsed');
-                toggle.classList.remove('expanded');
+        const tree = document.getElementById('tree-container');
+
+        // Get all visible treeitems in DOM order
+        function getVisibleTreeItems() {{
+            return Array.from(tree.querySelectorAll('[role="treeitem"]')).filter(item => {{
+                // An item is visible if none of its ancestor groups are collapsed
+                let parent = item.parentElement;
+                while (parent && parent !== tree) {{
+                    if (parent.getAttribute('role') === 'group') {{
+                        const parentItem = parent.closest('[role="treeitem"]');
+                        if (parentItem && parentItem.getAttribute('aria-expanded') === 'false') {{
+                            return false;
+                        }}
+                    }}
+                    parent = parent.parentElement;
+                }}
+                return true;
+            }});
+        }}
+
+        function setFocus(item) {{
+            // Roving tabindex: remove tabindex from current, set on new
+            const current = tree.querySelector('[role="treeitem"][tabindex="0"]');
+            if (current) current.setAttribute('tabindex', '-1');
+            item.setAttribute('tabindex', '0');
+            item.focus();
+        }}
+
+        function toggleItem(item) {{
+            const expanded = item.getAttribute('aria-expanded');
+            if (expanded === null) return; // leaf node
+            item.setAttribute('aria-expanded', expanded === 'true' ? 'false' : 'true');
+        }}
+
+        function expandItem(item) {{
+            if (item.getAttribute('aria-expanded') !== null) {{
+                item.setAttribute('aria-expanded', 'true');
             }}
         }}
 
+        function collapseItem(item) {{
+            if (item.getAttribute('aria-expanded') !== null) {{
+                item.setAttribute('aria-expanded', 'false');
+            }}
+        }}
+
+        // Keyboard navigation
+        tree.addEventListener('keydown', function(e) {{
+            const target = e.target.closest('[role="treeitem"]');
+            if (!target) return;
+
+            const items = getVisibleTreeItems();
+            const index = items.indexOf(target);
+            let handled = true;
+
+            switch (e.key) {{
+                case 'ArrowDown':
+                    if (index < items.length - 1) setFocus(items[index + 1]);
+                    break;
+                case 'ArrowUp':
+                    if (index > 0) setFocus(items[index - 1]);
+                    break;
+                case 'ArrowRight':
+                    if (target.getAttribute('aria-expanded') === 'false') {{
+                        expandItem(target);
+                    }} else if (target.getAttribute('aria-expanded') === 'true') {{
+                        // Move to first child
+                        const group = target.querySelector('[role="group"]');
+                        if (group) {{
+                            const firstChild = group.querySelector('[role="treeitem"]');
+                            if (firstChild) setFocus(firstChild);
+                        }}
+                    }}
+                    break;
+                case 'ArrowLeft':
+                    if (target.getAttribute('aria-expanded') === 'true') {{
+                        collapseItem(target);
+                    }} else {{
+                        // Move to parent treeitem
+                        const parentGroup = target.parentElement.closest('[role="treeitem"]');
+                        if (parentGroup) setFocus(parentGroup);
+                    }}
+                    break;
+                case 'Enter':
+                case ' ':
+                    if (target.getAttribute('aria-expanded') !== null) {{
+                        toggleItem(target);
+                    }} else {{
+                        // Activate link if it's a leaf node
+                        const link = target.querySelector('.node-url');
+                        if (link) link.click();
+                    }}
+                    break;
+                case 'Home':
+                    if (items.length > 0) setFocus(items[0]);
+                    break;
+                case 'End':
+                    if (items.length > 0) setFocus(items[items.length - 1]);
+                    break;
+                case '*':
+                    // Expand all siblings at this level
+                    const parentGroup = target.parentElement;
+                    if (parentGroup) {{
+                        parentGroup.querySelectorAll(':scope > [role="treeitem"][aria-expanded]').forEach(item => {{
+                            item.setAttribute('aria-expanded', 'true');
+                        }});
+                    }}
+                    break;
+                default:
+                    handled = false;
+            }}
+
+            if (handled) {{
+                e.preventDefault();
+                e.stopPropagation();
+            }}
+        }});
+
+        // Click to toggle expand/collapse
+        tree.addEventListener('click', function(e) {{
+            const toggle = e.target.closest('.node-toggle');
+            if (!toggle) return;
+            const item = toggle.closest('[role="treeitem"]');
+            if (item) {{
+                toggleItem(item);
+                setFocus(item);
+            }}
+        }});
+
         function expandAll() {{
-            document.querySelectorAll('.tree-children').forEach(node => {{
-                node.classList.remove('tree-collapsed');
-            }});
-            document.querySelectorAll('.node-toggle').forEach(toggle => {{
-                toggle.classList.add('expanded');
+            tree.querySelectorAll('[role="treeitem"][aria-expanded]').forEach(item => {{
+                item.setAttribute('aria-expanded', 'true');
             }});
         }}
 
         function collapseAll() {{
-            document.querySelectorAll('.tree-children').forEach(node => {{
-                node.classList.add('tree-collapsed');
-            }});
-            document.querySelectorAll('.node-toggle').forEach(toggle => {{
-                toggle.classList.remove('expanded');
+            tree.querySelectorAll('[role="treeitem"][aria-expanded]').forEach(item => {{
+                item.setAttribute('aria-expanded', 'false');
             }});
         }}
     </script>
@@ -627,7 +746,10 @@ class PageStructureReport:
     
     def _generate_tree_html(self, node: PageNode, node_id: str = "root", depth: int = 0, t: Dict[str, str] = None) -> str:
         """
-        Generate HTML for a tree node
+        Generate HTML for a tree node using WAI-ARIA treeview pattern.
+
+        Uses <li role="treeitem"> with aria-expanded for parent nodes
+        and <ul role="group"> for children.
 
         Args:
             node: Node to generate HTML for
@@ -641,34 +763,44 @@ class PageStructureReport:
         # Get translations if not provided
         if t is None:
             t = self._get_translations()
-        # Add class for directories
-        node_classes = 'tree-node'
+
+        has_children = bool(node.children)
+        is_expanded = depth < 2 if has_children else None
+
+        # Build <li role="treeitem"> attributes
+        li_classes = ''
         if node.is_directory:
-            node_classes += ' is-directory'
-            
-        html = f'<div class="{node_classes}">'
-        
-        # Node content
-        if node.children:
-            # Start expanded for top levels, collapsed for deeper levels
-            is_expanded = depth < 2
-            toggle_class = 'node-toggle expanded' if is_expanded else 'node-toggle'
-            html += f'<span class="{toggle_class}" id="toggle-{node_id}" onclick="toggleNode(\'{node_id}-children\')">▶</span>'
+            li_classes = ' class="is-directory"'
+
+        aria_expanded = ''
+        if has_children:
+            aria_expanded = f' aria-expanded="{"true" if is_expanded else "false"}"'
+
+        # First treeitem in the tree gets tabindex="0", all others get "-1"
+        tabindex = '0' if node_id == 'root' else '-1'
+
+        html = f'<li role="treeitem"{li_classes}{aria_expanded} tabindex="{tabindex}" id="{node_id}">'
+
+        # Node content wrapper
+        html += '<span class="tree-node-content">'
+
+        if has_children:
+            html += f'<span class="node-toggle" aria-hidden="true">▶</span>'
         else:
-            html += '<span style="display: inline-block; width: 28px;"></span>'
-        
+            html += '<span style="display: inline-block; width: 28px;" aria-hidden="true"></span>'
+
         # Icon
         if node.is_directory:
-            html += '<i class="bi bi-folder-fill text-warning node-icon"></i>'
+            html += '<i class="bi bi-folder-fill text-warning node-icon" aria-hidden="true"></i>'
         else:
-            html += '<i class="bi bi-file-earmark text-primary node-icon"></i>'
-        
+            html += '<i class="bi bi-file-earmark text-primary node-icon" aria-hidden="true"></i>'
+
         # Name/URL
         if node.url:
-            html += f'<a href="{node.url}" target="_blank" class="node-url">{node.name}</a>'
+            html += f'<a href="{node.url}" target="_blank" class="node-url" tabindex="-1">{node.name}</a>'
         else:
             html += f'<span class="node-name">{node.name}</span>'
-        
+
         # Stats badges
         if node.stats['total_pages'] > 0:
             html += '<span class="node-stats">'
@@ -681,7 +813,6 @@ class PageStructureReport:
                 html += f'<span class="badge bg-secondary stats-badge" data-i18n="not_tested">{t["not_tested"]}</span>'
 
             if node.stats['pages_with_issues'] > 0:
-                # Clarify this is counting pages, not issue types
                 page_text_key = "page_with_issues_count" if node.stats["pages_with_issues"] == 1 else "pages_with_issues_count"
                 html += f'<span class="badge bg-danger stats-badge">{node.stats["pages_with_issues"]} <span data-i18n="{page_text_key}">{t[page_text_key]}</span></span>'
 
@@ -689,18 +820,18 @@ class PageStructureReport:
                 html += f'<span class="text-danger ms-2">({node.stats["total_violations"]} <span data-i18n="total_violations_count">{t["total_violations_count"]}</span>)</span>'
 
             html += '</span>'
-        
-        html += '</div>'
-        
-        # Children
-        if node.children:
-            # Expand top levels by default
-            children_class = 'tree-children' if depth < 2 else 'tree-children tree-collapsed'
-            html += f'<div class="{children_class}" id="{node_id}-children">'
+
+        html += '</span>'  # close .tree-node-content
+
+        # Children as <ul role="group">
+        if has_children:
+            html += f'<ul role="group">'
             for i, child in enumerate(node.children):
                 child_id = f"{node_id}-{i}"
                 html += self._generate_tree_html(child, child_id, depth + 1, t)
-            html += '</div>'
+            html += '</ul>'
+
+        html += '</li>'
 
         return html
     

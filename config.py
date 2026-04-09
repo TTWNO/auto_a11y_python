@@ -96,8 +96,8 @@ class Config:
     SETTINGS_FILE: str = os.getenv('SETTINGS_FILE', '')
     AUTH_ENABLED: bool = os.getenv('AUTH_ENABLED', 'True').lower() == 'true'
 
-    # Session cookie security — only set True when serving over HTTPS
-    SESSION_COOKIE_SECURE: bool = os.getenv('SESSION_COOKIE_SECURE', 'False').lower() == 'true'
+    # Session cookie security — set False in .env when serving over HTTP (e.g. local dev)
+    SESSION_COOKIE_SECURE: bool = os.getenv('SESSION_COOKIE_SECURE', 'True').lower() == 'true'
 
     # CORS allowed origins (comma-separated, empty = no CORS)
     CORS_ORIGINS: str = os.getenv('CORS_ORIGINS', '')

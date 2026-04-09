@@ -96,6 +96,9 @@ class Config:
     SETTINGS_FILE: str = os.getenv('SETTINGS_FILE', '')
     AUTH_ENABLED: bool = os.getenv('AUTH_ENABLED', 'True').lower() == 'true'
 
+    # CORS allowed origins (comma-separated, empty = no CORS)
+    CORS_ORIGINS: str = os.getenv('CORS_ORIGINS', '')
+
     # Share token salt (must match between token creation and validation)
     TOKEN_SALT: str = 'public-share-token'
 

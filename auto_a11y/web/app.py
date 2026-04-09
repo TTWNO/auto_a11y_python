@@ -6,6 +6,7 @@ from flask import Flask, render_template, jsonify, request, session, g, redirect
 from flask_cors import CORS
 from flask_babel import Babel, format_datetime
 from flask_login import LoginManager, current_user, login_required
+from flask_wtf.csrf import CSRFProtect
 import logging
 import atexit
 
@@ -67,6 +68,12 @@ def create_app(config):
     if config.CORS_ORIGINS:
         cors_origins = [o.strip() for o in config.CORS_ORIGINS.split(',')]
         CORS(app, resources={r"/api/*": {"origins": cors_origins}})
+
+    # CSRF protection
+    csrf = CSRFProtect(app)
+    csrf.exempt(api_bp)     # API uses token auth, not session cookies
+    csrf.exempt(demo_bp)    # Static demo site
+    csrf.exempt(public_bp)  # Public share token routes (stateless)
 
     # Configure Flask-Babel for internationalization
     import os

@@ -23,6 +23,9 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/theme-toggle.css') }}">
 
     {% block extra_css %}{% endblock %}
+
+    <!-- CSRF Token -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
 <body>
     <a class="skip-link" href="#main-content">{{ _('Skip to main content') }}</a>
@@ -636,6 +639,32 @@
     </script>
 
     <script src="{{ url_for('static', filename='js/theme-toggle.js') }}"></script>
+
+    <!-- CSRF token for AJAX requests -->
+    <script>
+    (function() {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        if (csrfToken) {
+            const originalFetch = window.fetch;
+            window.fetch = function(url, options = {}) {
+                options = options || {};
+                const method = (options.method || 'GET').toUpperCase();
+                if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+                    options.headers = options.headers || {};
+                    if (options.headers instanceof Headers) {
+                        if (!options.headers.has('X-CSRFToken')) {
+                            options.headers.set('X-CSRFToken', csrfToken);
+                        }
+                    } else {
+                        options.headers['X-CSRFToken'] = options.headers['X-CSRFToken'] || csrfToken;
+                    }
+                }
+                return originalFetch.call(this, url, options);
+            };
+        }
+    })();
+    </script>
+
     {% block extra_js %}{% endblock %}
 </body>
 </html>

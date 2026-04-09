@@ -29,6 +29,11 @@ def serve_demo(filename='index.html'):
         # Handle subdirectories (css, js, images, pdfs)
         file_path = demo_dir / filename
 
+        # Security: ensure resolved path is within demo directory
+        if not file_path.resolve().is_relative_to(demo_dir.resolve()):
+            logger.warning(f"Path traversal attempt blocked: {filename}")
+            return "Not found", 404
+
         # If it's a directory or doesn't exist, try appending index.html
         if file_path.is_dir():
             filename = str(Path(filename) / 'index.html')
@@ -47,7 +52,7 @@ def serve_demo(filename='index.html'):
 
     except Exception as e:
         logger.error(f"Error serving demo file {filename}: {e}", exc_info=True)
-        return f"Error: {str(e)}", 500
+        return "Not found", 404
 
 
 @demo_bp.route('/info')
@@ -112,8 +117,11 @@ def login():
     else:
         # Login failed - redirect back with error
         logger.warning(f"Failed login attempt: {email}")
-        referer = request.referrer or url_for('demo.serve_demo', filename='login.html')
-        return redirect(referer + '?error=1')
+        referer = request.referrer or ''
+        if 'login-en' in referer:
+            return redirect(url_for('demo.serve_demo', filename='login-en.html') + '?error=1')
+        else:
+            return redirect(url_for('demo.serve_demo', filename='login.html') + '?error=1')
 
 
 @demo_bp.route('/logout')

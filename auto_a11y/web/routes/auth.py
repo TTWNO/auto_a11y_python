@@ -4,6 +4,7 @@ Authentication routes for user login, logout, and registration
 
 import hashlib
 import logging
+from urllib.parse import urlparse
 
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, session, g, abort, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
@@ -537,7 +538,7 @@ def login():
             user.record_login(success=False)
             current_app.db.update_app_user(user)
             flash(_('Invalid email or password.'), 'danger')
-            return render_template('auth/login.html', password_hint=user.password_hint)
+            return render_template('auth/login.html')
         
         user.record_login(success=True)
         current_app.db.update_app_user(user)
@@ -545,8 +546,10 @@ def login():
         login_user(user, remember=remember)
         
         next_page = request.args.get('next')
-        if next_page and next_page.startswith('/'):
-            return redirect(next_page)
+        if next_page:
+            parsed = urlparse(next_page)
+            if parsed.path.startswith('/') and not parsed.netloc and not parsed.scheme:
+                return redirect(next_page)
         
         return redirect(url_for('dashboard'))
     

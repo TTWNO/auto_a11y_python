@@ -393,7 +393,7 @@ def download_report(filename):
         return jsonify({'error': 'Report not found'}), 404
     
     # Security check - ensure file is in reports directory
-    if not file_path.resolve().parent == reports_dir.resolve():
+    if not file_path.resolve().is_relative_to(reports_dir.resolve()):
         return jsonify({'error': 'Invalid file path'}), 403
     
     return send_file(
@@ -413,7 +413,7 @@ def delete_report(filename):
         return jsonify({'error': 'Report not found'}), 404
 
     # Security check - ensure file is in reports directory
-    if not file_path.resolve().parent == reports_dir.resolve():
+    if not file_path.resolve().is_relative_to(reports_dir.resolve()):
         return jsonify({'error': 'Invalid file path'}), 403
 
     try:

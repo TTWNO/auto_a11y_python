@@ -170,17 +170,28 @@ class IssueFilterManager {
             // Display active filters as tags
             Object.entries(this.activeFilters).forEach(([type, values]) => {
                 if (typeof values === 'string' && values) {
-                    // Search filter
+                    // Search filter - use textContent for user value
                     const tag = document.createElement('span');
                     tag.className = 'active-filter-tag';
-                    tag.innerHTML = `Search: "${values}" <span class="remove-filter" data-type="${type}">×</span>`;
+                    tag.textContent = `Search: "${values}" `;
+                    const removeBtn = document.createElement('span');
+                    removeBtn.className = 'remove-filter';
+                    removeBtn.dataset.type = type;
+                    removeBtn.textContent = '\u00d7';
+                    tag.appendChild(removeBtn);
                     activeFilterTags.appendChild(tag);
                 } else if (values.size > 0) {
-                    // Other filters
+                    // Other filters - use textContent for user values
                     values.forEach(value => {
                         const tag = document.createElement('span');
                         tag.className = 'active-filter-tag';
-                        tag.innerHTML = `${type}: ${value} <span class="remove-filter" data-type="${type}" data-value="${value}">×</span>`;
+                        tag.textContent = `${type}: ${value} `;
+                        const removeBtn = document.createElement('span');
+                        removeBtn.className = 'remove-filter';
+                        removeBtn.dataset.type = type;
+                        removeBtn.dataset.value = value;
+                        removeBtn.textContent = '\u00d7';
+                        tag.appendChild(removeBtn);
                         activeFilterTags.appendChild(tag);
                     });
                 }

@@ -96,6 +96,9 @@ class Config:
     SETTINGS_FILE: str = os.getenv('SETTINGS_FILE', '')
     AUTH_ENABLED: bool = os.getenv('AUTH_ENABLED', 'True').lower() == 'true'
 
+    # Disable account lockout after failed login attempts (local dev convenience)
+    DISABLE_ACCOUNT_LOCKOUT: bool = os.getenv('DISABLE_ACCOUNT_LOCKOUT', 'False').lower() == 'true'
+
     # Session cookie security — set False in .env when serving over HTTP (e.g. local dev)
     SESSION_COOKIE_SECURE: bool = os.getenv('SESSION_COOKIE_SECURE', 'True').lower() == 'true'
 

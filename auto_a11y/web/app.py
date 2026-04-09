@@ -63,7 +63,7 @@ def create_app(config):
     # Session cookie security
     app.config['SESSION_COOKIE_HTTPONLY'] = True
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-    app.config['SESSION_COOKIE_SECURE'] = not config.DEBUG  # Allow HTTP in dev
+    app.config['SESSION_COOKIE_SECURE'] = config.SESSION_COOKIE_SECURE
     app.config['PERMANENT_SESSION_LIFETIME'] = 86400  # 24 hours
 
     # Configure CORS - only enable if origins are explicitly configured

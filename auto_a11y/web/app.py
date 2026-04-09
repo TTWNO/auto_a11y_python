@@ -7,6 +7,8 @@ from flask_cors import CORS
 from flask_babel import Babel, format_datetime
 from flask_login import LoginManager, current_user, login_required
 from flask_wtf.csrf import CSRFProtect
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 import logging
 import atexit
 
@@ -74,6 +76,14 @@ def create_app(config):
     csrf.exempt(api_bp)     # API uses token auth, not session cookies
     csrf.exempt(demo_bp)    # Static demo site
     csrf.exempt(public_bp)  # Public share token routes (stateless)
+
+    # Rate limiting
+    limiter = Limiter(
+        get_remote_address,
+        app=app,
+        default_limits=[config.RATELIMIT_DEFAULT],
+        storage_uri="memory://",
+    )
 
     # Configure Flask-Babel for internationalization
     import os
@@ -269,6 +279,12 @@ def create_app(config):
 
     from auto_a11y.web.routes.groups import groups_bp
     app.register_blueprint(groups_bp, url_prefix='/groups')
+
+    # Rate limits on auth endpoints (must be after register_blueprint calls)
+    limiter.limit("10/minute")(app.view_functions['auth.login'])
+    limiter.limit("5/minute")(app.view_functions['auth.register'])
+    if 'auth.forgot_password' in app.view_functions:
+        limiter.limit("3/minute")(app.view_functions['auth.forgot_password'])
 
     # Desktop-mode blueprint and auto-login (only active when DESKTOP_MODE env var is set)
     if config.DESKTOP_MODE:

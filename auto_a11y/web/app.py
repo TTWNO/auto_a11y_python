@@ -56,9 +56,17 @@ def create_app(config):
     # Apply configuration
     app.config['SECRET_KEY'] = config.SECRET_KEY
     app.config['DEBUG'] = config.DEBUG
-    
-    # Enable CORS for API routes
-    CORS(app, resources={r"/api/*": {"origins": "*"}})
+
+    # Session cookie security
+    app.config['SESSION_COOKIE_HTTPONLY'] = True
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+    app.config['SESSION_COOKIE_SECURE'] = not config.DEBUG  # Allow HTTP in dev
+    app.config['PERMANENT_SESSION_LIFETIME'] = 86400  # 24 hours
+
+    # Configure CORS - only enable if origins are explicitly configured
+    if config.CORS_ORIGINS:
+        cors_origins = [o.strip() for o in config.CORS_ORIGINS.split(',')]
+        CORS(app, resources={r"/api/*": {"origins": cors_origins}})
 
     # Configure Flask-Babel for internationalization
     import os
@@ -506,9 +514,30 @@ def create_app(config):
     def serve_screenshot(filename):
         """Serve screenshot files"""
         from flask import send_from_directory
+        from pathlib import Path
         import os
         screenshots_dir = os.path.join(os.getcwd(), 'screenshots')
+        file_path = Path(screenshots_dir) / filename
+        if not file_path.resolve().is_relative_to(Path(screenshots_dir).resolve()):
+            return jsonify({'error': 'Invalid file path'}), 403
         return send_from_directory(screenshots_dir, filename)
+
+    # Security headers
+    @app.after_request
+    def add_security_headers(response):
+        response.headers['X-Frame-Options'] = 'DENY'
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-XSS-Protection'] = '0'
+        response.headers['Content-Security-Policy'] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://code.jquery.com; "
+            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "img-src 'self' data:; "
+            "font-src 'self' https://cdn.jsdelivr.net"
+        )
+        if not config.DEBUG:
+            response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+        return response
 
     # Error handlers
     @app.errorhandler(403)

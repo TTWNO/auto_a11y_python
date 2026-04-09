@@ -29,6 +29,7 @@
                 </div>
                 {% endif %}
                 <form method="POST" action="{{ url_for('auth.login') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <fieldset>
                         <legend class="visually-hidden">{{ _('Login Credentials') }}</legend>
                         <div class="mb-3">

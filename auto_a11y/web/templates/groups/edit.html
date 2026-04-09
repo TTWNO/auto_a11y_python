@@ -16,6 +16,7 @@
 <div class="card shadow">
     <div class="card-body">
         <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <fieldset class="mb-4">
                 <legend class="h5">{{ _('Group Details') }}</legend>
                 <div class="mb-3">

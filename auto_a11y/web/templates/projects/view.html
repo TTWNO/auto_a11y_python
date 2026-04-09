@@ -475,6 +475,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form method="POST" action="{{ url_for('projects.add_website', project_id=project.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="url" class="form-label">{{ _('Website URL') }} *</label>
@@ -571,6 +572,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form id="testAllForm" method="POST" action="{{ url_for('projects.test_project', project_id=project.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <div class="modal-body">
                     <p>{{ _('This will test all websites in the project') }} "{{ project.name }}".</p>
 
@@ -626,6 +628,7 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
                 <form method="POST" action="{{ url_for('projects.delete_project', project_id=project.id) }}" style="display: inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <button type="submit" class="btn btn-danger">{{ _('Delete Project') }}</button>
                 </form>
             </div>

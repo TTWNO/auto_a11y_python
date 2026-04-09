@@ -21,6 +21,7 @@
             <div class="card">
                 <div class="card-body">
                     <form method="POST" action="{{ url_for('websites.edit_website', website_id=website.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <fieldset>
                             <legend id="basic-info-heading">{{ _('Basic Information') }}</legend>
 
@@ -136,6 +137,7 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
                 <form method="POST" action="{{ url_for('websites.delete_website', website_id=website.id) }}" style="display: inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <button type="submit" class="btn btn-danger">{{ _('Delete Website') }}</button>
                 </form>
             </div>

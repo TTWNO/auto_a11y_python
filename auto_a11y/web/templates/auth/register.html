@@ -17,6 +17,7 @@
                 {% endif %}
                 
                 <form method="POST" action="{{ url_for('auth.register') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <fieldset>
                         <legend class="visually-hidden">{{ _('Account Details') }}</legend>
                         <div class="mb-3">

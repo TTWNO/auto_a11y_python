@@ -27,6 +27,7 @@
             <div class="card">
                 <div class="card-body">
                     <form method="POST" action="{{ url_for('pages.edit_page', page_id=page.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <fieldset>
                             <legend class="visually-hidden">{{ _('Page Details') }}</legend>
                             <div class="mb-3">

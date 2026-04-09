@@ -39,6 +39,7 @@
     {% endwith %}
 
     <form method="POST" id="scheduleForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <div class="row">
             <!-- Left Column - Basic Info & Schedule -->
             <div class="col-lg-6">

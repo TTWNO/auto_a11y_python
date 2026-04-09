@@ -11,6 +11,7 @@
             </div>
             <div class="card-body">
                 <form method="POST" action="{{ url_for('auth.user_create') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <fieldset>
                         <legend class="visually-hidden">{{ _('New User Account') }}</legend>
                         <div class="mb-3">

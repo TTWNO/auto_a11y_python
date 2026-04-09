@@ -329,6 +329,7 @@
 
     <!-- Save Form -->
     <form method="POST" id="matrix-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <input type="hidden" name="matrix_data" id="matrix-data-input">
         <div class="d-flex justify-content-between align-items-center">
             <div>

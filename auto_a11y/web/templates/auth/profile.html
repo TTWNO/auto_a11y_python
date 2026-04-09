@@ -11,6 +11,7 @@
             </div>
             <div class="card-body">
                 <form method="POST" action="{{ url_for('auth.profile') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <input type="hidden" name="action" value="update_profile">
                     <fieldset>
                         <legend class="visually-hidden">{{ _('Profile Information') }}</legend>
@@ -48,6 +49,7 @@
             </div>
             <div class="card-body">
                 <form method="POST" action="{{ url_for('auth.profile') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <input type="hidden" name="action" value="change_password">
                     <fieldset>
                         <legend class="visually-hidden">{{ _('Change Password') }}</legend>

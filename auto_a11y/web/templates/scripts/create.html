@@ -83,6 +83,7 @@
             </div>
 
             <form method="POST" id="script-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
 
                 <!-- Basic Information -->
                 <fieldset>

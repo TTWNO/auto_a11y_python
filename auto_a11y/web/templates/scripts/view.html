@@ -74,7 +74,7 @@
                         </dd>
 
                         <dt class="col-sm-4">{{ _('Execution Trigger') }}</dt>
-                        <dd class="col-sm-8">{{ script.trigger.value.replace('_', ' ').title() }}</dd>
+                        <dd class="col-sm-8">{{ _(script.trigger.value|replace('_', ' ')|title) }}</dd>
 
                         <dt class="col-sm-4">{{ _('Multi-State Testing') }}</dt>
                         <dd class="col-sm-8">
@@ -113,7 +113,7 @@
                         <li class="list-group-item">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div class="ms-2 me-auto">
-                                    <div class="fw-bold">{{ step.action_type.value.replace('_', ' ').title() }}</div>
+                                    <div class="fw-bold">{{ _(step.action_type.value|replace('_', ' ')|title) }}</div>
                                     {% if step.selector %}
                                     <div class="text-muted small">
                                         <i class="bi bi-bullseye" aria-hidden="true"></i> {{ _('Selector') }}:

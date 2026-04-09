@@ -1487,7 +1487,7 @@
     "why": "Sans une structure de titres appropriée, les utilisateurs ne connaissent pas l'objectif ou le contexte du contenu de la modale. Les modales devraient commencer par des titres h1 ou h2 pour maintenir la structure du document et fournir un contexte clair.",
     "who": "Utilisateurs de lecteurs d'écran qui ont besoin de comprendre l'objectif de la modale et de naviguer par titres, utilisateurs avec des déficiences cognitives qui s'appuient sur une structure de document claire.",
     "remediation": "Changer le titre de la modale de h%(foundLevel)s à h2 (ou h1 si c'est le titre principal de la page). Titre actuel : \\\"%(headingText)s\\\". Les modales devraient utiliser h2 pour maintenir une hiérarchie de document appropriée et fournir un contexte clair pour tous les utilisateurs.",
-    "what_generic": "La modale a un titre h%(foundLevel)s (\\\"%(headingText)s\\\") mais devrait utiliser h2 (ou h1) pour une structure de document appropriée"
+    "what_generic": "La modale a un niveau de titre incorrect pour une structure de document appropriée"
   },
   "ErrModalMissingHeading_what": {
     "generic": "La modale a un niveau de titre incorrect pour une structure de document appropriée"

@@ -92,7 +92,7 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <small>{{ user.login_config.authentication_method.value.replace('_', ' ').title() }}</small>
+                                <small>{{ _(user.login_config.authentication_method.value|replace('_', ' ')|title) }}</small>
                             </td>
                             <td>
                                 {% if user.enabled %}

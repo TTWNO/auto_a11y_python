@@ -112,26 +112,26 @@ def create_page_script(page_id):
 
     # Get all action types for dropdown
     action_types = [
-        {'value': ActionType.CLICK.value, 'label': 'Click Element'},
-        {'value': ActionType.TYPE.value, 'label': 'Type Text'},
-        {'value': ActionType.SELECT.value, 'label': 'Select Dropdown Option'},
-        {'value': ActionType.WAIT_FOR_SELECTOR.value, 'label': 'Wait for Element'},
-        {'value': ActionType.WAIT.value, 'label': 'Wait (Fixed Time)'},
-        {'value': ActionType.WAIT_FOR_NETWORK_IDLE.value, 'label': 'Wait for Network Idle'},
-        {'value': ActionType.SCROLL.value, 'label': 'Scroll to Element'},
-        {'value': ActionType.HOVER.value, 'label': 'Hover Over Element'},
-        {'value': ActionType.WAIT_FOR_NAVIGATION.value, 'label': 'Wait for Navigation'},
-        {'value': ActionType.SCREENSHOT.value, 'label': 'Take Screenshot'}
+        {'value': ActionType.CLICK.value, 'label': _('Click Element')},
+        {'value': ActionType.TYPE.value, 'label': _('Type Text')},
+        {'value': ActionType.SELECT.value, 'label': _('Select Dropdown Option')},
+        {'value': ActionType.WAIT_FOR_SELECTOR.value, 'label': _('Wait for Element')},
+        {'value': ActionType.WAIT.value, 'label': _('Wait (Fixed Time)')},
+        {'value': ActionType.WAIT_FOR_NETWORK_IDLE.value, 'label': _('Wait for Network Idle')},
+        {'value': ActionType.SCROLL.value, 'label': _('Scroll to Element')},
+        {'value': ActionType.HOVER.value, 'label': _('Hover Over Element')},
+        {'value': ActionType.WAIT_FOR_NAVIGATION.value, 'label': _('Wait for Navigation')},
+        {'value': ActionType.SCREENSHOT.value, 'label': _('Take Screenshot')}
     ]
 
     trigger_options = [
-        {'value': ExecutionTrigger.ONCE_PER_PAGE.value, 'label': 'On This Page (Every Test)', 'description': 'Runs every time this page is tested'},
-        {'value': ExecutionTrigger.ONCE_PER_PAGE_FIRST_VISIT.value, 'label': 'On This Page (First Visit Only)', 'description': 'Runs only on the first test of this page in a session'},
-        {'value': ExecutionTrigger.CONDITIONAL.value, 'label': 'Conditional (If Element Exists)', 'description': 'Runs only if the condition selector exists on this page'}
+        {'value': ExecutionTrigger.ONCE_PER_PAGE.value, 'label': _('On This Page (Every Test)'), 'description': _('Runs every time this page is tested')},
+        {'value': ExecutionTrigger.ONCE_PER_PAGE_FIRST_VISIT.value, 'label': _('On This Page (First Visit Only)'), 'description': _('Runs only on the first test of this page in a session')},
+        {'value': ExecutionTrigger.CONDITIONAL.value, 'label': _('Conditional (If Element Exists)'), 'description': _('Runs only if the condition selector exists on this page')}
     ]
 
     scope_options = [
-        {'value': ScriptScope.PAGE.value, 'label': 'Page-Level', 'description': 'Runs only on this specific page'},
+        {'value': ScriptScope.PAGE.value, 'label': _('Page-Level'), 'description': _('Runs only on this specific page')},
     ]
 
     return render_template('scripts/create.html',
@@ -214,28 +214,28 @@ def create_website_script(website_id):
 
     # Get all action types for dropdown
     action_types = [
-        {'value': ActionType.CLICK.value, 'label': 'Click Element'},
-        {'value': ActionType.TYPE.value, 'label': 'Type Text'},
-        {'value': ActionType.SELECT.value, 'label': 'Select Dropdown Option'},
-        {'value': ActionType.WAIT_FOR_SELECTOR.value, 'label': 'Wait for Element'},
-        {'value': ActionType.WAIT.value, 'label': 'Wait (Fixed Time)'},
-        {'value': ActionType.WAIT_FOR_NETWORK_IDLE.value, 'label': 'Wait for Network Idle'},
-        {'value': ActionType.SCROLL.value, 'label': 'Scroll to Element'},
-        {'value': ActionType.HOVER.value, 'label': 'Hover Over Element'},
-        {'value': ActionType.WAIT_FOR_NAVIGATION.value, 'label': 'Wait for Navigation'},
-        {'value': ActionType.SCREENSHOT.value, 'label': 'Take Screenshot'}
+        {'value': ActionType.CLICK.value, 'label': _('Click Element')},
+        {'value': ActionType.TYPE.value, 'label': _('Type Text')},
+        {'value': ActionType.SELECT.value, 'label': _('Select Dropdown Option')},
+        {'value': ActionType.WAIT_FOR_SELECTOR.value, 'label': _('Wait for Element')},
+        {'value': ActionType.WAIT.value, 'label': _('Wait (Fixed Time)')},
+        {'value': ActionType.WAIT_FOR_NETWORK_IDLE.value, 'label': _('Wait for Network Idle')},
+        {'value': ActionType.SCROLL.value, 'label': _('Scroll to Element')},
+        {'value': ActionType.HOVER.value, 'label': _('Hover Over Element')},
+        {'value': ActionType.WAIT_FOR_NAVIGATION.value, 'label': _('Wait for Navigation')},
+        {'value': ActionType.SCREENSHOT.value, 'label': _('Take Screenshot')}
     ]
 
     trigger_options = [
-        {'value': ExecutionTrigger.ONCE_PER_SESSION.value, 'label': 'Once Per Session', 'description': 'Runs once at the start of testing'},
-        {'value': ExecutionTrigger.ONCE_PER_PAGE.value, 'label': 'Once Per Page', 'description': 'Runs before testing each page'},
-        {'value': ExecutionTrigger.ONCE_PER_PAGE_FIRST_VISIT.value, 'label': 'Once Per Page (First Visit Only)', 'description': 'Runs only on the first test of this page in a session'},
-        {'value': ExecutionTrigger.ALWAYS.value, 'label': 'Always (Every Test)', 'description': 'Runs every time a page is tested'},
-        {'value': ExecutionTrigger.CONDITIONAL.value, 'label': 'Conditional', 'description': 'Runs only if element exists'}
+        {'value': ExecutionTrigger.ONCE_PER_SESSION.value, 'label': _('Once Per Session'), 'description': _('Runs once at the start of testing')},
+        {'value': ExecutionTrigger.ONCE_PER_PAGE.value, 'label': _('Once Per Page'), 'description': _('Runs before testing each page')},
+        {'value': ExecutionTrigger.ONCE_PER_PAGE_FIRST_VISIT.value, 'label': _('Once Per Page (First Visit Only)'), 'description': _('Runs only on the first test of this page in a session')},
+        {'value': ExecutionTrigger.ALWAYS.value, 'label': _('Always (Every Test)'), 'description': _('Runs every time a page is tested')},
+        {'value': ExecutionTrigger.CONDITIONAL.value, 'label': _('Conditional'), 'description': _('Runs only if element exists')}
     ]
 
     scope_options = [
-        {'value': ScriptScope.WEBSITE.value, 'label': 'Website-Level', 'description': 'Applies to all pages in this website'},
+        {'value': ScriptScope.WEBSITE.value, 'label': _('Website-Level'), 'description': _('Applies to all pages in this website')},
     ]
 
     # Website-level scripts already have appropriate trigger options defined above
@@ -371,37 +371,37 @@ def edit_script(script_id):
         logger.warning(f"EDIT GET Step {i}: {step.to_dict()}")
 
     action_types = [
-        {'value': ActionType.CLICK.value, 'label': 'Click Element'},
-        {'value': ActionType.TYPE.value, 'label': 'Type Text'},
-        {'value': ActionType.SELECT.value, 'label': 'Select Dropdown Option'},
-        {'value': ActionType.WAIT_FOR_SELECTOR.value, 'label': 'Wait for Element'},
-        {'value': ActionType.WAIT.value, 'label': 'Wait (Fixed Time)'},
-        {'value': ActionType.WAIT_FOR_NETWORK_IDLE.value, 'label': 'Wait for Network Idle'},
-        {'value': ActionType.SCROLL.value, 'label': 'Scroll to Element'},
-        {'value': ActionType.HOVER.value, 'label': 'Hover Over Element'},
-        {'value': ActionType.WAIT_FOR_NAVIGATION.value, 'label': 'Wait for Navigation'},
-        {'value': ActionType.SCREENSHOT.value, 'label': 'Take Screenshot'}
+        {'value': ActionType.CLICK.value, 'label': _('Click Element')},
+        {'value': ActionType.TYPE.value, 'label': _('Type Text')},
+        {'value': ActionType.SELECT.value, 'label': _('Select Dropdown Option')},
+        {'value': ActionType.WAIT_FOR_SELECTOR.value, 'label': _('Wait for Element')},
+        {'value': ActionType.WAIT.value, 'label': _('Wait (Fixed Time)')},
+        {'value': ActionType.WAIT_FOR_NETWORK_IDLE.value, 'label': _('Wait for Network Idle')},
+        {'value': ActionType.SCROLL.value, 'label': _('Scroll to Element')},
+        {'value': ActionType.HOVER.value, 'label': _('Hover Over Element')},
+        {'value': ActionType.WAIT_FOR_NAVIGATION.value, 'label': _('Wait for Navigation')},
+        {'value': ActionType.SCREENSHOT.value, 'label': _('Take Screenshot')}
     ]
 
     # Provide different trigger options based on script scope
     if script.scope == ScriptScope.PAGE:
         trigger_options = [
-            {'value': ExecutionTrigger.ONCE_PER_PAGE.value, 'label': 'On This Page (Every Test)', 'description': 'Runs every time this page is tested'},
-            {'value': ExecutionTrigger.ONCE_PER_PAGE_FIRST_VISIT.value, 'label': 'On This Page (First Visit Only)', 'description': 'Runs only on the first test of this page in a session'},
-            {'value': ExecutionTrigger.CONDITIONAL.value, 'label': 'Conditional (If Element Exists)', 'description': 'Runs only if the condition selector exists on this page'}
+            {'value': ExecutionTrigger.ONCE_PER_PAGE.value, 'label': _('On This Page (Every Test)'), 'description': _('Runs every time this page is tested')},
+            {'value': ExecutionTrigger.ONCE_PER_PAGE_FIRST_VISIT.value, 'label': _('On This Page (First Visit Only)'), 'description': _('Runs only on the first test of this page in a session')},
+            {'value': ExecutionTrigger.CONDITIONAL.value, 'label': _('Conditional (If Element Exists)'), 'description': _('Runs only if the condition selector exists on this page')}
         ]
     else:  # Website-level scripts
         trigger_options = [
-            {'value': ExecutionTrigger.ONCE_PER_SESSION.value, 'label': 'Once Per Session', 'description': 'Runs once at the start of testing'},
-            {'value': ExecutionTrigger.ONCE_PER_PAGE.value, 'label': 'Once Per Page', 'description': 'Runs before testing each page'},
-            {'value': ExecutionTrigger.ONCE_PER_PAGE_FIRST_VISIT.value, 'label': 'Once Per Page (First Visit Only)', 'description': 'Runs only on the first test of each page in a session'},
-            {'value': ExecutionTrigger.ALWAYS.value, 'label': 'Always (Every Test)', 'description': 'Runs every time a page is tested'},
-            {'value': ExecutionTrigger.CONDITIONAL.value, 'label': 'Conditional', 'description': 'Runs only if element exists'}
+            {'value': ExecutionTrigger.ONCE_PER_SESSION.value, 'label': _('Once Per Session'), 'description': _('Runs once at the start of testing')},
+            {'value': ExecutionTrigger.ONCE_PER_PAGE.value, 'label': _('Once Per Page'), 'description': _('Runs before testing each page')},
+            {'value': ExecutionTrigger.ONCE_PER_PAGE_FIRST_VISIT.value, 'label': _('Once Per Page (First Visit Only)'), 'description': _('Runs only on the first test of each page in a session')},
+            {'value': ExecutionTrigger.ALWAYS.value, 'label': _('Always (Every Test)'), 'description': _('Runs every time a page is tested')},
+            {'value': ExecutionTrigger.CONDITIONAL.value, 'label': _('Conditional'), 'description': _('Runs only if element exists')}
         ]
 
     scope_options = [
-        {'value': ScriptScope.PAGE.value, 'label': 'Page-Level', 'description': 'Runs only on this specific page'},
-        {'value': ScriptScope.WEBSITE.value, 'label': 'Website-Level', 'description': 'Applies to all pages in this website'},
+        {'value': ScriptScope.PAGE.value, 'label': _('Page-Level'), 'description': _('Runs only on this specific page')},
+        {'value': ScriptScope.WEBSITE.value, 'label': _('Website-Level'), 'description': _('Applies to all pages in this website')},
     ]
 
     return render_template('scripts/edit.html',

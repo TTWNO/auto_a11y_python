@@ -115,7 +115,7 @@
                                 <select class="form-select" id="authentication_method" name="authentication_method">
                                     {% for method in auth_methods %}
                                     <option value="{{ method.value }}" {% if method.value == 'form_login' %}selected{% endif %}>
-                                        {{ method.value.replace('_', ' ').title() }}
+                                        {{ _(method.value|replace('_', ' ')|title) }}
                                     </option>
                                     {% endfor %}
                                 </select>

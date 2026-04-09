@@ -116,7 +116,7 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <small>{{ script.trigger.value.replace('_', ' ').title() }}</small>
+                                <small>{{ _(script.trigger.value|replace('_', ' ')|title) }}</small>
                             </td>
                             <td>
                                 {% if script.enabled %}

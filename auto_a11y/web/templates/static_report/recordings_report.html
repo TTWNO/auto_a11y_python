@@ -204,7 +204,7 @@
                     <div class="card-body">
                         <h4>
                             <span class="badge bg-{{ {'high': 'danger', 'medium': 'warning', 'low': 'secondary'}[issue.impact.value] }}">
-                                {{ issue.impact.value|upper }}
+                                {{ _(issue.impact.value|title)|upper }}
                             </span>
                             {{ issue.title }}
                         </h4>
@@ -281,7 +281,7 @@
             <div class="mb-3 pb-3 {% if not loop.last %}border-bottom{% endif %}">
                 <h4>
                     <span class="badge bg-{{ {'high': 'danger', 'medium': 'warning', 'low': 'secondary'}[issue.impact.value] }}">
-                        {{ issue.impact.value|upper }}
+                        {{ _(issue.impact.value|title)|upper }}
                     </span>
                     {{ issue.title }}
                 </h4>

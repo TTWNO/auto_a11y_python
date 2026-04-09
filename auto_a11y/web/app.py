@@ -570,6 +570,7 @@ def create_app(config):
         return render_template('help.html')
 
     @app.route('/screenshots/<path:filename>')
+    @limiter.exempt
     def serve_screenshot(filename):
         """Serve screenshot files"""
         from flask import send_from_directory

@@ -4551,7 +4551,7 @@ msgstr "Statut"
 #: auto_a11y/web/templates/pages/view.html:3749
 #: auto_a11y/web/templates/websites/discovery_run.html:228
 msgid "Discovered"
-msgstr "Découvrir"
+msgstr "Découvert"
 
 #: auto_a11y/web/templates/pages/edit.html:90
 #: auto_a11y/web/templates/pages/view.html:236
@@ -11173,7 +11173,7 @@ msgstr "Code temporel"
 
 #: auto_a11y/web/templates/scripts/view.html:135
 msgid "Wait"
-msgstr "WCAG AA"
+msgstr "Attendre"
 
 #: auto_a11y/web/templates/scripts/view.html:143
 msgid "No steps configured"
@@ -13466,7 +13466,7 @@ msgstr "Problème de découverte"
 
 #: auto_a11y/web/templates/websites/view.html:1464
 msgid "Discovery Failed"
-msgstr "Échec de la découverte :"
+msgstr "Échec de la découverte"
 
 #: auto_a11y/web/templates/websites/view.html:1472
 msgid "Discovery failed"
@@ -45777,4 +45777,168 @@ msgstr "%(prog)s : erreur : %(message)s\n"
 
 #~ msgid "Started testing %(count)s websites in project \"%(name)s\\"
 #~ msgstr ""
+
+#: auto_a11y/web/templates (enum translations)
+msgid "Skipped"
+msgstr "Ignoré"
+
+msgid "Form Login"
+msgstr "Connexion par formulaire"
+
+msgid "Basic Auth"
+msgstr "Authentification de base"
+
+msgid "Oauth"
+msgstr "OAuth"
+
+msgid "Sso"
+msgstr "SSO"
+
+msgid "Once Per Session"
+msgstr "Une fois par session"
+
+msgid "Once Per Page"
+msgstr "Une fois par page"
+
+msgid "Once Per Page First Visit"
+msgstr "Première visite de la page seulement"
+
+msgid "Conditional"
+msgstr "Conditionnel"
+
+msgid "Always"
+msgstr "Toujours"
+
+msgid "Click"
+msgstr "Clic"
+
+msgid "Hover"
+msgstr "Survol"
+
+msgid "Wait For Selector"
+msgstr "Attendre le sélecteur"
+
+msgid "Wait For Navigation"
+msgstr "Attendre la navigation"
+
+msgid "Wait For Network Idle"
+msgstr "Attendre l'inactivité réseau"
+
+msgid "Scroll"
+msgstr "Défilement"
+
+msgid "Select"
+msgstr "Sélectionner"
+
+msgid "Lived Experience Website"
+msgstr "Expérience vécue - Site web"
+
+msgid "Lived Experience App"
+msgstr "Expérience vécue - Application"
+
+msgid "Lived Experience Tangible Device"
+msgstr "Expérience vécue - Appareil tangible"
+
+msgid "Lived Experience Nav And Wayfinding"
+msgstr "Expérience vécue - Navigation et orientation"
+
+msgid "Impact"
+msgstr "Impact"
+
+msgid "Critical"
+msgstr "Critique"
+
+#: auto_a11y/web/routes/scripts.py (action type labels)
+msgid "Click Element"
+msgstr "Cliquer sur un élément"
+
+msgid "Type Text"
+msgstr "Saisir du texte"
+
+msgid "Select Dropdown Option"
+msgstr "Sélectionner une option du menu"
+
+msgid "Wait for Element"
+msgstr "Attendre un élément"
+
+msgid "Wait (Fixed Time)"
+msgstr "Attendre (temps fixe)"
+
+msgid "Wait for Network Idle"
+msgstr "Attendre l'inactivité réseau"
+
+msgid "Scroll to Element"
+msgstr "Défiler vers un élément"
+
+msgid "Hover Over Element"
+msgstr "Survoler un élément"
+
+msgid "Wait for Navigation"
+msgstr "Attendre la navigation"
+
+msgid "Take Screenshot"
+msgstr "Prendre une capture d'écran"
+
+#: auto_a11y/web/routes/scripts.py (trigger option labels)
+msgid "On This Page (Every Test)"
+msgstr "Sur cette page (chaque test)"
+
+msgid "On This Page (First Visit Only)"
+msgstr "Sur cette page (première visite seulement)"
+
+msgid "Conditional (If Element Exists)"
+msgstr "Conditionnel (si l'élément existe)"
+
+msgid "Once Per Session"
+msgstr "Une fois par session"
+
+msgid "Once Per Page"
+msgstr "Une fois par page"
+
+msgid "Once Per Page (First Visit Only)"
+msgstr "Une fois par page (première visite seulement)"
+
+msgid "Always (Every Test)"
+msgstr "Toujours (chaque test)"
+
+msgid "Conditional"
+msgstr "Conditionnel"
+
+#: auto_a11y/web/routes/scripts.py (trigger option descriptions)
+msgid "Runs every time this page is tested"
+msgstr "S'exécute chaque fois que cette page est testée"
+
+msgid "Runs only on the first test of this page in a session"
+msgstr "S'exécute uniquement lors du premier test de cette page dans une session"
+
+msgid "Runs only if the condition selector exists on this page"
+msgstr "S'exécute uniquement si le sélecteur de condition existe sur cette page"
+
+msgid "Runs once at the start of testing"
+msgstr "S'exécute une fois au début des tests"
+
+msgid "Runs before testing each page"
+msgstr "S'exécute avant de tester chaque page"
+
+msgid "Runs only on the first test of each page in a session"
+msgstr "S'exécute uniquement lors du premier test de chaque page dans une session"
+
+msgid "Runs every time a page is tested"
+msgstr "S'exécute chaque fois qu'une page est testée"
+
+msgid "Runs only if element exists"
+msgstr "S'exécute uniquement si l'élément existe"
+
+#: auto_a11y/web/routes/scripts.py (scope option labels)
+msgid "Page-Level"
+msgstr "Niveau de la page"
+
+msgid "Website-Level"
+msgstr "Niveau du site web"
+
+msgid "Runs only on this specific page"
+msgstr "S'exécute uniquement sur cette page spécifique"
+
+msgid "Applies to all pages in this website"
+msgstr "S'applique à toutes les pages de ce site web"
 

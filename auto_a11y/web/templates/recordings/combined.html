@@ -65,7 +65,7 @@
                 {% for recording in recordings %}
                 <div class="col-md-6 mb-2">
                     <article class="d-flex align-items-center">
-                        <span class="badge bg-secondary me-2">{{ recording.recording_type.value|replace('_', ' ')|title }}</span>
+                        <span class="badge bg-secondary me-2">{{ _(recording.recording_type.value|replace('_', ' ')|title) }}</span>
                         <span class="me-2">{{ recording.title }}</span>
                         <span class="badge bg-danger">{{ recording.total_issues }} {{ _('issues') }}</span>
                     </article>
@@ -98,7 +98,7 @@
                                 <div class="w-100 d-flex justify-content-between align-items-center me-2">
                                     <span>
                                         <span class="badge bg-{{ {'high': 'danger', 'medium': 'warning', 'low': 'secondary'}[issue.impact.value] }} me-2">
-                                            {{ issue.impact.value|upper }}
+                                            {{ _(issue.impact.value|title)|upper }}
                                         </span>
                                         {{ issue.title }}
                                     </span>
@@ -123,7 +123,7 @@
                                     <div class="row">
                                         <div class="col-md-6">
                                             <strong>{{ _('Recording:') }}</strong> {{ issue.recording_ref.title }}<br>
-                                            <strong>{{ _('Type:') }}</strong> {{ issue.recording_ref.recording_type.value|replace('_', ' ')|title }}
+                                            <strong>{{ _('Type:') }}</strong> {{ _(issue.recording_ref.recording_type.value|replace('_', ' ')|title) }}
                                         </div>
                                         <div class="col-md-6">
                                             <strong>{{ _('Auditor/Tester:') }}</strong> {{ issue.recording_ref.auditor_name or '-' }}<br>

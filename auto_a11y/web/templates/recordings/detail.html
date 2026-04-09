@@ -104,7 +104,7 @@
                             <dt class="text-muted mb-1">{{ _('Recording Type') }}</dt>
                             <dd class="mb-0">
                                 <span class="badge bg-info">
-                                    {{ recording.recording_type.value|replace('_', ' ')|title }}
+                                    {{ _(recording.recording_type.value|replace('_', ' ')|title) }}
                                 </span>
                             </dd>
                         </div>
@@ -449,7 +449,7 @@
                             <h4>
                                 {% if painpoint.impact %}
                                 <span class="badge bg-{{ {'high': 'danger', 'medium': 'warning', 'low': 'secondary'}[painpoint.impact|lower] or 'secondary' }} me-2">
-                                    {{ painpoint.impact|upper }}
+                                    {{ _(painpoint.impact|title)|upper }}
                                 </span>
                                 {% endif %}
                                 {{ painpoint.title }}
@@ -562,7 +562,7 @@
                                     <div class="w-100 d-flex justify-content-between align-items-center me-2">
                                         <span>
                                             <span class="badge bg-{{ {'high': 'danger', 'medium': 'warning', 'low': 'secondary'}[issue.impact.value] }} me-2">
-                                                {{ issue.impact.value|upper }}
+                                                {{ _(issue.impact.value|title)|upper }}
                                             </span>
                                             {{ issue.title }}
                                         </span>

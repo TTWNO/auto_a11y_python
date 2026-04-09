@@ -4,6 +4,7 @@ Report formatters for different output formats
 
 import json
 import csv
+import re
 import tempfile
 import os
 import warnings
@@ -14,6 +15,9 @@ import logging
 from auto_a11y.reporting.comprehensive_report import ComprehensiveReportGenerator
 from auto_a11y.reporting.issue_catalog import IssueCatalog
 from io import StringIO
+
+# Pattern to detect unresolved template placeholders in descriptions
+_UNRESOLVED_PLACEHOLDER_RE = re.compile(r'\{[a-zA-Z_]+\}|%\([a-zA-Z_]+\)s')
 
 logger = logging.getLogger(__name__)
 
@@ -144,6 +148,10 @@ class BaseFormatter:
             'warning': 'Warning',
             'guest': 'Guest',
             'no_login': 'no login',
+            # Impact levels
+            'impact_high': 'High',
+            'impact_medium': 'Medium',
+            'impact_low': 'Low',
             # Summary sheet labels
             'summary_statistics': 'Summary Statistics',
             'overall_statistics': 'Overall Statistics',
@@ -282,6 +290,10 @@ class BaseFormatter:
             'warning': 'Avertissement',
             'guest': 'Invité',
             'no_login': 'aucune connexion',
+            # Impact levels
+            'impact_high': 'Élevé',
+            'impact_medium': 'Moyen',
+            'impact_low': 'Faible',
             # Summary sheet labels
             'summary_statistics': 'Statistiques résumées',
             'overall_statistics': 'Statistiques générales',
@@ -309,7 +321,49 @@ class BaseFormatter:
     def _t(self, key: str) -> str:
         """Get translated string for current language"""
         return self.TRANSLATIONS.get(self.language, self.TRANSLATIONS['en']).get(key, key)
-    
+
+    def _translate_impact(self, impact_raw: str) -> str:
+        """Translate an impact level value (high/medium/low) to the report language."""
+        if not impact_raw:
+            return ''
+        key = f'impact_{impact_raw.strip().lower()}'
+        translated = self._t(key)
+        # If _t returned the key itself (no translation found), return original uppercased
+        return translated.upper() if translated != key else impact_raw.upper()
+
+    @staticmethod
+    def _best_description(issue_dict: dict) -> str:
+        """Pick the best available description from an enriched issue dict.
+
+        Prefers description_full (instance-specific, with placeholders resolved),
+        but falls back to what_generic (placeholder-free) when unresolved
+        placeholders remain, and finally to the raw description field.
+        """
+        def _clean(text):
+            return text and not _UNRESOLVED_PLACEHOLDER_RE.search(text)
+
+        desc = issue_dict.get('description_full', '')
+        if _clean(desc):
+            return desc
+        generic = issue_dict.get('what_generic', '')
+        if _clean(generic):
+            return generic
+        raw = issue_dict.get('description', '')
+        if _clean(raw):
+            return raw
+        # The metadata dict may hold a clean English what_generic (stored by
+        # result_processor at test time) and/or the original JS description
+        # with values already interpolated.
+        meta = issue_dict.get('metadata', {}) or {}
+        meta_generic = meta.get('what_generic', '')
+        if _clean(meta_generic):
+            return meta_generic
+        meta_desc = meta.get('description', '')
+        if _clean(meta_desc):
+            return meta_desc
+        # Nothing clean available — return the best we have as-is
+        return desc or generic or raw or ''
+
     def format_page_report(self, data: Dict[str, Any]) -> str:
         """Format page report data"""
         raise NotImplementedError
@@ -804,9 +858,9 @@ class HTMLFormatter(BaseFormatter):
             html += f"""
             <div class="violation">
                 <h4>{v.get('rule_id', self._t('unknown'))}
-                    <span class="impact {impact_class}">{v.get('impact', 'moderate').upper()}</span>
+                    <span class="impact {impact_class}">{self._translate_impact(v.get('impact', 'moderate'))}</span>
                 </h4>
-                <p><strong>{self._t('description')}:</strong> {v.get('description', self._t('no_description'))}</p>
+                <p><strong>{self._t('description')}:</strong> {self._best_description(v) if isinstance(v, dict) else v.get('description', self._t('no_description'))}</p>
                 <p><strong>{self._t('wcag_criteria')}:</strong> {', '.join(v.get('wcag_criteria', []))}</p>
                 <p><strong>{self._t('elements_affected')}:</strong> {v.get('node_count', 0)}</p>
                 {metadata_html}
@@ -834,7 +888,7 @@ class HTMLFormatter(BaseFormatter):
             html += f"""
             <div class="warning">
                 <h4>{w.get('rule_id', self._t('unknown'))}</h4>
-                <p>{w.get('description', self._t('no_description'))}</p>
+                <p>{self._best_description(w) if isinstance(w, dict) else w.get('description', self._t('no_description'))}</p>
                 {metadata_html}
             </div>"""
         html += "</section>"
@@ -859,14 +913,14 @@ class HTMLFormatter(BaseFormatter):
             html += f"""
             <div class="info-item">
                 <h4>{item.get('id', self._t('unknown'))}</h4>
-                <p><strong>{self._t('description')}:</strong> {item.get('description', self._t('no_description'))}</p>
+                <p><strong>{self._t('description')}:</strong> {self._best_description(item) if isinstance(item, dict) else item.get('description', self._t('no_description'))}</p>
                 <p><strong>{self._t('category')}:</strong> {item.get('category', 'General')}</p>
                 {f"<p><strong>{self._t('wcag_criteria')}:</strong> {', '.join(item.get('wcag_criteria', []))}</p>" if item.get('wcag_criteria') else ""}
                 {metadata_html}
             </div>"""
         html += "</section>"
         return html
-    
+
     def _format_discovery_section(self, discovery_items: List[Dict]) -> str:
         """Format discovery section"""
         if not discovery_items:
@@ -887,14 +941,14 @@ class HTMLFormatter(BaseFormatter):
             html += f"""
             <div class="discovery-item">
                 <h4>{item.get('id', self._t('unknown'))}</h4>
-                <p><strong>{self._t('description')}:</strong> {item.get('description', self._t('no_description'))}</p>
+                <p><strong>{self._t('description')}:</strong> {self._best_description(item) if isinstance(item, dict) else item.get('description', self._t('no_description'))}</p>
                 <p><strong>{self._t('category')}:</strong> {item.get('category', 'General')}</p>
                 {f"<p><strong>{self._t('location')}:</strong> <code>{item.get('xpath', self._t('not_specified'))}</code></p>" if item.get('xpath') else ""}
                 {metadata_html}
             </div>"""
         html += "</section>"
         return html
-    
+
     def _format_ai_findings_section(self, findings: List) -> str:
         """Format AI findings section"""
         if not findings:
@@ -1161,10 +1215,19 @@ class HTMLFormatter(BaseFormatter):
             out.write('\n</head>\n<body>\n<div class="container">\n')
             out.write(f'<header><h1>{self._t("accessibility_report")}</h1></header>\n')
 
-            # Summary dashboard
+            # Summary dashboard — only render the numeric stat fields
             out.write('<section class="summary"><div class="stats-grid">\n')
-            for key, val in s.items():
-                out.write(f'<div class="stat-card"><h3>{val}</h3><p>{key}</p></div>\n')
+            stat_cards = [
+                ('total_pages', self._t('total_pages'), ''),
+                ('total_violations', self._t('total_violations'), ' violations'),
+                ('total_warnings', self._t('total_warnings'), ' warnings'),
+                ('total_info', self._t('info'), ''),
+                ('total_discovery', self._t('discovery'), ''),
+                ('total_passes', self._t('passes'), ' passes'),
+            ]
+            for key, label, css_class in stat_cards:
+                val = s.get(key, 0)
+                out.write(f'<div class="stat-card{css_class}"><h3>{val}</h3><p>{label}</p></div>\n')
             out.write('</div></section>\n')
 
             # Stream body from temp file in 64KB chunks
@@ -1191,22 +1254,29 @@ class HTMLFormatter(BaseFormatter):
 
     # --- streaming helpers ---
 
-    @staticmethod
-    def _streaming_issue_row(issue) -> str:
+    def _streaming_issue_row(self, issue) -> str:
         """Return an HTML <tr> for one issue."""
-        _get = (lambda k, d='': getattr(issue, k, d)) if not isinstance(issue, dict) \
-            else (lambda k, d='': issue.get(k, d))
+        # Enrich with catalog data so descriptions are translated
+        if isinstance(issue, dict):
+            issue_dict = issue
+        elif hasattr(issue, 'to_dict'):
+            issue_dict = issue.to_dict()
+        else:
+            issue_dict = issue.__dict__.copy() if hasattr(issue, '__dict__') else {}
+        issue_dict = IssueCatalog.enrich_issue(issue_dict)
+        _get = lambda k, d='': issue_dict.get(k, d)
 
         impact = _get('impact', '')
         if hasattr(impact, 'value'):
             impact = impact.value
+        impact = self._translate_impact(str(impact))
 
         wcag = _get('wcag_criteria', [])
         if isinstance(wcag, list):
             wcag = ', '.join(str(c) for c in wcag)
 
         code = _get('id', '')
-        description = _get('description', '')
+        description = self._best_description(issue_dict)
         xpath = _get('xpath', '')
 
         return f'<tr><td>{code}</td><td>{description}</td><td>{impact}</td><td>{wcag}</td><td>{xpath}</td></tr>\n'
@@ -1444,8 +1514,15 @@ class CSVFormatter(BaseFormatter):
 
     def _write_issue_row(self, issue_type: str, page_url: str, page_title: str, issue):
         """Write a single CSV row for an issue (violation or warning)."""
-        _get = (lambda k, d='': getattr(issue, k, d)) if not isinstance(issue, dict) \
-            else (lambda k, d='': issue.get(k, d))
+        # Enrich with catalog data so descriptions are translated
+        if isinstance(issue, dict):
+            issue_dict = issue
+        elif hasattr(issue, 'to_dict'):
+            issue_dict = issue.to_dict()
+        else:
+            issue_dict = issue.__dict__.copy() if hasattr(issue, '__dict__') else {}
+        issue_dict = IssueCatalog.enrich_issue(issue_dict)
+        _get = lambda k, d='': issue_dict.get(k, d)
 
         impact = _get('impact', '')
         if hasattr(impact, 'value'):
@@ -1460,9 +1537,9 @@ class CSVFormatter(BaseFormatter):
             page_title,
             issue_type,
             _get('id', ''),
-            _get('description', ''),
+            self._best_description(issue_dict),
             _get('touchpoint', ''),
-            impact,
+            self._translate_impact(str(impact)),
             _get('xpath', ''),
             _get('html', ''),
             wcag,
@@ -2226,11 +2303,11 @@ class ExcelFormatter(BaseFormatter):
                     # Enrich with catalog information
                     v_dict = IssueCatalog.enrich_issue(v_dict)
 
-                    ws.cell(row=row, column=1, value='Violation')
-                    ws.cell(row=row, column=2, value=str(v_dict.get('impact', 'Unknown')).upper())
+                    ws.cell(row=row, column=1, value=self._t('violation'))
+                    ws.cell(row=row, column=2, value=self._translate_impact(str(v_dict.get('impact', 'Unknown'))))
                     ws.cell(row=row, column=3, value=v_dict.get('id', ''))
                     ws.cell(row=row, column=4, value=v_dict.get('touchpoint', v_dict.get('category', '')))
-                    ws.cell(row=row, column=5, value=v_dict.get('description_full', v_dict.get('what', v_dict.get('description', ''))))
+                    ws.cell(row=row, column=5, value=self._best_description(v_dict))
                     ws.cell(row=row, column=6, value=v_dict.get('why_it_matters', ''))
                     ws.cell(row=row, column=7, value=v_dict.get('who_it_affects', ''))
                     ws.cell(row=row, column=8, value=v_dict.get('how_to_fix', v_dict.get('remediation', v_dict.get('suggested_fix', ''))))
@@ -2270,11 +2347,11 @@ class ExcelFormatter(BaseFormatter):
                     # Enrich with catalog information
                     w_dict = IssueCatalog.enrich_issue(w_dict)
 
-                    ws.cell(row=row, column=1, value='Warning')
-                    ws.cell(row=row, column=2, value=str(w_dict.get('impact', 'Moderate')).upper())
+                    ws.cell(row=row, column=1, value=self._t('warning'))
+                    ws.cell(row=row, column=2, value=self._translate_impact(str(w_dict.get('impact', 'Moderate'))))
                     ws.cell(row=row, column=3, value=w_dict.get('id', ''))
                     ws.cell(row=row, column=4, value=w_dict.get('touchpoint', w_dict.get('category', '')))
-                    ws.cell(row=row, column=5, value=w_dict.get('description_full', w_dict.get('what', w_dict.get('description', ''))))
+                    ws.cell(row=row, column=5, value=self._best_description(w_dict))
                     ws.cell(row=row, column=6, value=w_dict.get('why_it_matters', ''))
                     ws.cell(row=row, column=7, value=w_dict.get('who_it_affects', ''))
                     ws.cell(row=row, column=8, value=w_dict.get('how_to_fix', w_dict.get('remediation', w_dict.get('suggested_fix', ''))))
@@ -2314,11 +2391,11 @@ class ExcelFormatter(BaseFormatter):
                     # Enrich with catalog information
                     i_dict = IssueCatalog.enrich_issue(i_dict)
 
-                    ws.cell(row=row, column=1, value='Info')
+                    ws.cell(row=row, column=1, value=self._t('info'))
                     ws.cell(row=row, column=2, value='INFO')
                     ws.cell(row=row, column=3, value=i_dict.get('id', ''))
                     ws.cell(row=row, column=4, value=i_dict.get('touchpoint', i_dict.get('category', '')))
-                    ws.cell(row=row, column=5, value=i_dict.get('description_full', i_dict.get('what', i_dict.get('description', ''))))
+                    ws.cell(row=row, column=5, value=self._best_description(i_dict))
                     ws.cell(row=row, column=6, value=i_dict.get('why_it_matters', ''))
                     ws.cell(row=row, column=7, value=i_dict.get('who_it_affects', ''))
                     ws.cell(row=row, column=8, value=i_dict.get('how_to_fix', i_dict.get('remediation', '')))
@@ -2358,11 +2435,11 @@ class ExcelFormatter(BaseFormatter):
                     # Enrich with catalog information
                     d_dict = IssueCatalog.enrich_issue(d_dict)
 
-                    ws.cell(row=row, column=1, value='Discovery')
+                    ws.cell(row=row, column=1, value=self._t('discovery'))
                     ws.cell(row=row, column=2, value='DISCOVERY')
                     ws.cell(row=row, column=3, value=d_dict.get('id', ''))
                     ws.cell(row=row, column=4, value=d_dict.get('touchpoint', d_dict.get('category', '')))
-                    ws.cell(row=row, column=5, value=d_dict.get('description_full', d_dict.get('what', d_dict.get('description', ''))))
+                    ws.cell(row=row, column=5, value=self._best_description(d_dict))
                     ws.cell(row=row, column=6, value=d_dict.get('why_it_matters', ''))
                     ws.cell(row=row, column=7, value=d_dict.get('who_it_affects', ''))
                     ws.cell(row=row, column=8, value=d_dict.get('how_to_fix', d_dict.get('remediation', '')))
@@ -3234,8 +3311,15 @@ class ExcelFormatter(BaseFormatter):
 
     def _append_issue_row(self, ws, page_url: str, page_title: str, issue):
         """Append a single data row to a worksheet."""
-        _get = (lambda k, d='': getattr(issue, k, d)) if not isinstance(issue, dict) \
-            else (lambda k, d='': issue.get(k, d))
+        # Enrich with catalog data so descriptions are translated
+        if isinstance(issue, dict):
+            issue_dict = issue
+        elif hasattr(issue, 'to_dict'):
+            issue_dict = issue.to_dict()
+        else:
+            issue_dict = issue.__dict__.copy() if hasattr(issue, '__dict__') else {}
+        issue_dict = IssueCatalog.enrich_issue(issue_dict)
+        _get = lambda k, d='': issue_dict.get(k, d)
 
         impact = _get('impact', '')
         if hasattr(impact, 'value'):
@@ -3249,9 +3333,9 @@ class ExcelFormatter(BaseFormatter):
             page_url,
             page_title,
             _get('id', ''),
-            _get('description', ''),
+            self._best_description(issue_dict),
             _get('touchpoint', ''),
-            impact,
+            self._translate_impact(str(impact)),
             _get('xpath', ''),
             _get('html', ''),
             wcag,

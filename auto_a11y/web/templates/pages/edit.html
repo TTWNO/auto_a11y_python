@@ -89,7 +89,7 @@
                             {% elif page.status.value == 'error' %}
                                 <span class="badge bg-danger">{{ _('Error') }}</span>
                             {% else %}
-                                <span class="badge bg-secondary">{{ page.status.value|title }}</span>
+                                <span class="badge bg-secondary">{{ _(page.status.value|title) }}</span>
                             {% endif %}
                         </dd>
                         

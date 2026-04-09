@@ -371,7 +371,7 @@
                             {% elif page.status.value == 'discovery_failed' %}
                             <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
                             {% endif %}
-                            {{ page.status.value|replace('_', ' ')|title }}
+                            {{ _(page.status.value|replace('_', ' ')|title) }}
                         </span>
                     </div>
                     <div class="d-flex flex-wrap gap-3 mb-3 small text-muted">

@@ -118,7 +118,7 @@
                                     {% for method in auth_methods %}
                                     <option value="{{ method.value }}"
                                             {% if method.value == user.login_config.authentication_method.value %}selected{% endif %}>
-                                        {{ method.value.replace('_', ' ').title() }}
+                                        {{ _(method.value|replace('_', ' ')|title) }}
                                     </option>
                                     {% endfor %}
                                 </select>

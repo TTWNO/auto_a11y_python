@@ -2702,10 +2702,12 @@ class IssueCatalog:
         issue_id = issue_dict.get('id', issue_dict.get('err', ''))
         # Build metadata for placeholder substitution - include root-level fields
         metadata = issue_dict.get('metadata', {}).copy() if issue_dict.get('metadata') else {}
-        # Add root-level fields that are used in placeholders
-        for field in ('element', 'element_text', 'element_tag', 'xpath', 'tag', 'tagName', 'href', 'src', 'alt', 'title', 'label', 'value', 'text', 'lang', 'role'):
-            if field in issue_dict and field not in metadata:
-                metadata[field] = issue_dict[field]
+        # Copy all root-level fields that could be used in description placeholders
+        # (e.g. foundLevel, headingText, current_level, animationName, etc.)
+        _skip = {'id', 'err', 'metadata'}
+        for field, val in issue_dict.items():
+            if field not in _skip and field not in metadata and val is not None:
+                metadata[field] = val
         catalog_data = cls.get_issue(issue_id, metadata)
         
         # Merge catalog data with existing issue data

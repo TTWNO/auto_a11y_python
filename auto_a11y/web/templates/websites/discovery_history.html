@@ -67,7 +67,7 @@
                                 {% elif run.status.value == 'cancelled' %}
                                 <span class="badge bg-secondary">{{ _('Cancelled') }}</span>
                                 {% else %}
-                                <span class="badge bg-secondary">{{ run.status.value }}</span>
+                                <span class="badge bg-secondary">{{ _(run.status.value|title) }}</span>
                                 {% endif %}
                             </td>
                             <td>{{ run.pages_discovered }}</td>

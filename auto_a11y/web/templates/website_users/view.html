@@ -97,7 +97,7 @@
                         <dt class="col-sm-5">{{ _('Auth Method:') }}</dt>
                         <dd class="col-sm-7">
                             <span class="badge bg-primary">
-                                {{ user.login_config.authentication_method.value.replace('_', ' ').title() }}
+                                {{ _(user.login_config.authentication_method.value|replace('_', ' ')|title) }}
                             </span>
                         </dd>
 

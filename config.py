@@ -3,10 +3,14 @@ Configuration management for Auto A11y Python
 """
 
 import os
+import secrets
+import logging
 from pathlib import Path
 from dotenv import load_dotenv
 from dataclasses import dataclass
 from typing import Optional
+
+_config_logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
@@ -29,8 +33,8 @@ class Config:
     """Application configuration"""
     
     # Flask
-    SECRET_KEY: str = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
-    DEBUG: bool = os.getenv('DEBUG', 'True').lower() == 'true'
+    SECRET_KEY: str = os.getenv('SECRET_KEY', '')
+    DEBUG: bool = os.getenv('DEBUG', 'False').lower() == 'true'
     HOST: str = os.getenv('HOST', '127.0.0.1')
     PORT: int = int(os.getenv('PORT', 5001))  # Changed from 5000 to avoid macOS AirPlay Receiver conflict
     
@@ -162,3 +166,10 @@ class Config:
 # Global config instance
 config = Config()
 config.validate()
+
+if not config.SECRET_KEY:
+    config.SECRET_KEY = secrets.token_hex(32)
+    _config_logger.warning(
+        "No SECRET_KEY set — using a random key. Sessions will not persist across restarts. "
+        "Set SECRET_KEY in your .env file for production."
+    )

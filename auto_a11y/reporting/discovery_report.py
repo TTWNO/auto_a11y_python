@@ -423,7 +423,7 @@ class DiscoveryReportGenerator:
             if page_ids_with_issues:
                 f.write('<div class="accordion">\n')
 
-                for idx, (page_id, _, _, _) in enumerate(page_ids_with_issues):
+                for idx, (page_id, _dc, _ic, _ac) in enumerate(page_ids_with_issues):
                     if progress_callback:
                         with force_locale(self.language):
                             progress_callback(

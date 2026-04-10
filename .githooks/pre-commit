@@ -51,25 +51,10 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# Run the validator (--po for fast check on .po-only changes,
-# full check if issue/WCAG translation files changed)
+# Run full validation (same check as CI)
 # ---------------------------------------------------------------------------
 
-FULL_CHECK=false
-for f in $STAGED_FILES; do
-    case "$f" in
-        *issue_translations_fr*|*wcag_translations_fr*)
-            FULL_CHECK=true
-            break
-            ;;
-    esac
-done
-
-if [ "$FULL_CHECK" = true ]; then
-    $PYTHON scripts/validate_translations.py
-else
-    $PYTHON scripts/validate_translations.py --po
-fi
+$PYTHON scripts/validate_translations.py
 
 RESULT=$?
 

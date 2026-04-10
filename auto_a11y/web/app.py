@@ -116,45 +116,17 @@ def create_app(config):
     # (e.g. l'annuler, d'attente) are rendered as &#39; and cannot break
     # JavaScript single-quoted strings or HTML attributes.
     from markupsafe import escape as _markup_escape
-    from flask_babel import gettext as _babel_gettext, ngettext as _babel_ngettext, get_translations
-
-    def _has_translation(msgid):
-        """Check if a msgid has an entry in the active translation catalog."""
-        try:
-            catalog = get_translations()
-            # GNUTranslations stores entries in _catalog dict
-            return str(msgid) in catalog._catalog
-        except Exception:
-            return False
+    from flask_babel import gettext as _babel_gettext, ngettext as _babel_ngettext
 
     def _escaped_gettext(*args, **kwargs):
-        original = args[0] if args else ''
         translated = _babel_gettext(*args, **kwargs)
-        # Append (FR) suffix when locale is French and the catalog has this entry
-        # (handles cases like "Pages" where FR translation == EN original)
-        if get_locale() == 'fr' and _has_translation(original):
-            translated = str(translated) + ' (FR)'
         return _markup_escape(translated)
     app.jinja_env.globals['_'] = _escaped_gettext
 
     def _escaped_ngettext(singular, plural, num, **kwargs):
         translated = _babel_ngettext(singular, plural, num, **kwargs)
-        if get_locale() == 'fr':
-            translated = str(translated) + ' (FR)'
         return _markup_escape(translated)
     app.jinja_env.globals['ngettext'] = _escaped_ngettext
-
-    # Monkey-patch flask_babel.gettext so Python-side _() calls in route files
-    # also get the (FR) debug suffix (they bypass the Jinja2 wrapper above).
-    import flask_babel as _flask_babel_module
-    _original_gettext = _flask_babel_module.gettext
-    def _debug_gettext(*args, **kwargs):
-        original = args[0] if args else ''
-        translated = _original_gettext(*args, **kwargs)
-        if get_locale() == 'fr' and _has_translation(original):
-            return str(translated) + ' (FR)'
-        return translated
-    _flask_babel_module.gettext = _debug_gettext
 
     # Add datetime format filter for templates
     @app.template_filter('datetimeformat')
@@ -512,37 +484,10 @@ def create_app(config):
                 total_pages = 0
                 tested_pages = 0
 
-        total_violations = 0
-        total_warnings = 0
-        total_info = 0
-        total_discovery = 0
-
-        for page in pages:
-            latest_result = app.db.test_results.find_one(
-                {'page_id': str(page['_id'])},
-                sort=[('created_at', -1)]
-            )
-
-            if latest_result:
-                if 'info' in latest_result and 'discovery' in latest_result:
-                    total_violations += len(latest_result.get('violations', []))
-                    total_warnings += len(latest_result.get('warnings', []))
-                    total_info += len(latest_result.get('info', []))
-                    total_discovery += len(latest_result.get('discovery', []))
-                else:
-                    for item in latest_result.get('violations', []):
-                        item_id = item.get('id', '')
-                        if '_Err' in item_id:
-                            total_violations += 1
-                        elif '_Warn' in item_id:
-                            total_warnings += 1
-                        elif '_Info' in item_id:
-                            total_info += 1
-                        elif '_Disco' in item_id:
-                            total_discovery += 1
-                        else:
-                            total_violations += 1
-                    total_warnings += len(latest_result.get('warnings', []))
+        total_violations = sum(p.get('violation_count', 0) for p in pages)
+        total_warnings = sum(p.get('warning_count', 0) for p in pages)
+        total_info = sum(p.get('info_count', 0) for p in pages)
+        total_discovery = sum(p.get('discovery_count', 0) for p in pages)
 
         stats = {
             'projects': len(user_projects),

@@ -8,7 +8,7 @@ from urllib.parse import urlparse
 
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, session, g, abort, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
-from flask_babel import _
+from auto_a11y.web.fluent import ftl
 from functools import wraps
 from itsdangerous import URLSafeSerializer, URLSafeTimedSerializer, BadSignature, SignatureExpired
 
@@ -27,11 +27,11 @@ def role_required(*roles):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             if not current_user.is_authenticated:
-                flash(_('Please log in to access this page.'), 'warning')
+                flash(ftl('common-please-log-in-to-access-this-page'), 'warning')
                 return redirect(url_for('auth.login', next=request.url))
             if getattr(current_user, 'is_superadmin', False):
                 return f(*args, **kwargs)
-            flash(_('You do not have permission to access this page.'), 'danger')
+            flash(ftl('common-you-do-not-have-permission-to-access-this-page'), 'danger')
             return redirect(url_for('index'))
         return decorated_function
     return decorator
@@ -42,10 +42,10 @@ def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated:
-            flash(_('Please log in to access this page.'), 'warning')
+            flash(ftl('common-please-log-in-to-access-this-page'), 'warning')
             return redirect(url_for('auth.login', next=request.url))
         if not getattr(current_user, 'is_superadmin', False):
-            flash(_('Administrator access required.'), 'danger')
+            flash(ftl('auth-administrator-access-required'), 'danger')
             return redirect(url_for('index'))
         return f(*args, **kwargs)
     return decorated_function
@@ -56,7 +56,7 @@ def auditor_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated:
-            flash(_('Please log in to access this page.'), 'warning')
+            flash(ftl('common-please-log-in-to-access-this-page'), 'warning')
             return redirect(url_for('auth.login', next=request.url))
         if getattr(current_user, 'is_superadmin', False):
             return f(*args, **kwargs)
@@ -64,7 +64,7 @@ def auditor_required(f):
         from auto_a11y.core.permissions import user_has_global_permission
         if user_has_global_permission(current_user, 'projects', 'create'):
             return f(*args, **kwargs)
-        flash(_('Auditor access required.'), 'danger')
+        flash(ftl('auth-auditor-access-required'), 'danger')
         return redirect(url_for('index'))
     return decorated_function
 
@@ -121,8 +121,8 @@ def project_role_required(*roles):
         def decorated_function(*args, **kwargs):
             if not current_user.is_authenticated:
                 if request.is_json:
-                    return jsonify({'error': _('Authentication required')}), 401
-                flash(_('Please log in to access this page.'), 'warning')
+                    return jsonify({'error': ftl('common-authentication-required')}), 401
+                flash(ftl('common-please-log-in-to-access-this-page'), 'warning')
                 return redirect(url_for('auth.login', next=request.url))
 
             if getattr(current_user, 'is_superadmin', False):
@@ -139,8 +139,8 @@ def project_role_required(*roles):
 
             if effective_role not in roles:
                 if request.is_json:
-                    return jsonify({'error': _('Insufficient permissions')}), 403
-                flash(_('You do not have permission to access this resource.'), 'danger')
+                    return jsonify({'error': ftl('common-insufficient-permissions')}), 403
+                flash(ftl('common-you-do-not-have-permission-to-access-this-resource'), 'danger')
                 abort(403)
 
             g.effective_role = effective_role
@@ -155,8 +155,8 @@ def project_admin_required(f):
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated:
             if request.is_json:
-                return jsonify({'error': _('Authentication required')}), 401
-            flash(_('Please log in to access this page.'), 'warning')
+                return jsonify({'error': ftl('common-authentication-required')}), 401
+            flash(ftl('common-please-log-in-to-access-this-page'), 'warning')
             return redirect(url_for('auth.login', next=request.url))
 
         if getattr(current_user, 'is_superadmin', False):
@@ -169,8 +169,8 @@ def project_admin_required(f):
             return f(*args, **kwargs)
 
         if request.is_json:
-            return jsonify({'error': _('Project admin access required')}), 403
-        flash(_('Project administrator access required.'), 'danger')
+            return jsonify({'error': ftl('auth-project-admin-access-required')}), 403
+        flash(ftl('auth-project-administrator-access-required'), 'danger')
         abort(403)
     return decorated_function
 
@@ -319,7 +319,7 @@ def send_password_reset_email(user):
     return send_email(
         config,
         to=user.email,
-        subject=_('Password Reset Request'),
+        subject=ftl('auth-password-reset-request'),
         text_body=text_body,
         html_body=html_body,
     )
@@ -517,27 +517,27 @@ def login():
         remember = request.form.get('remember', False) == 'on'
         
         if not email or not password:
-            flash(_('Please enter both email and password.'), 'danger')
+            flash(ftl('auth-please-enter-both-email-and-password'), 'danger')
             return render_template('auth/login.html')
         
         user = current_app.db.get_app_user_by_email(email)
         
         if user is None:
-            flash(_('Invalid email or password.'), 'danger')
+            flash(ftl('auth-invalid-email-or-password'), 'danger')
             return render_template('auth/login.html')
         
         if user.is_locked():
-            flash(_('Account is temporarily locked. Please try again later.'), 'danger')
+            flash(ftl('auth-account-is-temporarily-locked-please-try-again'), 'danger')
             return render_template('auth/login.html')
         
         if not user.is_active:
-            flash(_('Your account has been deactivated. Please contact an administrator.'), 'danger')
+            flash(ftl('auth-your-account-has-been-deactivated-please-contact'), 'danger')
             return render_template('auth/login.html')
         
         if not user.check_password(password):
             user.record_login(success=False)
             current_app.db.update_app_user(user)
-            flash(_('Invalid email or password.'), 'danger')
+            flash(ftl('auth-invalid-email-or-password'), 'danger')
             return render_template('auth/login.html')
         
         user.record_login(success=True)
@@ -561,7 +561,7 @@ def login():
 def logout():
     """User logout"""
     logout_user()
-    flash(_('You have been logged out.'), 'info')
+    flash(ftl('auth-you-have-been-logged-out'), 'info')
     return redirect(url_for('auth.login'))
 
 
@@ -584,20 +584,20 @@ def register():
         errors = []
 
         if not email:
-            errors.append(_('Email is required.'))
+            errors.append(ftl('auth-email-is-required'))
         elif '@' not in email:
-            errors.append(_('Please enter a valid email address.'))
+            errors.append(ftl('auth-please-enter-a-valid-email-address'))
         
         if not password:
-            errors.append(_('Password is required.'))
+            errors.append(ftl('auth-password-is-required'))
         elif len(password) < 8:
-            errors.append(_('Password must be at least 8 characters.'))
+            errors.append(ftl('auth-password-must-be-at-least-8-characters'))
         
         if password != confirm_password:
-            errors.append(_('Passwords do not match.'))
+            errors.append(ftl('auth-passwords-do-not-match'))
         
         if current_app.db.app_user_exists(email):
-            errors.append(_('An account with this email already exists.'))
+            errors.append(ftl('auth-an-account-with-this-email-already-exists'))
         
         if errors:
             for error in errors:
@@ -620,9 +620,9 @@ def register():
             current_app.db.create_app_user(user)
             
             if is_first_user:
-                flash(_('Admin account created successfully. Please log in.'), 'success')
+                flash(ftl('auth-admin-account-created-successfully-please-log-in'), 'success')
             else:
-                flash(_('Account created successfully. Please log in.'), 'success')
+                flash(ftl('auth-account-created-successfully-please-log-in'), 'success')
             
             return redirect(url_for('auth.login'))
         
@@ -653,7 +653,7 @@ def forgot_password():
                     logger.warning('Password reset requested but SMTP is not configured')
 
         # Always show the same message to prevent email enumeration
-        flash(_('If that email address is in our system, we have sent a password reset link.'), 'info')
+        flash(ftl('auth-if-that-email-address-is-in-our-system-we-have'), 'info')
         return redirect(url_for('auth.forgot_password'))
 
     return render_template('auth/forgot_password.html')
@@ -669,12 +669,12 @@ def reset_password(token):
 
     email = verify_reset_token(token)
     if email is None:
-        flash(_('This password reset link is invalid or has expired.'), 'danger')
+        flash(ftl('auth-this-password-reset-link-is-invalid-or-has-expired'), 'danger')
         return redirect(url_for('auth.forgot_password'))
 
     user = current_app.db.get_app_user_by_email(email)
     if user is None or not user.is_active:
-        flash(_('This password reset link is invalid or has expired.'), 'danger')
+        flash(ftl('auth-this-password-reset-link-is-invalid-or-has-expired'), 'danger')
         return redirect(url_for('auth.forgot_password'))
 
     # Reject token if it was generated before the last reset
@@ -683,12 +683,12 @@ def reset_password(token):
         try:
             _email, timestamp = serializer.loads_unsafe(token, salt=PASSWORD_RESET_SALT)
         except Exception:
-            flash(_('This password reset link is invalid or has expired.'), 'danger')
+            flash(ftl('auth-this-password-reset-link-is-invalid-or-has-expired'), 'danger')
             return redirect(url_for('auth.forgot_password'))
         from datetime import datetime
         token_created = datetime.utcfromtimestamp(timestamp)
         if token_created < user.password_reset_at:
-            flash(_('This password reset link has already been used.'), 'danger')
+            flash(ftl('auth-this-password-reset-link-has-already-been-used'), 'danger')
             return redirect(url_for('auth.forgot_password'))
 
     if request.method == 'POST':
@@ -696,11 +696,11 @@ def reset_password(token):
         confirm_password = request.form.get('confirm_password', '')
 
         if len(password) < 8:
-            flash(_('Password must be at least 8 characters.'), 'danger')
+            flash(ftl('auth-password-must-be-at-least-8-characters'), 'danger')
             return render_template('auth/reset_password.html', token=token)
 
         if password != confirm_password:
-            flash(_('Passwords do not match.'), 'danger')
+            flash(ftl('auth-passwords-do-not-match'), 'danger')
             return render_template('auth/reset_password.html', token=token)
 
         from datetime import datetime
@@ -711,7 +711,7 @@ def reset_password(token):
         user.update_timestamp()
         current_app.db.update_app_user(user)
 
-        flash(_('Your password has been reset. Please log in.'), 'success')
+        flash(ftl('auth-your-password-has-been-reset-please-log-in'), 'success')
         return redirect(url_for('auth.login'))
 
     return render_template('auth/reset_password.html', token=token)
@@ -729,7 +729,7 @@ def profile():
             current_user.display_name = display_name or None
             current_user.update_timestamp()
             current_app.db.update_app_user(current_user)
-            flash(_('Profile updated successfully.'), 'success')
+            flash(ftl('auth-profile-updated-successfully'), 'success')
         
         elif action == 'change_password':
             current_password = request.form.get('current_password', '')
@@ -738,17 +738,17 @@ def profile():
             password_hint = request.form.get('password_hint', '').strip()
 
             if not current_user.check_password(current_password):
-                flash(_('Current password is incorrect.'), 'danger')
+                flash(ftl('auth-current-password-is-incorrect'), 'danger')
             elif len(new_password) < 8:
-                flash(_('New password must be at least 8 characters.'), 'danger')
+                flash(ftl('auth-new-password-must-be-at-least-8-characters'), 'danger')
             elif new_password != confirm_password:
-                flash(_('New passwords do not match.'), 'danger')
+                flash(ftl('auth-new-passwords-do-not-match'), 'danger')
             else:
                 current_user.set_password(new_password)
                 current_user.password_hint = password_hint or None
                 current_user.update_timestamp()
                 current_app.db.update_app_user(current_user)
-                flash(_('Password changed successfully.'), 'success')
+                flash(ftl('auth-password-changed-successfully'), 'success')
         
         return redirect(url_for('auth.profile'))
     
@@ -776,13 +776,13 @@ def user_create():
         errors = []
 
         if not email or '@' not in email:
-            errors.append(_('Please enter a valid email address.'))
+            errors.append(ftl('auth-please-enter-a-valid-email-address'))
 
         if not password or len(password) < 8:
-            errors.append(_('Password must be at least 8 characters.'))
+            errors.append(ftl('auth-password-must-be-at-least-8-characters'))
 
         if current_app.db.app_user_exists(email):
-            errors.append(_('An account with this email already exists.'))
+            errors.append(ftl('auth-an-account-with-this-email-already-exists'))
 
         if errors:
             for error in errors:
@@ -800,7 +800,7 @@ def user_create():
 
         try:
             current_app.db.create_app_user(user)
-            flash(_('User created successfully.'), 'success')
+            flash(ftl('auth-user-created-successfully'), 'success')
             return redirect(url_for('auth.user_list'))
         except ValueError as e:
             flash(str(e), 'danger')
@@ -814,7 +814,7 @@ def user_edit(user_id):
     """Edit a user"""
     user = current_app.db.get_app_user(user_id)
     if not user:
-        flash(_('User not found.'), 'danger')
+        flash(ftl('auth-user-not-found'), 'danger')
         return redirect(url_for('auth.user_list'))
 
     if request.method == 'POST':
@@ -828,13 +828,13 @@ def user_edit(user_id):
                 user.is_superadmin = request.form.get('is_superadmin') == 'on'
             user.update_timestamp()
             current_app.db.update_app_user(user)
-            flash(_('User updated successfully.'), 'success')
+            flash(ftl('auth-user-updated-successfully'), 'success')
 
         elif action == 'reset_password':
             new_password = request.form.get('new_password', '')
             password_hint = request.form.get('password_hint', '').strip()
             if len(new_password) < 8:
-                flash(_('Password must be at least 8 characters.'), 'danger')
+                flash(ftl('auth-password-must-be-at-least-8-characters'), 'danger')
             else:
                 user.set_password(new_password)
                 user.password_hint = password_hint or None
@@ -842,23 +842,23 @@ def user_edit(user_id):
                 user.locked_until = None
                 user.update_timestamp()
                 current_app.db.update_app_user(user)
-                flash(_('Password reset successfully.'), 'success')
+                flash(ftl('auth-password-reset-successfully'), 'success')
 
         elif action == 'unlock':
             user.failed_login_count = 0
             user.locked_until = None
             user.update_timestamp()
             current_app.db.update_app_user(user)
-            flash(_('Account unlocked.'), 'success')
+            flash(ftl('auth-account-unlocked'), 'success')
 
         elif action == 'send_reset_email':
             if current_app.app_config.SMTP_ENABLED:
                 if send_password_reset_email(user):
-                    flash(_('Password reset email sent to %(email)s.', email=user.email), 'success')
+                    flash(ftl('auth-password-reset-email-sent-to-email', email=user.email), 'success')
                 else:
-                    flash(_('Failed to send password reset email. Check SMTP configuration.'), 'danger')
+                    flash(ftl('auth-failed-to-send-password-reset-email-check-smtp'), 'danger')
             else:
-                flash(_('SMTP is not configured. Cannot send email.'), 'danger')
+                flash(ftl('auth-smtp-is-not-configured-cannot-send-email'), 'danger')
 
         return redirect(url_for('auth.user_edit', user_id=user_id))
 
@@ -884,12 +884,12 @@ def user_edit(user_id):
 def user_delete(user_id):
     """Delete a user"""
     if current_user.id == user_id:
-        flash(_('You cannot delete your own account.'), 'danger')
+        flash(ftl('auth-you-cannot-delete-your-own-account'), 'danger')
         return redirect(url_for('auth.user_list'))
     
     user = current_app.db.get_app_user(user_id)
     if not user:
-        flash(_('User not found.'), 'danger')
+        flash(ftl('auth-user-not-found'), 'danger')
         return redirect(url_for('auth.user_list'))
 
     # Remove user from all project memberships before deleting
@@ -898,7 +898,7 @@ def user_delete(user_id):
         current_app.db.remove_project_member(project.id, user_id)
 
     current_app.db.delete_app_user(user_id)
-    flash(_('User deleted successfully.'), 'success')
+    flash(ftl('auth-user-deleted-successfully'), 'success')
     return redirect(url_for('auth.user_list'))
 
 
@@ -926,17 +926,17 @@ def microsoft_callback():
     claims = complete_microsoft_auth(request, redirect_uri)
 
     if claims is None:
-        flash(_('Microsoft sign-in failed. Please try again.'), 'danger')
+        flash(ftl('auth-microsoft-sign-in-failed-please-try-again'), 'danger')
         return redirect(url_for('auth.login'))
 
     user = find_sso_user(claims)
 
     if user is None:
-        flash(_('No account found for that email. Please contact us to request access.'), 'warning')
+        flash(ftl('auth-no-account-found-for-that-email-please-contact-us'), 'warning')
         return redirect(url_for('auth.contact'))
 
     if not user.is_active:
-        flash(_('Your account has been deactivated.'), 'danger')
+        flash(ftl('auth-your-account-has-been-deactivated'), 'danger')
         return redirect(url_for('auth.login'))
 
     user.record_login(success=True)
@@ -969,17 +969,17 @@ def google_callback():
     claims = complete_google_auth(request, redirect_uri)
 
     if claims is None:
-        flash(_('Google sign-in failed. Please try again.'), 'danger')
+        flash(ftl('auth-google-sign-in-failed-please-try-again'), 'danger')
         return redirect(url_for('auth.login'))
 
     user = find_sso_user(claims)
 
     if user is None:
-        flash(_('No account found for that email. Please contact us to request access.'), 'warning')
+        flash(ftl('auth-no-account-found-for-that-email-please-contact-us'), 'warning')
         return redirect(url_for('auth.contact'))
 
     if not user.is_active:
-        flash(_('Your account has been deactivated.'), 'danger')
+        flash(ftl('auth-your-account-has-been-deactivated'), 'danger')
         return redirect(url_for('auth.login'))
 
     user.record_login(success=True)

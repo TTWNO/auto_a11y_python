@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('Edit') }} {{ website.display_name }} - Auto A11y{% endblock %}
+{% block title %}{{ ftl('common-edit') }} {{ website.display_name }} - Auto A11y{% endblock %}
 
 {% block content %}
 <div class="container">
@@ -9,30 +9,30 @@
             <!-- Breadcrumb -->
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{ url_for('projects.list_projects') }}">{{ _('Projects') }}</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('projects.list_projects') }}">{{ ftl('common-projects') }}</a></li>
                     <li class="breadcrumb-item"><a href="{{ url_for('projects.view_project', project_id=project.id) }}">{{ project.name }}</a></li>
                     <li class="breadcrumb-item"><a href="{{ url_for('websites.view_website', website_id=website.id) }}">{{ website.display_name }}</a></li>
-                    <li class="breadcrumb-item active">{{ _('Edit') }}</li>
+                    <li class="breadcrumb-item active">{{ ftl('common-edit') }}</li>
                 </ol>
             </nav>
 
-            <h1 class="mb-4">{{ _('Edit Website') }}</h1>
+            <h1 class="mb-4">{{ ftl('websites-edit-website') }}</h1>
 
             <div class="card">
                 <div class="card-body">
                     <form method="POST" action="{{ url_for('websites.edit_website', website_id=website.id) }}">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <fieldset>
-                            <legend id="basic-info-heading">{{ _('Basic Information') }}</legend>
+                            <legend id="basic-info-heading">{{ ftl('common-basic-information') }}</legend>
 
                             <div class="mb-3">
-                                <label for="name" class="form-label">{{ _('Website Name') }}</label>
+                                <label for="name" class="form-label">{{ ftl('websites-website-name') }}</label>
                                 <input type="text" class="form-control" id="name" name="name"
-                                       value="{{ website.name or '' }}" placeholder="{{ _('Optional display name') }}">
+                                       value="{{ website.name or '' }}" placeholder="{{ ftl('websites-optional-display-name') }}">
                             </div>
 
                             <div class="mb-3">
-                                <label for="url" class="form-label">{{ _('Website URL') }} *</label>
+                                <label for="url" class="form-label">{{ ftl('common-website-url') }} *</label>
                                 <input type="url" class="form-control" id="url" name="url"
                                        value="{{ website.url }}" required autocomplete="url">
                             </div>
@@ -41,33 +41,33 @@
                         <hr class="my-4">
 
                         <fieldset>
-                            <legend id="scraping-config-heading">{{ _('Scraping Configuration') }}</legend>
+                            <legend id="scraping-config-heading">{{ ftl('websites-scraping-configuration') }}</legend>
 
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="max_pages" class="form-label">{{ _('Max Pages') }}</label>
+                                    <label for="max_pages" class="form-label">{{ ftl('websites-max-pages-2') }}</label>
                                     <input type="number" class="form-control" id="max_pages" name="max_pages"
                                            value="{{ website.scraping_config.max_pages }}" min="1" max="9999999"
                                            aria-describedby="max-pages-help">
-                                    <div id="max-pages-help" class="form-text">{{ _('Maximum number of pages to discover (default: unlimited)') }}</div>
+                                    <div id="max-pages-help" class="form-text">{{ ftl('websites-maximum-number-of-pages-to-discover-default') }}</div>
                                 </div>
 
                                 <div class="col-md-6 mb-3">
-                                    <label for="max_depth" class="form-label">{{ _('Max Depth') }}</label>
+                                    <label for="max_depth" class="form-label">{{ ftl('websites-max-depth-2') }}</label>
                                     <input type="number" class="form-control" id="max_depth" name="max_depth"
                                            value="{{ website.scraping_config.max_depth }}" min="1" max="50"
                                            aria-describedby="max-depth-help">
-                                    <div id="max-depth-help" class="form-text">{{ _('How many clicks away from the starting page (default: 10)') }}</div>
+                                    <div id="max-depth-help" class="form-text">{{ ftl('websites-how-many-clicks-away-from-the-starting-page') }}</div>
                                 </div>
                             </div>
 
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="request_delay" class="form-label">{{ _('Request Delay (seconds)') }}</label>
+                                    <label for="request_delay" class="form-label">{{ ftl('websites-request-delay-seconds') }}</label>
                                     <input type="number" class="form-control" id="request_delay" name="request_delay"
                                            value="{{ website.scraping_config.request_delay }}" min="0" max="10" step="0.1"
                                            aria-describedby="request-delay-help">
-                                    <div id="request-delay-help" class="form-text">{{ _('Delay between requests') }}</div>
+                                    <div id="request-delay-help" class="form-text">{{ ftl('websites-delay-between-requests') }}</div>
                                 </div>
                             </div>
                         
@@ -76,7 +76,7 @@
                                     <input class="form-check-input" type="checkbox" id="follow_external"
                                            name="follow_external" {% if website.scraping_config.follow_external %}checked{% endif %}>
                                     <label class="form-check-label" for="follow_external">
-                                        {{ _('Follow external links') }}
+                                        {{ ftl('websites-follow-external-links') }}
                                     </label>
                                 </div>
 
@@ -84,7 +84,7 @@
                                     <input class="form-check-input" type="checkbox" id="include_subdomains"
                                            name="include_subdomains" {% if website.scraping_config.include_subdomains %}checked{% endif %}>
                                     <label class="form-check-label" for="include_subdomains">
-                                        {{ _('Include subdomains') }}
+                                        {{ ftl('websites-include-subdomains') }}
                                     </label>
                                 </div>
 
@@ -92,7 +92,7 @@
                                     <input class="form-check-input" type="checkbox" id="respect_robots"
                                            name="respect_robots" {% if website.scraping_config.respect_robots %}checked{% endif %}>
                                     <label class="form-check-label" for="respect_robots">
-                                        {{ _('Respect robots.txt') }}
+                                        {{ ftl('websites-respect-robots-txt') }}
                                     </label>
                                 </div>
                             </div>
@@ -100,11 +100,11 @@
 
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-check-circle" aria-hidden="true"></i> {{ _('Update Website') }}
+                                <i class="bi bi-check-circle" aria-hidden="true"></i> {{ ftl('websites-update-website') }}
                             </button>
                             <a href="{{ url_for('websites.view_website', website_id=website.id) }}"
                                class="btn btn-outline-secondary">
-                                <i class="bi bi-x-circle" aria-hidden="true"></i> {{ _('Cancel') }}
+                                <i class="bi bi-x-circle" aria-hidden="true"></i> {{ ftl('common-cancel') }}
                             </a>
                         </div>
 
@@ -112,7 +112,7 @@
 
                         <div class="d-grid">
                             <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteWebsiteModal">
-                                <i class="bi bi-trash" aria-hidden="true"></i> {{ _('Delete Website') }}
+                                <i class="bi bi-trash" aria-hidden="true"></i> {{ ftl('websites-delete-website') }}
                             </button>
                         </div>
                     </form>
@@ -127,18 +127,18 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title" id="deleteWebsiteModalLabel">{{ _('Delete Website') }}</h2>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ _('Close') }}"></button>
+                <h2 class="modal-title" id="deleteWebsiteModalLabel">{{ ftl('websites-delete-website') }}</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ ftl('common-close') }}"></button>
             </div>
             <div class="modal-body">
-                <p>{{ _('Are you sure you want to delete the website') }} "{{ website.display_name }}"?</p>
-                <p class="text-danger">{{ _('This will permanently delete all pages and test results associated with this website.') }}</p>
+                <p>{{ ftl('websites-are-you-sure-you-want-to-delete-the-website') }} "{{ website.display_name }}"?</p>
+                <p class="text-danger">{{ ftl('websites-this-will-permanently-delete-all-pages-and-test') }}</p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ ftl('common-cancel') }}</button>
                 <form method="POST" action="{{ url_for('websites.delete_website', website_id=website.id) }}" style="display: inline;">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                    <button type="submit" class="btn btn-danger">{{ _('Delete Website') }}</button>
+                    <button type="submit" class="btn btn-danger">{{ ftl('websites-delete-website') }}</button>
                 </form>
             </div>
         </div>

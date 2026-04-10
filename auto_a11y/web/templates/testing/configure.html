@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('Settings') }} - Auto A11y{% endblock %}
+{% block title %}{{ ftl('common-settings') }} - Auto A11y{% endblock %}
 
 {% block content %}
 <div class="container">
     <div class="row">
         <div class="col-md-12">
             <h1 class="mb-4">
-                <i class="bi bi-gear" aria-hidden="true"></i> {{ _('Settings') }}
+                <i class="bi bi-gear" aria-hidden="true"></i> {{ ftl('common-settings') }}
             </h1>
         </div>
     </div>
@@ -17,26 +17,26 @@
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header">
-                    <h2><i class="bi bi-sliders" aria-hidden="true"></i> {{ _('Testing Configuration') }}</h2>
+                    <h2><i class="bi bi-sliders" aria-hidden="true"></i> {{ ftl('testing-testing-configuration') }}</h2>
                 </div>
                 <div class="card-body">
                     <form id="testing-config-form">
                         <fieldset>
-                            <legend class="visually-hidden">{{ _('Testing Configuration') }}</legend>
+                            <legend class="visually-hidden">{{ ftl('testing-testing-configuration') }}</legend>
                             <div class="row mb-3">
                                 <div class="col-md-6">
-                                    <label for="parallel_tests" class="form-label">{{ _('Parallel Tests') }}</label>
+                                    <label for="parallel_tests" class="form-label">{{ ftl('testing-parallel-tests') }}</label>
                                     <input type="number" class="form-control" id="parallel_tests"
                                            value="{{ config.parallel_tests }}" min="1" max="10"
                                            aria-describedby="parallel_tests_help">
-                                    <small class="text-muted" id="parallel_tests_help">{{ _('Number of tests to run in parallel') }}</small>
+                                    <small class="text-muted" id="parallel_tests_help">{{ ftl('testing-number-of-tests-to-run-in-parallel') }}</small>
                                 </div>
                                 <div class="col-md-6">
-                                    <label for="test_timeout" class="form-label">{{ _('Test Timeout (seconds)') }}</label>
+                                    <label for="test_timeout" class="form-label">{{ ftl('testing-test-timeout-seconds') }}</label>
                                     <input type="number" class="form-control" id="test_timeout"
                                            value="{{ config.test_timeout }}" min="10" max="300"
                                            aria-describedby="test_timeout_help">
-                                    <small class="text-muted" id="test_timeout_help">{{ _('Maximum time per page test') }}</small>
+                                    <small class="text-muted" id="test_timeout_help">{{ ftl('testing-maximum-time-per-page-test') }}</small>
                                 </div>
                             </div>
 
@@ -47,10 +47,10 @@
                                                {% if config.run_ai_analysis %}checked{% endif %}
                                                aria-describedby="run_ai_analysis_help">
                                         <label class="form-check-label" for="run_ai_analysis">
-                                            {{ _('Enable AI Analysis') }}
+                                            {{ ftl('testing-enable-ai-analysis') }}
                                         </label>
                                     </div>
-                                    <small class="text-muted" id="run_ai_analysis_help">{{ _('Use Claude AI for visual accessibility analysis') }}</small>
+                                    <small class="text-muted" id="run_ai_analysis_help">{{ ftl('testing-use-claude-ai-for-visual-accessibility-analysis') }}</small>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-check form-switch">
@@ -58,21 +58,21 @@
                                                {% if config.browser_headless %}checked{% endif %}
                                                aria-describedby="browser_headless_help">
                                         <label class="form-check-label" for="browser_headless">
-                                            {{ _('Headless Browser') }}
+                                            {{ ftl('testing-headless-browser') }}
                                         </label>
                                     </div>
-                                    <small class="text-muted" id="browser_headless_help">{{ _('Run browser in headless mode') }}</small>
+                                    <small class="text-muted" id="browser_headless_help">{{ ftl('testing-run-browser-in-headless-mode') }}</small>
                                 </div>
                             </div>
 
                             <div class="row mb-3">
                                 <div class="col-md-6">
-                                    <label for="viewport_width" class="form-label">{{ _('Viewport Width') }}</label>
+                                    <label for="viewport_width" class="form-label">{{ ftl('testing-viewport-width') }}</label>
                                     <input type="number" class="form-control" id="viewport_width"
                                            value="{{ config.viewport_width }}" min="320" max="3840">
                                 </div>
                                 <div class="col-md-6">
-                                    <label for="viewport_height" class="form-label">{{ _('Viewport Height') }}</label>
+                                    <label for="viewport_height" class="form-label">{{ ftl('testing-viewport-height') }}</label>
                                     <input type="number" class="form-control" id="viewport_height"
                                            value="{{ config.viewport_height }}" min="480" max="2160">
                                 </div>
@@ -82,23 +82,23 @@
                         <hr class="my-4">
                         <fieldset>
                             <legend>
-                                <h3><i class="bi bi-layout-text-window-reverse" aria-hidden="true"></i> {{ _('UI Pagination Settings') }}</h3>
+                                <h3><i class="bi bi-layout-text-window-reverse" aria-hidden="true"></i> {{ ftl('testing-ui-pagination-settings') }}</h3>
                             </legend>
 
                             <div class="row mb-3">
                                 <div class="col-md-6">
-                                    <label for="pages_per_page" class="form-label">{{ _('Pages Per Page') }}</label>
+                                    <label for="pages_per_page" class="form-label">{{ ftl('testing-pages-per-page') }}</label>
                                     <input type="number" class="form-control" id="pages_per_page"
                                            value="{{ config.pages_per_page }}" min="10" max="500"
                                            aria-describedby="pages_per_page_help">
-                                    <small class="text-muted" id="pages_per_page_help">{{ _('Default number of pages shown per view') }}</small>
+                                    <small class="text-muted" id="pages_per_page_help">{{ ftl('testing-default-number-of-pages-shown-per-view') }}</small>
                                 </div>
                                 <div class="col-md-6">
-                                    <label for="max_pages_per_page" class="form-label">{{ _('Maximum Pages Per Page') }}</label>
+                                    <label for="max_pages_per_page" class="form-label">{{ ftl('testing-maximum-pages-per-page') }}</label>
                                     <input type="number" class="form-control" id="max_pages_per_page"
                                            value="{{ config.max_pages_per_page }}" min="100" max="1000"
                                            aria-describedby="max_pages_per_page_help">
-                                    <small class="text-muted" id="max_pages_per_page_help">{{ _('Maximum allowed per page (for ?per_page parameter)') }}</small>
+                                    <small class="text-muted" id="max_pages_per_page_help">{{ ftl('testing-maximum-allowed-per-page-for-per_page-parameter') }}</small>
                                 </div>
                             </div>
                         </fieldset>
@@ -106,7 +106,7 @@
                         <hr class="my-4">
                         <fieldset>
                             <legend>
-                                <h3><i class="bi bi-code-square" aria-hidden="true"></i> {{ _('Developer Options') }}</h3>
+                                <h3><i class="bi bi-code-square" aria-hidden="true"></i> {{ ftl('testing-developer-options') }}</h3>
                             </legend>
 
                             <div class="row mb-3">
@@ -116,16 +116,16 @@
                                                {% if config.show_error_codes %}checked{% endif %}
                                                aria-describedby="show_error_codes_help">
                                         <label class="form-check-label" for="show_error_codes">
-                                            {{ _('Show Error Codes') }}
+                                            {{ ftl('testing-show-error-codes') }}
                                         </label>
                                     </div>
-                                    <small class="text-muted" id="show_error_codes_help">{{ _('Display internal error codes (e.g., ErrMissingAccessibleName) in reports') }}</small>
+                                    <small class="text-muted" id="show_error_codes_help">{{ ftl('testing-display-internal-error-codes-e-g') }}</small>
                                 </div>
                             </div>
                         </fieldset>
 
                         <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-save" aria-hidden="true"></i> {{ _('Save Configuration') }}
+                            <i class="bi bi-save" aria-hidden="true"></i> {{ ftl('common-save-configuration') }}
                         </button>
                     </form>
                 </div>
@@ -136,46 +136,46 @@
         <div class="col-md-4">
             <div class="card">
                 <div class="card-header bg-warning text-dark">
-                    <h2><i class="bi bi-wrench" aria-hidden="true"></i> {{ _('System Maintenance') }}</h2>
+                    <h2><i class="bi bi-wrench" aria-hidden="true"></i> {{ ftl('testing-system-maintenance') }}</h2>
                 </div>
                 <div class="card-body">
                     <div class="alert alert-warning" role="alert">
-                        <i class="bi bi-exclamation-triangle" aria-hidden="true"></i> <strong>{{ _('Warning:') }}</strong> {{ _('These actions cannot be undone.') }}
+                        <i class="bi bi-exclamation-triangle" aria-hidden="true"></i> <strong>{{ ftl('testing-warning') }}</strong> {{ ftl('testing-these-actions-cannot-be-undone') }}
                     </div>
                     
                     <div class="mb-3">
-                        <h3>{{ _('Clear Outstanding Jobs') }}</h3>
-                        <p class="text-muted small">{{ _('Reset all running and pending scrapes and tests. Use this if the system appears stuck.') }}</p>
+                        <h3>{{ ftl('testing-clear-outstanding-jobs') }}</h3>
+                        <p class="text-muted small">{{ ftl('testing-reset-all-running-and-pending-scrapes-and-tests') }}</p>
                         <button class="btn btn-danger" onclick="clearAllJobs()">
-                            <i class="bi bi-trash" aria-hidden="true"></i> {{ _('Clear All Jobs') }}
+                            <i class="bi bi-trash" aria-hidden="true"></i> {{ ftl('testing-clear-all-jobs') }}
                         </button>
                     </div>
                     
                     <div class="mb-3">
-                        <h3>{{ _('Clear Stale Jobs') }}</h3>
-                        <p class="text-muted small">{{ _('Remove jobs that have been running for more than 24 hours.') }}</p>
+                        <h3>{{ ftl('testing-clear-stale-jobs') }}</h3>
+                        <p class="text-muted small">{{ ftl('testing-remove-jobs-that-have-been-running-for-more-than') }}</p>
                         <button class="btn btn-warning" onclick="clearStaleJobs()">
-                            <i class="bi bi-clock-history" aria-hidden="true"></i> {{ _('Clear Stale Jobs') }}
+                            <i class="bi bi-clock-history" aria-hidden="true"></i> {{ ftl('testing-clear-stale-jobs') }}
                         </button>
                     </div>
                     
                     <div class="mb-3">
-                        <h3>{{ _('Clean Page Data') }}</h3>
-                        <p class="text-muted small">{{ _('Reset violation counts for pages that haven\'t been tested yet. Fixes data inconsistencies.') }}</p>
+                        <h3>{{ ftl('testing-clean-page-data') }}</h3>
+                        <p class="text-muted small">{{ ftl('testing-reset-violation-counts-for-pages-that-haven-t') }}</p>
                         <button class="btn btn-info" onclick="cleanupPageCounts()">
-                            <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> {{ _('Clean Page Data') }}
+                            <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> {{ ftl('testing-clean-page-data') }}
                         </button>
                     </div>
                     
                     <hr>
                     
                     <div class="mb-3">
-                        <h3>{{ _('System Status') }}</h3>
+                        <h3>{{ ftl('common-system-status') }}</h3>
                         <div id="job-stats" class="small">
                             <div class="spinner-border spinner-border-sm" role="status">
-                                <span class="visually-hidden">{{ _('Loading...') }}</span>
+                                <span class="visually-hidden">{{ ftl('common-loading') }}</span>
                             </div>
-                            {{ _('Loading job statistics...') }}
+                            {{ ftl('testing-loading-job-statistics') }}
                         </div>
                     </div>
                 </div>
@@ -189,15 +189,15 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title" id="confirmModalLabel">{{ _('Confirm Action') }}</h2>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ _('Close') }}"></button>
+                <h2 class="modal-title" id="confirmModalLabel">{{ ftl('testing-confirm-action') }}</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ ftl('common-close') }}"></button>
             </div>
             <div class="modal-body">
                 <p id="confirmMessage"></p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
-                <button type="button" class="btn btn-danger" id="confirmButton">{{ _('Confirm') }}</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ ftl('common-cancel') }}</button>
+                <button type="button" class="btn btn-danger" id="confirmButton">{{ ftl('testing-confirm') }}</button>
             </div>
         </div>
     </div>
@@ -220,17 +220,17 @@ function loadJobStats() {
         .then(data => {
             const statsDiv = document.getElementById('job-stats');
             statsDiv.innerHTML = `
-                <div class="mb-1"><strong>{{ _('Running:') }}</strong> ${data.running || 0} {{ _('jobs') }}</div>
-                <div class="mb-1"><strong>{{ _('Pending:') }}</strong> ${data.pending || 0} {{ _('jobs') }}</div>
-                <div class="mb-1"><strong>{{ _('Cancelling:') }}</strong> ${data.cancelling || 0} {{ _('jobs') }}</div>
-                <div class="mb-1"><strong>{{ _('Completed (24h):') }}</strong> ${data.completed_24h || 0} {{ _('jobs') }}</div>
-                <div class="mb-1"><strong>{{ _('Failed (24h):') }}</strong> ${data.failed_24h || 0} {{ _('jobs') }}</div>
+                <div class="mb-1"><strong>{{ ftl('testing-running') }}</strong> ${data.running || 0} {{ ftl('testing-jobs') }}</div>
+                <div class="mb-1"><strong>{{ ftl('testing-pending') }}</strong> ${data.pending || 0} {{ ftl('testing-jobs') }}</div>
+                <div class="mb-1"><strong>{{ ftl('testing-cancelling') }}</strong> ${data.cancelling || 0} {{ ftl('testing-jobs') }}</div>
+                <div class="mb-1"><strong>{{ ftl('testing-completed-24h') }}</strong> ${data.completed_24h || 0} {{ ftl('testing-jobs') }}</div>
+                <div class="mb-1"><strong>{{ ftl('testing-failed-24h') }}</strong> ${data.failed_24h || 0} {{ ftl('testing-jobs') }}</div>
             `;
         })
         .catch(error => {
             console.error('Error loading job stats:', error);
             document.getElementById('job-stats').innerHTML =
-                '<div class="text-danger">{{ _('Failed to load statistics') }}</div>';
+                '<div class="text-danger">{{ ftl('testing-failed-to-load-statistics') }}</div>';
         });
 }
 
@@ -238,7 +238,7 @@ function loadJobStats() {
 function clearAllJobs() {
     const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
     document.getElementById('confirmMessage').textContent =
-        {{ _('This will clear ALL running and pending jobs. This action cannot be undone. Are you sure?') | tojson }};
+        {{ ftl('testing-this-will-clear-all-running-and-pending-jobs-this') | tojson }};
 
     const confirmBtn = document.getElementById('confirmButton');
     confirmBtn.onclick = function() {
@@ -253,15 +253,15 @@ function clearAllJobs() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                showAlert('success', {{ _('Successfully cleared') | tojson }} + ' ' + data.cleared_count + ' ' + {{ _('jobs') | tojson }});
+                showAlert('success', {{ ftl('testing-successfully-cleared') | tojson }} + ' ' + data.cleared_count + ' ' + {{ ftl('testing-jobs') | tojson }});
                 loadJobStats();
             } else {
-                showAlert('danger', data.error || {{ _('Failed to clear jobs') | tojson }});
+                showAlert('danger', data.error || {{ ftl('testing-failed-to-clear-jobs') | tojson }});
             }
         })
         .catch(error => {
             console.error('Error clearing jobs:', error);
-            showAlert('danger', {{ _('An error occurred while clearing jobs') | tojson }});
+            showAlert('danger', {{ ftl('testing-an-error-occurred-while-clearing-jobs') | tojson }});
         });
     };
 
@@ -272,7 +272,7 @@ function clearAllJobs() {
 function clearStaleJobs() {
     const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
     document.getElementById('confirmMessage').textContent =
-        {{ _('This will clear all jobs that have been running for more than 24 hours. Are you sure?') | tojson }};
+        {{ ftl('testing-this-will-clear-all-jobs-that-have-been-running') | tojson }};
 
     const confirmBtn = document.getElementById('confirmButton');
     confirmBtn.onclick = function() {
@@ -287,15 +287,15 @@ function clearStaleJobs() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                showAlert('success', {{ _('Successfully cleared') | tojson }} + ' ' + data.cleared_count + ' ' + {{ _('stale jobs') | tojson }});
+                showAlert('success', {{ ftl('testing-successfully-cleared') | tojson }} + ' ' + data.cleared_count + ' ' + {{ ftl('testing-stale-jobs') | tojson }});
                 loadJobStats();
             } else {
-                showAlert('danger', data.error || {{ _('Failed to clear stale jobs') | tojson }});
+                showAlert('danger', data.error || {{ ftl('testing-failed-to-clear-stale-jobs') | tojson }});
             }
         })
         .catch(error => {
             console.error('Error clearing stale jobs:', error);
-            showAlert('danger', {{ _('An error occurred while clearing stale jobs') | tojson }});
+            showAlert('danger', {{ ftl('testing-an-error-occurred-while-clearing-stale-jobs') | tojson }});
         });
     };
 
@@ -328,20 +328,20 @@ document.getElementById('testing-config-form').addEventListener('submit', functi
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showAlert('success', {{ _('Configuration saved successfully') | tojson }});
+            showAlert('success', {{ ftl('testing-configuration-saved-successfully') | tojson }});
         } else {
-            showAlert('danger', data.error || {{ _('Failed to save configuration') | tojson }});
+            showAlert('danger', data.error || {{ ftl('testing-failed-to-save-configuration') | tojson }});
         }
     })
     .catch(error => {
         console.error('Error saving configuration:', error);
-        showAlert('danger', {{ _('An error occurred while saving configuration') | tojson }});
+        showAlert('danger', {{ ftl('testing-an-error-occurred-while-saving-configuration') | tojson }});
     });
 });
 
 // Clean up page counts
 function cleanupPageCounts() {
-    if (!confirm({{ _('This will reset violation counts for all pages that haven\'t been tested yet. Continue?') | tojson }})) {
+    if (!confirm({{ ftl('testing-this-will-reset-violation-counts-for-all-pages') | tojson }})) {
         return;
     }
 
@@ -354,14 +354,14 @@ function cleanupPageCounts() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showAlert('success', {{ _('Successfully cleaned') | tojson }} + ' ' + data.pages_cleaned + ' ' + {{ _('pages') | tojson }});
+            showAlert('success', {{ ftl('testing-successfully-cleaned') | tojson }} + ' ' + data.pages_cleaned + ' ' + {{ ftl('common-pages-2') | tojson }});
         } else {
-            showAlert('danger', data.error || {{ _('Failed to clean page data') | tojson }});
+            showAlert('danger', data.error || {{ ftl('testing-failed-to-clean-page-data') | tojson }});
         }
     })
     .catch(error => {
         console.error('Error cleaning page counts:', error);
-        showAlert('danger', {{ _('An error occurred while cleaning page data') | tojson }});
+        showAlert('danger', {{ ftl('testing-an-error-occurred-while-cleaning-page-data') | tojson }});
     });
 }
 
@@ -372,7 +372,7 @@ function showAlert(type, message) {
     alertDiv.setAttribute('role', 'alert');
     alertDiv.innerHTML = `
         ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ _('Dismiss') }}"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ ftl('common-dismiss') }}"></button>
     `;
     
     const container = document.querySelector('.container');

@@ -3,7 +3,7 @@ Page Setup Scripts Management Routes
 """
 
 from flask import Blueprint, render_template, request, jsonify, current_app, redirect, url_for, flash
-from flask_babel import gettext as _
+from auto_a11y.web.fluent import ftl
 from auto_a11y.models import PageSetupScript, ScriptStep, ActionType, ScriptScope, ExecutionTrigger
 from datetime import datetime
 import logging
@@ -17,7 +17,7 @@ def list_page_scripts(page_id):
     """List all scripts for a page"""
     page = current_app.db.get_page(page_id)
     if not page:
-        flash(_('Page not found'), 'error')
+        flash(ftl('common-page-not-found'), 'error')
         return redirect(url_for('index'))
 
     # Get website and project for context
@@ -47,7 +47,7 @@ def create_page_script(page_id):
     """Create a new page setup script"""
     page = current_app.db.get_page(page_id)
     if not page:
-        flash(_('Page not found'), 'error')
+        flash(ftl('common-page-not-found'), 'error')
         return redirect(url_for('index'))
 
     if request.method == 'POST':
@@ -104,7 +104,7 @@ def create_page_script(page_id):
 
         except Exception as e:
             logger.error(f"Error creating script: {e}")
-            flash(_('Error creating script: %(error)s', error=str(e)), 'error')
+            flash(ftl('scripts-error-creating-script-error', error=str(e)), 'error')
 
     # GET request - show form
     website = current_app.db.get_website(page.website_id)
@@ -112,26 +112,26 @@ def create_page_script(page_id):
 
     # Get all action types for dropdown
     action_types = [
-        {'value': ActionType.CLICK.value, 'label': _('Click Element')},
-        {'value': ActionType.TYPE.value, 'label': _('Type Text')},
-        {'value': ActionType.SELECT.value, 'label': _('Select Dropdown Option')},
-        {'value': ActionType.WAIT_FOR_SELECTOR.value, 'label': _('Wait for Element')},
-        {'value': ActionType.WAIT.value, 'label': _('Wait (Fixed Time)')},
-        {'value': ActionType.WAIT_FOR_NETWORK_IDLE.value, 'label': _('Wait for Network Idle')},
-        {'value': ActionType.SCROLL.value, 'label': _('Scroll to Element')},
-        {'value': ActionType.HOVER.value, 'label': _('Hover Over Element')},
-        {'value': ActionType.WAIT_FOR_NAVIGATION.value, 'label': _('Wait for Navigation')},
-        {'value': ActionType.SCREENSHOT.value, 'label': _('Take Screenshot')}
+        {'value': ActionType.CLICK.value, 'label': ftl('common-click-element')},
+        {'value': ActionType.TYPE.value, 'label': ftl('common-type-text')},
+        {'value': ActionType.SELECT.value, 'label': ftl('common-select-dropdown-option')},
+        {'value': ActionType.WAIT_FOR_SELECTOR.value, 'label': ftl('common-wait-for-element')},
+        {'value': ActionType.WAIT.value, 'label': ftl('common-wait-fixed-time')},
+        {'value': ActionType.WAIT_FOR_NETWORK_IDLE.value, 'label': ftl('common-wait-for-network-idle-2')},
+        {'value': ActionType.SCROLL.value, 'label': ftl('common-scroll-to-element')},
+        {'value': ActionType.HOVER.value, 'label': ftl('common-hover-over-element')},
+        {'value': ActionType.WAIT_FOR_NAVIGATION.value, 'label': ftl('common-wait-for-navigation-2')},
+        {'value': ActionType.SCREENSHOT.value, 'label': ftl('common-take-screenshot')}
     ]
 
     trigger_options = [
-        {'value': ExecutionTrigger.ONCE_PER_PAGE.value, 'label': _('On This Page (Every Test)'), 'description': _('Runs every time this page is tested')},
-        {'value': ExecutionTrigger.ONCE_PER_PAGE_FIRST_VISIT.value, 'label': _('On This Page (First Visit Only)'), 'description': _('Runs only on the first test of this page in a session')},
-        {'value': ExecutionTrigger.CONDITIONAL.value, 'label': _('Conditional (If Element Exists)'), 'description': _('Runs only if the condition selector exists on this page')}
+        {'value': ExecutionTrigger.ONCE_PER_PAGE.value, 'label': ftl('common-on-this-page-every-test'), 'description': ftl('common-runs-every-time-this-page-is-tested')},
+        {'value': ExecutionTrigger.ONCE_PER_PAGE_FIRST_VISIT.value, 'label': ftl('common-on-this-page-first-visit-only'), 'description': ftl('common-runs-only-on-the-first-test-of-this-page-in-a')},
+        {'value': ExecutionTrigger.CONDITIONAL.value, 'label': ftl('common-conditional-if-element-exists'), 'description': ftl('common-runs-only-if-the-condition-selector-exists-on')}
     ]
 
     scope_options = [
-        {'value': ScriptScope.PAGE.value, 'label': _('Page-Level'), 'description': _('Runs only on this specific page')},
+        {'value': ScriptScope.PAGE.value, 'label': ftl('scripts-page-level'), 'description': ftl('common-runs-only-on-this-specific-page')},
     ]
 
     return render_template('scripts/create.html',
@@ -149,7 +149,7 @@ def create_website_script(website_id):
     """Create a new website-level setup script"""
     website = current_app.db.get_website(website_id)
     if not website:
-        flash(_('Website not found'), 'error')
+        flash(ftl('common-website-not-found'), 'error')
         return redirect(url_for('index'))
 
     if request.method == 'POST':
@@ -207,35 +207,35 @@ def create_website_script(website_id):
 
         except Exception as e:
             logger.error(f"Error creating website script: {e}")
-            flash(_('Error creating script: %(error)s', error=str(e)), 'error')
+            flash(ftl('scripts-error-creating-script-error', error=str(e)), 'error')
 
     # GET request - show form
     project = current_app.db.get_project(website.project_id)
 
     # Get all action types for dropdown
     action_types = [
-        {'value': ActionType.CLICK.value, 'label': _('Click Element')},
-        {'value': ActionType.TYPE.value, 'label': _('Type Text')},
-        {'value': ActionType.SELECT.value, 'label': _('Select Dropdown Option')},
-        {'value': ActionType.WAIT_FOR_SELECTOR.value, 'label': _('Wait for Element')},
-        {'value': ActionType.WAIT.value, 'label': _('Wait (Fixed Time)')},
-        {'value': ActionType.WAIT_FOR_NETWORK_IDLE.value, 'label': _('Wait for Network Idle')},
-        {'value': ActionType.SCROLL.value, 'label': _('Scroll to Element')},
-        {'value': ActionType.HOVER.value, 'label': _('Hover Over Element')},
-        {'value': ActionType.WAIT_FOR_NAVIGATION.value, 'label': _('Wait for Navigation')},
-        {'value': ActionType.SCREENSHOT.value, 'label': _('Take Screenshot')}
+        {'value': ActionType.CLICK.value, 'label': ftl('common-click-element')},
+        {'value': ActionType.TYPE.value, 'label': ftl('common-type-text')},
+        {'value': ActionType.SELECT.value, 'label': ftl('common-select-dropdown-option')},
+        {'value': ActionType.WAIT_FOR_SELECTOR.value, 'label': ftl('common-wait-for-element')},
+        {'value': ActionType.WAIT.value, 'label': ftl('common-wait-fixed-time')},
+        {'value': ActionType.WAIT_FOR_NETWORK_IDLE.value, 'label': ftl('common-wait-for-network-idle-2')},
+        {'value': ActionType.SCROLL.value, 'label': ftl('common-scroll-to-element')},
+        {'value': ActionType.HOVER.value, 'label': ftl('common-hover-over-element')},
+        {'value': ActionType.WAIT_FOR_NAVIGATION.value, 'label': ftl('common-wait-for-navigation-2')},
+        {'value': ActionType.SCREENSHOT.value, 'label': ftl('common-take-screenshot')}
     ]
 
     trigger_options = [
-        {'value': ExecutionTrigger.ONCE_PER_SESSION.value, 'label': _('Once Per Session'), 'description': _('Runs once at the start of testing')},
-        {'value': ExecutionTrigger.ONCE_PER_PAGE.value, 'label': _('Once Per Page'), 'description': _('Runs before testing each page')},
-        {'value': ExecutionTrigger.ONCE_PER_PAGE_FIRST_VISIT.value, 'label': _('Once Per Page (First Visit Only)'), 'description': _('Runs only on the first test of this page in a session')},
-        {'value': ExecutionTrigger.ALWAYS.value, 'label': _('Always (Every Test)'), 'description': _('Runs every time a page is tested')},
-        {'value': ExecutionTrigger.CONDITIONAL.value, 'label': _('Conditional'), 'description': _('Runs only if element exists')}
+        {'value': ExecutionTrigger.ONCE_PER_SESSION.value, 'label': ftl('common-once-per-session'), 'description': ftl('common-runs-once-at-the-start-of-testing')},
+        {'value': ExecutionTrigger.ONCE_PER_PAGE.value, 'label': ftl('common-once-per-page'), 'description': ftl('common-runs-before-testing-each-page')},
+        {'value': ExecutionTrigger.ONCE_PER_PAGE_FIRST_VISIT.value, 'label': ftl('common-once-per-page-first-visit-only'), 'description': ftl('common-runs-only-on-the-first-test-of-this-page-in-a')},
+        {'value': ExecutionTrigger.ALWAYS.value, 'label': ftl('common-always-every-test'), 'description': ftl('common-runs-every-time-a-page-is-tested')},
+        {'value': ExecutionTrigger.CONDITIONAL.value, 'label': ftl('common-conditional'), 'description': ftl('common-runs-only-if-element-exists')}
     ]
 
     scope_options = [
-        {'value': ScriptScope.WEBSITE.value, 'label': _('Website-Level'), 'description': _('Applies to all pages in this website')},
+        {'value': ScriptScope.WEBSITE.value, 'label': ftl('scripts-website-level'), 'description': ftl('common-applies-to-all-pages-in-this-website')},
     ]
 
     # Website-level scripts already have appropriate trigger options defined above
@@ -256,7 +256,7 @@ def list_website_scripts(website_id):
     """List all scripts for a website"""
     website = current_app.db.get_website(website_id)
     if not website:
-        flash(_('Website not found'), 'error')
+        flash(ftl('common-website-not-found'), 'error')
         return redirect(url_for('index'))
 
     # Get project for context
@@ -282,7 +282,7 @@ def view_script(script_id):
     """View script details"""
     script = current_app.db.get_page_setup_script(script_id)
     if not script:
-        flash(_('Script not found'), 'error')
+        flash(ftl('scripts-script-not-found'), 'error')
         return redirect(url_for('index'))
 
     # Get related page/website/project
@@ -302,7 +302,7 @@ def edit_script(script_id):
     """Edit an existing script"""
     script = current_app.db.get_page_setup_script(script_id)
     if not script:
-        flash(_('Script not found'), 'error')
+        flash(ftl('scripts-script-not-found'), 'error')
         return redirect(url_for('index'))
 
     if request.method == 'POST':
@@ -358,7 +358,7 @@ def edit_script(script_id):
 
         except Exception as e:
             logger.error(f"Error updating script: {e}")
-            flash(_('Error updating script: %(error)s', error=str(e)), 'error')
+            flash(ftl('scripts-error-updating-script-error', error=str(e)), 'error')
 
     # GET request - show form
     page = current_app.db.get_page(script.page_id) if script.page_id else None
@@ -371,37 +371,37 @@ def edit_script(script_id):
         logger.warning(f"EDIT GET Step {i}: {step.to_dict()}")
 
     action_types = [
-        {'value': ActionType.CLICK.value, 'label': _('Click Element')},
-        {'value': ActionType.TYPE.value, 'label': _('Type Text')},
-        {'value': ActionType.SELECT.value, 'label': _('Select Dropdown Option')},
-        {'value': ActionType.WAIT_FOR_SELECTOR.value, 'label': _('Wait for Element')},
-        {'value': ActionType.WAIT.value, 'label': _('Wait (Fixed Time)')},
-        {'value': ActionType.WAIT_FOR_NETWORK_IDLE.value, 'label': _('Wait for Network Idle')},
-        {'value': ActionType.SCROLL.value, 'label': _('Scroll to Element')},
-        {'value': ActionType.HOVER.value, 'label': _('Hover Over Element')},
-        {'value': ActionType.WAIT_FOR_NAVIGATION.value, 'label': _('Wait for Navigation')},
-        {'value': ActionType.SCREENSHOT.value, 'label': _('Take Screenshot')}
+        {'value': ActionType.CLICK.value, 'label': ftl('common-click-element')},
+        {'value': ActionType.TYPE.value, 'label': ftl('common-type-text')},
+        {'value': ActionType.SELECT.value, 'label': ftl('common-select-dropdown-option')},
+        {'value': ActionType.WAIT_FOR_SELECTOR.value, 'label': ftl('common-wait-for-element')},
+        {'value': ActionType.WAIT.value, 'label': ftl('common-wait-fixed-time')},
+        {'value': ActionType.WAIT_FOR_NETWORK_IDLE.value, 'label': ftl('common-wait-for-network-idle-2')},
+        {'value': ActionType.SCROLL.value, 'label': ftl('common-scroll-to-element')},
+        {'value': ActionType.HOVER.value, 'label': ftl('common-hover-over-element')},
+        {'value': ActionType.WAIT_FOR_NAVIGATION.value, 'label': ftl('common-wait-for-navigation-2')},
+        {'value': ActionType.SCREENSHOT.value, 'label': ftl('common-take-screenshot')}
     ]
 
     # Provide different trigger options based on script scope
     if script.scope == ScriptScope.PAGE:
         trigger_options = [
-            {'value': ExecutionTrigger.ONCE_PER_PAGE.value, 'label': _('On This Page (Every Test)'), 'description': _('Runs every time this page is tested')},
-            {'value': ExecutionTrigger.ONCE_PER_PAGE_FIRST_VISIT.value, 'label': _('On This Page (First Visit Only)'), 'description': _('Runs only on the first test of this page in a session')},
-            {'value': ExecutionTrigger.CONDITIONAL.value, 'label': _('Conditional (If Element Exists)'), 'description': _('Runs only if the condition selector exists on this page')}
+            {'value': ExecutionTrigger.ONCE_PER_PAGE.value, 'label': ftl('common-on-this-page-every-test'), 'description': ftl('common-runs-every-time-this-page-is-tested')},
+            {'value': ExecutionTrigger.ONCE_PER_PAGE_FIRST_VISIT.value, 'label': ftl('common-on-this-page-first-visit-only'), 'description': ftl('common-runs-only-on-the-first-test-of-this-page-in-a')},
+            {'value': ExecutionTrigger.CONDITIONAL.value, 'label': ftl('common-conditional-if-element-exists'), 'description': ftl('common-runs-only-if-the-condition-selector-exists-on')}
         ]
     else:  # Website-level scripts
         trigger_options = [
-            {'value': ExecutionTrigger.ONCE_PER_SESSION.value, 'label': _('Once Per Session'), 'description': _('Runs once at the start of testing')},
-            {'value': ExecutionTrigger.ONCE_PER_PAGE.value, 'label': _('Once Per Page'), 'description': _('Runs before testing each page')},
-            {'value': ExecutionTrigger.ONCE_PER_PAGE_FIRST_VISIT.value, 'label': _('Once Per Page (First Visit Only)'), 'description': _('Runs only on the first test of each page in a session')},
-            {'value': ExecutionTrigger.ALWAYS.value, 'label': _('Always (Every Test)'), 'description': _('Runs every time a page is tested')},
-            {'value': ExecutionTrigger.CONDITIONAL.value, 'label': _('Conditional'), 'description': _('Runs only if element exists')}
+            {'value': ExecutionTrigger.ONCE_PER_SESSION.value, 'label': ftl('common-once-per-session'), 'description': ftl('common-runs-once-at-the-start-of-testing')},
+            {'value': ExecutionTrigger.ONCE_PER_PAGE.value, 'label': ftl('common-once-per-page'), 'description': ftl('common-runs-before-testing-each-page')},
+            {'value': ExecutionTrigger.ONCE_PER_PAGE_FIRST_VISIT.value, 'label': ftl('common-once-per-page-first-visit-only'), 'description': ftl('common-runs-only-on-the-first-test-of-each-page-in-a')},
+            {'value': ExecutionTrigger.ALWAYS.value, 'label': ftl('common-always-every-test'), 'description': ftl('common-runs-every-time-a-page-is-tested')},
+            {'value': ExecutionTrigger.CONDITIONAL.value, 'label': ftl('common-conditional'), 'description': ftl('common-runs-only-if-element-exists')}
         ]
 
     scope_options = [
-        {'value': ScriptScope.PAGE.value, 'label': _('Page-Level'), 'description': _('Runs only on this specific page')},
-        {'value': ScriptScope.WEBSITE.value, 'label': _('Website-Level'), 'description': _('Applies to all pages in this website')},
+        {'value': ScriptScope.PAGE.value, 'label': ftl('scripts-page-level'), 'description': ftl('common-runs-only-on-this-specific-page')},
+        {'value': ScriptScope.WEBSITE.value, 'label': ftl('scripts-website-level'), 'description': ftl('common-applies-to-all-pages-in-this-website')},
     ]
 
     return render_template('scripts/edit.html',
@@ -420,7 +420,7 @@ def delete_script(script_id):
     """Delete a script"""
     script = current_app.db.get_page_setup_script(script_id)
     if not script:
-        return jsonify({'error': _('Script not found')}), 404
+        return jsonify({'error': ftl('scripts-script-not-found')}), 404
 
     try:
         current_app.db.delete_page_setup_script(script_id)
@@ -452,7 +452,7 @@ def toggle_script(script_id):
     script = current_app.db.get_page_setup_script(script_id)
     if not script:
         logger.warning(f"ERROR: Script not found: {script_id}")
-        return jsonify({'error': _('Script not found')}), 404
+        return jsonify({'error': ftl('scripts-script-not-found')}), 404
 
     try:
         old_state = script.enabled
@@ -472,7 +472,7 @@ def toggle_script(script_id):
         return jsonify({
             'success': success,
             'enabled': script.enabled,
-            'message': _('Script enabled') if script.enabled else _('Script disabled'),
+            'message': ftl('scripts-script-enabled') if script.enabled else ftl('scripts-script-disabled'),
             'old_state': old_state,
             'new_state': new_state
         })
@@ -488,12 +488,12 @@ def test_script(script_id):
     """Test a script (dry run)"""
     script = current_app.db.get_page_setup_script(script_id)
     if not script:
-        return jsonify({'error': _('Script not found')}), 404
+        return jsonify({'error': ftl('scripts-script-not-found')}), 404
 
     # TODO: Implement script testing functionality
     # This would run the script without affecting test results
 
     return jsonify({
         'success': True,
-        'message': _('Script test feature coming soon')
+        'message': ftl('scripts-script-test-feature-coming-soon')
     })

@@ -1,0 +1,19 @@
+# public — auto-migrated from messages.po
+public-account = Compte
+public-affected-html = HTML concerné
+public-breadcrumb = Fil d'Ariane
+public-count-violations = { $count } violations
+public-how-to-fix = Comment corriger
+public-last-updated = Dernière mise à jour
+public-no-issues-found-on-this-page = Aucun problème trouvé sur cette page.
+public-no-pages-have-been-tested-yet = Aucune page n'a été testée pour le moment.
+public-no-projects-available = Aucun projet disponible.
+public-opens-in-new-window = s'ouvre dans une nouvelle fenêtre
+public-pages-tested-on-url = Pages testées sur { $url }
+public-project-overview = Aperçu du projet
+public-tested-of-total-pages-tested = { $tested } sur { $total } pages testées
+public-this-page-has-not-been-tested-yet = Cette page n'a pas encore été testée.
+public-understanding-wcag-criterion = Comprendre le critère WCAG
+public-violation = Violation
+public-warning = Avertissement
+public-you-do-not-have-permission-to-view-this-page-the = Vous n'avez pas la permission de voir cette page. Le lien a peut-être expiré ou a été révoqué.

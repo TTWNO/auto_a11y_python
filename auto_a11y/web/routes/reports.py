@@ -3,7 +3,8 @@ Report generation routes
 """
 
 from flask import Blueprint, render_template, request, jsonify, send_file, current_app, url_for, flash, redirect, session, g
-from flask_babel import get_locale, gettext as _, force_locale
+from flask_babel import get_locale
+from auto_a11y.web.fluent import ftl, force_locale
 from auto_a11y.models import PageStatus
 from auto_a11y.reporting import ReportGenerator, PageStructureReport
 from auto_a11y.reporting.discovery_report import DiscoveryReportGenerator
@@ -1002,8 +1003,8 @@ def generate_recordings_report(project_id):
         return jsonify({
             'success': False,
             'info': True,
-            'title': _('No Recordings Available'),
-            'message': _('There are no recordings for this project yet. Once recordings have been added, you can generate a report.')
+            'title': ftl('reports-no-recordings-available'),
+            'message': ftl('reports-there-are-no-recordings-for-this-project-yet-once')
         }), 200
 
     # Capture Flask context into local variables

@@ -3,7 +3,8 @@ Project management routes
 """
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
-from flask_babel import gettext as _, get_locale, lazy_gettext
+from flask_babel import get_locale
+from auto_a11y.web.fluent import ftl, lazy_ftl
 from flask_login import login_required
 from flask import g
 from auto_a11y.models import Project, ProjectStatus, ProjectType
@@ -80,7 +81,7 @@ def api_test_details(test_id):
         if not test_info:
             return jsonify({
                 'success': False,
-                'error': _('Test %(test_id)s not found in catalog', test_id=test_id)
+                'error': ftl('projects-test-test_id-not-found-in-catalog', test_id=test_id)
             }), 404
 
         # Get production_ready status from database
@@ -137,7 +138,7 @@ def api_set_test_production_ready(test_id):
         if not test_info:
             return jsonify({
                 'success': False,
-                'error': _('Test %(test_id)s not found in catalog', test_id=test_id)
+                'error': ftl('projects-test-test_id-not-found-in-catalog', test_id=test_id)
             }), 404
 
         # Get the new value from request
@@ -154,13 +155,13 @@ def api_set_test_production_ready(test_id):
         if success:
             return jsonify({
                 'success': True,
-                'message': _('Production ready status updated for %(test_id)s', test_id=test_id),
+                'message': ftl('projects-production-ready-status-updated-for-test_id', test_id=test_id),
                 'production_ready': production_ready
             })
         else:
             return jsonify({
                 'success': False,
-                'error': _('Failed to update production ready status')
+                'error': ftl('projects-failed-to-update-production-ready-status')
             }), 500
 
     except Exception as e:
@@ -256,7 +257,7 @@ def create_project():
         drupal_audit_name = request.form.get('drupal_audit_name', '').strip() or None
 
         if not name:
-            flash(_('Project name is required'), 'error')
+            flash(ftl('projects-project-name-is-required'), 'error')
             # Redirect to GET handler which will populate everything
             return redirect(url_for('projects.create_project'))
 
@@ -411,36 +412,36 @@ def create_project():
 
     # Touchpoint display names (ordered)
     touchpoint_names = {
-        'accessible_names': lazy_gettext('Accessible Names'),
-        'animation': lazy_gettext('Animation'),
-        'aria': lazy_gettext('ARIA'),
-        'buttons': lazy_gettext('Buttons'),
-        'colors_contrast': lazy_gettext('Colors & Contrast'),
-        'dialogs': lazy_gettext('Dialogs & Modals'),
-        'documents': lazy_gettext('Documents'),
-        'event_handling': lazy_gettext('Event Handling'),
-        'focus_management': lazy_gettext('Focus Management'),
-        'forms': lazy_gettext('Forms'),
-        'headings': lazy_gettext('Headings'),
-        'iframes': lazy_gettext('Iframes'),
-        'styles': lazy_gettext('Inline Styles'),
-        'images': lazy_gettext('Images'),
-        'keyboard_navigation': lazy_gettext('Keyboard Navigation'),
-        'landmarks': lazy_gettext('Landmarks'),
-        'language': lazy_gettext('Language'),
-        'links': lazy_gettext('Links'),
-        'lists': lazy_gettext('Lists'),
-        'maps': lazy_gettext('Maps'),
-        'media': lazy_gettext('Media'),
-        'navigation': lazy_gettext('Navigation'),
-        'page': lazy_gettext('Page'),
-        'reading_order': lazy_gettext('Reading Order'),
-        'semantic_structure': lazy_gettext('Semantic Structure'),
-        'tables': lazy_gettext('Tables'),
-        'timing': lazy_gettext('Timing'),
-        'title_attributes': lazy_gettext('Title Attributes'),
-        'fonts': lazy_gettext('Fonts'),
-        'other': lazy_gettext('Other')
+        'accessible_names': lazy_ftl('testing-accessible-names'),
+        'animation': lazy_ftl('testing-animation'),
+        'aria': lazy_ftl('testing-aria'),
+        'buttons': lazy_ftl('testing-buttons'),
+        'colors_contrast': lazy_ftl('testing-colors-contrast'),
+        'dialogs': lazy_ftl('testing-dialogs-modals'),
+        'documents': lazy_ftl('common-documents'),
+        'event_handling': lazy_ftl('testing-event-handling'),
+        'focus_management': lazy_ftl('testing-focus-management'),
+        'forms': lazy_ftl('common-forms'),
+        'headings': lazy_ftl('testing-headings'),
+        'iframes': lazy_ftl('testing-iframes'),
+        'styles': lazy_ftl('testing-inline-styles'),
+        'images': lazy_ftl('testing-images'),
+        'keyboard_navigation': lazy_ftl('testing-keyboard-navigation'),
+        'landmarks': lazy_ftl('testing-landmarks'),
+        'language': lazy_ftl('common-language'),
+        'links': lazy_ftl('testing-links'),
+        'lists': lazy_ftl('testing-lists'),
+        'maps': lazy_ftl('testing-maps'),
+        'media': lazy_ftl('testing-media'),
+        'navigation': lazy_ftl('testing-navigation'),
+        'page': lazy_ftl('common-page-2'),
+        'reading_order': lazy_ftl('common-reading-order'),
+        'semantic_structure': lazy_ftl('testing-semantic-structure'),
+        'tables': lazy_ftl('testing-tables'),
+        'timing': lazy_ftl('testing-timing'),
+        'title_attributes': lazy_ftl('testing-title-attributes'),
+        'fonts': lazy_ftl('testing-fonts'),
+        'other': lazy_ftl('common-other')
     }
 
     # Group all tests by touchpoint
@@ -491,7 +492,7 @@ def view_project(project_id):
     """View project details"""
     project = current_app.db.get_project(project_id)
     if not project:
-        flash(_('Project not found'), 'error')
+        flash(ftl('common-project-not-found'), 'error')
         return redirect(url_for('projects.list_projects'))
 
     websites = current_app.db.get_websites(project_id)
@@ -560,7 +561,7 @@ def edit_project(project_id):
     """Edit project"""
     project = current_app.db.get_project(project_id)
     if not project:
-        flash(_('Project not found'), 'error')
+        flash(ftl('common-project-not-found'), 'error')
         return redirect(url_for('projects.list_projects'))
 
     # Import TOUCHPOINT_TEST_MAPPING for rendering the form
@@ -568,34 +569,34 @@ def edit_project(project_id):
 
     # Build touchpoint data structure for the template
     touchpoint_names = {
-        'headings': lazy_gettext('Headings'),
-        'images': lazy_gettext('Images'),
-        'forms': lazy_gettext('Forms'),
-        'buttons': lazy_gettext('Buttons'),
-        'links': lazy_gettext('Links'),
-        'navigation': lazy_gettext('Navigation'),
-        'colors_contrast': lazy_gettext('Colors & Contrast'),
-        'keyboard_navigation': lazy_gettext('Keyboard Navigation'),
-        'landmarks': lazy_gettext('Landmarks'),
-        'language': lazy_gettext('Language'),
-        'tables': lazy_gettext('Tables'),
-        'lists': lazy_gettext('Lists'),
-        'media': lazy_gettext('Media'),
-        'dialogs': lazy_gettext('Dialogs & Modals'),
-        'animation': lazy_gettext('Animation'),
-        'timing': lazy_gettext('Timing'),
-        'fonts': lazy_gettext('Fonts'),
-        'semantic_structure': lazy_gettext('Semantic Structure'),
-        'aria': lazy_gettext('ARIA'),
-        'focus_management': lazy_gettext('Focus Management'),
-        'reading_order': lazy_gettext('Reading Order'),
-        'event_handling': lazy_gettext('Event Handling'),
-        'accessible_names': lazy_gettext('Accessible Names'),
-        'page': lazy_gettext('Page'),
-        'documents': lazy_gettext('Documents'),
-        'maps': lazy_gettext('Maps'),
-        'styles': lazy_gettext('Inline Styles'),
-        'iframes': lazy_gettext('Iframes')
+        'headings': lazy_ftl('testing-headings'),
+        'images': lazy_ftl('testing-images'),
+        'forms': lazy_ftl('common-forms'),
+        'buttons': lazy_ftl('testing-buttons'),
+        'links': lazy_ftl('testing-links'),
+        'navigation': lazy_ftl('testing-navigation'),
+        'colors_contrast': lazy_ftl('testing-colors-contrast'),
+        'keyboard_navigation': lazy_ftl('testing-keyboard-navigation'),
+        'landmarks': lazy_ftl('testing-landmarks'),
+        'language': lazy_ftl('common-language'),
+        'tables': lazy_ftl('testing-tables'),
+        'lists': lazy_ftl('testing-lists'),
+        'media': lazy_ftl('testing-media'),
+        'dialogs': lazy_ftl('testing-dialogs-modals'),
+        'animation': lazy_ftl('testing-animation'),
+        'timing': lazy_ftl('testing-timing'),
+        'fonts': lazy_ftl('testing-fonts'),
+        'semantic_structure': lazy_ftl('testing-semantic-structure'),
+        'aria': lazy_ftl('testing-aria'),
+        'focus_management': lazy_ftl('testing-focus-management'),
+        'reading_order': lazy_ftl('common-reading-order'),
+        'event_handling': lazy_ftl('testing-event-handling'),
+        'accessible_names': lazy_ftl('testing-accessible-names'),
+        'page': lazy_ftl('common-page-2'),
+        'documents': lazy_ftl('common-documents'),
+        'maps': lazy_ftl('testing-maps'),
+        'styles': lazy_ftl('testing-inline-styles'),
+        'iframes': lazy_ftl('testing-iframes')
     }
 
     if request.method == 'POST':
@@ -708,10 +709,10 @@ def edit_project(project_id):
         }
 
         if current_app.db.update_project(project):
-            flash(_('Project updated successfully'), 'success')
+            flash(ftl('projects-project-updated-successfully'), 'success')
             return redirect(url_for('projects.view_project', project_id=project_id))
         else:
-            flash(_('Failed to update project'), 'error')
+            flash(ftl('projects-failed-to-update-project'), 'error')
 
     return render_template('projects/edit.html',
                          project=project,
@@ -724,13 +725,13 @@ def delete_project(project_id):
     """Delete project"""
     project = current_app.db.get_project(project_id)
     if not project:
-        flash(_('Project not found'), 'error')
+        flash(ftl('common-project-not-found'), 'error')
         return redirect(url_for('projects.list_projects'))
 
     if current_app.db.delete_project(project_id):
         flash(_('Project "%(name)s" deleted successfully', name=project.name), 'success')
     else:
-        flash(_('Failed to delete project'), 'error')
+        flash(ftl('projects-failed-to-delete-project'), 'error')
     
     return redirect(url_for('projects.list_projects'))
 
@@ -743,13 +744,13 @@ def add_website(project_id):
     
     project = current_app.db.get_project(project_id)
     if not project:
-        return jsonify({'error': _('Project not found')}), 404
+        return jsonify({'error': ftl('common-project-not-found')}), 404
 
     url = request.form.get('url')
     name = request.form.get('name', '')
 
     if not url:
-        return jsonify({'error': _('URL is required')}), 400
+        return jsonify({'error': ftl('common-url-is-required')}), 400
     
     # Create website
     website = Website(
@@ -782,7 +783,7 @@ def test_project(project_id):
     
     project = current_app.db.get_project(project_id)
     if not project:
-        flash(_('Project not found'), 'error')
+        flash(ftl('common-project-not-found'), 'error')
         return redirect(url_for('projects.list_projects'))
 
     # Get test parameters
@@ -836,11 +837,11 @@ def test_project(project_id):
         if jobs:
             flash(_('Started testing %(count)s websites in project "%(name)s"', count=len(jobs), name=project.name), 'success')
         else:
-            flash(_('No websites found to test in this project'), 'warning')
+            flash(ftl('projects-no-websites-found-to-test-in-this-project'), 'warning')
         
     except Exception as e:
         logger.error(f"Failed to start project testing: {e}")
-        flash(_('Failed to start testing: %(error)s', error=str(e)), 'error')
+        flash(ftl('projects-failed-to-start-testing-error', error=str(e)), 'error')
     
     return redirect(url_for('projects.view_project', project_id=project_id))
 
@@ -853,7 +854,7 @@ def generate_project_report(project_id):
 
     project = current_app.db.get_project(project_id)
     if not project:
-        flash(_('Project not found'), 'error')
+        flash(ftl('common-project-not-found'), 'error')
         return redirect(url_for('projects.list_projects'))
 
     format = request.args.get('format', 'html')
@@ -925,7 +926,7 @@ def api_get_project(project_id):
     try:
         project = current_app.db.get_project(project_id)
         if not project:
-            return jsonify({'success': False, 'error': _('Project not found')}), 404
+            return jsonify({'success': False, 'error': ftl('common-project-not-found')}), 404
 
         return jsonify({
             'success': True,

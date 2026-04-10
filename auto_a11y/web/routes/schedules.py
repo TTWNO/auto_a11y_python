@@ -3,7 +3,7 @@ Routes for managing test schedules (scheduled accessibility testing)
 """
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify
-from flask_babel import gettext as _
+from auto_a11y.web.fluent import ftl
 from flask_login import current_user
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -99,7 +99,7 @@ def list_schedules(website_id):
     """List all schedules for a website"""
     website = current_app.db.get_website(website_id)
     if not website:
-        flash(_('Website not found'), 'error')
+        flash(ftl('common-website-not-found'), 'error')
         return redirect(url_for('index'))
 
     project = current_app.db.get_project(website.project_id)
@@ -119,7 +119,7 @@ def create_schedule(website_id):
     """Create a new schedule"""
     website = current_app.db.get_website(website_id)
     if not website:
-        flash(_('Website not found'), 'error')
+        flash(ftl('common-website-not-found'), 'error')
         return redirect(url_for('index'))
 
     project = current_app.db.get_project(website.project_id)
@@ -207,7 +207,7 @@ def create_schedule(website_id):
 
         except Exception as e:
             logger.error(f"Error creating schedule: {e}")
-            flash(_('Error creating schedule: %(error)s', error=str(e)), 'error')
+            flash(ftl('schedules-error-creating-schedule-error', error=str(e)), 'error')
 
     # Get pages for AI selection
     pages = current_app.db.get_pages(website_id)
@@ -237,12 +237,12 @@ def view_schedule(website_id, schedule_id):
     """View schedule details"""
     website = current_app.db.get_website(website_id)
     if not website:
-        flash(_('Website not found'), 'error')
+        flash(ftl('common-website-not-found'), 'error')
         return redirect(url_for('index'))
 
     schedule = current_app.db.get_test_schedule(schedule_id)
     if not schedule:
-        flash(_('Schedule not found'), 'error')
+        flash(ftl('schedules-schedule-not-found'), 'error')
         return redirect(url_for('schedules.list_schedules', website_id=website_id))
 
     project = current_app.db.get_project(website.project_id)
@@ -268,12 +268,12 @@ def edit_schedule(website_id, schedule_id):
     """Edit an existing schedule"""
     website = current_app.db.get_website(website_id)
     if not website:
-        flash(_('Website not found'), 'error')
+        flash(ftl('common-website-not-found'), 'error')
         return redirect(url_for('index'))
 
     schedule = current_app.db.get_test_schedule(schedule_id)
     if not schedule:
-        flash(_('Schedule not found'), 'error')
+        flash(ftl('schedules-schedule-not-found'), 'error')
         return redirect(url_for('schedules.list_schedules', website_id=website_id))
 
     project = current_app.db.get_project(website.project_id)
@@ -357,7 +357,7 @@ def edit_schedule(website_id, schedule_id):
 
         except Exception as e:
             logger.error(f"Error updating schedule: {e}")
-            flash(_('Error updating schedule: %(error)s', error=str(e)), 'error')
+            flash(ftl('schedules-error-updating-schedule-error', error=str(e)), 'error')
 
     # Get pages for AI selection
     pages = current_app.db.get_pages(website_id)
@@ -387,7 +387,7 @@ def delete_schedule(website_id, schedule_id):
     """Delete a schedule"""
     schedule = current_app.db.get_test_schedule(schedule_id)
     if not schedule:
-        flash(_('Schedule not found'), 'error')
+        flash(ftl('schedules-schedule-not-found'), 'error')
         return redirect(url_for('schedules.list_schedules', website_id=website_id))
 
     # Remove from scheduler
@@ -409,8 +409,8 @@ def toggle_schedule(website_id, schedule_id):
     schedule = current_app.db.get_test_schedule(schedule_id)
     if not schedule:
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({'error': _('Schedule not found')}), 404
-        flash(_('Schedule not found'), 'error')
+            return jsonify({'error': ftl('schedules-schedule-not-found')}), 404
+        flash(ftl('schedules-schedule-not-found'), 'error')
         return redirect(url_for('schedules.list_schedules', website_id=website_id))
 
     # Toggle enabled state
@@ -432,10 +432,10 @@ def toggle_schedule(website_id, schedule_id):
         return jsonify({
             'success': True,
             'enabled': new_state,
-            'message': _("Schedule enabled") if new_state else _("Schedule disabled")
+            'message': ftl('schedules-schedule-enabled') if new_state else ftl('schedules-schedule-disabled')
         })
 
-    flash(_("Schedule enabled") if new_state else _("Schedule disabled"), 'success')
+    flash(ftl('schedules-schedule-enabled') if new_state else ftl('schedules-schedule-disabled'), 'success')
     return redirect(url_for('schedules.list_schedules', website_id=website_id))
 
 
@@ -446,8 +446,8 @@ def run_now(website_id, schedule_id):
     schedule = current_app.db.get_test_schedule(schedule_id)
     if not schedule:
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({'error': _('Schedule not found')}), 404
-        flash(_('Schedule not found'), 'error')
+            return jsonify({'error': ftl('schedules-schedule-not-found')}), 404
+        flash(ftl('schedules-schedule-not-found'), 'error')
         return redirect(url_for('schedules.list_schedules', website_id=website_id))
 
     # Trigger immediate execution
@@ -459,17 +459,17 @@ def run_now(website_id, schedule_id):
                 return jsonify({
                     'success': True,
                     'job_id': job_id,
-                    'message': _('Test run started')
+                    'message': ftl('schedules-test-run-started')
                 })
-            flash(_('Test run started'), 'success')
+            flash(ftl('schedules-test-run-started'), 'success')
         else:
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({'error': _('Failed to start test run')}), 500
-            flash(_('Failed to start test run'), 'error')
+                return jsonify({'error': ftl('schedules-failed-to-start-test-run')}), 500
+            flash(ftl('schedules-failed-to-start-test-run'), 'error')
     else:
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({'error': _('Scheduler not available')}), 500
-        flash(_('Scheduler not available'), 'error')
+            return jsonify({'error': ftl('schedules-scheduler-not-available')}), 500
+        flash(ftl('schedules-scheduler-not-available'), 'error')
 
     return redirect(url_for('schedules.view_schedule', website_id=website_id, schedule_id=schedule_id))
 
@@ -480,11 +480,11 @@ def preview_runs(website_id, schedule_id):
     """Preview next run times for a schedule"""
     schedule = current_app.db.get_test_schedule(schedule_id)
     if not schedule:
-        return jsonify({'error': _('Schedule not found')}), 404
+        return jsonify({'error': ftl('schedules-schedule-not-found')}), 404
 
     scheduler = get_scheduler_service()
     if not scheduler:
-        return jsonify({'error': _('Scheduler not available')}), 500
+        return jsonify({'error': ftl('schedules-scheduler-not-available')}), 500
 
     count = request.args.get('count', 5, type=int)
     next_runs = scheduler.get_next_run_times(schedule_id, count)

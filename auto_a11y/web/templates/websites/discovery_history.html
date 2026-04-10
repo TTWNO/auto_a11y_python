@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('Discovery History') }} - {{ website.name }} - {{ _('Auto A11y') }}{% endblock %}
+{% block title %}{{ ftl('websites-discovery-history') }} - {{ website.name }} - {{ ftl('common-auto-a11y') }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -13,18 +13,18 @@
             <li class="breadcrumb-item">
                 <a href="{{ url_for('websites.view_website', website_id=website.id) }}">{{ website.display_name }}</a>
             </li>
-            <li class="breadcrumb-item active" aria-current="page">{{ _('Discovery History') }}</li>
+            <li class="breadcrumb-item active" aria-current="page">{{ ftl('websites-discovery-history') }}</li>
         </ol>
     </nav>
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h1>{{ _('Discovery History') }}</h1>
-            <p class="text-muted">{{ _('All discovery runs for %(name)s', name=website.name) }}</p>
+            <h1>{{ ftl('websites-discovery-history') }}</h1>
+            <p class="text-muted">{{ ftl('websites-all-discovery-runs-for-name', name=website.name) }}</p>
         </div>
         <div>
             <button class="btn btn-primary" onclick="startDiscovery()">
-                <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> {{ _('Start New Discovery') }}
+                <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> {{ ftl('websites-start-new-discovery') }}
             </button>
         </div>
     </div>
@@ -35,17 +35,17 @@
             {% if discovery_runs %}
             <div class="table-responsive">
                 <table class="table table-hover">
-                    <caption class="visually-hidden">{{ _('Discovery run history for this website') }}</caption>
+                    <caption class="visually-hidden">{{ ftl('websites-discovery-run-history-for-this-website') }}</caption>
                     <thead>
                         <tr>
-                            <th scope="col">{{ _('Started') }}</th>
-                            <th scope="col">{{ _('Status') }}</th>
-                            <th scope="col">{{ _('Pages Found') }}</th>
-                            <th scope="col">{{ _('Failed') }}</th>
-                            <th scope="col">{{ _('Changes') }}</th>
-                            <th scope="col">{{ _('Duration') }}</th>
-                            <th scope="col">{{ _('Triggered By') }}</th>
-                            <th scope="col">{{ _('Actions') }}</th>
+                            <th scope="col">{{ ftl('websites-started') }}</th>
+                            <th scope="col">{{ ftl('common-status') }}</th>
+                            <th scope="col">{{ ftl('websites-pages-found') }}</th>
+                            <th scope="col">{{ ftl('common-failed') }}</th>
+                            <th scope="col">{{ ftl('websites-changes') }}</th>
+                            <th scope="col">{{ ftl('common-duration') }}</th>
+                            <th scope="col">{{ ftl('websites-triggered-by') }}</th>
+                            <th scope="col">{{ ftl('common-actions') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -54,18 +54,18 @@
                             <td>
                                 {{ run.started_at.strftime('%Y-%m-%d %H:%M') }}
                                 {% if run.is_latest %}
-                                <span class="badge bg-primary ms-2">{{ _('Latest') }}</span>
+                                <span class="badge bg-primary ms-2">{{ ftl('websites-latest') }}</span>
                                 {% endif %}
                             </td>
                             <td>
                                 {% if run.status.value == 'completed' %}
-                                <span class="badge bg-success">{{ _('Completed') }}</span>
+                                <span class="badge bg-success">{{ ftl('common-completed') }}</span>
                                 {% elif run.status.value == 'running' %}
-                                <span class="badge bg-warning">{{ _('Running') }}</span>
+                                <span class="badge bg-warning">{{ ftl('common-running-2') }}</span>
                                 {% elif run.status.value == 'failed' %}
-                                <span class="badge bg-danger">{{ _('Failed') }}</span>
+                                <span class="badge bg-danger">{{ ftl('common-failed') }}</span>
                                 {% elif run.status.value == 'cancelled' %}
-                                <span class="badge bg-secondary">{{ _('Cancelled') }}</span>
+                                <span class="badge bg-secondary">{{ ftl('common-cancelled') }}</span>
                                 {% else %}
                                 <span class="badge bg-secondary">{{ _(run.status.value|title) }}</span>
                                 {% endif %}
@@ -87,16 +87,16 @@
                                 {% endif %}
                             </td>
                             <td>{{ run.duration_display }}</td>
-                            <td>{{ run.triggered_by or _('Manual') }}</td>
+                            <td>{{ run.triggered_by or ftl('common-manual') }}</td>
                             <td>
                                 <a href="{{ url_for('websites.view_discovery_run', website_id=website.id, discovery_run_id=run.id) }}" 
                                    class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-eye" aria-hidden="true"></i> {{ _('View') }}
+                                    <i class="bi bi-eye" aria-hidden="true"></i> {{ ftl('common-view') }}
                                 </a>
                                 {% if not run.is_latest and run.status.value == 'completed' %}
                                 <button class="btn btn-sm btn-outline-info" 
                                         onclick="compareWithLatest('{{ run.id }}')">
-                                    <i class="bi bi-arrow-left-right" aria-hidden="true"></i> {{ _('Compare') }}
+                                    <i class="bi bi-arrow-left-right" aria-hidden="true"></i> {{ ftl('websites-compare') }}
                                 </button>
                                 {% endif %}
                             </td>
@@ -107,7 +107,7 @@
             </div>
             {% else %}
             <div class="alert alert-info">
-                <i class="bi bi-info-circle" aria-hidden="true"></i> {{ _('No discovery runs found. Click "Start New Discovery" to begin.') }}
+                <i class="bi bi-info-circle" aria-hidden="true"></i> {{ ftl('websites-no-discovery-runs-found-click-start-new-discovery') }}
             </div>
             {% endif %}
         </div>
@@ -116,12 +116,12 @@
     <!-- Statistics Summary -->
     {% if discovery_runs %}
     <section aria-labelledby="statistics-heading">
-        <h2 id="statistics-heading" class="visually-hidden">{{ _('Statistics Summary') }}</h2>
+        <h2 id="statistics-heading" class="visually-hidden">{{ ftl('websites-statistics-summary') }}</h2>
         <div class="row mt-4">
             <div class="col-md-3">
                 <div class="card">
                     <div class="card-body text-center">
-                        <h3 class="card-title">{{ _('Total Runs') }}</h3>
+                        <h3 class="card-title">{{ ftl('common-total-runs') }}</h3>
                         <p class="h2">{{ discovery_runs|length }}</p>
                     </div>
                 </div>
@@ -129,7 +129,7 @@
             <div class="col-md-3">
                 <div class="card">
                     <div class="card-body text-center">
-                        <h3 class="card-title">{{ _('Successful') }}</h3>
+                        <h3 class="card-title">{{ ftl('websites-successful') }}</h3>
                         <p class="h2 text-success">{{ discovery_runs|selectattr('status.value', 'equalto', 'completed')|list|length }}</p>
                     </div>
                 </div>
@@ -137,7 +137,7 @@
             <div class="col-md-3">
                 <div class="card">
                     <div class="card-body text-center">
-                        <h3 class="card-title">{{ _('Failed') }}</h3>
+                        <h3 class="card-title">{{ ftl('common-failed') }}</h3>
                         <p class="h2 text-danger">{{ discovery_runs|selectattr('status.value', 'equalto', 'failed')|list|length }}</p>
                     </div>
                 </div>
@@ -145,7 +145,7 @@
             <div class="col-md-3">
                 <div class="card">
                     <div class="card-body text-center">
-                        <h3 class="card-title">{{ _('Average Duration') }}</h3>
+                        <h3 class="card-title">{{ ftl('websites-average-duration') }}</h3>
                         {% set completed_runs = discovery_runs|selectattr('duration_seconds')|list %}
                         {% if completed_runs %}
                         {% set avg_duration = (completed_runs|map(attribute='duration_seconds')|sum) / completed_runs|length %}
@@ -163,7 +163,7 @@
 
 <script>
 function startDiscovery() {
-    if (confirm('{{ _("Start a new discovery run for this website?") }}')) {
+    if (confirm('{{ ftl('websites-start-a-new-discovery-run-for-this-website') }}')) {
         fetch(`/websites/{{ website.id }}/discover`, {
             method: 'POST',
             headers: {
@@ -179,15 +179,15 @@ function startDiscovery() {
         })
         .then(data => {
             if (data.success) {
-                alert('{{ _("Discovery started successfully") }}');
+                alert('{{ ftl('websites-discovery-started-successfully') }}');
                 window.location.reload();
             } else {
-                alert('{{ _("Error:") }} ' + (data.error || '{{ _("Unknown error") }}'));
+                alert('{{ ftl('common-error') }} ' + (data.error || '{{ ftl('common-unknown-error') }}'));
             }
         })
         .catch(error => {
             console.error('Error starting discovery:', error);
-            alert('{{ _("Error starting discovery:") }} ' + error.message);
+            alert('{{ ftl('websites-error-starting-discovery') }} ' + error.message);
         });
     }
 }

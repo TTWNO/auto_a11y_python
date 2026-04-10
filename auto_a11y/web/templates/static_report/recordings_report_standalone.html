@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="{{ _('Recordings Accessibility Report') }}">
-    <title>{{ _('Recordings Report') }} - {{ project.name }} - Auto A11y</title>
+    <meta name="description" content="{{ ftl('reports-recordings-accessibility-report') }}">
+    <title>{{ ftl('reports-recordings-report') }} - {{ project.name }} - Auto A11y</title>
 
     <!-- Embedded Bootstrap CSS -->
     <style>
@@ -108,7 +108,7 @@
     </style>
 </head>
 <body>
-    <a class="skip-link" href="#main-content" style="position:absolute;top:-40px;left:0;background:var(--color-brand);color:var(--color-text-inverse);padding:8px;text-decoration:none;z-index:1100;">{{ _('Skip to main content') }}</a>
+    <a class="skip-link" href="#main-content" style="position:absolute;top:-40px;left:0;background:var(--color-brand);color:var(--color-text-inverse);padding:8px;text-decoration:none;z-index:1100;">{{ ftl('common-skip-to-main-content') }}</a>
     <!-- Navigation -->
     <nav class="navbar navbar-dark mb-4" id="main-content">
         <div class="container-fluid">
@@ -117,8 +117,8 @@
                 <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['auto_a11y_report'] }}</span>
             </span>
             <div class="lang-switcher">
-                <button onclick="switchLanguage('en')" id="lang-en" class="{{ 'active' if language == 'en' else '' }}" lang="en" aria-label="{{ _('Switch to English') }}">EN</button>
-                <button onclick="switchLanguage('fr')" id="lang-fr" class="{{ 'active' if language == 'fr' else '' }}" lang="fr" aria-label="{{ _('Switch to French') }}">FR</button>
+                <button onclick="switchLanguage('en')" id="lang-en" class="{{ 'active' if language == 'en' else '' }}" lang="en" aria-label="{{ ftl('reports-switch-to-english') }}">EN</button>
+                <button onclick="switchLanguage('fr')" id="lang-fr" class="{{ 'active' if language == 'fr' else '' }}" lang="fr" aria-label="{{ ftl('reports-switch-to-french') }}">FR</button>
             </div>
         </div>
     </nav>
@@ -346,19 +346,19 @@
                                         </h4>
                                         {% if painpoint.user_quote %}
                                         <div class="mb-3">
-                                            <strong class="text-primary">{{ _('User Quote:') }}</strong>
+                                            <strong class="text-primary">{{ ftl('common-user-quote') }}</strong>
                                             <p class="fst-italic ms-3">"{{ painpoint.user_quote }}"</p>
                                         </div>
                                         {% endif %}
                                         {% if include_timecodes and painpoint.timecodes %}
                                         <div>
-                                            <strong class="text-primary">{{ _('Timecodes:') }}</strong>
+                                            <strong class="text-primary">{{ ftl('common-timecodes') }}</strong>
                                             {% for tc in painpoint.timecodes %}
                                             <div class="ms-3 mb-2">
                                                 <i class="bi bi-clock" aria-hidden="true"></i>
                                                 <span class="text-muted small">
                                                     <code>{{ tc.start }}</code> - <code>{{ tc.end }}</code>
-                                                    {% if tc.duration %}({{ _('Duration:') }} <code>{{ tc.duration }}</code>){% endif %}
+                                                    {% if tc.duration %}({{ ftl('common-duration-2') }} <code>{{ tc.duration }}</code>){% endif %}
                                                 </span>
                                             </div>
                                             {% endfor %}
@@ -432,19 +432,19 @@
                                         <h4>{{ assertion.number }}. {{ assertion.assertion }}</h4>
                                         {% if assertion.user_quote %}
                                         <div class="mb-3">
-                                            <strong class="text-primary">{{ _('User Quote:') }}</strong>
+                                            <strong class="text-primary">{{ ftl('common-user-quote') }}</strong>
                                             <p class="fst-italic ms-3">"{{ assertion.user_quote }}"</p>
                                         </div>
                                         {% endif %}
                                         {% if include_timecodes and assertion.timecodes %}
                                         <div>
-                                            <strong class="text-primary">{{ _('Timecodes:') }}</strong>
+                                            <strong class="text-primary">{{ ftl('common-timecodes') }}</strong>
                                             {% for tc in assertion.timecodes %}
                                             <div class="ms-3 mb-2">
                                                 <i class="bi bi-clock" aria-hidden="true"></i>
                                                 <span class="text-muted small">
                                                     <code>{{ tc.start }}</code> - <code>{{ tc.end }}</code>
-                                                    {% if tc.duration %}({{ _('Duration:') }} <code>{{ tc.duration }}</code>){% endif %}
+                                                    {% if tc.duration %}({{ ftl('common-duration-2') }} <code>{{ tc.duration }}</code>){% endif %}
                                                 </span>
                                             </div>
                                             {% endfor %}
@@ -452,7 +452,7 @@
                                         {% endif %}
                                         {% if assertion.context %}
                                         <div class="mt-2">
-                                            <strong class="text-primary">{{ _('Context:') }}</strong>
+                                            <strong class="text-primary">{{ ftl('common-context') }}</strong>
                                             <p class="ms-3">{{ assertion.context }}</p>
                                         </div>
                                         {% endif %}
@@ -533,7 +533,7 @@
                                                         </span>
                                                         {% if issue.timecodes %}
                                                         <span class="badge bg-info">
-                                                            <i class="bi bi-clock" aria-hidden="true"></i> {{ issue.timecodes|length }} {{ _('timecode(s)') }}
+                                                            <i class="bi bi-clock" aria-hidden="true"></i> {{ issue.timecodes|length }} {{ ftl('common-timecode-s') }}
                                                         </span>
                                                         {% endif %}
                                                     </div>

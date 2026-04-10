@@ -3,7 +3,7 @@ Discovered Page management routes
 """
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
-from flask_babel import gettext as _
+from auto_a11y.web.fluent import ftl
 from bson import ObjectId
 from datetime import datetime
 import logging
@@ -25,7 +25,7 @@ def view_discovered_page(page_id):
         # Get the discovered page
         page_doc = db.discovered_pages.find_one({'_id': ObjectId(page_id)})
         if not page_doc:
-            flash(_('Discovered page not found'), 'error')
+            flash(ftl('pages-discovered-page-not-found'), 'error')
             return redirect(url_for('projects.list_projects'))
 
         page = DiscoveredPage.from_dict(page_doc)
@@ -33,7 +33,7 @@ def view_discovered_page(page_id):
         # Get the project
         project_doc = db.projects.find_one({'_id': ObjectId(page.project_id)})
         if not project_doc:
-            flash(_('Associated project not found'), 'error')
+            flash(ftl('pages-associated-project-not-found'), 'error')
             return redirect(url_for('projects.list_projects'))
 
         from auto_a11y.models import Project
@@ -68,7 +68,7 @@ def view_discovered_page(page_id):
 
     except Exception as e:
         logger.error(f"Error viewing discovered page: {e}")
-        flash(_('Error loading page: %(error)s', error=str(e)), 'error')
+        flash(ftl('pages-error-loading-page-error', error=str(e)), 'error')
         return redirect(url_for('projects.list_projects'))
 
 
@@ -81,7 +81,7 @@ def edit_discovered_page(page_id):
         # Get the discovered page
         page_doc = db.discovered_pages.find_one({'_id': ObjectId(page_id)})
         if not page_doc:
-            return jsonify({'success': False, 'error': _('Page not found')}), 404
+            return jsonify({'success': False, 'error': ftl('common-page-not-found')}), 404
 
         page = DiscoveredPage.from_dict(page_doc)
 
@@ -131,9 +131,9 @@ def edit_discovered_page(page_id):
         )
 
         if request.is_json:
-            return jsonify({'success': True, 'message': _('Page updated successfully')})
+            return jsonify({'success': True, 'message': ftl('pages-page-updated-successfully')})
         else:
-            flash(_('Page updated successfully'), 'success')
+            flash(ftl('pages-page-updated-successfully'), 'success')
             return redirect(url_for('discovered_pages.view_discovered_page', page_id=page_id))
 
     except Exception as e:
@@ -141,7 +141,7 @@ def edit_discovered_page(page_id):
         if request.is_json:
             return jsonify({'success': False, 'error': str(e)}), 500
         else:
-            flash(_('Error updating page: %(error)s', error=str(e)), 'error')
+            flash(ftl('pages-error-updating-page-error', error=str(e)), 'error')
             return redirect(url_for('discovered_pages.view_discovered_page', page_id=page_id))
 
 
@@ -154,7 +154,7 @@ def delete_discovered_page(page_id):
         # Get the page to find its project
         page_doc = db.discovered_pages.find_one({'_id': ObjectId(page_id)})
         if not page_doc:
-            return jsonify({'success': False, 'error': _('Page not found')}), 404
+            return jsonify({'success': False, 'error': ftl('common-page-not-found')}), 404
 
         project_id = page_doc.get('project_id')
 
@@ -163,15 +163,15 @@ def delete_discovered_page(page_id):
 
         if result.deleted_count > 0:
             if request.is_json:
-                return jsonify({'success': True, 'message': _('Page deleted successfully')})
+                return jsonify({'success': True, 'message': ftl('pages-page-deleted-successfully')})
             else:
-                flash(_('Page deleted successfully'), 'success')
+                flash(ftl('pages-page-deleted-successfully'), 'success')
                 return redirect(url_for('projects.view_project', project_id=project_id))
         else:
             if request.is_json:
-                return jsonify({'success': False, 'error': _('Page not found')}), 404
+                return jsonify({'success': False, 'error': ftl('common-page-not-found')}), 404
             else:
-                flash(_('Page not found'), 'error')
+                flash(ftl('common-page-not-found'), 'error')
                 return redirect(url_for('projects.list_projects'))
 
     except Exception as e:
@@ -179,5 +179,5 @@ def delete_discovered_page(page_id):
         if request.is_json:
             return jsonify({'success': False, 'error': str(e)}), 500
         else:
-            flash(_('Error deleting page: %(error)s', error=str(e)), 'error')
+            flash(ftl('pages-error-deleting-page-error', error=str(e)), 'error')
             return redirect(url_for('projects.list_projects'))

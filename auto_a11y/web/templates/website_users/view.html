@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ user.name_display }} - {{ _('Test User') }} - {{ _('Auto A11y') }}{% endblock %}
+{% block title %}{{ user.name_display }} - {{ ftl('common-test-user') }} - {{ ftl('common-auto-a11y') }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -14,7 +14,7 @@
                 <a href="{{ url_for('websites.view_website', website_id=website.id) }}">{{ website.display_name }}</a>
             </li>
             <li class="breadcrumb-item">
-                <a href="{{ url_for('website_users.list_users', website_id=website.id) }}">{{ _('Test Users') }}</a>
+                <a href="{{ url_for('website_users.list_users', website_id=website.id) }}">{{ ftl('common-test-users') }}</a>
             </li>
             <li class="breadcrumb-item active" aria-current="page">{{ user.name_display }}</li>
         </ol>
@@ -27,17 +27,17 @@
             </h1>
             {% if user.enabled %}
             <span class="badge bg-success">
-                <i class="bi bi-check-circle" aria-hidden="true"></i> {{ _('Enabled') }}
+                <i class="bi bi-check-circle" aria-hidden="true"></i> {{ ftl('common-enabled') }}
             </span>
             {% else %}
             <span class="badge bg-secondary">
-                <i class="bi bi-pause-circle" aria-hidden="true"></i> {{ _('Disabled') }}
+                <i class="bi bi-pause-circle" aria-hidden="true"></i> {{ ftl('common-disabled') }}
             </span>
             {% endif %}
         </div>
         <div>
             <a href="{{ url_for('website_users.edit_user', user_id=user.id) }}" class="btn btn-primary">
-                <i class="bi bi-pencil" aria-hidden="true"></i> {{ _('Edit User') }}
+                <i class="bi bi-pencil" aria-hidden="true"></i> {{ ftl('common-edit-user') }}
             </a>
         </div>
     </div>
@@ -47,39 +47,39 @@
             <!-- User Information -->
             <div class="card mb-4">
                 <div class="card-header">
-                    <h2 class="mb-0"><i class="bi bi-info-circle" aria-hidden="true"></i> {{ _('User Information') }}</h2>
+                    <h2 class="mb-0"><i class="bi bi-info-circle" aria-hidden="true"></i> {{ ftl('common-user-information') }}</h2>
                 </div>
                 <div class="card-body">
                     <dl class="row mb-0">
-                        <dt class="col-sm-4">{{ _('Display Name:') }}</dt>
+                        <dt class="col-sm-4">{{ ftl('common-display-name-2') }}</dt>
                         <dd class="col-sm-8">{{ user.display_name or user.username }}</dd>
 
-                        <dt class="col-sm-4">{{ _('Username:') }}</dt>
+                        <dt class="col-sm-4">{{ ftl('common-username-2') }}</dt>
                         <dd class="col-sm-8"><code>{{ user.username }}</code></dd>
 
-                        <dt class="col-sm-4">{{ _('Password:') }}</dt>
+                        <dt class="col-sm-4">{{ ftl('websites-password') }}</dt>
                         <dd class="col-sm-8"><span class="text-muted">●●●●●●●●</span></dd>
 
-                        <dt class="col-sm-4">{{ _('Roles:') }}</dt>
+                        <dt class="col-sm-4">{{ ftl('common-roles-2') }}</dt>
                         <dd class="col-sm-8">
                             {% if user.roles %}
                                 {% for role in user.roles %}
                                 <span class="badge bg-secondary">{{ role }}</span>
                                 {% endfor %}
                             {% else %}
-                            <span class="text-muted">{{ _('No roles') }}</span>
+                            <span class="text-muted">{{ ftl('common-no-roles') }}</span>
                             {% endif %}
                         </dd>
 
                         {% if user.description %}
-                        <dt class="col-sm-4">{{ _('Description:') }}</dt>
+                        <dt class="col-sm-4">{{ ftl('common-description-2') }}</dt>
                         <dd class="col-sm-8">{{ user.description }}</dd>
                         {% endif %}
 
-                        <dt class="col-sm-4">{{ _('Created:') }}</dt>
+                        <dt class="col-sm-4">{{ ftl('common-created-2') }}</dt>
                         <dd class="col-sm-8">{{ user.created_at.strftime('%Y-%m-%d %H:%M') }}</dd>
 
-                        <dt class="col-sm-4">{{ _('Last Updated:') }}</dt>
+                        <dt class="col-sm-4">{{ ftl('common-last-updated') }}</dt>
                         <dd class="col-sm-8">{{ user.updated_at.strftime('%Y-%m-%d %H:%M') }}</dd>
                     </dl>
                 </div>
@@ -90,11 +90,11 @@
             <!-- Login Configuration -->
             <div class="card mb-4">
                 <div class="card-header">
-                    <h2 class="mb-0"><i class="bi bi-key" aria-hidden="true"></i> {{ _('Login Configuration') }}</h2>
+                    <h2 class="mb-0"><i class="bi bi-key" aria-hidden="true"></i> {{ ftl('common-login-configuration') }}</h2>
                 </div>
                 <div class="card-body">
                     <dl class="row mb-0">
-                        <dt class="col-sm-5">{{ _('Auth Method:') }}</dt>
+                        <dt class="col-sm-5">{{ ftl('websites-auth-method') }}</dt>
                         <dd class="col-sm-7">
                             <span class="badge bg-primary">
                                 {{ _(user.login_config.authentication_method.value|replace('_', ' ')|title) }}
@@ -102,7 +102,7 @@
                         </dd>
 
                         {% if user.login_config.login_url %}
-                        <dt class="col-sm-5">{{ _('Login URL:') }}</dt>
+                        <dt class="col-sm-5">{{ ftl('common-login-url') }}</dt>
                         <dd class="col-sm-7">
                             <a href="{{ user.login_config.login_url }}" target="_blank">
                                 {{ user.login_config.login_url }}
@@ -112,27 +112,27 @@
                         {% endif %}
 
                         {% if user.login_config.username_field_selector %}
-                        <dt class="col-sm-5">{{ _('Username Selector:') }}</dt>
+                        <dt class="col-sm-5">{{ ftl('websites-username-selector') }}</dt>
                         <dd class="col-sm-7"><code>{{ user.login_config.username_field_selector }}</code></dd>
                         {% endif %}
 
                         {% if user.login_config.password_field_selector %}
-                        <dt class="col-sm-5">{{ _('Password Selector:') }}</dt>
+                        <dt class="col-sm-5">{{ ftl('websites-password-selector') }}</dt>
                         <dd class="col-sm-7"><code>{{ user.login_config.password_field_selector }}</code></dd>
                         {% endif %}
 
                         {% if user.login_config.submit_button_selector %}
-                        <dt class="col-sm-5">{{ _('Submit Selector:') }}</dt>
+                        <dt class="col-sm-5">{{ ftl('websites-submit-selector') }}</dt>
                         <dd class="col-sm-7"><code>{{ user.login_config.submit_button_selector }}</code></dd>
                         {% endif %}
 
                         {% if user.login_config.success_indicator_selector %}
-                        <dt class="col-sm-5">{{ _('Success Indicator:') }}</dt>
+                        <dt class="col-sm-5">{{ ftl('common-success-indicator') }}</dt>
                         <dd class="col-sm-7"><code>{{ user.login_config.success_indicator_selector }}</code></dd>
                         {% endif %}
 
-                        <dt class="col-sm-5">{{ _('Session Timeout:') }}</dt>
-                        <dd class="col-sm-7">{{ _('%(minutes)s minutes', minutes=user.login_config.session_timeout_minutes) }}</dd>
+                        <dt class="col-sm-5">{{ ftl('common-session-timeout') }}</dt>
+                        <dd class="col-sm-7">{{ ftl('common-minutes-minutes', minutes=user.login_config.session_timeout_minutes) }}</dd>
                     </dl>
                 </div>
             </div>
@@ -145,29 +145,29 @@
             <!-- Usage History -->
             <div class="card mb-4">
                 <div class="card-header">
-                    <h2 class="mb-0"><i class="bi bi-clock-history" aria-hidden="true"></i> {{ _('Usage History') }}</h2>
+                    <h2 class="mb-0"><i class="bi bi-clock-history" aria-hidden="true"></i> {{ ftl('common-usage-history') }}</h2>
                 </div>
                 <div class="card-body">
                     <dl class="row mb-0">
-                        <dt class="col-sm-2">{{ _('Last Used:') }}</dt>
+                        <dt class="col-sm-2">{{ ftl('common-last-used') }}</dt>
                         <dd class="col-sm-10">{{ user.last_used.strftime('%Y-%m-%d %H:%M:%S') }}</dd>
 
-                        <dt class="col-sm-2">{{ _('Last Login Status:') }}</dt>
+                        <dt class="col-sm-2">{{ ftl('common-last-login-status') }}</dt>
                         <dd class="col-sm-10">
                             {% if user.last_login_success == True %}
                             <span class="badge bg-success">
-                                <i class="bi bi-check-circle" aria-hidden="true"></i> {{ _('Login Successful') }}
+                                <i class="bi bi-check-circle" aria-hidden="true"></i> {{ ftl('websites-login-successful') }}
                             </span>
-                            <span class="text-muted">{{ _('- User authenticated successfully') }}</span>
+                            <span class="text-muted">{{ ftl('websites-user-authenticated-successfully') }}</span>
                             {% elif user.last_login_success == False %}
                             <span class="badge bg-danger">
-                                <i class="bi bi-x-circle" aria-hidden="true"></i> {{ _('Login Failed') }}
+                                <i class="bi bi-x-circle" aria-hidden="true"></i> {{ ftl('common-login-failed') }}
                             </span>
                             {% if user.last_login_error %}
                             <br><code class="text-danger mt-2 d-inline-block">{{ user.last_login_error }}</code>
                             {% endif %}
                             {% else %}
-                            <span class="text-muted">{{ _('Not used yet') }}</span>
+                            <span class="text-muted">{{ ftl('websites-not-used-yet') }}</span>
                             {% endif %}
                         </dd>
                     </dl>
@@ -180,13 +180,13 @@
     <!-- Actions -->
     <div class="d-flex gap-2">
         <a href="{{ url_for('website_users.edit_user', user_id=user.id) }}" class="btn btn-primary">
-            <i class="bi bi-pencil" aria-hidden="true"></i> {{ _('Edit User') }}
+            <i class="bi bi-pencil" aria-hidden="true"></i> {{ ftl('common-edit-user') }}
         </a>
         <a href="{{ url_for('website_users.list_users', website_id=website.id) }}" class="btn btn-secondary">
-            <i class="bi bi-arrow-left" aria-hidden="true"></i> {{ _('Back to List') }}
+            <i class="bi bi-arrow-left" aria-hidden="true"></i> {{ ftl('websites-back-to-list') }}
         </a>
         <button class="btn btn-danger" onclick="deleteUser('{{ user.id }}')">
-            <i class="bi bi-trash" aria-hidden="true"></i> {{ _('Delete User') }}
+            <i class="bi bi-trash" aria-hidden="true"></i> {{ ftl('common-delete-user') }}
         </button>
     </div>
 </div>
@@ -195,7 +195,7 @@
 {% block extra_js %}
 <script>
 function deleteUser(userId) {
-    if (!confirm("{{ _('Are you sure you want to delete this test user? This action cannot be undone.') }}")) return;
+    if (!confirm("{{ ftl('common-are-you-sure-you-want-to-delete-this-test-user') }}")) return;
 
     fetch(`/users/user/${userId}/delete`, {
         method: 'POST',
@@ -208,11 +208,11 @@ function deleteUser(userId) {
         if (data.success) {
             window.location.href = data.redirect;
         } else {
-            alert("{{ _('Error:') }} " + (data.error || "{{ _('Unknown error') }}"));
+            alert("{{ ftl('common-error') }} " + (data.error || "{{ ftl('common-unknown-error') }}"));
         }
     })
     .catch(err => {
-        alert("{{ _('Error deleting user:') }} " + err);
+        alert("{{ ftl('websites-error-deleting-user') }} " + err);
     });
 }
 </script>

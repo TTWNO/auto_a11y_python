@@ -9,7 +9,7 @@ from datetime import datetime
 import json
 from pathlib import Path
 
-from flask_babel import force_locale, gettext as _
+from auto_a11y.web.fluent import ftl, force_locale
 from auto_a11y.models import Project, Website, Page, PageStatus
 
 logger = logging.getLogger(__name__)
@@ -60,7 +60,7 @@ class ProjectReport:
         for website in self.websites:
             if progress_callback:
                 with force_locale(self.language):
-                    progress_callback(page_count, max(total_page_count, 1), _('Processing %(name)s...', name=website.name))
+                    progress_callback(page_count, max(total_page_count, 1), ftl('reports-processing-name', name=website.name))
             pages = self.pages_by_website.get(website.id, [])
             
             website_tested = sum(1 for p in pages if p.status == PageStatus.TESTED)

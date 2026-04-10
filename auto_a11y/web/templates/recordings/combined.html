@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('Combined Recordings') }} - {{ project.name }}{% endblock %}
+{% block title %}{{ ftl('recordings-combined-recordings') }} - {{ project.name }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -10,12 +10,12 @@
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="{{ url_for('projects.view_project', project_id=project.id) }}">{{ project.name }}</a></li>
-                    <li class="breadcrumb-item"><a href="{{ url_for('recordings.list_recordings') }}?project_id={{ project.id }}">{{ _('Recordings') }}</a></li>
-                    <li class="breadcrumb-item active">{{ _('Combined View') }}</li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('recordings.list_recordings') }}?project_id={{ project.id }}">{{ ftl('common-recordings') }}</a></li>
+                    <li class="breadcrumb-item active">{{ ftl('recordings-combined-view') }}</li>
                 </ol>
             </nav>
-            <h1 class="mb-0">{{ _('All Recordings Combined') }}</h1>
-            <p class="text-muted">{{ recordings|length }} {{ _('recordings') }}, {{ total_issues }} {{ _('total issues') }}</p>
+            <h1 class="mb-0">{{ ftl('common-all-recordings-combined') }}</h1>
+            <p class="text-muted">{{ recordings|length }} {{ ftl('common-recordings-2') }}, {{ total_issues }} {{ ftl('recordings-total-issues') }}</p>
         </div>
     </div>
 
@@ -24,7 +24,7 @@
         <div class="col-md-3">
             <div class="card">
                 <div class="card-body text-center">
-                    <h2 class="text-muted mb-2">{{ _('Total Issues') }}</h2>
+                    <h2 class="text-muted mb-2">{{ ftl('common-total-issues') }}</h2>
                     <p class="display-6 mb-0">{{ total_issues }}</p>
                 </div>
             </div>
@@ -32,7 +32,7 @@
         <div class="col-md-3">
             <div class="card">
                 <div class="card-body text-center">
-                    <h2 class="text-muted mb-2">{{ _('High Impact') }}</h2>
+                    <h2 class="text-muted mb-2">{{ ftl('common-high-impact') }}</h2>
                     <p class="display-6 text-danger mb-0">{{ high_count }}</p>
                 </div>
             </div>
@@ -40,7 +40,7 @@
         <div class="col-md-3">
             <div class="card">
                 <div class="card-body text-center">
-                    <h2 class="text-muted mb-2">{{ _('Medium Impact') }}</h2>
+                    <h2 class="text-muted mb-2">{{ ftl('common-medium-impact') }}</h2>
                     <p class="display-6 text-warning mb-0">{{ medium_count }}</p>
                 </div>
             </div>
@@ -48,7 +48,7 @@
         <div class="col-md-3">
             <div class="card">
                 <div class="card-body text-center">
-                    <h2 class="text-muted mb-2">{{ _('Low Impact') }}</h2>
+                    <h2 class="text-muted mb-2">{{ ftl('common-low-impact') }}</h2>
                     <p class="display-6 text-info mb-0">{{ low_count }}</p>
                 </div>
             </div>
@@ -58,7 +58,7 @@
     <!-- Recordings Included -->
     <div class="card mb-4">
         <div class="card-header">
-            <h2 class="mb-0">{{ _('Recordings Included') }}</h2>
+            <h2 class="mb-0">{{ ftl('recordings-recordings-included') }}</h2>
         </div>
         <div class="card-body">
             <div class="row">
@@ -67,7 +67,7 @@
                     <article class="d-flex align-items-center">
                         <span class="badge bg-secondary me-2">{{ _(recording.recording_type.value|replace('_', ' ')|title) }}</span>
                         <span class="me-2">{{ recording.title }}</span>
-                        <span class="badge bg-danger">{{ recording.total_issues }} {{ _('issues') }}</span>
+                        <span class="badge bg-danger">{{ recording.total_issues }} {{ ftl('common-issues') }}</span>
                     </article>
                 </div>
                 {% endfor %}
@@ -78,7 +78,7 @@
     <!-- Issues by Touchpoint -->
     <div class="card">
         <div class="card-header">
-            <h2 class="mb-0"><i class="bi bi-bug me-2" aria-hidden="true"></i>{{ _('Accessibility Issues by Touchpoint') }}</h2>
+            <h2 class="mb-0"><i class="bi bi-bug me-2" aria-hidden="true"></i>{{ ftl('recordings-accessibility-issues-by-touchpoint') }}</h2>
         </div>
         <div class="card-body">
             {% if issues_by_touchpoint %}
@@ -105,7 +105,7 @@
                                     <div>
                                         {% if issue.timecodes %}
                                         <span class="badge bg-info me-2">
-                                            <i class="bi bi-clock" aria-hidden="true"></i> {{ issue.timecodes|length }} {{ _('timecode(s)') }}
+                                            <i class="bi bi-clock" aria-hidden="true"></i> {{ issue.timecodes|length }} {{ ftl('common-timecode-s') }}
                                         </span>
                                         {% endif %}
                                         <small class="text-muted">
@@ -122,13 +122,13 @@
                                 <div class="alert alert-info mb-3">
                                     <div class="row">
                                         <div class="col-md-6">
-                                            <strong>{{ _('Recording:') }}</strong> {{ issue.recording_ref.title }}<br>
-                                            <strong>{{ _('Type:') }}</strong> {{ _(issue.recording_ref.recording_type.value|replace('_', ' ')|title) }}
+                                            <strong>{{ ftl('recordings-recording') }}</strong> {{ issue.recording_ref.title }}<br>
+                                            <strong>{{ ftl('common-type-2') }}</strong> {{ _(issue.recording_ref.recording_type.value|replace('_', ' ')|title) }}
                                         </div>
                                         <div class="col-md-6">
-                                            <strong>{{ _('Auditor/Tester:') }}</strong> {{ issue.recording_ref.auditor_name or '-' }}<br>
+                                            <strong>{{ ftl('recordings-auditor-tester') }}</strong> {{ issue.recording_ref.auditor_name or '-' }}<br>
                                             <a href="{{ url_for('recordings.view_recording', recording_id=issue.recording_ref.id) }}" class="btn btn-sm btn-outline-primary mt-2">
-                                                <i class="bi bi-eye" aria-hidden="true"></i> {{ _('View Recording') }}
+                                                <i class="bi bi-eye" aria-hidden="true"></i> {{ ftl('recordings-view-recording') }}
                                             </a>
                                         </div>
                                     </div>
@@ -137,39 +137,39 @@
                                 <!-- Issue Details -->
                                 {% if issue.what %}
                                 <div class="mb-3">
-                                    <strong>{{ _('What:') }}</strong>
+                                    <strong>{{ ftl('recordings-what') }}</strong>
                                     <p class="mb-0">{{ issue.what }}</p>
                                 </div>
                                 {% endif %}
 
                                 {% if issue.why %}
                                 <div class="mb-3">
-                                    <strong>{{ _('Why:') }}</strong>
+                                    <strong>{{ ftl('recordings-why') }}</strong>
                                     <p class="mb-0">{{ issue.why }}</p>
                                 </div>
                                 {% endif %}
 
                                 {% if issue.who %}
                                 <div class="mb-3">
-                                    <strong>{{ _('Who is affected:') }}</strong>
+                                    <strong>{{ ftl('recordings-who-is-affected') }}</strong>
                                     <p class="mb-0">{{ issue.who }}</p>
                                 </div>
                                 {% endif %}
 
                                 {% if issue.remediation %}
                                 <div class="mb-3">
-                                    <strong>{{ _('How to fix:') }}</strong>
+                                    <strong>{{ ftl('common-how-to-fix') }}</strong>
                                     <p class="mb-0">{{ issue.remediation }}</p>
                                 </div>
                                 {% endif %}
 
                                 {% if issue.wcag %}
                                 <div class="mb-3">
-                                    <strong>{{ _('WCAG:') }}</strong>
+                                    <strong>{{ ftl('common-wcag-2') }}</strong>
                                     <div class="mt-1">
                                         {% for wcag_ref in issue.wcag %}
                                         <span class="badge bg-primary me-1">
-                                            {{ wcag_ref.criteria }} ({{ _('Level') }} {{ wcag_ref.level }})
+                                            {{ wcag_ref.criteria }} ({{ ftl('common-level') }} {{ wcag_ref.level }})
                                         </span>
                                         {% endfor %}
                                     </div>
@@ -178,7 +178,7 @@
 
                                 {% if issue.timecodes %}
                                 <div class="mb-3">
-                                    <strong>{{ _('Timecodes:') }}</strong>
+                                    <strong>{{ ftl('common-timecodes') }}</strong>
                                     <div class="mt-1">
                                         {% for tc in issue.timecodes %}
                                         <span class="badge bg-secondary me-1">{{ tc.start }} - {{ tc.end }}</span>
@@ -194,7 +194,7 @@
             </div>
             {% endfor %}
             {% else %}
-            <p class="text-muted">{{ _('No issues found across all recordings.') }}</p>
+            <p class="text-muted">{{ ftl('recordings-no-issues-found-across-all-recordings') }}</p>
             {% endif %}
         </div>
     </div>

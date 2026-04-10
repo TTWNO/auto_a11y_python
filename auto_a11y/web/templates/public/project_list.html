@@ -1,9 +1,9 @@
 {% extends "public/public_base.html" %}
 
-{% block title %}{{ _('Projects') }}{% endblock %}
+{% block title %}{{ ftl('common-projects') }}{% endblock %}
 
 {% block content %}
-<h1>{{ _('Projects') }}</h1>
+<h1>{{ ftl('common-projects') }}</h1>
 
 {% if project_data %}
 <ul class="website-list">
@@ -15,15 +15,15 @@
             </a>
             <br>
             <small>
-                {{ _('%(tested)s of %(total)s pages tested', tested=item.stats.tested_pages, total=item.stats.total_pages) }}
+                {{ ftl('public-tested-of-total-pages-tested', tested=item.stats.tested_pages, total=item.stats.total_pages) }}
                 &middot;
-                {{ _('%(count)s violations', count=item.stats.total_violations) }}
+                {{ ftl('public-count-violations', count=item.stats.total_violations) }}
             </small>
         </article>
     </li>
     {% endfor %}
 </ul>
 {% else %}
-<p>{{ _('No projects available.') }}</p>
+<p>{{ ftl('public-no-projects-available') }}</p>
 {% endif %}
 {% endblock %}

@@ -2,11 +2,11 @@
 <div class="card mb-4" id="drupalSyncCard">
     <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
         <h2 class="mb-0">
-            <i class="bi bi-cloud-upload" aria-hidden="true"></i> {{ _('Access Labs Portal Sync') }}
+            <i class="bi bi-cloud-upload" aria-hidden="true"></i> {{ ftl('drupal-access-labs-portal-sync') }}
         </h2>
         <div>
             <span class="badge bg-info" id="drupalAuditBadge">
-                <i class="bi bi-info-circle" aria-hidden="true"></i> {{ _('Loading...') }}
+                <i class="bi bi-info-circle" aria-hidden="true"></i> {{ ftl('common-loading') }}
             </span>
         </div>
     </div>
@@ -15,7 +15,7 @@
             <!-- Content loaded via JavaScript -->
             <div class="text-center py-4">
                 <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">{{ _('Loading...') }}</span>
+                    <span class="visually-hidden">{{ ftl('common-loading') }}</span>
                 </div>
             </div>
         </div>
@@ -27,19 +27,19 @@
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title" id="uploadModalTitle">{{ _('Upload to Access Labs Portal') }}</h2>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ _('Close') }}"></button>
+                <h2 class="modal-title" id="uploadModalTitle">{{ ftl('drupal-upload-to-access-labs-portal') }}</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ ftl('common-close') }}"></button>
             </div>
             <div class="modal-body">
                 <!-- Step 1: Select Content -->
                 <div id="uploadStep1">
-                    <h3>{{ _('Select Content to Upload') }}</h3>
+                    <h3>{{ ftl('drupal-select-content-to-upload') }}</h3>
 
                     <!-- Discovered Pages -->
                     <div class="card mb-3">
                         <div class="card-header">
                             <input type="checkbox" id="selectAllPages" checked>
-                            <strong>{{ _('Discovered Pages') }} (<span id="discoveredPagesCount">0</span>)</strong>
+                            <strong>{{ ftl('common-discovered-pages') }} (<span id="discoveredPagesCount">0</span>)</strong>
                         </div>
                         <div class="card-body" style="max-height: 300px; overflow-y: auto;">
                             <div id="discoveredPagesList">
@@ -52,7 +52,7 @@
                     <div class="card mb-3">
                         <div class="card-header">
                             <input type="checkbox" id="selectAllRecordings" checked>
-                            <strong>{{ _('Recordings') }} (<span id="recordingsCount">0</span>)</strong>
+                            <strong>{{ ftl('common-recordings') }} (<span id="recordingsCount">0</span>)</strong>
                         </div>
                         <div class="card-body" style="max-height: 300px; overflow-y: auto;">
                             <div id="recordingsList">
@@ -64,7 +64,7 @@
 
                 <!-- Step 2: Upload Progress -->
                 <div id="uploadStep2" style="display:none;">
-                    <h3>{{ _('Uploading to Access Labs Portal...') }}</h3>
+                    <h3>{{ ftl('drupal-uploading-to-access-labs-portal') }}</h3>
 
                     <div class="progress mb-3" style="height: 30px;">
                         <div id="uploadProgressBar" class="progress-bar progress-bar-striped progress-bar-animated"
@@ -75,7 +75,7 @@
 
                     <div class="card">
                         <div class="card-header">
-                            <strong>{{ _('Upload Log') }}</strong>
+                            <strong>{{ ftl('drupal-upload-log') }}</strong>
                         </div>
                         <div class="card-body" style="max-height: 400px; overflow-y: auto;">
                             <div id="uploadLog" class="font-monospace small">
@@ -88,35 +88,35 @@
                 <!-- Step 3: Complete -->
                 <div id="uploadStep3" style="display:none;">
                     <div class="alert alert-success">
-                        <h3><i class="bi bi-check-circle" aria-hidden="true"></i> {{ _('Upload Complete!') }}</h3>
-                        <p>{{ _('Successfully uploaded') }} <strong><span id="successCount">0</span></strong> {{ _('items to Access Labs Portal.') }}</p>
+                        <h3><i class="bi bi-check-circle" aria-hidden="true"></i> {{ ftl('common-upload-complete') }}</h3>
+                        <p>{{ ftl('drupal-successfully-uploaded') }} <strong><span id="successCount">0</span></strong> {{ ftl('drupal-items-to-access-labs-portal') }}</p>
                     </div>
 
                     <div class="d-flex flex-wrap gap-3 mb-3">
                         <div class="stat-card text-center p-3 border rounded flex-fill" style="min-width: 140px;">
                             <dl class="mb-0">
                                 <dd class="mb-0" id="uploadedPages">0</dd>
-                                <dt>{{ _('Discovered Pages') }}</dt>
+                                <dt>{{ ftl('common-discovered-pages') }}</dt>
                             </dl>
                         </div>
                         <div class="stat-card text-center p-3 border rounded flex-fill" style="min-width: 140px;">
                             <dl class="mb-0">
                                 <dd class="mb-0" id="uploadedRecordings">0</dd>
-                                <dt>{{ _('Recordings') }}</dt>
+                                <dt>{{ ftl('common-recordings') }}</dt>
                             </dl>
                         </div>
                     </div>
 
                     <div id="uploadErrors" class="alert alert-danger" style="display:none;">
-                        <strong><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> {{ _('Some items failed:') }}</strong>
+                        <strong><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> {{ ftl('drupal-some-items-failed') }}</strong>
                         <ul id="uploadErrorsList"></ul>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="closeModalBtn">{{ _('Close') }}</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="closeModalBtn">{{ ftl('common-close') }}</button>
                 <button type="button" class="btn btn-primary" id="startUploadBtn" onclick="startUpload()">
-                    <i class="bi bi-cloud-upload" aria-hidden="true"></i> {{ _('Start Upload') }}
+                    <i class="bi bi-cloud-upload" aria-hidden="true"></i> {{ ftl('drupal-start-upload') }}
                 </button>
             </div>
         </div>
@@ -145,7 +145,7 @@ async function loadSyncStatus() {
         console.error('Error loading sync status:', error);
         document.getElementById('drupalSyncContent').innerHTML = `
             <div class="alert alert-danger">
-                <strong>{{ _('Error loading sync status:') }}</strong> ${error.message}
+                <strong>{{ ftl('drupal-error-loading-sync-status') }}</strong> ${error.message}
             </div>
         `;
     }
@@ -155,8 +155,8 @@ function renderSyncStatus() {
     if (!syncStatus.drupal_enabled) {
         document.getElementById('drupalSyncContent').innerHTML = `
             <div class="alert alert-warning">
-                <strong><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> {{ _('Access Labs Portal Integration Not Configured') }}</strong>
-                <p class="mb-0">{{ _('Configure portal connection in') }} <code>config/drupal.conf</code> {{ _('to enable sync.') }}</p>
+                <strong><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> {{ ftl('drupal-access-labs-portal-integration-not-configured') }}</strong>
+                <p class="mb-0">{{ ftl('drupal-configure-portal-connection-in') }} <code>config/drupal.conf</code> {{ ftl('drupal-to-enable-sync') }}</p>
             </div>
         `;
         return;
@@ -164,49 +164,49 @@ function renderSyncStatus() {
 
     // Update audit badge
     document.getElementById('drupalAuditBadge').innerHTML = `
-        <i class="bi bi-info-circle" aria-hidden="true"></i> {{ _('Audit:') }} "${syncStatus.project_name}"
+        <i class="bi bi-info-circle" aria-hidden="true"></i> {{ ftl('drupal-audit') }} "${syncStatus.project_name}"
     `;
 
     // Render status
     const content = `
         <div class="d-flex flex-wrap gap-3 mb-3">
             <div class="stat-box text-center p-3 border rounded flex-fill" style="min-width: 140px;">
-                <div class="stat-label">{{ _('Discovered Pages') }}</div>
+                <div class="stat-label">{{ ftl('common-discovered-pages') }}</div>
                 <div class="stat-value">
                     <span class="text-success">${syncStatus.discovered_pages.synced}</span> / ${syncStatus.discovered_pages.total}
                 </div>
-                <small class="text-muted">${syncStatus.discovered_pages.pending} {{ _('pending') }}</small>
+                <small class="text-muted">${syncStatus.discovered_pages.pending} {{ ftl('drupal-pending') }}</small>
             </div>
             <div class="stat-box text-center p-3 border rounded flex-fill" style="min-width: 140px;">
-                <div class="stat-label">{{ _('Recordings') }}</div>
+                <div class="stat-label">{{ ftl('common-recordings') }}</div>
                 <div class="stat-value">
                     <span class="text-success">${syncStatus.recordings.synced}</span> / ${syncStatus.recordings.total}
                 </div>
-                <small class="text-muted">${syncStatus.recordings.pending} {{ _('pending') }}</small>
+                <small class="text-muted">${syncStatus.recordings.pending} {{ ftl('drupal-pending') }}</small>
             </div>
             <div class="stat-box text-center p-3 border rounded flex-fill" style="min-width: 140px;">
-                <div class="stat-label">{{ _('Last Sync') }}</div>
+                <div class="stat-label">{{ ftl('drupal-last-sync') }}</div>
                 <div class="stat-value small">
-                    ${syncStatus.last_sync_time ? new Date(syncStatus.last_sync_time).toLocaleString() : '{{ _("Never") | replace("\'", "\\\'") }}'}
+                    ${syncStatus.last_sync_time ? new Date(syncStatus.last_sync_time).toLocaleString() : '{{ ftl('common-never') | replace("\'", "\\\'") }}'}
                 </div>
             </div>
         </div>
 
         <div class="d-flex flex-wrap gap-2 mb-3">
             <a href="/drupal/projects/{{ project.id }}/sync" class="btn btn-primary">
-                <i class="bi bi-cloud-arrow-up-down" aria-hidden="true"></i> {{ _('Synchronization Page') }}
+                <i class="bi bi-cloud-arrow-up-down" aria-hidden="true"></i> {{ ftl('drupal-synchronization-page') }}
             </a>
             <button type="button" class="btn btn-outline-primary" onclick="openUploadModal()">
-                <i class="bi bi-arrow-up-circle" aria-hidden="true"></i> {{ _('Quick Upload') }}
+                <i class="bi bi-arrow-up-circle" aria-hidden="true"></i> {{ ftl('drupal-quick-upload') }}
             </button>
             <button type="button" class="btn btn-outline-secondary" onclick="loadSyncStatus()">
-                <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> {{ _('Refresh') }}
+                <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> {{ ftl('drupal-refresh') }}
             </button>
         </div>
 
         ${syncStatus.sync_errors.length > 0 ? `
         <div class="alert alert-warning">
-            <strong><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> {{ _('Sync Issues') }}</strong>
+            <strong><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> {{ ftl('drupal-sync-issues') }}</strong>
             <ul class="mb-0 mt-2">
                 ${syncStatus.sync_errors.map(err => `<li>${err}</li>`).join('')}
             </ul>
@@ -237,7 +237,7 @@ async function openUploadModal() {
         modal.show();
     } catch (error) {
         console.error('Error loading content:', error);
-        alert({{ _('Error loading content:') | tojson }} + ' ' + error.message);
+        alert({{ ftl('drupal-error-loading-content') | tojson }} + ' ' + error.message);
     }
 }
 
@@ -246,7 +246,7 @@ function renderDiscoveredPagesList() {
     document.getElementById('discoveredPagesCount').textContent = discoveredPages.length;
 
     if (discoveredPages.length === 0) {
-        container.innerHTML = '<p class="text-muted">{{ _("No discovered pages found.") }}</p>';
+        container.innerHTML = '<p class="text-muted">{{ ftl('drupal-no-discovered-pages-found') }}</p>';
         return;
     }
 
@@ -257,8 +257,8 @@ function renderDiscoveredPagesList() {
                    ${page.needs_sync ? 'checked' : ''}>
             <label class="form-check-label" for="page_${page.id}">
                 <strong>${page.title}</strong>
-                ${page.is_synced ? '<span class="badge bg-success ms-2">{{ _("Synced") }}</span>' : ''}
-                ${page.drupal_sync_status === 'sync_failed' ? '<span class="badge bg-danger ms-2">{{ _("Failed") }}</span>' : ''}
+                ${page.is_synced ? '<span class="badge bg-success ms-2">{{ ftl('common-synced') }}</span>' : ''}
+                ${page.drupal_sync_status === 'sync_failed' ? '<span class="badge bg-danger ms-2">{{ ftl('common-failed') }}</span>' : ''}
                 <br>
                 <small class="text-muted">${page.url}</small>
             </label>
@@ -278,7 +278,7 @@ function renderRecordingsList() {
     document.getElementById('recordingsCount').textContent = recordings.length;
 
     if (recordings.length === 0) {
-        container.innerHTML = '<p class="text-muted">{{ _("No recordings found.") }}</p>';
+        container.innerHTML = '<p class="text-muted">{{ ftl('common-no-recordings-found') }}</p>';
         return;
     }
 
@@ -289,13 +289,13 @@ function renderRecordingsList() {
                    ${recording.needs_sync ? 'checked' : ''}>
             <label class="form-check-label" for="recording_${recording.id}">
                 <strong>${recording.title}</strong>
-                ${recording.is_synced ? '<span class="badge bg-success ms-2">{{ _("Synced") }}</span>' : ''}
-                ${recording.drupal_sync_status === 'sync_failed' ? '<span class="badge bg-danger ms-2">{{ _("Failed") }}</span>' : ''}
+                ${recording.is_synced ? '<span class="badge bg-success ms-2">{{ ftl('common-synced') }}</span>' : ''}
+                ${recording.drupal_sync_status === 'sync_failed' ? '<span class="badge bg-danger ms-2">{{ ftl('common-failed') }}</span>' : ''}
                 <br>
                 <small class="text-muted">
-                    ${recording.duration || '{{ _("Unknown duration") | replace("\'", "\\\'") }}'}
+                    ${recording.duration || '{{ ftl('drupal-unknown-duration') | replace("\'", "\\\'") }}'}
                     ${recording.auditor_name ? `• ${recording.auditor_name}` : ''}
-                    ${recording.total_issues > 0 ? `• ${recording.total_issues} {{ _("issues") }}` : ''}
+                    ${recording.total_issues > 0 ? `• ${recording.total_issues} {{ ftl('common-issues') }}` : ''}
                 </small>
             </label>
         </div>
@@ -317,7 +317,7 @@ async function startUpload() {
         .map(cb => cb.value);
 
     if (selectedPageIds.length === 0 && selectedRecordingIds.length === 0) {
-        alert({{ _('Please select at least one item to upload.') | tojson }});
+        alert({{ ftl('drupal-please-select-at-least-one-item-to-upload') | tojson }});
         return;
     }
 
@@ -379,7 +379,7 @@ async function startUpload() {
         console.error('Upload error:', error);
         document.getElementById('uploadLog').innerHTML += `
             <div class="text-danger">
-                <strong>{{ _("Error:") }}</strong> ${error.message}
+                <strong>{{ ftl('common-error') }}</strong> ${error.message}
             </div>
         `;
     }

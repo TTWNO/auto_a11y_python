@@ -1,46 +1,46 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('Edit User') }} - {{ _('Auto A11y') }}{% endblock %}
+{% block title %}{{ ftl('common-edit-user') }} - {{ ftl('common-auto-a11y') }}{% endblock %}
 
 {% block content %}
 <div class="row">
     <div class="col-md-6">
         <div class="card shadow mb-4">
             <div class="card-header bg-primary text-white">
-                <h2 class="mb-0"><i class="bi bi-person-gear" aria-hidden="true"></i> {{ _('Edit User') }}</h2>
+                <h2 class="mb-0"><i class="bi bi-person-gear" aria-hidden="true"></i> {{ ftl('common-edit-user') }}</h2>
             </div>
             <div class="card-body">
                 <form method="POST" action="{{ url_for('auth.user_edit', user_id=user.id) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <input type="hidden" name="action" value="update">
                     <fieldset>
-                        <legend class="visually-hidden">{{ _('User Details') }}</legend>
+                        <legend class="visually-hidden">{{ ftl('auth-user-details') }}</legend>
                         <div class="mb-3">
-                            <label for="email" class="form-label">{{ _('Email') }}</label>
+                            <label for="email" class="form-label">{{ ftl('common-email') }}</label>
                             <input type="email" class="form-control" id="email" value="{{ user.email }}" disabled>
                         </div>
                         <div class="mb-3">
-                            <label for="display_name" class="form-label">{{ _('Display Name') }}</label>
+                            <label for="display_name" class="form-label">{{ ftl('common-display-name') }}</label>
                             <input type="text" class="form-control" id="display_name" name="display_name" value="{{ user.display_name or '' }}">
                         </div>
                         <div class="mb-3 form-check">
                             <input type="checkbox" class="form-check-input" id="is_active" name="is_active" {% if user.is_active %}checked{% endif %}>
-                            <label class="form-check-label" for="is_active">{{ _('Active') }}</label>
+                            <label class="form-check-label" for="is_active">{{ ftl('common-active') }}</label>
                         </div>
                         {% if is_superadmin %}
                         <div class="mb-3 form-check">
                             <input type="checkbox" class="form-check-input" id="is_superadmin" name="is_superadmin"
                                    {% if user.is_superadmin %}checked{% endif %}>
-                            <label class="form-check-label" for="is_superadmin">{{ _('Superadmin') }}</label>
-                            <div class="form-text">{{ _('Superadmins bypass all permission checks and have full access to everything.') }}</div>
+                            <label class="form-check-label" for="is_superadmin">{{ ftl('common-superadmin') }}</label>
+                            <div class="form-text">{{ ftl('auth-superadmins-bypass-all-permission-checks-and-have') }}</div>
                         </div>
                         {% endif %}
                         <div class="d-flex gap-2">
                             <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-check-lg" aria-hidden="true"></i> {{ _('Save Changes') }}
+                                <i class="bi bi-check-lg" aria-hidden="true"></i> {{ ftl('common-save-changes') }}
                             </button>
                             <a href="{{ url_for('auth.user_list') }}" class="btn btn-secondary">
-                                {{ _('Cancel') }}
+                                {{ ftl('common-cancel') }}
                             </a>
                         </div>
                     </fieldset>
@@ -50,20 +50,20 @@
 
         <div class="card shadow mb-4">
             <div class="card-header bg-info text-white">
-                <h3 class="mb-0"><i class="bi bi-info-circle" aria-hidden="true"></i> {{ _('User Statistics') }}</h3>
+                <h3 class="mb-0"><i class="bi bi-info-circle" aria-hidden="true"></i> {{ ftl('auth-user-statistics') }}</h3>
             </div>
             <div class="card-body">
                 <dl class="row mb-0">
-                    <dt class="col-sm-5">{{ _('Created') }}</dt>
+                    <dt class="col-sm-5">{{ ftl('common-created') }}</dt>
                     <dd class="col-sm-7">{{ user.created_at.strftime('%Y-%m-%d %H:%M') }}</dd>
                     
-                    <dt class="col-sm-5">{{ _('Last Login') }}</dt>
+                    <dt class="col-sm-5">{{ ftl('auth-last-login') }}</dt>
                     <dd class="col-sm-7">{{ user.last_login.strftime('%Y-%m-%d %H:%M') if user.last_login else '-' }}</dd>
                     
-                    <dt class="col-sm-5">{{ _('Login Count') }}</dt>
+                    <dt class="col-sm-5">{{ ftl('auth-login-count') }}</dt>
                     <dd class="col-sm-7">{{ user.login_count }}</dd>
                     
-                    <dt class="col-sm-5">{{ _('Failed Logins') }}</dt>
+                    <dt class="col-sm-5">{{ ftl('auth-failed-logins') }}</dt>
                     <dd class="col-sm-7">{{ user.failed_login_count }}</dd>
                 </dl>
             </div>
@@ -73,26 +73,26 @@
     <div class="col-md-6">
         <div class="card shadow mb-4">
             <div class="card-header bg-warning text-dark">
-                <h3 class="mb-0"><i class="bi bi-key" aria-hidden="true"></i> {{ _('Reset Password') }}</h3>
+                <h3 class="mb-0"><i class="bi bi-key" aria-hidden="true"></i> {{ ftl('auth-reset-password') }}</h3>
             </div>
             <div class="card-body">
                 <form method="POST" action="{{ url_for('auth.user_edit', user_id=user.id) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <input type="hidden" name="action" value="reset_password">
                     <fieldset>
-                        <legend class="visually-hidden">{{ _('Reset Password') }}</legend>
+                        <legend class="visually-hidden">{{ ftl('auth-reset-password') }}</legend>
                         <div class="mb-3">
-                            <label for="new_password" class="form-label">{{ _('New Password') }}</label>
+                            <label for="new_password" class="form-label">{{ ftl('auth-new-password') }}</label>
                             <input type="password" class="form-control" id="new_password" name="new_password" required minlength="8" autocomplete="new-password" aria-describedby="new_password_help">
-                            <div class="form-text" id="new_password_help">{{ _('Minimum 8 characters.') }}</div>
+                            <div class="form-text" id="new_password_help">{{ ftl('auth-minimum-8-characters') }}</div>
                         </div>
                         <div class="mb-3">
-                            <label for="password_hint" class="form-label">{{ _('Password Hint') }}</label>
+                            <label for="password_hint" class="form-label">{{ ftl('auth-password-hint-2') }}</label>
                             <input type="text" class="form-control" id="password_hint" name="password_hint" value="{{ user.password_hint or '' }}" aria-describedby="password_hint_help">
-                            <div class="form-text" id="password_hint_help">{{ _('Optional. A hint to help the user remember their password.') }}</div>
+                            <div class="form-text" id="password_hint_help">{{ ftl('auth-optional-a-hint-to-help-the-user-remember-their') }}</div>
                         </div>
                         <button type="submit" class="btn btn-warning">
-                            <i class="bi bi-key" aria-hidden="true"></i> {{ _('Reset Password') }}
+                            <i class="bi bi-key" aria-hidden="true"></i> {{ ftl('auth-reset-password') }}
                         </button>
                     </fieldset>
                 </form>
@@ -101,19 +101,19 @@
         
         <div class="card shadow mb-4">
             <div class="card-header bg-secondary text-white">
-                <h3 class="mb-0"><i class="bi bi-envelope" aria-hidden="true"></i> {{ _('Email Password Reset') }}</h3>
+                <h3 class="mb-0"><i class="bi bi-envelope" aria-hidden="true"></i> {{ ftl('auth-email-password-reset') }}</h3>
             </div>
             <div class="card-body">
-                <p class="text-muted">{{ _('Send the user an email with a link to reset their own password. The link expires in 15 minutes.') }}</p>
+                <p class="text-muted">{{ ftl('auth-send-the-user-an-email-with-a-link-to-reset-their') }}</p>
                 <form method="POST" action="{{ url_for('auth.user_edit', user_id=user.id) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <input type="hidden" name="action" value="send_reset_email">
                     <button type="submit" class="btn btn-secondary" {% if not smtp_enabled %}disabled{% endif %}>
-                        <i class="bi bi-send" aria-hidden="true"></i> {{ _('Send Password Reset Email') }}
+                        <i class="bi bi-send" aria-hidden="true"></i> {{ ftl('auth-send-password-reset-email') }}
                     </button>
                     {% if not smtp_enabled %}
                     <div class="form-text text-warning mt-2">
-                        <i class="bi bi-exclamation-triangle" aria-hidden="true"></i> {{ _('SMTP is not configured. Set SMTP_ environment variables to enable.') }}
+                        <i class="bi bi-exclamation-triangle" aria-hidden="true"></i> {{ ftl('auth-smtp-is-not-configured-set-smtp_-environment') }}
                     </div>
                     {% endif %}
                 </form>
@@ -123,16 +123,16 @@
         {% if user.is_locked() %}
         <div class="card shadow">
             <div class="card-header bg-danger text-white">
-                <h3 class="mb-0"><i class="bi bi-lock" aria-hidden="true"></i> {{ _('Account Locked') }}</h3>
+                <h3 class="mb-0"><i class="bi bi-lock" aria-hidden="true"></i> {{ ftl('auth-account-locked') }}</h3>
             </div>
             <div class="card-body">
-                <p>{{ _('This account is locked due to too many failed login attempts.') }}</p>
-                <p>{{ _('Locked until:') }} {{ user.locked_until.strftime('%Y-%m-%d %H:%M') }}</p>
+                <p>{{ ftl('auth-this-account-is-locked-due-to-too-many-failed') }}</p>
+                <p>{{ ftl('auth-locked-until') }} {{ user.locked_until.strftime('%Y-%m-%d %H:%M') }}</p>
                 <form method="POST" action="{{ url_for('auth.user_edit', user_id=user.id) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <input type="hidden" name="action" value="unlock">
                     <button type="submit" class="btn btn-danger">
-                        <i class="bi bi-unlock" aria-hidden="true"></i> {{ _('Unlock Account') }}
+                        <i class="bi bi-unlock" aria-hidden="true"></i> {{ ftl('auth-unlock-account') }}
                     </button>
                 </form>
             </div>
@@ -145,16 +145,16 @@
     <div class="col-12">
         <div class="card shadow mt-4">
             <div class="card-header">
-                <h2 class="h5 mb-0"><i class="bi bi-folder" aria-hidden="true"></i> {{ _('Project Memberships') }}</h2>
+                <h2 class="h5 mb-0"><i class="bi bi-folder" aria-hidden="true"></i> {{ ftl('auth-project-memberships') }}</h2>
             </div>
             <div class="card-body">
                 {% if user_projects %}
                 <div class="table-responsive">
-                    <table class="table table-sm" aria-label="{{ _('Project memberships for this user') }}">
+                    <table class="table table-sm" aria-label="{{ ftl('auth-project-memberships-for-this-user') }}">
                         <thead>
                             <tr>
-                                <th scope="col">{{ _('Project') }}</th>
-                                <th scope="col">{{ _('Groups') }}</th>
+                                <th scope="col">{{ ftl('common-project') }}</th>
+                                <th scope="col">{{ ftl('common-groups') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -172,7 +172,7 @@
                     </table>
                 </div>
                 {% else %}
-                <p class="text-muted mb-0">{{ _('This user is not a member of any projects.') }}</p>
+                <p class="text-muted mb-0">{{ ftl('auth-this-user-is-not-a-member-of-any-projects') }}</p>
                 {% endif %}
             </div>
         </div>

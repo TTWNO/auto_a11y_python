@@ -16,7 +16,8 @@ from typing import List, Dict, Any, Optional
 import jinja2
 
 logger = logging.getLogger(__name__)
-from flask_babel import force_locale, gettext as _, lazy_gettext, pgettext
+from flask_babel import pgettext
+from auto_a11y.web.fluent import ftl, lazy_ftl, force_locale
 
 from auto_a11y.core.database import Database
 from auto_a11y.reporting.issue_catalog import IssueCatalog
@@ -880,7 +881,7 @@ class StaticHTMLReportGenerator:
         for i, page_id in enumerate(page_ids):
             if progress_callback:
                 with force_locale(self.language):
-                    progress_callback(i, len(page_ids), _('Collecting data for page %(current)s of %(total)s...', current=i + 1, total=len(page_ids)))
+                    progress_callback(i, len(page_ids), ftl('reports-collecting-data-for-page-current-of-total', current=i + 1, total=len(page_ids)))
             # Get page from database
             page = self.db.get_page(page_id)
             if not page:
@@ -1501,7 +1502,7 @@ class StaticHTMLReportGenerator:
         for i, page_id in enumerate(page_ids):
             if progress_callback:
                 progress_callback(i, len(page_ids),
-                                  _('Collecting summary (%(current)s/%(total)s)...', current=i + 1, total=len(page_ids)))
+                                  ftl('reports-collecting-summary-current-total', current=i + 1, total=len(page_ids)))
 
             # Collect lightweight page metadata
             page = self.db.get_page(page_id)
@@ -1720,7 +1721,7 @@ class StaticHTMLReportGenerator:
             if progress_callback:
                 with force_locale(self.language):
                     progress_callback(index - 1, total_pages,
-                                      _('Generating page %(current)s of %(total)s...', current=index, total=total_pages))
+                                      ftl('reports-generating-page-current-of-total', current=index, total=total_pages))
 
             page_id = pi['id']
 
@@ -2146,7 +2147,7 @@ class StaticHTMLReportGenerator:
         for index, page in enumerate(pages_data, start=1):
             if progress_callback:
                 with force_locale(self.language):
-                    progress_callback(index - 1, len(pages_data), _('Generating page %(current)s of %(total)s...', current=index, total=len(pages_data)))
+                    progress_callback(index - 1, len(pages_data), ftl('reports-generating-page-current-of-total', current=index, total=len(pages_data)))
             # Collect all unique touchpoints for filters
             all_touchpoints = set()
             for issue_list in [page['violations'], page['warnings'], page['informational'], page['discovery']]:

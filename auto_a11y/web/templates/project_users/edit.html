@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('Edit Test User') }} - {{ user.name_display }} - {{ _('Auto A11y') }}{% endblock %}
+{% block title %}{{ ftl('common-edit-test-user') }} - {{ user.name_display }} - {{ ftl('common-auto-a11y') }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -11,14 +11,14 @@
                 <a href="{{ url_for('projects.view_project', project_id=project.id) }}">{{ project.name }}</a>
             </li>
             <li class="breadcrumb-item">
-                <a href="{{ url_for('project_users.list_users', project_id=project.id) }}">{{ _('Test Users') }}</a>
+                <a href="{{ url_for('project_users.list_users', project_id=project.id) }}">{{ ftl('common-test-users') }}</a>
             </li>
-            <li class="breadcrumb-item active" aria-current="page">{{ _('Edit') }} {{ user.name_display }}</li>
+            <li class="breadcrumb-item active" aria-current="page">{{ ftl('common-edit') }} {{ user.name_display }}</li>
         </ol>
     </nav>
 
     <h1 class="mb-4">
-        <i class="bi bi-pencil" aria-hidden="true"></i> {{ _('Edit Test User') }}
+        <i class="bi bi-pencil" aria-hidden="true"></i> {{ ftl('common-edit-test-user') }}
     </h1>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -39,42 +39,42 @@
                 <!-- Basic Information -->
                 <div class="card mb-4">
                     <div class="card-header">
-                        <h2 class="mb-0"><i class="bi bi-person" aria-hidden="true"></i> {{ _('User Information') }}</h2>
+                        <h2 class="mb-0"><i class="bi bi-person" aria-hidden="true"></i> {{ ftl('common-user-information') }}</h2>
                     </div>
                     <div class="card-body">
                         <fieldset>
-                            <legend class="visually-hidden">{{ _('User Information') }}</legend>
+                            <legend class="visually-hidden">{{ ftl('common-user-information') }}</legend>
                             <div class="mb-3">
-                                <label for="display_name" class="form-label">{{ _('Display Name') }}</label>
+                                <label for="display_name" class="form-label">{{ ftl('common-display-name') }}</label>
                                 <input type="text" class="form-control" id="display_name" name="display_name"
                                        value="{{ user.display_name or '' }}"
-                                       placeholder="{{ _('e.g., Student User, John Doe') }}"
+                                       placeholder="{{ ftl('common-e-g-student-user-john-doe') }}"
                                        aria-describedby="display-name-help">
-                                <div class="form-text" id="display-name-help">{{ _('Friendly name for this test user (optional)') }}</div>
+                                <div class="form-text" id="display-name-help">{{ ftl('common-friendly-name-for-this-test-user-optional') }}</div>
                             </div>
 
                             <div class="mb-3">
-                                <label for="username" class="form-label">{{ _('Username') }} <span class="text-danger">*</span></label>
+                                <label for="username" class="form-label">{{ ftl('common-username') }} <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="username" name="username" required
                                        value="{{ user.username }}"
-                                       placeholder="{{ _('e.g., student123') }}" autocomplete="username"
+                                       placeholder="{{ ftl('common-e-g-student123') }}" autocomplete="username"
                                        aria-describedby="username-help">
-                                <div class="form-text" id="username-help">{{ _('Username for login') }}</div>
+                                <div class="form-text" id="username-help">{{ ftl('common-username-for-login') }}</div>
                             </div>
 
                             <div class="mb-3">
-                                <label for="password" class="form-label">{{ _('Password') }}</label>
+                                <label for="password" class="form-label">{{ ftl('common-password') }}</label>
                                 <input type="password" class="form-control" id="password" name="password"
-                                       placeholder="{{ _('Leave blank to keep current password') }}" autocomplete="new-password"
+                                       placeholder="{{ ftl('common-leave-blank-to-keep-current-password') }}" autocomplete="new-password"
                                        aria-describedby="password-help">
-                                <div class="form-text" id="password-help">{{ _('Only enter a password if you want to change it') }}</div>
+                                <div class="form-text" id="password-help">{{ ftl('common-only-enter-a-password-if-you-want-to-change-it') }}</div>
                             </div>
 
                             <div class="mb-3">
-                                <label for="roles" class="form-label">{{ _('Roles') }}</label>
+                                <label for="roles" class="form-label">{{ ftl('common-roles') }}</label>
                                 <input type="text" class="form-control" id="roles" name="roles"
                                        value="{{ user.roles|join(', ') if user.roles else '' }}"
-                                       placeholder="{{ _('e.g., student, premium, member') }}"
+                                       placeholder="{{ ftl('common-e-g-student-premium-member') }}"
                                        list="existing-roles"
                                        aria-describedby="roles-help">
                                 <datalist id="existing-roles">
@@ -82,22 +82,22 @@
                                     <option value="{{ role }}">
                                     {% endfor %}
                                 </datalist>
-                                <div class="form-text" id="roles-help">{{ _('Comma-separated list of user roles for testing role-based content') }}</div>
+                                <div class="form-text" id="roles-help">{{ ftl('common-comma-separated-list-of-user-roles-for-testing') }}</div>
                             </div>
 
                             <div class="mb-3">
-                                <label for="description" class="form-label">{{ _('Description') }}</label>
+                                <label for="description" class="form-label">{{ ftl('common-description') }}</label>
                                 <textarea class="form-control" id="description" name="description" rows="2"
-                                          placeholder="{{ _('Notes about this user...') }}"
+                                          placeholder="{{ ftl('common-notes-about-this-user') }}"
                                           aria-describedby="description-help">{{ user.description or '' }}</textarea>
-                                <div class="form-text" id="description-help">{{ _('Optional notes about this test user') }}</div>
+                                <div class="form-text" id="description-help">{{ ftl('common-optional-notes-about-this-test-user') }}</div>
                             </div>
 
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="enabled" name="enabled"
                                        {% if user.enabled %}checked{% endif %}>
                                 <label class="form-check-label" for="enabled">
-                                    <strong>{{ _('Enabled') }}</strong> - {{ _('User is active and can be used for testing') }}
+                                    <strong>{{ ftl('common-enabled') }}</strong> - {{ ftl('projects-user-is-active-and-can-be-used-for-testing') }}
                                 </label>
                             </div>
                         </fieldset>
@@ -107,13 +107,13 @@
                 <!-- Login Configuration -->
                 <div class="card mb-4">
                     <div class="card-header">
-                        <h2 class="mb-0"><i class="bi bi-key" aria-hidden="true"></i> {{ _('Login Configuration') }}</h2>
+                        <h2 class="mb-0"><i class="bi bi-key" aria-hidden="true"></i> {{ ftl('common-login-configuration') }}</h2>
                     </div>
                     <div class="card-body">
                         <fieldset>
-                            <legend class="visually-hidden">{{ _('Login Configuration') }}</legend>
+                            <legend class="visually-hidden">{{ ftl('common-login-configuration') }}</legend>
                             <div class="mb-3">
-                                <label for="authentication_method" class="form-label">{{ _('Authentication Method') }}</label>
+                                <label for="authentication_method" class="form-label">{{ ftl('common-authentication-method') }}</label>
                                 <select class="form-select" id="authentication_method" name="authentication_method">
                                     {% for method in auth_methods %}
                                     <option value="{{ method.value }}"
@@ -126,101 +126,101 @@
 
                             <div id="form-login-config" {% if user.login_config.authentication_method.value != 'form_login' %}style="display: none;"{% endif %}>
                                 <div class="mb-3">
-                                    <label for="login_url" class="form-label">{{ _('Login Page URL') }}</label>
+                                    <label for="login_url" class="form-label">{{ ftl('common-login-page-url') }}</label>
                                     <input type="url" class="form-control" id="login_url" name="login_url"
                                            value="{{ user.login_config.login_url or '' }}"
                                            placeholder="https://example.com/login" autocomplete="url"
                                            aria-describedby="login-url-help">
-                                    <div class="form-text" id="login-url-help">{{ _('Full URL of the login page') }}</div>
+                                    <div class="form-text" id="login-url-help">{{ ftl('common-full-url-of-the-login-page') }}</div>
                                 </div>
 
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
-                                        <label for="username_field_selector" class="form-label">{{ _('Username Field Selector') }}</label>
+                                        <label for="username_field_selector" class="form-label">{{ ftl('common-username-field-selector') }}</label>
                                         <input type="text" class="form-control" id="username_field_selector"
                                                name="username_field_selector"
                                                value="{{ user.login_config.username_field_selector or '' }}"
                                                placeholder="#username, input[name='user']"
                                                aria-describedby="username-selector-help">
-                                        <div class="form-text" id="username-selector-help">{{ _('CSS selector for username input') }}</div>
+                                        <div class="form-text" id="username-selector-help">{{ ftl('common-css-selector-for-username-input') }}</div>
                                     </div>
 
                                     <div class="col-md-6 mb-3">
-                                        <label for="password_field_selector" class="form-label">{{ _('Password Field Selector') }}</label>
+                                        <label for="password_field_selector" class="form-label">{{ ftl('common-password-field-selector') }}</label>
                                         <input type="text" class="form-control" id="password_field_selector"
                                                name="password_field_selector"
                                                value="{{ user.login_config.password_field_selector or '' }}"
                                                placeholder="#password, input[type='password']"
                                                aria-describedby="password-selector-help">
-                                        <div class="form-text" id="password-selector-help">{{ _('CSS selector for password input') }}</div>
+                                        <div class="form-text" id="password-selector-help">{{ ftl('common-css-selector-for-password-input') }}</div>
                                     </div>
                                 </div>
 
                                 <div class="mb-3">
-                                    <label for="submit_button_selector" class="form-label">{{ _('Submit Button Selector') }}</label>
+                                    <label for="submit_button_selector" class="form-label">{{ ftl('common-submit-button-selector') }}</label>
                                     <input type="text" class="form-control" id="submit_button_selector"
                                            name="submit_button_selector"
                                            value="{{ user.login_config.submit_button_selector or '' }}"
                                            placeholder="button[type='submit'], #login-btn"
                                            aria-describedby="submit-selector-help">
-                                    <div class="form-text" id="submit-selector-help">{{ _('CSS selector for login button') }}</div>
+                                    <div class="form-text" id="submit-selector-help">{{ ftl('common-css-selector-for-login-button') }}</div>
                                 </div>
 
                                 <div class="mb-3">
-                                    <label for="success_indicator_selector" class="form-label">{{ _('Success Indicator Selector') }}</label>
+                                    <label for="success_indicator_selector" class="form-label">{{ ftl('common-success-indicator-selector') }}</label>
                                     <input type="text" class="form-control" id="success_indicator_selector"
                                            name="success_indicator_selector"
                                            value="{{ user.login_config.success_indicator_selector or '' }}"
                                            placeholder=".user-profile, #logout-btn"
                                            aria-describedby="success-indicator-help">
-                                    <div class="form-text" id="success-indicator-help">{{ _('CSS selector that appears after successful login') }}</div>
+                                    <div class="form-text" id="success-indicator-help">{{ ftl('common-css-selector-that-appears-after-successful-login') }}</div>
                                 </div>
                             </div>
 
-                            <h3 class="mt-4 mb-3"><i class="bi bi-box-arrow-right" aria-hidden="true"></i> {{ _('Logout Configuration') }}</h3>
+                            <h3 class="mt-4 mb-3"><i class="bi bi-box-arrow-right" aria-hidden="true"></i> {{ ftl('common-logout-configuration') }}</h3>
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="mb-3">
-                                        <label for="logout_url" class="form-label">{{ _('Logout URL') }}</label>
+                                        <label for="logout_url" class="form-label">{{ ftl('common-logout-url') }}</label>
                                         <input type="text" class="form-control" id="logout_url"
                                                name="logout_url"
                                                value="{{ user.login_config.logout_url or '' }}"
                                                placeholder="/logout, /auth/logout"
                                                aria-describedby="logout-url-help">
-                                        <div class="form-text" id="logout-url-help">{{ _('URL to visit for logout (optional if using button)') }}</div>
+                                        <div class="form-text" id="logout-url-help">{{ ftl('common-url-to-visit-for-logout-optional-if-using-button') }}</div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
-                                        <label for="logout_button_selector" class="form-label">{{ _('Logout Button Selector') }}</label>
+                                        <label for="logout_button_selector" class="form-label">{{ ftl('common-logout-button-selector') }}</label>
                                         <input type="text" class="form-control" id="logout_button_selector"
                                                name="logout_button_selector"
                                                value="{{ user.login_config.logout_button_selector or '' }}"
                                                placeholder="#logout-btn, .logout-link"
                                                aria-describedby="logout-button-help">
-                                        <div class="form-text" id="logout-button-help">{{ _('CSS selector for logout button/link (optional)') }}</div>
+                                        <div class="form-text" id="logout-button-help">{{ ftl('common-css-selector-for-logout-button-link-optional') }}</div>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="mb-3">
-                                <label for="logout_success_indicator_selector" class="form-label">{{ _('Logout Success Indicator Selector') }}</label>
+                                <label for="logout_success_indicator_selector" class="form-label">{{ ftl('common-logout-success-indicator-selector') }}</label>
                                 <input type="text" class="form-control" id="logout_success_indicator_selector"
                                        name="logout_success_indicator_selector"
                                        value="{{ user.login_config.logout_success_indicator_selector or '' }}"
                                        placeholder=".login-form, #login-btn"
                                        aria-describedby="logout-success-help">
-                                <div class="form-text" id="logout-success-help">{{ _('CSS selector that appears after successful logout (e.g., login button visible again)') }}</div>
+                                <div class="form-text" id="logout-success-help">{{ ftl('common-css-selector-that-appears-after-successful-logout') }}</div>
                             </div>
 
                             <div class="mb-3">
-                                <label for="session_timeout_minutes" class="form-label">{{ _('Session Timeout (minutes)') }}</label>
+                                <label for="session_timeout_minutes" class="form-label">{{ ftl('common-session-timeout-minutes') }}</label>
                                 <input type="number" class="form-control" id="session_timeout_minutes"
                                        name="session_timeout_minutes"
                                        value="{{ user.login_config.session_timeout_minutes }}"
                                        min="1" max="480"
                                        aria-describedby="session-timeout-help">
-                                <div class="form-text" id="session-timeout-help">{{ _('How long the session stays valid') }}</div>
+                                <div class="form-text" id="session-timeout-help">{{ ftl('common-how-long-the-session-stays-valid') }}</div>
                             </div>
                         </fieldset>
                     </div>
@@ -230,26 +230,26 @@
                 {% if user.last_used %}
                 <div class="card mb-4">
                     <div class="card-header">
-                        <h2 class="mb-0"><i class="bi bi-clock-history" aria-hidden="true"></i> {{ _('Usage History') }}</h2>
+                        <h2 class="mb-0"><i class="bi bi-clock-history" aria-hidden="true"></i> {{ ftl('common-usage-history') }}</h2>
                     </div>
                     <div class="card-body">
                         <dl class="row mb-0">
-                            <dt class="col-sm-3">{{ _('Last Used:') }}</dt>
+                            <dt class="col-sm-3">{{ ftl('common-last-used') }}</dt>
                             <dd class="col-sm-9">{{ user.last_used.strftime('%Y-%m-%d %H:%M:%S') }}</dd>
 
-                            <dt class="col-sm-3">{{ _('Last Login Status:') }}</dt>
+                            <dt class="col-sm-3">{{ ftl('common-last-login-status') }}</dt>
                             <dd class="col-sm-9">
                                 {% if user.last_login_success == True %}
-                                <span class="badge bg-success"><i class="bi bi-check-circle" aria-hidden="true"></i> {{ _('Success') }}</span>
+                                <span class="badge bg-success"><i class="bi bi-check-circle" aria-hidden="true"></i> {{ ftl('common-success') }}</span>
                                 {% elif user.last_login_success == False %}
-                                <span class="badge bg-danger"><i class="bi bi-x-circle" aria-hidden="true"></i> {{ _('Failed') }}</span>
+                                <span class="badge bg-danger"><i class="bi bi-x-circle" aria-hidden="true"></i> {{ ftl('common-failed') }}</span>
                                 {% else %}
-                                <span class="text-muted">{{ _('Not attempted yet') }}</span>
+                                <span class="text-muted">{{ ftl('common-not-attempted-yet') }}</span>
                                 {% endif %}
                             </dd>
 
                             {% if user.last_login_error %}
-                            <dt class="col-sm-3">{{ _('Last Error:') }}</dt>
+                            <dt class="col-sm-3">{{ ftl('common-last-error') }}</dt>
                             <dd class="col-sm-9">
                                 <code class="text-danger">{{ user.last_login_error }}</code>
                             </dd>
@@ -264,27 +264,27 @@
             <div class="col-md-4">
                 <div class="card sticky-top" style="top: 20px;">
                     <div class="card-header bg-info text-white">
-                        <h2 class="mb-0"><i class="bi bi-question-circle" aria-hidden="true"></i> {{ _('Help') }}</h2>
+                        <h2 class="mb-0"><i class="bi bi-question-circle" aria-hidden="true"></i> {{ ftl('common-help') }}</h2>
                     </div>
                     <div class="card-body">
-                        <h3>{{ _('User Roles') }}</h3>
-                        <p class="small">{{ _('Roles help you test content that varies based on user permissions.') }}</p>
+                        <h3>{{ ftl('common-user-roles') }}</h3>
+                        <p class="small">{{ ftl('common-roles-help-you-test-content-that-varies-based-on-2') }}</p>
 
                         <hr>
 
-                        <h3>{{ _('CSS Selectors') }}</h3>
-                        <p class="small">{{ _('Use browser DevTools to find selectors:') }}</p>
+                        <h3>{{ ftl('common-css-selectors') }}</h3>
+                        <p class="small">{{ ftl('common-use-browser-devtools-to-find-selectors') }}</p>
                         <ol class="small">
-                            <li>{{ _('Right-click the element') }}</li>
-                            <li>{{ _('Select "Inspect"') }}</li>
-                            <li>{{ _('Right-click in the HTML panel') }}</li>
-                            <li>{{ _('Copy → Copy selector') }}</li>
+                            <li>{{ ftl('common-right-click-the-element') }}</li>
+                            <li>{{ ftl('common-select-inspect') }}</li>
+                            <li>{{ ftl('common-right-click-in-the-html-panel') }}</li>
+                            <li>{{ ftl('common-copy-copy-selector') }}</li>
                         </ol>
 
                         <hr>
 
-                        <h3>{{ _('Password Update') }}</h3>
-                        <p class="small">{{ _('Leave the password field blank to keep the current password unchanged.') }}</p>
+                        <h3>{{ ftl('common-password-update') }}</h3>
+                        <p class="small">{{ ftl('common-leave-the-password-field-blank-to-keep-the') }}</p>
                     </div>
                 </div>
             </div>
@@ -294,10 +294,10 @@
             <div class="col-md-8">
                 <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-check-circle" aria-hidden="true"></i> {{ _('Save Changes') }}
+                        <i class="bi bi-check-circle" aria-hidden="true"></i> {{ ftl('common-save-changes') }}
                     </button>
                     <a href="{{ url_for('project_users.list_users', project_id=project.id) }}" class="btn btn-secondary">
-                        <i class="bi bi-x-circle" aria-hidden="true"></i> {{ _('Cancel') }}
+                        <i class="bi bi-x-circle" aria-hidden="true"></i> {{ ftl('common-cancel') }}
                     </a>
                 </div>
             </div>

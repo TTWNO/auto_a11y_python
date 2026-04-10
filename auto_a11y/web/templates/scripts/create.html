@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('Create Page Setup Script - Auto A11y') }}{% endblock %}
+{% block title %}{{ ftl('scripts-create-page-setup-script-auto-a11y') }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -57,29 +57,29 @@
             </li>
             {% if page %}
             <li class="breadcrumb-item">
-                <a href="{{ url_for('pages.view_page', page_id=page.id) }}">{{ page.title or _('Page') }}</a>
+                <a href="{{ url_for('pages.view_page', page_id=page.id) }}">{{ page.title or ftl('common-page-2') }}</a>
             </li>
             {% endif %}
-            <li class="breadcrumb-item active" aria-current="page">{{ _('Create %(type)s Script', type=(_('Website') if is_website_script else _('Page'))) }}</li>
+            <li class="breadcrumb-item active" aria-current="page">{{ ftl('scripts-create-type-script', type=(_('Website') if is_website_script else ftl('common-page-2'))) }}</li>
         </ol>
     </nav>
 
     <div class="row">
         <div class="col-lg-10 col-xl-8">
             <h1 class="mb-4">
-                <i class="bi bi-code-square" aria-hidden="true"></i> {{ _('Create %(level)s Setup Script', level=(_('Website-Level') if is_website_script else _('Page-Level'))) }}
+                <i class="bi bi-code-square" aria-hidden="true"></i> {{ ftl('scripts-create-level-setup-script', level=(_('Website-Level') if is_website_script else ftl('scripts-page-level'))) }}
             </h1>
 
             <div class="alert alert-info">
                 <i class="bi bi-info-circle" aria-hidden="true"></i>
                 {% if is_website_script %}
-                <strong>{{ _('What are Website-Level Scripts?') }}</strong><br>
-                {{ _('Scripts that run for <strong>all pages</strong> in this website (e.g., dismiss cookie banners, handle login). Perfect for cookie notices that appear across the entire site!') }}
+                <strong>{{ ftl('scripts-what-are-website-level-scripts') }}</strong><br>
+                {{ ftl('scripts-scripts-that-run-for-all-pages-in-this-website-e') }}
                 {% else %}
-                <strong>{{ _('What are Page-Level Scripts?') }}</strong><br>
-                {{ _('Scripts that prepare a <strong>specific page</strong> for testing (e.g., open modals, navigate tabs).') }}
+                <strong>{{ ftl('scripts-what-are-page-level-scripts') }}</strong><br>
+                {{ ftl('scripts-scripts-that-prepare-a-specific-page-for-testing') }}
                 {% endif %}
-                {{ _('With <strong>multi-state testing</strong>, you can test pages both before and after the script runs.') }}
+                {{ ftl('scripts-with-multi-state-testing-you-can-test-pages-both') }}
             </div>
 
             <form method="POST" id="script-form">
@@ -87,55 +87,55 @@
 
                 <!-- Basic Information -->
                 <fieldset>
-                <legend class="visually-hidden">{{ _('Basic Information') }}</legend>
+                <legend class="visually-hidden">{{ ftl('common-basic-information') }}</legend>
                 <div class="form-section">
-                    <h2><i class="bi bi-info-circle" aria-hidden="true"></i> {{ _('Basic Information') }}</h2>
+                    <h2><i class="bi bi-info-circle" aria-hidden="true"></i> {{ ftl('common-basic-information') }}</h2>
 
                     <div class="mb-3">
-                        <label for="name" class="form-label">{{ _('Script Name') }} <span class="text-danger">*</span></label>
+                        <label for="name" class="form-label">{{ ftl('scripts-script-name') }} <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" id="name" name="name" required
-                               placeholder="{{ _('e.g., Dismiss Cookie Banner') }}"
+                               placeholder="{{ ftl('scripts-e-g-dismiss-cookie-banner') }}"
                                aria-describedby="name-help">
-                        <div id="name-help" class="form-text">{{ _('A descriptive name for this script') }}</div>
+                        <div id="name-help" class="form-text">{{ ftl('scripts-a-descriptive-name-for-this-script') }}</div>
                     </div>
 
                     <div class="mb-3">
-                        <label for="description" class="form-label">{{ _('Description') }}</label>
+                        <label for="description" class="form-label">{{ ftl('common-description') }}</label>
                         <textarea class="form-control" id="description" name="description" rows="2"
-                                  placeholder="{{ _('Optional: Describe what this script does') }}"></textarea>
+                                  placeholder="{{ ftl('scripts-optional-describe-what-this-script-does') }}"></textarea>
                     </div>
 
                     <div class="form-check mb-3">
                         <input class="form-check-input" type="checkbox" id="enabled" name="enabled" checked
                                aria-describedby="enabled-help">
                         <label class="form-check-label" for="enabled">
-                            <strong>{{ _('Script Enabled') }}</strong>
+                            <strong>{{ ftl('scripts-script-enabled-2') }}</strong>
                         </label>
-                        <div id="enabled-help" class="form-text">{{ _('Uncheck to disable this script without deleting it') }}</div>
+                        <div id="enabled-help" class="form-text">{{ ftl('scripts-uncheck-to-disable-this-script-without-deleting-it') }}</div>
                     </div>
                 </div>
                 </fieldset>
 
                 <!-- Multi-State Testing Configuration -->
                 <fieldset>
-                <legend class="visually-hidden">{{ _('Multi-State Testing') }}</legend>
+                <legend class="visually-hidden">{{ ftl('scripts-multi-state-testing') }}</legend>
                 <div class="form-section">
-                    <h2><i class="bi bi-layers" aria-hidden="true"></i> {{ _('Multi-State Testing') }}</h2>
+                    <h2><i class="bi bi-layers" aria-hidden="true"></i> {{ ftl('scripts-multi-state-testing') }}</h2>
 
                     <div class="alert alert-success">
                         <i class="bi bi-lightbulb" aria-hidden="true"></i>
-                        <strong>{{ _('Example:') }}</strong> {{ _('For a cookie banner, check both boxes to test the page WITH the banner (before), then dismiss it, then test WITHOUT the banner (after). This creates 2 test results showing the difference.') }}
+                        <strong>{{ ftl('common-example') }}</strong> {{ ftl('scripts-for-a-cookie-banner-check-both-boxes-to-test-the') }}
                     </div>
 
                     <div class="form-check mb-3">
                         <input class="form-check-input" type="checkbox" id="test_before_execution" name="test_before_execution"
                                aria-describedby="test-before-help">
                         <label class="form-check-label" for="test_before_execution">
-                            <strong>{{ _('Test BEFORE executing script') }}</strong>
+                            <strong>{{ ftl('scripts-test-before-executing-script') }}</strong>
                         </label>
                         <div id="test-before-help" class="form-text">
                             <i class="bi bi-check-circle text-success" aria-hidden="true"></i>
-                            {{ _('Recommended for cookie banners, modals, and any element you want to test before dismissing') }}
+                            {{ ftl('scripts-recommended-for-cookie-banners-modals-and-any') }}
                         </div>
                     </div>
 
@@ -143,11 +143,11 @@
                         <input class="form-check-input" type="checkbox" id="test_after_execution" name="test_after_execution" checked
                                aria-describedby="test-after-help">
                         <label class="form-check-label" for="test_after_execution">
-                            <strong>{{ _('Test AFTER executing script') }}</strong>
+                            <strong>{{ ftl('scripts-test-after-executing-script') }}</strong>
                         </label>
                         <div id="test-after-help" class="form-text">
                             <i class="bi bi-check-circle text-success" aria-hidden="true"></i>
-                            {{ _('Usually checked - test the page in its final state after setup') }}
+                            {{ ftl('scripts-usually-checked-test-the-page-in-its-final-state') }}
                         </div>
                     </div>
                 </div>
@@ -156,12 +156,12 @@
                 <!-- Script Scope (only show for website scripts) -->
                 {% if scope_options and scope_options|length > 1 %}
                 <fieldset>
-                <legend class="visually-hidden">{{ _('Script Scope') }}</legend>
+                <legend class="visually-hidden">{{ ftl('scripts-script-scope') }}</legend>
                 <div class="form-section">
-                    <h2><i class="bi bi-diagram-3" aria-hidden="true"></i> {{ _('Script Scope') }}</h2>
+                    <h2><i class="bi bi-diagram-3" aria-hidden="true"></i> {{ ftl('scripts-script-scope') }}</h2>
 
                     <div class="mb-3">
-                        <label for="scope" class="form-label">{{ _('Script Applies To:') }}</label>
+                        <label for="scope" class="form-label">{{ ftl('scripts-script-applies-to') }}</label>
                         <select class="form-select" id="scope" name="scope" disabled
                                 aria-describedby="scope-help">
                             {% for option in scope_options %}
@@ -172,9 +172,9 @@
                         </select>
                         <div id="scope-help" class="form-text">
                             {% if is_website_script %}
-                            <i class="bi bi-globe" aria-hidden="true"></i> <strong>{{ _('Website-Level:') }}</strong> {{ _('This script will run for all pages in the website') }}
+                            <i class="bi bi-globe" aria-hidden="true"></i> <strong>{{ ftl('scripts-website-level-2') }}</strong> {{ ftl('scripts-this-script-will-run-for-all-pages-in-the-website') }}
                             {% else %}
-                            <i class="bi bi-file-text" aria-hidden="true"></i> <strong>{{ _('Page-Level:') }}</strong> {{ _('This script only runs on this specific page') }}
+                            <i class="bi bi-file-text" aria-hidden="true"></i> <strong>{{ ftl('scripts-page-level-2') }}</strong> {{ ftl('scripts-this-script-only-runs-on-this-specific-page') }}
                             {% endif %}
                         </div>
                     </div>
@@ -184,12 +184,12 @@
 
                 <!-- Execution Trigger -->
                 <fieldset>
-                <legend class="visually-hidden">{{ _('Execution Trigger') }}</legend>
+                <legend class="visually-hidden">{{ ftl('scripts-execution-trigger') }}</legend>
                 <div class="form-section">
-                    <h2><i class="bi bi-play-circle" aria-hidden="true"></i> {{ _('Execution Trigger') }}</h2>
+                    <h2><i class="bi bi-play-circle" aria-hidden="true"></i> {{ ftl('scripts-execution-trigger') }}</h2>
 
                     <div class="mb-3">
-                        <label for="trigger" class="form-label">{{ _('When should this script run?') }}</label>
+                        <label for="trigger" class="form-label">{{ ftl('scripts-when-should-this-script-run') }}</label>
                         <select class="form-select" id="trigger" name="trigger"
                                 aria-describedby="trigger-help">
                             {% for option in trigger_options %}
@@ -201,30 +201,30 @@
                             {% endfor %}
                         </select>
                         <div class="form-text" id="trigger-help">
-                            {{ _('Select when this script should execute during testing') }}
+                            {{ ftl('scripts-select-when-this-script-should-execute-during') }}
                         </div>
                     </div>
 
                     <!-- Conditional selector (shown when trigger is 'conditional') -->
                     <div class="mb-3" id="conditional-section" style="display: none;">
-                        <label for="condition_selector" class="form-label">{{ _('Conditional Selector') }}</label>
+                        <label for="condition_selector" class="form-label">{{ ftl('scripts-conditional-selector') }}</label>
                         <input type="text" class="form-control font-monospace" id="condition_selector" name="condition_selector"
                                placeholder=".cookie-banner, #cookie-notice"
                                aria-describedby="condition-selector-help">
-                        <div id="condition-selector-help" class="form-text">{{ _('Script will only run if this element exists on the page') }}</div>
+                        <div id="condition-selector-help" class="form-text">{{ ftl('scripts-script-will-only-run-if-this-element-exists-on') }}</div>
 
                         <div class="form-check mt-2">
                             <input class="form-check-input" type="checkbox" id="wait_for_selector" name="wait_for_selector">
                             <label class="form-check-label" for="wait_for_selector">
-                                {{ _('Wait for element to appear') }}
+                                {{ ftl('scripts-wait-for-element-to-appear') }}
                             </label>
                         </div>
 
                         <div class="mt-2" id="wait-timeout-section" style="display: none;">
-                            <label for="wait_timeout" class="form-label">{{ _('Wait Timeout (ms)') }}</label>
+                            <label for="wait_timeout" class="form-label">{{ ftl('scripts-wait-timeout-ms') }}</label>
                             <input type="number" class="form-control" id="wait_timeout" name="wait_timeout" value="5000" min="0" max="30000"
                                    aria-describedby="wait-timeout-help">
-                            <div id="wait-timeout-help" class="form-text">{{ _('Maximum time to wait for element (milliseconds)') }}</div>
+                            <div id="wait-timeout-help" class="form-text">{{ ftl('scripts-maximum-time-to-wait-for-element-milliseconds') }}</div>
                         </div>
                     </div>
                 </div>
@@ -233,24 +233,24 @@
                 <!-- Clean State Options (especially useful for website-level scripts) -->
                 {% if is_website_script %}
                 <fieldset>
-                <legend class="visually-hidden">{{ _('Clean State Options') }}</legend>
+                <legend class="visually-hidden">{{ ftl('scripts-clean-state-options') }}</legend>
                 <div class="form-section">
-                    <h2><i class="bi bi-trash" aria-hidden="true"></i> {{ _('Clean State Options') }}</h2>
+                    <h2><i class="bi bi-trash" aria-hidden="true"></i> {{ ftl('scripts-clean-state-options') }}</h2>
 
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle" aria-hidden="true"></i>
-                        {{ _('Clear cookies and storage before testing to ensure a clean starting state') }}
+                        {{ ftl('scripts-clear-cookies-and-storage-before-testing-to') }}
                     </div>
 
                     <div class="form-check mb-3">
                         <input class="form-check-input" type="checkbox" id="clear_cookies_before" name="clear_cookies_before"
                                aria-describedby="clear-cookies-help">
                         <label class="form-check-label" for="clear_cookies_before">
-                            <strong>{{ _('Clear Cookies Before Script') }}</strong>
+                            <strong>{{ ftl('scripts-clear-cookies-before-script') }}</strong>
                         </label>
                         <div id="clear-cookies-help" class="form-text">
                             <i class="bi bi-check-circle text-success" aria-hidden="true"></i>
-                            {{ _('Recommended for cookie banner testing - ensures banner appears') }}
+                            {{ ftl('scripts-recommended-for-cookie-banner-testing-ensures') }}
                         </div>
                     </div>
 
@@ -258,10 +258,10 @@
                         <input class="form-check-input" type="checkbox" id="clear_local_storage_before" name="clear_local_storage_before"
                                aria-describedby="clear-storage-help">
                         <label class="form-check-label" for="clear_local_storage_before">
-                            <strong>{{ _('Clear Local Storage Before Script') }}</strong>
+                            <strong>{{ ftl('scripts-clear-local-storage-before-script') }}</strong>
                         </label>
                         <div id="clear-storage-help" class="form-text">
-                            {{ _('Clear localStorage and sessionStorage before running') }}
+                            {{ ftl('scripts-clear-localstorage-and-sessionstorage-before') }}
                         </div>
                     </div>
                 </div>
@@ -270,44 +270,44 @@
 
                 <!-- State Validation -->
                 <fieldset>
-                <legend class="visually-hidden">{{ _('State Validation') }}</legend>
+                <legend class="visually-hidden">{{ ftl('scripts-state-validation') }}</legend>
                 <div class="form-section">
-                    <h2><i class="bi bi-check2-square" aria-hidden="true"></i> {{ _('State Validation (Optional)') }}</h2>
+                    <h2><i class="bi bi-check2-square" aria-hidden="true"></i> {{ ftl('scripts-state-validation-optional') }}</h2>
 
                     <p class="text-muted">
-                        {{ _('Specify elements that should be visible or hidden after the script runs. The system will report violations if expectations aren\'t met.') }}
+                        {{ ftl('scripts-specify-elements-that-should-be-visible-or-hidden') }}
                     </p>
 
                     <div class="mb-3">
                         <label for="expect_visible_after" class="form-label">
-                            {{ _('Elements That Should Be <strong>Visible</strong> After Script') }}
+                            {{ ftl('scripts-elements-that-should-be-visible-after-script') }}
                         </label>
                         <textarea class="form-control font-monospace" id="expect_visible_after" name="expect_visible_after" rows="3"
                                   placeholder=".modal-dialog&#10;#settings-panel&#10;//*[@id='modal']"
                                   aria-describedby="expect-visible-help"></textarea>
-                        <div id="expect-visible-help" class="form-text">{{ _('CSS selectors or XPath, one per line. Example: After opening a modal, you\'d expect ".modal-dialog" to be visible') }}</div>
+                        <div id="expect-visible-help" class="form-text">{{ ftl('scripts-css-selectors-or-xpath-one-per-line-example-after') }}</div>
                     </div>
 
                     <div class="mb-3">
                         <label for="expect_hidden_after" class="form-label">
-                            {{ _('Elements That Should Be <strong>Hidden</strong> After Script') }}
+                            {{ ftl('scripts-elements-that-should-be-hidden-after-script') }}
                         </label>
                         <textarea class="form-control font-monospace" id="expect_hidden_after" name="expect_hidden_after" rows="3"
                                   placeholder=".cookie-banner&#10;#cookie-notice&#10;//*[@id='cookie-banner']"
                                   aria-describedby="expect-hidden-help"></textarea>
-                        <div id="expect-hidden-help" class="form-text">{{ _('CSS selectors or XPath, one per line. Example: After dismissing cookies, you\'d expect ".cookie-banner" to be hidden') }}</div>
+                        <div id="expect-hidden-help" class="form-text">{{ ftl('scripts-css-selectors-or-xpath-one-per-line-example-after-2') }}</div>
                     </div>
                 </div>
                 </fieldset>
 
                 <!-- Script Steps -->
                 <fieldset>
-                <legend class="visually-hidden">{{ _('Script Steps') }}</legend>
+                <legend class="visually-hidden">{{ ftl('scripts-script-steps') }}</legend>
                 <div class="form-section">
-                    <h2><i class="bi bi-list-ol" aria-hidden="true"></i> {{ _('Script Steps') }}</h2>
+                    <h2><i class="bi bi-list-ol" aria-hidden="true"></i> {{ ftl('scripts-script-steps') }}</h2>
 
                     <p class="text-muted">
-                        {{ _('Define the actions to perform. Steps execute in order from top to bottom.') }}
+                        {{ ftl('scripts-define-the-actions-to-perform-steps-execute-in') }}
                     </p>
 
                     <div id="steps-container">
@@ -315,7 +315,7 @@
                     </div>
 
                     <button type="button" class="btn btn-outline-primary" onclick="addStep()">
-                        <i class="bi bi-plus-circle" aria-hidden="true"></i> {{ _('Add Step') }}
+                        <i class="bi bi-plus-circle" aria-hidden="true"></i> {{ ftl('scripts-add-step') }}
                     </button>
                 </div>
                 </fieldset>
@@ -323,10 +323,10 @@
                 <!-- Form Actions -->
                 <div class="d-flex justify-content-between mt-4">
                     <a href="{{ url_for('scripts.list_page_scripts', page_id=page.id) }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left" aria-hidden="true"></i> {{ _('Cancel') }}
+                        <i class="bi bi-arrow-left" aria-hidden="true"></i> {{ ftl('common-cancel') }}
                     </a>
                     <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-save" aria-hidden="true"></i> {{ _('Create Script') }}
+                        <i class="bi bi-save" aria-hidden="true"></i> {{ ftl('scripts-create-script') }}
                     </button>
                 </div>
 
@@ -338,36 +338,36 @@
             <section aria-labelledby="quick-help-heading">
             <div class="card">
                 <div class="card-header bg-info text-white">
-                    <h2 id="quick-help-heading" class="mb-0"><i class="bi bi-question-circle" aria-hidden="true"></i> {{ _('Quick Help') }}</h2>
+                    <h2 id="quick-help-heading" class="mb-0"><i class="bi bi-question-circle" aria-hidden="true"></i> {{ ftl('scripts-quick-help') }}</h2>
                 </div>
                 <div class="card-body">
-                    <h3>{{ _('Common Selectors') }}</h3>
+                    <h3>{{ ftl('scripts-common-selectors') }}</h3>
                     <ul class="small">
-                        <li><code>.cookie-banner</code> - {{ _('Class name') }}</li>
-                        <li><code>#accept-btn</code> - {{ _('ID') }}</li>
-                        <li><code>button[data-action="accept"]</code> - {{ _('Attribute') }}</li>
-                        <li><code>.modal .close-button</code> - {{ _('Nested') }}</li>
+                        <li><code>.cookie-banner</code> - {{ ftl('scripts-class-name') }}</li>
+                        <li><code>#accept-btn</code> - {{ ftl('common-id') }}</li>
+                        <li><code>button[data-action="accept"]</code> - {{ ftl('scripts-attribute') }}</li>
+                        <li><code>.modal .close-button</code> - {{ ftl('scripts-nested') }}</li>
                     </ul>
 
-                    <h3>{{ _('Step Types') }}</h3>
+                    <h3>{{ ftl('scripts-step-types') }}</h3>
                     <ul class="small">
-                        <li><strong>{{ _('Click:') }}</strong> {{ _('Click a button/link') }}</li>
-                        <li><strong>{{ _('Type:') }}</strong> {{ _('Enter text in field') }}</li>
-                        <li><strong>{{ _('Wait for Element:') }}</strong> {{ _('Wait until element appears') }}</li>
-                        <li><strong>{{ _('Wait (Fixed):') }}</strong> {{ _('Pause for X milliseconds') }}</li>
+                        <li><strong>{{ ftl('scripts-click') }}</strong> {{ ftl('scripts-click-a-button-link') }}</li>
+                        <li><strong>{{ ftl('common-type-2') }}</strong> {{ ftl('scripts-enter-text-in-field') }}</li>
+                        <li><strong>{{ ftl('scripts-wait-for-element') }}</strong> {{ ftl('scripts-wait-until-element-appears') }}</li>
+                        <li><strong>{{ ftl('scripts-wait-fixed') }}</strong> {{ ftl('scripts-pause-for-x-milliseconds') }}</li>
                     </ul>
 
-                    <h3>{{ _('Examples') }}</h3>
-                    <p class="small"><strong>{{ _('Cookie Banner:') }}</strong></p>
+                    <h3>{{ ftl('scripts-examples') }}</h3>
+                    <p class="small"><strong>{{ ftl('scripts-cookie-banner') }}</strong></p>
                     <ol class="small">
-                        <li>{{ _('Wait for:') }} <code>.cookie-banner</code></li>
-                        <li>{{ _('Click:') }} <code>.accept-button</code></li>
+                        <li>{{ ftl('scripts-wait-for') }} <code>.cookie-banner</code></li>
+                        <li>{{ ftl('scripts-click') }} <code>.accept-button</code></li>
                     </ol>
 
-                    <p class="small"><strong>{{ _('Modal:') }}</strong></p>
+                    <p class="small"><strong>{{ ftl('scripts-modal') }}</strong></p>
                     <ol class="small">
-                        <li>{{ _('Click:') }} <code>#open-modal</code></li>
-                        <li>{{ _('Wait for:') }} <code>.modal-dialog</code></li>
+                        <li>{{ ftl('scripts-click') }} <code>#open-modal</code></li>
+                        <li>{{ ftl('scripts-wait-for') }} <code>.modal-dialog</code></li>
                     </ol>
                 </div>
             </div>
@@ -392,21 +392,21 @@ function addStep(stepData = null) {
             <div class="step-header">
                 <div>
                     <span class="step-number">${stepNum}</span>
-                    <span class="ms-2"><strong>{{ _('Step') }} ${stepNum}</strong></span>
+                    <span class="ms-2"><strong>{{ ftl('scripts-step') }} ${stepNum}</strong></span>
                 </div>
                 <div>
                     <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeStep(${stepIndex})">
-                        <i class="bi bi-trash" aria-hidden="true"></i> {{ _('Remove') }}
+                        <i class="bi bi-trash" aria-hidden="true"></i> {{ ftl('scripts-remove') }}
                     </button>
                 </div>
             </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-4 mb-3">
-                        <label class="form-label">{{ _('Action Type') }} <span class="text-danger">*</span></label>
+                        <label class="form-label">{{ ftl('scripts-action-type') }} <span class="text-danger">*</span></label>
                         <select class="form-select" name="step_${stepIndex}_action" id="step_${stepIndex}_action"
                                 onchange="updateStepFields(${stepIndex})" required>
-                            <option value="">{{ _('-- Select Action --') }}</option>
+                            <option value="">{{ ftl('scripts-select-action') }}</option>
                             ${actionTypes.map(type => `
                                 <option value="${type.value}" ${stepData && stepData.action === type.value ? 'selected' : ''}>
                                     ${type.label}
@@ -416,41 +416,41 @@ function addStep(stepData = null) {
                     </div>
 
                     <div class="col-md-8 mb-3" id="step_${stepIndex}_selector_container">
-                        <label class="form-label">{{ _('Selector (CSS or XPath)') }}</label>
+                        <label class="form-label">{{ ftl('scripts-selector-css-or-xpath') }}</label>
                         <input type="text" class="form-control font-monospace" name="step_${stepIndex}_selector"
                                id="step_${stepIndex}_selector"
                                placeholder="//*[@id='element-id'] or .cookie-banner or button[data-action='accept']">
                         <small class="form-text text-muted selector-help">
-                            {{ _('CSS selector or XPath (XPath must start with / or //)') }}
+                            {{ ftl('scripts-css-selector-or-xpath-xpath-must-start-with-or') }}
                         </small>
                     </div>
                 </div>
 
                 <div class="row" id="step_${stepIndex}_value_row" style="display: none;">
                     <div class="col-12 mb-3">
-                        <label class="form-label">{{ _('Value') }}</label>
+                        <label class="form-label">{{ ftl('scripts-value') }}</label>
                         <input type="text" class="form-control" name="step_${stepIndex}_value"
                                id="step_${stepIndex}_value"
-                               placeholder="{{ _('Text to type or value to set') }}">
+                               placeholder="{{ ftl('scripts-text-to-type-or-value-to-set') }}">
                     </div>
                 </div>
 
                 <div class="row">
                     <div class="col-md-8 mb-3">
-                        <label class="form-label">{{ _('Description (Optional)') }}</label>
+                        <label class="form-label">{{ ftl('scripts-description-optional') }}</label>
                         <input type="text" class="form-control" name="step_${stepIndex}_description"
                                id="step_${stepIndex}_description"
-                               placeholder="{{ _('e.g., Wait for cookie banner to appear') }}">
+                               placeholder="{{ ftl('scripts-e-g-wait-for-cookie-banner-to-appear') }}">
                     </div>
 
                     <div class="col-md-2 mb-3">
-                        <label class="form-label">{{ _('Timeout (ms)') }}</label>
+                        <label class="form-label">{{ ftl('scripts-timeout-ms') }}</label>
                         <input type="number" class="form-control" name="step_${stepIndex}_timeout"
                                value="${stepData ? stepData.timeout || 5000 : 5000}" min="0" step="100">
                     </div>
 
                     <div class="col-md-2 mb-3">
-                        <label class="form-label">{{ _('Wait After (ms)') }}</label>
+                        <label class="form-label">{{ ftl('scripts-wait-after-ms') }}</label>
                         <input type="number" class="form-control" name="step_${stepIndex}_wait_after"
                                value="${stepData ? stepData.wait_after || 0 : 0}" min="0" step="100">
                     </div>
@@ -493,7 +493,7 @@ function renumberSteps() {
     steps.forEach((step, index) => {
         const stepNum = index + 1;
         step.querySelector('.step-number').textContent = stepNum;
-        step.querySelector('.step-header strong').textContent = `{{ _('Step') }} ${stepNum}`;
+        step.querySelector('.step-header strong').textContent = `{{ ftl('scripts-step') }} ${stepNum}`;
     });
 }
 
@@ -573,7 +573,7 @@ document.getElementById('script-form').addEventListener('submit', function(e) {
     const steps = document.querySelectorAll('.step-card');
     if (steps.length === 0) {
         e.preventDefault();
-        alert('{{ _('Please add at least one step to the script.') }}');
+        alert('{{ ftl('scripts-please-add-at-least-one-step-to-the-script') }}');
         return false;
     }
 });

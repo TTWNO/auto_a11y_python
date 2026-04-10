@@ -17,7 +17,7 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 from pathlib import Path
 from collections import defaultdict
-from flask_babel import force_locale, gettext as _
+from auto_a11y.web.fluent import ftl, force_locale
 
 from auto_a11y.models import TestResult, Page, Website, Project
 from auto_a11y.core.database import Database
@@ -428,7 +428,7 @@ class DiscoveryReportGenerator:
                         with force_locale(self.language):
                             progress_callback(
                                 total_pages + idx, total_phases,
-                                _('Writing page %(current)s of %(total)s...', current=idx + 1, total=len(page_ids_with_issues))
+                                ftl('reports-writing-page-current-of-total', current=idx + 1, total=len(page_ids_with_issues))
                             )
                     try:
                         page_html = self._generate_page_html_from_db(
@@ -448,7 +448,7 @@ class DiscoveryReportGenerator:
 
         if progress_callback:
             with force_locale(self.language):
-                progress_callback(total_phases, total_phases, _('Report complete'))
+                progress_callback(total_phases, total_phases, ftl('reports-report-complete'))
 
         logger.info(f"Generated streaming discovery report: {filepath}")
         return str(filepath)
@@ -1215,7 +1215,7 @@ class DiscoveryReportGenerator:
 
         if progress_callback:
             with force_locale(self.language):
-                progress_callback(len(pages), len(pages), _('Generating report...'))
+                progress_callback(len(pages), len(pages), ftl('reports-generating-report'))
 
         # Prepare report data
         report_data = self._prepare_report_data_legacy(

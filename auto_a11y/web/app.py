@@ -168,8 +168,8 @@ def create_app(config):
     login_manager = LoginManager()
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
-    from flask_babel import lazy_gettext
-    login_manager.login_message = lazy_gettext('Please log in to access this page.')
+    from auto_a11y.web.fluent import lazy_ftl
+    login_manager.login_message = lazy_ftl('common-please-log-in-to-access-this-page')
     login_manager.login_message_category = 'warning'
 
     @login_manager.user_loader

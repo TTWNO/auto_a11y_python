@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}{% if is_edit %}{{ _('Edit Schedule') }}{% else %}{{ _('Create Schedule') }}{% endif %} - {{ website.name }} - {{ _('Auto A11y') }}{% endblock %}
+{% block title %}{% if is_edit %}{{ ftl('schedules-edit-schedule') }}{% else %}{{ ftl('common-create-schedule') }}{% endif %} - {{ website.name }} - {{ ftl('common-auto-a11y') }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
     <!-- Breadcrumb -->
-    <nav aria-label="{{ _('breadcrumb') }}">
+    <nav aria-label="{{ ftl('common-breadcrumb') }}">
         <ol class="breadcrumb">
             <li class="breadcrumb-item">
                 <a href="{{ url_for('projects.view_project', project_id=project.id) }}">{{ project.name }}</a>
@@ -14,17 +14,17 @@
                 <a href="{{ url_for('websites.view_website', website_id=website.id) }}">{{ website.name }}</a>
             </li>
             <li class="breadcrumb-item">
-                <a href="{{ url_for('schedules.list_schedules', website_id=website.id) }}">{{ _('Schedules') }}</a>
+                <a href="{{ url_for('schedules.list_schedules', website_id=website.id) }}">{{ ftl('common-schedules') }}</a>
             </li>
             <li class="breadcrumb-item active" aria-current="page">
-                {% if is_edit %}{{ _('Edit') }}{% else %}{{ _('Create') }}{% endif %}
+                {% if is_edit %}{{ ftl('common-edit') }}{% else %}{{ ftl('common-create') }}{% endif %}
             </li>
         </ol>
     </nav>
 
     <h1 class="mb-4">
         <i class="bi bi-calendar-event" aria-hidden="true"></i>
-        {% if is_edit %}{{ _('Edit Schedule') }}{% else %}{{ _('Create Schedule') }}{% endif %}
+        {% if is_edit %}{{ ftl('schedules-edit-schedule') }}{% else %}{{ ftl('common-create-schedule') }}{% endif %}
     </h1>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -45,29 +45,29 @@
             <div class="col-lg-6">
                 <!-- Basic Info -->
                 <fieldset>
-                <legend class="visually-hidden">{{ _('Basic Information') }}</legend>
+                <legend class="visually-hidden">{{ ftl('common-basic-information') }}</legend>
                 <div class="card mb-4">
                     <div class="card-header">
-                        <h2 class="mb-0"><i class="bi bi-info-circle" aria-hidden="true"></i> {{ _('Basic Information') }}</h2>
+                        <h2 class="mb-0"><i class="bi bi-info-circle" aria-hidden="true"></i> {{ ftl('common-basic-information') }}</h2>
                     </div>
                     <div class="card-body">
                         <div class="mb-3">
-                            <label for="name" class="form-label">{{ _('Schedule Name') }} <span class="text-danger">*</span></label>
+                            <label for="name" class="form-label">{{ ftl('schedules-schedule-name') }} <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="name" name="name" required
                                    value="{{ schedule.name if schedule else '' }}"
-                                   placeholder="{{ _('e.g., Nightly Full Scan') }}">
+                                   placeholder="{{ ftl('schedules-e-g-nightly-full-scan') }}">
                         </div>
 
                         <div class="mb-3">
-                            <label for="description" class="form-label">{{ _('Description') }}</label>
+                            <label for="description" class="form-label">{{ ftl('common-description') }}</label>
                             <textarea class="form-control" id="description" name="description" rows="2"
-                                      placeholder="{{ _('Optional description of this schedule') }}">{{ schedule.description if schedule else '' }}</textarea>
+                                      placeholder="{{ ftl('schedules-optional-description-of-this-schedule') }}">{{ schedule.description if schedule else '' }}</textarea>
                         </div>
 
                         <div class="form-check mb-3">
                             <input type="checkbox" class="form-check-input" id="enabled" name="enabled"
                                    {% if not schedule or schedule.enabled %}checked{% endif %}>
-                            <label class="form-check-label" for="enabled">{{ _('Enable this schedule') }}</label>
+                            <label class="form-check-label" for="enabled">{{ ftl('schedules-enable-this-schedule') }}</label>
                         </div>
                     </div>
                 </div>
@@ -75,34 +75,34 @@
 
                 <!-- Schedule Timing -->
                 <fieldset>
-                <legend class="visually-hidden">{{ _('Schedule Timing') }}</legend>
+                <legend class="visually-hidden">{{ ftl('schedules-schedule-timing') }}</legend>
                 <div class="card mb-4">
                     <div class="card-header">
-                        <h2 class="mb-0"><i class="bi bi-clock" aria-hidden="true"></i> {{ _('Schedule Timing') }}</h2>
+                        <h2 class="mb-0"><i class="bi bi-clock" aria-hidden="true"></i> {{ ftl('schedules-schedule-timing') }}</h2>
                     </div>
                     <div class="card-body">
                         <div class="mb-3">
-                            <label class="form-label">{{ _('Schedule Type') }} <span class="text-danger">*</span></label>
+                            <label class="form-label">{{ ftl('schedules-schedule-type') }} <span class="text-danger">*</span></label>
                             <div class="btn-group d-flex flex-wrap" role="group">
                                 <input type="radio" class="btn-check" name="schedule_type" id="type_one_time" value="one_time"
                                        {% if schedule and schedule.schedule_type.value == 'one_time' %}checked{% endif %}>
-                                <label class="btn btn-outline-primary" for="type_one_time">{{ _('One-time') }}</label>
+                                <label class="btn btn-outline-primary" for="type_one_time">{{ ftl('schedules-one-time') }}</label>
 
                                 <input type="radio" class="btn-check" name="schedule_type" id="type_daily" value="daily"
                                        {% if not schedule or schedule.schedule_type.value == 'daily' %}checked{% endif %}>
-                                <label class="btn btn-outline-primary" for="type_daily">{{ _('Daily') }}</label>
+                                <label class="btn btn-outline-primary" for="type_daily">{{ ftl('common-daily') }}</label>
 
                                 <input type="radio" class="btn-check" name="schedule_type" id="type_weekly" value="weekly"
                                        {% if schedule and schedule.schedule_type.value == 'weekly' %}checked{% endif %}>
-                                <label class="btn btn-outline-primary" for="type_weekly">{{ _('Weekly') }}</label>
+                                <label class="btn btn-outline-primary" for="type_weekly">{{ ftl('common-weekly') }}</label>
 
                                 <input type="radio" class="btn-check" name="schedule_type" id="type_monthly" value="monthly"
                                        {% if schedule and schedule.schedule_type.value == 'monthly' %}checked{% endif %}>
-                                <label class="btn btn-outline-primary" for="type_monthly">{{ _('Monthly') }}</label>
+                                <label class="btn btn-outline-primary" for="type_monthly">{{ ftl('common-monthly') }}</label>
 
                                 <input type="radio" class="btn-check" name="schedule_type" id="type_cron" value="cron"
                                        {% if schedule and schedule.schedule_type.value == 'cron' %}checked{% endif %}>
-                                <label class="btn btn-outline-primary" for="type_cron">{{ _('Custom Cron') }}</label>
+                                <label class="btn btn-outline-primary" for="type_cron">{{ ftl('schedules-custom-cron-2') }}</label>
                             </div>
                         </div>
 
@@ -110,12 +110,12 @@
                         <div id="oneTimeFields" class="schedule-fields" style="display: none;">
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="scheduled_date" class="form-label">{{ _('Date') }}</label>
+                                    <label for="scheduled_date" class="form-label">{{ ftl('common-date') }}</label>
                                     <input type="date" class="form-control" id="scheduled_date" name="scheduled_date"
                                            value="{{ schedule.scheduled_datetime.strftime('%Y-%m-%d') if schedule and schedule.scheduled_datetime else '' }}">
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label for="scheduled_time" class="form-label">{{ _('Time') }}</label>
+                                    <label for="scheduled_time" class="form-label">{{ ftl('schedules-time') }}</label>
                                     <input type="time" class="form-control" id="scheduled_time" name="scheduled_time"
                                            value="{{ schedule.scheduled_datetime.strftime('%H:%M') if schedule and schedule.scheduled_datetime else '02:00' }}">
                                 </div>
@@ -125,7 +125,7 @@
                         <!-- Daily Time -->
                         <div id="dailyFields" class="schedule-fields">
                             <div class="mb-3">
-                                <label for="time" class="form-label">{{ _('Time') }}</label>
+                                <label for="time" class="form-label">{{ ftl('schedules-time') }}</label>
                                 <input type="time" class="form-control" id="time" name="time"
                                        value="{{ schedule.preset_config.time if schedule else '02:00' }}">
                             </div>
@@ -135,19 +135,19 @@
                         <div id="weeklyFields" class="schedule-fields" style="display: none;">
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="day_of_week" class="form-label">{{ _('Day of Week') }}</label>
+                                    <label for="day_of_week" class="form-label">{{ ftl('schedules-day-of-week') }}</label>
                                     <select class="form-select" id="day_of_week" name="day_of_week">
-                                        <option value="0" {% if schedule and schedule.preset_config.day_of_week == 0 %}selected{% endif %}>{{ _('Monday') }}</option>
-                                        <option value="1" {% if schedule and schedule.preset_config.day_of_week == 1 %}selected{% endif %}>{{ _('Tuesday') }}</option>
-                                        <option value="2" {% if schedule and schedule.preset_config.day_of_week == 2 %}selected{% endif %}>{{ _('Wednesday') }}</option>
-                                        <option value="3" {% if schedule and schedule.preset_config.day_of_week == 3 %}selected{% endif %}>{{ _('Thursday') }}</option>
-                                        <option value="4" {% if schedule and schedule.preset_config.day_of_week == 4 %}selected{% endif %}>{{ _('Friday') }}</option>
-                                        <option value="5" {% if schedule and schedule.preset_config.day_of_week == 5 %}selected{% endif %}>{{ _('Saturday') }}</option>
-                                        <option value="6" {% if schedule and schedule.preset_config.day_of_week == 6 %}selected{% endif %}>{{ _('Sunday') }}</option>
+                                        <option value="0" {% if schedule and schedule.preset_config.day_of_week == 0 %}selected{% endif %}>{{ ftl('schedules-monday') }}</option>
+                                        <option value="1" {% if schedule and schedule.preset_config.day_of_week == 1 %}selected{% endif %}>{{ ftl('schedules-tuesday') }}</option>
+                                        <option value="2" {% if schedule and schedule.preset_config.day_of_week == 2 %}selected{% endif %}>{{ ftl('schedules-wednesday') }}</option>
+                                        <option value="3" {% if schedule and schedule.preset_config.day_of_week == 3 %}selected{% endif %}>{{ ftl('schedules-thursday') }}</option>
+                                        <option value="4" {% if schedule and schedule.preset_config.day_of_week == 4 %}selected{% endif %}>{{ ftl('schedules-friday') }}</option>
+                                        <option value="5" {% if schedule and schedule.preset_config.day_of_week == 5 %}selected{% endif %}>{{ ftl('schedules-saturday') }}</option>
+                                        <option value="6" {% if schedule and schedule.preset_config.day_of_week == 6 %}selected{% endif %}>{{ ftl('schedules-sunday') }}</option>
                                     </select>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label for="weekly_time" class="form-label">{{ _('Time') }}</label>
+                                    <label for="weekly_time" class="form-label">{{ ftl('schedules-time') }}</label>
                                     <input type="time" class="form-control" id="weekly_time" name="time"
                                            value="{{ schedule.preset_config.time if schedule else '02:00' }}">
                                 </div>
@@ -158,16 +158,16 @@
                         <div id="monthlyFields" class="schedule-fields" style="display: none;">
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="day_of_month" class="form-label">{{ _('Day of Month') }}</label>
+                                    <label for="day_of_month" class="form-label">{{ ftl('schedules-day-of-month') }}</label>
                                     <select class="form-select" id="day_of_month" name="day_of_month" aria-describedby="day-of-month-help">
                                         {% for day in range(1, 29) %}
                                         <option value="{{ day }}" {% if schedule and schedule.preset_config.day_of_month == day %}selected{% endif %}>{{ day }}</option>
                                         {% endfor %}
                                     </select>
-                                    <small id="day-of-month-help" class="form-text text-muted">{{ _('Note: For months with fewer days, test runs on the last day') }}</small>
+                                    <small id="day-of-month-help" class="form-text text-muted">{{ ftl('schedules-note-for-months-with-fewer-days-test-runs-on-the') }}</small>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label for="monthly_time" class="form-label">{{ _('Time') }}</label>
+                                    <label for="monthly_time" class="form-label">{{ ftl('schedules-time') }}</label>
                                     <input type="time" class="form-control" id="monthly_time" name="time"
                                            value="{{ schedule.preset_config.time if schedule else '02:00' }}">
                                 </div>
@@ -177,20 +177,20 @@
                         <!-- Cron Expression -->
                         <div id="cronFields" class="schedule-fields" style="display: none;">
                             <div class="mb-3">
-                                <label for="cron_expression" class="form-label">{{ _('Cron Expression') }}</label>
+                                <label for="cron_expression" class="form-label">{{ ftl('schedules-cron-expression') }}</label>
                                 <input type="text" class="form-control" id="cron_expression" name="cron_expression"
                                        value="{{ schedule.cron_expression if schedule else '' }}"
                                        placeholder="0 2 * * *"
                                        aria-describedby="cron-expression-help">
                                 <small id="cron-expression-help" class="form-text text-muted">
-                                    {{ _('Format: minute hour day month weekday (e.g., "0 2 * * *" = daily at 2am)') }}
+                                    {{ ftl('schedules-format-minute-hour-day-month-weekday-e-g-0-2') }}
                                 </small>
                             </div>
                         </div>
 
                         <!-- Timezone -->
                         <div class="mb-3">
-                            <label for="timezone" class="form-label">{{ _('Timezone') }}</label>
+                            <label for="timezone" class="form-label">{{ ftl('schedules-timezone') }}</label>
                             <select class="form-select" id="timezone" name="timezone">
                                 <option value="America/Toronto" {% if not schedule or schedule.preset_config.timezone == 'America/Toronto' %}selected{% endif %}>America/Toronto (EST/EDT)</option>
                                 <option value="America/Vancouver" {% if schedule and schedule.preset_config.timezone == 'America/Vancouver' %}selected{% endif %}>America/Vancouver (PST/PDT)</option>
@@ -210,50 +210,50 @@
             <div class="col-lg-6">
                 <!-- AI Testing Configuration -->
                 <fieldset>
-                <legend class="visually-hidden">{{ _('AI Testing') }}</legend>
+                <legend class="visually-hidden">{{ ftl('schedules-ai-testing') }}</legend>
                 <div class="card mb-4">
                     <div class="card-header">
-                        <h2 class="mb-0"><i class="bi bi-robot" aria-hidden="true"></i> {{ _('AI Testing') }}</h2>
+                        <h2 class="mb-0"><i class="bi bi-robot" aria-hidden="true"></i> {{ ftl('schedules-ai-testing') }}</h2>
                     </div>
                     <div class="card-body">
                         <div class="form-check mb-3">
                             <input type="checkbox" class="form-check-input" id="run_ai_tests" name="run_ai_tests"
                                    {% if not schedule or schedule.test_config.run_ai_tests %}checked{% endif %}>
-                            <label class="form-check-label" for="run_ai_tests">{{ _('Enable AI Testing') }}</label>
+                            <label class="form-check-label" for="run_ai_tests">{{ ftl('schedules-enable-ai-testing') }}</label>
                         </div>
 
                         <div id="aiPagesConfig">
-                            <label class="form-label">{{ _('AI Testing Scope') }}</label>
+                            <label class="form-label">{{ ftl('schedules-ai-testing-scope') }}</label>
                             <div class="mb-3">
                                 <div class="form-check">
                                     <input type="radio" class="form-check-input" name="ai_pages_mode" id="ai_all" value="all"
                                            {% if not schedule or schedule.test_config.ai_pages_mode.value == 'all' %}checked{% endif %}>
                                     <label class="form-check-label" for="ai_all">
-                                        <strong>{{ _('All Pages') }}</strong>
-                                        <small class="text-muted d-block">{{ _('Run AI analysis on every page (higher cost)') }}</small>
+                                        <strong>{{ ftl('common-all-pages') }}</strong>
+                                        <small class="text-muted d-block">{{ ftl('schedules-run-ai-analysis-on-every-page-higher-cost') }}</small>
                                     </label>
                                 </div>
                                 <div class="form-check">
                                     <input type="radio" class="form-check-input" name="ai_pages_mode" id="ai_selected" value="selected"
                                            {% if schedule and schedule.test_config.ai_pages_mode.value == 'selected' %}checked{% endif %}>
                                     <label class="form-check-label" for="ai_selected">
-                                        <strong>{{ _('Selected Pages Only') }}</strong>
-                                        <small class="text-muted d-block">{{ _('Choose specific pages for AI analysis') }}</small>
+                                        <strong>{{ ftl('schedules-selected-pages-only') }}</strong>
+                                        <small class="text-muted d-block">{{ ftl('schedules-choose-specific-pages-for-ai-analysis') }}</small>
                                     </label>
                                 </div>
                                 <div class="form-check">
                                     <input type="radio" class="form-check-input" name="ai_pages_mode" id="ai_none" value="none"
                                            {% if schedule and schedule.test_config.ai_pages_mode.value == 'none' %}checked{% endif %}>
                                     <label class="form-check-label" for="ai_none">
-                                        <strong>{{ _('No AI Testing') }}</strong>
-                                        <small class="text-muted d-block">{{ _('Run only automated JavaScript tests') }}</small>
+                                        <strong>{{ ftl('schedules-no-ai-testing') }}</strong>
+                                        <small class="text-muted d-block">{{ ftl('schedules-run-only-automated-javascript-tests') }}</small>
                                     </label>
                                 </div>
                             </div>
 
                             <!-- Page Selector (shown when 'selected' is chosen) -->
                             <div id="pageSelector" class="mb-3" style="display: none;">
-                                <label class="form-label">{{ _('Select Pages for AI Testing') }}</label>
+                                <label class="form-label">{{ ftl('schedules-select-pages-for-ai-testing') }}</label>
                                 <div class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">
                                     {% for page in pages %}
                                     <div class="form-check">
@@ -266,7 +266,7 @@
                                     </div>
                                     {% endfor %}
                                 </div>
-                                <small id="page-selector-help" class="form-text text-muted">{{ pages|length }} {{ _('pages available') }}</small>
+                                <small id="page-selector-help" class="form-text text-muted">{{ pages|length }} {{ ftl('schedules-pages-available') }}</small>
                             </div>
                         </div>
                     </div>
@@ -275,26 +275,26 @@
 
                 <!-- Other Test Settings -->
                 <fieldset>
-                <legend class="visually-hidden">{{ _('Test Settings') }}</legend>
+                <legend class="visually-hidden">{{ ftl('schedules-test-settings') }}</legend>
                 <div class="card mb-4">
                     <div class="card-header">
-                        <h2 class="mb-0"><i class="bi bi-gear" aria-hidden="true"></i> {{ _('Test Settings') }}</h2>
+                        <h2 class="mb-0"><i class="bi bi-gear" aria-hidden="true"></i> {{ ftl('schedules-test-settings') }}</h2>
                     </div>
                     <div class="card-body">
                         <div class="form-check mb-2">
                             <input type="checkbox" class="form-check-input" id="run_javascript_tests" name="run_javascript_tests"
                                    {% if not schedule or schedule.test_config.run_javascript_tests %}checked{% endif %}>
-                            <label class="form-check-label" for="run_javascript_tests">{{ _('Run JavaScript Tests') }}</label>
+                            <label class="form-check-label" for="run_javascript_tests">{{ ftl('schedules-run-javascript-tests') }}</label>
                         </div>
                         <div class="form-check mb-2">
                             <input type="checkbox" class="form-check-input" id="run_python_tests" name="run_python_tests"
                                    {% if not schedule or schedule.test_config.run_python_tests %}checked{% endif %}>
-                            <label class="form-check-label" for="run_python_tests">{{ _('Run Python Tests') }}</label>
+                            <label class="form-check-label" for="run_python_tests">{{ ftl('schedules-run-python-tests') }}</label>
                         </div>
                         <div class="form-check mb-3">
                             <input type="checkbox" class="form-check-input" id="take_screenshots" name="take_screenshots"
                                    {% if not schedule or schedule.test_config.take_screenshots %}checked{% endif %}>
-                            <label class="form-check-label" for="take_screenshots">{{ _('Take Screenshots') }}</label>
+                            <label class="form-check-label" for="take_screenshots">{{ ftl('common-take-screenshots') }}</label>
                         </div>
                     </div>
                 </div>
@@ -303,13 +303,13 @@
                 <!-- Test Users -->
                 {% if project_users %}
                 <fieldset>
-                <legend class="visually-hidden">{{ _('Test Users') }}</legend>
+                <legend class="visually-hidden">{{ ftl('common-test-users') }}</legend>
                 <div class="card mb-4">
                     <div class="card-header">
-                        <h2 class="mb-0"><i class="bi bi-people" aria-hidden="true"></i> {{ _('Test Users') }}</h2>
+                        <h2 class="mb-0"><i class="bi bi-people" aria-hidden="true"></i> {{ ftl('common-test-users') }}</h2>
                     </div>
                     <div class="card-body">
-                        <p class="text-muted small">{{ _('Select which users to test with. Leave unchecked to test as guest only.') }}</p>
+                        <p class="text-muted small">{{ ftl('schedules-select-which-users-to-test-with-leave-unchecked') }}</p>
                         {% for user in project_users %}
                         <div class="form-check">
                             <input type="checkbox" class="form-check-input" name="project_user_ids"
@@ -333,10 +333,10 @@
         <!-- Actions -->
         <div class="d-flex justify-content-between mb-4">
             <a href="{{ url_for('schedules.list_schedules', website_id=website.id) }}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left" aria-hidden="true"></i> {{ _('Cancel') }}
+                <i class="bi bi-arrow-left" aria-hidden="true"></i> {{ ftl('common-cancel') }}
             </a>
             <button type="submit" class="btn btn-primary">
-                <i class="bi bi-check-lg" aria-hidden="true"></i> {% if is_edit %}{{ _('Save Changes') }}{% else %}{{ _('Create Schedule') }}{% endif %}
+                <i class="bi bi-check-lg" aria-hidden="true"></i> {% if is_edit %}{{ ftl('common-save-changes') }}{% else %}{{ ftl('common-create-schedule') }}{% endif %}
             </button>
         </div>
     </form>

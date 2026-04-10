@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('Drupal Sync') }} - {{ project.name }} - Auto A11y{% endblock %}
+{% block title %}{{ ftl('common-drupal-sync') }} - {{ project.name }} - Auto A11y{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -8,15 +8,15 @@
         <div class="col">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{ url_for('projects.list_projects') }}">{{ _('Projects') }}</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('projects.list_projects') }}">{{ ftl('common-projects') }}</a></li>
                     <li class="breadcrumb-item"><a href="{{ url_for('projects.view_project', project_id=project.id) }}">{{ project.name }}</a></li>
-                    <li class="breadcrumb-item active">{{ _('Drupal Sync') }}</li>
+                    <li class="breadcrumb-item active">{{ ftl('common-drupal-sync') }}</li>
                 </ol>
             </nav>
             <h1>
-                <i class="bi bi-cloud-arrow-up-down" aria-hidden="true"></i> {{ _('Drupal Synchronization') }}
+                <i class="bi bi-cloud-arrow-up-down" aria-hidden="true"></i> {{ ftl('drupal-drupal-synchronization') }}
             </h1>
-            <p class="text-muted">{{ _('Manage synchronization between Auto A11y and Drupal for') }} {{ project.name }}</p>
+            <p class="text-muted">{{ ftl('drupal-manage-synchronization-between-auto-a11y-and') }} {{ project.name }}</p>
         </div>
     </div>
 
@@ -26,8 +26,8 @@
             <div class="card">
                 <div class="card-body text-center">
                     <dl class="mb-0">
-                        <dt class="text-muted">{{ _('Drupal Audit') }}</dt>
-                        <dd class="mb-0" id="drupalAuditName">{{ _('Loading...') }}</dd>
+                        <dt class="text-muted">{{ ftl('drupal-drupal-audit') }}</dt>
+                        <dd class="mb-0" id="drupalAuditName">{{ ftl('common-loading') }}</dd>
                     </dl>
                 </div>
             </div>
@@ -36,10 +36,10 @@
             <div class="card">
                 <div class="card-body text-center">
                     <dl class="mb-0">
-                        <dt class="text-muted">{{ _('Discovered Pages') }}</dt>
+                        <dt class="text-muted">{{ ftl('common-discovered-pages') }}</dt>
                         <dd class="mb-0"><span class="text-success" id="pagesSynced">0</span> / <span id="pagesTotal">0</span></dd>
                     </dl>
-                    <small class="text-muted"><span id="pagesPending">0</span> {{ _('pending') }}</small>
+                    <small class="text-muted"><span id="pagesPending">0</span> {{ ftl('drupal-pending') }}</small>
                 </div>
             </div>
         </div>
@@ -47,10 +47,10 @@
             <div class="card">
                 <div class="card-body text-center">
                     <dl class="mb-0">
-                        <dt class="text-muted">{{ _('Recordings') }}</dt>
+                        <dt class="text-muted">{{ ftl('common-recordings') }}</dt>
                         <dd class="mb-0"><span class="text-success" id="recordingsSynced">0</span> / <span id="recordingsTotal">0</span></dd>
                     </dl>
-                    <small class="text-muted"><span id="recordingsPending">0</span> {{ _('pending') }}</small>
+                    <small class="text-muted"><span id="recordingsPending">0</span> {{ ftl('drupal-pending') }}</small>
                 </div>
             </div>
         </div>
@@ -58,8 +58,8 @@
             <div class="card">
                 <div class="card-body text-center">
                     <dl class="mb-0">
-                        <dt class="text-muted">{{ _('Last Sync') }}</dt>
-                        <dd class="mb-0" id="lastSyncTime">{{ _('Never') }}</dd>
+                        <dt class="text-muted">{{ ftl('drupal-last-sync') }}</dt>
+                        <dd class="mb-0" id="lastSyncTime">{{ ftl('common-never') }}</dd>
                     </dl>
                 </div>
             </div>
@@ -71,13 +71,13 @@
         <div class="col">
             <div class="btn-group" role="group">
                 <button type="button" class="btn btn-primary" onclick="showPullTab()">
-                    <i class="bi bi-cloud-arrow-down" aria-hidden="true"></i> {{ _('Pull from Drupal') }}
+                    <i class="bi bi-cloud-arrow-down" aria-hidden="true"></i> {{ ftl('drupal-pull-from-drupal') }}
                 </button>
                 <button type="button" class="btn btn-success" onclick="showPushTab()">
-                    <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i> {{ _('Push to Drupal') }}
+                    <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i> {{ ftl('drupal-push-to-drupal') }}
                 </button>
                 <button type="button" class="btn btn-outline-secondary" onclick="loadSyncStatus()">
-                    <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> {{ _('Refresh') }}
+                    <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> {{ ftl('drupal-refresh') }}
                 </button>
             </div>
         </div>
@@ -87,17 +87,17 @@
     <ul class="nav nav-tabs mb-4" id="syncTabs" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link active" id="pull-tab" data-bs-toggle="tab" data-bs-target="#pull" type="button" role="tab">
-                <i class="bi bi-cloud-arrow-down" aria-hidden="true"></i> {{ _('Pull from Drupal') }}
+                <i class="bi bi-cloud-arrow-down" aria-hidden="true"></i> {{ ftl('drupal-pull-from-drupal') }}
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="push-tab" data-bs-toggle="tab" data-bs-target="#push" type="button" role="tab">
-                <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i> {{ _('Push to Drupal') }}
+                <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i> {{ ftl('drupal-push-to-drupal') }}
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab">
-                <i class="bi bi-clock-history" aria-hidden="true"></i> {{ _('Sync History') }}
+                <i class="bi bi-clock-history" aria-hidden="true"></i> {{ ftl('drupal-sync-history') }}
             </button>
         </li>
     </ul>
@@ -107,7 +107,7 @@
         <div class="tab-pane fade show active" id="pull" role="tabpanel">
             <div class="card">
                 <div class="card-header">
-                    <h2 class="mb-0">{{ _('Pull Discovered Pages from Drupal') }}</h2>
+                    <h2 class="mb-0">{{ ftl('drupal-pull-discovered-pages-from-drupal') }}</h2>
                 </div>
                 <div class="card-body">
                     <div id="importAlert" class="alert alert-info" style="display: none;">
@@ -115,16 +115,16 @@
                         <span id="importAlertMessage"></span>
                     </div>
 
-                    <h3>{{ _('What this will do:') }}</h3>
+                    <h3>{{ ftl('drupal-what-this-will-do') }}</h3>
                     <ul>
-                        <li>{{ _('Fetch all discovered pages associated with this audit in Drupal') }}</li>
-                        <li>{{ _('Import them into your local Auto A11y project') }}</li>
-                        <li>{{ _('Preserve page metadata (URL, title, description, etc.)') }}</li>
-                        <li>{{ _('Update existing pages if they already exist locally') }}</li>
+                        <li>{{ ftl('drupal-fetch-all-discovered-pages-associated-with-this') }}</li>
+                        <li>{{ ftl('drupal-import-them-into-your-local-auto-a11y-project') }}</li>
+                        <li>{{ ftl('drupal-preserve-page-metadata-url-title-description-etc') }}</li>
+                        <li>{{ ftl('drupal-update-existing-pages-if-they-already-exist') }}</li>
                     </ul>
 
                     <button type="button" class="btn btn-primary" id="importPagesBtn" onclick="importDiscoveredPages()">
-                        <i class="bi bi-cloud-arrow-down" aria-hidden="true"></i> {{ _('Pull Discovered Pages') }}
+                        <i class="bi bi-cloud-arrow-down" aria-hidden="true"></i> {{ ftl('drupal-pull-discovered-pages') }}
                     </button>
 
                     <!-- Progress Display -->
@@ -134,18 +134,18 @@
                                  role="progressbar" style="width: 0%"></div>
                         </div>
                         <div class="mt-2">
-                            <small id="importProgressText" class="text-muted">{{ _('Starting import...') }}</small>
+                            <small id="importProgressText" class="text-muted">{{ ftl('drupal-starting-import') }}</small>
                         </div>
                     </div>
 
                     <!-- Results Display -->
                     <div id="importResults" class="mt-3" style="display: none;">
                         <div class="alert alert-success">
-                            <h3><i class="bi bi-check-circle" aria-hidden="true"></i> {{ _('Import Complete') }}</h3>
+                            <h3><i class="bi bi-check-circle" aria-hidden="true"></i> {{ ftl('drupal-import-complete') }}</h3>
                             <ul class="mb-0">
-                                <li><strong>{{ _('Imported:') }}</strong> <span id="importedCount">0</span> {{ _('new pages') }}</li>
-                                <li><strong>{{ _('Updated:') }}</strong> <span id="updatedCount">0</span> {{ _('existing pages') }}</li>
-                                <li><strong>{{ _('Total:') }}</strong> <span id="totalCount">0</span> {{ _('pages processed') }}</li>
+                                <li><strong>{{ ftl('drupal-imported') }}</strong> <span id="importedCount">0</span> {{ ftl('drupal-new-pages') }}</li>
+                                <li><strong>{{ ftl('common-updated') }}</strong> <span id="updatedCount">0</span> {{ ftl('drupal-existing-pages') }}</li>
+                                <li><strong>{{ ftl('common-total') }}</strong> <span id="totalCount">0</span> {{ ftl('drupal-pages-processed') }}</li>
                             </ul>
                         </div>
                     </div>
@@ -157,7 +157,7 @@
         <div class="tab-pane fade" id="push" role="tabpanel">
             <div class="card">
                 <div class="card-header">
-                    <h2 class="mb-0">{{ _('Push Content to Drupal') }}</h2>
+                    <h2 class="mb-0">{{ ftl('drupal-push-content-to-drupal') }}</h2>
                 </div>
                 <div class="card-body">
                     <!-- Discovered Pages -->
@@ -165,17 +165,17 @@
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <div>
                                 <input type="checkbox" id="selectAllPages" checked>
-                                <strong class="ms-2">{{ _('Discovered Pages') }} (<span id="pushPagesCount">0</span>)</strong>
+                                <strong class="ms-2">{{ ftl('common-discovered-pages') }} (<span id="pushPagesCount">0</span>)</strong>
                             </div>
                             <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshPushLists()">
-                                <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> {{ _('Refresh') }}
+                                <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> {{ ftl('drupal-refresh') }}
                             </button>
                         </div>
                         <div class="card-body" style="max-height: 400px; overflow-y: auto;">
                             <div id="pushPagesList">
                                 <div class="text-center py-3">
                                     <div class="spinner-border text-primary" role="status">
-                                        <span class="visually-hidden">{{ _('Loading...') }}</span>
+                                        <span class="visually-hidden">{{ ftl('common-loading') }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -186,13 +186,13 @@
                     <div class="card mb-3">
                         <div class="card-header">
                             <input type="checkbox" id="selectAllRecordings" checked>
-                            <strong class="ms-2">{{ _('Recordings') }} (<span id="pushRecordingsCount">0</span>)</strong>
+                            <strong class="ms-2">{{ ftl('common-recordings') }} (<span id="pushRecordingsCount">0</span>)</strong>
                         </div>
                         <div class="card-body" style="max-height: 400px; overflow-y: auto;">
                             <div id="pushRecordingsList">
                                 <div class="text-center py-3">
                                     <div class="spinner-border text-primary" role="status">
-                                        <span class="visually-hidden">{{ _('Loading...') }}</span>
+                                        <span class="visually-hidden">{{ ftl('common-loading') }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -202,16 +202,16 @@
                     <!-- Upload Options -->
                     <div class="card mb-3">
                         <div class="card-header">
-                            <strong><i class="bi bi-gear" aria-hidden="true"></i> {{ _('Upload Options') }}</strong>
+                            <strong><i class="bi bi-gear" aria-hidden="true"></i> {{ ftl('drupal-upload-options') }}</strong>
                         </div>
                         <div class="card-body">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="includeFrenchContent">
                                 <label class="form-check-label" for="includeFrenchContent">
-                                    <strong>{{ _('Include French Content') }}</strong>
+                                    <strong>{{ ftl('drupal-include-french-content') }}</strong>
                                     <br>
                                     <small class="text-muted">
-                                        {{ _('Include French translations in recording uploads (if available). Defaults to English-only. French content will only be included if available for each recording.') }}
+                                        {{ ftl('drupal-include-french-translations-in-recording-uploads') }}
                                     </small>
                                 </label>
                             </div>
@@ -222,56 +222,56 @@
                     <div class="card mb-3">
                         <div class="card-header">
                             <input type="checkbox" id="includeAutomatedTests" checked>
-                            <strong class="ms-2"><i class="bi bi-lightning-charge" aria-hidden="true"></i> {{ _('Automated Test Results') }}</strong>
+                            <strong class="ms-2"><i class="bi bi-lightning-charge" aria-hidden="true"></i> {{ ftl('common-automated-test-results') }}</strong>
                         </div>
                         <div class="card-body">
                             <!-- Filters -->
                             <div class="row mb-3">
                                 <div class="col-md-4">
-                                    <label class="form-label">{{ _('Filter by Page') }}</label>
+                                    <label class="form-label">{{ ftl('drupal-filter-by-page') }}</label>
                                     <select id="automatedTestPageFilter" class="form-select" multiple size="4">
-                                        <option value="">{{ _('All Pages') }}</option>
+                                        <option value="">{{ ftl('common-all-pages') }}</option>
                                     </select>
-                                    <small class="form-text text-muted">{{ _('Hold Ctrl/Cmd to select multiple') }}</small>
+                                    <small class="form-text text-muted">{{ ftl('common-hold-ctrl-cmd-to-select-multiple') }}</small>
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label">{{ _('Filter by Touchpoint') }}</label>
+                                    <label class="form-label">{{ ftl('drupal-filter-by-touchpoint') }}</label>
                                     <select id="automatedTestTouchpointFilter" class="form-select" multiple size="4">
-                                        <option value="">{{ _('All Touchpoints') }}</option>
+                                        <option value="">{{ ftl('common-all-touchpoints') }}</option>
                                     </select>
-                                    <small class="form-text text-muted">{{ _('Hold Ctrl/Cmd to select multiple') }}</small>
+                                    <small class="form-text text-muted">{{ ftl('common-hold-ctrl-cmd-to-select-multiple') }}</small>
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label">{{ _('Filter by WCAG SC') }}</label>
+                                    <label class="form-label">{{ ftl('drupal-filter-by-wcag-sc') }}</label>
                                     <select id="automatedTestWcagFilter" class="form-select" multiple size="4">
-                                        <option value="">{{ _('All WCAG Criteria') }}</option>
+                                        <option value="">{{ ftl('common-all-wcag-criteria') }}</option>
                                     </select>
-                                    <small class="form-text text-muted">{{ _('Hold Ctrl/Cmd to select multiple') }}</small>
+                                    <small class="form-text text-muted">{{ ftl('common-hold-ctrl-cmd-to-select-multiple') }}</small>
                                 </div>
                             </div>
 
                             <!-- Filter Actions -->
                             <div class="d-flex gap-2 mb-3">
                                 <button type="button" class="btn btn-primary btn-sm" onclick="applyAutomatedTestFilters()">
-                                    <i class="bi bi-funnel" aria-hidden="true"></i> {{ _('Apply Filters') }}
+                                    <i class="bi bi-funnel" aria-hidden="true"></i> {{ ftl('common-apply-filters') }}
                                 </button>
                                 <button type="button" class="btn btn-secondary btn-sm" onclick="clearAutomatedTestFilters()">
-                                    <i class="bi bi-x-circle" aria-hidden="true"></i> {{ _('Clear Filters') }}
+                                    <i class="bi bi-x-circle" aria-hidden="true"></i> {{ ftl('common-clear-filters') }}
                                 </button>
                             </div>
 
                             <!-- Summary -->
                             <div id="automatedTestSummary" class="alert alert-info">
                                 <div class="spinner-border spinner-border-sm" role="status">
-                                    <span class="visually-hidden">{{ _('Loading...') }}</span>
+                                    <span class="visually-hidden">{{ ftl('common-loading') }}</span>
                                 </div>
-                                <span class="ms-2">{{ _('Loading automated test results...') }}</span>
+                                <span class="ms-2">{{ ftl('drupal-loading-automated-test-results') }}</span>
                             </div>
                         </div>
                     </div>
 
                     <button type="button" class="btn btn-success btn-lg" onclick="startPush()">
-                        <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i> {{ _('Push Selected Items to Drupal') }}
+                        <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i> {{ ftl('drupal-push-selected-items-to-drupal') }}
                     </button>
                 </div>
             </div>
@@ -279,7 +279,7 @@
             <!-- Push Progress (hidden initially) -->
             <div class="card mt-4" id="pushProgressCard" style="display: none;">
                 <div class="card-header">
-                    <h2 class="mb-0">{{ _('Upload Progress') }}</h2>
+                    <h2 class="mb-0">{{ ftl('drupal-upload-progress') }}</h2>
                 </div>
                 <div class="card-body">
                     <div class="progress mb-3" style="height: 30px;">
@@ -291,7 +291,7 @@
 
                     <div class="card">
                         <div class="card-header">
-                            <strong>{{ _('Upload Log') }}</strong>
+                            <strong>{{ ftl('drupal-upload-log') }}</strong>
                         </div>
                         <div class="card-body" style="max-height: 400px; overflow-y: auto;">
                             <div id="pushLog" class="font-monospace small">
@@ -307,12 +307,12 @@
         <div class="tab-pane fade" id="history" role="tabpanel">
             <div class="card">
                 <div class="card-header">
-                    <h2 class="mb-0">{{ _('Synchronization History') }}</h2>
+                    <h2 class="mb-0">{{ ftl('drupal-synchronization-history') }}</h2>
                 </div>
                 <div class="card-body">
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle" aria-hidden="true"></i>
-                        <strong>{{ _('Coming Soon:') }}</strong> {{ _('This will show a detailed history of all synchronization operations for this project.') }}
+                        <strong>{{ ftl('drupal-coming-soon') }}</strong> {{ ftl('drupal-this-will-show-a-detailed-history-of-all') }}
                     </div>
                 </div>
             </div>
@@ -387,7 +387,7 @@ function renderPushPagesList() {
     document.getElementById('pushPagesCount').textContent = discoveredPages.length;
 
     if (discoveredPages.length === 0) {
-        container.innerHTML = '<p class="text-muted">{{ _("No discovered pages found.") }}</p>';
+        container.innerHTML = '<p class="text-muted">{{ ftl('drupal-no-discovered-pages-found') }}</p>';
         return;
     }
 
@@ -398,8 +398,8 @@ function renderPushPagesList() {
                    ${page.needs_sync ? 'checked' : ''}>
             <label class="form-check-label" for="page_${page.id}">
                 <strong>${page.title}</strong>
-                ${page.is_synced ? '<span class="badge bg-success ms-2">{{ _("Synced") }}</span>' : ''}
-                ${page.drupal_sync_status === 'sync_failed' ? '<span class="badge bg-danger ms-2">{{ _("Failed") }}</span>' : ''}
+                ${page.is_synced ? '<span class="badge bg-success ms-2">{{ ftl('common-synced') }}</span>' : ''}
+                ${page.drupal_sync_status === 'sync_failed' ? '<span class="badge bg-danger ms-2">{{ ftl('common-failed') }}</span>' : ''}
                 <br>
                 <small class="text-muted">${page.url}</small>
             </label>
@@ -418,7 +418,7 @@ function renderPushRecordingsList() {
     document.getElementById('pushRecordingsCount').textContent = recordings.length;
 
     if (recordings.length === 0) {
-        container.innerHTML = '<p class="text-muted">{{ _("No recordings found.") }}</p>';
+        container.innerHTML = '<p class="text-muted">{{ ftl('common-no-recordings-found') }}</p>';
         return;
     }
 
@@ -429,13 +429,13 @@ function renderPushRecordingsList() {
                    ${recording.needs_sync ? 'checked' : ''}>
             <label class="form-check-label" for="recording_${recording.id}">
                 <strong>${recording.title}</strong>
-                ${recording.is_synced ? '<span class="badge bg-success ms-2">{{ _("Synced") }}</span>' : ''}
-                ${recording.drupal_sync_status === 'sync_failed' ? '<span class="badge bg-danger ms-2">{{ _("Failed") }}</span>' : ''}
+                ${recording.is_synced ? '<span class="badge bg-success ms-2">{{ ftl('common-synced') }}</span>' : ''}
+                ${recording.drupal_sync_status === 'sync_failed' ? '<span class="badge bg-danger ms-2">{{ ftl('common-failed') }}</span>' : ''}
                 <br>
                 <small class="text-muted">
-                    ${recording.duration || '{{ _("Unknown duration") }}'}
+                    ${recording.duration || '{{ ftl('drupal-unknown-duration') }}'}
                     ${recording.auditor_name ? `• ${recording.auditor_name}` : ''}
-                    ${recording.total_issues > 0 ? `• ${recording.total_issues} {{ _("issues") }}` : ''}
+                    ${recording.total_issues > 0 ? `• ${recording.total_issues} {{ ftl('common-issues') }}` : ''}
                 </small>
             </label>
         </div>
@@ -461,7 +461,7 @@ async function startPush() {
     const includeFrenchContent = document.getElementById('includeFrenchContent').checked;
 
     if (selectedPageIds.length === 0 && selectedRecordingIds.length === 0 && !includeAutomatedTests) {
-        alert('{{ _("Please select at least one item to upload.") }}');
+        alert('{{ ftl('drupal-please-select-at-least-one-item-to-upload') }}');
         return;
     }
 
@@ -522,7 +522,7 @@ async function startPush() {
         console.error('Push error:', error);
         document.getElementById('pushLog').innerHTML += `
             <div class="text-danger">
-                <strong>{{ _("Error:") }}</strong> ${error.message}
+                <strong>{{ ftl('common-error') }}</strong> ${error.message}
             </div>
         `;
     }
@@ -549,7 +549,7 @@ function handlePushMessage(data, totalItems) {
     } else if (data.type === 'error') {
         log.innerHTML += `<div class="text-danger">[${data.current}/${data.total}] ✗ ${data.item}: ${data.error}</div>`;
     } else if (data.type === 'complete') {
-        log.innerHTML += `<div class="text-success mt-3"><strong>{{ _("Upload complete!") }}</strong></div>`;
+        log.innerHTML += `<div class="text-success mt-3"><strong>{{ ftl('drupal-upload-complete') }}</strong></div>`;
     }
 
     log.scrollTop = log.scrollHeight;
@@ -577,7 +577,7 @@ async function importDiscoveredPages() {
 
     // Disable button and show progress
     btn.disabled = true;
-    btn.innerHTML = '<i class="bi bi-hourglass-split" aria-hidden="true"></i> {{ _("Importing...") }}';
+    btn.innerHTML = '<i class="bi bi-hourglass-split" aria-hidden="true"></i> {{ ftl('drupal-importing') }}';
     progress.style.display = 'block';
 
     try {
@@ -646,19 +646,19 @@ async function importDiscoveredPages() {
 
         // Re-enable button
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-cloud-arrow-down" aria-hidden="true"></i> {{ _("Pull Discovered Pages") }}';
+        btn.innerHTML = '<i class="bi bi-cloud-arrow-down" aria-hidden="true"></i> {{ ftl('drupal-pull-discovered-pages') }}';
 
     } catch (error) {
         console.error('Import error:', error);
 
         // Show error alert
         alert.className = 'alert alert-danger';
-        alert.querySelector('#importAlertMessage').textContent = `{{ _("Import failed:") }} ${error.message}`;
+        alert.querySelector('#importAlertMessage').textContent = `{{ ftl('drupal-import-failed') }} ${error.message}`;
         alert.style.display = 'block';
 
         progress.style.display = 'none';
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-cloud-arrow-down" aria-hidden="true"></i> {{ _("Pull Discovered Pages") }}';
+        btn.innerHTML = '<i class="bi bi-cloud-arrow-down" aria-hidden="true"></i> {{ ftl('drupal-pull-discovered-pages') }}';
     }
 }
 
@@ -691,7 +691,7 @@ async function loadAutomatedTestFilters() {
         const data = await response.json();
 
         // Populate page filter
-        pageFilter.innerHTML = '<option value="">{{ _("All Pages") }}</option>';
+        pageFilter.innerHTML = '<option value="">{{ ftl('common-all-pages') }}</option>';
         data.pages.forEach(page => {
             const option = document.createElement('option');
             option.value = page.url;
@@ -700,7 +700,7 @@ async function loadAutomatedTestFilters() {
         });
 
         // Populate touchpoint filter
-        touchpointFilter.innerHTML = '<option value="">{{ _("All Touchpoints") }}</option>';
+        touchpointFilter.innerHTML = '<option value="">{{ ftl('common-all-touchpoints') }}</option>';
         data.touchpoints.forEach(tp => {
             const option = document.createElement('option');
             option.value = tp;
@@ -709,7 +709,7 @@ async function loadAutomatedTestFilters() {
         });
 
         // Populate WCAG filter
-        wcagFilter.innerHTML = '<option value="">{{ _("All WCAG Criteria") }}</option>';
+        wcagFilter.innerHTML = '<option value="">{{ ftl('common-all-wcag-criteria') }}</option>';
         data.wcag_criteria.forEach(wc => {
             const option = document.createElement('option');
             option.value = wc;
@@ -724,14 +724,14 @@ async function loadAutomatedTestFilters() {
         automatedTestStats.filteredIssues = data.total_issues;
 
         summaryDiv.innerHTML = `
-            <strong>{{ _("Total:") }}</strong> ${data.total_pages} {{ _("pages with") }} ${data.total_issues} {{ _("issues") }}
+            <strong>{{ ftl('common-total') }}</strong> ${data.total_pages} {{ ftl('drupal-pages-with') }} ${data.total_issues} {{ ftl('common-issues') }}
             <br>
-            <strong>{{ _("Filtered:") }}</strong> <span id="filteredCount">${data.total_pages} {{ _("pages with") }} ${data.total_issues} {{ _("issues") }}</span>
+            <strong>{{ ftl('drupal-filtered') }}</strong> <span id="filteredCount">${data.total_pages} {{ ftl('drupal-pages-with') }} ${data.total_issues} {{ ftl('common-issues') }}</span>
         `;
 
     } catch (error) {
         console.error('Error loading automated test filters:', error);
-        summaryDiv.innerHTML = `<span class="text-danger">{{ _("Error loading test results:") }} ${error.message}</span>`;
+        summaryDiv.innerHTML = `<span class="text-danger">{{ ftl('drupal-error-loading-test-results') }} ${error.message}</span>`;
     }
 }
 
@@ -755,9 +755,9 @@ async function applyAutomatedTestFilters() {
     // Show loading
     summaryDiv.innerHTML = `
         <div class="spinner-border spinner-border-sm" role="status">
-            <span class="visually-hidden">{{ _("Loading...") }}</span>
+            <span class="visually-hidden">{{ ftl('common-loading') }}</span>
         </div>
-        <span class="ms-2">{{ _("Applying filters...") }}</span>
+        <span class="ms-2">{{ ftl('drupal-applying-filters') }}</span>
     `;
 
     try {
@@ -775,14 +775,14 @@ async function applyAutomatedTestFilters() {
         automatedTestStats.filteredIssues = data.total_violations;
 
         summaryDiv.innerHTML = `
-            <strong>{{ _("Total:") }}</strong> ${automatedTestStats.totalPages} {{ _("pages with") }} ${automatedTestStats.totalIssues} {{ _("issues") }}
+            <strong>{{ ftl('common-total') }}</strong> ${automatedTestStats.totalPages} {{ ftl('drupal-pages-with') }} ${automatedTestStats.totalIssues} {{ ftl('common-issues') }}
             <br>
-            <strong>{{ _("Filtered:") }}</strong> <span class="text-primary">${data.total_pages} {{ _("pages with") }} ${data.total_violations} {{ _("issues") }}</span>
+            <strong>{{ ftl('drupal-filtered') }}</strong> <span class="text-primary">${data.total_pages} {{ ftl('drupal-pages-with') }} ${data.total_violations} {{ ftl('common-issues') }}</span>
         `;
 
     } catch (error) {
         console.error('Error applying filters:', error);
-        summaryDiv.innerHTML = `<span class="text-danger">{{ _("Error applying filters:") }} ${error.message}</span>`;
+        summaryDiv.innerHTML = `<span class="text-danger">{{ ftl('drupal-error-applying-filters') }} ${error.message}</span>`;
     }
 }
 
@@ -800,9 +800,9 @@ function clearAutomatedTestFilters() {
 
     const summaryDiv = document.getElementById('automatedTestSummary');
     summaryDiv.innerHTML = `
-        <strong>{{ _("Total:") }}</strong> ${automatedTestStats.totalPages} {{ _("pages with") }} ${automatedTestStats.totalIssues} {{ _("issues") }}
+        <strong>{{ ftl('common-total') }}</strong> ${automatedTestStats.totalPages} {{ ftl('drupal-pages-with') }} ${automatedTestStats.totalIssues} {{ ftl('common-issues') }}
         <br>
-        <strong>{{ _("Filtered:") }}</strong> ${automatedTestStats.totalPages} {{ _("pages with") }} ${automatedTestStats.totalIssues} {{ _("issues") }}
+        <strong>{{ ftl('drupal-filtered') }}</strong> ${automatedTestStats.totalPages} {{ ftl('drupal-pages-with') }} ${automatedTestStats.totalIssues} {{ ftl('common-issues') }}
     `;
 }
 

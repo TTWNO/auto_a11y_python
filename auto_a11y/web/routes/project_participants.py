@@ -3,7 +3,7 @@ Routes for managing project participants (lived experience testers and test supe
 """
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify
-from flask_babel import gettext as _
+from auto_a11y.web.fluent import ftl
 from auto_a11y.models import LivedExperienceTester, TestSupervisor
 import logging
 
@@ -17,7 +17,7 @@ def list_participants(project_id):
     """List all lived experience testers and supervisors for a project"""
     project = current_app.db.get_project(project_id)
     if not project:
-        flash(_('Project not found'), 'error')
+        flash(ftl('common-project-not-found'), 'error')
         return redirect(url_for('index'))
 
     return render_template('project_participants/list.html',
@@ -33,7 +33,7 @@ def create_tester(project_id):
     """Create a new lived experience tester"""
     project = current_app.db.get_project(project_id)
     if not project:
-        flash(_('Project not found'), 'error')
+        flash(ftl('common-project-not-found'), 'error')
         return redirect(url_for('index'))
 
     if request.method == 'POST':
@@ -62,7 +62,7 @@ def create_tester(project_id):
 
         except Exception as e:
             logger.error(f"Error creating tester: {e}")
-            flash(_('Error creating tester: %(error)s', error=str(e)), 'error')
+            flash(ftl('projects-error-creating-tester-error', error=str(e)), 'error')
 
     return render_template('project_participants/create_tester.html', project=project)
 
@@ -72,12 +72,12 @@ def edit_tester(project_id, tester_id):
     """Edit a lived experience tester"""
     project = current_app.db.get_project(project_id)
     if not project:
-        flash(_('Project not found'), 'error')
+        flash(ftl('common-project-not-found'), 'error')
         return redirect(url_for('index'))
 
     tester = project.get_tester(tester_id)
     if not tester:
-        flash(_('Tester not found'), 'error')
+        flash(ftl('projects-tester-not-found'), 'error')
         return redirect(url_for('project_participants.list_participants', project_id=project_id))
 
     if request.method == 'POST':
@@ -104,7 +104,7 @@ def edit_tester(project_id, tester_id):
 
         except Exception as e:
             logger.error(f"Error updating tester: {e}")
-            flash(_('Error updating tester: %(error)s', error=str(e)), 'error')
+            flash(ftl('projects-error-updating-tester-error', error=str(e)), 'error')
 
     return render_template('project_participants/edit_tester.html',
                          project=project,
@@ -116,7 +116,7 @@ def delete_tester(project_id, tester_id):
     """Delete a lived experience tester"""
     project = current_app.db.get_project(project_id)
     if not project:
-        return jsonify({'error': _('Project not found')}), 404
+        return jsonify({'error': ftl('common-project-not-found')}), 404
 
     try:
         success = project.remove_tester(tester_id)
@@ -124,11 +124,11 @@ def delete_tester(project_id, tester_id):
             current_app.db.update_project(project)
             return jsonify({
                 'success': True,
-                'message': _('Tester deleted successfully'),
+                'message': ftl('projects-tester-deleted-successfully'),
                 'redirect': url_for('project_participants.list_participants', project_id=project_id)
             })
         else:
-            return jsonify({'error': _('Tester not found')}), 404
+            return jsonify({'error': ftl('projects-tester-not-found')}), 404
 
     except Exception as e:
         logger.error(f"Error deleting tester: {e}")
@@ -142,7 +142,7 @@ def create_supervisor(project_id):
     """Create a new test supervisor"""
     project = current_app.db.get_project(project_id)
     if not project:
-        flash(_('Project not found'), 'error')
+        flash(ftl('common-project-not-found'), 'error')
         return redirect(url_for('index'))
 
     if request.method == 'POST':
@@ -167,7 +167,7 @@ def create_supervisor(project_id):
 
         except Exception as e:
             logger.error(f"Error creating supervisor: {e}")
-            flash(_('Error creating supervisor: %(error)s', error=str(e)), 'error')
+            flash(ftl('projects-error-creating-supervisor-error', error=str(e)), 'error')
 
     return render_template('project_participants/create_supervisor.html', project=project)
 
@@ -177,12 +177,12 @@ def edit_supervisor(project_id, supervisor_id):
     """Edit a test supervisor"""
     project = current_app.db.get_project(project_id)
     if not project:
-        flash(_('Project not found'), 'error')
+        flash(ftl('common-project-not-found'), 'error')
         return redirect(url_for('index'))
 
     supervisor = project.get_supervisor(supervisor_id)
     if not supervisor:
-        flash(_('Supervisor not found'), 'error')
+        flash(ftl('projects-supervisor-not-found'), 'error')
         return redirect(url_for('project_participants.list_participants', project_id=project_id))
 
     if request.method == 'POST':
@@ -205,7 +205,7 @@ def edit_supervisor(project_id, supervisor_id):
 
         except Exception as e:
             logger.error(f"Error updating supervisor: {e}")
-            flash(_('Error updating supervisor: %(error)s', error=str(e)), 'error')
+            flash(ftl('projects-error-updating-supervisor-error', error=str(e)), 'error')
 
     return render_template('project_participants/edit_supervisor.html',
                          project=project,
@@ -217,7 +217,7 @@ def delete_supervisor(project_id, supervisor_id):
     """Delete a test supervisor"""
     project = current_app.db.get_project(project_id)
     if not project:
-        return jsonify({'error': _('Project not found')}), 404
+        return jsonify({'error': ftl('common-project-not-found')}), 404
 
     try:
         success = project.remove_supervisor(supervisor_id)
@@ -225,11 +225,11 @@ def delete_supervisor(project_id, supervisor_id):
             current_app.db.update_project(project)
             return jsonify({
                 'success': True,
-                'message': _('Supervisor deleted successfully'),
+                'message': ftl('projects-supervisor-deleted-successfully'),
                 'redirect': url_for('project_participants.list_participants', project_id=project_id)
             })
         else:
-            return jsonify({'error': _('Supervisor not found')}), 404
+            return jsonify({'error': ftl('projects-supervisor-not-found')}), 404
 
     except Exception as e:
         logger.error(f"Error deleting supervisor: {e}")

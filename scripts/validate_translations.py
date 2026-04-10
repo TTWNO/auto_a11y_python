@@ -1,31 +1,27 @@
 #!/usr/bin/env python3
 """
-Translation Validator for Auto A11y Python
+Translation Validator for Auto A11y Python (Fluent FTL format)
 
-Validates that ALL translation files are complete and correct.
-Every user-visible string must have a non-fuzzy French translation.
+Validates that ALL Fluent translation files are complete and correct.
+Every English message ID must have a corresponding French translation.
 
 Checks:
-  1. messages.po  — no fuzzy entries, no empty translations
-  2. messages.po  — compiles cleanly to .mo
-  3. issue_translations_fr.json — every English error code has a complete French entry
-  4. wcag_translations_fr.py — every WCAG criterion has a French translation
+  1. Every EN message ID has a corresponding FR message ID
+  2. No FR messages have empty values
+  3. No FTL files contain parse errors (Junk entries)
 
 Exit code 0 = all translations valid
 Exit code 1 = one or more translation issues found
 
 Usage:
-  python scripts/validate_translations.py          # full validation
-  python scripts/validate_translations.py --po     # .po file only (fast, for pre-commit)
+  python scripts/validate_translations.py
 """
 
-import argparse
-import importlib.util
-import json
 import os
-import re
 import sys
 from pathlib import Path
+
+from fluent.syntax import parse, ast as fluent_ast
 
 # ---------------------------------------------------------------------------
 # Paths (relative to repo root)
@@ -33,14 +29,8 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-PO_FILE = REPO_ROOT / "auto_a11y" / "web" / "translations" / "fr" / "LC_MESSAGES" / "messages.po"
-
-ISSUE_FR_JSON = REPO_ROOT / "auto_a11y" / "reporting" / "issue_translations_fr.json"
-ISSUE_EN_PY = REPO_ROOT / "auto_a11y" / "reporting" / "issue_descriptions_enhanced.py"
-
-WCAG_FR_PY = REPO_ROOT / "auto_a11y" / "reporting" / "wcag_translations_fr.py"
-
-REQUIRED_ISSUE_FIELDS = {"title", "what", "why", "who", "remediation"}
+EN_DIR = REPO_ROOT / "auto_a11y" / "web" / "translations" / "en"
+FR_DIR = REPO_ROOT / "auto_a11y" / "web" / "translations" / "fr"
 
 
 # ---------------------------------------------------------------------------
@@ -63,225 +53,139 @@ class ValidationResult:
         return len(self.errors) == 0
 
 
-def _load_module_from_file(path: Path, module_name: str):
-    """Import a Python module directly from file path, bypassing package __init__."""
-    spec = importlib.util.spec_from_file_location(module_name, str(path))
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
+def _collect_message_ids(ftl_dir: Path) -> dict[str, set[str]]:
+    """Parse all .ftl files in a directory and return {filename: set_of_message_ids}."""
+    result = {}
+    if not ftl_dir.is_dir():
+        return result
+
+    for ftl_file in sorted(ftl_dir.glob("*.ftl")):
+        source = ftl_file.read_text(encoding="utf-8")
+        resource = parse(source)
+        ids = set()
+        for entry in resource.body:
+            if isinstance(entry, fluent_ast.Message):
+                ids.add(entry.id.name)
+        result[ftl_file.name] = ids
+
+    return result
 
 
-# ---------------------------------------------------------------------------
-# 1. Validate messages.po
-# ---------------------------------------------------------------------------
+def _collect_message_values(ftl_dir: Path) -> dict[str, dict[str, str | None]]:
+    """Parse all .ftl files and return {filename: {msg_id: value_or_None}}."""
+    result = {}
+    if not ftl_dir.is_dir():
+        return result
 
-def validate_po_file(result: ValidationResult):
-    """Check that every entry in messages.po has a non-empty, non-fuzzy translation."""
+    for ftl_file in sorted(ftl_dir.glob("*.ftl")):
+        source = ftl_file.read_text(encoding="utf-8")
+        resource = parse(source)
+        entries = {}
+        for entry in resource.body:
+            if isinstance(entry, fluent_ast.Message):
+                if entry.value is None:
+                    entries[entry.id.name] = None
+                else:
+                    # Serialize the pattern elements to a string
+                    parts = []
+                    for elem in entry.value.elements:
+                        if isinstance(elem, fluent_ast.TextElement):
+                            parts.append(elem.value)
+                    entries[entry.id.name] = "".join(parts)
+        result[ftl_file.name] = entries
 
-    if not PO_FILE.exists():
-        result.error(f"PO file not found: {PO_FILE}")
-        return
+    return result
 
-    try:
-        from babel.messages.pofile import read_po
-    except ImportError:
-        result.error("babel is not installed — cannot parse .po file (pip install babel)")
-        return
 
-    with open(PO_FILE, "r", encoding="utf-8") as f:
-        catalog = read_po(f)
+def _check_for_junk(ftl_dir: Path) -> list[tuple[str, int]]:
+    """Return list of (filename, junk_count) for files with parse errors."""
+    junk_files = []
+    if not ftl_dir.is_dir():
+        return junk_files
 
-    fuzzy_entries: list[str] = []
-    empty_entries: list[str] = []
-
-    for message in catalog:
-        # Skip the header entry
-        if message.id == "":
-            continue
-
-        # Check fuzzy
-        if message.fuzzy:
-            fuzzy_entries.append(str(message.id)[:80])
-
-        # Check empty translation
-        if isinstance(message.string, str) and not message.string.strip():
-            empty_entries.append(str(message.id)[:80])
-        elif isinstance(message.string, tuple):
-            # Plural forms — every form must be translated
-            for i, form in enumerate(message.string):
-                if not form.strip():
-                    empty_entries.append(f"{str(message.id)[:60]} (plural form {i})")
-
-    if fuzzy_entries:
-        result.error(
-            f"messages.po: {len(fuzzy_entries)} FUZZY entries found — "
-            f"these will NOT be translated at runtime!\n"
-            + "\n".join(f"  - {e}" for e in fuzzy_entries)
+    for ftl_file in sorted(ftl_dir.glob("*.ftl")):
+        source = ftl_file.read_text(encoding="utf-8")
+        resource = parse(source)
+        junk_count = sum(
+            1 for entry in resource.body
+            if isinstance(entry, fluent_ast.Junk)
         )
+        if junk_count > 0:
+            junk_files.append((ftl_file.name, junk_count))
+
+    return junk_files
+
+
+# ---------------------------------------------------------------------------
+# Validation checks
+# ---------------------------------------------------------------------------
+
+def validate_coverage(result: ValidationResult):
+    """Check that every EN message ID has a corresponding FR message ID."""
+    en_ids_by_file = _collect_message_ids(EN_DIR)
+    fr_ids_by_file = _collect_message_ids(FR_DIR)
+
+    if not en_ids_by_file:
+        result.error(f"No EN .ftl files found in {EN_DIR}")
+        return
+
+    if not fr_ids_by_file:
+        result.error(f"No FR .ftl files found in {FR_DIR}")
+        return
+
+    # Flatten to global sets
+    all_en = set()
+    for ids in en_ids_by_file.values():
+        all_en.update(ids)
+
+    all_fr = set()
+    for ids in fr_ids_by_file.values():
+        all_fr.update(ids)
+
+    missing = sorted(all_en - all_fr)
+
+    if missing:
+        result.error(
+            f"{len(missing)} EN message(s) missing from FR translations:\n"
+            + "\n".join(f"  - {m}" for m in missing[:50])
+            + (f"\n  ... and {len(missing) - 50} more" if len(missing) > 50 else "")
+        )
+    else:
+        coverage = len(all_fr & all_en) / len(all_en) * 100 if all_en else 100
+        print(f"  [PASS] Coverage — {len(all_en)} EN messages, {len(all_fr)} FR messages, {coverage:.1f}% coverage")
+
+
+def validate_no_empty_values(result: ValidationResult):
+    """Check that no FR messages have empty/None values."""
+    fr_values = _collect_message_values(FR_DIR)
+
+    empty_entries = []
+    for filename, entries in fr_values.items():
+        for msg_id, value in entries.items():
+            if value is None or not value.strip():
+                empty_entries.append(f"{filename}:{msg_id}")
 
     if empty_entries:
         result.error(
-            f"messages.po: {len(empty_entries)} UNTRANSLATED entries found\n"
-            + "\n".join(f"  - {e}" for e in empty_entries)
-        )
-
-    if not fuzzy_entries and not empty_entries:
-        total = sum(1 for m in catalog if m.id)
-        print(f"  [PASS] messages.po — {total} entries, all translated, 0 fuzzy")
-
-
-# ---------------------------------------------------------------------------
-# 2. Validate .mo compilation
-# ---------------------------------------------------------------------------
-
-def validate_mo_file(result: ValidationResult):
-    """Check that messages.mo exists and can be compiled from the .po source."""
-
-    if not PO_FILE.exists():
-        return  # Already reported in validate_po_file
-
-    # The .mo is a build artifact (gitignored) compiled at app startup or in
-    # CI.  We just verify the .po compiles cleanly and produces a valid .mo.
-    try:
-        from babel.messages.pofile import read_po
-        from babel.messages.mofile import write_mo
-    except ImportError:
-        result.error("babel is not installed — cannot validate .mo file (pip install babel)")
-        return
-
-    try:
-        import tempfile
-        with open(PO_FILE, "r", encoding="utf-8") as f:
-            catalog = read_po(f)
-
-        with tempfile.NamedTemporaryFile(suffix=".mo", delete=False) as tmp:
-            tmp_path = Path(tmp.name)
-            write_mo(tmp, catalog)
-        tmp_path.unlink(missing_ok=True)
-
-        total = sum(1 for m in catalog if m.id and m.string)
-        print(f"  [PASS] messages.po compiles cleanly — {total} entries produce valid .mo")
-    except Exception as e:
-        result.error(f"messages.po failed to compile: {e}")
-
-
-# ---------------------------------------------------------------------------
-# 3. Validate issue_translations_fr.json
-# ---------------------------------------------------------------------------
-
-def _extract_english_error_codes() -> set[str]:
-    """Extract all error codes defined in issue_descriptions_enhanced.py."""
-
-    if not ISSUE_EN_PY.exists():
-        return set()
-
-    source = ISSUE_EN_PY.read_text(encoding="utf-8")
-
-    # Error codes are dictionary keys in the descriptions dict.
-    # Pattern: 'ErrSomething': { or 'AI_ErrSomething': { or 'WarnSomething': { etc.
-    codes = re.findall(
-        r"'((?:Err|Warn|Info|Disco|AI_Err|AI_Warn|AI_Info)[A-Za-z0-9_]+)'\s*:",
-        source,
-    )
-    return set(codes)
-
-
-def validate_issue_translations(result: ValidationResult):
-    """Check that every English error code has a complete French translation."""
-
-    if not ISSUE_FR_JSON.exists():
-        result.error(f"Issue translations file not found: {ISSUE_FR_JSON}")
-        return
-
-    with open(ISSUE_FR_JSON, "r", encoding="utf-8") as f:
-        fr_data = json.load(f)
-
-    # Get French main codes (exclude _what suffix entries)
-    fr_codes = {k for k in fr_data if not k.endswith("_what")}
-
-    # Get English codes
-    en_codes = _extract_english_error_codes()
-
-    if not en_codes:
-        result.warning(
-            "Could not extract English error codes from "
-            f"{ISSUE_EN_PY} — skipping cross-reference check"
+            f"{len(empty_entries)} FR message(s) have empty values:\n"
+            + "\n".join(f"  - {e}" for e in empty_entries[:50])
+            + (f"\n  ... and {len(empty_entries) - 50} more" if len(empty_entries) > 50 else "")
         )
     else:
-        missing = en_codes - fr_codes
-        if missing:
-            result.error(
-                f"issue_translations_fr.json: {len(missing)} error codes "
-                f"have no French translation\n"
-                + "\n".join(f"  - {c}" for c in sorted(missing))
-            )
-
-    # Check that each French entry has all required fields
-    incomplete: list[str] = []
-    empty_fields: list[str] = []
-    for code, entry in fr_data.items():
-        if code.endswith("_what"):
-            continue
-        if not isinstance(entry, dict):
-            incomplete.append(f"{code} (not a dict)")
-            continue
-        missing_fields = REQUIRED_ISSUE_FIELDS - set(entry.keys())
-        if missing_fields:
-            incomplete.append(f"{code} missing: {', '.join(sorted(missing_fields))}")
-        # Check for empty string values
-        for field in REQUIRED_ISSUE_FIELDS:
-            if field in entry and isinstance(entry[field], str) and not entry[field].strip():
-                empty_fields.append(f"{code}.{field}")
-
-    if incomplete:
-        result.error(
-            f"issue_translations_fr.json: {len(incomplete)} entries with missing fields\n"
-            + "\n".join(f"  - {e}" for e in incomplete)
-        )
-
-    if empty_fields:
-        result.error(
-            f"issue_translations_fr.json: {len(empty_fields)} empty field values\n"
-            + "\n".join(f"  - {e}" for e in empty_fields)
-        )
-
-    if not missing and not incomplete and not empty_fields:
-        print(
-            f"  [PASS] issue_translations_fr.json — "
-            f"{len(fr_codes)} codes, all complete "
-            f"({len(en_codes)} English codes covered)"
-        )
-    elif not en_codes and not incomplete and not empty_fields:
-        print(f"  [PASS] issue_translations_fr.json — {len(fr_codes)} codes, all fields present")
+        total = sum(len(entries) for entries in fr_values.values())
+        print(f"  [PASS] No empty values — {total} FR messages all have content")
 
 
-# ---------------------------------------------------------------------------
-# 4. Validate wcag_translations_fr.py
-# ---------------------------------------------------------------------------
-
-def validate_wcag_translations(result: ValidationResult):
-    """Check that WCAG French translations have no empty values."""
-
-    if not WCAG_FR_PY.exists():
-        result.error(f"WCAG translations file not found: {WCAG_FR_PY}")
-        return
-
-    mod = _load_module_from_file(WCAG_FR_PY, "wcag_translations_fr")
-
-    if not hasattr(mod, "WCAG_TRANSLATIONS_FR"):
-        result.error("wcag_translations_fr.py: WCAG_TRANSLATIONS_FR dict not found")
-        return
-
-    translations = mod.WCAG_TRANSLATIONS_FR
-    empty = [k for k, v in translations.items() if not v or not v.strip()]
-
-    if empty:
-        result.error(
-            f"wcag_translations_fr.py: {len(empty)} entries with empty French translation\n"
-            + "\n".join(f"  - {k}" for k in empty)
-        )
-    else:
-        print(f"  [PASS] wcag_translations_fr.py — {len(translations)} criteria translated")
+def validate_no_parse_errors(result: ValidationResult):
+    """Check that no FTL files contain Junk (parse errors)."""
+    for label, ftl_dir in [("EN", EN_DIR), ("FR", FR_DIR)]:
+        junk_files = _check_for_junk(ftl_dir)
+        if junk_files:
+            details = "\n".join(f"  - {name}: {count} junk entry(ies)" for name, count in junk_files)
+            result.error(f"{label} FTL files have parse errors:\n{details}")
+        else:
+            file_count = len(list(ftl_dir.glob("*.ftl"))) if ftl_dir.is_dir() else 0
+            print(f"  [PASS] {label} FTL files — {file_count} file(s), no parse errors")
 
 
 # ---------------------------------------------------------------------------
@@ -289,36 +193,24 @@ def validate_wcag_translations(result: ValidationResult):
 # ---------------------------------------------------------------------------
 
 def main():
-    parser = argparse.ArgumentParser(description="Validate all translation files")
-    parser.add_argument(
-        "--po",
-        action="store_true",
-        help="Only validate messages.po (fast check for pre-commit)",
-    )
-    args = parser.parse_args()
-
     result = ValidationResult()
 
     print()
     print("=" * 60)
-    print("  Translation Validation")
+    print("  Translation Validation (Fluent FTL)")
     print("=" * 60)
     print()
 
-    # Always check .po
-    validate_po_file(result)
-    validate_mo_file(result)
-
-    if not args.po:
-        validate_issue_translations(result)
-        validate_wcag_translations(result)
+    validate_coverage(result)
+    validate_no_empty_values(result)
+    validate_no_parse_errors(result)
 
     print()
 
     if result.warnings:
         print("WARNINGS:")
         for w in result.warnings:
-            print(f"  ⚠ {w}")
+            print(f"  WARNING: {w}")
         print()
 
     if result.ok:
@@ -330,10 +222,10 @@ def main():
     else:
         print("ERRORS:")
         for e in result.errors:
-            print(f"  ✗ {e}")
+            print(f"  FAIL: {e}")
         print()
         print("=" * 60)
-        print(f"  VALIDATION FAILED — {len(result.errors)} error(s)")
+        print(f"  VALIDATION FAILED -- {len(result.errors)} error(s)")
         print("=" * 60)
         print()
         return 1

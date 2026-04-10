@@ -60,14 +60,14 @@
                 <a href="{{ url_for('pages.view_page', page_id=page.id) }}">{{ page.title or ftl('common-page-2') }}</a>
             </li>
             {% endif %}
-            <li class="breadcrumb-item active" aria-current="page">{{ ftl('scripts-create-type-script', type=(_('Website') if is_website_script else ftl('common-page-2'))) }}</li>
+            <li class="breadcrumb-item active" aria-current="page">{{ ftl('scripts-create-type-script', type=(ftl('common-website-2') if is_website_script else ftl('common-page-2'))) }}</li>
         </ol>
     </nav>
 
     <div class="row">
         <div class="col-lg-10 col-xl-8">
             <h1 class="mb-4">
-                <i class="bi bi-code-square" aria-hidden="true"></i> {{ ftl('scripts-create-level-setup-script', level=(_('Website-Level') if is_website_script else ftl('scripts-page-level'))) }}
+                <i class="bi bi-code-square" aria-hidden="true"></i> {{ ftl('scripts-create-level-setup-script', level=(ftl('scripts-website-level') if is_website_script else ftl('scripts-page-level'))) }}
             </h1>
 
             <div class="alert alert-info">

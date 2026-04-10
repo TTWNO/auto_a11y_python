@@ -130,35 +130,6 @@ def download_browser():
         return False
 
 
-def compile_translations():
-    """Compile .po translation files to .mo binary format."""
-    logger = logging.getLogger(__name__)
-    po_file = Path(__file__).parent / "auto_a11y" / "web" / "translations" / "fr" / "LC_MESSAGES" / "messages.po"
-    mo_file = po_file.with_suffix(".mo")
-
-    if not po_file.exists():
-        logger.warning(f"Translation source not found: {po_file}")
-        return
-
-    # Skip if .mo is already up to date
-    if mo_file.exists() and mo_file.stat().st_mtime >= po_file.stat().st_mtime:
-        return
-
-    try:
-        from babel.messages.pofile import read_po
-        from babel.messages.mofile import write_mo
-
-        with open(po_file, "r", encoding="utf-8") as f:
-            catalog = read_po(f)
-        with open(mo_file, "wb") as f:
-            write_mo(f, catalog)
-        logger.info("Compiled translations: messages.po -> messages.mo")
-    except ImportError:
-        logger.warning("babel not installed — skipping translation compilation")
-    except Exception as e:
-        logger.warning(f"Failed to compile translations: {e}")
-
-
 def main():
     """Main application entry point"""
     parser = argparse.ArgumentParser(description='Auto A11y Python - Accessibility Testing Tool')
@@ -195,9 +166,6 @@ def main():
     
     # Initialize directories
     init_directories()
-
-    # Compile translations (.po -> .mo) if needed
-    compile_translations()
 
     # In desktop mode, redirect log file to USER_DATA_DIR
     if config.DESKTOP_MODE and config.USER_DATA_DIR:

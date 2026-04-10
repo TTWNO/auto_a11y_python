@@ -27,7 +27,6 @@ venv/
 ENV/
 env/
 .venv
-*.mo
 
 # IDE
 .idea/

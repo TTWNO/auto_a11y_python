@@ -43,9 +43,6 @@ RUN python -m playwright install chromium chromium-headless-shell
 # Copy application code
 COPY . .
 
-# Compile translations
-RUN pybabel compile -f -d auto_a11y/web/translations
-
 # Create required directories
 RUN mkdir -p data reports screenshots logs temp
 

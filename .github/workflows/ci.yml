@@ -44,6 +44,10 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
+    - name: Validate translations
+      run: |
+        python scripts/validate_translations.py
+
     - name: Install Playwright browsers
       run: |
         python -m playwright install chromium

@@ -1059,7 +1059,8 @@
     "title": "L'élément iframe ne contient pas l'attribut title requis",
     "why": "Les iframes intègrent du contenu externe comme des vidéos, cartes ou formulaires dans votre page. Sans attribut title, les utilisateurs de lecteurs d'écran n'entendent que « iframe » sans indication du contenu qu'elle contient. C'est comme avoir une porte sans étiquette - les utilisateurs ne savent pas ce qu'il y a derrière. Ils doivent entrer dans l'iframe et explorer son contenu pour comprendre son objectif, ce qui prend du temps et peut être déroutant si le contenu de l'iframe manque de contexte. Pour les pages avec plusieurs iframes, les utilisateurs ne peuvent pas les distinguer ou décider lesquelles valent la peine d'être explorées.",
     "who": "Utilisateurs de lecteurs d'écran qui ont besoin de comprendre ce que contient chaque iframe avant de décider d'interagir avec elle, utilisateurs de clavier naviguant à travers les iframes qui ont besoin de contexte sur le contenu intégré, utilisateurs avec des handicaps cognitifs qui ont besoin d'un étiquetage clair de toutes les régions de la page, et utilisateurs avec des connexions lentes qui peuvent subir des retards de chargement du contenu iframe",
-    "remediation": "Ajoutez un attribut title à chaque iframe qui décrit de manière concise son contenu ou son objectif (ex. : title=\\\"Vidéo YouTube : Démonstration produit\\\", title=\\\"Google Maps : Localisation bureau\\\", title=\\\"Formulaire de paiement\\\"). Le titre doit être unique s'il y a plusieurs iframes. Gardez-le bref mais suffisamment descriptif pour que les utilisateurs comprennent ce que contient l'iframe sans avoir à y entrer. Pour les iframes décoratives (rares), vous pouvez utiliser title=\\\"\\\" et ajouter tabindex=\\\"-1\\\" pour les retirer de l'ordre de tabulation."
+    "remediation": "Ajoutez un attribut title à chaque iframe qui décrit de manière concise son contenu ou son objectif (ex. : title=\\\"Vidéo YouTube : Démonstration produit\\\", title=\\\"Google Maps : Localisation bureau\\\", title=\\\"Formulaire de paiement\\\"). Le titre doit être unique s'il y a plusieurs iframes. Gardez-le bref mais suffisamment descriptif pour que les utilisateurs comprennent ce que contient l'iframe sans avoir à y entrer. Pour les iframes décoratives (rares), vous pouvez utiliser title=\\\"\\\" et ajouter tabindex=\\\"-1\\\" pour les retirer de l'ordre de tabulation.",
+    "what": "L'élément iframe ne contient pas l'attribut title requis"
   },
   "ErrImageAltContainsHTML": {
     "title": "Le texte alternatif de l'image contient des balises de marquage HTML",
@@ -1378,6 +1379,7 @@
     "what": "Région repère principale imbriquée dans une autre région repère",
     "why": "L'imbrication invalide de régions repères brise la structure",
     "who": "Utilisateurs de lecteurs d'écran",
+    "remediation": "Déplacez l'élément main en dehors des autres régions repères",
     "what_generic": "Région repère principale imbriquée dans une autre région repère"
   },
   "ErrMapAriaHidden": {
@@ -1393,7 +1395,8 @@
     "what": "La carte a un nom générique comme \\\"carte\\\", \\\"image\\\", ou \\\"localisation\\\" qui ne décrit pas son objectif",
     "why": "Les noms génériques ne transmettent pas ce que la carte montre ou représente, laissant les utilisateurs de lecteurs d'écran sans contexte utile.",
     "who": "Utilisateurs de lecteurs d'écran qui ont besoin de noms descriptifs pour comprendre l'objectif du contenu.",
-    "what_generic": "La carte a un nom générique comme \\\"carte\\\", \\\"image\\\", ou \\\"localisation\\\" qui ne décrit pas son objectif"
+    "what_generic": "La carte a un nom générique comme \\\"carte\\\", \\\"image\\\", ou \\\"localisation\\\" qui ne décrit pas son objectif",
+    "remediation": "Utilisez des noms descriptifs qui expliquent ce que la carte affiche (ex. : « Carte montrant l'emplacement du bureau au centre-ville » au lieu de simplement « carte »)."
   },
   "ErrMapMissingTitle": {
     "title": "Iframe de carte manque l'attribut title",
@@ -1667,7 +1670,8 @@
     "what": "Image sans attribut alt",
     "who": "Utilisateurs aveugles et malvoyants utilisant des lecteurs d'écran, utilisateurs avec images désactivées.",
     "remediation": "Ajouter un attribut alt à tous les éléments img ; utiliser alt=\\\"\\\" pour les images décoratives, un texte descriptif pour les images informatives.",
-    "what_generic": "Image sans attribut alt"
+    "what_generic": "Image sans attribut alt",
+    "why": "Sans attribut alt, les lecteurs d'écran ne peuvent transmettre aucune information sur les images aux utilisateurs."
   },
   "ErrNoBannerLandmarkOnPage": {
     "title": "La page ne contient pas de région repère bannière pour identifier la région d'en-tête du site",
@@ -2071,7 +2075,8 @@
     "what": "tabindex=\\\"0\\\" sur un élément non-interactif",
     "who": "Utilisateurs de clavier",
     "remediation": "Supprimez tabindex des éléments non-interactifs",
-    "what_generic": "tabindex=\\\"0\\\" sur un élément non-interactif"
+    "what_generic": "tabindex=\\\"0\\\" sur un élément non-interactif",
+    "why": "Les éléments non-interactifs dans l'ordre de tabulation perturbent la navigation au clavier et créent des attentes d'interactivité qui ne sont pas satisfaites."
   },
   "ErrTabindexOutlineNoneNoBoxShadow": {
     "title": "Élément avec tabindex supprime le contour sans fournir d'indicateur de focus alternatif (box-shadow, changement de bordure, etc.)",

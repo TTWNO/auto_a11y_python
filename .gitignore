@@ -27,7 +27,7 @@ venv/
 ENV/
 env/
 .venv
-messages.mo
+*.mo
 
 # IDE
 .idea/

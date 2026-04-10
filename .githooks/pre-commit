@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+#
+# Pre-commit hook: block commits that introduce translation problems.
+#
+# Checks for:
+#   - Fuzzy entries in messages.po (ALWAYS blocked)
+#   - Empty/untranslated entries in messages.po (ALWAYS blocked)
+#   - Stale .mo file when .po has been modified
+#
+# Install: git config core.hooksPath .githooks
+#
+
+set -euo pipefail
+
+PO_FILE="auto_a11y/web/translations/fr/LC_MESSAGES/messages.po"
+MO_FILE="auto_a11y/web/translations/fr/LC_MESSAGES/messages.mo"
+
+# ---------------------------------------------------------------------------
+# Only run translation checks if translation files are being committed
+# ---------------------------------------------------------------------------
+
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
+
+TRANSLATION_CHANGED=false
+for f in $STAGED_FILES; do
+    case "$f" in
+        *.po|*.pot|*.mo|*issue_translations_fr*|*wcag_translations_fr*)
+            TRANSLATION_CHANGED=true
+            break
+            ;;
+    esac
+done
+
+if [ "$TRANSLATION_CHANGED" = false ]; then
+    exit 0
+fi
+
+echo "Translation files changed — running validation..."
+echo
+
+# ---------------------------------------------------------------------------
+# Find Python — prefer .venv, fall back to system
+# ---------------------------------------------------------------------------
+
+if [ -x ".venv/bin/python" ]; then
+    PYTHON=".venv/bin/python"
+elif command -v python3 &>/dev/null; then
+    PYTHON="python3"
+else
+    PYTHON="python"
+fi
+
+# ---------------------------------------------------------------------------
+# Run the validator (--po for fast check on .po-only changes,
+# full check if issue/WCAG translation files changed)
+# ---------------------------------------------------------------------------
+
+FULL_CHECK=false
+for f in $STAGED_FILES; do
+    case "$f" in
+        *issue_translations_fr*|*wcag_translations_fr*)
+            FULL_CHECK=true
+            break
+            ;;
+    esac
+done
+
+if [ "$FULL_CHECK" = true ]; then
+    $PYTHON scripts/validate_translations.py
+else
+    $PYTHON scripts/validate_translations.py --po
+fi
+
+RESULT=$?
+
+if [ $RESULT -ne 0 ]; then
+    echo
+    echo "COMMIT BLOCKED: Translation validation failed."
+    echo "Fix the issues above before committing."
+    echo
+    exit 1
+fi
+
+exit 0

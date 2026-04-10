@@ -100,6 +100,77 @@ def lazy_ftl(message_id: str, **kwargs):
 
 
 # ---------------------------------------------------------------------------
+# Issue description & WCAG helpers
+# ---------------------------------------------------------------------------
+
+# Lazy-loaded map: English text -> FTL message ID (for inline issue translations)
+_inline_issue_ids: dict | None = None
+
+
+def _load_inline_issue_ids() -> dict:
+    """Load the inline issue ID map from the JSON file (once)."""
+    global _inline_issue_ids
+    if _inline_issue_ids is None:
+        import json
+        map_path = os.path.join(os.path.dirname(__file__), 'translations', 'inline_issue_ids.json')
+        try:
+            with open(map_path, 'r', encoding='utf-8') as f:
+                _inline_issue_ids = json.load(f)
+        except FileNotFoundError:
+            logger.warning("inline_issue_ids.json not found at %s", map_path)
+            _inline_issue_ids = {}
+    return _inline_issue_ids
+
+
+def ftl_issue(code: str, field: str, **kwargs) -> Markup | str:
+    """Get an issue description field via Fluent attribute.
+
+    Usage::
+
+        ftl_issue('ErrNoAlt', 'title')
+        ftl_issue('ErrNoAlt', 'what-generic')
+    """
+    return ftl_attr(code, field, **kwargs)
+
+
+def ftl_wcag(criterion_name: str) -> Markup | str:
+    """Get a WCAG criterion name translation via Fluent.
+
+    Converts a criterion name like ``'Non-text Content'`` to the FTL message
+    ID ``wcag-non-text-content`` and resolves it.
+    """
+    import re
+    slug = criterion_name.lower().strip()
+    slug = re.sub(r'[^a-z0-9]+', '-', slug)
+    slug = slug.strip('-')
+    msg_id = f'wcag-{slug}'
+    return ftl(msg_id)
+
+
+def ftl_translate_issue(text: str) -> str:
+    """Translate an inline issue description string via Fluent.
+
+    Looks up the English text in the inline issue ID map, resolves the
+    corresponding FTL message, and returns the translated string.
+    Falls back to the original text if no mapping exists.
+
+    This replaces the old ``translate_issue`` Jinja2 filter.
+    """
+    if not text:
+        return text or ''
+    id_map = _load_inline_issue_ids()
+    ftl_id = id_map.get(text)
+    if ftl_id is None:
+        # No mapping — return original text
+        return text
+    result = ftl(ftl_id)
+    # If ftl() returned the message ID (miss), fall back to original text
+    if isinstance(result, str) and result == ftl_id:
+        return text
+    return str(result)
+
+
+# ---------------------------------------------------------------------------
 # Initialization
 # ---------------------------------------------------------------------------
 
@@ -117,6 +188,9 @@ def init_fluent(app):
     app.jinja_env.globals['ftl'] = ftl
     app.jinja_env.globals['ftl_attr'] = ftl_attr
     app.jinja_env.globals['lazy_ftl'] = lazy_ftl
+    app.jinja_env.globals['ftl_issue'] = ftl_issue
+    app.jinja_env.globals['ftl_wcag'] = ftl_wcag
+    app.jinja_env.globals['ftl_translate_issue'] = ftl_translate_issue
 
     # Template filters
     app.jinja_env.filters['datetimeformat'] = _datetimeformat_filter

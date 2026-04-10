@@ -36,8 +36,6 @@ from auto_a11y.web.routes import (
     desktop_bp
 )
 from auto_a11y.web.routes.demo import demo_bp
-from auto_a11y.reporting.issue_translations_inline import ISSUE_DESCRIPTION_TRANSLATIONS_FR
-from auto_a11y.reporting.wcag_translations_fr import WCAG_TRANSLATIONS_FR
 
 logger = logging.getLogger(__name__)
 
@@ -211,8 +209,6 @@ def create_app(config):
 
         current_locale = get_locale()
         t = dynamic_translations.get(current_locale, dynamic_translations['en'])
-        wcag_fr = WCAG_TRANSLATIONS_FR if current_locale == 'fr' else {}
-        issue_fr = ISSUE_DESCRIPTION_TRANSLATIONS_FR if current_locale == 'fr' else {}
 
         return dict(
             get_locale=get_locale,
@@ -220,8 +216,6 @@ def create_app(config):
             current_user=current_user,
             t=t,  # Translation dictionary for dynamic strings
             translations=dynamic_translations,  # Full translations dict for JS
-            wcag_fr=wcag_fr,  # French WCAG translations
-            issue_fr=issue_fr,  # French issue description translations
             microsoft_sso_enabled=config.MICROSOFT_SSO_ENABLED,
             google_sso_enabled=config.GOOGLE_SSO_ENABLED,
             smtp_enabled=config.SMTP_ENABLED,
@@ -395,7 +389,7 @@ def create_app(config):
     def wcag_name(criterion):
         """Extract just the name from a WCAG criterion string (e.g., '2.4.8 Location (Level AAA)' -> 'Location')
 
-        Returns translated name in French locale if available.
+        Returns translated name via Fluent (supports EN/FR).
         """
         # Handle both full format "2.4.8 Location (Level AAA)" and short format "2.4.8"
         if not criterion:
@@ -414,27 +408,27 @@ def create_app(config):
                 name_parts.append(part)
             english_name = ' '.join(name_parts) if name_parts else parts[0]
 
-            # Return French translation if in French locale
-            current_locale = get_locale()
-            if current_locale == 'fr' and english_name in WCAG_TRANSLATIONS_FR:
-                return WCAG_TRANSLATIONS_FR[english_name]
+            # Resolve via Fluent (handles locale automatically)
+            from auto_a11y.web.fluent import ftl_wcag
+            result = ftl_wcag(english_name)
+            # ftl_wcag returns Markup on success, plain str message ID on miss
+            if result and str(result) != english_name:
+                return result
             return english_name
 
         return criterion
 
     @app.template_filter('translate_issue')
     def translate_issue(text):
-        """Translate issue description text to French if in French locale.
+        """Translate issue description text via Fluent.
 
         Falls back to original text if no translation is found.
         """
         if not text:
             return text
 
-        current_locale = get_locale()
-        if current_locale == 'fr':
-            return ISSUE_DESCRIPTION_TRANSLATIONS_FR.get(text, text)
-        return text
+        from auto_a11y.web.fluent import ftl_translate_issue
+        return ftl_translate_issue(text)
 
     # Main routes
     @app.route('/')

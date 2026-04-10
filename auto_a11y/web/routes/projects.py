@@ -7,6 +7,7 @@ from flask_babel import gettext as _, get_locale, lazy_gettext
 from flask_login import login_required
 from flask import g
 from auto_a11y.models import Project, ProjectStatus, ProjectType
+from auto_a11y.models.page import PageStatus
 from auto_a11y.models.app_user import UserRole
 from auto_a11y.web.routes.auth import auditor_required, project_role_required, get_effective_role
 from auto_a11y.core.job_manager import JobManager, JobType, JobStatus
@@ -500,8 +501,25 @@ def view_project(project_id):
     website_stats = {}
     for website in websites:
         pages = current_app.db.get_pages(website.id)
-        violations = sum(page.violation_count for page in pages)
-        warnings = sum(page.warning_count for page in pages)
+        tested_page_ids = [p.id for p in pages if p.status == PageStatus.TESTED]
+
+        # Aggregate counts from test_results (source of truth)
+        violations = 0
+        warnings = 0
+        if tested_page_ids:
+            pipeline = [
+                {'$match': {'page_id': {'$in': tested_page_ids}}},
+                {'$sort': {'test_date': -1}},
+                {'$group': {
+                    '_id': '$page_id',
+                    'violation_count': {'$first': {'$ifNull': ['$violation_count', 0]}},
+                    'warning_count': {'$first': {'$ifNull': ['$warning_count', 0]}},
+                }},
+            ]
+            for result in current_app.db.test_results.aggregate(pipeline):
+                violations += result.get('violation_count', 0)
+                warnings += result.get('warning_count', 0)
+
         website_stats[website.id] = {
             'violations': violations,
             'warnings': warnings

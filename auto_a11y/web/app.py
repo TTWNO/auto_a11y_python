@@ -484,10 +484,31 @@ def create_app(config):
                 total_pages = 0
                 tested_pages = 0
 
-        total_violations = sum(p.get('violation_count', 0) for p in pages)
-        total_warnings = sum(p.get('warning_count', 0) for p in pages)
-        total_info = sum(p.get('info_count', 0) for p in pages)
-        total_discovery = sum(p.get('discovery_count', 0) for p in pages)
+        # Aggregate issue counts from test_results (source of truth).
+        # Each tested page's latest result has violation_count, warning_count, etc.
+        page_ids = [str(p['_id']) for p in pages]
+        if page_ids:
+            pipeline = [
+                {'$match': {'page_id': {'$in': page_ids}}},
+                {'$sort': {'test_date': -1}},
+                {'$group': {
+                    '_id': '$page_id',
+                    'violation_count': {'$first': {'$ifNull': ['$violation_count', 0]}},
+                    'warning_count': {'$first': {'$ifNull': ['$warning_count', 0]}},
+                    'info_count': {'$first': {'$ifNull': ['$info_count', 0]}},
+                    'discovery_count': {'$first': {'$ifNull': ['$discovery_count', 0]}},
+                }},
+            ]
+            latest_results = list(app.db.test_results.aggregate(pipeline))
+            total_violations = sum(r.get('violation_count', 0) for r in latest_results)
+            total_warnings = sum(r.get('warning_count', 0) for r in latest_results)
+            total_info = sum(r.get('info_count', 0) for r in latest_results)
+            total_discovery = sum(r.get('discovery_count', 0) for r in latest_results)
+        else:
+            total_violations = 0
+            total_warnings = 0
+            total_info = 0
+            total_discovery = 0
 
         stats = {
             'projects': len(user_projects),

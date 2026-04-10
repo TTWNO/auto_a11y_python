@@ -136,7 +136,7 @@ def validate_po_file(result: ValidationResult):
 # ---------------------------------------------------------------------------
 
 def validate_mo_file(result: ValidationResult):
-    """Check that messages.mo exists and is not older than messages.po."""
+    """Check that messages.mo exists and matches the current messages.po content."""
 
     if not PO_FILE.exists():
         return  # Already reported in validate_po_file
@@ -148,16 +148,38 @@ def validate_mo_file(result: ValidationResult):
         )
         return
 
-    po_mtime = PO_FILE.stat().st_mtime
-    mo_mtime = MO_FILE.stat().st_mtime
+    # Compile .po to a temp .mo and compare with the committed .mo.
+    # This is reliable regardless of filesystem mtime (git checkout
+    # does not preserve original timestamps, so mtime comparison
+    # breaks in CI).
+    import tempfile
+    try:
+        from babel.messages.pofile import read_po
+        from babel.messages.mofile import write_mo
+    except ImportError:
+        result.error("babel is not installed — cannot validate .mo file (pip install babel)")
+        return
 
-    if mo_mtime < po_mtime:
-        result.error(
-            f"messages.mo is STALE — .po file is newer than compiled .mo.\n"
-            f"  Run: pybabel compile -f -d auto_a11y/web/translations"
-        )
-    else:
-        print("  [PASS] messages.mo — compiled and up to date")
+    with open(PO_FILE, "r", encoding="utf-8") as f:
+        catalog = read_po(f)
+
+    with tempfile.NamedTemporaryFile(suffix=".mo", delete=False) as tmp:
+        tmp_path = Path(tmp.name)
+        write_mo(tmp, catalog)
+
+    try:
+        expected = tmp_path.read_bytes()
+        actual = MO_FILE.read_bytes()
+
+        if expected != actual:
+            result.error(
+                f"messages.mo is STALE — compiled output does not match .po content.\n"
+                f"  Run: pybabel compile -f -d auto_a11y/web/translations"
+            )
+        else:
+            print("  [PASS] messages.mo — compiled and up to date")
+    finally:
+        tmp_path.unlink(missing_ok=True)
 
 
 # ---------------------------------------------------------------------------

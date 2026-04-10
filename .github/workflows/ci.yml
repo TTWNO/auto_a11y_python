@@ -44,8 +44,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-    - name: Validate translations
+    - name: Compile and validate translations
       run: |
+        pybabel compile -f -d auto_a11y/web/translations
         python scripts/validate_translations.py
 
     - name: Install Playwright browsers

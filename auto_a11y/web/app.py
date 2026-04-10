@@ -128,6 +128,10 @@ def create_app(config):
         return _markup_escape(translated)
     app.jinja_env.globals['ngettext'] = _escaped_ngettext
 
+    # Initialize Fluent (Project Fluent) — runs alongside Babel during migration
+    from auto_a11y.web.fluent import init_fluent
+    init_fluent(app)
+
     # Add datetime format filter for templates
     @app.template_filter('datetimeformat')
     def datetimeformat_filter(value, format='medium'):

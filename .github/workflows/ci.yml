@@ -104,15 +104,22 @@ jobs:
         from auto_a11y.core.database import Database
         from auto_a11y.models.app_user import AppUser, UserRole
         from config import config
+
+        email = os.environ['CI_USERNAME']
+        password = os.environ['CI_PASSWORD']
+        print(f'Creating admin: {email}')
+        print(f'Database: {config.DATABASE_NAME}')
+
         db = Database(config.MONGODB_URI, config.DATABASE_NAME)
-        user = AppUser.create(
-            email=os.environ['CI_USERNAME'],
-            password=os.environ['CI_PASSWORD'],
-            role=UserRole.ADMIN,
-        )
+        user = AppUser.create(email=email, password=password, role=UserRole.ADMIN)
         user.is_superadmin = True
         db.create_app_user(user)
-        print(f'CI admin user created: {user.email}')
+
+        # Verify the user can be found and password works
+        found = db.get_app_user_by_email(email)
+        assert found is not None, f'User {email} not found after creation!'
+        assert found.check_password(password), 'Password verification failed!'
+        print(f'Verified: user {found.email} exists and password is correct')
         "
 
     - name: Run pytest

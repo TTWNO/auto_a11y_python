@@ -256,6 +256,9 @@ def login(session, creds):
         match = re.search(r'type="hidden"[^>]*value="([^"]+)"', resp.text)
     csrf = match.group(1) if match else ""
 
+    if not csrf:
+        print("  WARNING: No CSRF token found on login page")
+
     resp = session.post(
         f"{BASE_URL}/auth/login",
         data={
@@ -265,14 +268,25 @@ def login(session, creds):
         },
         allow_redirects=True,
     )
+
+    # Debug: show what happened
+    print(f"  Login POST status: {resp.status_code}, URL: {resp.url}")
+
     # Check we're logged in (should redirect to dashboard, not back to login)
-    if "/auth/login" in resp.url and resp.url != f"{BASE_URL}/auth/login":
-        return True
     if "/dashboard" in resp.url or resp.url == f"{BASE_URL}/":
         return True
     # Check if page contains dashboard content
     if "dashboard" in resp.text.lower() or "projects" in resp.text.lower():
         return True
+
+    # Login failed — show flash messages for diagnosis
+    flash_matches = re.findall(r'class="alert[^"]*"[^>]*>(.*?)</div>', resp.text, re.DOTALL)
+    if flash_matches:
+        for msg in flash_matches:
+            clean = re.sub(r'<[^>]+>', '', msg).strip()
+            if clean:
+                print(f"  Flash message: {clean}")
+
     return False
 
 

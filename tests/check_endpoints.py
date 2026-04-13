@@ -6,6 +6,7 @@ Logs in with credentials from .creds, fetches real entity IDs from MongoDB,
 then visits every GET endpoint and checks for error indicators.
 """
 
+import os
 import re
 import sys
 import requests
@@ -297,7 +298,11 @@ def main():
     print("=" * 70)
 
     # Load credentials
-    creds = load_creds()
+    creds_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '.creds')
+    if not os.path.exists(creds_path) and not os.path.exists('.creds'):
+        print("SKIP: .creds file not found (needed for login)")
+        sys.exit(0)
+    creds = load_creds(creds_path if os.path.exists(creds_path) else '.creds')
     print(f"\nLoaded credentials for: {creds['USERNAME']}")
 
     # Get entity IDs from MongoDB

@@ -46,7 +46,7 @@ jobs:
 
     - name: Validate translations
       run: |
-        python scripts/validate_translations.py
+        python tests/validate_translations.py
 
     - name: Install Playwright browsers
       run: |
@@ -91,7 +91,24 @@ jobs:
       run: |
         python run.py --setup --skip-browser
 
-    - name: Test Flask app startup and homepage
+    - name: Run pytest
+      run: |
+        python -m pytest tests/ -v
+
+    - name: Run check scripts
+      run: |
+        echo "=== Running standalone check scripts ==="
+        python tests/check_catalog.py
+        python tests/check_translation_wrapper.py
+        python tests/check_metadata_flow.py
+        python tests/check_fixture_tests.py
+        python tests/check_test_results.py
+        python tests/check_documents_touchpoint.py
+        python tests/check_ai_headings.py
+        python tests/check_all_ai_issues.py
+        echo "=== All check scripts passed ==="
+
+    - name: Test Flask app and endpoints
       run: |
         # Start Flask app in background
         python run.py &
@@ -127,6 +144,9 @@ jobs:
             exit 1
           fi
         fi
+
+        # Run endpoint health check (skips if .creds not available)
+        python tests/check_endpoints.py
 
         # Clean up
         kill $APP_PID 2>/dev/null || true

@@ -332,7 +332,7 @@ The project uses [Project Fluent](https://projectfluent.org/) for i18n via the `
 # {{ ftl('pages-new-message') }}
 
 # 4. Validate coverage:
-python scripts/validate_translations.py
+python tests/validate_translations.py
 ```
 
 ### FTL Syntax Quick Reference

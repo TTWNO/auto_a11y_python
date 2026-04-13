@@ -62,7 +62,9 @@ async def test_all_pages_tested_with_multiple_workers():
     job = _make_job(len(pages))
 
     mock_db = MagicMock()
-    mock_db.get_website.return_value = MagicMock(project_id="proj_1")
+    mock_website = MagicMock(project_id="proj_1")
+    mock_website.scraping_config.request_delay = 0.0
+    mock_db.get_website.return_value = mock_website
     mock_db.get_project_user.return_value = None
     mock_db.get_page.side_effect = lambda pid: next(
         (p for p in pages if p.id == pid), None
@@ -102,7 +104,9 @@ async def test_worker_count_capped_by_page_count():
     job = _make_job(len(pages))
 
     mock_db = MagicMock()
-    mock_db.get_website.return_value = MagicMock(project_id="proj_1")
+    mock_website = MagicMock(project_id="proj_1")
+    mock_website.scraping_config.request_delay = 0.0
+    mock_db.get_website.return_value = mock_website
     mock_db.get_project_user.return_value = None
     mock_db.get_page.side_effect = lambda pid: next(
         (p for p in pages if p.id == pid), None
@@ -153,7 +157,9 @@ async def test_cancellation_stops_workers():
     job.job_manager.is_cancellation_requested.side_effect = check_cancelled
 
     mock_db = MagicMock()
-    mock_db.get_website.return_value = MagicMock(project_id="proj_1")
+    mock_website = MagicMock(project_id="proj_1")
+    mock_website.scraping_config.request_delay = 0.0
+    mock_db.get_website.return_value = mock_website
     mock_db.get_project_user.return_value = None
     mock_db.get_page.side_effect = lambda pid: next(
         (p for p in pages if p.id == pid), None
@@ -192,7 +198,9 @@ async def test_single_page_error_does_not_crash_worker():
     job = _make_job(len(pages))
 
     mock_db = MagicMock()
-    mock_db.get_website.return_value = MagicMock(project_id="proj_1")
+    mock_website = MagicMock(project_id="proj_1")
+    mock_website.scraping_config.request_delay = 0.0
+    mock_db.get_website.return_value = mock_website
     mock_db.get_project_user.return_value = None
     mock_db.get_page.side_effect = lambda pid: next(
         (p for p in pages if p.id == pid), None
@@ -232,7 +240,9 @@ async def test_progress_counts_are_accurate():
     job = _make_job(len(pages))
 
     mock_db = MagicMock()
-    mock_db.get_website.return_value = MagicMock(project_id="proj_1")
+    mock_website = MagicMock(project_id="proj_1")
+    mock_website.scraping_config.request_delay = 0.0
+    mock_db.get_website.return_value = mock_website
     mock_db.get_project_user.return_value = None
     mock_db.get_page.side_effect = lambda pid: next(
         (p for p in pages if p.id == pid), None

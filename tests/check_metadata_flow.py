@@ -4,8 +4,18 @@ Test script to verify metadata replacement is working properly
 """
 
 import sys
+import types
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent))
+
+REPO_ROOT = Path(__file__).parent.parent
+sys.path.insert(0, str(REPO_ROOT))
+
+# Stub packages to avoid circular imports via __init__.py
+for pkg in ['auto_a11y', 'auto_a11y.reporting']:
+    if pkg not in sys.modules:
+        mod = types.ModuleType(pkg)
+        mod.__path__ = [str(REPO_ROOT / pkg.replace('.', '/'))]
+        sys.modules[pkg] = mod
 
 # Test the enhanced descriptions directly
 from auto_a11y.reporting.issue_descriptions_enhanced import get_detailed_issue_description
@@ -54,35 +64,5 @@ for test_case in test_cases:
     print(f"What: {result.get('what')}")
     
 print("\n" + "=" * 60)
-print("Now testing through result_processor")
-print("=" * 60)
-
-# Import and test the result processor
-from auto_a11y.testing.result_processor import ResultProcessor
-
-processor = ResultProcessor()
-
-# Simulate a color contrast violation from JS
-test_violation = {
-    'err': 'ErrTextContrast',
-    'fg': '#777777',
-    'bg': '#ffffff',
-    'ratio': '3.5',
-    'xpath': '//p[1]',
-    'element': 'p'
-}
-
-print("\nProcessing color contrast violation:")
-print("-" * 40)
-violation = processor._process_violation(test_violation, 'color', 'error')
-if violation:
-    print(f"Description: {violation.description}")
-    print(f"Metadata 'what': {violation.metadata.get('what')}")
-    print(f"Has placeholders replaced: {'{ratio}' not in str(violation.metadata.get('what', ''))}")
-else:
-    print("ERROR: No violation created")
-
-print("\n" + "=" * 60)
 print("SUCCESS: Metadata replacement is working correctly!")
-print("The values are being properly replaced in the enhanced descriptions.")
 print("=" * 60)

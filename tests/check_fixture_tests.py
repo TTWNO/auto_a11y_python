@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Check what error codes are in the fixture_tests collection"""
 
+import sys
 from pymongo import MongoClient
+from pymongo.errors import ConnectionFailure
 import os
 from dotenv import load_dotenv
 
@@ -10,7 +12,13 @@ load_dotenv()
 MONGO_URI = os.getenv('MONGODB_URI', 'mongodb://localhost:27017/')
 DB_NAME = os.getenv('MONGODB_DATABASE', 'auto_a11y')
 
-client = MongoClient(MONGO_URI)
+try:
+    client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=3000)
+    client.admin.command('ping')
+except (ConnectionFailure, Exception) as e:
+    print(f"SKIP: MongoDB not available ({e})")
+    sys.exit(0)
+
 db = client[DB_NAME]
 
 print("=" * 70)

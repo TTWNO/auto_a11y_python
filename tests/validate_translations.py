@@ -14,7 +14,7 @@ Exit code 0 = all translations valid
 Exit code 1 = one or more translation issues found
 
 Usage:
-  python scripts/validate_translations.py
+  python tests/validate_translations.py
 """
 
 import os

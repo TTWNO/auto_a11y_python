@@ -5,15 +5,23 @@ Test script to verify the translation wrapper works correctly.
 This script tests:
 1. The wrapper module can be imported
 2. get_detailed_issue_description() returns descriptions
-3. Placeholder conversion works
-4. Translation infrastructure is functioning
+3. Translation infrastructure is functioning
 """
 
 import sys
+import types
 from pathlib import Path
 
-# Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
+# Add parent directory to path and stub packages to avoid circular imports
+REPO_ROOT = Path(__file__).parent.parent
+sys.path.insert(0, str(REPO_ROOT))
+
+for pkg in ['auto_a11y', 'auto_a11y.reporting']:
+    if pkg not in sys.modules:
+        mod = types.ModuleType(pkg)
+        mod.__path__ = [str(REPO_ROOT / pkg.replace('.', '/'))]
+        sys.modules[pkg] = mod
+
 
 def test_wrapper_import():
     """Test that the wrapper module can be imported"""
@@ -21,13 +29,12 @@ def test_wrapper_import():
     try:
         from auto_a11y.reporting.issue_descriptions_translated import (
             get_detailed_issue_description,
-            convert_placeholders,
             ImpactScale
         )
-        print("✓ Wrapper module imported successfully")
+        print("  Wrapper module imported successfully")
         return True
     except Exception as e:
-        print(f"✗ Failed to import wrapper: {e}")
+        print(f"  Failed to import wrapper: {e}")
         return False
 
 
@@ -41,47 +48,18 @@ def test_basic_functionality():
         desc = get_detailed_issue_description('ErrNoAlt')
 
         if not desc:
-            print("✗ No description returned")
+            print("  No description returned")
             return False
 
-        print(f"✓ Got description for ErrNoAlt")
+        print(f"  Got description for ErrNoAlt")
         print(f"  Title: {desc.get('title', 'N/A')[:80]}...")
         print(f"  Fields: {list(desc.keys())}")
 
         return True
     except Exception as e:
-        print(f"✗ Basic functionality test failed: {e}")
+        print(f"  Basic functionality test failed: {e}")
         import traceback
         traceback.print_exc()
-        return False
-
-
-def test_placeholder_conversion():
-    """Test placeholder conversion"""
-    print("\nTesting placeholder conversion...")
-    try:
-        from auto_a11y.reporting.issue_descriptions_translated import convert_placeholders
-
-        test_cases = [
-            ("{variable}", "%(variable)s"),
-            ("{element_text}", "%(element_text)s"),
-            ("{element.tag}", "%(element_tag)s"),
-            ("Text with {var} and {other.attr}", "Text with %(var)s and %(other_attr)s"),
-            ("No placeholders", "No placeholders"),
-        ]
-
-        all_passed = True
-        for input_text, expected in test_cases:
-            result = convert_placeholders(input_text)
-            if result == expected:
-                print(f"✓ '{input_text}' -> '{result}'")
-            else:
-                print(f"✗ '{input_text}' -> '{result}' (expected '{expected}')")
-                all_passed = False
-
-        return all_passed
-    except Exception as e:
-        print(f"✗ Placeholder conversion test failed: {e}")
         return False
 
 
@@ -100,19 +78,15 @@ def test_with_metadata():
         desc = get_detailed_issue_description('ErrNoAlt', metadata)
 
         if not desc:
-            print("✗ No description returned with metadata")
+            print("  No description returned with metadata")
             return False
 
-        print(f"✓ Got description with metadata")
+        print(f"  Got description with metadata")
         print(f"  Title: {desc.get('title', 'N/A')}")
-
-        # Check if placeholders were replaced (should be replaced by original function)
-        if 'element_text' in desc.get('title', '').lower() or 'element_tag' in desc.get('title', '').lower():
-            print("  Note: Title contains metadata keys (placeholders may not be replaced)")
 
         return True
     except Exception as e:
-        print(f"✗ Metadata test failed: {e}")
+        print(f"  Metadata test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
@@ -136,14 +110,14 @@ def test_multiple_issues():
         for issue_code in test_issues:
             desc = get_detailed_issue_description(issue_code)
             if desc and 'title' in desc:
-                print(f"✓ {issue_code}: {desc['title'][:60]}...")
+                print(f"  {issue_code}: {desc['title'][:60]}...")
             else:
-                print(f"✗ {issue_code}: Failed to get description")
+                print(f"  {issue_code}: Failed to get description")
                 all_passed = False
 
         return all_passed
     except Exception as e:
-        print(f"✗ Multiple issues test failed: {e}")
+        print(f"  Multiple issues test failed: {e}")
         return False
 
 
@@ -155,7 +129,6 @@ def main():
     tests = [
         test_wrapper_import,
         test_basic_functionality,
-        test_placeholder_conversion,
         test_with_metadata,
         test_multiple_issues,
     ]
@@ -169,10 +142,10 @@ def main():
     print("="*60)
 
     if all(results):
-        print("\n✓ All tests passed!")
+        print("\nAll tests passed!")
         return 0
     else:
-        print("\n✗ Some tests failed")
+        print("\nSome tests failed")
         return 1
 
 

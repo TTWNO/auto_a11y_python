@@ -1,14 +1,21 @@
 #!/usr/bin/env python3
 """Check Documents touchpoint fixture status"""
 
+import sys
 from pymongo import MongoClient
+from pymongo.errors import ConnectionFailure
 import os
 
-# Don't use dotenv in script mode, use environment variables directly
 MONGO_URI = os.environ.get('MONGODB_URI', 'mongodb://localhost:27017/')
 DB_NAME = os.environ.get('MONGODB_DATABASE', 'auto_a11y')
 
-client = MongoClient(MONGO_URI)
+try:
+    client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=3000)
+    client.admin.command('ping')
+except (ConnectionFailure, Exception) as e:
+    print(f"SKIP: MongoDB not available ({e})")
+    sys.exit(0)
+
 db = client[DB_NAME]
 
 print("=" * 70)

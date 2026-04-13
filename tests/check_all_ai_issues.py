@@ -5,11 +5,20 @@ Test script to verify all AI tests are running and reporting correctly
 
 import asyncio
 import os
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 from auto_a11y.core.database import Database
 from auto_a11y.core.browser_manager import BrowserManager
 from auto_a11y.ai import ClaudeAnalyzer
 from config import config
+
+api_key = getattr(config, 'CLAUDE_API_KEY', None)
+if not api_key:
+    print("SKIP: No CLAUDE_API_KEY configured")
+    sys.exit(0)
 
 print("AI Testing Comprehensive Check")
 print("=" * 50)
@@ -82,11 +91,6 @@ test_html = """
 """
 
 async def test_ai_analysis():
-    api_key = getattr(config, 'CLAUDE_API_KEY', None)
-    if not api_key:
-        print("ERROR: No CLAUDE_API_KEY configured")
-        return
-    
     print(f"\n1. API Key configured: {len(api_key)} chars")
     
     # Initialize browser for screenshot

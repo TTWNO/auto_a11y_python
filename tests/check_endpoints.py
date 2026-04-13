@@ -2,15 +2,19 @@
 """
 Check all HTML GET endpoints for Flask error pages.
 
-Logs in with credentials from .creds, fetches real entity IDs from MongoDB,
-then visits every GET endpoint and checks for error indicators.
+Reads CI_USERNAME / CI_PASSWORD from .env (or environment), fetches real
+entity IDs from MongoDB, then visits every GET endpoint and checks for
+error indicators.
 """
 
 import os
 import re
 import sys
 import requests
+from dotenv import load_dotenv
 from pymongo import MongoClient
+
+load_dotenv()
 
 BASE_URL = "http://127.0.0.1:5001"
 
@@ -36,21 +40,12 @@ ERROR_PATTERNS = [
 ]
 
 
-def load_creds(path=".creds"):
-    creds = {}
-    with open(path) as f:
-        for line in f:
-            line = line.strip()
-            if "=" in line and not line.startswith("#"):
-                key, val = line.split("=", 1)
-                creds[key.strip()] = val.strip().strip("'\"")
-    return creds
-
-
 def get_ids_from_db():
     """Fetch real entity IDs from MongoDB so parameterised routes can be tested."""
-    client = MongoClient("mongodb://127.0.0.1:27017/auto_a11y")
-    db = client["auto_a11y"]
+    mongo_uri = os.getenv('MONGODB_URI', 'mongodb://127.0.0.1:27017/')
+    db_name = os.getenv('DATABASE_NAME', os.getenv('MONGODB_DATABASE', 'auto_a11y'))
+    client = MongoClient(mongo_uri)
+    db = client[db_name]
 
     ids = {}
 
@@ -297,12 +292,13 @@ def main():
     print("AUTO A11Y - Endpoint Health Check")
     print("=" * 70)
 
-    # Load credentials
-    creds_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '.creds')
-    if not os.path.exists(creds_path) and not os.path.exists('.creds'):
-        print("SKIP: .creds file not found (needed for login)")
+    # Load credentials from environment / .env
+    username = os.getenv('CI_USERNAME')
+    password = os.getenv('CI_PASSWORD')
+    if not username or not password:
+        print("SKIP: CI_USERNAME / CI_PASSWORD not set in environment or .env")
         sys.exit(0)
-    creds = load_creds(creds_path if os.path.exists(creds_path) else '.creds')
+    creds = {'USERNAME': username, 'PASSWORD': password}
     print(f"\nLoaded credentials for: {creds['USERNAME']}")
 
     # Get entity IDs from MongoDB

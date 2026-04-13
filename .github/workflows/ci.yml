@@ -77,6 +77,10 @@ jobs:
         # Testing Configuration
         PARALLEL_TESTS=2
         TEST_TIMEOUT=60000
+
+        # CI admin credentials (for endpoint health check)
+        CI_USERNAME=ci@test.local
+        CI_PASSWORD=CiTestPassword123
         EOF
 
     - name: Initialize directories
@@ -90,6 +94,23 @@ jobs:
     - name: Run database setup
       run: |
         python run.py --setup --skip-browser
+
+    - name: Create CI admin user
+      run: |
+        python -c "
+        from auto_a11y.core.database import Database
+        from auto_a11y.models.app_user import AppUser, UserRole
+        from config import config
+        db = Database(config.MONGODB_URI, config.DATABASE_NAME)
+        user = AppUser.create(
+            email='ci@test.local',
+            password='CiTestPassword123',
+            role=UserRole.ADMIN,
+        )
+        user.is_superadmin = True
+        db.create_app_user(user)
+        print('CI admin user created')
+        "
 
     - name: Run pytest
       run: |
@@ -145,7 +166,7 @@ jobs:
           fi
         fi
 
-        # Run endpoint health check (skips if .creds not available)
+        # Run endpoint health check (skips if CI_USERNAME not set)
         python tests/check_endpoints.py
 
         # Clean up

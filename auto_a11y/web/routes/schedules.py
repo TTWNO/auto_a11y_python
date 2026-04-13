@@ -202,7 +202,7 @@ def create_schedule(website_id):
                 schedule = current_app.db.get_test_schedule(schedule_id)
                 scheduler._register_schedule_with_apscheduler(schedule)
 
-            flash(_('Schedule "%(name)s" created successfully', name=schedule.name), 'success')
+            flash(ftl('schedules-schedule-name-created-successfully', name=schedule.name), 'success')
             return redirect(url_for('schedules.list_schedules', website_id=website_id))
 
         except Exception as e:
@@ -352,7 +352,7 @@ def edit_schedule(website_id, schedule_id):
                 else:
                     scheduler.remove_from_apscheduler(schedule_id)
 
-            flash(_('Schedule "%(name)s" updated successfully', name=schedule.name), 'success')
+            flash(ftl('schedules-schedule-name-updated-successfully', name=schedule.name), 'success')
             return redirect(url_for('schedules.view_schedule', website_id=website_id, schedule_id=schedule_id))
 
         except Exception as e:
@@ -398,7 +398,7 @@ def delete_schedule(website_id, schedule_id):
     # Delete from database
     current_app.db.delete_test_schedule(schedule_id)
 
-    flash(_('Schedule "%(name)s" deleted', name=schedule.name), 'success')
+    flash(ftl('schedules-schedule-name-deleted', name=schedule.name), 'success')
     return redirect(url_for('schedules.list_schedules', website_id=website_id))
 
 

@@ -171,6 +171,6 @@ websites-users = Utilisateurs de test
 websites-via-redirect = Via redirection
 websites-violations = Actions
 websites-website-name = Sites web
-websites-website-name-deleted-successfully = Utilisateur supprimé avec succès.
+websites-website-name-deleted-successfully = Site web « { $name } » supprimé avec succès
 websites-website-updated-successfully = Site Web mis à jour avec succès
 websites-yes = Oui

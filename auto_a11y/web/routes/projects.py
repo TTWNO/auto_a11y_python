@@ -263,7 +263,7 @@ def create_project():
         # Check if project name exists
         existing = current_app.db.projects.find_one({'name': name})
         if existing:
-            flash(_('Project "%(name)s" already exists', name=name), 'error')
+            flash(ftl('projects-project-name-already-exists', name=name), 'error')
             # Redirect to GET handler which will populate everything
             return redirect(url_for('projects.create_project'))
         
@@ -341,7 +341,7 @@ def create_project():
         admin_group = current_app.db.get_group_by_name('Admin')
         if admin_group:
             current_app.db.add_project_member(project_id, str(current_user.get_id()), [admin_group.id])
-        flash(_('Project "%(name)s" created successfully', name=name), 'success')
+        flash(ftl('projects-project-name-created-successfully', name=name), 'success')
         
         return redirect(url_for('projects.view_project', project_id=project_id))
     
@@ -728,7 +728,7 @@ def delete_project(project_id):
         return redirect(url_for('projects.list_projects'))
 
     if current_app.db.delete_project(project_id):
-        flash(_('Project "%(name)s" deleted successfully', name=project.name), 'success')
+        flash(ftl('projects-project-name-deleted-successfully', name=project.name), 'success')
     else:
         flash(ftl('projects-failed-to-delete-project'), 'error')
     
@@ -770,7 +770,7 @@ def add_website(project_id):
         })
     else:
         # Regular form submission - redirect directly
-        flash(_('Website "%(name)s" added successfully', name=name or url), 'success')
+        flash(ftl('projects-website-name-added-successfully', name=name or url), 'success')
         return redirect(url_for('websites.view_website', website_id=website_id))
 
 
@@ -834,7 +834,7 @@ def test_project(project_id):
                 pass
         
         if jobs:
-            flash(_('Started testing %(count)s websites in project "%(name)s"', count=len(jobs), name=project.name), 'success')
+            flash(ftl('projects-started-testing-count-websites-in-project-name', count=len(jobs), name=project.name), 'success')
         else:
             flash(ftl('projects-no-websites-found-to-test-in-this-project'), 'warning')
         

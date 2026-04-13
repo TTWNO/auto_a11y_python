@@ -38,7 +38,7 @@ def create_group():
             return redirect(url_for('groups.create_group'))
 
         if current_app.db.get_group_by_name(name):
-            flash(_('Group "%(name)s" already exists.', name=name), 'danger')
+            flash(ftl('groups-group-name-already-exists', name=name), 'danger')
             return redirect(url_for('groups.create_group'))
 
         permissions = {}
@@ -55,7 +55,7 @@ def create_group():
             permissions=permissions,
         )
         current_app.db.create_group(group)
-        flash(_('Group "%(name)s" created.', name=name), 'success')
+        flash(ftl('groups-group-name-created', name=name), 'success')
         return redirect(url_for('groups.list_groups'))
 
     return render_template('groups/edit.html',
@@ -83,7 +83,7 @@ def edit_group(group_id):
 
         existing = current_app.db.get_group_by_name(name)
         if existing and str(existing._id) != group_id:
-            flash(_('Group "%(name)s" already exists.', name=name), 'danger')
+            flash(ftl('groups-group-name-already-exists', name=name), 'danger')
             return redirect(url_for('groups.edit_group', group_id=group_id))
 
         permissions = {}
@@ -98,7 +98,7 @@ def edit_group(group_id):
         group.description = description
         group.permissions = permissions
         current_app.db.update_group(group)
-        flash(_('Group "%(name)s" updated.', name=name), 'success')
+        flash(ftl('groups-group-name-updated', name=name), 'success')
         return redirect(url_for('groups.list_groups'))
 
     return render_template('groups/edit.html',
@@ -121,5 +121,5 @@ def delete_group(group_id):
         return redirect(url_for('groups.list_groups'))
 
     current_app.db.delete_group(group_id)
-    flash(_('Group "%(name)s" deleted.', name=group.name), 'success')
+    flash(ftl('groups-group-name-deleted', name=group.name), 'success')
     return redirect(url_for('groups.list_groups'))

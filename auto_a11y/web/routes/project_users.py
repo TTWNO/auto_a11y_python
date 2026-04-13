@@ -76,7 +76,7 @@ def create_user(project_id):
             )
 
             user_id = current_app.db.create_project_user(user)
-            flash(_('Test user "%(name)s" created successfully', name=user.name_display), 'success')
+            flash(ftl('common-test-user-name-created-successfully', name=user.name_display), 'success')
             return redirect(url_for('project_users.list_users', project_id=project_id))
 
         except Exception as e:
@@ -150,7 +150,7 @@ def edit_user(user_id):
             user.enabled = data.get('enabled') == 'on'
 
             current_app.db.update_project_user(user)
-            flash(_('Test user "%(name)s" updated successfully', name=user.name_display), 'success')
+            flash(ftl('common-test-user-name-updated-successfully', name=user.name_display), 'success')
             return redirect(url_for('project_users.list_users', project_id=user.project_id))
 
         except Exception as e:

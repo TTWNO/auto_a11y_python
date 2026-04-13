@@ -57,7 +57,7 @@ def create_tester(project_id):
             project.add_tester(tester)
             current_app.db.update_project(project)
 
-            flash(_('Lived experience tester "%(name)s" added successfully', name=tester.name), 'success')
+            flash(ftl('projects-lived-experience-tester-name-added-successfully', name=tester.name), 'success')
             return redirect(url_for('project_participants.list_participants', project_id=project_id))
 
         except Exception as e:
@@ -99,7 +99,7 @@ def edit_tester(project_id, tester_id):
             project.update_tester(tester)
             current_app.db.update_project(project)
 
-            flash(_('Tester "%(name)s" updated successfully', name=tester.name), 'success')
+            flash(ftl('projects-tester-name-updated-successfully', name=tester.name), 'success')
             return redirect(url_for('project_participants.list_participants', project_id=project_id))
 
         except Exception as e:
@@ -162,7 +162,7 @@ def create_supervisor(project_id):
             project.add_supervisor(supervisor)
             current_app.db.update_project(project)
 
-            flash(_('Test supervisor "%(name)s" added successfully', name=supervisor.name), 'success')
+            flash(ftl('projects-test-supervisor-name-added-successfully', name=supervisor.name), 'success')
             return redirect(url_for('project_participants.list_participants', project_id=project_id))
 
         except Exception as e:
@@ -200,7 +200,7 @@ def edit_supervisor(project_id, supervisor_id):
             project.update_supervisor(supervisor)
             current_app.db.update_project(project)
 
-            flash(_('Supervisor "%(name)s" updated successfully', name=supervisor.name), 'success')
+            flash(ftl('projects-supervisor-name-updated-successfully', name=supervisor.name), 'success')
             return redirect(url_for('project_participants.list_participants', project_id=project_id))
 
         except Exception as e:

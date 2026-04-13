@@ -172,7 +172,7 @@ def delete_website(website_id):
     project_id = website.project_id
     
     if current_app.db.delete_website(website_id):
-        flash(_('Website "%(name)s" deleted successfully', name=website.display_name), 'success')
+        flash(ftl('websites-website-name-deleted-successfully', name=website.display_name), 'success')
     else:
         flash(ftl('websites-failed-to-delete-website'), 'error')
     

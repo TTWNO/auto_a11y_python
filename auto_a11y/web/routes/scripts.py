@@ -99,7 +99,7 @@ def create_page_script(page_id):
             # Save to database
             script_id = current_app.db.create_page_setup_script(script)
 
-            flash(_('Script "%(name)s" created successfully', name=script.name), 'success')
+            flash(ftl('scripts-script-name-created-successfully', name=script.name), 'success')
             return redirect(url_for('scripts.edit_script', script_id=script_id))
 
         except Exception as e:
@@ -202,7 +202,7 @@ def create_website_script(website_id):
             # Save to database
             script_id = current_app.db.create_page_setup_script(script)
 
-            flash(_('Website script "%(name)s" created successfully', name=script.name), 'success')
+            flash(ftl('scripts-website-script-name-created-successfully', name=script.name), 'success')
             return redirect(url_for('scripts.edit_script', script_id=script_id))
 
         except Exception as e:
@@ -353,7 +353,7 @@ def edit_script(script_id):
             # Save changes
             current_app.db.update_page_setup_script(script)
 
-            flash(_('Script "%(name)s" updated successfully', name=script.name), 'success')
+            flash(ftl('scripts-script-name-updated-successfully', name=script.name), 'success')
             return redirect(url_for('scripts.view_script', script_id=script_id))
 
         except Exception as e:
@@ -424,7 +424,7 @@ def delete_script(script_id):
 
     try:
         current_app.db.delete_page_setup_script(script_id)
-        flash(_('Script "%(name)s" deleted successfully', name=script.name), 'success')
+        flash(ftl('scripts-script-name-deleted-successfully', name=script.name), 'success')
 
         # Return redirect URL
         if script.page_id:

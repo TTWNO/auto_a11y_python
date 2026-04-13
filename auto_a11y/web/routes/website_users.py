@@ -82,7 +82,7 @@ def create_user(website_id):
             )
 
             user_id = current_app.db.create_website_user(user)
-            flash(_('Test user "%(name)s" created successfully', name=user.name_display), 'success')
+            flash(ftl('common-test-user-name-created-successfully', name=user.name_display), 'success')
             return redirect(url_for('website_users.list_users', website_id=website_id))
 
         except Exception as e:
@@ -160,7 +160,7 @@ def edit_user(user_id):
             user.enabled = data.get('enabled') == 'on'
 
             current_app.db.update_website_user(user)
-            flash(_('Test user "%(name)s" updated successfully', name=user.name_display), 'success')
+            flash(ftl('common-test-user-name-updated-successfully', name=user.name_display), 'success')
             return redirect(url_for('website_users.list_users', website_id=user.website_id))
 
         except Exception as e:

@@ -98,18 +98,21 @@ jobs:
     - name: Create CI admin user
       run: |
         python -c "
+        import os
+        from dotenv import load_dotenv
+        load_dotenv()
         from auto_a11y.core.database import Database
         from auto_a11y.models.app_user import AppUser, UserRole
         from config import config
         db = Database(config.MONGODB_URI, config.DATABASE_NAME)
         user = AppUser.create(
-            email='ci@test.local',
-            password='CiTestPassword123',
+            email=os.environ['CI_USERNAME'],
+            password=os.environ['CI_PASSWORD'],
             role=UserRole.ADMIN,
         )
         user.is_superadmin = True
         db.create_app_user(user)
-        print('CI admin user created')
+        print(f'CI admin user created: {user.email}')
         "
 
     - name: Run pytest

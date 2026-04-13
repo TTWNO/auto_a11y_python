@@ -24,22 +24,53 @@ def _collect_message_ids(ftl_dir: Path) -> set[str]:
     return ids
 
 
+def _pattern_has_content(pattern) -> bool:
+    """Return True if a Fluent Pattern has any real content (text or placeables)."""
+    if pattern is None:
+        return False
+    for elem in pattern.elements:
+        if isinstance(elem, fluent_ast.Placeable):
+            return True
+        if isinstance(elem, fluent_ast.TextElement) and elem.value.strip():
+            return True
+    return False
+
+
 def _collect_message_values(ftl_dir: Path) -> dict[str, str | None]:
-    """Collect all message IDs and their text values from .ftl files."""
+    """Collect all message IDs and their text values from .ftl files.
+
+    A message is considered non-empty if its main value OR any of its
+    attributes contain real content (text or placeables).  This correctly
+    handles attribute-only messages such as issue descriptions.
+    """
     entries = {}
     for ftl_file in sorted(ftl_dir.glob('*.ftl')):
         source = ftl_file.read_text(encoding='utf-8')
         resource = parse(source)
         for entry in resource.body:
             if isinstance(entry, fluent_ast.Message):
-                if entry.value is None:
-                    entries[entry.id.name] = None
-                else:
+                # Check main value
+                if _pattern_has_content(entry.value):
                     parts = []
                     for elem in entry.value.elements:
                         if isinstance(elem, fluent_ast.TextElement):
                             parts.append(elem.value)
+                        elif isinstance(elem, fluent_ast.Placeable):
+                            parts.append('{…}')
                     entries[entry.id.name] = ''.join(parts)
+                    continue
+
+                # Check attributes (e.g. .title, .what, .why, …)
+                has_attr_content = any(
+                    _pattern_has_content(attr.value)
+                    for attr in (entry.attributes or [])
+                )
+                if has_attr_content:
+                    entries[entry.id.name] = '<attributes>'
+                    continue
+
+                # Truly empty
+                entries[entry.id.name] = None
     return entries
 
 

@@ -2392,41 +2392,7 @@ WarnInfiniteAnimationSpinner =
     .what = Loading spinner animation '{"{"}animationName{"}"}' runs infinitely without controls and requires manual inspection to ensure screen reader accessibility
     .why = While loading spinners are common and often acceptable, infinite animations without controls can still be problematic if they remain visible for extended periods. Loading spinners should ideally be hidden or stopped once loading completes. Additionally, spinners must be perceivable by screen reader users through proper ARIA attributes. This requires manual inspection to verify that the spinner has: 1) role="status" or role="alert" on a container element, 2) visually hidden text (e.g., "Loading...") for screen reader users, and 3) dynamic updates when loading completes. Without these attributes, screen reader users won't know that content is loading, creating a confusing and inaccessible experience.
     .who = Users with vestibular disorders, users with ADHD, users with photosensitive epilepsy, users with cognitive disabilities, screen reader users who need audible loading announcements.
-    .remediation = **1. Visual Control:** Ensure the spinner is hidden (display: none or visibility: hidden) when loading completes, or provide pause/stop controls. Consider respecting prefers-reduced-motion settings to disable animations entirely for users who prefer reduced motion.
-    
-    **2. Screen Reader Accessibility (Manual Inspection Required):** Verify the spinner includes proper ARIA attributes:
-    
-    **HTML Structure:**
-    ```html
-    <div class="spinner-container" role="status">
-      <div class="spinner"></div>
-      <span class="visually-hidden">Loading...</span>
-    </div>
-    ```
-    
-    **Required ARIA Attributes:**
-    - `role="status"` on the container to indicate a live region providing status information
-    - Visually hidden text inside the container (e.g., "Loading...") using a class like `.visually-hidden` or `.sr-only`
-    
-    **CSS for Visually Hidden Text:**
-    ```css
-    .visually-hidden {"{"}
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border-width: 0;
-    {"}"}
-    ```
-    
-    **Dynamic Updates (Optional):** When the spinner completes, update the visually hidden text to "Content loaded." using JavaScript to inform screen reader users that loading has finished.
-    
-    Current animation CSS:
-    {"{"}animationCSS{"}"}
+    .remediation = **1. Visual Control:** Ensure the spinner is hidden (display: none or visibility: hidden) when loading completes, or provide pause/stop controls. Consider respecting prefers-reduced-motion settings to disable animations entirely for users who prefer reduced motion. **2. Screen Reader Accessibility (Manual Inspection Required):** Verify the spinner includes proper ARIA attributes: role="status" on the container to indicate a live region, visually hidden text inside the container (e.g., "Loading...") using a class like .visually-hidden or .sr-only. **Dynamic Updates (Optional):** When the spinner completes, update the visually hidden text to "Content loaded." using JavaScript to inform screen reader users that loading has finished. Current animation CSS: {"{"}animationCSS{"}"}
     .what-generic = Loading spinner animation runs infinitely without controls
 
 WarnInputDefaultFocus =
@@ -2943,10 +2909,11 @@ WarnZeroOutlineOffset =
     .who = Keyboard users with low vision
     .remediation = Use positive outline-offset value
 
-[unique_identifier] =
-    .title = [what the issue is]
-    .what = [what the issue is]
-    .why = [accessibility impact]
-    .who = [affected user groups]
-    .remediation = [remediation steps]
+# Template for new issue entries:
+# unique-identifier =
+#     .title = [what the issue is]
+#     .what = [what the issue is]
+#     .why = [accessibility impact]
+#     .who = [affected user groups]
+#     .remediation = [remediation steps]
 

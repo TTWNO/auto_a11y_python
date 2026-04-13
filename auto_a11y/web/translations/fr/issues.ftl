@@ -3289,11 +3289,12 @@ WarnZeroOutlineOffset =
     .remediation = Utiliser une valeur positive pour outline-offset
     .what-generic = Le décalage du contour est défini à zéro
 
-[unique_identifier] =
-    .title = [quel est le problème]
-    .what = [quel est le problème]
-    .why = [impact sur l'accessibilité]
-    .who = [groupes d'utilisateurs affectés]
-    .remediation = [étapes de correction]
-    .what-generic = [quel est le problème]
+# Modèle pour les nouvelles entrées de problèmes :
+# unique-identifier =
+#     .title = [quel est le problème]
+#     .what = [quel est le problème]
+#     .why = [impact sur l'accessibilité]
+#     .who = [groupes d'utilisateurs affectés]
+#     .remediation = [étapes de correction]
+#     .what-generic = [quel est le problème]
 

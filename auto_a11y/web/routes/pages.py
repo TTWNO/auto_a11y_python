@@ -255,9 +255,9 @@ def view_page(page_id):
         'modals': lazy_ftl('testing-dialogs-modals'),
         'navigation': lazy_ftl('testing-navigation'),
         'page': lazy_ftl('common-page-2'),
-        'page_state': lazy_gettext('Page State'),
+        'page_state': lazy_ftl('common-page-states'),
         'reading_order': lazy_ftl('common-reading-order'),
-        'responsive': lazy_gettext('Responsive Design'),
+        'responsive': lazy_ftl('common-responsive-design'),
         'semantic_structure': lazy_ftl('testing-semantic-structure'),
         'styles': lazy_ftl('testing-inline-styles'),
         'tabindex': lazy_ftl('testing-keyboard-navigation'),
@@ -508,18 +508,8 @@ def delete_page(page_id):
 
 @pages_bp.route('/<page_id>/violations')
 def view_violations(page_id):
-    """View detailed violations for page"""
-    page = current_app.db.get_page(page_id)
-    if not page:
-        return jsonify({'error': ftl('common-page-not-found')}), 404
-
-    test_result = current_app.db.get_latest_test_result(page_id)
-    if not test_result:
-        return jsonify({'error': ftl('common-no-test-results-found')}), 404
-
-    return render_template('pages/violations.html',
-                         page=page,
-                         test_result=test_result)
+    """View detailed violations for page — redirects to page view which shows violations inline."""
+    return redirect(url_for('pages.view_page', page_id=page_id))
 
 
 @pages_bp.route('/<page_id>/matrix', methods=['GET', 'POST'])

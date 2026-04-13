@@ -139,7 +139,7 @@
                                 <strong>{{ result.total_issues }}</strong>
                             </td>
                             <td>
-                                <a href="{{ url_for('testing.view_test_result', result_id=result.test_result.id) }}"
+                                <a href="{{ url_for('testing.view_result', result_id=result.test_result.id) }}"
                                    class="btn btn-sm btn-outline-primary">
                                     {{ ftl('common-view-details') }}
                                 </a>

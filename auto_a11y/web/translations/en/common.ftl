@@ -499,6 +499,7 @@ common-reports = Reports
 common-reports-dashboard = Reports Dashboard
 common-reports-exports = Reports & Exports
 common-required = required
+common-responsive-design = Responsive Design
 common-review-for-improvements = Review for improvements
 common-right-click-in-the-html-panel = Right-click in the HTML panel
 common-right-click-the-element = Right-click the element

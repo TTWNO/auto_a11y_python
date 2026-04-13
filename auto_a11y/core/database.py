@@ -67,6 +67,7 @@ class Database:
         self.test_schedules: Collection = self.db.test_schedules  # Scheduled test configurations
         self.share_tokens: Collection = self.db.share_tokens  # Public share tokens
         self.groups: Collection = self.db['groups']  # Permission groups
+        self.issues: Collection = self.db.issues  # Issues for Drupal sync
 
         # Create indexes
         self._create_indexes()

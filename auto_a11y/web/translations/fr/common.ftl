@@ -499,6 +499,7 @@ common-reports = Rapports
 common-reports-dashboard = Tableau de bord des rapports
 common-reports-exports = Rapports et exports
 common-required = requis
+common-responsive-design = Conception adaptative
 common-review-for-improvements = Vérifier pour améliorations
 common-right-click-in-the-html-panel = Clic droit dans le panneau HTML
 common-right-click-the-element = Éléments de la page

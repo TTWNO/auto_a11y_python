@@ -67,7 +67,7 @@
                                 {% elif run.status.value == 'cancelled' %}
                                 <span class="badge bg-secondary">{{ ftl('common-cancelled') }}</span>
                                 {% else %}
-                                <span class="badge bg-secondary">{{ _(run.status.value|title) }}</span>
+                                <span class="badge bg-secondary">{{ ftl_enum(run.status.value) }}</span>
                                 {% endif %}
                             </td>
                             <td>{{ run.pages_discovered }}</td>

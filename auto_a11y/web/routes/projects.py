@@ -3,8 +3,7 @@ Project management routes
 """
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
-from flask_babel import get_locale
-from auto_a11y.web.fluent import ftl, lazy_ftl
+from auto_a11y.web.fluent import ftl, lazy_ftl, _get_current_locale as get_locale
 from flask_login import login_required
 from flask import g
 from auto_a11y.models import Project, ProjectStatus, ProjectType

@@ -7,7 +7,7 @@ from collections import defaultdict, Counter
 from datetime import datetime, timedelta
 import json
 import logging
-from flask_babel import force_locale
+from auto_a11y.web.fluent import force_locale
 
 from auto_a11y.reporting.ai_executive_summary import AIExecutiveSummaryGenerator
 from auto_a11y.ai.claude_client import ClaudeClient, ClaudeConfig

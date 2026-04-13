@@ -147,6 +147,25 @@ def ftl_wcag(criterion_name: str) -> Markup | str:
     return ftl(msg_id)
 
 
+def ftl_enum(value) -> Markup | str:
+    """Translate an enum value string via Fluent.
+
+    Converts 'discovery_failed' to 'enum-discovery-failed' and looks up
+    the FTL message.  Falls back to title-cased original if no FTL message
+    is found.
+    """
+    if not value:
+        return value or ''
+    # Normalize: lowercase, replace underscores/spaces with hyphens
+    normalized = str(value).lower().replace('_', '-').replace(' ', '-')
+    msg_id = f'enum-{normalized}'
+    result = ftl(msg_id)
+    # If ftl() returned the message ID itself (not found), fall back to title case
+    if isinstance(result, str) and result == msg_id:
+        return str(value).replace('_', ' ').title()
+    return result
+
+
 def ftl_translate_issue(text: str) -> str:
     """Translate an inline issue description string via Fluent.
 
@@ -190,6 +209,7 @@ def init_fluent(app):
     app.jinja_env.globals['lazy_ftl'] = lazy_ftl
     app.jinja_env.globals['ftl_issue'] = ftl_issue
     app.jinja_env.globals['ftl_wcag'] = ftl_wcag
+    app.jinja_env.globals['ftl_enum'] = ftl_enum
     app.jinja_env.globals['ftl_translate_issue'] = ftl_translate_issue
 
     # Template filters

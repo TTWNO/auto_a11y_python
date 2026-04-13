@@ -16,7 +16,6 @@ from typing import List, Dict, Any, Optional
 import jinja2
 
 logger = logging.getLogger(__name__)
-from flask_babel import pgettext
 from auto_a11y.web.fluent import ftl, lazy_ftl, force_locale
 
 from auto_a11y.core.database import Database

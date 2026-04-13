@@ -120,3 +120,7 @@ auth-you-have-been-logged-out = Vous avez été déconnecté.
 auth-your-account-has-been-deactivated = Votre compte a été désactivé.
 auth-your-account-has-been-deactivated-please-contact = Votre compte a été désactivé. Veuillez contacter un administrateur.
 auth-your-password-has-been-reset-please-log-in = Votre mot de passe a été réinitialisé. Veuillez vous connecter.
+
+# Plain text email messages
+auth-email-reset-click-link = Nous avons reçu une demande de réinitialisation de votre mot de passe. Cliquez sur le lien ci-dessous pour définir un nouveau mot de passe :
+auth-email-reset-expire-notice = Ce lien expirera dans 15 minutes. Si vous n'avez pas demandé de réinitialisation de mot de passe, vous pouvez ignorer cet e-mail en toute sécurité.

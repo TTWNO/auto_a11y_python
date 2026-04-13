@@ -4,7 +4,6 @@ Flask application factory
 
 from flask import Flask, render_template, jsonify, request, session, g, redirect, url_for
 from flask_cors import CORS
-from flask_babel import Babel, format_datetime
 from flask_login import LoginManager, current_user, login_required
 from flask_wtf.csrf import CSRFProtect
 from flask_limiter import Limiter
@@ -83,60 +82,9 @@ def create_app(config):
         storage_uri="memory://",
     )
 
-    # Configure Flask-Babel for internationalization
-    import os
-    app.config['BABEL_DEFAULT_LOCALE'] = 'en'
-    app.config['BABEL_SUPPORTED_LOCALES'] = ['en', 'fr']
-    # Use absolute path to translations directory
-    translations_dir = os.path.join(os.path.dirname(__file__), 'translations')
-    app.config['BABEL_TRANSLATION_DIRECTORIES'] = translations_dir
-
-    logger.info(f"Translations directory: {translations_dir}")
-    logger.info(f"Translations directory exists: {os.path.exists(translations_dir)}")
-    if os.path.exists(translations_dir):
-        logger.info(f"Contents: {os.listdir(translations_dir)}")
-
-    def get_locale():
-        """Determine the best locale to use for the request"""
-        # Check if user explicitly set language
-        if 'language' in session:
-            locale = session['language']
-            logger.debug(f"Locale from session: {locale}")
-            return locale
-        # Otherwise, try to match browser language preferences
-        locale = request.accept_languages.best_match(['en', 'fr']) or 'en'
-        logger.debug(f"Locale from browser: {locale}")
-        return locale
-
-    babel = Babel(app, locale_selector=get_locale)
-
-    # Auto-escape i18n strings so that apostrophes in French translations
-    # (e.g. l'annuler, d'attente) are rendered as &#39; and cannot break
-    # JavaScript single-quoted strings or HTML attributes.
-    from markupsafe import escape as _markup_escape
-    from flask_babel import gettext as _babel_gettext, ngettext as _babel_ngettext
-
-    def _escaped_gettext(*args, **kwargs):
-        translated = _babel_gettext(*args, **kwargs)
-        return _markup_escape(translated)
-    app.jinja_env.globals['_'] = _escaped_gettext
-
-    def _escaped_ngettext(singular, plural, num, **kwargs):
-        translated = _babel_ngettext(singular, plural, num, **kwargs)
-        return _markup_escape(translated)
-    app.jinja_env.globals['ngettext'] = _escaped_ngettext
-
-    # Initialize Fluent (Project Fluent) — runs alongside Babel during migration
+    # Initialize Fluent (Project Fluent) — sole i18n system
     from auto_a11y.web.fluent import init_fluent
     init_fluent(app)
-
-    # Add datetime format filter for templates
-    @app.template_filter('datetimeformat')
-    def datetimeformat_filter(value, format='medium'):
-        """Format datetime using Flask-Babel's locale-aware formatting"""
-        if value is None:
-            return ''
-        return format_datetime(value, format)
 
     # Initialize database connection (needed before Flask-Login)
     app.db = Database(config.MONGODB_URI, config.DATABASE_NAME)
@@ -176,46 +124,14 @@ def create_app(config):
         return app.db.get_app_user(user_id)
 
     # Make get_locale, config, and current_user available to all templates
+    from auto_a11y.web.fluent import _get_current_locale as get_locale
+
     @app.context_processor
     def inject_globals():
-        # Dynamic translations that pybabel keeps marking as obsolete
-        # These are used in templates for dynamically generated strings
-        dynamic_translations = {
-            'en': {
-                # Impact levels
-                'CRITICAL': 'Critical',
-                'HIGH': 'High',
-                'MEDIUM': 'Medium',
-                'LOW': 'Low',
-                # Lowercase versions
-                'critical': 'Critical',
-                'high': 'High',
-                'medium': 'Medium',
-                'low': 'Low',
-            },
-            'fr': {
-                # Impact levels
-                'CRITICAL': 'Critique',
-                'HIGH': 'Élevé',
-                'MEDIUM': 'Moyen',
-                'LOW': 'Faible',
-                # Lowercase versions
-                'critical': 'Critique',
-                'high': 'Élevé',
-                'medium': 'Moyen',
-                'low': 'Faible',
-            }
-        }
-
-        current_locale = get_locale()
-        t = dynamic_translations.get(current_locale, dynamic_translations['en'])
-
         return dict(
             get_locale=get_locale,
             show_error_codes=config.SHOW_ERROR_CODES,
             current_user=current_user,
-            t=t,  # Translation dictionary for dynamic strings
-            translations=dynamic_translations,  # Full translations dict for JS
             microsoft_sso_enabled=config.MICROSOFT_SSO_ENABLED,
             google_sso_enabled=config.GOOGLE_SSO_ENABLED,
             smtp_enabled=config.SMTP_ENABLED,

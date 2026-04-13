@@ -97,7 +97,7 @@
                         <dt class="col-sm-5">{{ ftl('websites-auth-method') }}</dt>
                         <dd class="col-sm-7">
                             <span class="badge bg-primary">
-                                {{ _(user.login_config.authentication_method.value|replace('_', ' ')|title) }}
+                                {{ ftl_enum(user.login_config.authentication_method.value) }}
                             </span>
                         </dd>
 

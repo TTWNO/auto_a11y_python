@@ -56,7 +56,7 @@
                     <div class="d-flex justify-content-between align-items-start mb-2">
                         <h2 class="card-title">{{ recording.title }}</h2>
                         <div>
-                            <span class="badge bg-info">{{ _(recording.recording_type.value|replace('_', ' ')|title) }}</span>
+                            <span class="badge bg-info">{{ ftl_enum(recording.recording_type.value) }}</span>
                         </div>
                     </div>
 

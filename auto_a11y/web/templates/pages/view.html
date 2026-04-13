@@ -235,7 +235,7 @@
                         {% elif page.status.value == 'error' %}
                             <span class="badge bg-danger">{{ ftl('common-error-2') }}</span>
                         {% else %}
-                            <span class="badge bg-secondary">{{ _(page.status.value|title) }}</span>
+                            <span class="badge bg-secondary">{{ ftl_enum(page.status.value) }}</span>
                         {% endif %}
                     </p>
                 </div>
@@ -548,7 +548,7 @@
                     <tbody>
                         {% for check in latest_result.metadata.checks %}
                         <tr>
-                            <td>{{ touchpoint_names.get(check.test_name, _(check.test_name|replace('_', ' ')|title)) }}</td>
+                            <td>{{ touchpoint_names.get(check.test_name, ftl_enum(check.test_name)) }}</td>
                             <td>
                                 {% set touchpoint_lower = check.test_name|replace('_', ' ')|lower %}
                                 {{ ftl('common-accessibility-checks-for-touchpoint', touchpoint=touchpoint_lower) }}

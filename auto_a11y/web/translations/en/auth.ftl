@@ -120,3 +120,7 @@ auth-you-have-been-logged-out = You have been logged out.
 auth-your-account-has-been-deactivated = Your account has been deactivated.
 auth-your-account-has-been-deactivated-please-contact = Your account has been deactivated. Please contact an administrator.
 auth-your-password-has-been-reset-please-log-in = Your password has been reset. Please log in.
+
+# Plain text email messages
+auth-email-reset-click-link = We received a request to reset your password. Click the link below to set a new password:
+auth-email-reset-expire-notice = This link will expire in 15 minutes. If you did not request a password reset, you can safely ignore this email.

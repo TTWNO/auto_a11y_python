@@ -112,7 +112,7 @@
                                 <select class="form-select" id="authentication_method" name="authentication_method">
                                     {% for method in auth_methods %}
                                     <option value="{{ method.value }}" {% if method.value == 'form_login' %}selected{% endif %}>
-                                        {{ _(method.value|replace('_', ' ')|title) }}
+                                        {{ ftl_enum(method.value) }}
                                     </option>
                                     {% endfor %}
                                 </select>

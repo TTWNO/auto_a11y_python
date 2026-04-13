@@ -90,7 +90,7 @@
                 <div class="card-body">
                     <dl class="row mb-0">
                         <dt class="col-sm-3">{{ ftl('projects-authentication-method') }}</dt>
-                        <dd class="col-sm-9">{{ _(user.login_config.authentication_method.value|replace('_', ' ')|title) }}</dd>
+                        <dd class="col-sm-9">{{ ftl_enum(user.login_config.authentication_method.value) }}</dd>
 
                         {% if user.login_config.authentication_method.value == 'form_login' %}
                         <dt class="col-sm-3">{{ ftl('common-login-url') }}</dt>

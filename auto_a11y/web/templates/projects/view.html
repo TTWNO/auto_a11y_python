@@ -11,7 +11,7 @@
                 <h1 class="mb-2">
                     {{ project.name }}
                     <span class="badge bg-{{ {'active': 'success', 'paused': 'warning', 'completed': 'info', 'archived': 'secondary'}[project.status.value] }}">
-                        {{ _(project.status.value|title) }}
+                        {{ ftl_enum(project.status.value) }}
                     </span>
                 </h1>
                 <p class="text-muted mb-0">{{ project.description or ftl('projects-no-description') }}</p>
@@ -292,7 +292,7 @@
                             <td>{{ recording.title }}</td>
                             <td>
                                 <span class="badge bg-secondary">
-                                    {{ _(recording.recording_type.value|replace('_', ' ')|title) }}
+                                    {{ ftl_enum(recording.recording_type.value) }}
                                 </span>
                             </td>
                             <td>{{ recording.auditor_name or '-' }}</td>
@@ -362,7 +362,7 @@
                         </div>
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <span class="badge bg-secondary" style="font-size: 0.7rem;">{{ _(recording.recording_type.value|replace('_', ' ')|title) }}</span>
+                                <span class="badge bg-secondary" style="font-size: 0.7rem;">{{ ftl_enum(recording.recording_type.value) }}</span>
                                 {% if recording.recorded_date %}
                                 <small class="text-muted ms-1">{{ recording.recorded_date.strftime('%m/%d') }}</small>
                                 {% endif %}

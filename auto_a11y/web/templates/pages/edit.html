@@ -89,7 +89,7 @@
                             {% elif page.status.value == 'error' %}
                                 <span class="badge bg-danger">{{ ftl('common-error-2') }}</span>
                             {% else %}
-                                <span class="badge bg-secondary">{{ _(page.status.value|title) }}</span>
+                                <span class="badge bg-secondary">{{ ftl_enum(page.status.value) }}</span>
                             {% endif %}
                         </dd>
                         

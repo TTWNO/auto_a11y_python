@@ -89,7 +89,7 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <small>{{ _(user.login_config.authentication_method.value|replace('_', ' ')|title) }}</small>
+                                <small>{{ ftl_enum(user.login_config.authentication_method.value) }}</small>
                             </td>
                             <td>
                                 {% if user.enabled %}

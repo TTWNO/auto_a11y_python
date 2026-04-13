@@ -721,3 +721,63 @@ common-xpath = XPath:
 common-you-do-not-have-permission-to-access-this-page = You do not have permission to access this page.
 common-you-do-not-have-permission-to-access-this-resource = You do not have permission to access this resource.
 common-your-account-has-been-created-an-administrator = Your account has been created. An administrator will grant you access to projects shortly.
+
+# Enum translations — dynamic values from Python enums
+# Page status
+enum-discovered = Discovered
+enum-queued = Queued
+enum-testing = Testing
+enum-tested = Tested
+enum-error = Error
+enum-skipped = Skipped
+enum-discovery-failed = Discovery Failed
+
+# Recording type
+enum-audit = Audit
+enum-lived-experience-website = Lived Experience Website
+enum-lived-experience-app = Lived Experience App
+enum-lived-experience-tangible-device = Lived Experience Tangible Device
+enum-lived-experience-nav-and-wayfinding = Lived Experience Nav And Wayfinding
+
+# Impact level
+enum-low = Low
+enum-medium = Medium
+enum-high = High
+enum-critical = Critical
+
+# Authentication method
+enum-form-login = Form Login
+enum-basic-auth = Basic Auth
+enum-oauth = OAuth
+enum-sso = SSO
+
+# Project status
+enum-active = Active
+enum-paused = Paused
+enum-completed = Completed
+enum-archived = Archived
+
+# Project type
+enum-website = Website
+enum-app = App
+enum-tangible-device = Tangible Device
+enum-nav-and-wayfinding = Nav And Wayfinding
+
+# Script execution trigger
+enum-once-per-session = Once Per Session
+enum-once-per-page = Once Per Page
+enum-once-per-page-first-visit = Once Per Page First Visit
+enum-conditional = Conditional
+enum-always = Always
+
+# Script action type
+enum-click = Click
+enum-type = Type
+enum-wait = Wait
+enum-wait-for-selector = Wait For Selector
+enum-wait-for-navigation = Wait For Navigation
+enum-wait-for-network-idle = Wait For Network Idle
+enum-scroll = Scroll
+enum-select = Select
+enum-hover = Hover
+enum-screenshot = Screenshot

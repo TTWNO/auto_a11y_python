@@ -721,3 +721,63 @@ common-xpath = XPath :
 common-you-do-not-have-permission-to-access-this-page = Vous n'avez pas la permission d'accéder à cette page.
 common-you-do-not-have-permission-to-access-this-resource = Vous n'avez pas la permission d'accéder à cette ressource.
 common-your-account-has-been-created-an-administrator = Votre compte a été créé. Un administrateur vous accordera l'accès aux projets sous peu.
+
+# Enum translations — dynamic values from Python enums
+# Page status
+enum-discovered = Découvert
+enum-queued = En file d'attente
+enum-testing = En cours de test
+enum-tested = Testé
+enum-error = Erreur
+enum-skipped = Ignoré
+enum-discovery-failed = Échec de la découverte
+
+# Recording type
+enum-audit = Audit
+enum-lived-experience-website = Expérience vécue site web
+enum-lived-experience-app = Expérience vécue application
+enum-lived-experience-tangible-device = Expérience vécue appareil tangible
+enum-lived-experience-nav-and-wayfinding = Expérience vécue navigation et orientation
+
+# Impact level
+enum-low = Faible
+enum-medium = Moyen
+enum-high = Élevé
+enum-critical = Critique
+
+# Authentication method
+enum-form-login = Connexion par formulaire
+enum-basic-auth = Authentification de base
+enum-oauth = OAuth
+enum-sso = SSO
+
+# Project status
+enum-active = Actif
+enum-paused = En pause
+enum-completed = Terminé
+enum-archived = Archivé
+
+# Project type
+enum-website = Site web
+enum-app = Application
+enum-tangible-device = Appareil tangible
+enum-nav-and-wayfinding = Navigation et orientation
+
+# Script execution trigger
+enum-once-per-session = Une fois par session
+enum-once-per-page = Une fois par page
+enum-once-per-page-first-visit = Une fois par page première visite
+enum-conditional = Conditionnel
+enum-always = Toujours
+
+# Script action type
+enum-click = Clic
+enum-type = Saisie
+enum-wait = Attente
+enum-wait-for-selector = Attente du sélecteur
+enum-wait-for-navigation = Attente de la navigation
+enum-wait-for-network-idle = Attente du réseau inactif
+enum-scroll = Défilement
+enum-select = Sélection
+enum-hover = Survol
+enum-screenshot = Capture d'écran

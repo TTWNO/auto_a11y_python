@@ -116,7 +116,7 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <small>{{ _(script.trigger.value|replace('_', ' ')|title) }}</small>
+                                <small>{{ ftl_enum(script.trigger.value) }}</small>
                             </td>
                             <td>
                                 {% if script.enabled %}

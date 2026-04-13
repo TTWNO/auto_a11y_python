@@ -3,8 +3,7 @@ Report generation routes
 """
 
 from flask import Blueprint, render_template, request, jsonify, send_file, current_app, url_for, flash, redirect, session, g
-from flask_babel import get_locale
-from auto_a11y.web.fluent import ftl, force_locale
+from auto_a11y.web.fluent import ftl, force_locale, _get_current_locale as get_locale
 from auto_a11y.models import PageStatus
 from auto_a11y.reporting import ReportGenerator, PageStructureReport
 from auto_a11y.reporting.discovery_report import DiscoveryReportGenerator

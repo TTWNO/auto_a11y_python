@@ -339,7 +339,7 @@
                                 data-bs-toggle="collapse" 
                                 data-bs-target="#violation-{{ loop.index }}">
                             <span class="badge bg-{{ {'high': 'danger', 'medium': 'warning', 'low': 'info'}[violation.impact.value|lower if violation.impact.value else violation.impact|lower] or 'secondary' }} me-2">
-                                {{ _(violation.impact.value|title if violation.impact.value else violation.impact|title)|upper }}
+                                {{ ftl_enum(violation.impact.value if violation.impact.value else violation.impact)|upper }}
                             </span>
                             <span class="me-2">{{ violation.id }}</span>
                             <span class="text-muted">- {{ violation.description }}</span>

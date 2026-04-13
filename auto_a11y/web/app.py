@@ -157,17 +157,27 @@ def create_app(config):
         app.scheduler = SchedulerService(app.db, config)
         app.scheduler.start()
         logger.info("Scheduler service started")
-
-        # Register shutdown handler
-        def shutdown_scheduler():
-            if hasattr(app, 'scheduler') and app.scheduler:
-                logger.info("Shutting down scheduler...")
-                app.scheduler.shutdown()
-
-        atexit.register(shutdown_scheduler)
     else:
         app.scheduler = None
         logger.info("Scheduler is disabled")
+
+    # Register shutdown handler — stop task runner first (waits for
+    # in-flight Playwright tests to finish and close browsers), then
+    # the scheduler.  Without this ordering the Python process tears
+    # down while Playwright's Node.js driver still has open pipes,
+    # causing an unhandled EPIPE crash.
+    def _graceful_shutdown():
+        logger.info("Shutting down task runner...")
+        try:
+            task_runner.stop()
+        except Exception as e:
+            logger.warning(f"Task runner shutdown error: {e}")
+
+        if hasattr(app, 'scheduler') and app.scheduler:
+            logger.info("Shutting down scheduler...")
+            app.scheduler.shutdown()
+
+    atexit.register(_graceful_shutdown)
 
     # Language switching route
     @app.route('/set-language/<language>')

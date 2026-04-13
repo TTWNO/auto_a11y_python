@@ -78,6 +78,9 @@ jobs:
         PARALLEL_TESTS=2
         TEST_TIMEOUT=60000
 
+        # CI serves over HTTP, not HTTPS
+        SESSION_COOKIE_SECURE=False
+
         # CI admin credentials (for endpoint health check)
         CI_USERNAME=ci@test.local
         CI_PASSWORD=CiTestPassword123

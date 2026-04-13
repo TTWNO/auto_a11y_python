@@ -1,4 +1,9 @@
 # common — auto-migrated from messages.po
+common-page-count =
+    { $count ->
+        [one] page
+       *[other] pages
+    }
 common-0-test-has-violations = 0%% (test has violations)
 common-1-missing-label = 1 missing label ✗
 common-1-year = 1 year

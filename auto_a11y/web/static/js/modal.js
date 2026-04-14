@@ -26,13 +26,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Prevent Escape on persistent dialogs
+    // Prevent Escape on persistent dialogs (cancel does not bubble, use capture)
     document.addEventListener('cancel', function(e) {
         if (e.target.tagName === 'DIALOG'
             && e.target.hasAttribute('data-modal-persistent')) {
             e.preventDefault();
         }
-    });
+    }, true);
 });
 
 // Programmatic helpers for inline scripts

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dialog Accessibility Test Page</title>
+    <link rel="stylesheet" href="../../auto_a11y/web/static/css/modal.css">
+    <style>
+        /* Minimal Bootstrap-like classes for testing */
+        .modal-dialog { max-width: 500px; }
+        .modal-content { background: white; border-radius: 8px; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem; border-bottom: 1px solid #dee2e6; }
+        .modal-body { padding: 1rem; }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 0.5rem; padding: 1rem; border-top: 1px solid #dee2e6; }
+        .btn-close { background: none; border: none; font-size: 1.25rem; cursor: pointer; padding: 0.5rem; }
+        .btn-close::before { content: "\00d7"; }
+        .btn { padding: 0.375rem 0.75rem; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; }
+        body { font-family: sans-serif; padding: 2rem; }
+    </style>
+</head>
+<body>
+    <h1>Dialog Accessibility Tests</h1>
+
+    <!-- Trigger buttons -->
+    <button id="openStandard" data-open-modal="#standardModal">Open Standard Modal</button>
+    <button id="openPersistent" data-open-modal="#persistentModal">Open Persistent Modal</button>
+    <button id="openProgrammatic" onclick="openModal('programmaticModal')">Open Programmatic Modal</button>
+    <button id="openNoLabel" data-open-modal="#noLabelModal">Open No-Label Modal</button>
+
+    <!-- Standard modal with aria-labelledby -->
+    <dialog class="modal" id="standardModal" aria-labelledby="standardModalTitle">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title" id="standardModalTitle">Standard Modal</h2>
+                    <button type="button" class="btn-close" data-close-modal aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>This is a standard modal dialog.</p>
+                    <a href="#" id="standardLink">A focusable link</a>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn" data-close-modal>Cancel</button>
+                    <button type="button" class="btn" id="standardConfirm">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- Persistent (non-dismissable) modal -->
+    <dialog class="modal" id="persistentModal" aria-labelledby="persistentModalTitle" data-modal-persistent>
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title" id="persistentModalTitle">Processing...</h2>
+                </div>
+                <div class="modal-body">
+                    <p>Please wait while the operation completes.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn" id="persistentClose" data-close-modal>Done</button>
+                </div>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- Programmatically opened modal -->
+    <dialog class="modal" id="programmaticModal" aria-labelledby="programmaticModalTitle">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title" id="programmaticModalTitle">Programmatic Modal</h2>
+                    <button type="button" class="btn-close" data-close-modal aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Opened via openModal() helper.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn" data-close-modal>Close</button>
+                </div>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- Modal without aria-labelledby (negative test case) -->
+    <dialog class="modal" id="noLabelModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title">Unlabelled Modal</h2>
+                    <button type="button" class="btn-close" data-close-modal aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>This modal has no aria-labelledby.</p>
+                </div>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- Background content for inert testing -->
+    <div id="backgroundContent">
+        <button id="bgButton">Background Button</button>
+        <input id="bgInput" type="text" placeholder="Background input">
+        <a href="#" id="bgLink">Background Link</a>
+    </div>
+
+    <script src="../../auto_a11y/web/static/js/modal.js"></script>
+</body>
+</html>

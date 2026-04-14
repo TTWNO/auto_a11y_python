@@ -408,6 +408,9 @@ class RecordingsReportGenerator:
             autoescape=select_autoescape(['html', 'xml'])
         )
 
+        # Register Fluent translation functions so templates can use {{ ftl(...) }}
+        env.globals['ftl'] = ftl
+
         # Load the standalone template (fully self-contained with embedded assets)
         template = env.get_template('static_report/recordings_report_standalone.html')
 

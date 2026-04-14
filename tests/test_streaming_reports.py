@@ -137,11 +137,13 @@ class TestCollectSummary:
         rg._collect_summary(page_gen, progress)
 
         assert progress.call_count == 3
-        # Verify it was called with incrementing page counts
-        # ftl() returns the message ID in test context (no Flask app)
-        progress.assert_any_call(1, 0, "reports-collecting-summary-count")
-        progress.assert_any_call(2, 0, "reports-collecting-summary-count")
-        progress.assert_any_call(3, 0, "reports-collecting-summary-count")
+        # Verify it was called with incrementing page counts.
+        # The third arg is a resolved Fluent Markup string, so check
+        # only the numeric arguments.
+        calls = progress.call_args_list
+        assert calls[0].args[:2] == (1, 0)
+        assert calls[1].args[:2] == (2, 0)
+        assert calls[2].args[:2] == (3, 0)
 
 
 class TestWriteDetails:
@@ -220,9 +222,11 @@ class TestWriteDetails:
             rg._write_details(page_gen, summary, formatter, output_file, progress)
 
         assert progress.call_count == 2
-        # ftl() returns the message ID in test context (no Flask app)
-        progress.assert_any_call(1, 2, "reports-writing-details-current-total")
-        progress.assert_any_call(2, 2, "reports-writing-details-current-total")
+        # The third arg is a resolved Fluent Markup string, so check
+        # only the numeric arguments.
+        calls = progress.call_args_list
+        assert calls[0].args[:2] == (1, 2)
+        assert calls[1].args[:2] == (2, 2)
 
 
 class TestPrepareSinglePageData:

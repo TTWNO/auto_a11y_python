@@ -16,7 +16,7 @@ from typing import List, Dict, Any, Optional
 import jinja2
 
 logger = logging.getLogger(__name__)
-from auto_a11y.web.fluent import ftl, lazy_ftl, force_locale
+from auto_a11y.web.fluent import ftl, ftl_enum, lazy_ftl, force_locale
 
 from auto_a11y.core.database import Database
 from auto_a11y.reporting.issue_catalog import IssueCatalog
@@ -302,6 +302,10 @@ class StaticHTMLReportGenerator:
 
         # Add custom filters
         self._setup_template_filters()
+
+        # Register Fluent translation functions so templates can use {{ ftl(...) }}
+        self.template_env.globals['ftl'] = ftl
+        self.template_env.globals['ftl_enum'] = ftl_enum
 
     def _get_translations(self) -> Dict[str, Dict[str, str]]:
         """Get translations for both EN and FR languages"""

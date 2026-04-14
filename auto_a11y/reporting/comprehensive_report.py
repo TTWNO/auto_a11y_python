@@ -7,7 +7,7 @@ from collections import defaultdict, Counter
 from datetime import datetime, timedelta
 import json
 import logging
-from auto_a11y.web.fluent import force_locale
+from auto_a11y.web.fluent import ftl, force_locale
 
 from auto_a11y.reporting.ai_executive_summary import AIExecutiveSummaryGenerator
 from auto_a11y.ai.claude_client import ClaudeClient, ClaudeConfig
@@ -164,6 +164,9 @@ class ComprehensiveReportGenerator:
             loader=jinja2.FileSystemLoader(str(templates_dir)),
             autoescape=jinja2.select_autoescape(['html', 'xml'])
         )
+
+        # Register Fluent translation functions so templates can use {{ ftl(...) }}
+        env.globals['ftl'] = ftl
 
         # Load the standalone template
         template = env.get_template('static_report/comprehensive_report_standalone.html')

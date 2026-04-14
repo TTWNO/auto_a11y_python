@@ -787,3 +787,9 @@ enum-scroll = Scroll
 enum-select = Select
 enum-hover = Hover
 enum-screenshot = Screenshot
+
+# Touchpoint enums
+enum-colors = Colors
+enum-event-handling = Event Handling
+enum-lists = Lists
+enum-tabindex = Tabindex

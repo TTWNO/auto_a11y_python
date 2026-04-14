@@ -2,9 +2,13 @@
 Routes for managing website users (test users for authenticated testing)
 """
 
+import asyncio
+
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify
 from auto_a11y.web.fluent import ftl
 from auto_a11y.models import WebsiteUser, LoginConfig, AuthenticationMethod
+from auto_a11y.core.browser_manager import BrowserManager
+from auto_a11y.testing.login_automation import LoginAutomation
 import logging
 
 logger = logging.getLogger(__name__)
@@ -196,6 +200,65 @@ def delete_user(user_id):
     except Exception as e:
         logger.error(f"Error deleting user: {e}")
         return jsonify({'error': str(e)}), 500
+
+
+@website_users_bp.route('/user/<user_id>/test-login', methods=['POST'])
+def test_login(user_id):
+    """Test login for a website user without running a full test"""
+    user = current_app.db.get_website_user(user_id)
+    if not user:
+        return jsonify({'error': ftl('common-user-not-found')}), 404
+
+    login_config = user.login_config
+    if not login_config.login_url:
+        return jsonify({
+            'success': False,
+            'error': ftl('websites-login-url-not-configured')
+        })
+
+    # Build browser config
+    website = current_app.db.get_website(user.website_id)
+    project = current_app.db.get_project(website.project_id) if website else None
+    browser_config = current_app.app_config.__dict__.copy()
+    if project and project.config:
+        browser_config['stealth_mode'] = project.config.get('stealth_mode', False)
+        headless_setting = project.config.get('headless_browser', 'true')
+        browser_config['BROWSER_HEADLESS'] = (headless_setting == 'true')
+    else:
+        browser_config['stealth_mode'] = False
+
+    async def _do_test_login():
+        bm = BrowserManager(browser_config)
+        try:
+            await bm.start()
+            context = await bm.create_context()
+            page = await context.new_page()
+            login_automation = LoginAutomation(current_app.db)
+            result = await login_automation.perform_login(page, user, timeout=30000)
+            return result
+        finally:
+            await bm.stop()
+
+    try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            result = loop.run_until_complete(_do_test_login())
+        finally:
+            loop.close()
+
+        return jsonify({
+            'success': result.get('success', False),
+            'error': result.get('error'),
+            'duration_ms': result.get('duration_ms', 0)
+        })
+
+    except Exception as e:
+        logger.error(f"Test login error for user {user_id}: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 
 @website_users_bp.route('/user/<user_id>/toggle', methods=['POST'])

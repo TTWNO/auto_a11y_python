@@ -2,6 +2,13 @@
 
 {% block title %}{{ ftl('common-test-users') }} - {{ website.display_name }} - {{ ftl('common-auto-a11y') }}{% endblock %}
 
+{% block extra_css %}
+<style>
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
     <!-- Breadcrumb -->
@@ -132,6 +139,11 @@
                                        class="btn btn-outline-secondary" title="{{ ftl('common-edit') }}">
                                         <i class="bi bi-pencil" aria-hidden="true"></i>
                                     </a>
+                                    <button type="button" class="btn btn-outline-info"
+                                            id="test-login-btn-{{ user.id }}"
+                                            onclick="testLogin('{{ user.id }}')" title="{{ ftl('websites-test-login') }}">
+                                        <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>
+                                    </button>
                                     <button type="button" class="btn btn-outline-{% if user.enabled %}success{% else %}secondary{% endif %}"
                                             onclick="toggleUser('{{ user.id }}')" title="{% if user.enabled %}{{ ftl('common-disable') }}{% else %}{{ ftl('common-enable') }}{% endif %}">
                                         <i class="bi bi-toggle-{% if user.enabled %}on{% else %}off{% endif %}" aria-hidden="true"></i>
@@ -178,6 +190,46 @@
 
 {% block extra_js %}
 <script>
+function testLogin(userId) {
+    const btn = document.getElementById(`test-login-btn-${userId}`);
+    const icon = btn.querySelector('i');
+    const originalClass = icon.className;
+
+    // Show spinner
+    btn.disabled = true;
+    icon.className = 'bi bi-arrow-repeat spin';
+    btn.title = {{ ftl('websites-testing-login') | tojson }};
+
+    fetch(`/users/user/${userId}/test-login`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.disabled = false;
+        if (data.success) {
+            icon.className = 'bi bi-check-circle-fill';
+            btn.classList.remove('btn-outline-info');
+            btn.classList.add('btn-outline-success');
+            btn.title = {{ ftl('websites-login-test-succeeded', duration='') | tojson }} + data.duration_ms + 'ms';
+        } else {
+            icon.className = 'bi bi-x-circle-fill';
+            btn.classList.remove('btn-outline-info');
+            btn.classList.add('btn-outline-danger');
+            btn.title = (data.error || {{ ftl('websites-login-test-failed') | tojson }});
+        }
+        // Reload after 3 seconds to update the status column
+        setTimeout(() => location.reload(), 3000);
+    })
+    .catch(err => {
+        btn.disabled = false;
+        icon.className = originalClass;
+        alert({{ ftl('websites-error-testing-login') | tojson }} + ' ' + err.message);
+    });
+}
+
 function toggleUser(userId) {
     fetch(`/users/user/${userId}/toggle`, {
         method: 'POST',

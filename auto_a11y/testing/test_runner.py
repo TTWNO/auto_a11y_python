@@ -597,19 +597,24 @@ class TestRunner:
                     logger.debug(f"DEBUG multi-state: get_website_user returned: {user}")
                 logger.debug(f"DEBUG multi-state: user={user}, user.enabled={user.enabled if user else 'N/A'}")
                 if user and user.enabled:
-                    logger.debug(f"DEBUG multi-state: About to authenticate as user: {user.username}")
-                    login_result = await self.login_automation.perform_login(
-                        browser_page,
-                        user,
-                        timeout=30000
-                    )
-
-                    if login_result['success']:
-                        logger.info(f"Successfully authenticated as {user.username}")
-                        authenticated_user = user
-                        self._logged_in_user = user
+                    # Check if already logged in as this user (cookies persist in shared context)
+                    if self._logged_in_user and self._logged_in_user.id == user.id:
+                        logger.debug(f"DEBUG multi-state: Already logged in as {user.username}, reusing session")
+                        authenticated_user = self._logged_in_user
                     else:
-                        logger.error(f"Authentication failed: {login_result['error']}")
+                        logger.debug(f"DEBUG multi-state: About to authenticate as user: {user.username}")
+                        login_result = await self.login_automation.perform_login(
+                            browser_page,
+                            user,
+                            timeout=30000
+                        )
+
+                        if login_result['success']:
+                            logger.info(f"Successfully authenticated as {user.username}")
+                            authenticated_user = user
+                            self._logged_in_user = user
+                        else:
+                            logger.error(f"Authentication failed: {login_result['error']}")
 
             # STEP 2: Navigate to test page (after authentication)
             logger.info(f"Navigating to test page: {page.url}")

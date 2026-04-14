@@ -787,3 +787,9 @@ enum-scroll = Défilement
 enum-select = Sélection
 enum-hover = Survol
 enum-screenshot = Capture d'écran
+
+# Touchpoint enums
+enum-colors = Couleurs
+enum-event-handling = Gestion des événements
+enum-lists = Listes
+enum-tabindex = Tabindex

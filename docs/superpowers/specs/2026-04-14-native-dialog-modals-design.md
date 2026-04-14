@@ -15,12 +15,12 @@ Native `<dialog>` elements provide built-in accessibility benefits over Bootstra
 
 ## Scope
 
-28 modals across 12 template files:
+27 modals across 12 template files:
 
 | Template | Modals | IDs |
 |----------|--------|-----|
 | `pages/view.html` | 2 | screenshotModal, testModal |
-| `projects/view.html` | 5 | addWebsiteModal, discoveryModal, testAllModal, deleteModal |
+| `projects/view.html` | 4 | addWebsiteModal, discoveryModal, testAllModal, deleteModal |
 | `projects/create.html` | 1 | testDetailsModal |
 | `projects/edit.html` | 2 | deleteProjectModal, testDetailsModal |
 | `websites/view.html` | 5 | discoveryModal, addPageModal, testAllModal, testUntestedModal, screenshotModal |
@@ -94,13 +94,16 @@ dialog.modal {
     overflow-y: auto;
 }
 
+/* Override Bootstrap's .modal { display: none } when dialog is open */
+dialog.modal[open] {
+    display: block;
+}
+
 dialog.modal::backdrop {
     background-color: rgba(0, 0, 0, 0.5);
 }
 
 dialog.modal .modal-dialog {
-    display: flex;
-    align-items: center;
     min-height: 100%;
     margin: 1.75rem auto;
 }
@@ -133,10 +136,19 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Backdrop click to close
+    // Backdrop click to close (skip persistent dialogs)
     document.addEventListener('click', function(e) {
-        if (e.target.tagName === 'DIALOG' && e.target.open) {
+        if (e.target.tagName === 'DIALOG' && e.target.open
+            && !e.target.hasAttribute('data-modal-persistent')) {
             e.target.close();
+        }
+    });
+
+    // Prevent Escape on persistent dialogs
+    document.addEventListener('cancel', function(e) {
+        if (e.target.tagName === 'DIALOG'
+            && e.target.hasAttribute('data-modal-persistent')) {
+            e.preventDefault();
         }
     });
 });
@@ -163,10 +175,24 @@ function closeModal(id) {
 | `el.addEventListener('show.bs.modal', fn)` | Call `fn()` before `showModal()` at call site |
 | `el.addEventListener('hidden.bs.modal', fn)` | `el.addEventListener('close', fn)` |
 
-Special cases:
+Additional patterns:
+- `bootstrap.Modal.getInstance(el); if (modal) modal.hide()` → `el.close()` (no null guard needed; `.close()` is a no-op on an already-closed dialog).
 - `showMessageDialog()` in `reports/dashboard.html`: Rewrite to use `openModal('messageModal')` internally.
 - `fixture_status.html` dynamically created modal: Change to create a `<dialog>` element instead of a `<div>`, use `.showModal()`, listen for `close` event instead of `hidden.bs.modal`.
 - `show.bs.modal` listeners on siteStructureModal and discoveryModal (dashboard): Move the load function call to before `showModal()` at the trigger site.
+- **Do NOT use `method="dialog"` on any forms inside dialogs.** All existing forms use AJAX submission with `e.preventDefault()` — this must be preserved.
+
+### 5. Non-Dismissable Dialogs
+
+The `testModal` in `pages/view.html` is a progress dialog that should not be closed by backdrop click or Escape. For these cases, add `data-modal-persistent` to the `<dialog>` element. The utility script will:
+- Skip backdrop-click-to-close for persistent dialogs
+- Prevent Escape via the native `cancel` event
+
+### 6. Accessibility Fixes During Migration
+
+Fix pre-existing issues while converting:
+- Add `aria-labelledby` to any modal currently missing it (e.g., `screenshotModal` in `websites/view.html`)
+- Add `aria-label="{{ ftl('common-close') }}"` to any close button currently missing it (e.g., close buttons in `projects/view.html`)
 
 ## Files Changed
 
@@ -196,3 +222,5 @@ Special cases:
 - Removing Bootstrap's modal JS/CSS from the bundle (can be done separately once all modals are converted)
 - Animation/transitions (native `<dialog>` has no built-in fade; can be added with CSS later if desired)
 - Fixture HTML files (test fixtures, not app UI)
+- `help-system.js` custom modal (uses `role="dialog"` div with manual focus trapping — a good candidate for a follow-up conversion but not part of this change)
+- `pages/view.html.backup` (not served)

@@ -1,0 +1,25 @@
+/* Native <dialog> overrides — works with Bootstrap's inner modal classes */
+dialog.modal {
+    padding: 0;
+    border: none;
+    background: transparent;
+    max-width: 100%;
+    max-height: 100%;
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+}
+
+/* Override Bootstrap's .modal { display: none } when dialog is open */
+dialog.modal[open] {
+    display: block;
+}
+
+dialog.modal::backdrop {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+dialog.modal .modal-dialog {
+    min-height: 100%;
+    margin: 1.75rem auto;
+}

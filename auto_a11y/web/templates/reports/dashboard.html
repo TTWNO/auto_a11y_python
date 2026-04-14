@@ -56,7 +56,7 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>{{ ftl('common-reports') }}</h1>
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#generateReportModal">
+        <button class="btn btn-primary" data-open-modal="#generateReportModal">
             <i class="bi bi-plus-circle" aria-hidden="true"></i> {{ ftl('common-generate-report') }}
         </button>
     </div>
@@ -74,7 +74,7 @@
                         <p class="card-text text-muted">{{ ftl('reports-comprehensive-accessibility-testing-results') }}</p>
                     </div>
                     <div class="btn-wrapper">
-                        <button class="btn btn-summary" data-bs-toggle="modal" data-bs-target="#generateReportModal">
+                        <button class="btn btn-summary" data-open-modal="#generateReportModal">
                             <i class="bi bi-download me-2" aria-hidden="true"></i>{{ ftl('common-generate-report') }}
                         </button>
                     </div>
@@ -92,7 +92,7 @@
                         <p class="card-text text-muted">{{ ftl('reports-discover-content-requiring-manual-inspection') }}</p>
                     </div>
                     <div class="btn-wrapper">
-                        <button class="btn btn-html" data-bs-toggle="modal" data-bs-target="#discoveryModal">
+                        <button class="btn btn-html" onclick="loadProjectsForDiscovery(); openModal('discoveryModal');">
                             <i class="bi bi-search me-2" aria-hidden="true"></i>{{ ftl('reports-generate-discovery-report') }}
                         </button>
                     </div>
@@ -110,7 +110,7 @@
                         <p class="card-text text-muted">{{ ftl('reports-hierarchical-view-of-website-organization') }}</p>
                     </div>
                     <div class="btn-wrapper">
-                        <button class="btn btn-summary" data-bs-toggle="modal" data-bs-target="#siteStructureModal">
+                        <button class="btn btn-summary" onclick="loadProjectsForStructure(); openModal('siteStructureModal');">
                             <i class="bi bi-diagram-3 me-2" aria-hidden="true"></i>{{ ftl('reports-generate-structure') }}
                         </button>
                     </div>
@@ -132,7 +132,7 @@
                         <p class="card-text text-muted">{{ ftl('reports-multi-page-offline-report-with-filters-scores-and') }}</p>
                     </div>
                     <div class="btn-wrapper">
-                        <button class="btn btn-html" data-bs-toggle="modal" data-bs-target="#staticHtmlModal">
+                        <button class="btn btn-html" data-open-modal="#staticHtmlModal">
                             <i class="bi bi-download me-2" aria-hidden="true"></i>{{ ftl('reports-generate-offline-report') }}
                         </button>
                     </div>
@@ -150,7 +150,7 @@
                         <p class="card-text text-muted">{{ ftl('reports-single-page-offline-report-with-issues-grouped-by') }}</p>
                     </div>
                     <div class="btn-wrapper">
-                        <button class="btn btn-summary" data-bs-toggle="modal" data-bs-target="#deduplicatedModal">
+                        <button class="btn btn-summary" data-open-modal="#deduplicatedModal">
                             <i class="bi bi-file-earmark-zip me-2" aria-hidden="true"></i>{{ ftl('reports-generate-deduplicated-report') }}
                         </button>
                     </div>
@@ -168,7 +168,7 @@
                         <p class="card-text text-muted">{{ ftl('reports-manual-accessibility-audit-findings-from-recorded') }}</p>
                     </div>
                     <div class="btn-wrapper">
-                        <button class="btn btn-pdf" data-bs-toggle="modal" data-bs-target="#recordingsModal">
+                        <button class="btn btn-pdf" data-open-modal="#recordingsModal">
                             <i class="bi bi-mic me-2" aria-hidden="true"></i>{{ ftl('reports-generate-recordings-report') }}
                         </button>
                     </div>
@@ -288,12 +288,12 @@
 </div>
 
 <!-- Generate Report Modal -->
-<div class="modal fade" id="generateReportModal" tabindex="-1" aria-labelledby="generateReportModalTitle">
+<dialog class="modal" id="generateReportModal" aria-labelledby="generateReportModalTitle">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 class="modal-title" id="generateReportModalTitle">{{ ftl('common-generate-report') }}</h2>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ ftl('common-close') }}"></button>
+                <button type="button" class="btn-close" data-close-modal aria-label="{{ ftl('common-close') }}"></button>
             </div>
             <form id="generateReportForm">
                 <div class="modal-body">
@@ -317,7 +317,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
@@ -339,7 +339,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="mb-3">
                         <label class="form-label">{{ ftl('reports-date-range') }}</label>
                         <div class="row">
@@ -351,7 +351,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="mb-3">
                         <label class="form-label">{{ ftl('common-include-in-report') }}</label>
                         <div class="form-check">
@@ -387,7 +387,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ ftl('common-cancel') }}</button>
+                    <button type="button" class="btn btn-secondary" data-close-modal>{{ ftl('common-cancel') }}</button>
                     <button type="submit" class="btn btn-primary">
                         <i class="bi bi-file-earmark-arrow-down" aria-hidden="true"></i> {{ ftl('common-generate-report') }}
                     </button>
@@ -395,7 +395,7 @@
             </form>
         </div>
     </div>
-</div>
+</dialog>
 {% endblock %}
 
 {% block extra_js %}
@@ -722,8 +722,7 @@ document.getElementById('generateReportForm').addEventListener('submit', functio
     const reportType = document.getElementById('reportType')?.value || 'xlsx';
     const displayName = projectSelect?.selectedOptions[0]?.text || _i18n.report;
 
-    const modal = bootstrap.Modal.getInstance(document.getElementById('generateReportModal'));
-    if (modal) modal.hide();
+    document.getElementById('generateReportModal').close();
 
     submitReportJob('/reports/generate', {
         method: 'POST',
@@ -743,8 +742,7 @@ document.getElementById('generateReportForm').addEventListener('submit', functio
 
 function generateReport(type) {
     document.getElementById('reportType').value = type;
-    const modal = new bootstrap.Modal(document.getElementById('generateReportModal'));
-    modal.show();
+    document.getElementById('generateReportModal').showModal();
 }
 
 function deleteReport(reportId) {
@@ -767,14 +765,6 @@ function deleteReport(reportId) {
 
 // Site Structure Report Functions
 document.addEventListener('DOMContentLoaded', function() {
-    // Load projects when site structure modal opens
-    const siteStructureModal = document.getElementById('siteStructureModal');
-    if (siteStructureModal) {
-        siteStructureModal.addEventListener('show.bs.modal', function() {
-            loadProjectsForStructure();
-        });
-    }
-    
     // Handle project selection change
     const structureProject = document.getElementById('structureProject');
     if (structureProject) {
@@ -870,8 +860,7 @@ function generateSiteStructureReport() {
 
     const websiteName = document.getElementById('structureWebsite').selectedOptions[0]?.text || {{ ftl('common-website-2') | tojson }};
 
-    const modal = bootstrap.Modal.getInstance(document.getElementById('siteStructureModal'));
-    if (modal) modal.hide();
+    document.getElementById('siteStructureModal').close();
 
     submitReportJob('/reports/generate/page-structure', {
         method: 'POST',
@@ -892,14 +881,6 @@ function generateSiteStructureReport() {
 (function() {
     // Wait for DOM to be ready
     const initDiscovery = function() {
-        // Load projects when discovery modal opens
-        const discoveryModal = document.getElementById('discoveryModal');
-        if (discoveryModal) {
-            discoveryModal.addEventListener('show.bs.modal', function() {
-                loadProjectsForDiscovery();
-            });
-        }
-
         // Handle scope selection change
         const scopeRadios = document.querySelectorAll('input[name="discoveryScope"]');
         scopeRadios.forEach(radio => {
@@ -1035,8 +1016,7 @@ function generateDiscoveryReport() {
         displayName = `Discovery Report - ${projectName}`;
     }
 
-    const modal = bootstrap.Modal.getInstance(document.getElementById('discoveryModal'));
-    if (modal) modal.hide();
+    document.getElementById('discoveryModal').close();
 
     submitReportJob(url, {
         method: 'POST',
@@ -1049,12 +1029,12 @@ function generateDiscoveryReport() {
 </script>
 
 <!-- Site Structure Report Modal -->
-<div class="modal fade" id="siteStructureModal" tabindex="-1" aria-labelledby="siteStructureModalTitle">
+<dialog class="modal" id="siteStructureModal" aria-labelledby="siteStructureModalTitle">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 class="modal-title" id="siteStructureModalTitle">{{ ftl('reports-generate-site-structure-report') }}</h2>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ ftl('common-close') }}"></button>
+                <button type="button" class="btn-close" data-close-modal aria-label="{{ ftl('common-close') }}"></button>
             </div>
             <form id="siteStructureForm">
                 <div class="modal-body">
@@ -1085,7 +1065,7 @@ function generateDiscoveryReport() {
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ ftl('common-cancel') }}</button>
+                    <button type="button" class="btn btn-secondary" data-close-modal>{{ ftl('common-cancel') }}</button>
                     <button type="submit" class="btn btn-primary">
                         <i class="bi bi-diagram-3" aria-hidden="true"></i> {{ ftl('reports-generate-structure-report') }}
                     </button>
@@ -1093,15 +1073,15 @@ function generateDiscoveryReport() {
             </form>
         </div>
     </div>
-</div>
+</dialog>
 
 <!-- Discovery Report Modal -->
-<div class="modal fade" id="discoveryModal" tabindex="-1" aria-labelledby="discoveryModalTitle">
+<dialog class="modal" id="discoveryModal" aria-labelledby="discoveryModalTitle">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 class="modal-title" id="discoveryModalTitle">{{ ftl('reports-generate-discovery-report') }}</h2>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ ftl('common-close') }}"></button>
+                <button type="button" class="btn-close" data-close-modal aria-label="{{ ftl('common-close') }}"></button>
             </div>
             <form id="discoveryForm">
                 <div class="modal-body">
@@ -1152,7 +1132,7 @@ function generateDiscoveryReport() {
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ ftl('common-cancel') }}</button>
+                    <button type="button" class="btn btn-secondary" data-close-modal>{{ ftl('common-cancel') }}</button>
                     <button type="submit" class="btn btn-primary">
                         <i class="bi bi-search" aria-hidden="true"></i> {{ ftl('reports-generate-discovery-report') }}
                     </button>
@@ -1160,15 +1140,15 @@ function generateDiscoveryReport() {
             </form>
         </div>
     </div>
-</div>
+</dialog>
 
 <!-- Static HTML Report Modal -->
-<div class="modal fade" id="staticHtmlModal" tabindex="-1" aria-labelledby="staticHtmlModalTitle">
+<dialog class="modal" id="staticHtmlModal" aria-labelledby="staticHtmlModalTitle">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 class="modal-title" id="staticHtmlModalTitle">{{ ftl('reports-generate-offline-report-static-html') }}</h2>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ ftl('common-close') }}"></button>
+                <button type="button" class="btn-close" data-close-modal aria-label="{{ ftl('common-close') }}"></button>
             </div>
             <form id="staticHtmlForm">
                 <div class="modal-body">
@@ -1228,7 +1208,7 @@ function generateDiscoveryReport() {
                         <i class="bi bi-exclamation-triangle" aria-hidden="true"></i> <strong>{{ ftl('common-note') }}</strong> {{ ftl('reports-large-reports-may-take-several-minutes-to') }}
                     </div>
                     <div class="d-flex justify-content-end gap-2">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ ftl('common-cancel') }}</button>
+                        <button type="button" class="btn btn-secondary" data-close-modal>{{ ftl('common-cancel') }}</button>
                         <button type="submit" class="btn btn-primary">
                             <i class="bi bi-file-earmark-zip" aria-hidden="true"></i> {{ ftl('common-generate-report') }}
                         </button>
@@ -1237,7 +1217,7 @@ function generateDiscoveryReport() {
             </form>
         </div>
     </div>
-</div>
+</dialog>
 
 <script>
 // Static HTML Modal Logic
@@ -1303,8 +1283,7 @@ if (staticHtmlModal) {
         formDataObj.append('include_screenshots', includeScreenshots);
         formDataObj.append('include_discovery', includeDiscovery);
 
-        const modal = bootstrap.Modal.getInstance(document.getElementById('staticHtmlModal'));
-        if (modal) modal.hide();
+        document.getElementById('staticHtmlModal').close();
 
         submitReportJob('/reports/generate/static-html', {
             method: 'POST',
@@ -1320,12 +1299,12 @@ if (staticHtmlModal) {
 </script>
 
 <!-- Deduplicated Report Modal -->
-<div class="modal fade" id="deduplicatedModal" tabindex="-1" aria-labelledby="deduplicatedModalTitle">
+<dialog class="modal" id="deduplicatedModal" aria-labelledby="deduplicatedModalTitle">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 class="modal-title" id="deduplicatedModalTitle">{{ ftl('reports-generate-deduplicated-report') }}</h2>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ ftl('common-close') }}"></button>
+                <button type="button" class="btn-close" data-close-modal aria-label="{{ ftl('common-close') }}"></button>
             </div>
             <form id="deduplicatedForm">
                 <div class="modal-body">
@@ -1366,7 +1345,7 @@ if (staticHtmlModal) {
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ ftl('common-cancel') }}</button>
+                    <button type="button" class="btn btn-secondary" data-close-modal>{{ ftl('common-cancel') }}</button>
                     <button type="submit" class="btn btn-primary">
                         <i class="bi bi-layers" aria-hidden="true"></i> {{ ftl('common-generate-report') }}
                     </button>
@@ -1374,7 +1353,7 @@ if (staticHtmlModal) {
             </form>
         </div>
     </div>
-</div>
+</dialog>
 
 <script>
 // Deduplicated Report Modal Logic
@@ -1434,8 +1413,7 @@ if (deduplicatedModal) {
         if (projectId) formDataObj.append('project_id', projectId);
         if (websiteId) formDataObj.append('website_id', websiteId);
 
-        const modal = bootstrap.Modal.getInstance(document.getElementById('deduplicatedModal'));
-        if (modal) modal.hide();
+        document.getElementById('deduplicatedModal').close();
 
         submitReportJob('/reports/generate/deduplicated', {
             method: 'POST',
@@ -1451,12 +1429,12 @@ if (deduplicatedModal) {
 </script>
 
 <!-- Recordings Report Modal -->
-<div class="modal fade" id="recordingsModal" tabindex="-1" aria-labelledby="recordingsModalTitle">
+<dialog class="modal" id="recordingsModal" aria-labelledby="recordingsModalTitle">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 class="modal-title" id="recordingsModalTitle">{{ ftl('reports-generate-recordings-report') }}</h2>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ ftl('common-close') }}"></button>
+                <button type="button" class="btn-close" data-close-modal aria-label="{{ ftl('common-close') }}"></button>
             </div>
             <form id="recordingsForm">
                 <div class="modal-body">
@@ -1521,7 +1499,7 @@ if (deduplicatedModal) {
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ ftl('common-cancel') }}</button>
+                    <button type="button" class="btn btn-secondary" data-close-modal>{{ ftl('common-cancel') }}</button>
                     <button type="submit" class="btn btn-primary">
                         <i class="bi bi-mic" aria-hidden="true"></i> {{ ftl('reports-generate-recordings-report') }}
                     </button>
@@ -1529,33 +1507,32 @@ if (deduplicatedModal) {
             </form>
         </div>
     </div>
-</div>
+</dialog>
 
 <!-- Error/Info Dialog Modal -->
-<div class="modal fade" id="messageModal" tabindex="-1" aria-labelledby="messageModalTitle">
+<dialog class="modal" id="messageModal" aria-labelledby="messageModalTitle">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 class="modal-title" id="messageModalTitle">{{ ftl('reports-notice') }}</h2>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ ftl('common-close') }}"></button>
+                <button type="button" class="btn-close" data-close-modal aria-label="{{ ftl('common-close') }}"></button>
             </div>
             <div class="modal-body">
                 <p id="messageModalBody"></p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">{{ ftl('reports-ok') }}</button>
+                <button type="button" class="btn btn-primary" data-close-modal>{{ ftl('reports-ok') }}</button>
             </div>
         </div>
     </div>
-</div>
+</dialog>
 
 <script>
 // Helper function to show a dismissable modal dialog
 function showMessageDialog(title, message) {
     document.getElementById('messageModalTitle').textContent = title;
     document.getElementById('messageModalBody').textContent = message;
-    const modal = new bootstrap.Modal(document.getElementById('messageModal'));
-    modal.show();
+    document.getElementById('messageModal').showModal();
 }
 
 // Recordings Report Modal Logic
@@ -1591,8 +1568,7 @@ if (recordingsModal) {
         formDataObj.append('include_wcag', includeWCAG);
         formDataObj.append('group_by_touchpoint', groupByTouchpoint);
 
-        const recordingsModalInstance = bootstrap.Modal.getInstance(recordingsModal);
-        if (recordingsModalInstance) recordingsModalInstance.hide();
+        document.getElementById('recordingsModal').close();
 
         submitReportJob(`/reports/generate/recordings/${projectId}`, {
             method: 'POST',

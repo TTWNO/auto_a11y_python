@@ -17,7 +17,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
 <body>
-    <a class="skip-link" href="#main-content">{{ _('Skip to main content') }}</a>
+    <a class="skip-link" href="#main-content">{{ ftl('common-skip-to-main-content') }}</a>
 
     <header class="site-header">
         <div class="container header-inner">
@@ -25,11 +25,11 @@
                 {% if project %}
                     {{ project.name }}
                 {% else %}
-                    {{ _('Accessibility Report') }}
+                    {{ ftl('common-accessibility-report') }}
                 {% endif %}
             </p>
 
-            <nav aria-label="{{ _('Language') }}" class="lang-nav">
+            <nav aria-label="{{ ftl('common-language') }}" class="lang-nav">
                 <a href="{{ url_for('set_language', language='en') }}"
                    {% if get_locale() == 'en' %}aria-current="true"{% endif %}
                    lang="en">English</a>
@@ -41,9 +41,9 @@
             {% include 'components/theme_toggle.html' %}
 
             {% if current_user.is_authenticated %}
-            <nav aria-label="{{ _('Account') }}" class="account-nav">
+            <nav aria-label="{{ ftl('public-account') }}" class="account-nav">
                 <span>{{ current_user.name_display }}</span>
-                <a href="{{ url_for('auth.logout') }}">{{ _('Logout') }}</a>
+                <a href="{{ url_for('auth.logout') }}">{{ ftl('common-logout') }}</a>
             </nav>
             {% endif %}
         </div>
@@ -71,7 +71,7 @@
         <div class="container">
             {% block footer_content %}
             {% if project and project.updated_at %}
-            <p>{{ _('Last updated') }}: {{ project.updated_at|datetimeformat }}</p>
+            <p>{{ ftl('public-last-updated') }}: {{ project.updated_at|datetimeformat }}</p>
             {% endif %}
             {% endblock %}
         </div>

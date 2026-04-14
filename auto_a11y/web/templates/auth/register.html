@@ -1,56 +1,56 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('Register') }} - {{ _('Auto A11y') }}{% endblock %}
+{% block title %}{{ ftl('auth-register') }} - {{ ftl('common-auto-a11y') }}{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-6 col-lg-4">
         <div class="card shadow">
             <div class="card-header bg-primary text-white">
-                <h1 class="mb-0"><i class="bi bi-person-plus" aria-hidden="true"></i> {{ _('Register') }}</h1>
+                <h1 class="mb-0"><i class="bi bi-person-plus" aria-hidden="true"></i> {{ ftl('auth-register') }}</h1>
             </div>
             <div class="card-body">
                 {% if is_first_user %}
                 <div class="alert alert-info">
-                    <i class="bi bi-info-circle" aria-hidden="true"></i> {{ _('This will be the first user account and will have administrator privileges.') }}
+                    <i class="bi bi-info-circle" aria-hidden="true"></i> {{ ftl('auth-this-will-be-the-first-user-account-and-will-have') }}
                 </div>
                 {% endif %}
                 
                 <form method="POST" action="{{ url_for('auth.register') }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <fieldset>
-                        <legend class="visually-hidden">{{ _('Account Details') }}</legend>
+                        <legend class="visually-hidden">{{ ftl('auth-account-details') }}</legend>
                         <div class="mb-3">
-                            <label for="email" class="form-label">{{ _('Email') }} <span class="text-danger">*</span></label>
+                            <label for="email" class="form-label">{{ ftl('common-email') }} <span class="text-danger">*</span></label>
                             <input type="email" class="form-control" id="email" name="email" required autofocus autocomplete="email">
                         </div>
                         <div class="mb-3">
-                            <label for="display_name" class="form-label">{{ _('Display Name') }}</label>
+                            <label for="display_name" class="form-label">{{ ftl('common-display-name') }}</label>
                             <input type="text" class="form-control" id="display_name" name="display_name" aria-describedby="display_name_help">
-                            <div class="form-text" id="display_name_help">{{ _('Optional. How you want your name displayed.') }}</div>
+                            <div class="form-text" id="display_name_help">{{ ftl('auth-optional-how-you-want-your-name-displayed') }}</div>
                         </div>
                         <div class="mb-3">
-                            <label for="password" class="form-label">{{ _('Password') }} <span class="text-danger">*</span></label>
+                            <label for="password" class="form-label">{{ ftl('common-password') }} <span class="text-danger">*</span></label>
                             <input type="password" class="form-control" id="password" name="password" required minlength="8" autocomplete="new-password" aria-describedby="password_help">
-                            <div class="form-text" id="password_help">{{ _('Minimum 8 characters.') }}</div>
+                            <div class="form-text" id="password_help">{{ ftl('auth-minimum-8-characters') }}</div>
                         </div>
                         <div class="mb-3">
-                            <label for="confirm_password" class="form-label">{{ _('Confirm Password') }} <span class="text-danger">*</span></label>
+                            <label for="confirm_password" class="form-label">{{ ftl('auth-confirm-password') }} <span class="text-danger">*</span></label>
                             <input type="password" class="form-control" id="confirm_password" name="confirm_password" required autocomplete="new-password">
                         </div>
                         <div class="mb-3">
-                            <label for="password_hint" class="form-label">{{ _('Password Hint') }}</label>
+                            <label for="password_hint" class="form-label">{{ ftl('auth-password-hint-2') }}</label>
                             <input type="text" class="form-control" id="password_hint" name="password_hint" aria-describedby="password_hint_help">
-                            <div class="form-text" id="password_hint_help">{{ _('Optional. A hint to help you remember your password. This will be shown after a failed login attempt.') }}</div>
+                            <div class="form-text" id="password_hint_help">{{ ftl('auth-optional-a-hint-to-help-you-remember-your') }}</div>
                         </div>
                         <button type="submit" class="btn btn-primary w-100">
-                            <i class="bi bi-person-plus" aria-hidden="true"></i> {{ _('Create Account') }}
+                            <i class="bi bi-person-plus" aria-hidden="true"></i> {{ ftl('auth-create-account') }}
                         </button>
                     </fieldset>
                 </form>
             </div>
             <div class="card-footer text-center">
-                <a href="{{ url_for('auth.login') }}">{{ _('Already have an account? Login') }}</a>
+                <a href="{{ url_for('auth.login') }}">{{ ftl('auth-already-have-an-account-login') }}</a>
             </div>
         </div>
     </div>

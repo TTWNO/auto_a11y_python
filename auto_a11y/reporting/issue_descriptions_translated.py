@@ -47,15 +47,12 @@ def _load_translations(lang: str) -> Dict[str, Dict[str, str]]:
 
 
 def _get_current_locale() -> str:
-    """Get the current locale from Flask-Babel."""
+    """Get the current locale from Fluent integration."""
     try:
-        from flask_babel import get_locale
-        locale = get_locale()
-        if locale:
-            return str(locale.language)
+        from auto_a11y.web.fluent import _get_current_locale as get_locale
+        return get_locale()
     except Exception:
-        pass
-    return 'en'
+        return 'en'
 
 
 def _extract_error_type(issue_code: str) -> str:

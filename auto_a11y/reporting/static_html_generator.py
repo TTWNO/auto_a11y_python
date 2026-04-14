@@ -16,11 +16,11 @@ from typing import List, Dict, Any, Optional
 import jinja2
 
 logger = logging.getLogger(__name__)
-from flask_babel import force_locale, gettext as _, lazy_gettext, pgettext
+from auto_a11y.web.fluent import ftl, lazy_ftl, force_locale
 
 from auto_a11y.core.database import Database
 from auto_a11y.reporting.issue_catalog import IssueCatalog
-from auto_a11y.reporting.issue_translations_inline import ISSUE_DESCRIPTION_TRANSLATIONS_FR
+from auto_a11y.web.fluent import ftl_translate_issue
 from config import config
 
 
@@ -673,9 +673,14 @@ class StaticHTMLReportGenerator:
         }
         return translations
 
-    def _get_issue_description_translations(self) -> Dict[str, str]:
-        """Get inline translations for issue descriptions (EN -> FR mapping)"""
-        return ISSUE_DESCRIPTION_TRANSLATIONS_FR
+    def _get_issue_description_translations(self) -> None:
+        """DEPRECATED: Inline issue translations are now resolved via Fluent.
+
+        Use ``ftl_translate_issue(text)`` inside a ``force_locale('fr')`` block
+        instead of dictionary lookups.  This method is kept for backwards
+        compatibility but returns None.
+        """
+        return None
 
     def _setup_template_filters(self):
         """Setup custom Jinja2 filters"""
@@ -880,7 +885,7 @@ class StaticHTMLReportGenerator:
         for i, page_id in enumerate(page_ids):
             if progress_callback:
                 with force_locale(self.language):
-                    progress_callback(i, len(page_ids), _('Collecting data for page %(current)s of %(total)s...', current=i + 1, total=len(page_ids)))
+                    progress_callback(i, len(page_ids), ftl('reports-collecting-data-for-page-current-of-total', current=i + 1, total=len(page_ids)))
             # Get page from database
             page = self.db.get_page(page_id)
             if not page:
@@ -1175,15 +1180,13 @@ class StaticHTMLReportGenerator:
                         with force_locale('fr'):
                             enriched_fr = IssueCatalog.enrich_issue(issue_dict.copy())
 
-                        # Get inline translations for fallback
-                        inline_translations = self._get_issue_description_translations()
-                        
                         # Add bilingual descriptions
                         desc_en = enriched_en.get('description_full', enriched_en.get('description', violation.description or violation.id))
                         desc_fr = enriched_fr.get('description_full', enriched_fr.get('description', violation.description or violation.id))
-                        # Apply inline translation if French is same as English (not translated)
-                        if desc_fr == desc_en and desc_en in inline_translations:
-                            desc_fr = inline_translations[desc_en]
+                        # Apply Fluent inline translation if French is same as English (not translated)
+                        if desc_fr == desc_en:
+                            with force_locale('fr'):
+                                desc_fr = ftl_translate_issue(desc_en)
                         issue_dict['description_en'] = desc_en
                         issue_dict['description_fr'] = desc_fr
 
@@ -1192,29 +1195,32 @@ class StaticHTMLReportGenerator:
                             issue_dict['metadata'] = {}
                         # enrich_issue returns top-level keys, not nested 'metadata'
                         orig_metadata = violation.metadata if hasattr(violation, 'metadata') and violation.metadata else {}
-                        
-                        # Get title with inline translation fallback
+
+                        # Get title with Fluent translation fallback
                         title_en = orig_metadata.get('title_en', enriched_en.get('title', enriched_en.get('description_full', '')))
                         title_fr = orig_metadata.get('title_fr', enriched_fr.get('title', enriched_fr.get('description_full', '')))
-                        if title_fr == title_en and title_en in inline_translations:
-                            title_fr = inline_translations[title_en]
+                        if title_fr == title_en:
+                            with force_locale('fr'):
+                                title_fr = ftl_translate_issue(title_en)
                         issue_dict['metadata']['title_en'] = title_en
                         issue_dict['metadata']['title_fr'] = title_fr
-                        
-                        # Get what_generic with inline translation fallback
+
+                        # Get what_generic with Fluent translation fallback
                         what_generic_en = orig_metadata.get('what_generic_en', enriched_en.get('what_generic', enriched_en.get('description_full', '')))
                         what_generic_fr = orig_metadata.get('what_generic_fr', enriched_fr.get('what_generic', enriched_fr.get('description_full', '')))
-                        if what_generic_fr == what_generic_en and what_generic_en in inline_translations:
-                            what_generic_fr = inline_translations[what_generic_en]
+                        if what_generic_fr == what_generic_en:
+                            with force_locale('fr'):
+                                what_generic_fr = ftl_translate_issue(what_generic_en)
                         issue_dict['metadata']['what_generic_en'] = what_generic_en
                         issue_dict['metadata']['what_generic_fr'] = what_generic_fr
                         issue_dict['metadata']['what_generic'] = what_generic_en if self.language == 'en' else what_generic_fr
-                        
-                        # Get what with inline translation fallback
+
+                        # Get what with Fluent translation fallback
                         what_en = orig_metadata.get('what_en', enriched_en.get('description_full', enriched_en.get('description', '')))
                         what_fr = orig_metadata.get('what_fr', enriched_fr.get('description_full', enriched_fr.get('description', '')))
-                        if what_fr == what_en and what_en in inline_translations:
-                            what_fr = inline_translations[what_en]
+                        if what_fr == what_en:
+                            with force_locale('fr'):
+                                what_fr = ftl_translate_issue(what_en)
                         issue_dict['metadata']['what_en'] = what_en
                         issue_dict['metadata']['what_fr'] = what_fr
                         issue_dict['metadata']['why_en'] = orig_metadata.get('why_en', enriched_en.get('why_it_matters', ''))
@@ -1253,14 +1259,12 @@ class StaticHTMLReportGenerator:
                         with force_locale('fr'):
                             enriched_fr = IssueCatalog.enrich_issue(issue_dict.copy())
 
-                        # Get inline translations for fallback
-                        inline_translations = self._get_issue_description_translations()
-                        
                         # Add bilingual descriptions
                         desc_en = enriched_en.get('description_full', enriched_en.get('description', warning.description or warning.id))
                         desc_fr = enriched_fr.get('description_full', enriched_fr.get('description', warning.description or warning.id))
-                        if desc_fr == desc_en and desc_en in inline_translations:
-                            desc_fr = inline_translations[desc_en]
+                        if desc_fr == desc_en:
+                            with force_locale('fr'):
+                                desc_fr = ftl_translate_issue(desc_en)
                         issue_dict['description_en'] = desc_en
                         issue_dict['description_fr'] = desc_fr
 
@@ -1269,29 +1273,32 @@ class StaticHTMLReportGenerator:
                             issue_dict['metadata'] = {}
                         # enrich_issue returns top-level keys, not nested 'metadata'
                         orig_metadata = warning.metadata if hasattr(warning, 'metadata') and warning.metadata else {}
-                        
-                        # Get title with inline translation fallback
+
+                        # Get title with Fluent translation fallback
                         title_en = orig_metadata.get('title_en', enriched_en.get('title', enriched_en.get('description_full', '')))
                         title_fr = orig_metadata.get('title_fr', enriched_fr.get('title', enriched_fr.get('description_full', '')))
-                        if title_fr == title_en and title_en in inline_translations:
-                            title_fr = inline_translations[title_en]
+                        if title_fr == title_en:
+                            with force_locale('fr'):
+                                title_fr = ftl_translate_issue(title_en)
                         issue_dict['metadata']['title_en'] = title_en
                         issue_dict['metadata']['title_fr'] = title_fr
-                        
-                        # Get what_generic with inline translation fallback
+
+                        # Get what_generic with Fluent translation fallback
                         what_generic_en = orig_metadata.get('what_generic_en', enriched_en.get('what_generic', enriched_en.get('description_full', '')))
                         what_generic_fr = orig_metadata.get('what_generic_fr', enriched_fr.get('what_generic', enriched_fr.get('description_full', '')))
-                        if what_generic_fr == what_generic_en and what_generic_en in inline_translations:
-                            what_generic_fr = inline_translations[what_generic_en]
+                        if what_generic_fr == what_generic_en:
+                            with force_locale('fr'):
+                                what_generic_fr = ftl_translate_issue(what_generic_en)
                         issue_dict['metadata']['what_generic_en'] = what_generic_en
                         issue_dict['metadata']['what_generic_fr'] = what_generic_fr
                         issue_dict['metadata']['what_generic'] = what_generic_en if self.language == 'en' else what_generic_fr
-                        
-                        # Get what with inline translation fallback
+
+                        # Get what with Fluent translation fallback
                         what_en = orig_metadata.get('what_en', enriched_en.get('description_full', enriched_en.get('description', '')))
                         what_fr = orig_metadata.get('what_fr', enriched_fr.get('description_full', enriched_fr.get('description', '')))
-                        if what_fr == what_en and what_en in inline_translations:
-                            what_fr = inline_translations[what_en]
+                        if what_fr == what_en:
+                            with force_locale('fr'):
+                                what_fr = ftl_translate_issue(what_en)
                         issue_dict['metadata']['what_en'] = what_en
                         issue_dict['metadata']['what_fr'] = what_fr
                         issue_dict['metadata']['why_en'] = orig_metadata.get('why_en', enriched_en.get('why_it_matters', ''))
@@ -1329,23 +1336,23 @@ class StaticHTMLReportGenerator:
                         with force_locale('fr'):
                             enriched_fr = IssueCatalog.enrich_issue(issue_dict.copy())
 
-                        inline_translations = self._get_issue_description_translations()
-                        
                         desc_en = enriched_en.get('description_full', enriched_en.get('description', info_item.description or info_item.id))
                         desc_fr = enriched_fr.get('description_full', enriched_fr.get('description', info_item.description or info_item.id))
-                        if desc_fr == desc_en and desc_en in inline_translations:
-                            desc_fr = inline_translations[desc_en]
+                        if desc_fr == desc_en:
+                            with force_locale('fr'):
+                                desc_fr = ftl_translate_issue(desc_en)
                         issue_dict['description_en'] = desc_en
                         issue_dict['description_fr'] = desc_fr
 
                         if not issue_dict['metadata']:
                             issue_dict['metadata'] = {}
                         orig_metadata = info_item.metadata if hasattr(info_item, 'metadata') and info_item.metadata else {}
-                        
+
                         what_generic_en = orig_metadata.get('what_generic_en', enriched_en.get('what_generic', enriched_en.get('description_full', '')))
                         what_generic_fr = orig_metadata.get('what_generic_fr', enriched_fr.get('what_generic', enriched_fr.get('description_full', '')))
-                        if what_generic_fr == what_generic_en and what_generic_en in inline_translations:
-                            what_generic_fr = inline_translations[what_generic_en]
+                        if what_generic_fr == what_generic_en:
+                            with force_locale('fr'):
+                                what_generic_fr = ftl_translate_issue(what_generic_en)
                         issue_dict['metadata']['what_generic_en'] = what_generic_en
                         issue_dict['metadata']['what_generic_fr'] = what_generic_fr
                         issue_dict['metadata']['what_generic'] = what_generic_en if self.language == 'en' else what_generic_fr
@@ -1370,23 +1377,23 @@ class StaticHTMLReportGenerator:
                         with force_locale('fr'):
                             enriched_fr = IssueCatalog.enrich_issue(issue_dict.copy())
 
-                        inline_translations = self._get_issue_description_translations()
-                        
                         desc_en = enriched_en.get('description_full', enriched_en.get('description', disco_item.description or disco_item.id))
                         desc_fr = enriched_fr.get('description_full', enriched_fr.get('description', disco_item.description or disco_item.id))
-                        if desc_fr == desc_en and desc_en in inline_translations:
-                            desc_fr = inline_translations[desc_en]
+                        if desc_fr == desc_en:
+                            with force_locale('fr'):
+                                desc_fr = ftl_translate_issue(desc_en)
                         issue_dict['description_en'] = desc_en
                         issue_dict['description_fr'] = desc_fr
 
                         if not issue_dict['metadata']:
                             issue_dict['metadata'] = {}
                         orig_metadata = disco_item.metadata if hasattr(disco_item, 'metadata') and disco_item.metadata else {}
-                        
+
                         what_generic_en = orig_metadata.get('what_generic_en', enriched_en.get('what_generic', enriched_en.get('description_full', '')))
                         what_generic_fr = orig_metadata.get('what_generic_fr', enriched_fr.get('what_generic', enriched_fr.get('description_full', '')))
-                        if what_generic_fr == what_generic_en and what_generic_en in inline_translations:
-                            what_generic_fr = inline_translations[what_generic_en]
+                        if what_generic_fr == what_generic_en:
+                            with force_locale('fr'):
+                                what_generic_fr = ftl_translate_issue(what_generic_en)
                         issue_dict['metadata']['what_generic_en'] = what_generic_en
                         issue_dict['metadata']['what_generic_fr'] = what_generic_fr
                         issue_dict['metadata']['what_generic'] = what_generic_en if self.language == 'en' else what_generic_fr
@@ -1501,7 +1508,7 @@ class StaticHTMLReportGenerator:
         for i, page_id in enumerate(page_ids):
             if progress_callback:
                 progress_callback(i, len(page_ids),
-                                  _('Collecting summary (%(current)s/%(total)s)...', current=i + 1, total=len(page_ids)))
+                                  ftl('reports-collecting-summary-current-total', current=i + 1, total=len(page_ids)))
 
             # Collect lightweight page metadata
             page = self.db.get_page(page_id)
@@ -1720,7 +1727,7 @@ class StaticHTMLReportGenerator:
             if progress_callback:
                 with force_locale(self.language):
                     progress_callback(index - 1, total_pages,
-                                      _('Generating page %(current)s of %(total)s...', current=index, total=total_pages))
+                                      ftl('reports-generating-page-current-of-total', current=index, total=total_pages))
 
             page_id = pi['id']
 
@@ -2146,7 +2153,7 @@ class StaticHTMLReportGenerator:
         for index, page in enumerate(pages_data, start=1):
             if progress_callback:
                 with force_locale(self.language):
-                    progress_callback(index - 1, len(pages_data), _('Generating page %(current)s of %(total)s...', current=index, total=len(pages_data)))
+                    progress_callback(index - 1, len(pages_data), ftl('reports-generating-page-current-of-total', current=index, total=len(pages_data)))
             # Collect all unique touchpoints for filters
             all_touchpoints = set()
             for issue_list in [page['violations'], page['warnings'], page['informational'], page['discovery']]:

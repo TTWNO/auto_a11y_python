@@ -3,7 +3,7 @@ Report generation routes
 """
 
 from flask import Blueprint, render_template, request, jsonify, send_file, current_app, url_for, flash, redirect, session, g
-from flask_babel import get_locale, gettext as _, force_locale
+from auto_a11y.web.fluent import ftl, force_locale, _get_current_locale as get_locale
 from auto_a11y.models import PageStatus
 from auto_a11y.reporting import ReportGenerator, PageStructureReport
 from auto_a11y.reporting.discovery_report import DiscoveryReportGenerator
@@ -426,47 +426,8 @@ def delete_report(filename):
 
 @reports_bp.route('/project/<project_id>/summary')
 def project_summary(project_id):
-    """Generate project summary report"""
-    project = current_app.db.get_project(project_id)
-    if not project:
-        return jsonify({'error': 'Project not found'}), 404
-    
-    stats = current_app.db.get_project_stats(project_id)
-    websites = current_app.db.get_websites(project_id)
-    
-    # Get violation breakdown
-    violation_summary = {
-        'by_touchpoint': {},
-        'by_severity': {
-            'critical': 0,
-            'serious': 0,
-            'moderate': 0,
-            'minor': 0
-        },
-        'top_issues': []
-    }
-    
-    # Aggregate data from all test results
-    for website in websites:
-        pages = current_app.db.get_pages(website.id)
-        for page in pages:
-            if page.status == PageStatus.TESTED:
-                result = current_app.db.get_latest_test_result(page.id)
-                if result:
-                    for violation in result.violations:
-                        # Count by touchpoint
-                        if violation.touchpoint not in violation_summary['by_touchpoint']:
-                            violation_summary['by_touchpoint'][violation.touchpoint] = 0
-                        violation_summary['by_touchpoint'][violation.touchpoint] += 1
-                        
-                        # Count by severity
-                        violation_summary['by_severity'][violation.impact.value] += 1
-    
-    return render_template('reports/project_summary.html',
-                         project=project,
-                         stats=stats,
-                         websites=websites,
-                         violation_summary=violation_summary)
+    """Project summary — redirects to the project report page."""
+    return redirect(url_for('projects.generate_project_report', project_id=project_id))
 
 
 @reports_bp.route('/export-csv', methods=['POST'])
@@ -1002,8 +963,8 @@ def generate_recordings_report(project_id):
         return jsonify({
             'success': False,
             'info': True,
-            'title': _('No Recordings Available'),
-            'message': _('There are no recordings for this project yet. Once recordings have been added, you can generate a report.')
+            'title': ftl('reports-no-recordings-available'),
+            'message': ftl('reports-there-are-no-recordings-for-this-project-yet-once')
         }), 200
 
     # Capture Flask context into local variables

@@ -10,7 +10,7 @@ from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Optional
 from collections import defaultdict
-from flask_babel import force_locale, gettext as _
+from auto_a11y.web.fluent import ftl, force_locale
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 logger = logging.getLogger(__name__)
@@ -253,7 +253,7 @@ class RecordingsReportGenerator:
         for i, recording in enumerate(recordings):
             if progress_callback:
                 with force_locale(self.language):
-                    progress_callback(i, len(recordings), _('Processing recording %(current)s of %(total)s...', current=i + 1, total=len(recordings)))
+                    progress_callback(i, len(recordings), ftl('reports-processing-recording-current-of-total', current=i + 1, total=len(recordings)))
             all_issues = self.db.get_recording_issues_for_recording(recording.recording_id)
 
             # Separate issues by language

@@ -4,7 +4,6 @@ Flask application factory
 
 from flask import Flask, render_template, jsonify, request, session, g, redirect, url_for
 from flask_cors import CORS
-from flask_babel import Babel, format_datetime
 from flask_login import LoginManager, current_user, login_required
 from flask_wtf.csrf import CSRFProtect
 from flask_limiter import Limiter
@@ -36,8 +35,6 @@ from auto_a11y.web.routes import (
     desktop_bp
 )
 from auto_a11y.web.routes.demo import demo_bp
-from auto_a11y.reporting.issue_translations_inline import ISSUE_DESCRIPTION_TRANSLATIONS_FR
-from auto_a11y.reporting.wcag_translations_fr import WCAG_TRANSLATIONS_FR
 
 logger = logging.getLogger(__name__)
 
@@ -85,56 +82,9 @@ def create_app(config):
         storage_uri="memory://",
     )
 
-    # Configure Flask-Babel for internationalization
-    import os
-    app.config['BABEL_DEFAULT_LOCALE'] = 'en'
-    app.config['BABEL_SUPPORTED_LOCALES'] = ['en', 'fr']
-    # Use absolute path to translations directory
-    translations_dir = os.path.join(os.path.dirname(__file__), 'translations')
-    app.config['BABEL_TRANSLATION_DIRECTORIES'] = translations_dir
-
-    logger.info(f"Translations directory: {translations_dir}")
-    logger.info(f"Translations directory exists: {os.path.exists(translations_dir)}")
-    if os.path.exists(translations_dir):
-        logger.info(f"Contents: {os.listdir(translations_dir)}")
-
-    def get_locale():
-        """Determine the best locale to use for the request"""
-        # Check if user explicitly set language
-        if 'language' in session:
-            locale = session['language']
-            logger.debug(f"Locale from session: {locale}")
-            return locale
-        # Otherwise, try to match browser language preferences
-        locale = request.accept_languages.best_match(['en', 'fr']) or 'en'
-        logger.debug(f"Locale from browser: {locale}")
-        return locale
-
-    babel = Babel(app, locale_selector=get_locale)
-
-    # Auto-escape i18n strings so that apostrophes in French translations
-    # (e.g. l'annuler, d'attente) are rendered as &#39; and cannot break
-    # JavaScript single-quoted strings or HTML attributes.
-    from markupsafe import escape as _markup_escape
-    from flask_babel import gettext as _babel_gettext, ngettext as _babel_ngettext
-
-    def _escaped_gettext(*args, **kwargs):
-        translated = _babel_gettext(*args, **kwargs)
-        return _markup_escape(translated)
-    app.jinja_env.globals['_'] = _escaped_gettext
-
-    def _escaped_ngettext(singular, plural, num, **kwargs):
-        translated = _babel_ngettext(singular, plural, num, **kwargs)
-        return _markup_escape(translated)
-    app.jinja_env.globals['ngettext'] = _escaped_ngettext
-
-    # Add datetime format filter for templates
-    @app.template_filter('datetimeformat')
-    def datetimeformat_filter(value, format='medium'):
-        """Format datetime using Flask-Babel's locale-aware formatting"""
-        if value is None:
-            return ''
-        return format_datetime(value, format)
+    # Initialize Fluent (Project Fluent) — sole i18n system
+    from auto_a11y.web.fluent import init_fluent
+    init_fluent(app)
 
     # Initialize database connection (needed before Flask-Login)
     app.db = Database(config.MONGODB_URI, config.DATABASE_NAME)
@@ -164,8 +114,8 @@ def create_app(config):
     login_manager = LoginManager()
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
-    from flask_babel import lazy_gettext
-    login_manager.login_message = lazy_gettext('Please log in to access this page.')
+    from auto_a11y.web.fluent import lazy_ftl
+    login_manager.login_message = lazy_ftl('common-please-log-in-to-access-this-page')
     login_manager.login_message_category = 'warning'
 
     @login_manager.user_loader
@@ -174,50 +124,14 @@ def create_app(config):
         return app.db.get_app_user(user_id)
 
     # Make get_locale, config, and current_user available to all templates
+    from auto_a11y.web.fluent import _get_current_locale as get_locale
+
     @app.context_processor
     def inject_globals():
-        # Dynamic translations that pybabel keeps marking as obsolete
-        # These are used in templates for dynamically generated strings
-        dynamic_translations = {
-            'en': {
-                # Impact levels
-                'CRITICAL': 'Critical',
-                'HIGH': 'High',
-                'MEDIUM': 'Medium',
-                'LOW': 'Low',
-                # Lowercase versions
-                'critical': 'Critical',
-                'high': 'High',
-                'medium': 'Medium',
-                'low': 'Low',
-            },
-            'fr': {
-                # Impact levels
-                'CRITICAL': 'Critique',
-                'HIGH': 'Élevé',
-                'MEDIUM': 'Moyen',
-                'LOW': 'Faible',
-                # Lowercase versions
-                'critical': 'Critique',
-                'high': 'Élevé',
-                'medium': 'Moyen',
-                'low': 'Faible',
-            }
-        }
-
-        current_locale = get_locale()
-        t = dynamic_translations.get(current_locale, dynamic_translations['en'])
-        wcag_fr = WCAG_TRANSLATIONS_FR if current_locale == 'fr' else {}
-        issue_fr = ISSUE_DESCRIPTION_TRANSLATIONS_FR if current_locale == 'fr' else {}
-
         return dict(
             get_locale=get_locale,
             show_error_codes=config.SHOW_ERROR_CODES,
             current_user=current_user,
-            t=t,  # Translation dictionary for dynamic strings
-            translations=dynamic_translations,  # Full translations dict for JS
-            wcag_fr=wcag_fr,  # French WCAG translations
-            issue_fr=issue_fr,  # French issue description translations
             microsoft_sso_enabled=config.MICROSOFT_SSO_ENABLED,
             google_sso_enabled=config.GOOGLE_SSO_ENABLED,
             smtp_enabled=config.SMTP_ENABLED,
@@ -243,17 +157,27 @@ def create_app(config):
         app.scheduler = SchedulerService(app.db, config)
         app.scheduler.start()
         logger.info("Scheduler service started")
-
-        # Register shutdown handler
-        def shutdown_scheduler():
-            if hasattr(app, 'scheduler') and app.scheduler:
-                logger.info("Shutting down scheduler...")
-                app.scheduler.shutdown()
-
-        atexit.register(shutdown_scheduler)
     else:
         app.scheduler = None
         logger.info("Scheduler is disabled")
+
+    # Register shutdown handler — stop task runner first (waits for
+    # in-flight Playwright tests to finish and close browsers), then
+    # the scheduler.  Without this ordering the Python process tears
+    # down while Playwright's Node.js driver still has open pipes,
+    # causing an unhandled EPIPE crash.
+    def _graceful_shutdown():
+        logger.info("Shutting down task runner...")
+        try:
+            task_runner.stop()
+        except Exception as e:
+            logger.warning(f"Task runner shutdown error: {e}")
+
+        if hasattr(app, 'scheduler') and app.scheduler:
+            logger.info("Shutting down scheduler...")
+            app.scheduler.shutdown()
+
+    atexit.register(_graceful_shutdown)
 
     # Language switching route
     @app.route('/set-language/<language>')
@@ -391,7 +315,7 @@ def create_app(config):
     def wcag_name(criterion):
         """Extract just the name from a WCAG criterion string (e.g., '2.4.8 Location (Level AAA)' -> 'Location')
 
-        Returns translated name in French locale if available.
+        Returns translated name via Fluent (supports EN/FR).
         """
         # Handle both full format "2.4.8 Location (Level AAA)" and short format "2.4.8"
         if not criterion:
@@ -410,27 +334,27 @@ def create_app(config):
                 name_parts.append(part)
             english_name = ' '.join(name_parts) if name_parts else parts[0]
 
-            # Return French translation if in French locale
-            current_locale = get_locale()
-            if current_locale == 'fr' and english_name in WCAG_TRANSLATIONS_FR:
-                return WCAG_TRANSLATIONS_FR[english_name]
+            # Resolve via Fluent (handles locale automatically)
+            from auto_a11y.web.fluent import ftl_wcag
+            result = ftl_wcag(english_name)
+            # ftl_wcag returns Markup on success, plain str message ID on miss
+            if result and str(result) != english_name:
+                return result
             return english_name
 
         return criterion
 
     @app.template_filter('translate_issue')
     def translate_issue(text):
-        """Translate issue description text to French if in French locale.
+        """Translate issue description text via Fluent.
 
         Falls back to original text if no translation is found.
         """
         if not text:
             return text
 
-        current_locale = get_locale()
-        if current_locale == 'fr':
-            return ISSUE_DESCRIPTION_TRANSLATIONS_FR.get(text, text)
-        return text
+        from auto_a11y.web.fluent import ftl_translate_issue
+        return ftl_translate_issue(text)
 
     # Main routes
     @app.route('/')
@@ -484,10 +408,31 @@ def create_app(config):
                 total_pages = 0
                 tested_pages = 0
 
-        total_violations = sum(p.get('violation_count', 0) for p in pages)
-        total_warnings = sum(p.get('warning_count', 0) for p in pages)
-        total_info = sum(p.get('info_count', 0) for p in pages)
-        total_discovery = sum(p.get('discovery_count', 0) for p in pages)
+        # Aggregate issue counts from test_results (source of truth).
+        # Each tested page's latest result has violation_count, warning_count, etc.
+        page_ids = [str(p['_id']) for p in pages]
+        if page_ids:
+            pipeline = [
+                {'$match': {'page_id': {'$in': page_ids}}},
+                {'$sort': {'test_date': -1}},
+                {'$group': {
+                    '_id': '$page_id',
+                    'violation_count': {'$first': {'$ifNull': ['$violation_count', 0]}},
+                    'warning_count': {'$first': {'$ifNull': ['$warning_count', 0]}},
+                    'info_count': {'$first': {'$ifNull': ['$info_count', 0]}},
+                    'discovery_count': {'$first': {'$ifNull': ['$discovery_count', 0]}},
+                }},
+            ]
+            latest_results = list(app.db.test_results.aggregate(pipeline))
+            total_violations = sum(r.get('violation_count', 0) for r in latest_results)
+            total_warnings = sum(r.get('warning_count', 0) for r in latest_results)
+            total_info = sum(r.get('info_count', 0) for r in latest_results)
+            total_discovery = sum(r.get('discovery_count', 0) for r in latest_results)
+        else:
+            total_violations = 0
+            total_warnings = 0
+            total_info = 0
+            total_discovery = 0
 
         stats = {
             'projects': len(user_projects),

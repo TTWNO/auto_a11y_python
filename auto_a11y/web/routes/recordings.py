@@ -6,7 +6,7 @@ from flask import (
     Blueprint, render_template, request, redirect,
     url_for, flash, jsonify, current_app, g, session
 )
-from flask_babel import gettext as _
+from auto_a11y.web.fluent import ftl
 from werkzeug.utils import secure_filename
 import logging
 import json
@@ -52,7 +52,7 @@ def list_recordings():
         )
     except Exception as e:
         logger.error(f"Error listing recordings: {e}", exc_info=True)
-        flash(_('Error loading recordings: %(error)s', error=str(e)), "danger")
+        flash(ftl('recordings-error-loading-recordings-error', error=str(e)), "danger")
         return render_template('recordings/list.html', recordings=[], projects=[])
 
 
@@ -62,7 +62,7 @@ def view_recording(recording_id):
     try:
         recording = current_app.db.get_recording(recording_id)
         if not recording:
-            flash(_("Recording not found"), "danger")
+            flash(ftl('recordings-recording-not-found'), "danger")
             return redirect(url_for('recordings.list_recordings'))
 
         # Get language preference - use page language from session/locale
@@ -154,7 +154,7 @@ def view_recording(recording_id):
         )
     except Exception as e:
         logger.error(f"Error viewing recording: {e}", exc_info=True)
-        flash(_('Error loading recording: %(error)s', error=str(e)), "danger")
+        flash(ftl('recordings-error-loading-recording-error', error=str(e)), "danger")
         return redirect(url_for('recordings.list_recordings'))
 
 
@@ -165,14 +165,14 @@ def view_combined_recordings(project_id):
         # Get project
         project = current_app.db.get_project(project_id)
         if not project:
-            flash(_("Project not found"), "danger")
+            flash(ftl('common-project-not-found'), "danger")
             return redirect(url_for('recordings.list_recordings'))
 
         # Get all recordings for this project
         recordings = current_app.db.get_recordings(project_id=project_id)
 
         if not recordings:
-            flash(_("No recordings found for this project"), "info")
+            flash(ftl('recordings-no-recordings-found-for-this-project'), "info")
             return redirect(url_for('projects.view_project', project_id=project_id))
 
         # Collect all issues from all recordings
@@ -211,7 +211,7 @@ def view_combined_recordings(project_id):
         )
     except Exception as e:
         logger.error(f"Error viewing combined recordings: {e}", exc_info=True)
-        flash(_('Error loading combined view: %(error)s', error=str(e)), "danger")
+        flash(ftl('recordings-error-loading-combined-view-error', error=str(e)), "danger")
         return redirect(url_for('projects.view_project', project_id=project_id))
 
 
@@ -225,16 +225,16 @@ def upload_recording():
     try:
         # Validate file uploads - at least English required
         if 'json_file_en' not in request.files:
-            flash(_("English JSON file is required"), "danger")
+            flash(ftl('recordings-english-json-file-is-required'), "danger")
             return redirect(url_for('recordings.upload_recording'))
 
         file_en = request.files['json_file_en']
         if file_en.filename == '':
-            flash(_("English JSON file is required"), "danger")
+            flash(ftl('recordings-english-json-file-is-required'), "danger")
             return redirect(url_for('recordings.upload_recording'))
 
         if not file_en.filename.endswith('.json'):
-            flash(_("File must be a JSON file"), "danger")
+            flash(ftl('recordings-file-must-be-a-json-file'), "danger")
             return redirect(url_for('recordings.upload_recording'))
 
         # Optional French file
@@ -244,7 +244,7 @@ def upload_recording():
         # Get form data
         project_id = request.form.get('project_id')
         if not project_id:
-            flash(_("Project is required"), "danger")
+            flash(ftl('recordings-project-is-required'), "danger")
             return redirect(url_for('recordings.upload_recording'))
 
         # Optional fields
@@ -318,7 +318,7 @@ def upload_recording():
                             logger.info(f"✓ Parsed {len(key_takeaways_data[lang_code])} key takeaways ({lang_code.upper()}) from HTML")
                     except Exception as e:
                         logger.error(f"Error parsing key takeaways ({lang_code}): {e}", exc_info=True)
-                        flash(_('Error parsing key takeaways (%(lang)s): %(error)s', lang=lang_code, error=str(e)), "warning")
+                        flash(ftl('recordings-error-parsing-key-takeaways-lang-error', lang=lang_code, error=str(e)), "warning")
 
             # User Painpoints
             file_key = f'user_painpoints_file{lang_suffix}'
@@ -336,7 +336,7 @@ def upload_recording():
                             logger.info(f"✓ Parsed {len(user_painpoints_data[lang_code])} painpoints ({lang_code.upper()}) from HTML")
                     except Exception as e:
                         logger.error(f"Error parsing user painpoints ({lang_code}): {e}", exc_info=True)
-                        flash(_('Error parsing user painpoints (%(lang)s): %(error)s', lang=lang_code, error=str(e)), "warning")
+                        flash(ftl('recordings-error-parsing-user-painpoints-lang-error', lang=lang_code, error=str(e)), "warning")
 
             # User Assertions
             file_key = f'user_assertions_file{lang_suffix}'
@@ -354,7 +354,7 @@ def upload_recording():
                             logger.info(f"✓ Parsed user assertions ({lang_code.upper()}) from HTML")
                     except Exception as e:
                         logger.error(f"Error parsing user assertions ({lang_code}): {e}", exc_info=True)
-                        flash(_('Error parsing user assertions (%(lang)s): %(error)s', lang=lang_code, error=str(e)), "warning")
+                        flash(ftl('recordings-error-parsing-user-assertions-lang-error', lang=lang_code, error=str(e)), "warning")
 
         # Process JSON files for both languages
         import tempfile
@@ -373,7 +373,7 @@ def upload_recording():
             # Verify both files have the same recording_id
             recording_id_fr = data_fr.get('recording', '')
             if recording_id_fr != recording_id_value:
-                flash(_("Recording IDs don't match: EN='%(en_id)s', FR='%(fr_id)s'", en_id=recording_id_value, fr_id=recording_id_fr), "danger")
+                flash(ftl('recordings-recording-ids-don-t-match-en-en_id-fr-fr_id', en_id=recording_id_value, fr_id=recording_id_fr), "danger")
                 return redirect(url_for('recordings.upload_recording'))
 
         # If lived experience tester selected but no auditor name, look up tester name
@@ -406,7 +406,7 @@ def upload_recording():
         # Check if recording with this recording_id already exists
         existing = current_app.db.get_recording_by_recording_id(recording_id_value)
         if existing:
-            flash(_("Recording '%(id)s' already exists. Please use a different recording ID.", id=recording_id_value), "danger")
+            flash(ftl('recordings-recording-id-already-exists-please-use-a', id=recording_id_value), "danger")
             return redirect(url_for('recordings.upload_recording'))
 
         # Process English issues
@@ -473,7 +473,7 @@ def upload_recording():
                     current_app.db.update_project(project)
 
             lang_detail = f"{len(issues_en)} EN" + (f", {len(issues_fr)} FR" if has_french else "")
-            flash(_("Successfully imported recording '%(id)s' with %(count)s issues (%(detail)s)", id=recording.recording_id, count=len(all_issues), detail=lang_detail), "success")
+            flash(ftl('recordings-successfully-imported-recording-id-with-count', id=recording.recording_id, count=len(all_issues), detail=lang_detail), "success")
             return redirect(url_for('recordings.view_recording', recording_id=recording_id))
 
         finally:
@@ -483,11 +483,11 @@ def upload_recording():
 
     except json.JSONDecodeError as e:
         logger.error(f"Invalid JSON file: {e}")
-        flash(_('Invalid JSON file: %(error)s', error=str(e)), "danger")
+        flash(ftl('recordings-invalid-json-file-error', error=str(e)), "danger")
         return redirect(url_for('recordings.upload_recording'))
     except Exception as e:
         logger.error(f"Error uploading recording: {e}", exc_info=True)
-        flash(_('Error uploading recording: %(error)s', error=str(e)), "danger")
+        flash(ftl('recordings-error-uploading-recording-error', error=str(e)), "danger")
         return redirect(url_for('recordings.upload_recording'))
 
 
@@ -497,7 +497,7 @@ def edit_recording(recording_id):
     try:
         recording = current_app.db.get_recording(recording_id)
         if not recording:
-            return jsonify({'success': False, 'error': _('Recording not found')}), 404
+            return jsonify({'success': False, 'error': ftl('recordings-recording-not-found')}), 404
 
         # Get form data
         data = request.get_json() if request.is_json else request.form
@@ -527,9 +527,9 @@ def edit_recording(recording_id):
         current_app.db.update_recording(recording)
 
         if request.is_json:
-            return jsonify({'success': True, 'message': _('Recording updated successfully')})
+            return jsonify({'success': True, 'message': ftl('recordings-recording-updated-successfully')})
         else:
-            flash(_('Recording updated successfully'), 'success')
+            flash(ftl('recordings-recording-updated-successfully'), 'success')
             return redirect(url_for('recordings.view_recording', recording_id=recording_id))
 
     except Exception as e:
@@ -537,7 +537,7 @@ def edit_recording(recording_id):
         if request.is_json:
             return jsonify({'success': False, 'error': str(e)}), 500
         else:
-            flash(_('Error updating recording: %(error)s', error=str(e)), 'error')
+            flash(ftl('recordings-error-updating-recording-error', error=str(e)), 'error')
             return redirect(url_for('recordings.view_recording', recording_id=recording_id))
 
 
@@ -547,7 +547,7 @@ def delete_recording(recording_id):
     try:
         recording = current_app.db.get_recording(recording_id)
         if not recording:
-            flash(_("Recording not found"), "danger")
+            flash(ftl('recordings-recording-not-found'), "danger")
             return redirect(url_for('recordings.list_recordings'))
 
         # Remove from project's recording_ids
@@ -560,11 +560,11 @@ def delete_recording(recording_id):
         # Delete recording (will also delete related issues)
         current_app.db.delete_recording(recording_id)
 
-        flash(_("Recording '%(id)s' deleted successfully", id=recording.recording_id), "success")
+        flash(ftl('recordings-recording-id-deleted-successfully', id=recording.recording_id), "success")
         return redirect(url_for('recordings.list_recordings'))
     except Exception as e:
         logger.error(f"Error deleting recording: {e}", exc_info=True)
-        flash(_('Error deleting recording: %(error)s', error=str(e)), "danger")
+        flash(ftl('recordings-error-deleting-recording-error', error=str(e)), "danger")
         return redirect(url_for('recordings.list_recordings'))
 
 
@@ -607,7 +607,7 @@ def api_recording_issues(recording_id):
     try:
         recording = current_app.db.get_recording(recording_id)
         if not recording:
-            return jsonify({'success': False, 'error': _('Recording not found')}), 404
+            return jsonify({'success': False, 'error': ftl('recordings-recording-not-found')}), 404
 
         issues = current_app.db.get_recording_issues_for_recording(recording.recording_id)
 
@@ -641,14 +641,14 @@ def api_update_issue_status(issue_id):
     try:
         status = request.json.get('status')
         if not status:
-            return jsonify({'success': False, 'error': _('Status is required')}), 400
+            return jsonify({'success': False, 'error': ftl('recordings-status-is-required')}), 400
 
         success = current_app.db.update_recording_issue_status(issue_id, status)
 
         if success:
             return jsonify({'success': True})
         else:
-            return jsonify({'success': False, 'error': _('Failed to update status')}), 500
+            return jsonify({'success': False, 'error': ftl('recordings-failed-to-update-status')}), 500
     except Exception as e:
         logger.error(f"Error updating issue status: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500

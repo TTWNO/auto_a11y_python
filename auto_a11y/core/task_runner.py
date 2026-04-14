@@ -37,14 +37,20 @@ class TaskRunner:
         """Start task runner"""
         logger.info("Task runner started")
     
-    def stop(self):
-        """Stop task runner"""
-        # Cancel all running tasks
+    def stop(self, timeout: float = 30):
+        """Stop task runner, waiting up to *timeout* seconds for running tasks."""
+        # Mark all running tasks as cancelled so workers can check and exit early
         for task_id, task in self.tasks.items():
             if task.status == 'running':
                 task.cancel()
-        
-        self.executor.shutdown(wait=True)
+
+        # Wait for the executor to drain.  cancel_futures=True (Python 3.9+)
+        # prevents queued-but-not-started work from launching.
+        try:
+            self.executor.shutdown(wait=True, cancel_futures=True)
+        except TypeError:
+            # Python 3.8 doesn't support cancel_futures
+            self.executor.shutdown(wait=True)
         logger.info("Task runner stopped")
     
     def submit_task(

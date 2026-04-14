@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('Schedules') }} - {{ website.name }} - {{ _('Auto A11y') }}{% endblock %}
+{% block title %}{{ ftl('common-schedules') }} - {{ website.name }} - {{ ftl('common-auto-a11y') }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
     <!-- Breadcrumb -->
-    <nav aria-label="{{ _('breadcrumb') }}">
+    <nav aria-label="{{ ftl('common-breadcrumb') }}">
         <ol class="breadcrumb">
             <li class="breadcrumb-item">
                 <a href="{{ url_for('projects.view_project', project_id=project.id) }}">{{ project.name }}</a>
@@ -13,20 +13,20 @@
             <li class="breadcrumb-item">
                 <a href="{{ url_for('websites.view_website', website_id=website.id) }}">{{ website.name }}</a>
             </li>
-            <li class="breadcrumb-item active" aria-current="page">{{ _('Schedules') }}</li>
+            <li class="breadcrumb-item active" aria-current="page">{{ ftl('common-schedules') }}</li>
         </ol>
     </nav>
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h1>
-                <i class="bi bi-calendar-event" aria-hidden="true"></i> {{ _('Test Schedules') }}
+                <i class="bi bi-calendar-event" aria-hidden="true"></i> {{ ftl('schedules-test-schedules') }}
             </h1>
-            <p class="text-muted">{{ _('Schedule automated accessibility tests for %(name)s', name=website.name) }}</p>
+            <p class="text-muted">{{ ftl('schedules-schedule-automated-accessibility-tests-for-name', name=website.name) }}</p>
         </div>
         <div>
             <a href="{{ url_for('schedules.create_schedule', website_id=website.id) }}" class="btn btn-primary">
-                <i class="bi bi-plus-circle" aria-hidden="true"></i> {{ _('Create Schedule') }}
+                <i class="bi bi-plus-circle" aria-hidden="true"></i> {{ ftl('common-create-schedule') }}
             </a>
         </div>
     </div>
@@ -45,31 +45,31 @@
     <!-- Info Box -->
     <div class="alert alert-info">
         <i class="bi bi-info-circle" aria-hidden="true"></i>
-        <strong>{{ _('Scheduled Testing:') }}</strong>
-        {{ _('Create schedules to run accessibility tests automatically at specific times or intervals. You can configure which tests run and optionally limit AI testing to specific pages to control costs.') }}
+        <strong>{{ ftl('schedules-scheduled-testing') }}</strong>
+        {{ ftl('schedules-create-schedules-to-run-accessibility-tests') }}
     </div>
 
     {% if schedules %}
     <div class="card">
         <div class="card-header bg-primary text-white">
             <h2 class="mb-0">
-                <i class="bi bi-calendar-event" aria-hidden="true"></i> {{ _('Schedules') }}
+                <i class="bi bi-calendar-event" aria-hidden="true"></i> {{ ftl('common-schedules') }}
                 <span class="badge bg-light text-dark">{{ schedules|length }}</span>
             </h2>
         </div>
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-hover">
-                    <caption class="visually-hidden">{{ _('Test Schedules List') }}</caption>
+                    <caption class="visually-hidden">{{ ftl('schedules-test-schedules-list') }}</caption>
                     <thead>
                         <tr>
-                            <th scope="col">{{ _('Name') }}</th>
-                            <th scope="col">{{ _('Schedule') }}</th>
-                            <th scope="col">{{ _('AI Testing') }}</th>
-                            <th scope="col">{{ _('Status') }}</th>
-                            <th scope="col">{{ _('Next Run') }}</th>
-                            <th scope="col">{{ _('Last Run') }}</th>
-                            <th scope="col">{{ _('Actions') }}</th>
+                            <th scope="col">{{ ftl('common-name') }}</th>
+                            <th scope="col">{{ ftl('schedules-schedule') }}</th>
+                            <th scope="col">{{ ftl('schedules-ai-testing') }}</th>
+                            <th scope="col">{{ ftl('common-status') }}</th>
+                            <th scope="col">{{ ftl('schedules-next-run') }}</th>
+                            <th scope="col">{{ ftl('schedules-last-run') }}</th>
+                            <th scope="col">{{ ftl('common-actions') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -87,53 +87,53 @@
                             </td>
                             <td>
                                 <span class="badge bg-info">
-                                    {% if schedule.schedule_type.value == 'one_time' %}{{ _('One-time') }}
-                                    {% elif schedule.schedule_type.value == 'daily' %}{{ _('Daily') }}
-                                    {% elif schedule.schedule_type.value == 'weekly' %}{{ _('Weekly') }}
-                                    {% elif schedule.schedule_type.value == 'monthly' %}{{ _('Monthly') }}
-                                    {% elif schedule.schedule_type.value == 'cron' %}{{ _('Custom Cron') }}
+                                    {% if schedule.schedule_type.value == 'one_time' %}{{ ftl('schedules-one-time') }}
+                                    {% elif schedule.schedule_type.value == 'daily' %}{{ ftl('common-daily') }}
+                                    {% elif schedule.schedule_type.value == 'weekly' %}{{ ftl('common-weekly') }}
+                                    {% elif schedule.schedule_type.value == 'monthly' %}{{ ftl('common-monthly') }}
+                                    {% elif schedule.schedule_type.value == 'cron' %}{{ ftl('schedules-custom-cron-2') }}
                                     {% endif %}
                                 </span>
                                 <br><small>
                                     {% if schedule.schedule_type.value == 'one_time' %}
                                         {% if schedule.scheduled_datetime %}
-                                            {{ _('Once at') }} {{ schedule.scheduled_datetime|datetimeformat('yyyy-MM-dd HH:mm') }}
+                                            {{ ftl('schedules-once-at') }} {{ schedule.scheduled_datetime|datetimeformat('yyyy-MM-dd HH:mm') }}
                                         {% else %}
-                                            {{ _('One-time') }} ({{ _('no date set') }})
+                                            {{ ftl('schedules-one-time') }} ({{ ftl('schedules-no-date-set') }})
                                         {% endif %}
                                     {% elif schedule.schedule_type.value == 'cron' %}
-                                        {{ _('Cron:') }} {{ schedule.cron_expression or _('Not set') }}
+                                        {{ ftl('schedules-cron-2') }} {{ schedule.cron_expression or ftl('schedules-not-set') }}
                                     {% elif schedule.schedule_type.value == 'daily' %}
-                                        {{ _('Daily at') }} {{ schedule.preset_config.time }}
+                                        {{ ftl('schedules-daily-at') }} {{ schedule.preset_config.time }}
                                     {% elif schedule.schedule_type.value == 'weekly' %}
-                                        {% set days = [_('Monday'), _('Tuesday'), _('Wednesday'), _('Thursday'), _('Friday'), _('Saturday'), _('Sunday')] %}
-                                        {{ _('Weekly on') }} {{ days[schedule.preset_config.day_of_week] }} {{ _('at') }} {{ schedule.preset_config.time }}
+                                        {% set days = [ftl('schedules-monday'), ftl('schedules-tuesday'), ftl('schedules-wednesday'), ftl('schedules-thursday'), ftl('schedules-friday'), ftl('schedules-saturday'), ftl('schedules-sunday')] %}
+                                        {{ ftl('schedules-weekly-on') }} {{ days[schedule.preset_config.day_of_week] }} {{ ftl('schedules-at') }} {{ schedule.preset_config.time }}
                                     {% elif schedule.schedule_type.value == 'monthly' %}
-                                        {{ _('Monthly on day') }} {{ schedule.preset_config.day_of_month }} {{ _('at') }} {{ schedule.preset_config.time }}
+                                        {{ ftl('schedules-monthly-on-day') }} {{ schedule.preset_config.day_of_month }} {{ ftl('schedules-at') }} {{ schedule.preset_config.time }}
                                     {% endif %}
                                 </small>
                             </td>
                             <td>
                                 {% if schedule.test_config.run_ai_tests %}
                                     {% if schedule.test_config.ai_pages_mode.value == 'all' %}
-                                    <span class="badge bg-success">{{ _('All Pages') }}</span>
+                                    <span class="badge bg-success">{{ ftl('common-all-pages') }}</span>
                                     {% elif schedule.test_config.ai_pages_mode.value == 'selected' %}
-                                    <span class="badge bg-warning text-dark">{{ schedule.test_config.ai_page_ids|length }} {{ _('pages') }}</span>
+                                    <span class="badge bg-warning text-dark">{{ schedule.test_config.ai_page_ids|length }} {{ ftl('common-pages-2') }}</span>
                                     {% else %}
-                                    <span class="badge bg-secondary">{{ _('Disabled') }}</span>
+                                    <span class="badge bg-secondary">{{ ftl('common-disabled') }}</span>
                                     {% endif %}
                                 {% else %}
-                                <span class="badge bg-secondary">{{ _('Disabled') }}</span>
+                                <span class="badge bg-secondary">{{ ftl('common-disabled') }}</span>
                                 {% endif %}
                             </td>
                             <td>
                                 {% if schedule.enabled %}
                                 <span class="badge bg-success">
-                                    <i class="bi bi-check-circle" aria-hidden="true"></i> {{ _('Enabled') }}
+                                    <i class="bi bi-check-circle" aria-hidden="true"></i> {{ ftl('common-enabled') }}
                                 </span>
                                 {% else %}
                                 <span class="badge bg-secondary">
-                                    <i class="bi bi-pause-circle" aria-hidden="true"></i> {{ _('Disabled') }}
+                                    <i class="bi bi-pause-circle" aria-hidden="true"></i> {{ ftl('common-disabled') }}
                                 </span>
                                 {% endif %}
                             </td>
@@ -150,37 +150,37 @@
                                 {% if schedule.last_run_status %}
                                 <br>
                                 {% if schedule.last_run_status.value == 'success' %}
-                                <span class="badge bg-success">{{ _('Success') }}</span>
+                                <span class="badge bg-success">{{ ftl('common-success') }}</span>
                                 {% elif schedule.last_run_status.value == 'failed' %}
-                                <span class="badge bg-danger">{{ _('Failed') }}</span>
+                                <span class="badge bg-danger">{{ ftl('common-failed') }}</span>
                                 {% elif schedule.last_run_status.value == 'running' %}
-                                <span class="badge bg-primary">{{ _('Running') }}</span>
+                                <span class="badge bg-primary">{{ ftl('common-running-2') }}</span>
                                 {% endif %}
                                 {% endif %}
                                 {% else %}
-                                <span class="text-muted">{{ _('Never') }}</span>
+                                <span class="text-muted">{{ ftl('common-never') }}</span>
                                 {% endif %}
                             </td>
                             <td>
                                 <div class="btn-group btn-group-sm" role="group">
                                     <a href="{{ url_for('schedules.view_schedule', website_id=website.id, schedule_id=schedule.id) }}"
-                                       class="btn btn-outline-primary" title="{{ _('View') }}">
+                                       class="btn btn-outline-primary" title="{{ ftl('common-view') }}">
                                         <i class="bi bi-eye" aria-hidden="true"></i>
                                     </a>
                                     <a href="{{ url_for('schedules.edit_schedule', website_id=website.id, schedule_id=schedule.id) }}"
-                                       class="btn btn-outline-secondary" title="{{ _('Edit') }}">
+                                       class="btn btn-outline-secondary" title="{{ ftl('common-edit') }}">
                                         <i class="bi bi-pencil" aria-hidden="true"></i>
                                     </a>
                                     <button type="button" class="btn btn-outline-{% if schedule.enabled %}success{% else %}secondary{% endif %}"
-                                            onclick="toggleSchedule('{{ schedule.id }}')" title="{% if schedule.enabled %}{{ _('Disable') }}{% else %}{{ _('Enable') }}{% endif %}">
+                                            onclick="toggleSchedule('{{ schedule.id }}')" title="{% if schedule.enabled %}{{ ftl('common-disable') }}{% else %}{{ ftl('common-enable') }}{% endif %}">
                                         <i class="bi bi-toggle-{% if schedule.enabled %}on{% else %}off{% endif %}" aria-hidden="true"></i>
                                     </button>
                                     <button type="button" class="btn btn-outline-info"
-                                            onclick="runNow('{{ schedule.id }}')" title="{{ _('Run Now') }}">
+                                            onclick="runNow('{{ schedule.id }}')" title="{{ ftl('schedules-run-now') }}">
                                         <i class="bi bi-play-fill" aria-hidden="true"></i>
                                     </button>
                                     <button type="button" class="btn btn-outline-danger"
-                                            onclick="deleteSchedule('{{ schedule.id }}')" title="{{ _('Delete') }}">
+                                            onclick="deleteSchedule('{{ schedule.id }}')" title="{{ ftl('common-delete') }}">
                                         <i class="bi bi-trash" aria-hidden="true"></i>
                                     </button>
                                 </div>
@@ -196,9 +196,9 @@
     {% else %}
     <div class="text-center py-5">
         <i class="bi bi-calendar-event text-placeholder" aria-hidden="true" style="font-size: 3rem;"></i>
-        <p class="text-muted mt-3">{{ _('No schedules yet') }}</p>
+        <p class="text-muted mt-3">{{ ftl('schedules-no-schedules-yet') }}</p>
         <a href="{{ url_for('schedules.create_schedule', website_id=website.id) }}" class="btn btn-primary">
-            <i class="bi bi-plus-circle" aria-hidden="true"></i> {{ _('Create Your First Schedule') }}
+            <i class="bi bi-plus-circle" aria-hidden="true"></i> {{ ftl('schedules-create-your-first-schedule') }}
         </a>
     </div>
     {% endif %}
@@ -222,16 +222,16 @@ function toggleSchedule(scheduleId) {
         if (data.success) {
             location.reload();
         } else {
-            alert('{{ _("Error: ") }}' + (data.error || '{{ _("Unknown error") }}'));
+            alert('{{ ftl('common-error-3') }}' + (data.error || '{{ ftl('common-unknown-error') }}'));
         }
     })
     .catch(err => {
-        alert('{{ _("Error toggling schedule: ") }}' + err.message);
+        alert('{{ ftl('schedules-error-toggling-schedule') }}' + err.message);
     });
 }
 
 function runNow(scheduleId) {
-    if (!confirm('{{ _("Run this schedule now?") }}')) return;
+    if (!confirm('{{ ftl('schedules-run-this-schedule-now') }}')) return;
 
     fetch(`/websites/${websiteId}/schedules/${scheduleId}/run-now`, {
         method: 'POST',
@@ -242,19 +242,19 @@ function runNow(scheduleId) {
     .then(r => r.json())
     .then(data => {
         if (data.success) {
-            alert('{{ _("Test run started!") }}');
+            alert('{{ ftl('schedules-test-run-started-2') }}');
             location.reload();
         } else {
-            alert('{{ _("Error: ") }}' + (data.error || '{{ _("Unknown error") }}'));
+            alert('{{ ftl('common-error-3') }}' + (data.error || '{{ ftl('common-unknown-error') }}'));
         }
     })
     .catch(err => {
-        alert('{{ _("Error starting test run: ") }}' + err.message);
+        alert('{{ ftl('schedules-error-starting-test-run') }}' + err.message);
     });
 }
 
 function deleteSchedule(scheduleId) {
-    if (!confirm('{{ _("Are you sure you want to delete this schedule? This action cannot be undone.") }}')) return;
+    if (!confirm('{{ ftl('schedules-are-you-sure-you-want-to-delete-this-schedule') }}')) return;
 
     const form = document.createElement('form');
     form.method = 'POST';

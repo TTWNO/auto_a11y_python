@@ -1,6 +1,6 @@
 {% extends "static_report/base.html" %}
 
-{% block title %}{{ _('Summary') }}{% endblock %}
+{% block title %}{{ ftl('common-summary') }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -341,9 +341,9 @@
 <div class="container-xl">
     <!-- Summary Header -->
     <div class="summary-header">
-        <h1><i class="bi bi-bar-chart-fill" aria-hidden="true"></i> {{ _('Accessibility Report Summary') }}</h1>
+        <h1><i class="bi bi-bar-chart-fill" aria-hidden="true"></i> {{ ftl('reports-accessibility-report-summary') }}</h1>
         <p class="subtitle">{{ project_name|default('Accessibility Report') }}</p>
-        <p class="mb-0">{{ _('Generated on') }} {{ generation_date|default('N/A') }}</p>
+        <p class="mb-0">{{ ftl('reports-generated-on') }} {{ generation_date|default('N/A') }}</p>
     </div>
 
     <!-- Overview Cards -->
@@ -351,62 +351,62 @@
         <div class="overview-card">
             <div class="card-icon"><i class="bi bi-file-earmark-text text-primary" aria-hidden="true"></i></div>
             <div class="card-value text-primary">{{ pages|length }}</div>
-            <div class="card-label">{{ _('Pages Tested') }}</div>
+            <div class="card-label">{{ ftl('common-pages-tested-2') }}</div>
         </div>
 
         <div class="overview-card">
             <div class="card-icon"><i class="bi bi-exclamation-octagon text-danger" aria-hidden="true"></i></div>
             <div class="card-value text-danger">{{ summary.total_errors|default(0) }}</div>
-            <div class="card-label">{{ _('Total Errors') }}</div>
+            <div class="card-label">{{ ftl('reports-total-errors') }}</div>
         </div>
 
         <div class="overview-card">
             <div class="card-icon"><i class="bi bi-exclamation-triangle text-warning" aria-hidden="true"></i></div>
             <div class="card-value text-warning">{{ summary.total_warnings|default(0) }}</div>
-            <div class="card-label">{{ _('Total Warnings') }}</div>
+            <div class="card-label">{{ ftl('common-total-warnings') }}</div>
         </div>
 
         <div class="overview-card">
             <div class="card-icon"><i class="bi bi-check-circle text-success" aria-hidden="true"></i></div>
             <div class="card-value text-success">{{ "%.1f"|format(summary.average_score|default(0)) }}%</div>
-            <div class="card-label">{{ _('Average Score') }}</div>
+            <div class="card-label">{{ ftl('reports-average-score') }}</div>
         </div>
     </div>
 
     <!-- WCAG Compliance Status -->
     <div class="section">
-        <h2><i class="bi bi-clipboard-check" aria-hidden="true"></i> {{ _('WCAG Compliance Status') }}</h2>
+        <h2><i class="bi bi-clipboard-check" aria-hidden="true"></i> {{ ftl('reports-wcag-compliance-status') }}</h2>
         {% set compliance_level = summary.compliance_level|default('partial') %}
         {% if compliance_level == 'pass' %}
             <span class="compliance-badge compliance-pass">
-                <i class="bi bi-check-circle-fill" aria-hidden="true"></i> {{ _('WCAG') }} {{ wcag_level|default('AA') }} {{ _('Compliant') }}
+                <i class="bi bi-check-circle-fill" aria-hidden="true"></i> {{ ftl('common-wcag') }} {{ wcag_level|default('AA') }} {{ ftl('reports-compliant') }}
             </span>
-            <p>{{ _('This website meets WCAG %(level)s standards with no critical errors detected.', level=wcag_level|default('AA')) }}</p>
+            <p>{{ ftl('reports-this-website-meets-wcag-level-standards-with-no', level=wcag_level|default('AA')) }}</p>
         {% elif compliance_level == 'fail' %}
             <span class="compliance-badge compliance-fail">
-                <i class="bi bi-x-circle-fill" aria-hidden="true"></i> {{ _('WCAG') }} {{ wcag_level|default('AA') }} {{ _('Non-Compliant') }}
+                <i class="bi bi-x-circle-fill" aria-hidden="true"></i> {{ ftl('common-wcag') }} {{ wcag_level|default('AA') }} {{ ftl('reports-non-compliant') }}
             </span>
-            <p>{{ _('This website has critical accessibility errors that must be addressed to meet WCAG %(level)s standards.', level=wcag_level|default('AA')) }}</p>
+            <p>{{ ftl('reports-this-website-has-critical-accessibility-errors', level=wcag_level|default('AA')) }}</p>
         {% else %}
             <span class="compliance-badge compliance-partial">
-                <i class="bi bi-exclamation-circle-fill" aria-hidden="true"></i> {{ _('Partial WCAG %(level)s Compliance', level=wcag_level|default('AA')) }}
+                <i class="bi bi-exclamation-circle-fill" aria-hidden="true"></i> {{ ftl('reports-partial-wcag-level-compliance', level=wcag_level|default('AA')) }}
             </span>
-            <p>{{ _('This website has accessibility issues that should be addressed to fully meet WCAG %(level)s standards.', level=wcag_level|default('AA')) }}</p>
+            <p>{{ ftl('reports-this-website-has-accessibility-issues-that-should', level=wcag_level|default('AA')) }}</p>
         {% endif %}
     </div>
 
     <!-- Issue Breakdown by Type -->
     <div class="section">
-        <h2><i class="bi bi-pie-chart" aria-hidden="true"></i> {{ _('Issue Breakdown by Type') }}</h2>
+        <h2><i class="bi bi-pie-chart" aria-hidden="true"></i> {{ ftl('reports-issue-breakdown-by-type') }}</h2>
         <div class="issue-breakdown">
             <div class="issue-type-card errors">
                 <div class="type-icon text-danger">
                     <i class="bi bi-x-circle-fill" aria-hidden="true"></i>
                 </div>
                 <div class="type-count text-danger">{{ summary.total_errors|default(0) }}</div>
-                <div class="type-label text-danger">{{ _('Errors') }}</div>
+                <div class="type-label text-danger">{{ ftl('common-errors') }}</div>
                 <div class="type-pages">
-                    {{ _('On') }} {{ summary.pages_with_errors|default(0) }} {{ _('page') }}{{ 's' if summary.pages_with_errors != 1 }}
+                    {{ ftl('reports-on') }} {{ summary.pages_with_errors|default(0) }} {{ ftl('common-page') }}{{ 's' if summary.pages_with_errors != 1 }}
                 </div>
             </div>
 
@@ -415,9 +415,9 @@
                     <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
                 </div>
                 <div class="type-count text-warning">{{ summary.total_warnings|default(0) }}</div>
-                <div class="type-label text-severity-medium">{{ _('Warnings') }}</div>
+                <div class="type-label text-severity-medium">{{ ftl('common-warnings') }}</div>
                 <div class="type-pages">
-                    {{ _('On') }} {{ summary.pages_with_warnings|default(0) }} {{ _('page') }}{{ 's' if summary.pages_with_warnings != 1 }}
+                    {{ ftl('reports-on') }} {{ summary.pages_with_warnings|default(0) }} {{ ftl('common-page') }}{{ 's' if summary.pages_with_warnings != 1 }}
                 </div>
             </div>
 
@@ -426,9 +426,9 @@
                     <i class="bi bi-info-circle-fill" aria-hidden="true"></i>
                 </div>
                 <div class="type-count text-info">{{ summary.total_info|default(0) }}</div>
-                <div class="type-label text-info">{{ _('Informational') }}</div>
+                <div class="type-label text-info">{{ ftl('common-informational') }}</div>
                 <div class="type-pages">
-                    {{ _('On') }} {{ summary.pages_with_info|default(0) }} {{ _('page') }}{{ 's' if summary.pages_with_info != 1 }}
+                    {{ ftl('reports-on') }} {{ summary.pages_with_info|default(0) }} {{ ftl('common-page') }}{{ 's' if summary.pages_with_info != 1 }}
                 </div>
             </div>
 
@@ -437,9 +437,9 @@
                     <i class="bi bi-lightbulb-fill" aria-hidden="true"></i>
                 </div>
                 <div class="type-count text-muted">{{ summary.total_discovery|default(0) }}</div>
-                <div class="type-label text-muted">{{ _('Discovery') }}</div>
+                <div class="type-label text-muted">{{ ftl('common-discovery-2') }}</div>
                 <div class="type-pages">
-                    {{ _('On') }} {{ summary.pages_with_discovery|default(0) }} {{ _('page') }}{{ 's' if summary.pages_with_discovery != 1 }}
+                    {{ ftl('reports-on') }} {{ summary.pages_with_discovery|default(0) }} {{ ftl('common-page') }}{{ 's' if summary.pages_with_discovery != 1 }}
                 </div>
             </div>
         </div>
@@ -447,8 +447,8 @@
 
     <!-- Top Issues -->
     <div class="section">
-        <h2><i class="bi bi-list-ol" aria-hidden="true"></i> {{ _('Top Issues') }}</h2>
-        <p class="text-muted mb-3">{{ _('Most frequently occurring accessibility issues across all pages') }}</p>
+        <h2><i class="bi bi-list-ol" aria-hidden="true"></i> {{ ftl('common-top-issues') }}</h2>
+        <p class="text-muted mb-3">{{ ftl('reports-most-frequently-occurring-accessibility-issues') }}</p>
         <ul class="top-issues-list">
             {% for issue in summary.top_issues|default([]) %}
             <li class="top-issue-item {{ issue.severity|lower }}">
@@ -456,8 +456,8 @@
                 <div class="issue-details">
                     <div class="issue-name">{{ issue.title }}</div>
                     <div class="issue-count">
-                        <i class="bi bi-exclamation-circle" aria-hidden="true"></i> {{ issue.count }} {{ _('occurrence') }}{{ 's' if issue.count != 1 }}
-                        {{ _('on') }} {{ issue.pages }} {{ _('page') }}{{ 's' if issue.pages != 1 }}
+                        <i class="bi bi-exclamation-circle" aria-hidden="true"></i> {{ issue.count }} {{ ftl('reports-occurrence') }}{{ 's' if issue.count != 1 }}
+                        {{ ftl('reports-on-2') }} {{ issue.pages }} {{ ftl('common-page') }}{{ 's' if issue.pages != 1 }}
                     </div>
                 </div>
                 <span class="issue-impact impact-{{ issue.impact|lower }}">
@@ -465,7 +465,7 @@
                 </span>
             </li>
             {% else %}
-            <li class="text-muted">{{ _('No issues found') }}</li>
+            <li class="text-muted">{{ ftl('common-no-issues-found') }}</li>
             {% endfor %}
         </ul>
     </div>
@@ -473,7 +473,7 @@
     <!-- Touchpoint Breakdown -->
     {% if summary.by_touchpoint %}
     <div class="section">
-        <h2><i class="bi bi-diagram-3" aria-hidden="true"></i> {{ _('Issue Breakdown by Touchpoint') }}</h2>
+        <h2><i class="bi bi-diagram-3" aria-hidden="true"></i> {{ ftl('reports-issue-breakdown-by-touchpoint') }}</h2>
         <div class="touchpoint-breakdown">
             {% for touchpoint, stats in summary.by_touchpoint.items() %}
             <div class="touchpoint-card">
@@ -507,7 +507,7 @@
     <!-- WCAG Criteria -->
     {% if summary.by_wcag %}
     <div class="section">
-        <h2><i class="bi bi-shield-check" aria-hidden="true"></i> {{ _('WCAG 2.2 Criteria Violations') }}</h2>
+        <h2><i class="bi bi-shield-check" aria-hidden="true"></i> {{ ftl('reports-wcag-2-2-criteria-violations') }}</h2>
         <div class="wcag-compliance">
             {% for principle, criteria_list in summary.by_wcag.items() %}
             <div class="wcag-principle">
@@ -529,17 +529,17 @@
     <!-- Recommendations -->
     <div class="section">
         <div class="recommendations">
-            <h3><i class="bi bi-lightbulb" aria-hidden="true"></i> {{ _('Priority Recommendations') }}</h3>
+            <h3><i class="bi bi-lightbulb" aria-hidden="true"></i> {{ ftl('reports-priority-recommendations') }}</h3>
             <ol>
                 {% for rec in summary.recommendations|default([]) %}
                 <li><strong>{{ rec.title }}:</strong> {{ rec.description }}</li>
                 {% else %}
-                <li>{{ _('Address all errors first (highest priority)') }}</li>
-                <li>{{ _('Review and fix warnings') }}</li>
-                <li>{{ _('Consider informational items for enhanced accessibility') }}</li>
-                <li>{{ _('Review discovery items for potential improvements') }}</li>
-                <li>{{ _('Test with actual assistive technologies') }}</li>
-                <li>{{ _('Conduct user testing with people with disabilities') }}</li>
+                <li>{{ ftl('reports-address-all-errors-first-highest-priority') }}</li>
+                <li>{{ ftl('reports-review-and-fix-warnings') }}</li>
+                <li>{{ ftl('reports-consider-informational-items-for-enhanced') }}</li>
+                <li>{{ ftl('reports-review-discovery-items-for-potential-improvements') }}</li>
+                <li>{{ ftl('reports-test-with-actual-assistive-technologies') }}</li>
+                <li>{{ ftl('reports-conduct-user-testing-with-people-with-disabilities') }}</li>
                 {% endfor %}
             </ol>
         </div>
@@ -547,26 +547,26 @@
 
     <!-- Testing Information -->
     <div class="section">
-        <h2><i class="bi bi-info-circle" aria-hidden="true"></i> {{ _('Testing Information') }}</h2>
+        <h2><i class="bi bi-info-circle" aria-hidden="true"></i> {{ ftl('reports-testing-information') }}</h2>
         <div class="row">
             <div class="col-md-6">
                 <table class="table table-sm">
-                    <caption class="visually-hidden">{{ _('Testing information summary') }}</caption>
+                    <caption class="visually-hidden">{{ ftl('reports-testing-information-summary') }}</caption>
                     <tbody>
                         <tr>
-                            <th scope="row">{{ _('Project:') }}</th>
+                            <th scope="row">{{ ftl('reports-project') }}</th>
                             <td>{{ project_name|default('Unknown') }}</td>
                         </tr>
                         <tr>
-                            <th scope="row">{{ _('Website:') }}</th>
+                            <th scope="row">{{ ftl('reports-website') }}</th>
                             <td>{{ website_url|default('N/A') }}</td>
                         </tr>
                         <tr>
-                            <th scope="row">{{ _('Test Date:') }}</th>
+                            <th scope="row">{{ ftl('common-test-date') }}</th>
                             <td>{{ generation_date|default('N/A') }}</td>
                         </tr>
                         <tr>
-                            <th scope="row">{{ _('WCAG Level:') }}</th>
+                            <th scope="row">{{ ftl('reports-wcag-level-2') }}</th>
                             <td>{{ wcag_level|default('AA') }}</td>
                         </tr>
                     </tbody>
@@ -574,22 +574,22 @@
             </div>
             <div class="col-md-6">
                 <table class="table table-sm">
-                    <caption class="visually-hidden">{{ _('Additional testing details') }}</caption>
+                    <caption class="visually-hidden">{{ ftl('reports-additional-testing-details') }}</caption>
                     <tbody>
                         <tr>
-                            <th scope="row">{{ _('Pages Tested:') }}</th>
+                            <th scope="row">{{ ftl('reports-pages-tested') }}</th>
                             <td>{{ pages|length }}</td>
                         </tr>
                         <tr>
-                            <th scope="row">{{ _('Touchpoints:') }}</th>
+                            <th scope="row">{{ ftl('reports-touchpoints') }}</th>
                             <td>{{ touchpoints_tested|join(', ')|default('All') }}</td>
                         </tr>
                         <tr>
-                            <th scope="row">{{ _('AI Tests:') }}</th>
-                            <td>{{ _('Enabled') if ai_tests_enabled else _('Disabled') }}</td>
+                            <th scope="row">{{ ftl('reports-ai-tests') }}</th>
+                            <td>{{ ftl('common-enabled') if ai_tests_enabled else ftl('common-disabled') }}</td>
                         </tr>
                         <tr>
-                            <th scope="row">{{ _('Report Version:') }}</th>
+                            <th scope="row">{{ ftl('reports-report-version') }}</th>
                             <td>{{ report_version|default('1.0.0') }}</td>
                         </tr>
                     </tbody>

@@ -5,7 +5,7 @@
 {% block content %}
 <div class="container-fluid">
     <!-- Breadcrumb -->
-    <nav aria-label="{{ _('breadcrumb') }}">
+    <nav aria-label="{{ ftl('common-breadcrumb') }}">
         <ol class="breadcrumb">
             <li class="breadcrumb-item">
                 <a href="{{ url_for('projects.view_project', project_id=project.id) }}">{{ project.name }}</a>
@@ -15,10 +15,10 @@
             </li>
             {% if page %}
             <li class="breadcrumb-item">
-                <a href="{{ url_for('pages.view_page', page_id=page.id) }}">{{ page.title or _('Page') }}</a>
+                <a href="{{ url_for('pages.view_page', page_id=page.id) }}">{{ page.title or ftl('common-page-2') }}</a>
             </li>
             <li class="breadcrumb-item">
-                <a href="{{ url_for('scripts.list_page_scripts', page_id=page.id) }}">{{ _('Scripts') }}</a>
+                <a href="{{ url_for('scripts.list_page_scripts', page_id=page.id) }}">{{ ftl('common-scripts') }}</a>
             </li>
             {% endif %}
             <li class="breadcrumb-item active" aria-current="page">{{ script.name }}</li>
@@ -36,7 +36,7 @@
         </div>
         <div>
             <a href="{{ url_for('scripts.edit_script', script_id=script.id) }}" class="btn btn-primary">
-                <i class="bi bi-pencil" aria-hidden="true"></i> {{ _('Edit Script') }}
+                <i class="bi bi-pencil" aria-hidden="true"></i> {{ ftl('scripts-edit-script') }}
             </a>
         </div>
     </div>
@@ -47,49 +47,49 @@
             <section aria-labelledby="script-config-heading">
             <div class="card mb-4">
                 <div class="card-header">
-                    <h2 id="script-config-heading" class="mb-0"><i class="bi bi-info-circle" aria-hidden="true"></i> {{ _('Script Configuration') }}</h2>
+                    <h2 id="script-config-heading" class="mb-0"><i class="bi bi-info-circle" aria-hidden="true"></i> {{ ftl('scripts-script-configuration') }}</h2>
                 </div>
                 <div class="card-body">
                     <dl class="row mb-0">
-                        <dt class="col-sm-4">{{ _('Status') }}</dt>
+                        <dt class="col-sm-4">{{ ftl('common-status') }}</dt>
                         <dd class="col-sm-8">
                             {% if script.enabled %}
                             <span class="badge bg-success">
-                                <i class="bi bi-check-circle" aria-hidden="true"></i> {{ _('Enabled') }}
+                                <i class="bi bi-check-circle" aria-hidden="true"></i> {{ ftl('common-enabled') }}
                             </span>
                             {% else %}
                             <span class="badge bg-secondary">
-                                <i class="bi bi-pause-circle" aria-hidden="true"></i> {{ _('Disabled') }}
+                                <i class="bi bi-pause-circle" aria-hidden="true"></i> {{ ftl('common-disabled') }}
                             </span>
                             {% endif %}
                         </dd>
 
-                        <dt class="col-sm-4">{{ _('Scope') }}</dt>
+                        <dt class="col-sm-4">{{ ftl('common-scope') }}</dt>
                         <dd class="col-sm-8">
                             {% if script.scope.value == 'page' %}
-                            <span class="badge bg-primary">{{ _('Page-Level') }}</span>
+                            <span class="badge bg-primary">{{ ftl('scripts-page-level') }}</span>
                             {% elif script.scope.value == 'website' %}
-                            <span class="badge bg-info">{{ _('Website-Wide') }}</span>
+                            <span class="badge bg-info">{{ ftl('scripts-website-wide') }}</span>
                             {% endif %}
                         </dd>
 
-                        <dt class="col-sm-4">{{ _('Execution Trigger') }}</dt>
-                        <dd class="col-sm-8">{{ _(script.trigger.value|replace('_', ' ')|title) }}</dd>
+                        <dt class="col-sm-4">{{ ftl('scripts-execution-trigger') }}</dt>
+                        <dd class="col-sm-8">{{ ftl_enum(script.trigger.value) }}</dd>
 
-                        <dt class="col-sm-4">{{ _('Multi-State Testing') }}</dt>
+                        <dt class="col-sm-4">{{ ftl('scripts-multi-state-testing') }}</dt>
                         <dd class="col-sm-8">
                             {% if script.test_before_execution %}
                             <span class="badge bg-success">
-                                <i class="bi bi-check" aria-hidden="true"></i> {{ _('Test Before Execution') }}
+                                <i class="bi bi-check" aria-hidden="true"></i> {{ ftl('scripts-test-before-execution') }}
                             </span>
                             {% endif %}
                             {% if script.test_after_execution %}
                             <span class="badge bg-success">
-                                <i class="bi bi-check" aria-hidden="true"></i> {{ _('Test After Execution') }}
+                                <i class="bi bi-check" aria-hidden="true"></i> {{ ftl('scripts-test-after-execution') }}
                             </span>
                             {% endif %}
                             {% if not script.test_before_execution and not script.test_after_execution %}
-                            <span class="text-muted">{{ _('No testing configured') }}</span>
+                            <span class="text-muted">{{ ftl('scripts-no-testing-configured') }}</span>
                             {% endif %}
                         </dd>
                     </dl>
@@ -102,7 +102,7 @@
             <div class="card mb-4">
                 <div class="card-header">
                     <h2 id="script-steps-heading" class="mb-0">
-                        <i class="bi bi-list-ol" aria-hidden="true"></i> {{ _('Script Steps') }}
+                        <i class="bi bi-list-ol" aria-hidden="true"></i> {{ ftl('scripts-script-steps') }}
                         <span class="badge bg-secondary">{{ script.steps|length }}</span>
                     </h2>
                 </div>
@@ -113,16 +113,16 @@
                         <li class="list-group-item">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div class="ms-2 me-auto">
-                                    <div class="fw-bold">{{ _(step.action_type.value|replace('_', ' ')|title) }}</div>
+                                    <div class="fw-bold">{{ ftl_enum(step.action_type.value) }}</div>
                                     {% if step.selector %}
                                     <div class="text-muted small">
-                                        <i class="bi bi-bullseye" aria-hidden="true"></i> {{ _('Selector') }}:
+                                        <i class="bi bi-bullseye" aria-hidden="true"></i> {{ ftl('scripts-selector') }}:
                                         <code>{{ step.selector }}</code>
                                     </div>
                                     {% endif %}
                                     {% if step.value %}
                                     <div class="text-muted small">
-                                        <i class="bi bi-input-cursor-text" aria-hidden="true"></i> {{ _('Value') }}: {{ step.value }}
+                                        <i class="bi bi-input-cursor-text" aria-hidden="true"></i> {{ ftl('scripts-value') }}: {{ step.value }}
                                     </div>
                                     {% endif %}
                                     {% if step.description %}
@@ -131,8 +131,8 @@
                                 </div>
                                 <div class="text-end">
                                     <small class="text-muted">
-                                        {% if step.timeout %}{{ _('Timeout') }}: {{ step.timeout }}ms<br>{% endif %}
-                                        {% if step.wait_after %}{{ _('Wait') }}: {{ step.wait_after }}ms{% endif %}
+                                        {% if step.timeout %}{{ ftl('scripts-timeout') }}: {{ step.timeout }}ms<br>{% endif %}
+                                        {% if step.wait_after %}{{ ftl('scripts-wait') }}: {{ step.wait_after }}ms{% endif %}
                                     </small>
                                 </div>
                             </div>
@@ -140,7 +140,7 @@
                         {% endfor %}
                     </ol>
                     {% else %}
-                    <p class="text-muted">{{ _('No steps configured') }}</p>
+                    <p class="text-muted">{{ ftl('scripts-no-steps-configured') }}</p>
                     {% endif %}
                 </div>
             </div>
@@ -151,11 +151,11 @@
             <section aria-labelledby="state-validation-heading">
             <div class="card mb-4">
                 <div class="card-header">
-                    <h2 id="state-validation-heading" class="mb-0"><i class="bi bi-check2-square" aria-hidden="true"></i> {{ _('State Validation') }}</h2>
+                    <h2 id="state-validation-heading" class="mb-0"><i class="bi bi-check2-square" aria-hidden="true"></i> {{ ftl('scripts-state-validation') }}</h2>
                 </div>
                 <div class="card-body">
                     {% if script.expect_visible_after %}
-                    <h3>{{ _('Expected Visible Elements:') }}</h3>
+                    <h3>{{ ftl('scripts-expected-visible-elements') }}</h3>
                     <ul class="font-monospace small">
                         {% for selector in script.expect_visible_after %}
                         <li>{{ selector }}</li>
@@ -164,7 +164,7 @@
                     {% endif %}
 
                     {% if script.expect_hidden_after %}
-                    <h3>{{ _('Expected Hidden Elements:') }}</h3>
+                    <h3>{{ ftl('scripts-expected-hidden-elements') }}</h3>
                     <ul class="font-monospace small">
                         {% for selector in script.expect_hidden_after %}
                         <li>{{ selector }}</li>
@@ -182,18 +182,18 @@
             <section aria-labelledby="actions-heading">
             <div class="card mb-4">
                 <div class="card-header">
-                    <h2 id="actions-heading" class="mb-0"><i class="bi bi-gear" aria-hidden="true"></i> {{ _('Actions') }}</h2>
+                    <h2 id="actions-heading" class="mb-0"><i class="bi bi-gear" aria-hidden="true"></i> {{ ftl('common-actions') }}</h2>
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
                         <a href="{{ url_for('scripts.edit_script', script_id=script.id) }}" class="btn btn-primary">
-                            <i class="bi bi-pencil" aria-hidden="true"></i> {{ _('Edit Script') }}
+                            <i class="bi bi-pencil" aria-hidden="true"></i> {{ ftl('scripts-edit-script') }}
                         </a>
                         <button class="btn btn-outline-info" onclick="toggleScript('{{ script.id }}')">
-                            <i class="bi bi-toggle-on" aria-hidden="true"></i> {{ _('Disable') if script.enabled else _('Enable') }} {{ _('Script') }}
+                            <i class="bi bi-toggle-on" aria-hidden="true"></i> {{ ftl('common-disable') if script.enabled else ftl('common-enable') }} {{ ftl('scripts-script') }}
                         </button>
                         <button class="btn btn-outline-danger" onclick="deleteScript('{{ script.id }}')">
-                            <i class="bi bi-trash" aria-hidden="true"></i> {{ _('Delete Script') }}
+                            <i class="bi bi-trash" aria-hidden="true"></i> {{ ftl('scripts-delete-script') }}
                         </button>
                     </div>
                 </div>
@@ -203,17 +203,17 @@
             <section aria-labelledby="metadata-heading">
             <div class="card">
                 <div class="card-header">
-                    <h2 id="metadata-heading" class="mb-0"><i class="bi bi-clock-history" aria-hidden="true"></i> {{ _('Metadata') }}</h2>
+                    <h2 id="metadata-heading" class="mb-0"><i class="bi bi-clock-history" aria-hidden="true"></i> {{ ftl('common-metadata') }}</h2>
                 </div>
                 <div class="card-body">
                     <dl class="row mb-0">
-                        <dt class="col-sm-5">{{ _('Created:') }}</dt>
-                        <dd class="col-sm-7">{{ script.created_date.strftime('%Y-%m-%d %H:%M') if script.created_date else _('N/A') }}</dd>
+                        <dt class="col-sm-5">{{ ftl('common-created-2') }}</dt>
+                        <dd class="col-sm-7">{{ script.created_date.strftime('%Y-%m-%d %H:%M') if script.created_date else ftl('common-n-a') }}</dd>
 
-                        <dt class="col-sm-5">{{ _('Updated:') }}</dt>
-                        <dd class="col-sm-7">{{ script.updated_date.strftime('%Y-%m-%d %H:%M') if script.updated_date else _('N/A') }}</dd>
+                        <dt class="col-sm-5">{{ ftl('common-updated') }}</dt>
+                        <dd class="col-sm-7">{{ script.updated_date.strftime('%Y-%m-%d %H:%M') if script.updated_date else ftl('common-n-a') }}</dd>
 
-                        <dt class="col-sm-5">{{ _('Script ID:') }}</dt>
+                        <dt class="col-sm-5">{{ ftl('scripts-script-id') }}</dt>
                         <dd class="col-sm-7"><small><code>{{ script.id }}</code></small></dd>
                     </dl>
                 </div>
@@ -227,7 +227,7 @@
 {% block extra_js %}
 <script>
 function toggleScript(scriptId) {
-    if (!confirm('{{ _("Toggle this script (enable/disable)?") }}')) return;
+    if (!confirm('{{ ftl('scripts-toggle-this-script-enable-disable') }}')) return;
 
     fetch(`/scripts/${scriptId}/toggle`, {
         method: 'POST'
@@ -243,17 +243,17 @@ function toggleScript(scriptId) {
         if (data.success) {
             location.reload();
         } else {
-            alert('{{ _("Error:") }} ' + (data.error || '{{ _("Unknown error") }}'));
+            alert('{{ ftl('common-error') }} ' + (data.error || '{{ ftl('common-unknown-error') }}'));
         }
     })
     .catch(err => {
         console.error('Toggle error:', err);
-        alert('{{ _("Error toggling script:") }} ' + err.message);
+        alert('{{ ftl('scripts-error-toggling-script') }} ' + err.message);
     });
 }
 
 function deleteScript(scriptId) {
-    if (!confirm('{{ _("Are you sure you want to delete this script? This action cannot be undone.") }}')) return;
+    if (!confirm('{{ ftl('scripts-are-you-sure-you-want-to-delete-this-script-this') }}')) return;
 
     fetch(`/scripts/${scriptId}/delete`, {
         method: 'POST'
@@ -263,7 +263,7 @@ function deleteScript(scriptId) {
         if (data.success) {
             window.location.href = data.redirect;
         } else {
-            alert('{{ _("Error:") }} ' + (data.error || '{{ _("Unknown error") }}'));
+            alert('{{ ftl('common-error') }} ' + (data.error || '{{ ftl('common-unknown-error') }}'));
         }
     });
 }

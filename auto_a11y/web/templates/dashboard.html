@@ -1,34 +1,34 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('Dashboard') }} - Auto A11y{% endblock %}
+{% block title %}{{ ftl('common-dashboard') }} - Auto A11y{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
     {% if not has_projects %}
     {# Welcome dashboard for users with no project access #}
-    <h1 class="mb-4">{{ _('Hello, %(name)s!', name=current_user.name_display) }}</h1>
+    <h1 class="mb-4">{{ ftl('common-hello-name', name=current_user.name_display) }}</h1>
     <div class="row justify-content-center mt-5">
         <div class="col-md-8 col-lg-6">
             <div class="card text-center">
                 <div class="card-body py-5">
                     <i class="bi bi-person-check display-1 text-primary mb-3" aria-hidden="true"></i>
-                    <h2 class="card-title">{{ _('Welcome to Auto A11y') }}</h2>
+                    <h2 class="card-title">{{ ftl('common-welcome-to-auto-a11y') }}</h2>
                     <p class="card-text text-muted">
-                        {{ _('Your account has been created. An administrator will grant you access to projects shortly.') }}
+                        {{ ftl('common-your-account-has-been-created-an-administrator') }}
                     </p>
                     <p class="card-text text-muted">
-                        {{ _('Once you have been added to a project, you will be able to view reports and results here.') }}
+                        {{ ftl('common-once-you-have-been-added-to-a-project-you-will-be') }}
                     </p>
                 </div>
             </div>
         </div>
     </div>
     {% else %}
-    <h1 class="mb-4">{{ _('Dashboard') }}</h1>
+    <h1 class="mb-4">{{ ftl('common-dashboard') }}</h1>
 
     <!-- Statistics Cards -->
     <section aria-labelledby="stats-heading">
-    <h2 id="stats-heading" class="visually-hidden">{{ _('Statistics') }}</h2>
+    <h2 id="stats-heading" class="visually-hidden">{{ ftl('common-statistics') }}</h2>
     <div class="row mb-4 g-3">
         <!-- First Row - General Stats -->
         <div class="col-6 col-sm-6 col-lg-3">
@@ -36,7 +36,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h2 class="card-subtitle mb-2 fs-7">{{ _('Projects') }}</h2>
+                            <h2 class="card-subtitle mb-2 fs-7">{{ ftl('common-projects') }}</h2>
                             <h3 class="card-title mb-0">{{ stats.projects }}</h3>
                         </div>
                         <i class="bi bi-folder display-6 opacity-50 d-none d-sm-block" aria-hidden="true"></i>
@@ -49,7 +49,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h2 class="card-subtitle mb-2 fs-7">{{ _('Total Pages') }}</h2>
+                            <h2 class="card-subtitle mb-2 fs-7">{{ ftl('common-total-pages') }}</h2>
                             <h3 class="card-title mb-0">{{ stats.total_pages }}</h3>
                         </div>
                         <i class="bi bi-file-text display-6 opacity-50 d-none d-sm-block" aria-hidden="true"></i>
@@ -62,7 +62,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h2 class="card-subtitle mb-2 fs-7">{{ _('Tested Pages') }}</h2>
+                            <h2 class="card-subtitle mb-2 fs-7">{{ ftl('common-tested-pages') }}</h2>
                             <h3 class="card-title mb-0">{{ stats.tested_pages }}</h3>
                         </div>
                         <i class="bi bi-check-circle display-6 opacity-50 d-none d-sm-block" aria-hidden="true"></i>
@@ -75,7 +75,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h2 class="card-subtitle mb-2 fs-7">{{ _('Total Issues') }}</h2>
+                            <h2 class="card-subtitle mb-2 fs-7">{{ ftl('common-total-issues') }}</h2>
                             <h3 class="card-title mb-0">{{ stats.total_violations + stats.total_warnings + stats.total_info + stats.total_discovery }}</h3>
                         </div>
                         <i class="bi bi-list-check display-6 opacity-50 d-none d-sm-block" aria-hidden="true"></i>
@@ -92,7 +92,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h2 class="card-subtitle mb-2 fs-7">{{ _('Errors') }}</h2>
+                            <h2 class="card-subtitle mb-2 fs-7">{{ ftl('common-errors') }}</h2>
                             <h3 class="card-title mb-0">{{ stats.total_violations }}</h3>
                         </div>
                         <i class="bi bi-x-circle display-6 opacity-50 d-none d-sm-block" aria-hidden="true"></i>
@@ -105,7 +105,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h2 class="card-subtitle mb-2 fs-7">{{ _('Warnings') }}</h2>
+                            <h2 class="card-subtitle mb-2 fs-7">{{ ftl('common-warnings') }}</h2>
                             <h3 class="card-title mb-0">{{ stats.total_warnings }}</h3>
                         </div>
                         <i class="bi bi-exclamation-triangle display-6 opacity-50 d-none d-sm-block" aria-hidden="true"></i>
@@ -118,7 +118,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h2 class="card-subtitle mb-2 fs-7">{{ _('Info Notes') }}</h2>
+                            <h2 class="card-subtitle mb-2 fs-7">{{ ftl('common-info-notes') }}</h2>
                             <h3 class="card-title mb-0">{{ stats.total_info }}</h3>
                         </div>
                         <i class="bi bi-info-circle display-6 opacity-50 d-none d-sm-block" aria-hidden="true"></i>
@@ -131,7 +131,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h2 class="card-subtitle mb-2 fs-7">{{ _('Discovery') }}</h2>
+                            <h2 class="card-subtitle mb-2 fs-7">{{ ftl('common-discovery-2') }}</h2>
                             <h3 class="card-title mb-0">{{ stats.total_discovery }}</h3>
                         </div>
                         <i class="bi bi-search display-6 opacity-50 d-none d-sm-block" aria-hidden="true"></i>
@@ -148,18 +148,18 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h2 id="actions-heading" class="card-title mb-0">{{ _('Quick Actions') }}</h2>
+                    <h2 id="actions-heading" class="card-title mb-0">{{ ftl('common-quick-actions') }}</h2>
                 </div>
                 <div class="card-body">
                     <div class="d-flex flex-wrap gap-2">
                         <a href="{{ url_for('projects.create_project') }}" class="btn btn-primary">
-                            <i class="bi bi-plus-circle" aria-hidden="true"></i> {{ _('New Project') }}
+                            <i class="bi bi-plus-circle" aria-hidden="true"></i> {{ ftl('common-new-project') }}
                         </a>
                         <a href="{{ url_for('testing.testing_dashboard') }}" class="btn btn-success">
-                            <i class="bi bi-play-circle" aria-hidden="true"></i> {{ _('Run Tests') }}
+                            <i class="bi bi-play-circle" aria-hidden="true"></i> {{ ftl('common-run-tests') }}
                         </a>
                         <a href="{{ url_for('reports.reports_dashboard') }}" class="btn btn-info">
-                            <i class="bi bi-download" aria-hidden="true"></i> {{ _('Generate Report') }}
+                            <i class="bi bi-download" aria-hidden="true"></i> {{ ftl('common-generate-report') }}
                         </a>
                     </div>
                 </div>
@@ -174,17 +174,17 @@
             <section aria-labelledby="coverage-heading">
             <div class="card">
                 <div class="card-header">
-                    <h2 id="coverage-heading" class="card-title mb-0">{{ _('Test Coverage') }}</h2>
+                    <h2 id="coverage-heading" class="card-title mb-0">{{ ftl('common-test-coverage') }}</h2>
                 </div>
                 <div class="card-body">
                     {% set coverage = (stats.tested_pages / stats.total_pages * 100) if stats.total_pages > 0 else 0 %}
-                    <div class="progress" style="height: 30px;" role="progressbar" aria-valuenow="{{ "%.1f"|format(coverage) }}" aria-valuemin="0" aria-valuemax="100" aria-label="{{ _('Test coverage') }}">
+                    <div class="progress" style="height: 30px;" role="progressbar" aria-valuenow="{{ "%.1f"|format(coverage) }}" aria-valuemin="0" aria-valuemax="100" aria-label="{{ ftl('common-test-coverage-2') }}">
                         <div class="progress-bar bg-success" style="width: {{ coverage }}%">
-                            {{ "%.1f"|format(coverage) }}% {{ _('Tested') }}
+                            {{ "%.1f"|format(coverage) }}% {{ ftl('common-tested') }}
                         </div>
                     </div>
                     <p class="text-muted mt-2">
-                        {{ stats.tested_pages }} {{ _('of') }} {{ stats.total_pages }} {{ _('pages tested') }}
+                        {{ stats.tested_pages }} {{ ftl('common-of') }} {{ stats.total_pages }} {{ ftl('common-pages-tested') }}
                     </p>
                 </div>
             </div>
@@ -194,21 +194,21 @@
             <section aria-labelledby="status-heading">
             <div class="card">
                 <div class="card-header">
-                    <h2 id="status-heading" class="card-title mb-0">{{ _('System Status') }}</h2>
+                    <h2 id="status-heading" class="card-title mb-0">{{ ftl('common-system-status') }}</h2>
                 </div>
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-2">
-                        <span>{{ _('Database') }}</span>
-                        <span class="badge bg-success">{{ _('Connected') }}</span>
+                        <span>{{ ftl('common-database') }}</span>
+                        <span class="badge bg-success">{{ ftl('common-connected') }}</span>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
-                        <span>{{ _('Browser Engine') }}</span>
-                        <span class="badge bg-success">{{ _('Ready') }}</span>
+                        <span>{{ ftl('common-browser-engine') }}</span>
+                        <span class="badge bg-success">{{ ftl('common-ready') }}</span>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
-                        <span>{{ _('AI Analysis') }}</span>
+                        <span>{{ ftl('common-ai-analysis') }}</span>
                         <span class="badge bg-{{ 'success' if config.RUN_AI_ANALYSIS else 'secondary' }}">
-                            {{ _('Enabled') if config.RUN_AI_ANALYSIS else _('Disabled') }}
+                            {{ ftl('common-enabled') if config.RUN_AI_ANALYSIS else ftl('common-disabled') }}
                         </span>
                     </div>
                 </div>

@@ -1,16 +1,16 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('Page Not Found') }} - Auto A11y{% endblock %}
+{% block title %}{{ ftl('common-page-not-found-2') }} - Auto A11y{% endblock %}
 
 {% block content %}
 <div class="container">
     <div class="row mt-5">
         <div class="col-md-6 mx-auto text-center">
             <p class="display-1" aria-hidden="true">404</p>
-            <h1>{{ _('Page Not Found') }}</h1>
-            <p class="lead">{{ _("The page you're looking for doesn't exist.") }}</p>
+            <h1>{{ ftl('common-page-not-found-2') }}</h1>
+            <p class="lead">{{ ftl('common-the-page-you-re-looking-for-doesn-t-exist') }}</p>
             <a href="{{ url_for('index') }}" class="btn btn-primary">
-                <i class="bi bi-house" aria-hidden="true"></i> {{ _('Go Home') }}
+                <i class="bi bi-house" aria-hidden="true"></i> {{ ftl('common-go-home') }}
             </a>
         </div>
     </div>

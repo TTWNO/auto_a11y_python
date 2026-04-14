@@ -1,9 +1,9 @@
 {% extends "public/public_base.html" %}
 
-{% block title %}{{ _('Project Overview') }}{% endblock %}
+{% block title %}{{ ftl('public-project-overview') }}{% endblock %}
 
 {% block breadcrumb %}
-<nav aria-label="{{ _('Breadcrumb') }}" class="container">
+<nav aria-label="{{ ftl('public-breadcrumb') }}" class="container">
     <ol class="breadcrumb">
         <li aria-current="page">{{ project.name }}</li>
     </ol>
@@ -18,23 +18,23 @@
 {% endif %}
 
 <dl class="stats">
-    <dt>{{ _('Pages Tested') }}</dt>
+    <dt>{{ ftl('common-pages-tested-2') }}</dt>
     <dd>{{ stats.tested_pages }} / {{ stats.total_pages }}</dd>
-    <dt>{{ _('Test Coverage') }}</dt>
+    <dt>{{ ftl('common-test-coverage') }}</dt>
     <dd>
         <meter min="0" max="100" value="{{ stats.test_coverage|round(1) }}"
-               aria-label="{{ _('Test coverage') }}">{{ stats.test_coverage|round(1) }}%</meter>
+               aria-label="{{ ftl('common-test-coverage-2') }}">{{ stats.test_coverage|round(1) }}%</meter>
         {{ stats.test_coverage|round(1) }}%
     </dd>
-    <dt>{{ _('Violations') }}</dt>
+    <dt>{{ ftl('common-violations') }}</dt>
     <dd>{{ stats.total_violations }}</dd>
-    <dt>{{ _('Warnings') }}</dt>
+    <dt>{{ ftl('common-warnings') }}</dt>
     <dd>{{ stats.total_warnings }}</dd>
 </dl>
 
 {% if websites %}
 <section aria-labelledby="websites-heading">
-<h2 id="websites-heading">{{ _('Websites') }}</h2>
+<h2 id="websites-heading">{{ ftl('common-websites') }}</h2>
 <ul class="website-list">
     {% for website in websites %}
     <li>

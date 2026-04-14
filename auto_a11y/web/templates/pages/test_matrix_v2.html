@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('Configure Test Matrix') }} - {{ page.title or page.url }} - {{ _('Auto A11y') }}{% endblock %}
+{% block title %}{{ ftl('common-configure-test-matrix') }} - {{ page.title or page.url }} - {{ ftl('common-auto-a11y') }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -74,25 +74,25 @@
                 <a href="{{ url_for('websites.view_website', website_id=website.id) }}">{{ website.display_name }}</a>
             </li>
             <li class="breadcrumb-item">
-                <a href="{{ url_for('pages.view_page', page_id=page.id) }}">{{ page.title or _('Page') }}</a>
+                <a href="{{ url_for('pages.view_page', page_id=page.id) }}">{{ page.title or ftl('common-page-2') }}</a>
             </li>
             <li class="breadcrumb-item">
-                <a href="{{ url_for('scripts.list_page_scripts', page_id=page.id) }}">{{ _('Scripts') }}</a>
+                <a href="{{ url_for('scripts.list_page_scripts', page_id=page.id) }}">{{ ftl('common-scripts') }}</a>
             </li>
-            <li class="breadcrumb-item active" aria-current="page">{{ _('Test Matrix') }}</li>
+            <li class="breadcrumb-item active" aria-current="page">{{ ftl('pages-test-matrix') }}</li>
         </ol>
     </nav>
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h1>
-                <i class="bi bi-grid-3x3" aria-hidden="true"></i> {{ _('Configure Test Matrix') }}
+                <i class="bi bi-grid-3x3" aria-hidden="true"></i> {{ ftl('common-configure-test-matrix') }}
             </h1>
             <p class="text-muted">{{ page.url }}</p>
         </div>
         <div>
             <a href="{{ url_for('scripts.list_page_scripts', page_id=page.id) }}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left" aria-hidden="true"></i> {{ _('Back to Scripts') }}
+                <i class="bi bi-arrow-left" aria-hidden="true"></i> {{ ftl('pages-back-to-scripts') }}
             </a>
         </div>
     </div>
@@ -102,7 +102,7 @@
             {% for category, message in messages %}
             <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
                 {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ _('Dismiss') }}"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ ftl('common-dismiss') }}"></button>
             </div>
             {% endfor %}
         {% endif %}
@@ -111,11 +111,11 @@
     {% if not testable_scripts %}
     <div class="alert alert-warning">
         <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
-        <strong>{{ _('No Testable Scripts') }}</strong><br>
-        {{ _('This page has no enabled scripts with multi-state testing configured.') }}
+        <strong>{{ ftl('pages-no-testable-scripts') }}</strong><br>
+        {{ ftl('pages-this-page-has-no-enabled-scripts-with-multi-state-2') }}
         <div class="mt-3">
             <a href="{{ url_for('scripts.create_page_script', page_id=page.id) }}" class="btn btn-primary">
-                <i class="bi bi-plus-circle" aria-hidden="true"></i> {{ _('Create New Script') }}
+                <i class="bi bi-plus-circle" aria-hidden="true"></i> {{ ftl('common-create-new-script') }}
             </a>
         </div>
     </div>
@@ -123,14 +123,14 @@
 
     <!-- Info Box -->
     <div class="info-box">
-        <h2><i class="bi bi-info-circle" aria-hidden="true"></i> {{ _('About Test Combinations') }}</h2>
+        <h2><i class="bi bi-info-circle" aria-hidden="true"></i> {{ ftl('pages-about-test-combinations') }}</h2>
         <p class="mb-2">
-            {{ _('Each row defines one test run. Select which state each script should be in for that test.') }}
+            {{ ftl('pages-each-row-defines-one-test-run-select-which-state') }}
         </p>
         <ul class="mb-0">
-            <li><strong>{{ _('None') }}:</strong> {{ _('Script not involved in this test') }}</li>
-            <li><strong>{{ _('Before') }}:</strong> {{ _('Script not executed (initial state)') }}</li>
-            <li><strong>{{ _('After') }}:</strong> {{ _('Script executed') }}</li>
+            <li><strong>{{ ftl('common-none') }}:</strong> {{ ftl('pages-script-not-involved-in-this-test') }}</li>
+            <li><strong>{{ ftl('common-before') }}:</strong> {{ ftl('pages-script-not-executed-initial-state') }}</li>
+            <li><strong>{{ ftl('common-after') }}:</strong> {{ ftl('pages-script-executed') }}</li>
         </ul>
     </div>
 
@@ -138,10 +138,10 @@
     <section aria-labelledby="execution-order-heading">
         <div class="card mb-4">
             <div class="card-header bg-secondary text-white">
-                <h2 id="execution-order-heading" class="mb-0"><i class="bi bi-sort-numeric-down" aria-hidden="true"></i> {{ _('Script Execution Order') }}</h2>
+                <h2 id="execution-order-heading" class="mb-0"><i class="bi bi-sort-numeric-down" aria-hidden="true"></i> {{ ftl('pages-script-execution-order') }}</h2>
             </div>
         <div class="card-body">
-            <p class="text-muted mb-3">{{ _('Drag to reorder scripts. Scripts execute from left to right.') }}</p>
+            <p class="text-muted mb-3">{{ ftl('pages-drag-to-reorder-scripts-scripts-execute-from-left') }}</p>
             <div id="script-order-list" class="d-flex flex-wrap gap-2">
                 {% for script in matrix.scripts %}
                 <div class="script-order-item badge bg-primary p-2" draggable="true" data-script-id="{{ script.script_id }}">
@@ -157,19 +157,19 @@
     <!-- Preset Buttons -->
     <div class="preset-buttons">
         <button type="button" class="btn btn-outline-primary" onclick="applyPreset('sequential')">
-            <i class="bi bi-arrow-right-circle" aria-hidden="true"></i> {{ _('Sequential (Default)') }}
+            <i class="bi bi-arrow-right-circle" aria-hidden="true"></i> {{ ftl('pages-sequential-default') }}
         </button>
         <button type="button" class="btn btn-outline-secondary" onclick="applyPreset('initial_final')">
-            <i class="bi bi-arrow-left-right" aria-hidden="true"></i> {{ _('Initial + Final') }}
+            <i class="bi bi-arrow-left-right" aria-hidden="true"></i> {{ ftl('pages-initial-final') }}
         </button>
         <button type="button" class="btn btn-outline-secondary" onclick="applyPreset('all')">
-            <i class="bi bi-grid-fill" aria-hidden="true"></i> {{ _('All Combinations') }}
+            <i class="bi bi-grid-fill" aria-hidden="true"></i> {{ ftl('pages-all-combinations') }}
         </button>
         <button type="button" class="btn btn-outline-secondary" onclick="applyPreset('clear')">
-            <i class="bi bi-x-circle" aria-hidden="true"></i> {{ _('Clear All') }}
+            <i class="bi bi-x-circle" aria-hidden="true"></i> {{ ftl('common-clear-all') }}
         </button>
         <button type="button" class="btn btn-success" onclick="addCombination()">
-            <i class="bi bi-plus-circle" aria-hidden="true"></i> {{ _('Add Combination') }}
+            <i class="bi bi-plus-circle" aria-hidden="true"></i> {{ ftl('pages-add-combination') }}
         </button>
     </div>
 
@@ -177,13 +177,13 @@
     <section aria-labelledby="combinations-heading">
         <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                <h2 id="combinations-heading" class="mb-0">{{ _('Test Combinations') }}</h2>
-                <span class="badge bg-light text-dark"><span id="combinations-count">0</span> {{ _('combinations') }}</span>
+                <h2 id="combinations-heading" class="mb-0">{{ ftl('pages-test-combinations') }}</h2>
+                <span class="badge bg-light text-dark"><span id="combinations-count">0</span> {{ ftl('pages-combinations') }}</span>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
-                        <caption class="visually-hidden">{{ _('Test script combinations configuration') }}</caption>
+                        <caption class="visually-hidden">{{ ftl('pages-test-script-combinations-configuration') }}</caption>
                     <thead>
                         <tr>
                             <th scope="col" style="width: 40px;"></th>
@@ -191,7 +191,7 @@
                             {% for script in matrix.scripts %}
                             <th scope="col">{{ script.script_name }}</th>
                             {% endfor %}
-                            <th scope="col" style="width: 80px;">{{ _('Actions') }}</th>
+                            <th scope="col" style="width: 80px;">{{ ftl('common-actions') }}</th>
                         </tr>
                     </thead>
                     <tbody id="combinations-tbody">
@@ -211,10 +211,10 @@
         <div class="d-flex justify-content-between align-items-center">
             <div>
                 <button type="submit" class="btn btn-primary btn-lg">
-                    <i class="bi bi-save" aria-hidden="true"></i> {{ _('Save Configuration') }}
+                    <i class="bi bi-save" aria-hidden="true"></i> {{ ftl('common-save-configuration') }}
                 </button>
                 <a href="{{ url_for('scripts.list_page_scripts', page_id=page.id) }}" class="btn btn-outline-secondary btn-lg">
-                    {{ _('Cancel') }}
+                    {{ ftl('common-cancel') }}
                 </a>
             </div>
         </div>
@@ -292,20 +292,20 @@ function renderTable() {
             // Add "None" option (always available)
             const noneOpt = document.createElement('option');
             noneOpt.value = 'none';
-            noneOpt.textContent = {{ _('None') | tojson }};
+            noneOpt.textContent = {{ ftl('common-none') | tojson }};
             select.appendChild(noneOpt);
 
             if (script.test_before) {
                 const beforeOpt = document.createElement('option');
                 beforeOpt.value = 'before';
-                beforeOpt.textContent = {{ _('Before') | tojson }};
+                beforeOpt.textContent = {{ ftl('common-before') | tojson }};
                 select.appendChild(beforeOpt);
             }
 
             if (script.test_after) {
                 const afterOpt = document.createElement('option');
                 afterOpt.value = 'after';
-                afterOpt.textContent = {{ _('After') | tojson }};
+                afterOpt.textContent = {{ ftl('common-after') | tojson }};
                 select.appendChild(afterOpt);
             }
 
@@ -324,7 +324,7 @@ function renderTable() {
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'btn btn-sm btn-outline-danger';
         deleteBtn.innerHTML = '<i class="bi bi-trash" aria-hidden="true"></i>';
-        deleteBtn.title = {{ _('Delete') | tojson }};
+        deleteBtn.title = {{ ftl('common-delete') | tojson }};
         deleteBtn.onclick = () => deleteCombination(index);
         actionsCell.appendChild(deleteBtn);
         row.appendChild(actionsCell);
@@ -349,7 +349,7 @@ function addCombination() {
 // Delete a combination
 function deleteCombination(index) {
     if (combinations.length <= 1) {
-        alert({{ _('You must have at least one combination') | tojson }});
+        alert({{ ftl('pages-you-must-have-at-least-one-combination') | tojson }});
         return;
     }
     combinations.splice(index, 1);

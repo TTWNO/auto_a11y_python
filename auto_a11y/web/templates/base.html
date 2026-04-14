@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}{{ _('Auto A11y') }}{% endblock %}</title>
+    <title>{% block title %}{{ ftl('common-auto-a11y') }}{% endblock %}</title>
     
     <!-- Anti-FOUC: apply saved theme before render -->
     <script>
@@ -28,15 +28,15 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
 <body>
-    <a class="skip-link" href="#main-content">{{ _('Skip to main content') }}</a>
+    <a class="skip-link" href="#main-content">{{ ftl('common-skip-to-main-content') }}</a>
 
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary" aria-label="{{ _('Main navigation') }}">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary" aria-label="{{ ftl('common-main-navigation') }}">
         <div class="container-fluid">
             <a class="navbar-brand" href="{{ url_for('index') }}">
-                <i class="bi bi-universal-access-circle" aria-hidden="true"></i> {{ _('Auto A11y') }}
+                <i class="bi bi-universal-access-circle" aria-hidden="true"></i> {{ ftl('common-auto-a11y') }}
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="{{ _('Toggle navigation') }}">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="{{ ftl('common-toggle-navigation') }}">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
@@ -44,44 +44,44 @@
                     <!-- Dashboard - standalone -->
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('dashboard') }}" {% if request.endpoint == 'dashboard' %}aria-current="page"{% endif %}>
-                            <i class="bi bi-speedometer2" aria-hidden="true"></i> {{ _('Dashboard') }}
+                            <i class="bi bi-speedometer2" aria-hidden="true"></i> {{ ftl('common-dashboard') }}
                         </a>
                     </li>
                     {% if current_user.is_authenticated and (is_superadmin or user_has_projects) %}
                     <!-- Projects - standalone -->
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('projects.list_projects') }}" {% if request.endpoint and request.endpoint.startswith('projects.') %}aria-current="page"{% endif %}>
-                            <i class="bi bi-folder" aria-hidden="true"></i> {{ _('Projects') }}
+                            <i class="bi bi-folder" aria-hidden="true"></i> {{ ftl('common-projects') }}
                         </a>
                     </li>
                     <!-- Testing dropdown -->
                     <li class="nav-item dropdown">
                         <button type="button" class="nav-link dropdown-toggle" id="testingDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-check2-square" aria-hidden="true"></i> {{ _('Testing') }}
+                            <i class="bi bi-check2-square" aria-hidden="true"></i> {{ ftl('common-testing') }}
                         </button>
                         <ul class="dropdown-menu" aria-labelledby="testingDropdown">
                             <li><a class="dropdown-item" href="{{ url_for('testing.testing_dashboard') }}">
-                                <i class="bi bi-speedometer2" aria-hidden="true"></i> {{ _('Testing Dashboard') }}
+                                <i class="bi bi-speedometer2" aria-hidden="true"></i> {{ ftl('common-testing-dashboard') }}
                             </a></li>
                             <li><a class="dropdown-item" href="{{ url_for('testing.trends_page') }}">
-                                <i class="bi bi-graph-up-arrow" aria-hidden="true"></i> {{ _('Trend Analysis') }}
+                                <i class="bi bi-graph-up-arrow" aria-hidden="true"></i> {{ ftl('common-trend-analysis') }}
                             </a></li>
                             <li><a class="dropdown-item" href="{{ url_for('schedules.schedules_dashboard') }}">
-                                <i class="bi bi-calendar-check" aria-hidden="true"></i> {{ _('Schedules') }}
+                                <i class="bi bi-calendar-check" aria-hidden="true"></i> {{ ftl('common-schedules') }}
                             </a></li>
                         </ul>
                     </li>
                     <!-- Reports dropdown -->
                     <li class="nav-item dropdown">
                         <button type="button" class="nav-link dropdown-toggle" id="reportsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-file-earmark-text" aria-hidden="true"></i> {{ _('Reports') }}
+                            <i class="bi bi-file-earmark-text" aria-hidden="true"></i> {{ ftl('common-reports') }}
                         </button>
                         <ul class="dropdown-menu" aria-labelledby="reportsDropdown">
                             <li><a class="dropdown-item" href="{{ url_for('reports.reports_dashboard') }}">
-                                <i class="bi bi-file-earmark-bar-graph" aria-hidden="true"></i> {{ _('Reports Dashboard') }}
+                                <i class="bi bi-file-earmark-bar-graph" aria-hidden="true"></i> {{ ftl('common-reports-dashboard') }}
                             </a></li>
                             <li><a class="dropdown-item" href="{{ url_for('recordings.list_recordings') }}">
-                                <i class="bi bi-mic" aria-hidden="true"></i> {{ _('Recordings') }}
+                                <i class="bi bi-mic" aria-hidden="true"></i> {{ ftl('common-recordings') }}
                             </a></li>
                         </ul>
                     </li>
@@ -94,7 +94,7 @@
                     </li>
                     <!-- Language selector - compact -->
                     <li class="nav-item dropdown">
-                        <button type="button" class="nav-link dropdown-toggle py-2 px-2" id="languageDropdown" data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ _('Language') }}">
+                        <button type="button" class="nav-link dropdown-toggle py-2 px-2" id="languageDropdown" data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ ftl('common-language') }}">
                             <i class="bi bi-translate" aria-hidden="true"></i> <span class="d-none d-lg-inline" id="current-language">{{ get_locale().upper() }}</span>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
@@ -104,20 +104,20 @@
                     </li>
                     <!-- Settings dropdown - includes Help -->
                     <li class="nav-item dropdown">
-                        <button type="button" class="nav-link dropdown-toggle py-2 px-2" id="settingsDropdown" data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ _('Settings') }}">
+                        <button type="button" class="nav-link dropdown-toggle py-2 px-2" id="settingsDropdown" data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ ftl('common-settings') }}">
                             <i class="bi bi-gear" aria-hidden="true"></i>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="{{ url_for('help') }}">
-                                <i class="bi bi-question-circle" aria-hidden="true"></i> {{ _('Help') }}
+                                <i class="bi bi-question-circle" aria-hidden="true"></i> {{ ftl('common-help') }}
                             </a></li>
                             {% if current_user.is_authenticated and (is_superadmin or user_has_projects) %}
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{{ url_for('testing.configure_testing') }}">
-                                <i class="bi bi-sliders" aria-hidden="true"></i> {{ _('Configuration') }}
+                                <i class="bi bi-sliders" aria-hidden="true"></i> {{ ftl('common-configuration') }}
                             </a></li>
                             <li><a class="dropdown-item" href="{{ url_for('testing.fixture_status') }}">
-                                <i class="bi bi-check2-square" aria-hidden="true"></i> {{ _('Fixture Status') }}
+                                <i class="bi bi-check2-square" aria-hidden="true"></i> {{ ftl('common-fixture-status') }}
                             </a></li>
                             {% endif %}
                         </ul>
@@ -130,33 +130,33 @@
                         <ul class="dropdown-menu dropdown-menu-end">
                             {% if is_superadmin %}
                             <li><span class="dropdown-item-text text-muted small">
-                                {{ _('Superadmin') }}
+                                {{ ftl('common-superadmin') }}
                             </span></li>
                             {% endif %}
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">
-                                <i class="bi bi-person" aria-hidden="true"></i> {{ _('Profile') }}
+                                <i class="bi bi-person" aria-hidden="true"></i> {{ ftl('common-profile') }}
                             </a></li>
                             {% if user_can('users', 'read') %}
                             <li><a class="dropdown-item" href="{{ url_for('auth.user_list') }}">
-                                <i class="bi bi-people" aria-hidden="true"></i> {{ _('User Management') }}
+                                <i class="bi bi-people" aria-hidden="true"></i> {{ ftl('common-user-management') }}
                             </a></li>
                             {% endif %}
                             {% if user_can('groups', 'read') %}
                             <li><a class="dropdown-item" href="{{ url_for('groups.list_groups') }}">
-                                <i class="bi bi-shield-lock" aria-hidden="true"></i> {{ _('Groups') }}
+                                <i class="bi bi-shield-lock" aria-hidden="true"></i> {{ ftl('common-groups') }}
                             </a></li>
                             {% endif %}
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">
-                                <i class="bi bi-box-arrow-right" aria-hidden="true"></i> {{ _('Logout') }}
+                                <i class="bi bi-box-arrow-right" aria-hidden="true"></i> {{ ftl('common-logout') }}
                             </a></li>
                         </ul>
                     </li>
                     {% else %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('auth.login') }}">
-                            <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> {{ _('Login') }}
+                            <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> {{ ftl('common-login') }}
                         </a>
                     </li>
                     {% endif %}
@@ -171,14 +171,14 @@
             <div class="alert alert-info alert-dismissible fade show mt-2" role="alert">
                 <div class="d-flex align-items-center">
                     <div class="spinner-border spinner-border-sm me-2" role="status">
-                        <span class="visually-hidden">{{ _('Loading...') }}</span>
+                        <span class="visually-hidden">{{ ftl('common-loading') }}</span>
                     </div>
                     <div>
-                        <strong id="global-activity-title">{{ _('Activity in Progress') }}</strong> - <span id="global-test-message">{{ _('Checking status...') }}</span>
-                        <a href="#" id="global-test-link" class="ms-2">{{ _('View Details') }}</a>
+                        <strong id="global-activity-title">{{ ftl('common-activity-in-progress') }}</strong> - <span id="global-test-message">{{ ftl('common-checking-status') }}</span>
+                        <a href="#" id="global-test-link" class="ms-2">{{ ftl('common-view-details') }}</a>
                     </div>
                 </div>
-                <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert" aria-label="{{ _('Dismiss') }}" onclick="pauseGlobalTestTracking()"></button>
+                <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert" aria-label="{{ ftl('common-dismiss') }}" onclick="pauseGlobalTestTracking()"></button>
             </div>
         </div>
     </div>
@@ -190,7 +190,7 @@
                 {% for category, message in messages %}
                     <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
                         {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ _('Dismiss') }}"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ ftl('common-dismiss') }}"></button>
                     </div>
                 {% endfor %}
             </div>
@@ -207,54 +207,54 @@
     <!-- Footer (hidden on mobile - replaced by bottom nav) -->
     <footer class="footer mt-auto py-3 bg-light">
         <div class="container text-center">
-            <span class="text-muted">{{ _('Auto A11y') }} © 2025 | {{ _('Canadian National Institute for the Blind') }}</span>
+            <span class="text-muted">{{ ftl('common-auto-a11y') }} © 2025 | {{ ftl('common-canadian-national-institute-for-the-blind') }}</span>
         </div>
     </footer>
 
     <!-- Mobile Bottom Navigation -->
     {% if current_user.is_authenticated %}
-    <nav class="mobile-bottom-nav" aria-label="{{ _('Mobile navigation') }}">
+    <nav class="mobile-bottom-nav" aria-label="{{ ftl('common-mobile-navigation') }}">
         <ul>
             <li>
                 <a href="{{ url_for('dashboard') }}" {% if request.endpoint == 'dashboard' %}class="active" aria-current="page"{% endif %}>
                     <i class="bi bi-speedometer2" aria-hidden="true"></i>
-                    <span>{{ _('Dashboard') }}</span>
+                    <span>{{ ftl('common-dashboard') }}</span>
                 </a>
             </li>
             <li>
                 <a href="{{ url_for('projects.list_projects') }}" {% if request.endpoint and request.endpoint.startswith('projects.') %}class="active" aria-current="page"{% endif %}>
                     <i class="bi bi-folder" aria-hidden="true"></i>
-                    <span>{{ _('Projects') }}</span>
+                    <span>{{ ftl('common-projects') }}</span>
                 </a>
             </li>
             <li>
                 <a href="{{ url_for('testing.testing_dashboard') }}" {% if request.endpoint == 'testing.testing_dashboard' %}class="active" aria-current="page"{% endif %}>
                     <i class="bi bi-check2-square" aria-hidden="true"></i>
-                    <span>{{ _('Testing') }}</span>
+                    <span>{{ ftl('common-testing') }}</span>
                 </a>
             </li>
             <li>
                 <a href="{{ url_for('testing.trends_page') }}" {% if request.endpoint == 'testing.trends_page' %}class="active" aria-current="page"{% endif %}>
                     <i class="bi bi-graph-up-arrow" aria-hidden="true"></i>
-                    <span>{{ _('Trends') }}</span>
+                    <span>{{ ftl('common-trends') }}</span>
                 </a>
             </li>
             <li>
                 <a href="{{ url_for('schedules.schedules_dashboard') }}" {% if request.endpoint == 'schedules.schedules_dashboard' %}class="active" aria-current="page"{% endif %}>
                     <i class="bi bi-calendar-check" aria-hidden="true"></i>
-                    <span>{{ _('Schedules') }}</span>
+                    <span>{{ ftl('common-schedules') }}</span>
                 </a>
             </li>
             <li>
                 <a href="{{ url_for('reports.reports_dashboard') }}" {% if request.endpoint and request.endpoint.startswith('reports.') %}class="active" aria-current="page"{% endif %}>
                     <i class="bi bi-file-earmark-text" aria-hidden="true"></i>
-                    <span>{{ _('Reports') }}</span>
+                    <span>{{ ftl('common-reports') }}</span>
                 </a>
             </li>
             <li>
                 <a href="{{ url_for('auth.profile') }}" {% if request.endpoint and request.endpoint.startswith('auth.') %}class="active" aria-current="page"{% endif %}>
                     <i class="bi bi-person-circle" aria-hidden="true"></i>
-                    <span>{{ _('Profile') }}</span>
+                    <span>{{ ftl('common-profile') }}</span>
                 </a>
             </li>
         </ul>
@@ -475,13 +475,13 @@
                 
                 // Update title based on activity types
                 if (discoveryCount > 0 && testCount === 0) {
-                    titleElement.textContent = '{{ _("Discovery Running") }}';
+                    titleElement.textContent = '{{ ftl('common-discovery-running') }}';
                 } else if (discoveryCount === 0 && testCount > 0) {
-                    titleElement.textContent = '{{ _("Tests Running") }}';
+                    titleElement.textContent = '{{ ftl('common-tests-running') }}';
                 } else if (discoveryCount > 0 && testCount > 0) {
-                    titleElement.textContent = '{{ _("Discovery & Tests Running") }}';
+                    titleElement.textContent = '{{ ftl('common-discovery-tests-running') }}';
                 } else {
-                    titleElement.textContent = '{{ _("Activity in Progress") }}';
+                    titleElement.textContent = '{{ ftl('common-activity-in-progress') }}';
                 }
                 
                 if (activeCount === 1) {
@@ -497,12 +497,12 @@
                     // Build message based on activity types
                     let messages = [];
                     if (discoveryCount > 0) {
-                        messages.push(discoveryCount > 1 ? `${discoveryCount} {{ _("discoveries") }}` : `${discoveryCount} {{ _("discovery") }}`);
+                        messages.push(discoveryCount > 1 ? `${discoveryCount} {{ ftl('common-discoveries') }}` : `${discoveryCount} {{ ftl('common-discovery') }}`);
                     }
                     if (testCount > 0) {
-                        messages.push(testCount > 1 ? `${testCount} {{ _("tests") }}` : `${testCount} {{ _("test") }}`);
+                        messages.push(testCount > 1 ? `${testCount} {{ ftl('common-tests') }}` : `${testCount} {{ ftl('common-test') }}`);
                     }
-                    message.textContent = messages.join(' {{ _("and") }} ') + ' {{ _("running") }}';
+                    message.textContent = messages.join(' {{ ftl('common-and') }} ') + ' {{ ftl('common-running') }}';
                     link.href = '/testing';
                 }
             }
@@ -511,8 +511,8 @@
             if (completedInThisCheck.length > 0) {
                 for (const test of completedInThisCheck) {
                     if (window.showNotification) {
-                        const title = test.type === 'discovery' ? '{{ _("Discovery Complete") }}' : '{{ _("Test Complete") }}';
-                        const message = test.type === 'discovery' ? `${test.description} {{ _("has finished") }}` : `${test.description} {{ _("has finished testing") }}`;
+                        const title = test.type === 'discovery' ? '{{ ftl('common-discovery-complete') }}' : '{{ ftl('common-test-complete') }}';
+                        const message = test.type === 'discovery' ? `${test.description} {{ ftl('common-has-finished') }}` : `${test.description} {{ ftl('common-has-finished-testing') }}`;
                         showNotification(title, message, 'success');
                     }
                     
@@ -544,12 +544,12 @@
     
     // Helper function to add a page test
     function trackPageTest(pageId, pageName) {
-        TestTracker.addTest('page', pageId, `{{ _("Testing") }} ${pageName || '{{ _("page") }}'}`);
+        TestTracker.addTest('page', pageId, `{{ ftl('common-testing') }} ${pageName || '{{ ftl('common-page') }}'}`);
     }
 
     // Helper function to add a website test
     function trackWebsiteTest(websiteId, websiteName) {
-        TestTracker.addTest('website', websiteId, `{{ _("Testing") }} ${websiteName || '{{ _("website") }}'}`);
+        TestTracker.addTest('website', websiteId, `{{ ftl('common-testing') }} ${websiteName || '{{ ftl('common-website') }}'}`);
     }
     
     // Show notification helper (if not already defined)
@@ -562,7 +562,7 @@
             alertDiv.setAttribute('role', 'alert');
             alertDiv.innerHTML = `
                 <strong>${title}</strong> ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ _('Dismiss') }}"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ ftl('common-dismiss') }}"></button>
             `;
             document.body.appendChild(alertDiv);
 

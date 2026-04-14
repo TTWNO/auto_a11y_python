@@ -3,7 +3,7 @@ import logging
 from functools import wraps
 
 from flask import current_app, request, g, abort, jsonify, flash, redirect, url_for
-from flask_babel import gettext as _
+from auto_a11y.web.fluent import ftl
 from flask_login import current_user
 
 from auto_a11y.models.permission_group import (
@@ -151,8 +151,8 @@ def permission_required(resource, level):
         def decorated_function(*args, **kwargs):
             if not current_user.is_authenticated:
                 if request.is_json:
-                    return jsonify({'error': _('Authentication required')}), 401
-                flash(_('Please log in to access this page.'), 'warning')
+                    return jsonify({'error': ftl('common-authentication-required')}), 401
+                flash(ftl('common-please-log-in-to-access-this-page'), 'warning')
                 return redirect(url_for('auth.login', next=request.url))
 
             if getattr(current_user, 'is_superadmin', False):
@@ -167,8 +167,8 @@ def permission_required(resource, level):
                     return f(*args, **kwargs)
 
             if request.is_json:
-                return jsonify({'error': _('Insufficient permissions')}), 403
-            flash(_('You do not have permission to access this resource.'), 'danger')
+                return jsonify({'error': ftl('common-insufficient-permissions')}), 403
+            flash(ftl('common-you-do-not-have-permission-to-access-this-resource'), 'danger')
             abort(403)
         return decorated_function
     return decorator
@@ -180,14 +180,14 @@ def superadmin_required(f):
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated:
             if request.is_json:
-                return jsonify({'error': _('Authentication required')}), 401
-            flash(_('Please log in to access this page.'), 'warning')
+                return jsonify({'error': ftl('common-authentication-required')}), 401
+            flash(ftl('common-please-log-in-to-access-this-page'), 'warning')
             return redirect(url_for('auth.login', next=request.url))
 
         if not getattr(current_user, 'is_superadmin', False):
             if request.is_json:
-                return jsonify({'error': _('Superadmin access required')}), 403
-            flash(_('Superadmin access required.'), 'danger')
+                return jsonify({'error': ftl('common-superadmin-access-required')}), 403
+            flash(ftl('common-superadmin-access-required-2'), 'danger')
             abort(403)
 
         return f(*args, **kwargs)

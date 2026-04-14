@@ -1,69 +1,69 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('Login') }} - {{ _('Auto A11y') }}{% endblock %}
+{% block title %}{{ ftl('auth-login-title') }} - {{ ftl('auth-app-name') }}{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-6 col-lg-4">
         <div class="card shadow">
             <div class="card-header bg-primary text-white">
-                <h1 class="mb-0"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> {{ _('Login') }}</h1>
+                <h1 class="mb-0"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> {{ ftl('auth-login-title') }}</h1>
             </div>
             <div class="card-body">
                 {% if microsoft_sso_enabled or google_sso_enabled %}
                 <div class="mb-3">
                     {% if microsoft_sso_enabled %}
                     <a href="{{ url_for('auth.microsoft_login') }}" class="btn btn-dark w-100 mb-2">
-                        <i class="bi bi-microsoft" aria-hidden="true"></i> {{ _('Sign in with Microsoft') }}
+                        <i class="bi bi-microsoft" aria-hidden="true"></i> {{ ftl('auth-sign-in-microsoft') }}
                     </a>
                     {% endif %}
                     {% if google_sso_enabled %}
                     <a href="{{ url_for('auth.google_login') }}" class="btn btn-light w-100 mb-2 border">
-                        <i class="bi bi-google" aria-hidden="true"></i> {{ _('Sign in with Google') }}
+                        <i class="bi bi-google" aria-hidden="true"></i> {{ ftl('auth-sign-in-google') }}
                     </a>
                     {% endif %}
 
                     <div class="text-center text-muted my-2">
-                        <span>{{ _('or') }}</span>
+                        <span>{{ ftl('auth-or') }}</span>
                     </div>
                 </div>
                 {% endif %}
                 <form method="POST" action="{{ url_for('auth.login') }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <fieldset>
-                        <legend class="visually-hidden">{{ _('Login Credentials') }}</legend>
+                        <legend class="visually-hidden">{{ ftl('auth-login-credentials') }}</legend>
                         <div class="mb-3">
-                            <label for="email" class="form-label">{{ _('Email') }}</label>
+                            <label for="email" class="form-label">{{ ftl('auth-email-label') }}</label>
                             <input type="email" class="form-control" id="email" name="email" required autofocus autocomplete="email">
                         </div>
                         <div class="mb-3">
-                            <label for="password" class="form-label">{{ _('Password') }}</label>
+                            <label for="password" class="form-label">{{ ftl('auth-password-label') }}</label>
                             <input type="password" class="form-control" id="password" name="password" required autocomplete="current-password">
                             <div class="form-check mt-1">
                                 <input type="checkbox" class="form-check-input" id="show-password">
-                                <label class="form-check-label" for="show-password">{{ _('Show password') }}</label>
+                                <label class="form-check-label" for="show-password">{{ ftl('auth-show-password') }}</label>
                             </div>
                         </div>
                         {% if password_hint %}
                         <div class="alert alert-info" role="alert">
-                            <i class="bi bi-lightbulb" aria-hidden="true"></i> <strong>{{ _('Password hint:') }}</strong> {{ password_hint }}
+                            <i class="bi bi-lightbulb" aria-hidden="true"></i> <strong>{{ ftl('auth-password-hint') }}</strong> {{ password_hint }}
                         </div>
                         {% endif %}
                         <div class="mb-3 form-check">
                             <input type="checkbox" class="form-check-input" id="remember" name="remember">
-                            <label class="form-check-label" for="remember">{{ _('Remember me') }}</label>
+                            <label class="form-check-label" for="remember">{{ ftl('auth-remember-me') }}</label>
                         </div>
                         <button type="submit" class="btn btn-primary w-100">
-                            <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> {{ _('Login') }}
+                            <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> {{ ftl('auth-login-title') }}
                         </button>
                     </fieldset>
                 </form>
             </div>
             <div class="card-footer text-center">
                 {% if smtp_enabled %}
-                <a href="{{ url_for('auth.forgot_password') }}" class="d-block mb-1">{{ _('Forgot your password?') }}</a>
+                <a href="{{ url_for('auth.forgot_password') }}" class="d-block mb-1">{{ ftl('auth-forgot-password') }}</a>
                 {% endif %}
-                <a href="{{ url_for('auth.register') }}">{{ _("Don't have an account? Register") }}</a>
+                <a href="{{ url_for('auth.register') }}">{{ ftl('auth-no-account-register') }}</a>
             </div>
         </div>
     </div>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ page_title|default(_('Issues Not in Common Components')) }} - {{ _('Deduplicated Report') }}</title>
+    <title>{{ page_title|default(ftl('reports-issues-not-in-common-components')) }} - {{ ftl('reports-deduplicated-report') }}</title>
     <style>
 /* Bootstrap CSS */
 {{ bootstrap_css|safe }}
@@ -257,7 +257,7 @@
 </style>
 </head>
 <body>
-<a href="#main-content" class="visually-hidden-focusable">{{ _('Skip to main content') }}</a>
+<a href="#main-content" class="visually-hidden-focusable">{{ ftl('common-skip-to-main-content') }}</a>
 
 {# Macro for rendering violation details - defined at top so it's available throughout #}
 {% macro render_violation_details(violation, alert_type) %}
@@ -433,8 +433,8 @@
             </p>
         </div>
         <div class="lang-switcher">
-            <button onclick="switchLanguage('en')" id="lang-en" class="{{ 'active' if language == 'en' else '' }}" lang="en" aria-label="{{ _('Switch to English') }}">EN</button>
-            <button onclick="switchLanguage('fr')" id="lang-fr" class="{{ 'active' if language == 'fr' else '' }}" lang="fr" aria-label="{{ _('Switch to French') }}">FR</button>
+            <button onclick="switchLanguage('en')" id="lang-en" class="{{ 'active' if language == 'en' else '' }}" lang="en" aria-label="{{ ftl('reports-switch-to-english') }}">EN</button>
+            <button onclick="switchLanguage('fr')" id="lang-fr" class="{{ 'active' if language == 'fr' else '' }}" lang="fr" aria-label="{{ ftl('reports-switch-to-french') }}">FR</button>
         </div>
     </div>
 

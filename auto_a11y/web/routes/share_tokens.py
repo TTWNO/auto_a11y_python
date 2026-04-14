@@ -7,7 +7,7 @@ import hashlib
 
 from flask import Blueprint, request, current_app, jsonify, url_for
 from flask_login import current_user
-from flask_babel import _
+from auto_a11y.web.fluent import ftl
 from itsdangerous import URLSafeSerializer
 
 from auto_a11y.models import ShareToken, TokenScope
@@ -35,7 +35,7 @@ def create_project_token(project_id):
     """Create a share token scoped to a project"""
     project = current_app.db.get_project(project_id)
     if not project:
-        return jsonify({'error': _('Project not found')}), 404
+        return jsonify({'error': ftl('common-project-not-found')}), 404
 
     return _create_token(TokenScope.PROJECT, project_id)
 
@@ -46,7 +46,7 @@ def create_website_token(website_id):
     """Create a share token scoped to a website"""
     website = current_app.db.get_website(website_id)
     if not website:
-        return jsonify({'error': _('Website not found')}), 404
+        return jsonify({'error': ftl('common-website-not-found')}), 404
 
     return _create_token(TokenScope.WEBSITE, website_id)
 
@@ -122,7 +122,7 @@ def revoke_token(token_id):
     # Look up token to find its scope, then check project membership
     token = current_app.db.get_share_token(token_id)
     if not token:
-        return jsonify({'error': _('Token not found')}), 404
+        return jsonify({'error': ftl('settings-token-not-found')}), 404
 
     # Resolve scope_id to project
     if token.scope == TokenScope.WEBSITE:
@@ -138,8 +138,8 @@ def revoke_token(token_id):
 
     success = current_app.db.revoke_share_token(token_id)
     if success:
-        return jsonify({'status': 'success', 'message': _('Token revoked')})
-    return jsonify({'error': _('Token not found')}), 404
+        return jsonify({'status': 'success', 'message': ftl('settings-token-revoked')})
+    return jsonify({'error': ftl('settings-token-not-found')}), 404
 
 
 def _token_to_json(token: ShareToken) -> dict:

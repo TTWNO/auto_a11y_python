@@ -27,7 +27,6 @@ venv/
 ENV/
 env/
 .venv
-messages.mo
 
 # IDE
 .idea/
@@ -70,6 +69,7 @@ data/
 *.json
 !package.json
 !requirements.json
+!auto_a11y/web/translations/inline_issue_ids.json
 
 # Secrets - NEVER commit these
 *.key

@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 
-{% block title %}{{ website.display_name }} - {{ _('Auto A11y') }}{% endblock %}
+{% block title %}{{ website.display_name }} - {{ ftl('common-auto-a11y') }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{{ url_for('projects.list_projects') }}">{{ _('Projects') }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('projects.list_projects') }}">{{ ftl('common-projects') }}</a></li>
             <li class="breadcrumb-item"><a href="{{ url_for('projects.view_project', project_id=project.id) }}">{{ project.name }}</a></li>
             <li class="breadcrumb-item active">{{ website.display_name }}</li>
         </ol>
@@ -29,15 +29,15 @@
             {% if website_users %}
             <div class="btn-group" role="group">
                 <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" id="discoveryUserSelectionBtn">
-                    <i class="bi bi-person-check" aria-hidden="true"></i> {{ _('Discovery Users') }}: <span id="discoveryUserSelectionCount">{{ _('Guest') }}</span>
+                    <i class="bi bi-person-check" aria-hidden="true"></i> {{ ftl('websites-discovery-users') }}: <span id="discoveryUserSelectionCount">{{ ftl('common-guest') }}</span>
                 </button>
                 <ul class="dropdown-menu p-2" style="min-width: 280px;">
-                    <li class="px-2 mb-2"><strong>{{ _('Select users for discovery:') }}</strong></li>
+                    <li class="px-2 mb-2"><strong>{{ ftl('common-select-users-for-discovery') }}</strong></li>
                     <li><hr class="dropdown-divider"></li>
                     <li class="px-2">
                         <div class="form-check">
                             <input class="form-check-input batch-discovery-user-checkbox" type="checkbox" value="" id="discovery-user-guest" checked>
-                            <label class="form-check-label" for="discovery-user-guest"><strong>{{ _('Guest') }}</strong> ({{ _('no login') }})</label>
+                            <label class="form-check-label" for="discovery-user-guest"><strong>{{ ftl('common-guest') }}</strong> ({{ ftl('common-no-login') }})</label>
                         </div>
                     </li>
                     {% for user in website_users %}
@@ -53,30 +53,30 @@
                     {% endfor %}
                     <li><hr class="dropdown-divider"></li>
                     <li class="px-2">
-                        <button class="btn btn-sm btn-link p-0" onclick="selectAllDiscoveryUsers()">{{ _('Select All') }}</button> |
-                        <button class="btn btn-sm btn-link p-0" onclick="clearAllDiscoveryUsers()">{{ _('Clear All') }}</button>
+                        <button class="btn btn-sm btn-link p-0" onclick="selectAllDiscoveryUsers()">{{ ftl('common-select-all') }}</button> |
+                        <button class="btn btn-sm btn-link p-0" onclick="clearAllDiscoveryUsers()">{{ ftl('common-clear-all') }}</button>
                     </li>
                 </ul>
             </div>
             {% endif %}
             <button class="btn btn-success" id="discoverBtn">
-                <i class="bi bi-search" aria-hidden="true"></i> {{ _('Discover Pages') }}
+                <i class="bi bi-search" aria-hidden="true"></i> {{ ftl('websites-discover-pages') }}
             </button>
             <button class="btn btn-danger" id="cancelDiscoveryBtn" style="display: none;">
-                <i class="bi bi-stop-circle-fill" aria-hidden="true"></i> {{ _('Abort') }}
+                <i class="bi bi-stop-circle-fill" aria-hidden="true"></i> {{ ftl('websites-abort') }}
             </button>
             {% if website_users %}
             <div class="btn-group" role="group">
                 <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" id="userSelectionBtn">
-                    <i class="bi bi-person-check" aria-hidden="true"></i> {{ _('Test Users') }}: <span id="userSelectionCount">{{ _('Guest') }}</span>
+                    <i class="bi bi-person-check" aria-hidden="true"></i> {{ ftl('common-test-users') }}: <span id="userSelectionCount">{{ ftl('common-guest') }}</span>
                 </button>
                 <ul class="dropdown-menu p-2" style="min-width: 280px;">
-                    <li class="px-2 mb-2"><strong>{{ _('Select users to test:') }}</strong></li>
+                    <li class="px-2 mb-2"><strong>{{ ftl('websites-select-users-to-test') }}</strong></li>
                     <li><hr class="dropdown-divider"></li>
                     <li class="px-2">
                         <div class="form-check">
                             <input class="form-check-input batch-test-user-checkbox" type="checkbox" value="" id="user-guest" checked>
-                            <label class="form-check-label" for="user-guest"><strong>{{ _('Guest') }}</strong> ({{ _('no login') }})</label>
+                            <label class="form-check-label" for="user-guest"><strong>{{ ftl('common-guest') }}</strong> ({{ ftl('common-no-login') }})</label>
                         </div>
                     </li>
                     {% for user in website_users %}
@@ -92,90 +92,90 @@
                     {% endfor %}
                     <li><hr class="dropdown-divider"></li>
                     <li class="px-2">
-                        <button class="btn btn-sm btn-link p-0" onclick="selectAllTestUsers()">{{ _('Select All') }}</button> |
-                        <button class="btn btn-sm btn-link p-0" onclick="clearAllTestUsers()">{{ _('Clear All') }}</button>
+                        <button class="btn btn-sm btn-link p-0" onclick="selectAllTestUsers()">{{ ftl('common-select-all') }}</button> |
+                        <button class="btn btn-sm btn-link p-0" onclick="clearAllTestUsers()">{{ ftl('common-clear-all') }}</button>
                     </li>
                 </ul>
             </div>
             {% endif %}
             <button class="btn btn-primary" id="testAllBtn">
-                <i class="bi bi-play-fill" aria-hidden="true"></i> {{ _('Test All Pages') }}
+                <i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('common-test-all-pages') }}
             </button>
             <button class="btn btn-outline-primary" id="testUntestedBtn">
-                <i class="bi bi-play" aria-hidden="true"></i> {{ _('Test Untested Pages') }}
+                <i class="bi bi-play" aria-hidden="true"></i> {{ ftl('websites-test-untested-pages') }}
                 {% set untested_count = stats.total_pages - stats.tested_pages %}
                 {% if untested_count > 0 %}
                 <span class="badge bg-light text-dark">{{ untested_count }}</span>
                 {% endif %}
             </button>
             <button class="btn btn-warning" id="cancelTestingBtn" style="display: none;">
-                <i class="bi bi-stop-circle" aria-hidden="true"></i> {{ _('Cancel') }}
+                <i class="bi bi-stop-circle" aria-hidden="true"></i> {{ ftl('common-cancel') }}
             </button>
         </div>
         
         <!-- Secondary Actions -->
         <div class="d-flex flex-wrap gap-2">
             <a href="{{ url_for('websites.view_discovery_history', website_id=website.id) }}" class="btn btn-outline-info">
-                <i class="bi bi-clock-history" aria-hidden="true"></i> {{ _('Discovery History') }}
+                <i class="bi bi-clock-history" aria-hidden="true"></i> {{ ftl('websites-discovery-history') }}
             </a>
             <a href="{{ url_for('websites.view_documents', website_id=website.id) }}" class="btn btn-outline-info">
-                <i class="bi bi-file-earmark" aria-hidden="true"></i> {{ _('Documents') }}
+                <i class="bi bi-file-earmark" aria-hidden="true"></i> {{ ftl('common-documents') }}
             </a>
             <a href="{{ url_for('scripts.list_website_scripts', website_id=website.id) }}" class="btn btn-outline-primary">
-                <i class="bi bi-code-square" aria-hidden="true"></i> {{ _('Setup Scripts') }}
+                <i class="bi bi-code-square" aria-hidden="true"></i> {{ ftl('common-setup-scripts') }}
             </a>
             <a href="{{ url_for('project_users.list_users', project_id=project.id) }}" class="btn btn-outline-success">
-                <i class="bi bi-people" aria-hidden="true"></i> {{ _('Test Users') }}
+                <i class="bi bi-people" aria-hidden="true"></i> {{ ftl('common-test-users') }}
             </a>
             <a href="{{ url_for('schedules.list_schedules', website_id=website.id) }}" class="btn btn-outline-warning">
-                <i class="bi bi-calendar-event" aria-hidden="true"></i> {{ _('Schedules') }}
+                <i class="bi bi-calendar-event" aria-hidden="true"></i> {{ ftl('common-schedules') }}
             </a>
             <div class="btn-group">
                 <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
-                    <i class="bi bi-file-earmark-text" aria-hidden="true"></i> {{ _('Reports') }}
+                    <i class="bi bi-file-earmark-text" aria-hidden="true"></i> {{ ftl('common-reports') }}
                 </button>
                 <ul class="dropdown-menu">
-                    <li><div class="dropdown-header">{{ _('Site Structure') }}</div></li>
+                    <li><div class="dropdown-header">{{ ftl('common-site-structure') }}</div></li>
                     <li><a class="dropdown-item" href="#" onclick="generateSiteStructureReport('html')"><i class="bi bi-filetype-html" aria-hidden="true"></i> HTML</a></li>
                     <li><a class="dropdown-item" href="#" onclick="generateSiteStructureReport('json')"><i class="bi bi-filetype-json" aria-hidden="true"></i> JSON</a></li>
                     <li><a class="dropdown-item" href="#" onclick="generateSiteStructureReport('csv')"><i class="bi bi-filetype-csv" aria-hidden="true"></i> CSV</a></li>
                     <li><hr class="dropdown-divider"></li>
-                    <li><div class="dropdown-header">{{ _('Accessibility Report') }}</div></li>
+                    <li><div class="dropdown-header">{{ ftl('common-accessibility-report') }}</div></li>
                     <li><a class="dropdown-item" href="#" onclick="generateAccessibilityReport('html')"><i class="bi bi-filetype-html" aria-hidden="true"></i> HTML</a></li>
                     <li><a class="dropdown-item" href="#" onclick="generateAccessibilityReport('xlsx')"><i class="bi bi-filetype-xlsx" aria-hidden="true"></i> Excel</a></li>
                 </ul>
             </div>
             <a href="{{ url_for('websites.edit_website', website_id=website.id) }}" class="btn btn-outline-primary">
-                <i class="bi bi-pencil" aria-hidden="true"></i> {{ _('Edit') }}
+                <i class="bi bi-pencil" aria-hidden="true"></i> {{ ftl('common-edit') }}
             </a>
         </div>
     </div>
 
     <!-- Statistics -->
     <section aria-labelledby="statistics-heading">
-        <h2 id="statistics-heading" class="visually-hidden">{{ _('Statistics') }}</h2>
+        <h2 id="statistics-heading" class="visually-hidden">{{ ftl('common-statistics') }}</h2>
         <div class="d-flex flex-wrap gap-3 mb-4">
             <div class="card text-center flex-fill" style="min-width: 140px;">
                 <div class="card-body py-3">
-                    <h3 class="card-title text-muted mb-1">{{ _('Total Pages') }}</h3>
+                    <h3 class="card-title text-muted mb-1">{{ ftl('common-total-pages') }}</h3>
                     <p class="display-6 mb-0" id="totalPagesCount">{{ stats.total_pages }}</p>
                 </div>
             </div>
             <div class="card text-center flex-fill" style="min-width: 140px;">
                 <div class="card-body py-3">
-                    <h3 class="card-title text-muted mb-1">{{ _('Tested') }}</h3>
+                    <h3 class="card-title text-muted mb-1">{{ ftl('common-tested') }}</h3>
                     <p class="display-6 mb-0">{{ stats.tested_pages }}</p>
                 </div>
             </div>
             <div class="card text-center flex-fill" style="min-width: 140px;">
                 <div class="card-body py-3">
-                    <h3 class="card-title text-danger mb-1">{{ _('Violations') }}</h3>
+                    <h3 class="card-title text-danger mb-1">{{ ftl('common-violations') }}</h3>
                     <p class="display-6 mb-0 text-danger">{{ stats.total_violations }}</p>
                 </div>
             </div>
             <div class="card text-center flex-fill" style="min-width: 140px;">
                 <div class="card-body py-3">
-                    <h3 class="card-title text-warning mb-1">{{ _('Warnings') }}</h3>
+                    <h3 class="card-title text-warning mb-1">{{ ftl('common-warnings') }}</h3>
                     <p class="display-6 mb-0 text-warning">{{ stats.total_warnings }}</p>
                 </div>
             </div>
@@ -186,8 +186,8 @@
     {% set failed_pages = pages | selectattr('status.value', 'equalto', 'discovery_failed') | list %}
     {% if failed_pages %}
     <div class="alert alert-warning mb-3">
-        <h2 class="alert-heading"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> {{ _('Discovery Issues') }}</h2>
-        <p class="mb-2">{{ failed_pages|length }} {{ _('page(s) could not be discovered:') }}</p>
+        <h2 class="alert-heading"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> {{ ftl('websites-discovery-issues') }}</h2>
+        <p class="mb-2">{{ failed_pages|length }} {{ ftl('websites-page-s-could-not-be-discovered') }}</p>
         {% if failed_pages|length <= 5 %}
         <ul class="mb-0">
             {% for page in failed_pages %}
@@ -201,7 +201,7 @@
             {% endfor %}
         </ul>
         <details class="mt-2">
-            <summary class="text-link" style="cursor: pointer;">{{ _('Show') }} {{ failed_pages|length - 5 }} {{ _('more failed pages...') }}</summary>
+            <summary class="text-link" style="cursor: pointer;">{{ ftl('websites-show') }} {{ failed_pages|length - 5 }} {{ ftl('websites-more-failed-pages') }}</summary>
             <ul class="mt-2" style="max-height: 300px; overflow-y: auto;">
                 {% for page in failed_pages[5:] %}
                 <li><strong>{{ page.url }}</strong>: {{ page.error_reason }}</li>
@@ -218,8 +218,8 @@
         <div class="card mb-3">
             <div class="card-header" data-bs-toggle="collapse" data-bs-target="#discoveryHistory" style="cursor: pointer;">
                 <h2 id="discovery-history-heading" class="mb-0">
-                    <i class="bi bi-clock-history" aria-hidden="true"></i> {{ _('Discovery History') }}
-                    <small class="text-muted">({{ website.discovery_history|length }} {{ _('attempts') }})</small>
+                    <i class="bi bi-clock-history" aria-hidden="true"></i> {{ ftl('websites-discovery-history') }}
+                    <small class="text-muted">({{ website.discovery_history|length }} {{ ftl('websites-attempts') }})</small>
                     <i class="bi bi-chevron-down float-end" aria-hidden="true"></i>
                 </h2>
             </div>
@@ -227,21 +227,21 @@
                 <div class="card-body">
                     <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
                         <table class="table table-sm">
-                            <caption class="visually-hidden">{{ _('Discovery History') }}</caption>
+                            <caption class="visually-hidden">{{ ftl('websites-discovery-history') }}</caption>
                             <thead>
                                 <tr>
-                                    <th scope="col">{{ _('Date') }}</th>
-                                    <th scope="col">{{ _('Status') }}</th>
-                                    <th scope="col">{{ _('Pages Found') }}</th>
-                                    <th scope="col">{{ _('Failed') }}</th>
-                                    <th scope="col">{{ _('Duration') }}</th>
-                                    <th scope="col">{{ _('Details') }}</th>
+                                    <th scope="col">{{ ftl('common-date') }}</th>
+                                    <th scope="col">{{ ftl('common-status') }}</th>
+                                    <th scope="col">{{ ftl('websites-pages-found') }}</th>
+                                    <th scope="col">{{ ftl('common-failed') }}</th>
+                                    <th scope="col">{{ ftl('common-duration') }}</th>
+                                    <th scope="col">{{ ftl('common-details') }}</th>
                                 </tr>
                             </thead>
                         <tbody>
                             {% for attempt in website.discovery_history|reverse %}
                             <tr>
-                                <td>{{ attempt.started_at.strftime('%Y-%m-%d %H:%M') if attempt.started_at else _('Unknown') }}</td>
+                                <td>{{ attempt.started_at.strftime('%Y-%m-%d %H:%M') if attempt.started_at else ftl('common-unknown') }}</td>
                                 <td>
                                     <span class="badge bg-{{ {'completed': 'success', 'failed': 'danger', 'running': 'warning'}[attempt.status] }}">
                                         {{ attempt.status|title }}
@@ -259,10 +259,10 @@
                                 <td>
                                     {% if attempt.error %}
                                         <span class="text-danger" title="{{ attempt.error }}" data-bs-toggle="tooltip">
-                                            <i class="bi bi-exclamation-circle" aria-hidden="true"></i> {{ _('Error') }}
+                                            <i class="bi bi-exclamation-circle" aria-hidden="true"></i> {{ ftl('common-error-2') }}
                                         </span>
                                     {% else %}
-                                        <span class="text-muted">{{ _('Max') }}: {{ attempt.max_pages }} {{ _('pages') }}, {{ attempt.max_depth }} {{ _('depth') }}</span>
+                                        <span class="text-muted">{{ ftl('websites-max') }}: {{ attempt.max_pages }} {{ ftl('common-pages-2') }}, {{ attempt.max_depth }} {{ ftl('websites-depth-2') }}</span>
                                     {% endif %}
                                 </td>
                             </tr>
@@ -279,30 +279,30 @@
     <section aria-labelledby="pages-heading">
         <div class="card">
             <div class="card-header d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2">
-                <h2 id="pages-heading" class="mb-0">{{ _('Pages') }} ({{ pagination.total_items if pagination else stats.total_pages }})</h2>
+                <h2 id="pages-heading" class="mb-0">{{ ftl('common-pages') }} ({{ pagination.total_items if pagination else stats.total_pages }})</h2>
             <div class="d-flex align-items-center gap-2">
                 {% if pagination and pagination.total_pages > 1 %}
                 <span class="text-muted small d-none d-md-inline">
-                    {{ pagination.start_item }}-{{ pagination.end_item }} {{ _('of') }} {{ pagination.total_items }}
+                    {{ pagination.start_item }}-{{ pagination.end_item }} {{ ftl('common-of') }} {{ pagination.total_items }}
                 </span>
                 {% endif %}
                 <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addPageModal">
-                    <i class="bi bi-plus-circle" aria-hidden="true"></i> <span class="d-none d-sm-inline">{{ _('Add Page') }}</span><span class="d-sm-none">{{ _('Add') }}</span>
+                    <i class="bi bi-plus-circle" aria-hidden="true"></i> <span class="d-none d-sm-inline">{{ ftl('websites-add-page') }}</span><span class="d-sm-none">{{ ftl('common-add') }}</span>
                 </button>
             </div>
         </div>
         <div class="card-body">
             {% if pagination and pagination.total_pages > 1 %}
             <!-- Pagination Controls - Top -->
-            <nav aria-label="{{ _('Page navigation') }}" class="mb-3">
+            <nav aria-label="{{ ftl('websites-page-navigation') }}" class="mb-3">
                 <ul class="pagination pagination-sm justify-content-center mb-0">
                     <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
-                        <a class="page-link" href="{{ url_for('websites.view_website', website_id=website.id, page=1) }}" aria-label="{{ _('First') }}">
+                        <a class="page-link" href="{{ url_for('websites.view_website', website_id=website.id, page=1) }}" aria-label="{{ ftl('websites-first') }}">
                             <span aria-hidden="true">&laquo;&laquo;</span>
                         </a>
                     </li>
                     <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
-                        <a class="page-link" href="{{ url_for('websites.view_website', website_id=website.id, page=pagination.page - 1) }}" aria-label="{{ _('Previous') }}">
+                        <a class="page-link" href="{{ url_for('websites.view_website', website_id=website.id, page=pagination.page - 1) }}" aria-label="{{ ftl('websites-previous') }}">
                             <span aria-hidden="true">&laquo;</span>
                         </a>
                     </li>
@@ -322,12 +322,12 @@
                     {% endif %}
 
                     <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
-                        <a class="page-link" href="{{ url_for('websites.view_website', website_id=website.id, page=pagination.page + 1) }}" aria-label="{{ _('Next') }}">
+                        <a class="page-link" href="{{ url_for('websites.view_website', website_id=website.id, page=pagination.page + 1) }}" aria-label="{{ ftl('websites-next') }}">
                             <span aria-hidden="true">&raquo;</span>
                         </a>
                     </li>
                     <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
-                        <a class="page-link" href="{{ url_for('websites.view_website', website_id=website.id, page=pagination.total_pages) }}" aria-label="{{ _('Last') }}">
+                        <a class="page-link" href="{{ url_for('websites.view_website', website_id=website.id, page=pagination.total_pages) }}" aria-label="{{ ftl('websites-last') }}">
                             <span aria-hidden="true">&raquo;&raquo;</span>
                         </a>
                     </li>
@@ -345,7 +345,7 @@
                             {% if page.screenshot_path %}
                             <a href="#" onclick="showScreenshot('{{ url_for('serve_screenshot', filename=page.screenshot_path) }}', '{{ page.url }}'); return false;" class="flex-shrink-0">
                                 <img src="{{ url_for('serve_screenshot', filename=page.screenshot_path) }}"
-                                     alt="{{ _('Screenshot of') }} {{ page.url }}"
+                                     alt="{{ ftl('common-screenshot-of') }} {{ page.url }}"
                                      class="border-subtle" style="width: 60px; height: auto; border: 1px solid; border-radius: 4px; cursor: pointer;"
                                      onerror="this.style.display='none';">
                             </a>
@@ -371,31 +371,31 @@
                             {% elif page.status.value == 'discovery_failed' %}
                             <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
                             {% endif %}
-                            {{ _(page.status.value|replace('_', ' ')|title) }}
+                            {{ ftl_enum(page.status.value) }}
                         </span>
                     </div>
                     <div class="d-flex flex-wrap gap-3 mb-3 small text-muted">
                         <span class="{% if page.violation_count > 0 %}text-danger{% else %}text-success{% endif %}">
-                            <i class="bi bi-x-circle" aria-hidden="true"></i> {{ page.violation_count }} {{ _('violations') }}
+                            <i class="bi bi-x-circle" aria-hidden="true"></i> {{ page.violation_count }} {{ ftl('websites-violations') }}
                         </span>
                         <span class="{% if page.warning_count > 0 %}text-warning{% else %}text-muted{% endif %}">
-                            <i class="bi bi-exclamation-triangle" aria-hidden="true"></i> {{ page.warning_count }} {{ _('warnings') }}
+                            <i class="bi bi-exclamation-triangle" aria-hidden="true"></i> {{ page.warning_count }} {{ ftl('common-warnings-2') }}
                         </span>
                         <span>
-                            <i class="bi bi-clock" aria-hidden="true"></i> {{ page.last_tested.strftime('%Y-%m-%d %H:%M') if page.last_tested else _('Not tested') }}
+                            <i class="bi bi-clock" aria-hidden="true"></i> {{ page.last_tested.strftime('%Y-%m-%d %H:%M') if page.last_tested else ftl('websites-not-tested') }}
                         </span>
                     </div>
                     <div class="d-flex flex-wrap gap-2">
                         <a href="{{ url_for('pages.view_page', page_id=page.id) }}" class="btn btn-sm btn-primary">
-                            <i class="bi bi-eye" aria-hidden="true"></i> {{ _('View') }}
+                            <i class="bi bi-eye" aria-hidden="true"></i> {{ ftl('common-view') }}
                         </a>
                         {% if page.status.value in ['queued', 'testing'] %}
                         <button class="btn btn-sm btn-danger page-test-btn" data-page-id="{{ page.id }}" onclick="cancelPageTest('{{ page.id }}')">
-                            <i class="bi bi-x-circle" aria-hidden="true"></i> {{ _('Cancel') }}
+                            <i class="bi bi-x-circle" aria-hidden="true"></i> {{ ftl('common-cancel') }}
                         </button>
                         {% else %}
                         <button class="btn btn-sm btn-success page-test-btn" data-page-id="{{ page.id }}" onclick="testPage('{{ page.id }}')">
-                            <i class="bi bi-play" aria-hidden="true"></i> {{ _('Test') }}
+                            <i class="bi bi-play" aria-hidden="true"></i> {{ ftl('common-test-2') }}
                         </button>
                         {% endif %}
                         <button class="btn btn-sm btn-outline-danger" onclick="deletePage('{{ page.id }}', '{{ page.url }}')">
@@ -408,15 +408,15 @@
 
             {% if pagination and pagination.total_pages > 1 %}
             <!-- Pagination Controls - Bottom -->
-            <nav aria-label="{{ _('Page navigation') }}" class="mt-3">
+            <nav aria-label="{{ ftl('websites-page-navigation') }}" class="mt-3">
                 <ul class="pagination pagination-sm justify-content-center mb-0">
                     <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
-                        <a class="page-link" href="{{ url_for('websites.view_website', website_id=website.id, page=1) }}" aria-label="{{ _('First') }}">
+                        <a class="page-link" href="{{ url_for('websites.view_website', website_id=website.id, page=1) }}" aria-label="{{ ftl('websites-first') }}">
                             <span aria-hidden="true">&laquo;&laquo;</span>
                         </a>
                     </li>
                     <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
-                        <a class="page-link" href="{{ url_for('websites.view_website', website_id=website.id, page=pagination.page - 1) }}" aria-label="{{ _('Previous') }}">
+                        <a class="page-link" href="{{ url_for('websites.view_website', website_id=website.id, page=pagination.page - 1) }}" aria-label="{{ ftl('websites-previous') }}">
                             <span aria-hidden="true">&laquo;</span>
                         </a>
                     </li>
@@ -436,12 +436,12 @@
                     {% endif %}
 
                     <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
-                        <a class="page-link" href="{{ url_for('websites.view_website', website_id=website.id, page=pagination.page + 1) }}" aria-label="{{ _('Next') }}">
+                        <a class="page-link" href="{{ url_for('websites.view_website', website_id=website.id, page=pagination.page + 1) }}" aria-label="{{ ftl('websites-next') }}">
                             <span aria-hidden="true">&raquo;</span>
                         </a>
                     </li>
                     <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
-                        <a class="page-link" href="{{ url_for('websites.view_website', website_id=website.id, page=pagination.total_pages) }}" aria-label="{{ _('Last') }}">
+                        <a class="page-link" href="{{ url_for('websites.view_website', website_id=website.id, page=pagination.total_pages) }}" aria-label="{{ ftl('websites-last') }}">
                             <span aria-hidden="true">&raquo;&raquo;</span>
                         </a>
                     </li>
@@ -450,7 +450,7 @@
             {% endif %}
 
             {% else %}
-            <p class="text-muted">{{ _('No pages discovered yet. Click "Discover Pages" to find pages automatically.') }}</p>
+            <p class="text-muted">{{ ftl('websites-no-pages-discovered-yet-click-discover-pages-to') }}</p>
             {% endif %}
         </div>
     </section>
@@ -461,25 +461,25 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title" id="discoveryModalLabel">{{ _('Discovery Options') }}</h2>
+                <h2 class="modal-title" id="discoveryModalLabel">{{ ftl('common-discovery-options') }}</h2>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form id="discoveryForm">
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="maxPages" class="form-label">{{ _('Maximum Pages to Discover') }}</label>
+                        <label for="maxPages" class="form-label">{{ ftl('common-maximum-pages-to-discover') }}</label>
                         <input type="number" class="form-control" id="maxPages" min="1" max="9999999"
-                               placeholder="{{ _('Leave empty for unlimited discovery') }}">
-                        <small class="text-muted">{{ _('Limit the number of pages to discover. Default is unlimited (up to 1 million pages).') }}</small>
+                               placeholder="{{ ftl('websites-leave-empty-for-unlimited-discovery') }}">
+                        <small class="text-muted">{{ ftl('websites-limit-the-number-of-pages-to-discover-default-is') }}</small>
                     </div>
                     <div class="alert alert-info">
-                        <i class="bi bi-info-circle" aria-hidden="true"></i> {{ _('Discovery will crawl your website starting from the home page, following links to find all accessible pages.') }}
+                        <i class="bi bi-info-circle" aria-hidden="true"></i> {{ ftl('websites-discovery-will-crawl-your-website-starting-from') }}
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ ftl('common-cancel') }}</button>
                     <button type="submit" class="btn btn-success">
-                        <i class="bi bi-search" aria-hidden="true"></i> {{ _('Start Discovery') }}
+                        <i class="bi bi-search" aria-hidden="true"></i> {{ ftl('common-start-discovery') }}
                     </button>
                 </div>
             </form>
@@ -492,28 +492,28 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title" id="addPageModalLabel">{{ _('Add Page Manually') }}</h2>
+                <h2 class="modal-title" id="addPageModalLabel">{{ ftl('websites-add-page-manually') }}</h2>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form id="addPageForm">
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="pageUrl" class="form-label">{{ _('Page URL') }} *</label>
+                        <label for="pageUrl" class="form-label">{{ ftl('common-page-url') }} *</label>
                         <input type="url" class="form-control" id="pageUrl" required
                                placeholder="https://example.com/page">
                     </div>
                     <div class="mb-3">
-                        <label for="priority" class="form-label">{{ _('Priority') }}</label>
+                        <label for="priority" class="form-label">{{ ftl('common-priority') }}</label>
                         <select class="form-select" id="priority">
-                            <option value="normal">{{ _('Normal') }}</option>
-                            <option value="high">{{ _('High') }}</option>
-                            <option value="low">{{ _('Low') }}</option>
+                            <option value="normal">{{ ftl('common-normal') }}</option>
+                            <option value="high">{{ ftl('common-high') }}</option>
+                            <option value="low">{{ ftl('common-low') }}</option>
                         </select>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
-                    <button type="submit" class="btn btn-primary">{{ _('Add Page') }}</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ ftl('common-cancel') }}</button>
+                    <button type="submit" class="btn btn-primary">{{ ftl('websites-add-page') }}</button>
                 </div>
             </form>
         </div>
@@ -525,19 +525,19 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title" id="testAllModalLabel">{{ _('Test All Pages Options') }}</h2>
+                <h2 class="modal-title" id="testAllModalLabel">{{ ftl('websites-test-all-pages-options') }}</h2>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form id="testAllForm">
                 <div class="modal-body">
                     <div class="alert alert-info">
-                        <i class="bi bi-info-circle" aria-hidden="true"></i> {{ _('This will run accessibility tests on all pages with the selected test user(s). Testing multiple users will increase the total test time.') }}
+                        <i class="bi bi-info-circle" aria-hidden="true"></i> {{ ftl('websites-this-will-run-accessibility-tests-on-all-pages') }}
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ ftl('common-cancel') }}</button>
                     <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-play-fill" aria-hidden="true"></i> {{ _('Start Testing') }}
+                        <i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('websites-start-testing') }}
                     </button>
                 </div>
             </form>
@@ -550,7 +550,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title" id="testUntestedModalLabel">{{ _('Test Untested Pages') }}</h2>
+                <h2 class="modal-title" id="testUntestedModalLabel">{{ ftl('websites-test-untested-pages') }}</h2>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form id="testUntestedForm">
@@ -558,20 +558,20 @@
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle" aria-hidden="true"></i>
                         {% set untested_count = stats.total_pages - stats.tested_pages %}
-                        {{ _('There are %(count)s untested pages.', count=untested_count) }}
+                        {{ ftl('websites-there-are-count-untested-pages', count=untested_count) }}
                     </div>
                     <div class="mb-3">
-                        <label for="maxUntestedPages" class="form-label">{{ _('Number of pages to test') }}</label>
+                        <label for="maxUntestedPages" class="form-label">{{ ftl('websites-number-of-pages-to-test') }}</label>
                         <input type="number" class="form-control" id="maxUntestedPages" name="max_pages"
                                min="1" max="{{ stats.total_pages - stats.tested_pages }}"
-                               placeholder="{{ _('Leave blank to test all untested pages') }}">
-                        <div class="form-text">{{ _('Leave blank to queue all untested pages for testing.') }}</div>
+                               placeholder="{{ ftl('websites-leave-blank-to-test-all-untested-pages') }}">
+                        <div class="form-text">{{ ftl('websites-leave-blank-to-queue-all-untested-pages-for') }}</div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ ftl('common-cancel') }}</button>
                     <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-play-fill" aria-hidden="true"></i> {{ _('Start Testing') }}
+                        <i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('websites-start-testing') }}
                     </button>
                 </div>
             </form>
@@ -584,17 +584,17 @@
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title" id="screenshotModalTitle">{{ _('Screenshot') }}</h2>
+                <h2 class="modal-title" id="screenshotModalTitle">{{ ftl('common-screenshot') }}</h2>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body text-center">
-                <img id="screenshotModalImage" src="" alt="{{ _('Screenshot') }}" style="max-width: 100%; height: auto;">
+                <img id="screenshotModalImage" src="" alt="{{ ftl('common-screenshot') }}" style="max-width: 100%; height: auto;">
             </div>
             <div class="modal-footer">
                 <a id="screenshotModalLink" href="" target="_blank" class="btn btn-primary">
-                    <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i> {{ _('Open in New Tab') }}
+                    <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i> {{ ftl('common-open-in-new-tab') }}
                 </a>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Close') }}</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ ftl('common-close') }}</button>
             </div>
         </div>
     </div>
@@ -605,7 +605,7 @@
 {% block extra_js %}
 <script>
 function showScreenshot(screenshotUrl, pageUrl) {
-    $('#screenshotModalTitle').text('{{ _("Screenshot") }}: ' + pageUrl);
+    $('#screenshotModalTitle').text('{{ ftl('common-screenshot') }}: ' + pageUrl);
     $('#screenshotModalImage').attr('src', screenshotUrl);
     $('#screenshotModalLink').attr('href', screenshotUrl);
     $('#screenshotModal').modal('show');
@@ -634,17 +634,17 @@ function updateUserSelectionDisplay() {
     const countSpan = document.getElementById('userSelectionCount');
 
     if (count === 0) {
-        countSpan.textContent = '{{ _("None") }}';
+        countSpan.textContent = '{{ ftl('common-none') }}';
     } else if (count === 1) {
         const checkbox = checkboxes[0];
         if (checkbox.value === '') {
-            countSpan.textContent = '{{ _("Guest") }}';
+            countSpan.textContent = '{{ ftl('common-guest') }}';
         } else {
             const label = checkbox.nextElementSibling.querySelector('strong').textContent;
             countSpan.textContent = label;
         }
     } else {
-        countSpan.textContent = `${count} {{ _("users") }}`;
+        countSpan.textContent = `${count} {{ ftl('websites-users') }}`;
     }
 }
 
@@ -675,17 +675,17 @@ function updateDiscoveryUserSelectionDisplay() {
     const countSpan = document.getElementById('discoveryUserSelectionCount');
 
     if (count === 0) {
-        countSpan.textContent = '{{ _("None") }}';
+        countSpan.textContent = '{{ ftl('common-none') }}';
     } else if (count === 1) {
         const checkbox = checkboxes[0];
         if (checkbox.value === '') {
-            countSpan.textContent = '{{ _("Guest") }}';
+            countSpan.textContent = '{{ ftl('common-guest') }}';
         } else {
             const label = checkbox.nextElementSibling.querySelector('strong').textContent;
             countSpan.textContent = label;
         }
     } else {
-        countSpan.textContent = `${count} {{ _("users") }}`;
+        countSpan.textContent = `${count} {{ ftl('websites-users') }}`;
     }
 }
 
@@ -793,7 +793,7 @@ function checkWebsiteStatus() {
             
             // Show notification
             if (window.showNotification) {
-                showNotification('{{ _("Testing Complete") }}', '{{ _("All pages have been tested. Refreshing...") }}', 'success');
+                showNotification('{{ ftl('websites-testing-complete') }}', '{{ ftl('websites-all-pages-have-been-tested-refreshing') }}', 'success');
             }
             
             // Reload page to show updated results
@@ -815,7 +815,7 @@ function stopWebsiteStatusPolling() {
     const testBtn = document.getElementById('testAllBtn');
     if (testBtn) {
         testBtn.disabled = false;
-        testBtn.innerHTML = '<i class="bi bi-play-fill" aria-hidden="true"></i> {{ _("Test All Pages") }}';
+        testBtn.innerHTML = '<i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('common-test-all-pages') }}';
     }
     const testUntestedBtn = document.getElementById('testUntestedBtn');
     if (testUntestedBtn) {
@@ -856,7 +856,7 @@ $(document).ready(function() {
                 // If we just learned it completed, show a message
                 if (data.status === 'completed') {
                     if (window.showNotification) {
-                        showNotification('{{ _("Discovery Complete") }}', '{{ _("The discovery process has finished.") }}', 'info');
+                        showNotification('{{ ftl('common-discovery-complete') }}', '{{ ftl('websites-the-discovery-process-has-finished') }}', 'info');
                     }
                 }
             }
@@ -883,7 +883,7 @@ $(document).ready(function() {
     
     // Wire up the cancel discovery button
     $('#cancelDiscoveryBtn').click(function() {
-        if (confirm('{{ _("Are you sure you want to abort the discovery process?") }}')) {
+        if (confirm('{{ ftl('websites-are-you-sure-you-want-to-abort-the-discovery') }}')) {
             cancelDiscovery();
         }
     });
@@ -892,7 +892,7 @@ $(document).ready(function() {
     $('#discoverBtn').click(function() {
         // Check if discovery is already running
         if (discoveryStatusInterval) {
-            if (confirm('{{ _("Discovery is already running. Do you want to cancel it?") }}')) {
+            if (confirm('{{ ftl('websites-discovery-is-already-running-do-you-want-to') }}')) {
                 cancelDiscovery();
             }
             return;
@@ -920,7 +920,7 @@ $(document).ready(function() {
         if (document.querySelectorAll('.batch-discovery-user-checkbox').length === 0) {
             selectedDiscoveryUserIds.push(''); // Guest user (empty string)
         } else if (selectedDiscoveryUserIds.length === 0) {
-            alert('{{ _("Please select at least one user for discovery using the Discovery Users dropdown.") }}');
+            alert('{{ ftl('websites-please-select-at-least-one-user-for-discovery') }}');
             return;
         }
 
@@ -935,7 +935,7 @@ $(document).ready(function() {
             requestData.max_pages = parseInt(maxPages);
         }
 
-        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> {{ _("Starting discovery...") }}');
+        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> {{ ftl('websites-starting-discovery') }}');
 
         // Show the cancel button
         $('#cancelDiscoveryBtn').show();
@@ -969,7 +969,7 @@ $(document).ready(function() {
                     }
 
                     if (window.showNotification) {
-                        showNotification('{{ _("Discovery Started") }}', data.message, 'info');
+                        showNotification('{{ ftl('common-discovery-started') }}', data.message, 'info');
                     } else {
                         alert(data.message);
                     }
@@ -977,15 +977,15 @@ $(document).ready(function() {
                     // Start polling for discovery progress
                     startDiscoveryPolling();
                 } else {
-                    btn.prop('disabled', false).html('<i class="bi bi-search" aria-hidden="true"></i> {{ _("Discover Pages") }}');
+                    btn.prop('disabled', false).html('<i class="bi bi-search" aria-hidden="true"></i> {{ ftl('websites-discover-pages') }}');
                     $('#cancelDiscoveryBtn').hide();
-                    alert(data.message || '{{ _("Failed to start discovery") }}');
+                    alert(data.message || '{{ ftl('common-failed-to-start-discovery') }}');
                 }
             }
         }).fail(function() {
-            btn.prop('disabled', false).html('<i class="bi bi-search" aria-hidden="true"></i> {{ _("Discover Pages") }}');
+            btn.prop('disabled', false).html('<i class="bi bi-search" aria-hidden="true"></i> {{ ftl('websites-discover-pages') }}');
             $('#cancelDiscoveryBtn').hide();
-            alert('{{ _("Failed to start page discovery") }}');
+            alert('{{ ftl('common-failed-to-start-page-discovery') }}');
         });
     });
     
@@ -1012,7 +1012,7 @@ $(document).ready(function() {
         if (document.querySelectorAll('.batch-test-user-checkbox').length === 0) {
             selectedUserIds.push('');
         } else if (selectedUserIds.length === 0) {
-            alert('{{ _("Please select at least one test user using the Test Users dropdown.") }}');
+            alert('{{ ftl('websites-please-select-at-least-one-test-user-using-the') }}');
             return;
         }
 
@@ -1032,7 +1032,7 @@ $(document).ready(function() {
         }
 
         btn.prop('disabled', true);
-        testAllBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> {{ _("Starting...") }}');
+        testAllBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> {{ ftl('common-starting') }}');
 
         $.ajax({
             url: "{{ url_for('websites.test_all_pages', website_id=website.id) }}",
@@ -1058,23 +1058,23 @@ $(document).ready(function() {
                     }
 
                     if (window.showNotification) {
-                        showNotification('{{ _("Testing Started") }}', `{{ _("Queued") }} ${data.pages_queued} {{ _("untested pages for testing") }}`, 'info');
+                        showNotification('{{ ftl('websites-testing-started') }}', `{{ ftl('common-queued') }} ${data.pages_queued} {{ ftl('websites-untested-pages-for-testing') }}`, 'info');
                     } else {
                         alert(data.message);
                     }
 
-                    testAllBtn.html(`<span class="spinner-border spinner-border-sm"></span> {{ _("Testing") }}: 0/${data.pages_queued}`);
+                    testAllBtn.html(`<span class="spinner-border spinner-border-sm"></span> {{ ftl('common-testing') }}: 0/${data.pages_queued}`);
                     startTestingStatusPolling();
                 } else {
-                    alert(data.message || '{{ _("Failed to queue tests") }}');
+                    alert(data.message || '{{ ftl('websites-failed-to-queue-tests') }}');
                     btn.prop('disabled', false);
-                    testAllBtn.prop('disabled', false).html('<i class="bi bi-play-fill" aria-hidden="true"></i> {{ _("Test All Pages") }}');
+                    testAllBtn.prop('disabled', false).html('<i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('common-test-all-pages') }}');
                 }
             }
         }).fail(function() {
-            alert('{{ _("Failed to start testing") }}');
+            alert('{{ ftl('websites-failed-to-start-testing') }}');
             btn.prop('disabled', false);
-            testAllBtn.prop('disabled', false).html('<i class="bi bi-play-fill" aria-hidden="true"></i> {{ _("Test All Pages") }}');
+            testAllBtn.prop('disabled', false).html('<i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('common-test-all-pages') }}');
         });
     });
 
@@ -1093,7 +1093,7 @@ $(document).ready(function() {
         if (document.querySelectorAll('.batch-test-user-checkbox').length === 0) {
             selectedUserIds.push(''); // Guest user (empty string)
         } else if (selectedUserIds.length === 0) {
-            alert('{{ _("Please select at least one test user using the Test Users dropdown.") }}');
+            alert('{{ ftl('websites-please-select-at-least-one-test-user-using-the') }}');
             return;
         }
 
@@ -1108,7 +1108,7 @@ $(document).ready(function() {
             website_user_ids: selectedUserIds
         };
 
-        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> {{ _("Starting...") }}');
+        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> {{ ftl('common-starting') }}');
 
         $.ajax({
             url: "{{ url_for('websites.test_all_pages', website_id=website.id) }}",
@@ -1139,33 +1139,33 @@ $(document).ready(function() {
                     }
 
                     if (window.showNotification) {
-                        showNotification('{{ _("Testing Started") }}', `{{ _("Queued") }} ${data.pages_queued} {{ _("pages for testing") }}`, 'info');
+                        showNotification('{{ ftl('websites-testing-started') }}', `{{ ftl('common-queued') }} ${data.pages_queued} {{ ftl('websites-pages-for-testing') }}`, 'info');
                     } else {
                         alert(data.message);
                     }
 
                     // Update button to show it's testing
-                    btn.html(`<span class="spinner-border spinner-border-sm"></span> {{ _("Testing") }}: 0/${data.pages_queued}`);
+                    btn.html(`<span class="spinner-border spinner-border-sm"></span> {{ ftl('common-testing') }}: 0/${data.pages_queued}`);
 
                     // Start polling for status immediately
                     console.log('Starting testing status polling with job_id:', testingJobId);
                     startTestingStatusPolling();
 
                 } else {
-                    alert(data.message || '{{ _("Failed to queue tests") }}');
-                    btn.prop('disabled', false).html('<i class="bi bi-play-fill" aria-hidden="true"></i> {{ _("Test All Pages") }}');
+                    alert(data.message || '{{ ftl('websites-failed-to-queue-tests') }}');
+                    btn.prop('disabled', false).html('<i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('common-test-all-pages') }}');
                 }
             }
         }).fail(function(error) {
             console.error('Failed to start testing:', error);
-            alert('{{ _("Failed to start testing") }}');
-            btn.prop('disabled', false).html('<i class="bi bi-play-fill" aria-hidden="true"></i> {{ _("Test All Pages") }}');
+            alert('{{ ftl('websites-failed-to-start-testing') }}');
+            btn.prop('disabled', false).html('<i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('common-test-all-pages') }}');
         });
     });
     
     // Wire up the cancel testing button
     $('#cancelTestingBtn').click(function() {
-        if (confirm('{{ _("Are you sure you want to cancel the testing process?") }}')) {
+        if (confirm('{{ ftl('websites-are-you-sure-you-want-to-cancel-the-testing') }}')) {
             cancelTesting();
         }
     });
@@ -1181,7 +1181,7 @@ $(document).ready(function() {
                 $('#addPageModal').modal('hide');
                 location.reload();
             } else {
-                alert(data.error || '{{ _("Failed to add page") }}');
+                alert(data.error || '{{ ftl('websites-failed-to-add-page') }}');
             }
         });
     });
@@ -1216,7 +1216,7 @@ function testPage(pageId) {
             btn.disabled = false;
             
             if (window.showNotification) {
-                showNotification('{{ _("Test Started") }}', '{{ _("Page queued for testing") }}', 'info');
+                showNotification('{{ ftl('websites-test-started') }}', '{{ ftl('common-page-queued-for-testing') }}', 'info');
             }
 
             // Start polling if not already running
@@ -1226,12 +1226,12 @@ function testPage(pageId) {
         } else {
             btn.disabled = false;
             btn.innerHTML = '<i class="bi bi-play" aria-hidden="true"></i>';
-            alert('{{ _("Failed to start test") }}');
+            alert('{{ ftl('common-failed-to-start-test') }}');
         }
     }).fail(function() {
         btn.disabled = false;
         btn.innerHTML = '<i class="bi bi-play" aria-hidden="true"></i>';
-        alert('{{ _("Failed to start test") }}');
+        alert('{{ ftl('common-failed-to-start-test') }}');
     });
 }
 
@@ -1272,17 +1272,17 @@ function cancelPageTest(pageId) {
             }
             
             if (window.showNotification) {
-                showNotification('{{ _("Test Cancelled") }}', '{{ _("Page test has been cancelled") }}', 'warning');
+                showNotification('{{ ftl('common-test-cancelled') }}', '{{ ftl('websites-page-test-has-been-cancelled') }}', 'warning');
             }
         } else {
-            alert('{{ _("Failed to cancel test") }}: ' + (data.message || '{{ _("Unknown error") }}'));
+            alert('{{ ftl('common-failed-to-cancel-test') }}: ' + (data.message || '{{ ftl('common-unknown-error') }}'));
             if (btn) {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="bi bi-x-circle" aria-hidden="true"></i>';
             }
         }
     }).fail(function() {
-        alert('{{ _("Failed to cancel test") }}');
+        alert('{{ ftl('common-failed-to-cancel-test') }}');
         if (btn) {
             btn.disabled = false;
             btn.innerHTML = '<i class="bi bi-x-circle" aria-hidden="true"></i>';
@@ -1291,7 +1291,7 @@ function cancelPageTest(pageId) {
 }
 
 function deletePage(pageId, pageUrl) {
-    if (!confirm(`{{ _("Are you sure you want to delete this page?") }}\n\n${pageUrl}\n\n{{ _("This will also delete all test results for this page.") }}`)) {
+    if (!confirm(`{{ ftl('websites-are-you-sure-you-want-to-delete-this-page') }}\n\n${pageUrl}\n\n{{ ftl('websites-this-will-also-delete-all-test-results-for-this') }}`)) {
         return;
     }
 
@@ -1303,7 +1303,7 @@ function deletePage(pageId, pageUrl) {
 
     $.post(`/pages/${pageId}/delete`, function(data) {
         if (window.showNotification) {
-            showNotification('{{ _("Page Deleted") }}', '{{ _("Page has been deleted successfully") }}', 'success');
+            showNotification('{{ ftl('websites-page-deleted') }}', '{{ ftl('websites-page-has-been-deleted-successfully') }}', 'success');
         }
         // Reload page to show updated list
         location.reload();
@@ -1312,13 +1312,13 @@ function deletePage(pageId, pageUrl) {
             btn.disabled = false;
             btn.innerHTML = '<i class="bi bi-trash" aria-hidden="true"></i>';
         }
-        alert('{{ _("Failed to delete page") }}: ' + (xhr.responseJSON?.error || '{{ _("Unknown error") }}'));
+        alert('{{ ftl('common-failed-to-delete-page') }}: ' + (xhr.responseJSON?.error || '{{ ftl('common-unknown-error') }}'));
     });
 }
 
 function cancelDiscovery() {
     if (!discoveryJobId) {
-        alert('{{ _("No discovery job to cancel") }}');
+        alert('{{ ftl('common-no-discovery-job-to-cancel') }}');
         return;
     }
 
@@ -1327,7 +1327,7 @@ function cancelDiscovery() {
 
     // Disable cancel button and update discover button
     cancelBtn.prop('disabled', true);
-    btn.html('<span class="spinner-border spinner-border-sm"></span> {{ _("Cancelling...") }}');
+    btn.html('<span class="spinner-border spinner-border-sm"></span> {{ ftl('common-cancelling') }}');
     
     $.post(`{{ url_for('websites.cancel_discovery', website_id=website.id) }}`, 
         { job_id: discoveryJobId }, 
@@ -1337,7 +1337,7 @@ function cancelDiscovery() {
                 
                 // Hide cancel button and reset discover button
                 cancelBtn.hide().prop('disabled', false);
-                btn.prop('disabled', false).html('<i class="bi bi-search" aria-hidden="true"></i> {{ _("Discover Pages") }}');
+                btn.prop('disabled', false).html('<i class="bi bi-search" aria-hidden="true"></i> {{ ftl('websites-discover-pages') }}');
 
                 // Remove from global tracking
                 if (typeof TestTracker !== 'undefined') {
@@ -1345,26 +1345,26 @@ function cancelDiscovery() {
                 }
 
                 if (window.showNotification) {
-                    showNotification('{{ _("Discovery Cancelled") }}', data.message, 'warning');
+                    showNotification('{{ ftl('common-discovery-cancelled') }}', data.message, 'warning');
                 } else {
                     alert(data.message);
                 }
             } else {
                 // Re-enable cancel button on failure
                 cancelBtn.prop('disabled', false);
-                btn.html('<span class="spinner-border spinner-border-sm"></span> {{ _("Discovery Running...") }}');
-                alert('{{ _("Failed to cancel discovery") }}: ' + (data.message || '{{ _("Unknown error") }}'));
+                btn.html('<span class="spinner-border spinner-border-sm"></span> {{ ftl('websites-discovery-running') }}');
+                alert('{{ ftl('common-failed-to-cancel-discovery') }}: ' + (data.message || '{{ ftl('common-unknown-error') }}'));
             }
         }
     ).fail(function(xhr, status, error) {
         // Re-enable cancel button on failure
         cancelBtn.prop('disabled', false);
-        btn.html('<span class="spinner-border spinner-border-sm"></span> {{ _("Discovery Running...") }}');
+        btn.html('<span class="spinner-border spinner-border-sm"></span> {{ ftl('websites-discovery-running') }}');
         console.error('Cancel discovery failed:', status, error);
         console.error('Response:', xhr.responseText);
 
         // Try to parse error message
-        let errorMsg = '{{ _("Failed to cancel discovery") }}';
+        let errorMsg = '{{ ftl('common-failed-to-cancel-discovery') }}';
         try {
             const response = JSON.parse(xhr.responseText);
             if (response.error) {
@@ -1394,7 +1394,7 @@ function startDiscoveryPolling() {
     
     // Change discover button to show it's running
     btn.prop('disabled', true)
-       .html('<span class="spinner-border spinner-border-sm"></span> {{ _("Discovery Running...") }}');
+       .html('<span class="spinner-border spinner-border-sm"></span> {{ ftl('websites-discovery-running') }}');
     
     discoveryStatusInterval = setInterval(() => {
         const url = discoveryJobId 
@@ -1406,7 +1406,7 @@ function startDiscoveryPolling() {
             
             if (data.status === 'running') {
                 // Update discover button with progress
-                const message = data.message || `{{ _("Found") }} ${data.pages_found} {{ _("pages...") }}`;
+                const message = data.message || `{{ ftl('common-found') }} ${data.pages_found} {{ ftl('websites-pages') }}`;
                 btn.html(`<span class="spinner-border spinner-border-sm"></span> ${message}`);
 
                 // Check for new failures and show toast
@@ -1415,11 +1415,11 @@ function startDiscoveryPolling() {
                     // New failure detected - show toast
                     if (window.showNotification) {
                         const failedUrl = data.last_failed_url;
-                        const failedReason = data.last_failed_reason || '{{ _("Unknown error") }}';
+                        const failedReason = data.last_failed_reason || '{{ ftl('common-unknown-error') }}';
                         // Truncate URL for display
                         const displayUrl = failedUrl.length > 60 ? failedUrl.substring(0, 57) + '...' : failedUrl;
                         showNotification(
-                            '{{ _("Discovery Issue") }}',
+                            '{{ ftl('websites-discovery-issue') }}',
                             `${displayUrl}: ${failedReason}`,
                             'warning'
                         );
@@ -1439,7 +1439,7 @@ function startDiscoveryPolling() {
                 btn.prop('disabled', false)
                    .removeClass('btn-danger')
                    .addClass('btn-success')
-                   .html('<i class="bi bi-check-circle" aria-hidden="true"></i> {{ _("Discovery Complete") }}');
+                   .html('<i class="bi bi-check-circle" aria-hidden="true"></i> {{ ftl('common-discovery-complete') }}');
 
                 // Remove from global tracking if available
                 if (typeof TestTracker !== 'undefined') {
@@ -1448,8 +1448,8 @@ function startDiscoveryPolling() {
 
                 // Show completion notification
                 if (window.showNotification) {
-                    const failedInfo = data.pages_failed > 0 ? ` (${data.pages_failed} {{ _("failed") }})` : '';
-                    showNotification('{{ _("Discovery Complete") }}', `{{ _("Found") }} ${data.pages_found} {{ _("pages") }}${failedInfo}. {{ _("Refreshing...") }}`, 'success');
+                    const failedInfo = data.pages_failed > 0 ? ` (${data.pages_failed} {{ ftl('common-failed-2') }})` : '';
+                    showNotification('{{ ftl('common-discovery-complete') }}', `{{ ftl('common-found') }} ${data.pages_found} {{ ftl('common-pages-2') }}${failedInfo}. {{ ftl('common-refreshing') }}`, 'success');
                 }
                 
                 // Refresh page to show new pages
@@ -1461,7 +1461,7 @@ function startDiscoveryPolling() {
                 btn.prop('disabled', false)
                    .removeClass('btn-danger')
                    .addClass('btn-warning')
-                   .html('<i class="bi bi-x-circle" aria-hidden="true"></i> {{ _("Discovery Failed") }}');
+                   .html('<i class="bi bi-x-circle" aria-hidden="true"></i> {{ ftl('websites-discovery-failed') }}');
 
                 // Remove from global tracking
                 if (typeof TestTracker !== 'undefined') {
@@ -1469,13 +1469,13 @@ function startDiscoveryPolling() {
                 }
 
                 // Show error
-                alert('{{ _("Discovery failed") }}: ' + (data.error || '{{ _("Unknown error") }}'));
+                alert('{{ ftl('websites-discovery-failed-2') }}: ' + (data.error || '{{ ftl('common-unknown-error') }}'));
 
                 // Reset button after delay
                 setTimeout(() => {
                     btn.removeClass('btn-warning')
                        .addClass('btn-success')
-                       .html('<i class="bi bi-search" aria-hidden="true"></i> {{ _("Discover Pages") }}');
+                       .html('<i class="bi bi-search" aria-hidden="true"></i> {{ ftl('websites-discover-pages') }}');
                 }, 3000);
             }
         }).fail(function() {
@@ -1501,7 +1501,7 @@ function stopDiscoveryPolling() {
             .prop('disabled', false)
             .removeClass('btn-danger btn-warning')
             .addClass('btn-success')
-            .html('<i class="bi bi-search" aria-hidden="true"></i> {{ _("Discover Pages") }}');
+            .html('<i class="bi bi-search" aria-hidden="true"></i> {{ ftl('websites-discover-pages') }}');
     }, 3000);
 }
 
@@ -1523,19 +1523,19 @@ function startTestingStatusPolling() {
             
             if (data.status === 'running') {
                 // Update button with progress - use message if available (includes user label)
-                const progressText = data.message || `{{ _("Testing") }}: ${data.pages_tested || 0}/${data.total_pages || 0}`;
+                const progressText = data.message || `{{ ftl('common-testing') }}: ${data.pages_tested || 0}/${data.total_pages || 0}`;
                 btn.html(`<span class="spinner-border spinner-border-sm"></span> ${progressText}`);
                 
                 // Update current page if available
                 if (data.current_page) {
-                    btn.attr('title', `{{ _("Currently testing") }}: ${data.current_page}`);
+                    btn.attr('title', `{{ ftl('websites-currently-testing') }}: ${data.current_page}`);
                 }
             } else if (data.status === 'completed') {
                 stopTestingStatusPolling();
 
                 // Update button
                 btn.prop('disabled', false)
-                   .html('<i class="bi bi-check-circle" aria-hidden="true"></i> {{ _("Testing Complete") }}');
+                   .html('<i class="bi bi-check-circle" aria-hidden="true"></i> {{ ftl('websites-testing-complete') }}');
 
                 // Remove from global tracking
                 if (typeof TestTracker !== 'undefined') {
@@ -1544,8 +1544,8 @@ function startTestingStatusPolling() {
 
                 // Show completion notification
                 if (window.showNotification) {
-                    const message = `{{ _("Tested") }} ${data.pages_tested} {{ _("pages") }}: ${data.pages_passed} {{ _("passed") }}, ${data.pages_failed} {{ _("failed") }}`;
-                    showNotification('{{ _("Testing Complete") }}', message, 'success');
+                    const message = `{{ ftl('common-tested') }} ${data.pages_tested} {{ ftl('common-pages-2') }}: ${data.pages_passed} {{ ftl('common-passed') }}, ${data.pages_failed} {{ ftl('common-failed-2') }}`;
+                    showNotification('{{ ftl('websites-testing-complete') }}', message, 'success');
                 }
                 
                 // Refresh page to show results
@@ -1555,7 +1555,7 @@ function startTestingStatusPolling() {
 
                 // Update button
                 btn.prop('disabled', false)
-                   .html('<i class="bi bi-x-circle" aria-hidden="true"></i> {{ _("Testing Cancelled") }}');
+                   .html('<i class="bi bi-x-circle" aria-hidden="true"></i> {{ ftl('websites-testing-cancelled') }}');
 
                 // Remove from global tracking
                 if (typeof TestTracker !== 'undefined') {
@@ -1564,19 +1564,19 @@ function startTestingStatusPolling() {
 
                 // Show cancellation notification
                 if (window.showNotification) {
-                    showNotification('{{ _("Testing Cancelled") }}', data.message || '{{ _("Testing was cancelled") }}', 'warning');
+                    showNotification('{{ ftl('websites-testing-cancelled') }}', data.message || '{{ ftl('websites-testing-was-cancelled') }}', 'warning');
                 }
 
                 // Reset button after delay
                 setTimeout(() => {
-                    btn.html('<i class="bi bi-play-fill" aria-hidden="true"></i> {{ _("Test All Pages") }}');
+                    btn.html('<i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('common-test-all-pages') }}');
                 }, 3000);
             } else if (data.status === 'failed') {
                 stopTestingStatusPolling();
 
                 // Update button
                 btn.prop('disabled', false)
-                   .html('<i class="bi bi-x-circle" aria-hidden="true"></i> {{ _("Testing Failed") }}');
+                   .html('<i class="bi bi-x-circle" aria-hidden="true"></i> {{ ftl('websites-testing-failed') }}');
 
                 // Remove from global tracking
                 if (typeof TestTracker !== 'undefined') {
@@ -1584,11 +1584,11 @@ function startTestingStatusPolling() {
                 }
 
                 // Show error
-                alert('{{ _("Testing failed") }}: ' + (data.error || '{{ _("Unknown error") }}'));
+                alert('{{ ftl('websites-testing-failed-2') }}: ' + (data.error || '{{ ftl('common-unknown-error') }}'));
 
                 // Reset button after delay
                 setTimeout(() => {
-                    btn.html('<i class="bi bi-play-fill" aria-hidden="true"></i> {{ _("Test All Pages") }}');
+                    btn.html('<i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('common-test-all-pages') }}');
                 }, 3000);
             }
         }).fail(function() {
@@ -1618,7 +1618,7 @@ function stopTestingStatusPolling() {
 
 function cancelTesting() {
     if (!testingJobId) {
-        alert('{{ _("No testing job to cancel") }}');
+        alert('{{ ftl('websites-no-testing-job-to-cancel') }}');
         return;
     }
 
@@ -1627,7 +1627,7 @@ function cancelTesting() {
 
     // Disable cancel button and update test button
     cancelBtn.prop('disabled', true);
-    btn.html('<span class="spinner-border spinner-border-sm"></span> {{ _("Cancelling...") }}');
+    btn.html('<span class="spinner-border spinner-border-sm"></span> {{ ftl('common-cancelling') }}');
     
     $.post(`{{ url_for('websites.cancel_testing', website_id=website.id) }}`, 
         { job_id: testingJobId }, 
@@ -1637,7 +1637,7 @@ function cancelTesting() {
                 
                 // Hide cancel button and reset test button
                 cancelBtn.hide().prop('disabled', false);
-                btn.prop('disabled', false).html('<i class="bi bi-play-fill" aria-hidden="true"></i> {{ _("Test All Pages") }}');
+                btn.prop('disabled', false).html('<i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('common-test-all-pages') }}');
 
                 // Remove from global tracking
                 if (typeof TestTracker !== 'undefined') {
@@ -1645,23 +1645,23 @@ function cancelTesting() {
                 }
 
                 if (window.showNotification) {
-                    showNotification('{{ _("Testing Cancelled") }}', data.message, 'warning');
+                    showNotification('{{ ftl('websites-testing-cancelled') }}', data.message, 'warning');
                 } else {
                     alert(data.message);
                 }
             } else {
                 // Re-enable cancel button on failure
                 cancelBtn.prop('disabled', false);
-                btn.html('<span class="spinner-border spinner-border-sm"></span> {{ _("Testing...") }}');
-                alert('{{ _("Failed to cancel testing") }}: ' + (data.message || '{{ _("Unknown error") }}'));
+                btn.html('<span class="spinner-border spinner-border-sm"></span> {{ ftl('common-testing-2') }}');
+                alert('{{ ftl('websites-failed-to-cancel-testing') }}: ' + (data.message || '{{ ftl('common-unknown-error') }}'));
             }
         }
     ).fail(function(xhr, status, error) {
         // Re-enable cancel button on failure
         cancelBtn.prop('disabled', false);
-        btn.html('<span class="spinner-border spinner-border-sm"></span> {{ _("Testing...") }}');
+        btn.html('<span class="spinner-border spinner-border-sm"></span> {{ ftl('common-testing-2') }}');
         console.error('Cancel testing failed:', status, error);
-        alert('{{ _("Failed to cancel testing") }}');
+        alert('{{ ftl('websites-failed-to-cancel-testing') }}');
     });
 }
 
@@ -1685,14 +1685,14 @@ function generateSiteStructureReport(format) {
     .then(data => {
         if (data.success) {
             if (window.showNotification) {
-                showNotification('{{ _("Report Generation") }}',
-                    '{{ _("Report is being generated. Check the Reports dashboard for progress.") }}', 'info');
+                showNotification('{{ ftl('websites-report-generation') }}',
+                    '{{ ftl('websites-report-is-being-generated-check-the-reports') }}', 'info');
             }
         } else {
-            alert(data.error || '{{ _("Failed to generate report") }}');
+            alert(data.error || '{{ ftl('websites-failed-to-generate-report') }}');
         }
     })
-    .catch(() => alert('{{ _("Failed to generate report") }}'))
+    .catch(() => alert('{{ ftl('websites-failed-to-generate-report') }}'))
     .finally(() => {
         if (btn) {
             btn.innerHTML = originalText;
@@ -1717,14 +1717,14 @@ function generateAccessibilityReport(format) {
     .then(data => {
         if (data.success) {
             if (window.showNotification) {
-                showNotification('{{ _("Report Generation") }}',
-                    '{{ _("Report is being generated. Check the Reports dashboard for progress.") }}', 'info');
+                showNotification('{{ ftl('websites-report-generation') }}',
+                    '{{ ftl('websites-report-is-being-generated-check-the-reports') }}', 'info');
             }
         } else {
-            alert(data.error || '{{ _("Failed to generate report") }}');
+            alert(data.error || '{{ ftl('websites-failed-to-generate-report') }}');
         }
     })
-    .catch(() => alert('{{ _("Failed to generate report") }}'))
+    .catch(() => alert('{{ ftl('websites-failed-to-generate-report') }}'))
     .finally(() => {
         if (btn) {
             btn.innerHTML = originalText;

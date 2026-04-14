@@ -94,48 +94,66 @@ def project_automated_tests(project_id):
 
     project = Project.from_dict(project_doc)
 
-    # Get all websites and pages for this project
+    # Get all websites and build page_id -> website lookup
     websites = db.get_websites(project_id)
+    website_lookup = {w.id: w for w in websites}
 
-    # Collect all test results with page info
-    test_results_data = []
-    unique_touchpoints = set()
-    unique_wcag_criteria = set()
-
+    # Collect all page IDs across all project websites
+    all_page_ids = []
+    page_to_website = {}
+    page_lookup = {}
     for website in websites:
         pages = db.get_pages(website.id)
-
         for page in pages:
-            test_result = db.get_latest_test_result(page.id)
-            if test_result:
-                # Collect all violations/warnings/info
-                all_violations = (
-                    test_result.violations +
-                    test_result.warnings +
-                    test_result.info
-                )
+            all_page_ids.append(page.id)
+            page_to_website[page.id] = website.id
+            page_lookup[page.id] = page
 
-                # Extract unique touchpoints and WCAG criteria
-                for violation in all_violations:
-                    if violation.touchpoint:
-                        unique_touchpoints.add(violation.touchpoint)
-                    if violation.wcag_criteria:
-                        for criterion in violation.wcag_criteria:
-                            unique_wcag_criteria.add(criterion)
+    # Use a single aggregation to get latest result counts per page
+    # instead of N+1 queries that crash on large projects
+    pipeline = [
+        {'$match': {'page_id': {'$in': all_page_ids}}},
+        {'$sort': {'test_date': -1}},
+        {'$group': {
+            '_id': '$page_id',
+            'result_id': {'$first': '$_id'},
+            'violation_count': {'$first': {'$ifNull': ['$violation_count', 0]}},
+            'warning_count': {'$first': {'$ifNull': ['$warning_count', 0]}},
+            'info_count': {'$first': {'$ifNull': ['$info_count', 0]}},
+        }},
+    ]
+    latest_results = list(db.test_results.aggregate(pipeline))
 
-                test_results_data.append({
-                    'page': page,
-                    'website': website,
-                    'test_result': test_result,
-                    'violation_count': len(test_result.violations),
-                    'warning_count': len(test_result.warnings),
-                    'info_count': len(test_result.info),
-                    'total_issues': len(all_violations)
-                })
+    # Build results data from aggregation output
+    test_results_data = []
+    for r in latest_results:
+        page_id = r['_id']
+        page = page_lookup.get(page_id)
+        website_id = page_to_website.get(page_id)
+        website = website_lookup.get(website_id) if website_id else None
+        if not page or not website:
+            continue
 
-    # Sort touchpoints and WCAG criteria for display
-    touchpoints = sorted(unique_touchpoints)
-    wcag_criteria = sorted(unique_wcag_criteria)
+        total = r['violation_count'] + r['warning_count'] + r['info_count']
+        # Build a lightweight object with .id for the template url_for
+        class _ResultRef:
+            def __init__(self, rid):
+                self.id = str(rid)
+        test_results_data.append({
+            'page': page,
+            'website': website,
+            'test_result': _ResultRef(r['result_id']),
+            'violation_count': r['violation_count'],
+            'warning_count': r['warning_count'],
+            'info_count': r['info_count'],
+            'total_issues': total,
+        })
+
+    # Get unique touchpoints / WCAG criteria from the aggregated violation items
+    # Use a lightweight aggregation on test_result_items or just provide empty
+    # lists (filters load dynamically via the filter-options API endpoint).
+    touchpoints = []
+    wcag_criteria = []
 
     return render_template(
         'automated_tests/list.html',

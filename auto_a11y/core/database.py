@@ -67,6 +67,7 @@ class Database:
         self.test_schedules: Collection = self.db.test_schedules  # Scheduled test configurations
         self.share_tokens: Collection = self.db.share_tokens  # Public share tokens
         self.groups: Collection = self.db['groups']  # Permission groups
+        self.issues: Collection = self.db.issues  # Issues for Drupal sync
 
         # Create indexes
         self._create_indexes()
@@ -1264,22 +1265,37 @@ class Database:
     def get_project_stats(self, project_id: str) -> Dict[str, Any]:
         """Get statistics for a project"""
         websites = self.get_websites(project_id)
-        
+
         total_pages = 0
         tested_pages = 0
-        total_violations = 0
-        total_warnings = 0
-        
+        tested_page_ids = []
+
         for website in websites:
             pages = self.get_pages(website.id)
             total_pages += len(pages)
-            
+
             for page in pages:
                 if page.status == PageStatus.TESTED:
                     tested_pages += 1
-                    total_violations += page.violation_count
-                    total_warnings += page.warning_count
-        
+                    tested_page_ids.append(page.id)
+
+        # Aggregate issue counts from test_results (source of truth)
+        total_violations = 0
+        total_warnings = 0
+        if tested_page_ids:
+            pipeline = [
+                {'$match': {'page_id': {'$in': tested_page_ids}}},
+                {'$sort': {'test_date': -1}},
+                {'$group': {
+                    '_id': '$page_id',
+                    'violation_count': {'$first': {'$ifNull': ['$violation_count', 0]}},
+                    'warning_count': {'$first': {'$ifNull': ['$warning_count', 0]}},
+                }},
+            ]
+            for result in self.test_results.aggregate(pipeline):
+                total_violations += result.get('violation_count', 0)
+                total_warnings += result.get('warning_count', 0)
+
         return {
             "website_count": len(websites),
             "total_pages": total_pages,

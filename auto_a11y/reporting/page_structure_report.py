@@ -11,7 +11,7 @@ import json
 import csv
 from io import StringIO
 
-from flask_babel import force_locale, gettext as _
+from auto_a11y.web.fluent import ftl, force_locale
 from auto_a11y.models import Page, PageStatus
 
 logger = logging.getLogger(__name__)
@@ -241,12 +241,12 @@ class PageStructureReport:
         for i, page in enumerate(self.pages):
             if progress_callback:
                 with force_locale(self.language):
-                    progress_callback(i, len(self.pages), _('Building tree: page %(current)s of %(total)s...', current=i + 1, total=len(self.pages)))
+                    progress_callback(i, len(self.pages), ftl('reports-building-tree-page-current-of-total', current=i + 1, total=len(self.pages)))
             self._add_page_to_tree(root, page)
 
         if progress_callback:
             with force_locale(self.language):
-                progress_callback(len(self.pages), len(self.pages), _('Tree structure complete'))
+                progress_callback(len(self.pages), len(self.pages), ftl('reports-tree-structure-complete'))
 
         return root
     

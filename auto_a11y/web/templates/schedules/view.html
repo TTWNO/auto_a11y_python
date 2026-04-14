@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}{{ schedule.name }} - {{ _('Schedule') }} - {{ _('Auto A11y') }}{% endblock %}
+{% block title %}{{ schedule.name }} - {{ ftl('schedules-schedule') }} - {{ ftl('common-auto-a11y') }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
     <!-- Breadcrumb -->
-    <nav aria-label="{{ _('breadcrumb') }}">
+    <nav aria-label="{{ ftl('common-breadcrumb') }}">
         <ol class="breadcrumb">
             <li class="breadcrumb-item">
                 <a href="{{ url_for('projects.view_project', project_id=project.id) }}">{{ project.name }}</a>
@@ -14,7 +14,7 @@
                 <a href="{{ url_for('websites.view_website', website_id=website.id) }}">{{ website.name }}</a>
             </li>
             <li class="breadcrumb-item">
-                <a href="{{ url_for('schedules.list_schedules', website_id=website.id) }}">{{ _('Schedules') }}</a>
+                <a href="{{ url_for('schedules.list_schedules', website_id=website.id) }}">{{ ftl('common-schedules') }}</a>
             </li>
             <li class="breadcrumb-item active" aria-current="page">{{ schedule.name }}</li>
         </ol>
@@ -25,9 +25,9 @@
             <h1>
                 <i class="bi bi-calendar-event" aria-hidden="true"></i> {{ schedule.name }}
                 {% if schedule.enabled %}
-                <span class="badge bg-success">{{ _('Enabled') }}</span>
+                <span class="badge bg-success">{{ ftl('common-enabled') }}</span>
                 {% else %}
-                <span class="badge bg-secondary">{{ _('Disabled') }}</span>
+                <span class="badge bg-secondary">{{ ftl('common-disabled') }}</span>
                 {% endif %}
             </h1>
             {% if schedule.description %}
@@ -37,15 +37,15 @@
         <div class="btn-group">
             <a href="{{ url_for('schedules.edit_schedule', website_id=website.id, schedule_id=schedule.id) }}"
                class="btn btn-outline-primary">
-                <i class="bi bi-pencil" aria-hidden="true"></i> {{ _('Edit') }}
+                <i class="bi bi-pencil" aria-hidden="true"></i> {{ ftl('common-edit') }}
             </a>
             <button type="button" class="btn btn-outline-{% if schedule.enabled %}warning{% else %}success{% endif %}"
                     onclick="toggleSchedule()">
                 <i class="bi bi-toggle-{% if schedule.enabled %}on{% else %}off{% endif %}" aria-hidden="true"></i>
-                {% if schedule.enabled %}{{ _('Disable') }}{% else %}{{ _('Enable') }}{% endif %}
+                {% if schedule.enabled %}{{ ftl('common-disable') }}{% else %}{{ ftl('common-enable') }}{% endif %}
             </button>
             <button type="button" class="btn btn-primary" onclick="runNow()">
-                <i class="bi bi-play-fill" aria-hidden="true"></i> {{ _('Run Now') }}
+                <i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('schedules-run-now') }}
             </button>
         </div>
     </div>
@@ -68,49 +68,49 @@
             <section aria-labelledby="schedule-details-heading">
             <div class="card mb-4">
                 <div class="card-header">
-                    <h2 id="schedule-details-heading" class="mb-0"><i class="bi bi-clock" aria-hidden="true"></i> {{ _('Schedule Details') }}</h2>
+                    <h2 id="schedule-details-heading" class="mb-0"><i class="bi bi-clock" aria-hidden="true"></i> {{ ftl('schedules-schedule-details') }}</h2>
                 </div>
                 <div class="card-body">
                     <dl class="row mb-0">
-                        <dt class="col-sm-5">{{ _('Type') }}</dt>
+                        <dt class="col-sm-5">{{ ftl('common-type') }}</dt>
                         <dd class="col-sm-7"><span class="badge bg-info">
-                            {% if schedule.schedule_type.value == 'one_time' %}{{ _('One-time') }}
-                            {% elif schedule.schedule_type.value == 'daily' %}{{ _('Daily') }}
-                            {% elif schedule.schedule_type.value == 'weekly' %}{{ _('Weekly') }}
-                            {% elif schedule.schedule_type.value == 'monthly' %}{{ _('Monthly') }}
-                            {% elif schedule.schedule_type.value == 'cron' %}{{ _('Custom Cron') }}
+                            {% if schedule.schedule_type.value == 'one_time' %}{{ ftl('schedules-one-time') }}
+                            {% elif schedule.schedule_type.value == 'daily' %}{{ ftl('common-daily') }}
+                            {% elif schedule.schedule_type.value == 'weekly' %}{{ ftl('common-weekly') }}
+                            {% elif schedule.schedule_type.value == 'monthly' %}{{ ftl('common-monthly') }}
+                            {% elif schedule.schedule_type.value == 'cron' %}{{ ftl('schedules-custom-cron-2') }}
                             {% endif %}
                         </span></dd>
 
-                        <dt class="col-sm-5">{{ _('Schedule') }}</dt>
+                        <dt class="col-sm-5">{{ ftl('schedules-schedule') }}</dt>
                         <dd class="col-sm-7">
                             {% if schedule.schedule_type.value == 'one_time' %}
                                 {% if schedule.scheduled_datetime %}
-                                    {{ _('Once at') }} {{ schedule.scheduled_datetime|datetimeformat('yyyy-MM-dd HH:mm') }}
+                                    {{ ftl('schedules-once-at') }} {{ schedule.scheduled_datetime|datetimeformat('yyyy-MM-dd HH:mm') }}
                                 {% else %}
-                                    {{ _('One-time') }} ({{ _('no date set') }})
+                                    {{ ftl('schedules-one-time') }} ({{ ftl('schedules-no-date-set') }})
                                 {% endif %}
                             {% elif schedule.schedule_type.value == 'cron' %}
-                                {{ _('Cron:') }} {{ schedule.cron_expression or _('Not set') }}
+                                {{ ftl('schedules-cron-2') }} {{ schedule.cron_expression or ftl('schedules-not-set') }}
                             {% elif schedule.schedule_type.value == 'daily' %}
-                                {{ _('Daily at') }} {{ schedule.preset_config.time }}
+                                {{ ftl('schedules-daily-at') }} {{ schedule.preset_config.time }}
                             {% elif schedule.schedule_type.value == 'weekly' %}
-                                {% set days = [_('Monday'), _('Tuesday'), _('Wednesday'), _('Thursday'), _('Friday'), _('Saturday'), _('Sunday')] %}
-                                {{ _('Weekly on') }} {{ days[schedule.preset_config.day_of_week] }} {{ _('at') }} {{ schedule.preset_config.time }}
+                                {% set days = [ftl('schedules-monday'), ftl('schedules-tuesday'), ftl('schedules-wednesday'), ftl('schedules-thursday'), ftl('schedules-friday'), ftl('schedules-saturday'), ftl('schedules-sunday')] %}
+                                {{ ftl('schedules-weekly-on') }} {{ days[schedule.preset_config.day_of_week] }} {{ ftl('schedules-at') }} {{ schedule.preset_config.time }}
                             {% elif schedule.schedule_type.value == 'monthly' %}
-                                {{ _('Monthly on day') }} {{ schedule.preset_config.day_of_month }} {{ _('at') }} {{ schedule.preset_config.time }}
+                                {{ ftl('schedules-monthly-on-day') }} {{ schedule.preset_config.day_of_month }} {{ ftl('schedules-at') }} {{ schedule.preset_config.time }}
                             {% endif %}
                         </dd>
 
-                        <dt class="col-sm-5">{{ _('Timezone') }}</dt>
+                        <dt class="col-sm-5">{{ ftl('schedules-timezone') }}</dt>
                         <dd class="col-sm-7">{{ schedule.preset_config.timezone }}</dd>
 
                         {% if schedule.cron_expression %}
-                        <dt class="col-sm-5">{{ _('Cron Expression') }}</dt>
+                        <dt class="col-sm-5">{{ ftl('schedules-cron-expression') }}</dt>
                         <dd class="col-sm-7"><code>{{ schedule.cron_expression }}</code></dd>
                         {% endif %}
 
-                        <dt class="col-sm-5">{{ _('Total Runs') }}</dt>
+                        <dt class="col-sm-5">{{ ftl('common-total-runs') }}</dt>
                         <dd class="col-sm-7">{{ schedule.run_count }}</dd>
                     </dl>
                 </div>
@@ -121,7 +121,7 @@
             <section aria-labelledby="upcoming-runs-heading">
             <div class="card mb-4">
                 <div class="card-header">
-                    <h2 id="upcoming-runs-heading" class="mb-0"><i class="bi bi-calendar-week" aria-hidden="true"></i> {{ _('Upcoming Runs') }}</h2>
+                    <h2 id="upcoming-runs-heading" class="mb-0"><i class="bi bi-calendar-week" aria-hidden="true"></i> {{ ftl('schedules-upcoming-runs') }}</h2>
                 </div>
                 <div class="card-body">
                     {% if next_runs %}
@@ -134,7 +134,7 @@
                         {% endfor %}
                     </ul>
                     {% else %}
-                    <p class="text-muted mb-0">{{ _('No upcoming runs scheduled') }}</p>
+                    <p class="text-muted mb-0">{{ ftl('schedules-no-upcoming-runs-scheduled') }}</p>
                     {% endif %}
                 </div>
             </div>
@@ -144,34 +144,34 @@
             <section aria-labelledby="last-execution-heading">
             <div class="card mb-4">
                 <div class="card-header">
-                    <h2 id="last-execution-heading" class="mb-0"><i class="bi bi-clock-history" aria-hidden="true"></i> {{ _('Last Execution') }}</h2>
+                    <h2 id="last-execution-heading" class="mb-0"><i class="bi bi-clock-history" aria-hidden="true"></i> {{ ftl('schedules-last-execution') }}</h2>
                 </div>
                 <div class="card-body">
                     {% if schedule.last_run_at %}
                     <dl class="row mb-0">
-                        <dt class="col-sm-5">{{ _('Run Time') }}</dt>
+                        <dt class="col-sm-5">{{ ftl('schedules-run-time') }}</dt>
                         <dd class="col-sm-7">{{ schedule.last_run_at|datetimeformat('yyyy-MM-dd HH:mm:ss') }}</dd>
 
-                        <dt class="col-sm-5">{{ _('Status') }}</dt>
+                        <dt class="col-sm-5">{{ ftl('common-status') }}</dt>
                         <dd class="col-sm-7">
                             {% if schedule.last_run_status.value == 'success' %}
-                            <span class="badge bg-success"><i class="bi bi-check-circle" aria-hidden="true"></i> {{ _('Success') }}</span>
+                            <span class="badge bg-success"><i class="bi bi-check-circle" aria-hidden="true"></i> {{ ftl('common-success') }}</span>
                             {% elif schedule.last_run_status.value == 'failed' %}
-                            <span class="badge bg-danger"><i class="bi bi-x-circle" aria-hidden="true"></i> {{ _('Failed') }}</span>
+                            <span class="badge bg-danger"><i class="bi bi-x-circle" aria-hidden="true"></i> {{ ftl('common-failed') }}</span>
                             {% elif schedule.last_run_status.value == 'running' %}
-                            <span class="badge bg-primary"><i class="bi bi-arrow-repeat" aria-hidden="true"></i> {{ _('Running') }}</span>
+                            <span class="badge bg-primary"><i class="bi bi-arrow-repeat" aria-hidden="true"></i> {{ ftl('common-running-2') }}</span>
                             {% elif schedule.last_run_status.value == 'cancelled' %}
-                            <span class="badge bg-warning"><i class="bi bi-pause-circle" aria-hidden="true"></i> {{ _('Cancelled') }}</span>
+                            <span class="badge bg-warning"><i class="bi bi-pause-circle" aria-hidden="true"></i> {{ ftl('common-cancelled') }}</span>
                             {% endif %}
                         </dd>
 
                         {% if schedule.last_run_job_id %}
-                        <dt class="col-sm-5">{{ _('Job ID') }}</dt>
+                        <dt class="col-sm-5">{{ ftl('schedules-job-id') }}</dt>
                         <dd class="col-sm-7"><code>{{ schedule.last_run_job_id }}</code></dd>
                         {% endif %}
                     </dl>
                     {% else %}
-                    <p class="text-muted mb-0">{{ _('This schedule has not run yet') }}</p>
+                    <p class="text-muted mb-0">{{ ftl('schedules-this-schedule-has-not-run-yet') }}</p>
                     {% endif %}
                 </div>
             </div>
@@ -184,34 +184,34 @@
             <section aria-labelledby="test-config-heading">
             <div class="card mb-4">
                 <div class="card-header">
-                    <h2 id="test-config-heading" class="mb-0"><i class="bi bi-gear" aria-hidden="true"></i> {{ _('Test Configuration') }}</h2>
+                    <h2 id="test-config-heading" class="mb-0"><i class="bi bi-gear" aria-hidden="true"></i> {{ ftl('common-test-configuration') }}</h2>
                 </div>
                 <div class="card-body">
                     <dl class="row mb-0">
-                        <dt class="col-sm-5">{{ _('JavaScript Tests') }}</dt>
+                        <dt class="col-sm-5">{{ ftl('schedules-javascript-tests') }}</dt>
                         <dd class="col-sm-7">
                             {% if schedule.test_config.run_javascript_tests %}
-                            <span class="badge bg-success">{{ _('Enabled') }}</span>
+                            <span class="badge bg-success">{{ ftl('common-enabled') }}</span>
                             {% else %}
-                            <span class="badge bg-secondary">{{ _('Disabled') }}</span>
+                            <span class="badge bg-secondary">{{ ftl('common-disabled') }}</span>
                             {% endif %}
                         </dd>
 
-                        <dt class="col-sm-5">{{ _('Python Tests') }}</dt>
+                        <dt class="col-sm-5">{{ ftl('schedules-python-tests') }}</dt>
                         <dd class="col-sm-7">
                             {% if schedule.test_config.run_python_tests %}
-                            <span class="badge bg-success">{{ _('Enabled') }}</span>
+                            <span class="badge bg-success">{{ ftl('common-enabled') }}</span>
                             {% else %}
-                            <span class="badge bg-secondary">{{ _('Disabled') }}</span>
+                            <span class="badge bg-secondary">{{ ftl('common-disabled') }}</span>
                             {% endif %}
                         </dd>
 
-                        <dt class="col-sm-5">{{ _('Screenshots') }}</dt>
+                        <dt class="col-sm-5">{{ ftl('schedules-screenshots') }}</dt>
                         <dd class="col-sm-7">
                             {% if schedule.test_config.take_screenshots %}
-                            <span class="badge bg-success">{{ _('Enabled') }}</span>
+                            <span class="badge bg-success">{{ ftl('common-enabled') }}</span>
                             {% else %}
-                            <span class="badge bg-secondary">{{ _('Disabled') }}</span>
+                            <span class="badge bg-secondary">{{ ftl('common-disabled') }}</span>
                             {% endif %}
                         </dd>
                     </dl>
@@ -223,33 +223,33 @@
             <section aria-labelledby="ai-testing-heading">
             <div class="card mb-4">
                 <div class="card-header">
-                    <h2 id="ai-testing-heading" class="mb-0"><i class="bi bi-robot" aria-hidden="true"></i> {{ _('AI Testing') }}</h2>
+                    <h2 id="ai-testing-heading" class="mb-0"><i class="bi bi-robot" aria-hidden="true"></i> {{ ftl('schedules-ai-testing') }}</h2>
                 </div>
                 <div class="card-body">
                     {% if schedule.test_config.run_ai_tests %}
                     <dl class="row mb-0">
-                        <dt class="col-sm-5">{{ _('AI Testing') }}</dt>
-                        <dd class="col-sm-7"><span class="badge bg-success">{{ _('Enabled') }}</span></dd>
+                        <dt class="col-sm-5">{{ ftl('schedules-ai-testing') }}</dt>
+                        <dd class="col-sm-7"><span class="badge bg-success">{{ ftl('common-enabled') }}</span></dd>
 
-                        <dt class="col-sm-5">{{ _('Scope') }}</dt>
+                        <dt class="col-sm-5">{{ ftl('common-scope') }}</dt>
                         <dd class="col-sm-7">
                             {% if schedule.test_config.ai_pages_mode.value == 'all' %}
-                            <span class="badge bg-info">{{ _('All Pages') }}</span>
+                            <span class="badge bg-info">{{ ftl('common-all-pages') }}</span>
                             {% elif schedule.test_config.ai_pages_mode.value == 'selected' %}
-                            <span class="badge bg-warning text-dark">{{ _('Selected Pages') }}</span>
+                            <span class="badge bg-warning text-dark">{{ ftl('schedules-selected-pages') }}</span>
                             {% else %}
-                            <span class="badge bg-secondary">{{ _('Disabled') }}</span>
+                            <span class="badge bg-secondary">{{ ftl('common-disabled') }}</span>
                             {% endif %}
                         </dd>
 
                         {% if schedule.test_config.ai_pages_mode.value == 'selected' %}
-                        <dt class="col-sm-5">{{ _('Selected Pages') }}</dt>
-                        <dd class="col-sm-7">{{ schedule.test_config.ai_page_ids|length }} {{ _('pages') }}</dd>
+                        <dt class="col-sm-5">{{ ftl('schedules-selected-pages') }}</dt>
+                        <dd class="col-sm-7">{{ schedule.test_config.ai_page_ids|length }} {{ ftl('common-pages-2') }}</dd>
                         {% endif %}
                     </dl>
                     {% else %}
                     <p class="text-muted mb-0">
-                        <i class="bi bi-robot" aria-hidden="true"></i> {{ _('AI testing is disabled for this schedule') }}
+                        <i class="bi bi-robot" aria-hidden="true"></i> {{ ftl('schedules-ai-testing-is-disabled-for-this-schedule') }}
                     </p>
                     {% endif %}
                 </div>
@@ -260,7 +260,7 @@
             <section aria-labelledby="test-users-heading">
             <div class="card mb-4">
                 <div class="card-header">
-                    <h2 id="test-users-heading" class="mb-0"><i class="bi bi-people" aria-hidden="true"></i> {{ _('Test Users') }}</h2>
+                    <h2 id="test-users-heading" class="mb-0"><i class="bi bi-people" aria-hidden="true"></i> {{ ftl('common-test-users') }}</h2>
                 </div>
                 <div class="card-body">
                     {% if schedule.project_user_ids %}
@@ -273,7 +273,7 @@
                     </ul>
                     {% else %}
                     <p class="text-muted mb-0">
-                        <i class="bi bi-person" aria-hidden="true"></i> {{ _('Testing as guest (no login)') }}
+                        <i class="bi bi-person" aria-hidden="true"></i> {{ ftl('schedules-testing-as-guest-no-login') }}
                     </p>
                     {% endif %}
                 </div>
@@ -284,25 +284,25 @@
             <section aria-labelledby="scheduler-status-heading">
             <div class="card mb-4">
                 <div class="card-header">
-                    <h2 id="scheduler-status-heading" class="mb-0"><i class="bi bi-cpu" aria-hidden="true"></i> {{ _('Scheduler Status') }}</h2>
+                    <h2 id="scheduler-status-heading" class="mb-0"><i class="bi bi-cpu" aria-hidden="true"></i> {{ ftl('schedules-scheduler-status') }}</h2>
                 </div>
                 <div class="card-body">
                     <dl class="row mb-0">
-                        <dt class="col-sm-5">{{ _('Status') }}</dt>
+                        <dt class="col-sm-5">{{ ftl('common-status') }}</dt>
                         <dd class="col-sm-7">
                             {% if scheduler_status.status == 'registered' %}
-                            <span class="badge bg-success">{{ _('Registered') }}</span>
+                            <span class="badge bg-success">{{ ftl('schedules-registered') }}</span>
                             {% elif scheduler_status.status == 'not_registered' %}
-                            <span class="badge bg-warning">{{ _('Not Registered') }}</span>
+                            <span class="badge bg-warning">{{ ftl('schedules-not-registered') }}</span>
                             {% elif scheduler_status.status == 'scheduler_not_running' %}
-                            <span class="badge bg-danger">{{ _('Scheduler Not Running') }}</span>
+                            <span class="badge bg-danger">{{ ftl('schedules-scheduler-not-running') }}</span>
                             {% else %}
                             <span class="badge bg-secondary">{{ scheduler_status.status }}</span>
                             {% endif %}
                         </dd>
 
                         {% if scheduler_status.next_run_time %}
-                        <dt class="col-sm-5">{{ _('Next Run') }}</dt>
+                        <dt class="col-sm-5">{{ ftl('schedules-next-run') }}</dt>
                         <dd class="col-sm-7">{{ scheduler_status.next_run_time|datetimeformat('yyyy-MM-dd HH:mm:ss') }}</dd>
                         {% endif %}
                     </dl>
@@ -316,16 +316,16 @@
     <section aria-labelledby="danger-zone-heading">
     <div class="card border-danger mb-4">
         <div class="card-header bg-danger text-white">
-            <h2 id="danger-zone-heading" class="mb-0"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> {{ _('Danger Zone') }}</h2>
+            <h2 id="danger-zone-heading" class="mb-0"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> {{ ftl('schedules-danger-zone') }}</h2>
         </div>
         <div class="card-body">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <strong>{{ _('Delete this schedule') }}</strong>
-                    <p class="text-muted mb-0">{{ _('Once deleted, this schedule cannot be recovered.') }}</p>
+                    <strong>{{ ftl('schedules-delete-this-schedule') }}</strong>
+                    <p class="text-muted mb-0">{{ ftl('schedules-once-deleted-this-schedule-cannot-be-recovered') }}</p>
                 </div>
                 <button type="button" class="btn btn-outline-danger" onclick="deleteSchedule()">
-                    <i class="bi bi-trash" aria-hidden="true"></i> {{ _('Delete Schedule') }}
+                    <i class="bi bi-trash" aria-hidden="true"></i> {{ ftl('schedules-delete-schedule') }}
                 </button>
             </div>
         </div>
@@ -351,16 +351,16 @@ function toggleSchedule() {
         if (data.success) {
             location.reload();
         } else {
-            alert('{{ _("Error: ") }}' + (data.error || '{{ _("Unknown error") }}'));
+            alert('{{ ftl('common-error-3') }}' + (data.error || '{{ ftl('common-unknown-error') }}'));
         }
     })
     .catch(err => {
-        alert('{{ _("Error toggling schedule: ") }}' + err.message);
+        alert('{{ ftl('schedules-error-toggling-schedule') }}' + err.message);
     });
 }
 
 function runNow() {
-    if (!confirm('{{ _("Run this schedule now?") }}')) return;
+    if (!confirm('{{ ftl('schedules-run-this-schedule-now') }}')) return;
 
     fetch(`/websites/${websiteId}/schedules/${scheduleId}/run-now`, {
         method: 'POST',
@@ -371,19 +371,19 @@ function runNow() {
     .then(r => r.json())
     .then(data => {
         if (data.success) {
-            alert('{{ _("Test run started!") }}');
+            alert('{{ ftl('schedules-test-run-started-2') }}');
             location.reload();
         } else {
-            alert('{{ _("Error: ") }}' + (data.error || '{{ _("Unknown error") }}'));
+            alert('{{ ftl('common-error-3') }}' + (data.error || '{{ ftl('common-unknown-error') }}'));
         }
     })
     .catch(err => {
-        alert('{{ _("Error starting test run: ") }}' + err.message);
+        alert('{{ ftl('schedules-error-starting-test-run') }}' + err.message);
     });
 }
 
 function deleteSchedule() {
-    if (!confirm('{{ _("Are you sure you want to delete this schedule? This action cannot be undone.") }}')) return;
+    if (!confirm('{{ ftl('schedules-are-you-sure-you-want-to-delete-this-schedule') }}')) return;
 
     const form = document.createElement('form');
     form.method = 'POST';

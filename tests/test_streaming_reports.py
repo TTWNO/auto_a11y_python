@@ -138,9 +138,10 @@ class TestCollectSummary:
 
         assert progress.call_count == 3
         # Verify it was called with incrementing page counts
-        progress.assert_any_call(1, 0, "Collecting summary (1)...")
-        progress.assert_any_call(2, 0, "Collecting summary (2)...")
-        progress.assert_any_call(3, 0, "Collecting summary (3)...")
+        # ftl() returns the message ID in test context (no Flask app)
+        progress.assert_any_call(1, 0, "reports-collecting-summary-count")
+        progress.assert_any_call(2, 0, "reports-collecting-summary-count")
+        progress.assert_any_call(3, 0, "reports-collecting-summary-count")
 
 
 class TestWriteDetails:
@@ -219,8 +220,9 @@ class TestWriteDetails:
             rg._write_details(page_gen, summary, formatter, output_file, progress)
 
         assert progress.call_count == 2
-        progress.assert_any_call(1, 2, "Writing details (1/2)...")
-        progress.assert_any_call(2, 2, "Writing details (2/2)...")
+        # ftl() returns the message ID in test context (no Flask app)
+        progress.assert_any_call(1, 2, "reports-writing-details-current-total")
+        progress.assert_any_call(2, 2, "reports-writing-details-current-total")
 
 
 class TestPrepareSinglePageData:

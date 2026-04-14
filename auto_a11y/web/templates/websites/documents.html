@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('Documents') }} - {{ website.name }} - Auto A11y{% endblock %}
+{% block title %}{{ ftl('common-documents') }} - {{ website.name }} - Auto A11y{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
     <!-- Page Header -->
-    <nav aria-label="{{ _('breadcrumb') }}">
+    <nav aria-label="{{ ftl('common-breadcrumb') }}">
         <ol class="breadcrumb">
             <li class="breadcrumb-item">
                 <a href="{{ url_for('projects.view_project', project_id=project.id) }}">{{ project.name }}</a>
@@ -13,19 +13,19 @@
             <li class="breadcrumb-item">
                 <a href="{{ url_for('websites.view_website', website_id=website.id) }}">{{ website.display_name }}</a>
             </li>
-            <li class="breadcrumb-item active" aria-current="page">{{ _('Documents') }}</li>
+            <li class="breadcrumb-item active" aria-current="page">{{ ftl('common-documents') }}</li>
         </ol>
     </nav>
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h1>{{ _('Electronic Documents') }}</h1>
-            <p class="text-muted">{{ _('Documents found during website discovery') }}</p>
+            <h1>{{ ftl('websites-electronic-documents') }}</h1>
+            <p class="text-muted">{{ ftl('websites-documents-found-during-website-discovery') }}</p>
         </div>
         <div>
-            <span class="badge bg-primary me-2">{{ _('Total:') }} {{ total_docs }}</span>
-            <span class="badge bg-success me-2">{{ _('Internal:') }} {{ internal_docs|length }}</span>
-            <span class="badge bg-warning">{{ _('External:') }} {{ external_docs|length }}</span>
+            <span class="badge bg-primary me-2">{{ ftl('common-total') }} {{ total_docs }}</span>
+            <span class="badge bg-success me-2">{{ ftl('websites-internal') }} {{ internal_docs|length }}</span>
+            <span class="badge bg-warning">{{ ftl('websites-external') }} {{ external_docs|length }}</span>
         </div>
     </div>
 
@@ -34,7 +34,7 @@
         <div class="card mb-4">
             <div class="card-header">
                 <h2 id="internal-docs-heading" class="mb-0">
-                    <i class="bi bi-house-door" aria-hidden="true"></i> {{ _('Internal Documents') }}
+                    <i class="bi bi-house-door" aria-hidden="true"></i> {{ ftl('websites-internal-documents') }}
                     <span class="badge bg-secondary ms-2">{{ internal_docs|length }}</span>
                 </h2>
             </div>
@@ -42,17 +42,17 @@
             {% if internal_docs %}
             <div class="table-responsive">
                 <table class="table table-hover">
-                    <caption class="visually-hidden">{{ _('Internal documents found during website discovery') }}</caption>
+                    <caption class="visually-hidden">{{ ftl('websites-internal-documents-found-during-website-discovery') }}</caption>
                     <thead>
                         <tr>
-                            <th scope="col">{{ _('Document URL') }}</th>
-                            <th scope="col">{{ _('Type') }}</th>
-                            <th scope="col">{{ _('Language') }}</th>
-                            <th scope="col">{{ _('Link Text') }}</th>
-                            <th scope="col">{{ _('Found On Page') }}</th>
-                            <th scope="col">{{ _('First Seen') }}</th>
-                            <th scope="col">{{ _('References') }}</th>
-                            <th scope="col">{{ _('Actions') }}</th>
+                            <th scope="col">{{ ftl('websites-document-url') }}</th>
+                            <th scope="col">{{ ftl('common-type') }}</th>
+                            <th scope="col">{{ ftl('common-language') }}</th>
+                            <th scope="col">{{ ftl('websites-link-text') }}</th>
+                            <th scope="col">{{ ftl('websites-found-on-page') }}</th>
+                            <th scope="col">{{ ftl('websites-first-seen') }}</th>
+                            <th scope="col">{{ ftl('websites-references') }}</th>
+                            <th scope="col">{{ ftl('common-actions') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -70,7 +70,7 @@
                             <td>
                                 {% if doc.language %}
                                     <span class="badge bg-secondary"
-                                          title="{{ _('Confidence:') }} {{ (doc.language_confidence * 100)|round(0)|int }}%">
+                                          title="{{ ftl('common-confidence') }} {{ (doc.language_confidence * 100)|round(0)|int }}%">
                                         {{ doc.language_display }}
                                     </span>
                                 {% else %}
@@ -102,7 +102,7 @@
                 </table>
             </div>
             {% else %}
-            <p class="text-muted">{{ _('No internal documents found.') }}</p>
+            <p class="text-muted">{{ ftl('websites-no-internal-documents-found') }}</p>
             {% endif %}
         </div>
     </section>
@@ -112,7 +112,7 @@
         <div class="card">
             <div class="card-header">
                 <h2 id="external-docs-heading" class="mb-0">
-                    <i class="bi bi-globe" aria-hidden="true"></i> {{ _('External Documents') }}
+                    <i class="bi bi-globe" aria-hidden="true"></i> {{ ftl('websites-external-documents') }}
                     <span class="badge bg-secondary ms-2">{{ external_docs|length }}</span>
                 </h2>
             </div>
@@ -120,17 +120,17 @@
             {% if external_docs %}
             <div class="table-responsive">
                 <table class="table table-hover">
-                    <caption class="visually-hidden">{{ _('External documents found during website discovery') }}</caption>
+                    <caption class="visually-hidden">{{ ftl('websites-external-documents-found-during-website-discovery') }}</caption>
                     <thead>
                         <tr>
-                            <th scope="col">{{ _('Document URL') }}</th>
-                            <th scope="col">{{ _('Type') }}</th>
-                            <th scope="col">{{ _('Language') }}</th>
-                            <th scope="col">{{ _('Link Text') }}</th>
-                            <th scope="col">{{ _('Found On Page') }}</th>
-                            <th scope="col">{{ _('First Seen') }}</th>
-                            <th scope="col">{{ _('References') }}</th>
-                            <th scope="col">{{ _('Via Redirect') }}</th>
+                            <th scope="col">{{ ftl('websites-document-url') }}</th>
+                            <th scope="col">{{ ftl('common-type') }}</th>
+                            <th scope="col">{{ ftl('common-language') }}</th>
+                            <th scope="col">{{ ftl('websites-link-text') }}</th>
+                            <th scope="col">{{ ftl('websites-found-on-page') }}</th>
+                            <th scope="col">{{ ftl('websites-first-seen') }}</th>
+                            <th scope="col">{{ ftl('websites-references') }}</th>
+                            <th scope="col">{{ ftl('websites-via-redirect') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -148,7 +148,7 @@
                             <td>
                                 {% if doc.language %}
                                     <span class="badge bg-secondary"
-                                          title="{{ _('Confidence:') }} {{ (doc.language_confidence * 100)|round(0)|int }}%">
+                                          title="{{ ftl('common-confidence') }} {{ (doc.language_confidence * 100)|round(0)|int }}%">
                                         {{ doc.language_display }}
                                     </span>
                                 {% else %}
@@ -171,11 +171,11 @@
                             </td>
                             <td>
                                 {% if doc.via_redirect %}
-                                <span class="badge bg-warning" title="{{ _('Found through address rewriting/redirect') }}">
-                                    <i class="bi bi-arrow-right-circle" aria-hidden="true"></i> {{ _('Yes') }}
+                                <span class="badge bg-warning" title="{{ ftl('websites-found-through-address-rewriting-redirect') }}">
+                                    <i class="bi bi-arrow-right-circle" aria-hidden="true"></i> {{ ftl('websites-yes') }}
                                 </span>
                                 {% else %}
-                                <span class="text-muted">{{ _('No') }}</span>
+                                <span class="text-muted">{{ ftl('websites-no') }}</span>
                                 {% endif %}
                             </td>
                         </tr>
@@ -184,7 +184,7 @@
                 </table>
             </div>
             {% else %}
-            <p class="text-muted">{{ _('No external documents found.') }}</p>
+            <p class="text-muted">{{ ftl('websites-no-external-documents-found') }}</p>
             {% endif %}
         </div>
     </section>
@@ -193,7 +193,7 @@
     <section aria-labelledby="doc-type-summary-heading">
         <div class="card mt-4">
             <div class="card-header">
-                <h2 id="doc-type-summary-heading" class="mb-0">{{ _('Document Type Summary') }}</h2>
+                <h2 id="doc-type-summary-heading" class="mb-0">{{ ftl('websites-document-type-summary') }}</h2>
             </div>
         <div class="card-body">
             <div class="row">
@@ -222,7 +222,7 @@
     <section aria-labelledby="doc-language-summary-heading">
         <div class="card mt-4">
             <div class="card-header">
-                <h2 id="doc-language-summary-heading" class="mb-0">{{ _('Document Language Summary') }}</h2>
+                <h2 id="doc-language-summary-heading" class="mb-0">{{ ftl('websites-document-language-summary') }}</h2>
             </div>
         <div class="card-body">
             <div class="row">
@@ -249,7 +249,7 @@
                     {% endfor %}
                 {% else %}
                     <div class="col-12">
-                        <p class="text-muted mb-0">{{ _('No language information available yet.') }}</p>
+                        <p class="text-muted mb-0">{{ ftl('websites-no-language-information-available-yet') }}</p>
                     </div>
                 {% endif %}
             </div>

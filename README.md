@@ -52,6 +52,9 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 # Install dependencies
 pip install -r requirements.txt
 
+# Enable git hooks (translation validation on commit)
+git config core.hooksPath .githooks
+
 # Set up MongoDB (if not already running)
 # Install MongoDB and start the service
 # Default connection: mongodb://localhost:27017/

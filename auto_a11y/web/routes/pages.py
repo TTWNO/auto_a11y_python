@@ -3,7 +3,7 @@ Page management routes
 """
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
-from flask_babel import gettext as _, lazy_gettext, force_locale
+from auto_a11y.web.fluent import ftl, lazy_ftl, force_locale
 from auto_a11y.models import PageStatus
 from auto_a11y.reporting.issue_catalog import IssueCatalog
 from auto_a11y.reporting.wcag_mapper import enrich_wcag_criteria
@@ -142,7 +142,7 @@ def view_page(page_id):
     """View page details and test results"""
     page = current_app.db.get_page(page_id)
     if not page:
-        flash(_('Page not found'), 'error')
+        flash(ftl('common-page-not-found'), 'error')
         return redirect(url_for('projects.list_projects'))
 
     website = current_app.db.get_website(page.website_id)
@@ -225,48 +225,48 @@ def view_page(page_id):
     # Touchpoint display names (translated)
     # Match actual touchpoint keys used in test results
     touchpoint_names = {
-        'accessible_names': lazy_gettext('Accessible Names'),
-        'animation': lazy_gettext('Animation'),
-        'aria': lazy_gettext('ARIA'),
-        'buttons': lazy_gettext('Buttons'),
-        'colors': lazy_gettext('Colors & Contrast'),
-        'colors_contrast': lazy_gettext('Colors & Contrast'),  # Legacy key
-        'dialogs': lazy_gettext('Dialogs & Modals'),
-        'document_links': lazy_gettext('Electronic Documents'),
-        'documents': lazy_gettext('Electronic Documents'),
-        'electronic_documents': lazy_gettext('Electronic Documents'),
-        'event_handlers': lazy_gettext('Event Handling'),
-        'event_handling': lazy_gettext('Event Handling'),
-        'floating_dialogs': lazy_gettext('Dialogs & Modals'),
-        'focus_management': lazy_gettext('Focus Management'),
-        'fonts': lazy_gettext('Fonts'),
-        'forms': lazy_gettext('Forms'),
-        'headings': lazy_gettext('Headings'),
-        'iframes': lazy_gettext('Iframes'),
-        'images': lazy_gettext('Images'),
-        'keyboard_navigation': lazy_gettext('Keyboard Navigation'),
-        'landmarks': lazy_gettext('Landmarks'),
-        'language': lazy_gettext('Language'),
-        'links': lazy_gettext('Links'),
-        'list': lazy_gettext('Lists'),
-        'lists': lazy_gettext('Lists'),
-        'maps': lazy_gettext('Maps'),
-        'media': lazy_gettext('Media'),
-        'modals': lazy_gettext('Dialogs & Modals'),
-        'navigation': lazy_gettext('Navigation'),
-        'page': lazy_gettext('Page'),
-        'page_state': lazy_gettext('Page State'),
-        'reading_order': lazy_gettext('Reading Order'),
-        'responsive': lazy_gettext('Responsive Design'),
-        'semantic_structure': lazy_gettext('Semantic Structure'),
-        'styles': lazy_gettext('Inline Styles'),
-        'tabindex': lazy_gettext('Keyboard Navigation'),
-        'tables': lazy_gettext('Tables'),
-        'timers': lazy_gettext('Timing'),
-        'timing': lazy_gettext('Timing'),
-        'title_attributes': lazy_gettext('Title Attributes'),
-        'video': lazy_gettext('Media'),
-        'other': lazy_gettext('Other')
+        'accessible_names': lazy_ftl('testing-accessible-names'),
+        'animation': lazy_ftl('testing-animation'),
+        'aria': lazy_ftl('testing-aria'),
+        'buttons': lazy_ftl('testing-buttons'),
+        'colors': lazy_ftl('testing-colors-contrast'),
+        'colors_contrast': lazy_ftl('testing-colors-contrast'),  # Legacy key
+        'dialogs': lazy_ftl('testing-dialogs-modals'),
+        'document_links': lazy_ftl('websites-electronic-documents'),
+        'documents': lazy_ftl('websites-electronic-documents'),
+        'electronic_documents': lazy_ftl('websites-electronic-documents'),
+        'event_handlers': lazy_ftl('testing-event-handling'),
+        'event_handling': lazy_ftl('testing-event-handling'),
+        'floating_dialogs': lazy_ftl('testing-dialogs-modals'),
+        'focus_management': lazy_ftl('testing-focus-management'),
+        'fonts': lazy_ftl('testing-fonts'),
+        'forms': lazy_ftl('common-forms'),
+        'headings': lazy_ftl('testing-headings'),
+        'iframes': lazy_ftl('testing-iframes'),
+        'images': lazy_ftl('testing-images'),
+        'keyboard_navigation': lazy_ftl('testing-keyboard-navigation'),
+        'landmarks': lazy_ftl('testing-landmarks'),
+        'language': lazy_ftl('common-language'),
+        'links': lazy_ftl('testing-links'),
+        'list': lazy_ftl('testing-lists'),
+        'lists': lazy_ftl('testing-lists'),
+        'maps': lazy_ftl('testing-maps'),
+        'media': lazy_ftl('testing-media'),
+        'modals': lazy_ftl('testing-dialogs-modals'),
+        'navigation': lazy_ftl('testing-navigation'),
+        'page': lazy_ftl('common-page-2'),
+        'page_state': lazy_ftl('common-page-states'),
+        'reading_order': lazy_ftl('common-reading-order'),
+        'responsive': lazy_ftl('common-responsive-design'),
+        'semantic_structure': lazy_ftl('testing-semantic-structure'),
+        'styles': lazy_ftl('testing-inline-styles'),
+        'tabindex': lazy_ftl('testing-keyboard-navigation'),
+        'tables': lazy_ftl('testing-tables'),
+        'timers': lazy_ftl('testing-timing'),
+        'timing': lazy_ftl('testing-timing'),
+        'title_attributes': lazy_ftl('testing-title-attributes'),
+        'video': lazy_ftl('testing-media'),
+        'other': lazy_ftl('common-other')
     }
 
     return render_template('pages/view.html',
@@ -288,7 +288,7 @@ def edit_page(page_id):
     """Edit page details"""
     page = current_app.db.get_page(page_id)
     if not page:
-        flash(_('Page not found'), 'error')
+        flash(ftl('common-page-not-found'), 'error')
         return redirect(url_for('projects.list_projects'))
 
     website = current_app.db.get_website(page.website_id)
@@ -301,10 +301,10 @@ def edit_page(page_id):
         page.notes = request.form.get('notes', page.notes)
 
         if current_app.db.update_page(page):
-            flash(_('Page updated successfully'), 'success')
+            flash(ftl('pages-page-updated-successfully'), 'success')
             return redirect(url_for('pages.view_page', page_id=page_id))
         else:
-            flash(_('Failed to update page'), 'error')
+            flash(ftl('pages-failed-to-update-page'), 'error')
     
     return render_template('pages/edit.html',
                          page=page,
@@ -321,13 +321,13 @@ def test_page(page_id):
 
     browser_mode = getattr(current_app.app_config, 'BROWSER_MODE', 'local')
     if browser_mode == 'disabled':
-        return jsonify({'error': _('Browser testing is disabled on this server.')}), 503
+        return jsonify({'error': ftl('pages-browser-testing-is-disabled-on-this-server')}), 503
     if browser_mode == 'remote':
-        return jsonify({'error': _('This server is configured for remote browser testing only. Submit tests via the remote worker.')}), 503
+        return jsonify({'error': ftl('pages-this-server-is-configured-for-remote-browser')}), 503
 
     page = current_app.db.get_page(page_id)
     if not page:
-        return jsonify({'error': _('Page not found')}), 404
+        return jsonify({'error': ftl('common-page-not-found')}), 404
 
     # Check if multi-state testing requested
     data = request.get_json() if request.is_json else {}
@@ -407,7 +407,7 @@ def test_page(page_id):
 
     return jsonify({
         'success': True,
-        'message': _('Page queued for testing (multi-state enabled)') if enable_multi_state else _('Page queued for testing'),
+        'message': ftl('pages-page-queued-for-testing-multi-state-enabled') if enable_multi_state else ftl('common-page-queued-for-testing'),
         'job_id': job_id,
         'multi_state': enable_multi_state,
         'status_url': url_for('pages.test_status', page_id=page_id)
@@ -419,11 +419,11 @@ def test_status(page_id):
     """Check test job status"""
     page = current_app.db.get_page(page_id)
     if not page:
-        return jsonify({'error': _('Page not found')}), 404
+        return jsonify({'error': ftl('common-page-not-found')}), 404
 
     return jsonify({
         'status': page.status.value,
-        'message': _('Page is %(status)s', status=page.status.value)
+        'message': ftl('pages-page-is-status', status=page.status.value)
     })
 
 
@@ -434,13 +434,13 @@ def cancel_test(page_id):
     
     page = current_app.db.get_page(page_id)
     if not page:
-        return jsonify({'error': _('Page not found')}), 404
+        return jsonify({'error': ftl('common-page-not-found')}), 404
 
     # Check if page is actually queued or testing
     if page.status not in [PageStatus.QUEUED, PageStatus.TESTING]:
         return jsonify({
             'success': False,
-            'message': _('Page is not being tested (status: %(status)s)', status=page.status.value)
+            'message': ftl('pages-page-is-not-being-tested-status-status', status=page.status.value)
         })
     
     # Try to cancel the task
@@ -478,13 +478,13 @@ def cancel_test(page_id):
         
         return jsonify({
             'success': True,
-            'message': _('Test cancelled successfully'),
+            'message': ftl('pages-test-cancelled-successfully'),
             'new_status': page.status.value
         })
     else:
         return jsonify({
             'success': False,
-            'message': _('Could not cancel test - it may have already started')
+            'message': ftl('pages-could-not-cancel-test-it-may-have-already-started')
         })
 
 
@@ -493,33 +493,23 @@ def delete_page(page_id):
     """Delete page"""
     page = current_app.db.get_page(page_id)
     if not page:
-        flash(_('Page not found'), 'error')
+        flash(ftl('common-page-not-found'), 'error')
         return redirect(url_for('projects.list_projects'))
 
     website_id = page.website_id
 
     if current_app.db.delete_page(page_id):
-        flash(_('Page deleted successfully'), 'success')
+        flash(ftl('pages-page-deleted-successfully'), 'success')
     else:
-        flash(_('Failed to delete page'), 'error')
+        flash(ftl('common-failed-to-delete-page'), 'error')
     
     return redirect(url_for('websites.view_website', website_id=website_id))
 
 
 @pages_bp.route('/<page_id>/violations')
 def view_violations(page_id):
-    """View detailed violations for page"""
-    page = current_app.db.get_page(page_id)
-    if not page:
-        return jsonify({'error': _('Page not found')}), 404
-
-    test_result = current_app.db.get_latest_test_result(page_id)
-    if not test_result:
-        return jsonify({'error': _('No test results found')}), 404
-
-    return render_template('pages/violations.html',
-                         page=page,
-                         test_result=test_result)
+    """View detailed violations for page — redirects to page view which shows violations inline."""
+    return redirect(url_for('pages.view_page', page_id=page_id))
 
 
 @pages_bp.route('/<page_id>/matrix', methods=['GET', 'POST'])
@@ -529,7 +519,7 @@ def configure_test_matrix(page_id):
 
     page = current_app.db.get_page(page_id)
     if not page:
-        flash(_('Page not found'), 'error')
+        flash(ftl('common-page-not-found'), 'error')
         return redirect(url_for('projects.list_projects'))
 
     website = current_app.db.get_website(page.website_id)
@@ -596,16 +586,16 @@ def configure_test_matrix(page_id):
             # Save or update matrix
             if matrix._id:
                 current_app.db.update_test_state_matrix(matrix)
-                flash(_('Test matrix updated successfully'), 'success')
+                flash(ftl('pages-test-matrix-updated-successfully'), 'success')
             else:
                 current_app.db.create_test_state_matrix(matrix)
-                flash(_('Test matrix created successfully'), 'success')
+                flash(ftl('pages-test-matrix-created-successfully'), 'success')
 
             return redirect(url_for('pages.configure_test_matrix', page_id=page_id))
 
         except Exception as e:
             logger.error(f"Error saving test matrix: {e}")
-            flash(_('Failed to save test matrix: %(error)s', error=str(e)), 'error')
+            flash(ftl('pages-failed-to-save-test-matrix-error', error=str(e)), 'error')
 
     # GET request - load existing matrix or create default
     matrix = current_app.db.get_test_state_matrix_by_page(page_id)

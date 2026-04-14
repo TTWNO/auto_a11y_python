@@ -1,21 +1,21 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('Automated Tests') }} - {{ project.name }}{% endblock %}
+{% block title %}{{ ftl('common-automated-tests') }} - {{ project.name }}{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
-    <nav aria-label="{{ _('breadcrumb') }}">
+    <nav aria-label="{{ ftl('common-breadcrumb') }}">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{{ url_for('projects.list_projects') }}">{{ _('Projects') }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('projects.list_projects') }}">{{ ftl('common-projects') }}</a></li>
             <li class="breadcrumb-item"><a href="{{ url_for('projects.view_project', project_id=project.id) }}">{{ project.name }}</a></li>
-            <li class="breadcrumb-item active" aria-current="page">{{ _('Automated Tests') }}</li>
+            <li class="breadcrumb-item active" aria-current="page">{{ ftl('common-automated-tests') }}</li>
         </ol>
     </nav>
 
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>{{ _('Automated Tests') }}</h1>
+        <h1>{{ ftl('common-automated-tests') }}</h1>
         <button id="uploadBtn" class="btn btn-primary" disabled>
-            <i class="bi bi-cloud-upload" aria-hidden="true"></i> {{ _('Upload to Drupal') }}
+            <i class="bi bi-cloud-upload" aria-hidden="true"></i> {{ ftl('testing-upload-to-drupal') }}
         </button>
     </div>
 
@@ -23,7 +23,7 @@
     <div class="card mb-4">
         <div class="card-header">
             <h2 class="mb-0">
-                <i class="bi bi-funnel" aria-hidden="true"></i> {{ _('Filters') }}
+                <i class="bi bi-funnel" aria-hidden="true"></i> {{ ftl('testing-filters') }}
             </h2>
         </div>
         <div class="card-body">
@@ -31,61 +31,61 @@
                 <div class="row">
                     <!-- Page URL Filter -->
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">{{ _('Page URLs') }}</label>
+                        <label class="form-label">{{ ftl('testing-page-urls') }}</label>
                         <select id="pageUrlsFilter" class="form-select" multiple size="5">
-                            <option value="">{{ _('All Pages') }}</option>
+                            <option value="">{{ ftl('common-all-pages') }}</option>
                             {% for result in test_results_data %}
                             <option value="{{ result.page.url }}">{{ result.page.title or result.page.url }}</option>
                             {% endfor %}
                         </select>
-                        <small class="form-text text-muted">{{ _('Hold Ctrl/Cmd to select multiple') }}</small>
+                        <small class="form-text text-muted">{{ ftl('common-hold-ctrl-cmd-to-select-multiple') }}</small>
                     </div>
 
                     <!-- Touchpoint Filter -->
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">{{ _('Touchpoints') }}</label>
+                        <label class="form-label">{{ ftl('testing-touchpoints') }}</label>
                         <select id="touchpointsFilter" class="form-select" multiple size="5">
-                            <option value="">{{ _('All Touchpoints') }}</option>
+                            <option value="">{{ ftl('common-all-touchpoints') }}</option>
                             {% for touchpoint in touchpoints %}
                             <option value="{{ touchpoint }}">{{ touchpoint }}</option>
                             {% endfor %}
                         </select>
-                        <small class="form-text text-muted">{{ _('Hold Ctrl/Cmd to select multiple') }}</small>
+                        <small class="form-text text-muted">{{ ftl('common-hold-ctrl-cmd-to-select-multiple') }}</small>
                     </div>
 
                     <!-- WCAG Criteria Filter -->
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">{{ _('WCAG Success Criteria') }}</label>
+                        <label class="form-label">{{ ftl('common-wcag-success-criteria') }}</label>
                         <select id="wcagFilter" class="form-select" multiple size="5">
-                            <option value="">{{ _('All WCAG Criteria') }}</option>
+                            <option value="">{{ ftl('common-all-wcag-criteria') }}</option>
                             {% for criterion in wcag_criteria %}
                             <option value="{{ criterion }}">{{ criterion }}</option>
                             {% endfor %}
                         </select>
-                        <small class="form-text text-muted">{{ _('Hold Ctrl/Cmd to select multiple') }}</small>
+                        <small class="form-text text-muted">{{ ftl('common-hold-ctrl-cmd-to-select-multiple') }}</small>
                     </div>
 
                     <!-- Impact Level Filter -->
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">{{ _('Impact Level') }}</label>
+                        <label class="form-label">{{ ftl('common-impact-level') }}</label>
                         <select id="impactFilter" class="form-select" multiple size="5">
-                            <option value="">{{ _('All Impact Levels') }}</option>
-                            <option value="critical">{{ _('Critical') }}</option>
-                            <option value="high">{{ _('High') }}</option>
-                            <option value="med">{{ _('Medium') }}</option>
-                            <option value="low">{{ _('Low') }}</option>
+                            <option value="">{{ ftl('testing-all-impact-levels') }}</option>
+                            <option value="critical">{{ ftl('common-critical') }}</option>
+                            <option value="high">{{ ftl('common-high') }}</option>
+                            <option value="med">{{ ftl('common-medium') }}</option>
+                            <option value="low">{{ ftl('common-low') }}</option>
                         </select>
-                        <small class="form-text text-muted">{{ _('Hold Ctrl/Cmd to select multiple') }}</small>
+                        <small class="form-text text-muted">{{ ftl('common-hold-ctrl-cmd-to-select-multiple') }}</small>
                     </div>
                 </div>
 
                 <!-- Filter Actions -->
                 <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-search" aria-hidden="true"></i> {{ _('Apply Filters') }}
+                        <i class="bi bi-search" aria-hidden="true"></i> {{ ftl('common-apply-filters') }}
                     </button>
                     <button type="button" id="clearFiltersBtn" class="btn btn-secondary">
-                        <i class="bi bi-x-circle" aria-hidden="true"></i> {{ _('Clear Filters') }}
+                        <i class="bi bi-x-circle" aria-hidden="true"></i> {{ ftl('common-clear-filters') }}
                     </button>
                 </div>
             </form>
@@ -94,27 +94,27 @@
 
     <!-- Results Summary -->
     <div id="resultsSummary" class="alert alert-info">
-        <strong>{{ _('Total:') }}</strong> {{ _('%(num_pages)s pages with %(num_issues)s issues', num_pages=test_results_data|length, num_issues=test_results_data|sum(attribute='total_issues')) }}
+        <strong>{{ ftl('common-total') }}</strong> {{ ftl('testing-num_pages-pages-with-num_issues-issues', num_pages=test_results_data|length, num_issues=test_results_data|sum(attribute='total_issues')) }}
     </div>
 
     <!-- Test Results Table -->
     <div class="card">
         <div class="card-header">
-            <h2 class="mb-0">{{ _('Test Results') }}</h2>
+            <h2 class="mb-0">{{ ftl('testing-test-results') }}</h2>
         </div>
         <div class="card-body">
             <div id="resultsContainer">
                 <table class="table table-striped" id="resultsTable">
-                    <caption class="visually-hidden">{{ _('Automated Test Results') }}</caption>
+                    <caption class="visually-hidden">{{ ftl('common-automated-test-results') }}</caption>
                     <thead>
                         <tr>
-                            <th scope="col">{{ _('Page') }}</th>
-                            <th scope="col">{{ _('Website') }}</th>
-                            <th scope="col" class="text-center">{{ _('Violations') }}</th>
-                            <th scope="col" class="text-center">{{ _('Warnings') }}</th>
-                            <th scope="col" class="text-center">{{ _('Info') }}</th>
-                            <th scope="col" class="text-center">{{ _('Total') }}</th>
-                            <th scope="col">{{ _('Actions') }}</th>
+                            <th scope="col">{{ ftl('common-page-2') }}</th>
+                            <th scope="col">{{ ftl('common-website-2') }}</th>
+                            <th scope="col" class="text-center">{{ ftl('common-violations') }}</th>
+                            <th scope="col" class="text-center">{{ ftl('common-warnings') }}</th>
+                            <th scope="col" class="text-center">{{ ftl('common-info') }}</th>
+                            <th scope="col" class="text-center">{{ ftl('testing-total') }}</th>
+                            <th scope="col">{{ ftl('common-actions') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -139,9 +139,9 @@
                                 <strong>{{ result.total_issues }}</strong>
                             </td>
                             <td>
-                                <a href="{{ url_for('testing.view_test_result', result_id=result.test_result.id) }}"
+                                <a href="{{ url_for('testing.view_result', result_id=result.test_result.id) }}"
                                    class="btn btn-sm btn-outline-primary">
-                                    {{ _('View Details') }}
+                                    {{ ftl('common-view-details') }}
                                 </a>
                             </td>
                         </tr>
@@ -152,9 +152,9 @@
 
             <div id="loadingSpinner" class="text-center d-none">
                 <div class="spinner-border" role="status">
-                    <span class="visually-hidden">{{ _('Loading...') }}</span>
+                    <span class="visually-hidden">{{ ftl('common-loading') }}</span>
                 </div>
-                <p>{{ _('Loading filtered results...') }}</p>
+                <p>{{ ftl('testing-loading-filtered-results') }}</p>
             </div>
         </div>
     </div>
@@ -165,16 +165,16 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title" id="uploadModalTitle">{{ _('Uploading to Drupal') }}</h2>
+                <h2 class="modal-title" id="uploadModalTitle">{{ ftl('testing-uploading-to-drupal') }}</h2>
             </div>
             <div class="modal-body">
                 <div id="uploadProgress">
                     <div class="text-center mb-3">
                         <div class="spinner-border" role="status">
-                            <span class="visually-hidden">{{ _('Uploading...') }}</span>
+                            <span class="visually-hidden">{{ ftl('testing-uploading') }}</span>
                         </div>
                     </div>
-                    <p id="uploadStatus">{{ _('Preparing upload...') }}</p>
+                    <p id="uploadStatus">{{ ftl('testing-preparing-upload') }}</p>
                     <div class="progress">
                         <div id="uploadProgressBar" class="progress-bar progress-bar-striped progress-bar-animated"
                              role="progressbar" style="width: 0%"></div>
@@ -182,19 +182,19 @@
                 </div>
                 <div id="uploadComplete" class="d-none">
                     <div class="alert alert-success">
-                        <h3>{{ _('Upload Complete!') }}</h3>
+                        <h3>{{ ftl('common-upload-complete') }}</h3>
                         <ul id="uploadResultsList" class="mb-0"></ul>
                     </div>
                 </div>
                 <div id="uploadError" class="d-none">
                     <div class="alert alert-danger">
-                        <h3>{{ _('Upload Failed') }}</h3>
+                        <h3>{{ ftl('testing-upload-failed') }}</h3>
                         <p id="uploadErrorMessage"></p>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Close') }}</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ ftl('common-close') }}</button>
             </div>
         </div>
     </div>
@@ -206,21 +206,21 @@
 
     // i18n strings for JavaScript
     const i18n = {
-        filteredResults: '{{ _("Filtered Results:") }}',
-        pagesWithIssues: '{{ _("%(num_pages)s pages with %(num_issues)s issues") }}',
-        errorFiltering: '{{ _("Error filtering results. Please try again.") }}',
-        noResultsMatch: '{{ _("No results match the current filters") }}',
-        viewDetails: '{{ _("View Details") }}',
-        deduplicating: '{{ _("Deduplicating test results...") }}',
-        commonComponents: '{{ _("Common Components:") }}',
-        componentDiscoveredPages: '{{ _("Component Discovered Pages:") }}',
-        urlDiscoveredPages: '{{ _("URL Discovered Pages:") }}',
-        violationsLinked: '{{ _("Violations Linked:") }}',
-        discoveredPagesSynced: '{{ _("Discovered Pages Synced:") }}',
-        issuesCreated: '{{ _("Issues Created:") }}',
-        issuesUpdated: '{{ _("Issues Updated:") }}',
-        issuesFailed: '{{ _("Issues Failed:") }}',
-        viewViolationsFor: '{{ _("View violations for:") }}'
+        filteredResults: '{{ ftl('testing-filtered-results') }}',
+        pagesWithIssues: '{{ ftl('testing-num_pages-pages-with-num_issues-issues') }}',
+        errorFiltering: '{{ ftl('testing-error-filtering-results-please-try-again') }}',
+        noResultsMatch: '{{ ftl('testing-no-results-match-the-current-filters') }}',
+        viewDetails: '{{ ftl('common-view-details') }}',
+        deduplicating: '{{ ftl('testing-deduplicating-test-results') }}',
+        commonComponents: '{{ ftl('testing-common-components') }}',
+        componentDiscoveredPages: '{{ ftl('testing-component-discovered-pages') }}',
+        urlDiscoveredPages: '{{ ftl('testing-url-discovered-pages') }}',
+        violationsLinked: '{{ ftl('testing-violations-linked') }}',
+        discoveredPagesSynced: '{{ ftl('testing-discovered-pages-synced') }}',
+        issuesCreated: '{{ ftl('testing-issues-created') }}',
+        issuesUpdated: '{{ ftl('testing-issues-updated') }}',
+        issuesFailed: '{{ ftl('testing-issues-failed') }}',
+        viewViolationsFor: '{{ ftl('testing-view-violations-for') }}'
     };
 
     // Filter form submission

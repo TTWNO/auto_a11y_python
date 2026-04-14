@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('Edit Supervisor') }} - {{ project.name }} - {{ _('Auto A11y') }}{% endblock %}
+{% block title %}{{ ftl('projects-edit-supervisor') }} - {{ project.name }} - {{ ftl('common-auto-a11y') }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
@@ -11,14 +11,14 @@
                 <a href="{{ url_for('projects.view_project', project_id=project.id) }}">{{ project.name }}</a>
             </li>
             <li class="breadcrumb-item">
-                <a href="{{ url_for('project_participants.list_participants', project_id=project.id) }}">{{ _('Testing Participants') }}</a>
+                <a href="{{ url_for('project_participants.list_participants', project_id=project.id) }}">{{ ftl('projects-testing-participants') }}</a>
             </li>
-            <li class="breadcrumb-item active" aria-current="page">{{ _('Edit Supervisor') }}</li>
+            <li class="breadcrumb-item active" aria-current="page">{{ ftl('projects-edit-supervisor') }}</li>
         </ol>
     </nav>
 
     <h1 class="mb-4">
-        <i class="bi bi-person-check" aria-hidden="true"></i> {{ _('Edit Test Supervisor') }}
+        <i class="bi bi-person-check" aria-hidden="true"></i> {{ ftl('projects-edit-test-supervisor') }}
     </h1>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -38,62 +38,62 @@
             <div class="col-md-8">
                 <div class="card mb-4">
                     <div class="card-header">
-                        <h2 class="mb-0"><i class="bi bi-person" aria-hidden="true"></i> {{ _('Supervisor Information') }}</h2>
+                        <h2 class="mb-0"><i class="bi bi-person" aria-hidden="true"></i> {{ ftl('projects-supervisor-information') }}</h2>
                     </div>
                     <div class="card-body">
                         <fieldset>
-                            <legend class="visually-hidden">{{ _('Supervisor Information') }}</legend>
+                            <legend class="visually-hidden">{{ ftl('projects-supervisor-information') }}</legend>
                             <div class="mb-3">
-                                <label for="name" class="form-label">{{ _('Name') }} <span class="text-danger">*</span></label>
+                                <label for="name" class="form-label">{{ ftl('common-name') }} <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="name" name="name" required
                                        value="{{ supervisor.name }}"
-                                       placeholder="{{ _('e.g., Dr. Sarah Johnson') }}"
+                                       placeholder="{{ ftl('projects-e-g-dr-sarah-johnson') }}"
                                        aria-describedby="name-help">
-                                <div class="form-text" id="name-help">{{ _('Full name of the test supervisor') }}</div>
+                                <div class="form-text" id="name-help">{{ ftl('projects-full-name-of-the-test-supervisor') }}</div>
                             </div>
 
                             <div class="mb-3">
-                                <label for="email" class="form-label">{{ _('Email') }}</label>
+                                <label for="email" class="form-label">{{ ftl('common-email') }}</label>
                                 <input type="email" class="form-control" id="email" name="email"
                                        value="{{ supervisor.email or '' }}"
-                                       placeholder="{{ _('e.g., sarah.johnson@example.com') }}"
+                                       placeholder="{{ ftl('projects-e-g-sarah-johnson-example-com') }}"
                                        aria-describedby="email-help">
-                                <div class="form-text" id="email-help">{{ _('Contact email for the supervisor (optional)') }}</div>
+                                <div class="form-text" id="email-help">{{ ftl('projects-contact-email-for-the-supervisor-optional') }}</div>
                             </div>
 
                             <div class="mb-3">
-                                <label for="role" class="form-label">{{ _('Role') }}</label>
+                                <label for="role" class="form-label">{{ ftl('projects-role') }}</label>
                                 <input type="text" class="form-control" id="role" name="role"
                                        value="{{ supervisor.role or '' }}"
-                                       placeholder="{{ _('e.g., Accessibility Specialist, Research Lead') }}"
+                                       placeholder="{{ ftl('projects-e-g-accessibility-specialist-research-lead') }}"
                                        list="common-roles"
                                        aria-describedby="role-help">
                                 <datalist id="common-roles">
-                                    <option value="{{ _('Accessibility Specialist') }}">
-                                    <option value="{{ _('Research Lead') }}">
-                                    <option value="{{ _('UX Researcher') }}">
-                                    <option value="{{ _('Accessibility Consultant') }}">
-                                    <option value="{{ _('Project Manager') }}">
-                                    <option value="{{ _('Quality Assurance Lead') }}">
+                                    <option value="{{ ftl('projects-accessibility-specialist') }}">
+                                    <option value="{{ ftl('projects-research-lead') }}">
+                                    <option value="{{ ftl('projects-ux-researcher') }}">
+                                    <option value="{{ ftl('projects-accessibility-consultant') }}">
+                                    <option value="{{ ftl('projects-project-manager') }}">
+                                    <option value="{{ ftl('projects-quality-assurance-lead') }}">
                                 </datalist>
-                                <div class="form-text" id="role-help">{{ _('Job title or role (optional)') }}</div>
+                                <div class="form-text" id="role-help">{{ ftl('projects-job-title-or-role-optional') }}</div>
                             </div>
 
                             <div class="mb-3">
-                                <label for="organization" class="form-label">{{ _('Organization') }}</label>
+                                <label for="organization" class="form-label">{{ ftl('projects-organization') }}</label>
                                 <input type="text" class="form-control" id="organization" name="organization"
                                        value="{{ supervisor.organization or '' }}"
-                                       placeholder="{{ _('e.g., Accessibility Research Institute') }}"
+                                       placeholder="{{ ftl('projects-e-g-accessibility-research-institute') }}"
                                        aria-describedby="organization-help">
-                                <div class="form-text" id="organization-help">{{ _('Organization or company name (optional)') }}</div>
+                                <div class="form-text" id="organization-help">{{ ftl('projects-organization-or-company-name-optional') }}</div>
                             </div>
 
                             <div class="mb-3">
-                                <label for="notes" class="form-label">{{ _('Notes') }}</label>
+                                <label for="notes" class="form-label">{{ ftl('common-notes') }}</label>
                                 <textarea class="form-control" id="notes" name="notes" rows="3"
-                                          placeholder="{{ _('Additional information about this supervisor...') }}"
+                                          placeholder="{{ ftl('projects-additional-information-about-this-supervisor') }}"
                                           aria-describedby="notes-help">{{ supervisor.notes or '' }}</textarea>
-                                <div class="form-text" id="notes-help">{{ _('Optional notes (e.g., areas of expertise, contact preferences)') }}</div>
+                                <div class="form-text" id="notes-help">{{ ftl('projects-optional-notes-e-g-areas-of-expertise-contact') }}</div>
                             </div>
                         </fieldset>
                     </div>
@@ -104,34 +104,34 @@
             <div class="col-md-4">
                 <div class="card sticky-top" style="top: 20px;">
                     <div class="card-header bg-info text-white">
-                        <h2 class="mb-0"><i class="bi bi-question-circle" aria-hidden="true"></i> {{ _('Help') }}</h2>
+                        <h2 class="mb-0"><i class="bi bi-question-circle" aria-hidden="true"></i> {{ ftl('common-help') }}</h2>
                     </div>
                     <div class="card-body">
-                        <h3>{{ _('About Test Supervisors') }}</h3>
-                        <p class="small">{{ _('Test supervisors are accessibility experts who oversee and coordinate lived experience testing sessions.') }}</p>
+                        <h3>{{ ftl('projects-about-test-supervisors') }}</h3>
+                        <p class="small">{{ ftl('projects-test-supervisors-are-accessibility-experts-who') }}</p>
 
                         <hr>
 
-                        <h3>{{ _('Common Supervisor Roles') }}</h3>
+                        <h3>{{ ftl('projects-common-supervisor-roles') }}</h3>
                         <ul class="small">
-                            <li>{{ _('Accessibility Specialist') }}</li>
-                            <li>{{ _('Research Lead') }}</li>
-                            <li>{{ _('UX Researcher') }}</li>
-                            <li>{{ _('Accessibility Consultant') }}</li>
-                            <li>{{ _('Project Manager') }}</li>
-                            <li>{{ _('Quality Assurance Lead') }}</li>
+                            <li>{{ ftl('projects-accessibility-specialist') }}</li>
+                            <li>{{ ftl('projects-research-lead') }}</li>
+                            <li>{{ ftl('projects-ux-researcher') }}</li>
+                            <li>{{ ftl('projects-accessibility-consultant') }}</li>
+                            <li>{{ ftl('projects-project-manager') }}</li>
+                            <li>{{ ftl('projects-quality-assurance-lead') }}</li>
                         </ul>
 
                         <hr>
 
-                        <h3>{{ _('Supervisor Responsibilities') }}</h3>
-                        <p class="small">{{ _('Test supervisors typically:') }}</p>
+                        <h3>{{ ftl('projects-supervisor-responsibilities') }}</h3>
+                        <p class="small">{{ ftl('projects-test-supervisors-typically') }}</p>
                         <ul class="small">
-                            <li>{{ _('Coordinate testing sessions') }}</li>
-                            <li>{{ _('Ensure ethical testing practices') }}</li>
-                            <li>{{ _('Provide technical support') }}</li>
-                            <li>{{ _('Document findings') }}</li>
-                            <li>{{ _('Communicate with stakeholders') }}</li>
+                            <li>{{ ftl('projects-coordinate-testing-sessions') }}</li>
+                            <li>{{ ftl('projects-ensure-ethical-testing-practices') }}</li>
+                            <li>{{ ftl('projects-provide-technical-support') }}</li>
+                            <li>{{ ftl('projects-document-findings') }}</li>
+                            <li>{{ ftl('projects-communicate-with-stakeholders') }}</li>
                         </ul>
                     </div>
                 </div>
@@ -142,10 +142,10 @@
             <div class="col-md-8">
                 <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-success">
-                        <i class="bi bi-check-circle" aria-hidden="true"></i> {{ _('Update Supervisor') }}
+                        <i class="bi bi-check-circle" aria-hidden="true"></i> {{ ftl('projects-update-supervisor') }}
                     </button>
                     <a href="{{ url_for('project_participants.list_participants', project_id=project.id) }}" class="btn btn-secondary">
-                        <i class="bi bi-x-circle" aria-hidden="true"></i> {{ _('Cancel') }}
+                        <i class="bi bi-x-circle" aria-hidden="true"></i> {{ ftl('common-cancel') }}
                     </a>
                 </div>
             </div>

@@ -9,7 +9,7 @@ from flask import (
     Blueprint, render_template, current_app, request, redirect,
     url_for, abort, g,
 )
-from flask_babel import _
+from auto_a11y.web.fluent import ftl
 from flask_login import current_user
 
 from auto_a11y.models import TokenScope, PageStatus
@@ -34,7 +34,7 @@ def group_by_touchpoint(violations):
     """Group a list of Violation objects by their touchpoint field."""
     groups = defaultdict(list)
     for v in violations:
-        groups[v.touchpoint or _('Other')].append(v)
+        groups[v.touchpoint or ftl('common-other')].append(v)
     return dict(sorted(groups.items()))
 
 

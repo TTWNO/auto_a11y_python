@@ -1115,13 +1115,32 @@ def testing_dashboard():
         # Stats for single website
         pages = db.get_pages(website_id)
         tested_pages = sum(1 for p in pages if p.status == PageStatus.TESTED)
+        tested_page_ids = [p.id for p in pages if p.status == PageStatus.TESTED]
+
+        # Aggregate counts from test_results (source of truth)
+        total_violations = 0
+        total_warnings = 0
+        if tested_page_ids:
+            pipeline = [
+                {'$match': {'page_id': {'$in': tested_page_ids}}},
+                {'$sort': {'test_date': -1}},
+                {'$group': {
+                    '_id': '$page_id',
+                    'violation_count': {'$first': {'$ifNull': ['$violation_count', 0]}},
+                    'warning_count': {'$first': {'$ifNull': ['$warning_count', 0]}},
+                }},
+            ]
+            for result in db.test_results.aggregate(pipeline):
+                total_violations += result.get('violation_count', 0)
+                total_warnings += result.get('warning_count', 0)
+
         stats = {
             'website_count': 1,
             'total_pages': len(pages),
             'tested_pages': tested_pages,
             'untested_pages': len(pages) - tested_pages,
-            'total_violations': sum(p.violation_count for p in pages),
-            'total_warnings': sum(p.warning_count for p in pages),
+            'total_violations': total_violations,
+            'total_warnings': total_warnings,
             'test_coverage': (tested_pages / len(pages) * 100) if pages else 0
         }
     elif project_id and selected_project:
@@ -1383,13 +1402,32 @@ def api_stats():
         if website:
             pages = db.get_pages(website_id)
             tested_pages = sum(1 for p in pages if p.status == PageStatus.TESTED)
+            tested_page_ids = [p.id for p in pages if p.status == PageStatus.TESTED]
+
+            # Aggregate counts from test_results (source of truth)
+            total_violations = 0
+            total_warnings = 0
+            if tested_page_ids:
+                pipeline = [
+                    {'$match': {'page_id': {'$in': tested_page_ids}}},
+                    {'$sort': {'test_date': -1}},
+                    {'$group': {
+                        '_id': '$page_id',
+                        'violation_count': {'$first': {'$ifNull': ['$violation_count', 0]}},
+                        'warning_count': {'$first': {'$ifNull': ['$warning_count', 0]}},
+                    }},
+                ]
+                for result in db.test_results.aggregate(pipeline):
+                    total_violations += result.get('violation_count', 0)
+                    total_warnings += result.get('warning_count', 0)
+
             stats = {
                 'website_count': 1,
                 'total_pages': len(pages),
                 'tested_pages': tested_pages,
                 'untested_pages': len(pages) - tested_pages,
-                'total_violations': sum(p.violation_count for p in pages),
-                'total_warnings': sum(p.warning_count for p in pages),
+                'total_violations': total_violations,
+                'total_warnings': total_warnings,
                 'test_coverage': round((tested_pages / len(pages) * 100), 1) if pages else 0
             }
         else:
@@ -1771,9 +1809,25 @@ def api_trends_compare():
                 continue
 
             pages = db.get_pages(ws_id)
-            total_violations = sum(p.violation_count for p in pages)
-            total_warnings = sum(p.warning_count for p in pages)
             tested_pages = sum(1 for p in pages if p.status == PageStatus.TESTED)
+            tested_page_ids = [p.id for p in pages if p.status == PageStatus.TESTED]
+
+            # Aggregate counts from test_results (source of truth)
+            total_violations = 0
+            total_warnings = 0
+            if tested_page_ids:
+                pipeline = [
+                    {'$match': {'page_id': {'$in': tested_page_ids}}},
+                    {'$sort': {'test_date': -1}},
+                    {'$group': {
+                        '_id': '$page_id',
+                        'violation_count': {'$first': {'$ifNull': ['$violation_count', 0]}},
+                        'warning_count': {'$first': {'$ifNull': ['$warning_count', 0]}},
+                    }},
+                ]
+                for result in db.test_results.aggregate(pipeline):
+                    total_violations += result.get('violation_count', 0)
+                    total_warnings += result.get('warning_count', 0)
 
             items.append({
                 'label': website.name,

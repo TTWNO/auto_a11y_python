@@ -304,38 +304,77 @@ Python touchpoint tests (`auto_a11y/testing/touchpoint_tests/`) process JavaScri
 
 **All user-visible frontend text MUST be translatable to both English and French.** This is a hard requirement, not optional.
 
+The project uses [Project Fluent](https://projectfluent.org/) for i18n via the `fluent-compiler` Python library. Translations are stored in `.ftl` (Fluent Translation List) files.
+
 ### Rules
 
-1. **Every user-visible string in templates** (headings, labels, buttons, badges, links, placeholder text, error messages, tooltips, aria-labels) MUST be wrapped in `{{ _('...') }}`
-2. **Every user-visible string in JavaScript** (alerts, confirms, prompts, innerHTML, textContent, status messages) embedded in Jinja2 templates MUST use `{{ _('...') }}` — e.g., `alert('{{ _("Error occurred") }}')`
-3. **Standalone JS files** (`auto_a11y/web/static/js/`) cannot use Jinja2 syntax. Use `window.i18n` objects or data attributes to pass translated strings from templates
-4. **After adding new `_()` strings**, add corresponding French translations to `auto_a11y/web/translations/fr/LC_MESSAGES/messages.po`
-5. **Recompile after .po edits:** `pybabel compile -f -d auto_a11y/web/translations`
-6. **Apostrophes in .po files** must NOT be escaped — use `l'aide`, not `l\'aide`
-7. **Never mark entries as fuzzy** — resolve merge conflicts by choosing the correct translation
-8. **Verify translations are accurate** — the msgstr must match the meaning of the msgid (past issues with copy-paste errors placing wrong translations)
+1. **Every user-visible string in templates** MUST use Fluent: `{{ ftl('message-id') }}` for static strings, `{{ ftl('message-id', var=value) }}` for parameterized strings, `{{ ftl_enum(value) }}` for enum values
+2. **Every user-visible string in JavaScript** embedded in Jinja2 templates MUST use `{{ ftl('message-id') | tojson }}` for safe JS escaping
+3. **Standalone JS files** (`auto_a11y/web/static/js/`) cannot use Jinja2 syntax. Use `window.i18n` objects built in templates with `{{ ftl('id') | tojson }}` values
+4. **After adding new strings**, add entries to both `auto_a11y/web/translations/en/{feature}.ftl` and `fr/{feature}.ftl`
+5. **No compilation step** — `.ftl` files are read directly at runtime (unlike the old `.po`/`.mo` system)
+6. **Message IDs** use kebab-case with feature prefix: `auth-login-button`, `common-save`, `pages-empty-state`
+7. **Enum values** use `enum-` prefix: `enum-discovered`, `enum-high`, `enum-active`
+8. **Verify translations are accurate** — the French value must match the meaning of the English value
 
 ### Translation Workflow
 
 ```bash
-# Extract new strings from templates/code
-pybabel extract -F babel.cfg -o auto_a11y/web/translations/messages.pot .
+# 1. Add the English string to the appropriate .ftl file
+# e.g., auto_a11y/web/translations/en/pages.ftl
+# pages-new-message = Your new message here
 
-# Update .po file with new strings
-pybabel update -i auto_a11y/web/translations/messages.pot -d auto_a11y/web/translations
+# 2. Add the French translation to the matching .ftl file
+# e.g., auto_a11y/web/translations/fr/pages.ftl
+# pages-new-message = Votre nouveau message ici
 
-# Edit auto_a11y/web/translations/fr/LC_MESSAGES/messages.po to add French translations
+# 3. Use in template:
+# {{ ftl('pages-new-message') }}
 
-# Compile
-pybabel compile -f -d auto_a11y/web/translations
+# 4. Validate coverage:
+python tests/validate_translations.py
+```
+
+### FTL Syntax Quick Reference
+
+```ftl
+# Simple message
+welcome = Welcome to Auto A11y
+
+# Variable substitution
+greeting = Hello, { $name }!
+
+# Plural selectors
+items-found =
+    { $count ->
+        [one] { $count } item found
+       *[other] { $count } items found
+    }
+
+# Attributes (group related strings)
+search-input = Search pages
+    .placeholder = Enter URL or page name
+    .aria-label = Search accessibility test results
 ```
 
 ### Translation Files
 
-- **Main catalog:** `auto_a11y/web/translations/fr/LC_MESSAGES/messages.po`
-- **Issue descriptions:** `auto_a11y/reporting/issue_translations_fr.json`
-- **WCAG criteria:** `auto_a11y/reporting/wcag_translations_fr.py`
-- **Typst reports:** `auto_a11y/reporting/typst_templates/lib/i18n.typ`
+- **UI strings:** `auto_a11y/web/translations/{en,fr}/*.ftl` (14 files per locale)
+- **Issue descriptions:** `auto_a11y/web/translations/{en,fr}/issues.ftl` and `inline-issues.ftl`
+- **WCAG criteria:** `auto_a11y/web/translations/{en,fr}/wcag.ftl`
+- **Typst reports:** `auto_a11y/reporting/typst_templates/lib/i18n.typ` (separate, not Fluent)
+- **Integration layer:** `auto_a11y/web/fluent.py`
+
+### Key Functions (from `auto_a11y/web/fluent.py`)
+
+| Function | Usage |
+|----------|-------|
+| `ftl('message-id')` | Resolve a simple message |
+| `ftl('message-id', var=value)` | Resolve with variables |
+| `ftl_attr('message-id', 'attr')` | Resolve an attribute |
+| `ftl_enum(value)` | Translate an enum value |
+| `lazy_ftl('message-id')` | Lazy proxy for module-scope strings |
+| `force_locale('fr')` | Context manager to override locale |
 
 ### README
 

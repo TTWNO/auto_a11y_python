@@ -33,7 +33,7 @@
                 </button>
                 <ul class="dropdown-menu p-2" style="min-width: 280px;">
                     <li class="px-2 mb-2"><strong>{{ ftl('common-select-users-for-discovery') }}</strong></li>
-                    <li><hr class="dropdown-divider"></li>
+                    <li role="none"><hr class="dropdown-divider" role="separator"></li>
                     <li class="px-2">
                         <div class="form-check">
                             <input class="form-check-input batch-discovery-user-checkbox" type="checkbox" value="" id="discovery-user-guest" checked>
@@ -51,7 +51,7 @@
                         </div>
                     </li>
                     {% endfor %}
-                    <li><hr class="dropdown-divider"></li>
+                    <li role="none"><hr class="dropdown-divider" role="separator"></li>
                     <li class="px-2">
                         <button class="btn btn-sm btn-link p-0" onclick="selectAllDiscoveryUsers()">{{ ftl('common-select-all') }}</button> |
                         <button class="btn btn-sm btn-link p-0" onclick="clearAllDiscoveryUsers()">{{ ftl('common-clear-all') }}</button>
@@ -72,7 +72,7 @@
                 </button>
                 <ul class="dropdown-menu p-2" style="min-width: 280px;">
                     <li class="px-2 mb-2"><strong>{{ ftl('websites-select-users-to-test') }}</strong></li>
-                    <li><hr class="dropdown-divider"></li>
+                    <li role="none"><hr class="dropdown-divider" role="separator"></li>
                     <li class="px-2">
                         <div class="form-check">
                             <input class="form-check-input batch-test-user-checkbox" type="checkbox" value="" id="user-guest" checked>
@@ -90,7 +90,7 @@
                         </div>
                     </li>
                     {% endfor %}
-                    <li><hr class="dropdown-divider"></li>
+                    <li role="none"><hr class="dropdown-divider" role="separator"></li>
                     <li class="px-2">
                         <button class="btn btn-sm btn-link p-0" onclick="selectAllTestUsers()">{{ ftl('common-select-all') }}</button> |
                         <button class="btn btn-sm btn-link p-0" onclick="clearAllTestUsers()">{{ ftl('common-clear-all') }}</button>
@@ -139,7 +139,7 @@
                     <li><a class="dropdown-item" href="#" onclick="generateSiteStructureReport('html')"><i class="bi bi-filetype-html" aria-hidden="true"></i> HTML</a></li>
                     <li><a class="dropdown-item" href="#" onclick="generateSiteStructureReport('json')"><i class="bi bi-filetype-json" aria-hidden="true"></i> JSON</a></li>
                     <li><a class="dropdown-item" href="#" onclick="generateSiteStructureReport('csv')"><i class="bi bi-filetype-csv" aria-hidden="true"></i> CSV</a></li>
-                    <li><hr class="dropdown-divider"></li>
+                    <li role="none"><hr class="dropdown-divider" role="separator"></li>
                     <li><div class="dropdown-header">{{ ftl('common-accessibility-report') }}</div></li>
                     <li><a class="dropdown-item" href="#" onclick="generateAccessibilityReport('html')"><i class="bi bi-filetype-html" aria-hidden="true"></i> HTML</a></li>
                     <li><a class="dropdown-item" href="#" onclick="generateAccessibilityReport('xlsx')"><i class="bi bi-filetype-xlsx" aria-hidden="true"></i> Excel</a></li>
@@ -457,7 +457,7 @@
 </div>
 
 <!-- Discovery Options Modal -->
-<dialog class="modal" id="discoveryModal" aria-labelledby="discoveryModalLabel">
+<dialog class="modal" id="discoveryModal" aria-labelledby="discoveryModalLabel" aria-modal="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -488,7 +488,7 @@
 </dialog>
 
 <!-- Add Page Modal -->
-<dialog class="modal" id="addPageModal" aria-labelledby="addPageModalLabel">
+<dialog class="modal" id="addPageModal" aria-labelledby="addPageModalLabel" aria-modal="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -521,7 +521,7 @@
 </dialog>
 
 <!-- Test All Pages Modal -->
-<dialog class="modal" id="testAllModal" aria-labelledby="testAllModalLabel">
+<dialog class="modal" id="testAllModal" aria-labelledby="testAllModalLabel" aria-modal="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -546,7 +546,7 @@
 </dialog>
 
 <!-- Test Untested Pages Modal -->
-<dialog class="modal" id="testUntestedModal" aria-labelledby="testUntestedModalLabel">
+<dialog class="modal" id="testUntestedModal" aria-labelledby="testUntestedModalLabel" aria-modal="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -580,7 +580,7 @@
 </dialog>
 
 <!-- Screenshot Modal -->
-<dialog class="modal" id="screenshotModal" aria-labelledby="screenshotModalTitle">
+<dialog class="modal" id="screenshotModal" aria-labelledby="screenshotModalTitle" aria-modal="true">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">

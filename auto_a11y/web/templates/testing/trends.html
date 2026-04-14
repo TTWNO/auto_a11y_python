@@ -163,6 +163,11 @@
         margin-left: 0.25rem;
         cursor: pointer;
         opacity: 0.8;
+        font-size: inherit;
+        line-height: inherit;
+        vertical-align: baseline;
+        text-decoration: none;
+        color: inherit;
     }
     .filter-tag .remove-filter:hover {
         opacity: 1;
@@ -1287,7 +1292,7 @@ function createFilterTag(label, value, type, filterValue) {
     }
     return `<span class="filter-tag">
         ${label}: ${displayValue}
-        <span class="remove-filter" onclick="removeFilter('${type}', '${filterValue}')">&times;</span>
+        <button type="button" class="remove-filter btn btn-link p-0 border-0" onclick="removeFilter('${type}', '${filterValue}')" aria-label="Remove filter: ${filterValue}">&times;</button>
     </span>`;
 }
 

@@ -276,3 +276,6 @@ testing-violations-warnings-over-time = Violations et avertissements au fil du t
 testing-warning = Avertissement :
 testing-what-it-means = Ce que cela signifie :
 testing-why-is-this-important = Pourquoi est-ce important ?
+testing-help-all-pass = Aide : Tous les tests réussissent
+testing-help-partial-pass = Aide : Réussite partielle des tests
+testing-help-all-fail = Aide : Tous les tests échouent

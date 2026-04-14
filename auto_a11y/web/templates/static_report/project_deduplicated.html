@@ -214,6 +214,13 @@
     .page-list-item:last-child {
         border-bottom: none;
     }
+
+    @media (prefers-reduced-motion: reduce) {
+        * {
+            animation-duration: 0.01ms !important;
+            transition-duration: 0.01ms !important;
+        }
+    }
     </style>
 </head>
 <body>

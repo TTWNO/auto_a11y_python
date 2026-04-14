@@ -113,8 +113,8 @@
     <nav class="navbar navbar-dark mb-4" id="main-content">
         <div class="container-fluid">
             <span class="navbar-brand mb-0 h1">
-                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['auto_a11y_report'] }}</span>
-                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['auto_a11y_report'] }}</span>
+                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['auto_a11y_report'] }}</span>
+                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['auto_a11y_report'] }}</span>
             </span>
             <div class="lang-switcher">
                 <button onclick="switchLanguage('en')" id="lang-en" class="{{ 'active' if language == 'en' else '' }}" lang="en" aria-label="{{ ftl('reports-switch-to-english') }}">EN</button>
@@ -127,18 +127,18 @@
         <!-- Header -->
         <div class="mb-4">
             <h1 class="display-4">
-                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">
+                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">
                     {{ t['recordings_report'] }}: {{ project.name }}
                 </span>
-                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">
+                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">
                     {{ translations_fr['recordings_report'] }} : {{ project.name }}
                 </span>
             </h1>
             <p class="text-muted">
-                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">
+                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">
                     {{ t['generated'] }}: {{ report_date }}
                 </span>
-                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">
+                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">
                     {{ translations_fr['generated'] }} : {{ report_date }}
                 </span>
             </p>
@@ -149,8 +149,8 @@
         <div class="row mb-4">
             <div class="col-12">
                 <h2>
-                    <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['executive_summary'] }}</span>
-                    <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['executive_summary'] }}</span>
+                    <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['executive_summary'] }}</span>
+                    <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['executive_summary'] }}</span>
                 </h2>
             </div>
         </div>
@@ -161,8 +161,8 @@
                 <div class="stat-card bg-primary text-white">
                     <div class="stat-value">{{ stats.total_recordings }}</div>
                     <div class="stat-label text-white">
-                        <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['total_recordings'] }}</span>
-                        <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['total_recordings'] }}</span>
+                        <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['total_recordings'] }}</span>
+                        <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['total_recordings'] }}</span>
                     </div>
                 </div>
             </div>
@@ -172,8 +172,8 @@
                 <div class="stat-card bg-info text-white">
                     <div class="stat-value">{{ stats.total_issues }}</div>
                     <div class="stat-label text-white">
-                        <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['total_issues'] }}</span>
-                        <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['total_issues'] }}</span>
+                        <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['total_issues'] }}</span>
+                        <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['total_issues'] }}</span>
                     </div>
                 </div>
             </div>
@@ -183,8 +183,8 @@
                 <div class="stat-card bg-danger text-white">
                     <div class="stat-value">{{ stats.high_count }}</div>
                     <div class="stat-label text-white">
-                        <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['high'] }}</span>
-                        <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['high'] }}</span>
+                        <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['high'] }}</span>
+                        <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['high'] }}</span>
                     </div>
                 </div>
             </div>
@@ -194,8 +194,8 @@
                 <div class="stat-card bg-warning">
                     <div class="stat-value">{{ stats.medium_count }}</div>
                     <div class="stat-label">
-                        <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['medium'] }}</span>
-                        <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['medium'] }}</span>
+                        <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['medium'] }}</span>
+                        <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['medium'] }}</span>
                     </div>
                 </div>
             </div>
@@ -205,8 +205,8 @@
                 <div class="stat-card bg-secondary text-white">
                     <div class="stat-value">{{ stats.low_count }}</div>
                     <div class="stat-label text-white">
-                        <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['low'] }}</span>
-                        <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['low'] }}</span>
+                        <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['low'] }}</span>
+                        <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['low'] }}</span>
                     </div>
                 </div>
             </div>
@@ -217,8 +217,8 @@
         <div class="row mb-4">
             <div class="col-12">
                 <h2>
-                    <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['recordings'] }}</span>
-                    <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['recordings'] }}</span>
+                    <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['recordings'] }}</span>
+                    <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['recordings'] }}</span>
                 </h2>
             </div>
         </div>
@@ -237,8 +237,8 @@
                     {% if recording.auditor_name %}
                     <div class="col-md-6">
                         <strong>
-                            <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['auditor'] }}:</span>
-                            <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['auditor'] }} :</span>
+                            <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['auditor'] }}:</span>
+                            <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['auditor'] }} :</span>
                         </strong>
                         {{ recording.auditor_name }}
                     </div>
@@ -246,8 +246,8 @@
                     {% if recording.auditor_role %}
                     <div class="col-md-6">
                         <strong>
-                            <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['role'] }}:</span>
-                            <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['role'] }} :</span>
+                            <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['role'] }}:</span>
+                            <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['role'] }} :</span>
                         </strong>
                         {{ recording.auditor_role }}
                     </div>
@@ -267,8 +267,8 @@
                                     data-bs-target="#collapseKeyTakeaways-{{ recording.recording_id|replace(' ', '-') }}" aria-expanded="false" aria-controls="collapseKeyTakeaways-{{ recording.recording_id|replace(' ', '-') }}">
                                 <i class="bi bi-list-ol me-2" aria-hidden="true"></i>
                                 <strong>
-                                    <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['key_takeaways'] }} ({{ takeaways_en|length }})</span>
-                                    <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['key_takeaways'] }} ({{ takeaways_fr|length }})</span>
+                                    <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['key_takeaways'] }} ({{ takeaways_en|length }})</span>
+                                    <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['key_takeaways'] }} ({{ takeaways_fr|length }})</span>
                                 </strong>
                             </button>
                         </h2>
@@ -276,7 +276,7 @@
                              data-bs-parent="#recordingContentAccordion-{{ recording.recording_id|replace(' ', '-') }}">
                             <div class="accordion-body">
                                 <!-- English Takeaways -->
-                                <div data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">
+                                <div data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">
                                     {% for takeaway in takeaways_en %}
                                     <div class="mb-4{% if not loop.last %} pb-3 border-bottom{% endif %}">
                                         <h4>{{ takeaway.number }}. {{ takeaway.topic }}</h4>
@@ -293,7 +293,7 @@
                                     {% endfor %}
                                 </div>
                                 <!-- French Takeaways -->
-                                <div data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">
+                                <div data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">
                                     {% for takeaway in takeaways_fr %}
                                     <div class="mb-4{% if not loop.last %} pb-3 border-bottom{% endif %}">
                                         <h4>{{ takeaway.number }}. {{ takeaway.topic }}</h4>
@@ -324,8 +324,8 @@
                                     data-bs-target="#collapsePainpoints-{{ recording.recording_id|replace(' ', '-') }}">
                                 <i class="bi bi-exclamation-triangle me-2" aria-hidden="true"></i>
                                 <strong>
-                                    <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['user_painpoints'] }} ({{ painpoints_en|length }})</span>
-                                    <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['user_painpoints'] }} ({{ painpoints_fr|length }})</span>
+                                    <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['user_painpoints'] }} ({{ painpoints_en|length }})</span>
+                                    <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['user_painpoints'] }} ({{ painpoints_fr|length }})</span>
                                 </strong>
                             </button>
                         </h2>
@@ -333,7 +333,7 @@
                              data-bs-parent="#recordingContentAccordion-{{ recording.recording_id|replace(' ', '-') }}">
                             <div class="accordion-body">
                                 <!-- English Painpoints -->
-                                <div data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">
+                                <div data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">
                                     {% for painpoint in painpoints_en %}
                                     <div class="mb-4{% if not loop.last %} pb-3 border-bottom{% endif %}">
                                         <h4>
@@ -368,7 +368,7 @@
                                     {% endfor %}
                                 </div>
                                 <!-- French Painpoints -->
-                                <div data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">
+                                <div data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">
                                     {% for painpoint in painpoints_fr %}
                                     <div class="mb-4{% if not loop.last %} pb-3 border-bottom{% endif %}">
                                         <h4>
@@ -417,8 +417,8 @@
                                     data-bs-target="#collapseAssertions-{{ recording.recording_id|replace(' ', '-') }}">
                                 <i class="bi bi-chat-quote me-2" aria-hidden="true"></i>
                                 <strong>
-                                    <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['user_assertions'] }} ({{ assertions_en|length }})</span>
-                                    <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['user_assertions'] }} ({{ assertions_fr|length }})</span>
+                                    <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['user_assertions'] }} ({{ assertions_en|length }})</span>
+                                    <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['user_assertions'] }} ({{ assertions_fr|length }})</span>
                                 </strong>
                             </button>
                         </h2>
@@ -426,7 +426,7 @@
                              data-bs-parent="#recordingContentAccordion-{{ recording.recording_id|replace(' ', '-') }}">
                             <div class="accordion-body">
                                 <!-- English Assertions -->
-                                <div data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">
+                                <div data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">
                                     {% for assertion in assertions_en %}
                                     <div class="mb-4{% if not loop.last %} pb-3 border-bottom{% endif %}">
                                         <h4>{{ assertion.number }}. {{ assertion.assertion }}</h4>
@@ -460,7 +460,7 @@
                                     {% endfor %}
                                 </div>
                                 <!-- French Assertions -->
-                                <div data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">
+                                <div data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">
                                     {% for assertion in assertions_fr %}
                                     <div class="mb-4{% if not loop.last %} pb-3 border-bottom{% endif %}">
                                         <h4>{{ assertion.number }}. {{ assertion.assertion }}</h4>
@@ -508,9 +508,9 @@
                                     data-bs-target="#collapseIssues-{{ recording.recording_id|replace(' ', '-') }}" aria-expanded="true">
                                 <i class="bi bi-bug me-2" aria-hidden="true"></i>
                                 <strong>
-                                    <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['accessibility_issues'] }}</span>
-                                    <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['accessibility_issues'] }}</span>
-                                    (<span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ recording_issues_en|length }}</span><span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ recording_issues_fr|length }}</span>)
+                                    <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['accessibility_issues'] }}</span>
+                                    <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['accessibility_issues'] }}</span>
+                                    (<span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ recording_issues_en|length }}</span><span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ recording_issues_fr|length }}</span>)
                                 </strong>
                             </button>
                         </h2>
@@ -518,7 +518,7 @@
                              data-bs-parent="#recordingContentAccordion-{{ recording.recording_id|replace(' ', '-') }}">
                             <div class="accordion-body">
                                 <!-- English Issues -->
-                                <div class="accordion" id="accordion-issues-en-{{ recording.recording_id|replace(' ', '-') }}" data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">
+                                <div class="accordion" id="accordion-issues-en-{{ recording.recording_id|replace(' ', '-') }}" data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">
                                     {% for issue in recording_issues_en %}
                                         <div class="accordion-item">
                                             <h2 class="accordion-header">
@@ -605,7 +605,7 @@
                                     {% endfor %}
                                 </div>
                                 <!-- French Issues -->
-                                <div class="accordion" id="accordion-issues-fr-{{ recording.recording_id|replace(' ', '-') }}" data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">
+                                <div class="accordion" id="accordion-issues-fr-{{ recording.recording_id|replace(' ', '-') }}" data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">
                                     {% for issue in recording_issues_fr %}
                                         <div class="accordion-item">
                                             <h2 class="accordion-header">

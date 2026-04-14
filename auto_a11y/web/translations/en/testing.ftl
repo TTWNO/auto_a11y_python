@@ -276,3 +276,6 @@ testing-violations-warnings-over-time = Violations & Warnings Over Time
 testing-warning = Warning:
 testing-what-it-means = What it means:
 testing-why-is-this-important = Why is this important?
+testing-help-all-pass = Help: All fixtures pass
+testing-help-partial-pass = Help: Partial fixture pass
+testing-help-all-fail = Help: All fixtures fail

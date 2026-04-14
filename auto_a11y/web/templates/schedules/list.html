@@ -195,7 +195,7 @@
 
     {% else %}
     <div class="text-center py-5">
-        <i class="bi bi-calendar-event text-placeholder" aria-hidden="true" style="font-size: 3rem;"></i>
+        <i class="bi bi-calendar-event text-placeholder empty-state-icon" aria-hidden="true"></i>
         <p class="text-muted mt-3">{{ ftl('schedules-no-schedules-yet') }}</p>
         <a href="{{ url_for('schedules.create_schedule', website_id=website.id) }}" class="btn btn-primary">
             <i class="bi bi-plus-circle" aria-hidden="true"></i> {{ ftl('schedules-create-your-first-schedule') }}

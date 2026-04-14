@@ -4,60 +4,6 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/help-system.css') }}">
-<style>
-    .help-section {
-        margin-bottom: 40px;
-    }
-    
-    .help-card {
-        border-left: 4px solid #3498db;
-        margin-bottom: 20px;
-        transition: transform 0.2s;
-    }
-    
-    .help-card:hover {
-        transform: translateX(5px);
-    }
-    
-    .help-nav {
-        position: sticky;
-        top: 20px;
-    }
-    
-    .help-nav .nav-link {
-        color: #6c757d;
-        padding: 8px 15px;
-        border-left: 2px solid transparent;
-    }
-    
-    .help-nav .nav-link:hover {
-        color: #3498db;
-        border-left-color: #3498db;
-    }
-    
-    .help-nav .nav-link.active {
-        color: #3498db;
-        font-weight: 600;
-        border-left-color: #3498db;
-        background-color: rgba(52, 152, 219, 0.1);
-    }
-    
-    .score-comparison {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 30px;
-        border-radius: 10px;
-        margin-bottom: 30px;
-    }
-    
-    .score-example {
-        background-color: white;
-        color: #333;
-        padding: 20px;
-        border-radius: 8px;
-        margin-top: 20px;
-    }
-</style>
 {% endblock %}
 
 {% block content %}

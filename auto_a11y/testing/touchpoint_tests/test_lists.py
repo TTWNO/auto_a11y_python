@@ -124,6 +124,11 @@ async def test_lists(page) -> Dict[str, Any]:
                             return false;
                         }
 
+                        // Skip container elements with diverse block content (pages, sections, etc.)
+                        if (el.querySelector('nav, section, article, form, table, header, footer')) {
+                            return false;
+                        }
+
                         // Check for explicit list styling or bullet characters
                         if (style.display === 'list-item' ||
                             html.includes('•') || html.includes('·') || html.includes('‣') ||
@@ -138,9 +143,9 @@ async def test_lists(page) -> Dict[str, Any]:
                             let bulletCount = 0;
                             iconElements.forEach(icon => {
                                 const parent = icon.parentElement;
-                                // Skip if the icon is inside a proper list item - that's OK (just bad CSS practice)
-                                if (parent && parent.closest('li')) {
-                                    return; // Icon is in a list item, don't count it
+                                // Skip if the icon is inside a list item, nav, link, or button - not a bullet
+                                if (parent && parent.closest('li, nav, a, button')) {
+                                    return; // Icon is decorative, don't count it
                                 }
                                 // Check if icon is at start of parent and parent has text after it
                                 if (parent && parent.firstElementChild === icon && parent.textContent.trim().length > icon.textContent.trim().length) {

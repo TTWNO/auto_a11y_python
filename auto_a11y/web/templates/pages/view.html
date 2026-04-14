@@ -296,10 +296,10 @@
                              alt="{{ ftl('common-screenshot-of') }} {{ page.url }}"
                              class="border-subtle" style="width: 120px; height: auto; border: 1px solid; border-radius: 4px; cursor: pointer;"
                              onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                        <span style="display: none; font-size: 0.9em; color: var(--color-text-muted);">{{ ftl('pages-no-screenshot-available') }}</span>
+                        <span class="text-size-card-subtitle text-muted" style="display: none;">{{ ftl('pages-no-screenshot-available') }}</span>
                     </a>
                     {% else %}
-                    <span style="font-size: 0.9em; color: var(--color-text-muted);">{{ ftl('pages-no-screenshot-available') }}</span>
+                    <span class="text-size-card-subtitle text-muted">{{ ftl('pages-no-screenshot-available') }}</span>
                     {% endif %}
                 </div>
             </div>
@@ -655,7 +655,7 @@
                             class="btn btn-outline-primary state-selector {% if is_active %}active{% endif %}"
                             data-state-index="{{ loop.index0 }}"
                             onclick="showState({{ loop.index0 }})">
-                        <i class="bi bi-circle-fill" aria-hidden="true" style="font-size: 8px;"></i>
+                        <i class="bi bi-circle-fill text-size-tiny" aria-hidden="true"></i>
                         {{ state_desc }}
                         <br>
                         <small class="{% if is_active %}text-white{% else %}text-muted{% endif %}">
@@ -971,7 +971,7 @@
                                                             <p class="mb-1"><strong>&lt;{{ element.element }}&gt;:</strong> "{{ element.text }}"</p>
                                                             <p class="mb-1 small text-muted">
                                                             {{ ftl('pages-location') }} <code>{{element.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1" onclick="copyXpathToClipboard('{{element.xpath|e}}', this)" title="{{ ftl('common-copy-xpath-to-clipboard') }}" style="font-size: 0.875rem;">
+                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{element.xpath|e}}', this)" title="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -984,7 +984,7 @@
                                                             <p class="mb-1"><strong>H1 #{{ h1.index }}:</strong> {{ h1.text }}</p>
                                                             <p class="mb-1 small text-muted">
                                                             Location: <code>{{h1.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1" onclick="copyXpathToClipboard('{{h1.xpath|e}}', this)" title="Copy XPath to clipboard" style="font-size: 0.875rem;">
+                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{h1.xpath|e}}', this)" title="Copy XPath to clipboard">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -1016,7 +1016,7 @@
                                                             <p class="mb-1"><strong>{{ ftl('pages-instance') }} {{ instance.index }}:</strong> {{ instance.name }}</p>
                                                             <p class="mb-1 small text-muted">
                                                             Location: <code>{{instance.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" title="Copy XPath to clipboard" style="font-size: 0.875rem;">
+                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" title="Copy XPath to clipboard">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -1030,7 +1030,7 @@
                                                             <p class="mb-1"><strong>Navigation {{ instance.index }}:</strong></p>
                                                             <p class="mb-1 small text-muted">
                                                             Location: <code>{{instance.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" title="Copy XPath to clipboard" style="font-size: 0.875rem;">
+                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" title="Copy XPath to clipboard">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -1045,7 +1045,7 @@
                                                             <p class="mb-1 small">Text preview: "{{ instance.text }}"</p>
                                                             <p class="mb-1 small text-muted">
                                                             Location: <code>{{instance.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" title="Copy XPath to clipboard" style="font-size: 0.875rem;">
+                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" title="Copy XPath to clipboard">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -1062,7 +1062,7 @@
                                                             <p class="mb-1"><strong>Link {{ anchor.index }}:</strong> "{{ anchor.text }}"</p>
                                                             <p class="mb-1 small text-muted">
                                                             Location: <code>{{anchor.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1" onclick="copyXpathToClipboard('{{anchor.xpath|e}}', this)" title="Copy XPath to clipboard" style="font-size: 0.875rem;">
+                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{anchor.xpath|e}}', this)" title="Copy XPath to clipboard">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -1094,7 +1094,7 @@
                                                                      class="img-thumbnail"
                                                                      style="max-width: 300px; height: auto; cursor: pointer;"
                                                                      onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                                                                <span style="display: none; font-size: 0.9em; color: var(--color-text-muted);">{{ ftl('pages-thumbnail-not-available') }}</span>
+                                                                <span class="text-size-card-subtitle text-muted" style="display: none;">{{ ftl('pages-thumbnail-not-available') }}</span>
                                                             </a>
                                                             <p class="text-muted small mt-1">{{ ftl('pages-click-to-view-full-size') }}</p>
                                                         </figure>
@@ -1347,7 +1347,7 @@
                                                             <p class="mb-1"><strong>&lt;{{ element.element }}&gt;:</strong> "{{ element.text }}"</p>
                                                             <p class="mb-1 small text-muted">
                                                             {{ ftl('pages-location') }} <code>{{element.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1" onclick="copyXpathToClipboard('{{element.xpath|e}}', this)" title="{{ ftl('common-copy-xpath-to-clipboard') }}" style="font-size: 0.875rem;">
+                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{element.xpath|e}}', this)" title="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -1360,7 +1360,7 @@
                                                             <p class="mb-1"><strong>H1 #{{ h1.index }}:</strong> {{ h1.text }}</p>
                                                             <p class="mb-1 small text-muted">
                                                             Location: <code>{{h1.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1" onclick="copyXpathToClipboard('{{h1.xpath|e}}', this)" title="Copy XPath to clipboard" style="font-size: 0.875rem;">
+                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{h1.xpath|e}}', this)" title="Copy XPath to clipboard">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -1392,7 +1392,7 @@
                                                             <p class="mb-1"><strong>{{ ftl('pages-instance') }} {{ instance.index }}:</strong> {{ instance.name }}</p>
                                                             <p class="mb-1 small text-muted">
                                                             Location: <code>{{instance.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" title="Copy XPath to clipboard" style="font-size: 0.875rem;">
+                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" title="Copy XPath to clipboard">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -1406,7 +1406,7 @@
                                                             <p class="mb-1"><strong>Navigation {{ instance.index }}:</strong></p>
                                                             <p class="mb-1 small text-muted">
                                                             Location: <code>{{instance.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" title="Copy XPath to clipboard" style="font-size: 0.875rem;">
+                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" title="Copy XPath to clipboard">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -1421,7 +1421,7 @@
                                                             <p class="mb-1 small">Text preview: "{{ instance.text }}"</p>
                                                             <p class="mb-1 small text-muted">
                                                             Location: <code>{{instance.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" title="Copy XPath to clipboard" style="font-size: 0.875rem;">
+                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" title="Copy XPath to clipboard">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -1438,7 +1438,7 @@
                                                             <p class="mb-1"><strong>Link {{ anchor.index }}:</strong> "{{ anchor.text }}"</p>
                                                             <p class="mb-1 small text-muted">
                                                             Location: <code>{{anchor.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1" onclick="copyXpathToClipboard('{{anchor.xpath|e}}', this)" title="Copy XPath to clipboard" style="font-size: 0.875rem;">
+                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{anchor.xpath|e}}', this)" title="Copy XPath to clipboard">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -1470,7 +1470,7 @@
                                                                      class="img-thumbnail"
                                                                      style="max-width: 300px; height: auto; cursor: pointer;"
                                                                      onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                                                                <span style="display: none; font-size: 0.9em; color: var(--color-text-muted);">{{ ftl('pages-thumbnail-not-available') }}</span>
+                                                                <span class="text-size-card-subtitle text-muted" style="display: none;">{{ ftl('pages-thumbnail-not-available') }}</span>
                                                             </a>
                                                             <p class="text-muted small mt-1">{{ ftl('pages-click-to-view-full-size') }}</p>
                                                         </figure>
@@ -1726,7 +1726,7 @@
                                     <p class="mb-1 small">{{ ftl('pages-text-preview') }} "{{ instance.text|truncate(80) }}"</p>
                                     <p class="mb-1 small text-muted">
                                         {{ ftl('pages-location') }} <code>{{ instance.xpath }}</code>
-                                        <button class="btn btn-sm btn-link p-0 ms-1" onclick="copyXpathToClipboard('{{ instance.xpath|e }}', this)" title="{{ ftl('common-copy-xpath-to-clipboard') }}" style="font-size: 0.875rem;">
+                                        <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{ instance.xpath|e }}', this)" title="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                             <i class="bi bi-clipboard" aria-hidden="true"></i>
                                         </button>
                                     </p>
@@ -1747,7 +1747,7 @@
                                     <p class="mb-1 small">{{ ftl('pages-content-preview') }} "{{ instance.text|truncate(100) }}"</p>
                                     <p class="mb-1 small text-muted">
                                         {{ ftl('pages-location') }} <code>{{ instance.xpath }}</code>
-                                        <button class="btn btn-sm btn-link p-0 ms-1" onclick="copyXpathToClipboard('{{ instance.xpath|e }}', this)" title="{{ ftl('common-copy-xpath-to-clipboard') }}" style="font-size: 0.875rem;">
+                                        <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{ instance.xpath|e }}', this)" title="{{ ftl('common-copy-xpath-to-clipboard') }}">
                                             <i class="bi bi-clipboard" aria-hidden="true"></i>
                                         </button>
                                     </p>
@@ -1811,7 +1811,7 @@
                                     <p class="mb-1"><strong>&lt;{{ element.element }}&gt;:</strong> "{{ element.text }}"</p>
                                     <p class="mb-1 small text-muted">
                                                             Location: <code>{{element.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1" onclick="copyXpathToClipboard('{{element.xpath|e}}', this)" title="Copy XPath to clipboard" style="font-size: 0.875rem;">
+                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{element.xpath|e}}', this)" title="Copy XPath to clipboard">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -1824,7 +1824,7 @@
                                     <p class="mb-1"><strong>H1 #{{ h1.index }}:</strong> {{ h1.text }}</p>
                                     <p class="mb-1 small text-muted">
                                                             Location: <code>{{h1.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1" onclick="copyXpathToClipboard('{{h1.xpath|e}}', this)" title="Copy XPath to clipboard" style="font-size: 0.875rem;">
+                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{h1.xpath|e}}', this)" title="Copy XPath to clipboard">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -1856,7 +1856,7 @@
                                     <p class="mb-1"><strong>{{ ftl('pages-instance') }} {{ instance.index }}:</strong> {{ instance.name }}</p>
                                     <p class="mb-1 small text-muted">
                                                             Location: <code>{{instance.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" title="Copy XPath to clipboard" style="font-size: 0.875rem;">
+                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" title="Copy XPath to clipboard">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -1870,7 +1870,7 @@
                                     <p class="mb-1"><strong>Navigation {{ instance.index }}:</strong></p>
                                     <p class="mb-1 small text-muted">
                                                             Location: <code>{{instance.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" title="Copy XPath to clipboard" style="font-size: 0.875rem;">
+                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" title="Copy XPath to clipboard">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -1885,7 +1885,7 @@
                                     <p class="mb-1 small">Text preview: "{{ instance.text }}"</p>
                                     <p class="mb-1 small text-muted">
                                     Location: <code>{{instance.xpath}}</code>
-                                    <button class="btn btn-sm btn-link p-0 ms-1" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" title="Copy XPath to clipboard" style="font-size: 0.875rem;">
+                                    <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" title="Copy XPath to clipboard">
                                         <i class="bi bi-clipboard" aria-hidden="true"></i>
                                     </button>
                                 </p>
@@ -1902,7 +1902,7 @@
                                     <p class="mb-1"><strong>Link {{ anchor.index }}:</strong> "{{ anchor.text }}"</p>
                                     <p class="mb-1 small text-muted">
                                     Location: <code>{{anchor.xpath}}</code>
-                                    <button class="btn btn-sm btn-link p-0 ms-1" onclick="copyXpathToClipboard('{{anchor.xpath|e}}', this)" title="Copy XPath to clipboard" style="font-size: 0.875rem;">
+                                    <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{anchor.xpath|e}}', this)" title="Copy XPath to clipboard">
                                         <i class="bi bi-clipboard" aria-hidden="true"></i>
                                     </button>
                                 </p>
@@ -1934,7 +1934,7 @@
                                      class="img-thumbnail"
                                      style="max-width: 300px; height: auto; cursor: pointer;"
                                      onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                                <span style="display: none; font-size: 0.9em; color: var(--color-text-muted);">Thumbnail not available</span>
+                                <span class="text-size-card-subtitle text-muted" style="display: none;">Thumbnail not available</span>
                             </a>
                             <p class="text-muted small mt-1">{{ ftl('pages-click-to-view-full-size') }}</p>
                             {% endif %}
@@ -2225,7 +2225,7 @@
                                                             <p class="mb-1"><strong>{{ ftl('pages-instance') }} {{ instance.index }}:</strong> {{ instance.name }}</p>
                                                             <p class="mb-1 small text-muted">
                                                             Location: <code>{{instance.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" title="Copy XPath to clipboard" style="font-size: 0.875rem;">
+                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" title="Copy XPath to clipboard">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -2257,7 +2257,7 @@
                                                                      class="img-thumbnail"
                                                                      style="max-width: 300px; height: auto; cursor: pointer;"
                                                                      onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                                                                <span style="display: none; font-size: 0.9em; color: var(--color-text-muted);">{{ ftl('pages-thumbnail-not-available') }}</span>
+                                                                <span class="text-size-card-subtitle text-muted" style="display: none;">{{ ftl('pages-thumbnail-not-available') }}</span>
                                                             </a>
                                                             <p class="text-muted small mt-1">{{ ftl('pages-click-to-view-full-size') }}</p>
                                                         </figure>
@@ -2595,7 +2595,7 @@
                                                             <p class="mb-1"><strong>{{ ftl('pages-instance') }} {{ instance.index }}:</strong> {{ instance.name }}</p>
                                                             <p class="mb-1 small text-muted">
                                                             Location: <code>{{instance.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" title="Copy XPath to clipboard" style="font-size: 0.875rem;">
+                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" title="Copy XPath to clipboard">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -2627,7 +2627,7 @@
                                      class="img-thumbnail"
                                      style="max-width: 300px; height: auto; cursor: pointer;"
                                      onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                                <span style="display: none; font-size: 0.9em; color: var(--color-text-muted);">Thumbnail not available</span>
+                                <span class="text-size-card-subtitle text-muted" style="display: none;">Thumbnail not available</span>
                             </a>
                             <p class="text-muted small mt-1">{{ ftl('pages-click-to-view-full-size') }}</p>
                             {% endif %}
@@ -2684,7 +2684,7 @@
                                      class="img-thumbnail"
                                      style="max-width: 300px; height: auto; cursor: pointer;"
                                      onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                                <span style="display: none; font-size: 0.9em; color: var(--color-text-muted);">Thumbnail not available</span>
+                                <span class="text-size-card-subtitle text-muted" style="display: none;">Thumbnail not available</span>
                             </a>
                             <p class="text-muted small mt-1">{{ ftl('pages-click-to-view-full-size') }}</p>
                             {% endif %}
@@ -2865,7 +2865,7 @@
                                                             <p class="mb-1"><strong>{{ ftl('pages-instance') }} {{ instance.index }}:</strong> {{ instance.name }}</p>
                                                             <p class="mb-1 small text-muted">
                                                             Location: <code>{{instance.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" title="Copy XPath to clipboard" style="font-size: 0.875rem;">
+                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" title="Copy XPath to clipboard">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -2897,7 +2897,7 @@
                                                                      class="img-thumbnail"
                                                                      style="max-width: 300px; height: auto; cursor: pointer;"
                                                                      onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                                                                <span style="display: none; font-size: 0.9em; color: var(--color-text-muted);">{{ ftl('pages-thumbnail-not-available') }}</span>
+                                                                <span class="text-size-card-subtitle text-muted" style="display: none;">{{ ftl('pages-thumbnail-not-available') }}</span>
                                                             </a>
                                                             <p class="text-muted small mt-1">{{ ftl('pages-click-to-view-full-size') }}</p>
                                                         </figure>
@@ -2928,7 +2928,7 @@
                                 {{ info.description|translate_issue }}
                             {% endif %}
                             {% if info.xpath %}
-                                <span class="text-muted ms-2" style="font-size: 0.9em;">{{ info.xpath }}</span>
+                                <span class="text-muted ms-2 text-size-card-subtitle">{{ info.xpath }}</span>
                             {% endif %}
                                     </button>
                                 </h2>
@@ -3026,7 +3026,7 @@
                                                             <p class="mb-1"><strong>{{ ftl('pages-instance') }} {{ instance.index }}:</strong> {{ instance.name }}</p>
                                                             <p class="mb-1 small text-muted">
                                                             Location: <code>{{instance.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" title="Copy XPath to clipboard" style="font-size: 0.875rem;">
+                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" title="Copy XPath to clipboard">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -3057,7 +3057,7 @@
                                                                      class="img-thumbnail"
                                                                      style="max-width: 300px; height: auto; cursor: pointer;"
                                                                      onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                                                                <span style="display: none; font-size: 0.9em; color: var(--color-text-muted);">{{ ftl('pages-thumbnail-not-available') }}</span>
+                                                                <span class="text-size-card-subtitle text-muted" style="display: none;">{{ ftl('pages-thumbnail-not-available') }}</span>
                                                             </a>
                                                             <p class="text-muted small mt-1">{{ ftl('pages-click-to-view-full-size') }}</p>
                                                         </figure>
@@ -3104,7 +3104,7 @@
                                      class="img-thumbnail"
                                      style="max-width: 300px; height: auto; cursor: pointer;"
                                      onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                                <span style="display: none; font-size: 0.9em; color: var(--color-text-muted);">Thumbnail not available</span>
+                                <span class="text-size-card-subtitle text-muted" style="display: none;">Thumbnail not available</span>
                             </a>
                             <p class="text-muted small mt-1">{{ ftl('pages-click-to-view-full-size') }}</p>
                             {% endif %}
@@ -3309,7 +3309,7 @@
                                                             <p class="mb-1"><strong><span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">Instance</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Instance</span> {{ instance.index }}:</strong> {{ instance.name }}</p>
                                                             <p class="mb-1 small text-muted">
                                                             <span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">Location:</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Emplacement :</span> <code>{{instance.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" title="Copy XPath to clipboard" style="font-size: 0.875rem;">
+                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" title="Copy XPath to clipboard">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -3357,7 +3357,7 @@
                                                                      class="img-thumbnail"
                                                                      style="max-width: 300px; height: auto; cursor: pointer;"
                                                                      onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                                                                <span style="display: none; font-size: 0.9em; color: var(--color-text-muted);">{{ ftl('pages-thumbnail-not-available') }}</span>
+                                                                <span class="text-size-card-subtitle text-muted" style="display: none;">{{ ftl('pages-thumbnail-not-available') }}</span>
                                                             </a>
                                                             <p class="text-muted small mt-1">{{ ftl('pages-click-to-view-full-size') }}</p>
                                                         </figure>
@@ -3393,7 +3393,7 @@
                                 {{ discovery.description|translate_issue }}
                             {% endif %}
                             {% if discovery.xpath %}
-                                <span class="text-muted ms-2" style="font-size: 0.9em;">{{ discovery.xpath }}</span>
+                                <span class="text-muted ms-2 text-size-card-subtitle">{{ discovery.xpath }}</span>
                             {% endif %}
                                     </button>
                                 </h2>
@@ -3502,7 +3502,7 @@
                                                             <p class="mb-1"><strong>{{ ftl('pages-instance') }} {{ instance.index }}:</strong> {{ instance.name }}</p>
                                                             <p class="mb-1 small text-muted">
                                                             Location: <code>{{instance.xpath}}</code>
-                                                            <button class="btn btn-sm btn-link p-0 ms-1" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" title="Copy XPath to clipboard" style="font-size: 0.875rem;">
+                                                            <button class="btn btn-sm btn-link p-0 ms-1 text-size-sm" onclick="copyXpathToClipboard('{{instance.xpath|e}}', this)" title="Copy XPath to clipboard">
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
@@ -3550,7 +3550,7 @@
                                      class="img-thumbnail"
                                      style="max-width: 300px; height: auto; cursor: pointer;"
                                      onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                                <span style="display: none; font-size: 0.9em; color: var(--color-text-muted);">Thumbnail not available</span>
+                                <span class="text-size-card-subtitle text-muted" style="display: none;">Thumbnail not available</span>
                             </a>
                             <p class="text-muted small mt-1">{{ ftl('pages-click-to-view-full-size') }}</p>
                             {% endif %}
@@ -3597,7 +3597,7 @@
                                      class="img-thumbnail"
                                      style="max-width: 300px; height: auto; cursor: pointer;"
                                      onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                                <span style="display: none; font-size: 0.9em; color: var(--color-text-muted);">Thumbnail not available</span>
+                                <span class="text-size-card-subtitle text-muted" style="display: none;">Thumbnail not available</span>
                             </a>
                             <p class="text-muted small mt-1">{{ ftl('pages-click-to-view-full-size') }}</p>
                             {% endif %}
@@ -3701,7 +3701,7 @@
 </div>
 
 <!-- Screenshot Modal -->
-<dialog class="modal" id="screenshotModal" aria-labelledby="screenshotModalTitle">
+<dialog class="modal" id="screenshotModal" aria-labelledby="screenshotModalTitle" aria-modal="true">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
@@ -3722,7 +3722,7 @@
 </dialog>
 
 <!-- Test Page Modal -->
-<dialog class="modal" id="testModal" aria-labelledby="testModalTitle" data-modal-persistent>
+<dialog class="modal" id="testModal" aria-labelledby="testModalTitle" aria-modal="true" data-modal-persistent>
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">

@@ -688,7 +688,7 @@ function updateIssueStatus(issueId, status) {
 
 <!-- WCAG Criteria Breakdown Modal -->
 {% if scores and scores.compliance_score is not none %}
-<dialog class="modal" id="criteriaBreakdownModal" aria-labelledby="criteriaBreakdownModalLabel">
+<dialog class="modal" id="criteriaBreakdownModal" aria-labelledby="criteriaBreakdownModalLabel" aria-modal="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">

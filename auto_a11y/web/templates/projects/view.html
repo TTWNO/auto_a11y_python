@@ -221,10 +221,10 @@
                 <div class="card mb-2 shadow-sm">
                     <div class="card-body py-2 px-3">
                         <div class="d-flex justify-content-between align-items-start mb-1">
-                            <h3 class="mb-0 text-break" style="font-size: 0.9rem;">{{ page.title or ftl('projects-untitled') }}</h3>
+                            <h3 class="mb-0 text-break text-size-card-title">{{ page.title or ftl('projects-untitled') }}</h3>
                             <div class="d-flex flex-wrap gap-1 ms-2">
                                 {% if page.audited %}
-                                <span class="badge bg-success" style="font-size: 0.7rem;">{{ ftl('common-audited') }}</span>
+                                <span class="badge bg-success text-size-card-badge">{{ ftl('common-audited') }}</span>
                                 {% endif %}
                             </div>
                         </div>
@@ -353,7 +353,7 @@
                     <div class="card-body py-2 px-3">
                         <div class="d-flex justify-content-between align-items-start mb-1">
                             <div class="flex-grow-1 me-2">
-                                <h3 class="mb-0 text-break" style="font-size: 0.9rem;">{{ recording.title }}</h3>
+                                <h3 class="mb-0 text-break text-size-card-title">{{ recording.title }}</h3>
                                 <small class="text-muted">{{ recording.recording_id }}</small>
                             </div>
                             {% if recording.total_issues > 0 %}
@@ -362,7 +362,7 @@
                         </div>
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <span class="badge bg-secondary" style="font-size: 0.7rem;">{{ ftl_enum(recording.recording_type.value) }}</span>
+                                <span class="badge bg-secondary text-size-card-badge">{{ ftl_enum(recording.recording_type.value) }}</span>
                                 {% if recording.recorded_date %}
                                 <small class="text-muted ms-1">{{ recording.recorded_date.strftime('%m/%d') }}</small>
                                 {% endif %}
@@ -467,7 +467,7 @@
 </div>
 
 <!-- Add Website Modal -->
-<dialog class="modal" id="addWebsiteModal" aria-labelledby="addWebsiteModalLabel">
+<dialog class="modal" id="addWebsiteModal" aria-labelledby="addWebsiteModalLabel" aria-modal="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -498,7 +498,7 @@
 </dialog>
 
 <!-- Discovery Options Modal -->
-<dialog class="modal" id="discoveryModal" aria-labelledby="discoveryModalLabel">
+<dialog class="modal" id="discoveryModal" aria-labelledby="discoveryModalLabel" aria-modal="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -564,7 +564,7 @@
 </dialog>
 
 <!-- Test All Websites Modal -->
-<dialog class="modal" id="testAllModal" aria-labelledby="testAllModalLabel">
+<dialog class="modal" id="testAllModal" aria-labelledby="testAllModalLabel" aria-modal="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -614,7 +614,7 @@
 </dialog>
 
 <!-- Delete Project Modal -->
-<dialog class="modal" id="deleteModal" aria-labelledby="deleteModalLabel">
+<dialog class="modal" id="deleteModal" aria-labelledby="deleteModalLabel" aria-modal="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{{ ftl('common-auto-a11y') }}{% endblock %}</title>
-    
+
     <!-- Anti-FOUC: apply saved theme before render -->
     <script>
     (function(){try{var p=localStorage.getItem('theme-preference');if(p==='dark'||p==='light'){document.documentElement.setAttribute('data-theme',p);}}catch(e){}})();
@@ -100,7 +100,7 @@
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item language-switch" href="#" data-lang="en" lang="en">English</a></li>
-                            <li><a class="dropdown-item language-switch" href="#" data-lang="fr" lang="fr">Français</a></li>
+                            <li><a class="dropdown-item language-switch" href="#" data-lang="fr" lang="fr">Fran&ccedil;ais</a></li>
                         </ul>
                     </li>
                     <!-- Settings dropdown - includes Help -->
@@ -113,7 +113,7 @@
                                 <i class="bi bi-question-circle" aria-hidden="true"></i> {{ ftl('common-help') }}
                             </a></li>
                             {% if current_user.is_authenticated and (is_superadmin or user_has_projects) %}
-                            <li><hr class="dropdown-divider"></li>
+                            <li role="none"><hr class="dropdown-divider" role="separator"></li>
                             <li><a class="dropdown-item" href="{{ url_for('testing.configure_testing') }}">
                                 <i class="bi bi-sliders" aria-hidden="true"></i> {{ ftl('common-configuration') }}
                             </a></li>
@@ -134,7 +134,7 @@
                                 {{ ftl('common-superadmin') }}
                             </span></li>
                             {% endif %}
-                            <li><hr class="dropdown-divider"></li>
+                            <li role="none"><hr class="dropdown-divider" role="separator"></li>
                             <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">
                                 <i class="bi bi-person" aria-hidden="true"></i> {{ ftl('common-profile') }}
                             </a></li>
@@ -148,7 +148,7 @@
                                 <i class="bi bi-shield-lock" aria-hidden="true"></i> {{ ftl('common-groups') }}
                             </a></li>
                             {% endif %}
-                            <li><hr class="dropdown-divider"></li>
+                            <li role="none"><hr class="dropdown-divider" role="separator"></li>
                             <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">
                                 <i class="bi bi-box-arrow-right" aria-hidden="true"></i> {{ ftl('common-logout') }}
                             </a></li>
@@ -208,7 +208,7 @@
     <!-- Footer (hidden on mobile - replaced by bottom nav) -->
     <footer class="footer mt-auto py-3 bg-light">
         <div class="container text-center">
-            <span class="text-muted">{{ ftl('common-auto-a11y') }} © 2025 | {{ ftl('common-canadian-national-institute-for-the-blind') }}</span>
+            <span class="text-muted">{{ ftl('common-auto-a11y') }} &copy; 2025 | {{ ftl('common-canadian-national-institute-for-the-blind') }}</span>
         </div>
     </footer>
 
@@ -266,7 +266,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    
+
     <!-- Global Test Tracking System -->
     <script>
     // Global activity tracking system (tests and discoveries)
@@ -275,7 +275,7 @@
         LEGACY_KEY: 'active_tests',  // For migration
         CHECK_INTERVAL: 5000, // Check every 5 seconds
         pollInterval: null,
-        
+
         // Add an activity (test or discovery) to track
         addTest: function(type, id, description) {
             const tests = this.getActiveTests();
@@ -288,19 +288,19 @@
             localStorage.setItem(this.STORAGE_KEY, JSON.stringify(tests));
             this.startTracking();
         },
-        
+
         // Remove a completed activity
         removeTest: function(type, id) {
             const tests = this.getActiveTests();
             delete tests[`${type}_${id}`];
             localStorage.setItem(this.STORAGE_KEY, JSON.stringify(tests));
-            
+
             // Stop tracking if no more activities
             if (Object.keys(tests).length === 0) {
                 this.stopTracking();
             }
         },
-        
+
         // Get all active tests/discoveries
         getActiveTests: function() {
             // Migrate from old key if it exists
@@ -310,16 +310,16 @@
                 localStorage.removeItem(this.LEGACY_KEY);
                 console.log('Migrated from active_tests to active_activities');
             }
-            
+
             const stored = localStorage.getItem(this.STORAGE_KEY);
             const tests = stored ? JSON.parse(stored) : {};
-            
+
             // Clean up stale entries (older than 10 minutes for discovery, 30 minutes for tests)
             const now = Date.now();
             const tenMinutesAgo = now - (10 * 60 * 1000);
             const thirtyMinutesAgo = now - (30 * 60 * 1000);
             let hasStale = false;
-            
+
             for (const key in tests) {
                 const test = tests[key];
                 if (test.startTime) {
@@ -337,27 +337,27 @@
                     }
                 }
             }
-            
+
             // Save cleaned up list if we removed any stale entries
             if (hasStale) {
                 localStorage.setItem(this.STORAGE_KEY, JSON.stringify(tests));
             }
-            
+
             return tests;
         },
-        
+
         // Start tracking active tests
         startTracking: function() {
             // Don't start multiple trackers
             if (this.pollInterval) return;
-            
+
             // Check immediately
             this.checkTests();
-            
+
             // Then check periodically
             this.pollInterval = setInterval(() => this.checkTests(), this.CHECK_INTERVAL);
         },
-        
+
         // Stop tracking
         stopTracking: function() {
             if (this.pollInterval) {
@@ -366,32 +366,32 @@
             }
             document.getElementById('global-test-status').classList.add('d-none');
         },
-        
+
         // Check status of all active activities
         checkTests: async function() {
             const tests = this.getActiveTests();
             const testCount = Object.keys(tests).length;
-            
+
             if (testCount === 0) {
                 this.stopTracking();
                 return;
             }
-            
+
             // Show global indicator
             const statusDiv = document.getElementById('global-test-status');
             statusDiv.classList.remove('d-none');
-            
+
             let activeCount = 0;
             let completedInThisCheck = [];
-            
+
             // Check each test
             for (const key in tests) {
                 const test = tests[key];
-                
+
                 try {
                     let statusUrl = '';
                     let detailUrl = '';
-                    
+
                     if (test.type === 'page') {
                         statusUrl = `/pages/${test.id}/test-status`;
                         detailUrl = `/pages/${test.id}`;
@@ -423,9 +423,9 @@
                         }
                         continue;
                     }
-                    
+
                     const response = await $.get(statusUrl);
-                    
+
                     if (test.type === 'page') {
                         // Page test - check if completed or not actively running
                         // Only keep tracking if status is 'queued' or 'testing'
@@ -462,18 +462,18 @@
                     }
                 }
             }
-            
+
             // Update UI
             if (activeCount > 0) {
                 const message = document.getElementById('global-test-message');
                 const link = document.getElementById('global-test-link');
                 const titleElement = document.getElementById('global-activity-title');
-                
+
                 // Count different types of activities
                 const allTests = this.getActiveTests();
                 const discoveryCount = Object.values(allTests).filter(t => t.type === 'discovery').length;
                 const testCount = Object.values(allTests).filter(t => t.type === 'page' || t.type === 'website').length;
-                
+
                 // Update title based on activity types
                 if (discoveryCount > 0 && testCount === 0) {
                     titleElement.textContent = '{{ ftl('common-discovery-running') }}';
@@ -484,11 +484,11 @@
                 } else {
                     titleElement.textContent = '{{ ftl('common-activity-in-progress') }}';
                 }
-                
+
                 if (activeCount === 1) {
                     const remainingTest = Object.values(allTests)[0];
                     message.textContent = remainingTest.description + (remainingTest.progress ? ` - ${remainingTest.progress}` : '');
-                    
+
                     if (remainingTest.type === 'page') {
                         link.href = `/pages/${remainingTest.id}`;
                     } else if (remainingTest.type === 'website' || remainingTest.type === 'discovery') {
@@ -507,7 +507,7 @@
                     link.href = '/testing';
                 }
             }
-            
+
             // Show completion notification and refresh if on relevant page
             if (completedInThisCheck.length > 0) {
                 for (const test of completedInThisCheck) {
@@ -516,10 +516,10 @@
                         const message = test.type === 'discovery' ? `${test.description} {{ ftl('common-has-finished') }}` : `${test.description} {{ ftl('common-has-finished-testing') }}`;
                         showNotification(title, message, 'success');
                     }
-                    
+
                     // Refresh page if we're viewing the tested item
                     const currentPath = window.location.pathname;
-                    if (currentPath.includes(`/pages/${test.id}`) || 
+                    if (currentPath.includes(`/pages/${test.id}`) ||
                         currentPath.includes(`/websites/${test.id}`) ||
                         (test.type === 'website' && currentPath.includes('/projects/'))) {
                         setTimeout(() => location.reload(), 1500);
@@ -527,7 +527,7 @@
                 }
             }
         },
-        
+
         // Initialize on page load
         init: function() {
             const tests = this.getActiveTests();
@@ -536,13 +536,13 @@
             }
         }
     };
-    
+
     // Pause tracking (when user dismisses the notification)
     function pauseGlobalTestTracking() {
         TestTracker.stopTracking();
         // Don't clear the tests, just stop showing the notification
     }
-    
+
     // Helper function to add a page test
     function trackPageTest(pageId, pageName) {
         TestTracker.addTest('page', pageId, `{{ ftl('common-testing') }} ${pageName || '{{ ftl('common-page') }}'}`);
@@ -552,7 +552,7 @@
     function trackWebsiteTest(websiteId, websiteName) {
         TestTracker.addTest('website', websiteId, `{{ ftl('common-testing') }} ${websiteName || '{{ ftl('common-website') }}'}`);
     }
-    
+
     // Show notification helper (if not already defined)
     if (typeof showNotification === 'undefined') {
         window.showNotification = function(title, message, type) {
@@ -579,14 +579,14 @@
             }, 5000);
         };
     }
-    
+
     // Initialize on page load
     document.addEventListener('DOMContentLoaded', function() {
         // Clean up on page load - remove anything older than 10 minutes for discovery
         TestTracker.getActiveTests();  // This triggers cleanup
         TestTracker.init();
     });
-    
+
     // Add manual clear function to window for debugging
     window.clearTestTracker = function() {
         localStorage.removeItem('active_activities');
@@ -598,7 +598,7 @@
         }
         console.log('Activity tracker cleared');
     };
-    
+
     // Add function to clear specific types
     window.clearDiscoveries = function() {
         const tests = TestTracker.getActiveTests();

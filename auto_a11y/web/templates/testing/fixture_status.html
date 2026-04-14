@@ -18,7 +18,7 @@
     #test-status-table code {
         font-size: 0.875rem;
         padding: 0.125rem 0.25rem;
-        background-color: rgba(0, 0, 0, 0.05);
+        background-color: var(--color-bg-subtle);
         border-radius: 0.25rem;
     }
     
@@ -60,15 +60,15 @@
     
     /* Hover effect for table rows */
     #test-status-table tbody tr:hover {
-        background-color: rgba(0, 123, 255, 0.05);
+        background-color: rgba(var(--bs-primary-rgb), 0.05);
     }
-    
+
     .table-warning {
-        background-color: rgba(255, 193, 7, 0.1) !important;
+        background-color: rgba(var(--bs-warning-rgb), 0.1) !important;
     }
-    
+
     .table-warning:hover {
-        background-color: rgba(255, 193, 7, 0.15) !important;
+        background-color: rgba(var(--bs-warning-rgb), 0.15) !important;
     }
 </style>
 {% endblock %}
@@ -111,7 +111,7 @@
         <div class="col-12 col-sm-6 col-xl-2">
             <div class="card h-100 border-success">
                 <div class="card-body">
-                    <h3 class="card-title fs-6">{{ ftl('testing-all-pass') }} <i class="bi bi-question-circle-fill text-primary" aria-hidden="true" style="cursor: pointer;" onclick="showHelp('all-pass')"></i></h3>
+                    <h3 class="card-title fs-6">{{ ftl('testing-all-pass') }} <button type="button" class="btn btn-link p-0 border-0" onclick="showHelp('all-pass')" aria-label="{{ ftl('testing-help-all-pass') }}"><i class="bi bi-question-circle-fill text-primary" aria-hidden="true"></i></button></h3>
                     <p class="card-text display-6 text-success" id="all-pass-tests">-</p>
                     <small class="text-muted">{{ ftl('testing-all-fixtures-passing') }}</small>
                 </div>
@@ -120,7 +120,7 @@
         <div class="col-12 col-sm-6 col-xl-2">
             <div class="card h-100 border-warning">
                 <div class="card-body">
-                    <h3 class="card-title fs-6">{{ ftl('testing-partial-pass') }} <i class="bi bi-question-circle-fill text-primary" aria-hidden="true" style="cursor: pointer;" onclick="showHelp('partial-pass')"></i></h3>
+                    <h3 class="card-title fs-6">{{ ftl('testing-partial-pass') }} <button type="button" class="btn btn-link p-0 border-0" onclick="showHelp('partial-pass')" aria-label="{{ ftl('testing-help-partial-pass') }}"><i class="bi bi-question-circle-fill text-primary" aria-hidden="true"></i></button></h3>
                     <p class="card-text display-6 text-warning" id="partial-pass-tests">-</p>
                     <small class="text-muted">{{ ftl('testing-some-fixtures-passing') }}</small>
                 </div>
@@ -129,7 +129,7 @@
         <div class="col-12 col-sm-6 col-xl-2">
             <div class="card h-100 border-danger">
                 <div class="card-body">
-                    <h3 class="card-title fs-6">{{ ftl('testing-all-fail') }} <i class="bi bi-question-circle-fill text-primary" aria-hidden="true" style="cursor: pointer;" onclick="showHelp('all-fail')"></i></h3>
+                    <h3 class="card-title fs-6">{{ ftl('testing-all-fail') }} <button type="button" class="btn btn-link p-0 border-0" onclick="showHelp('all-fail')" aria-label="{{ ftl('testing-help-all-fail') }}"><i class="bi bi-question-circle-fill text-primary" aria-hidden="true"></i></button></h3>
                     <p class="card-text display-6 text-danger" id="all-fail-tests">-</p>
                     <small class="text-muted">{{ ftl('testing-no-fixtures-passing') }}</small>
                 </div>
@@ -556,7 +556,7 @@ function showHelp(topic) {
 
     // Create modal dynamically
     const modalHtml = `
-        <dialog class="modal" id="helpModal" aria-labelledby="helpModalLabel">
+        <dialog class="modal" id="helpModal" aria-labelledby="helpModalLabel" aria-modal="true">
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class="modal-header">

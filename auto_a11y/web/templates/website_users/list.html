@@ -6,6 +6,7 @@
 <style>
 .spin { animation: spin 1s linear infinite; }
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
 </style>
 {% endblock %}
 
@@ -177,7 +178,7 @@
 
     {% else %}
     <div class="text-center py-5">
-        <i class="bi bi-people text-placeholder" aria-hidden="true" style="font-size: 3rem;"></i>
+        <i class="bi bi-people text-placeholder empty-state-icon" aria-hidden="true"></i>
         <p class="text-muted mt-3">{{ ftl('common-no-test-users-yet') }}</p>
         <a href="{{ url_for('website_users.create_user', website_id=website.id) }}" class="btn btn-primary">
             <i class="bi bi-plus-circle" aria-hidden="true"></i> {{ ftl('common-create-your-first-test-user') }}

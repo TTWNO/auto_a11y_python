@@ -156,7 +156,7 @@
             </div>
             {% else %}
             <div class="text-center py-5">
-                <i class="bi bi-code-slash text-placeholder" aria-hidden="true" style="font-size: 3rem;"></i>
+                <i class="bi bi-code-slash text-placeholder empty-state-icon" aria-hidden="true"></i>
                 <p class="text-muted mt-3">{{ ftl('scripts-no-page-specific-scripts-yet') }}</p>
                 <a href="{{ url_for('scripts.create_page_script', page_id=page.id) }}" class="btn btn-primary">
                     <i class="bi bi-plus-circle" aria-hidden="true"></i> {{ ftl('scripts-create-your-first-script') }}

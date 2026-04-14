@@ -1,8 +1,8 @@
 {% extends "static_report/base.html" %}
 
 {% block title %}
-<span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['recordings_report'] }}</span>
-<span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['recordings_report'] }}</span>
+<span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['recordings_report'] }}</span>
+<span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['recordings_report'] }}</span>
 {% endblock %}
 
 {% block content %}
@@ -10,18 +10,18 @@
     <!-- Header -->
     <div class="mb-4">
         <h1 class="display-4">
-            <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">
+            <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">
                 {{ t['recordings_report'] }}: {{ project.name }}
             </span>
-            <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">
+            <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">
                 {{ translations_fr['recordings_report'] }} : {{ project.name }}
             </span>
         </h1>
         <p class="text-muted">
-            <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">
+            <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">
                 {{ t['generated'] }}: {{ report_date }}
             </span>
-            <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">
+            <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">
                 {{ translations_fr['generated'] }} : {{ report_date }}
             </span>
         </p>
@@ -32,8 +32,8 @@
     <div class="row mb-4">
         <div class="col-12">
             <h2>
-                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['executive_summary'] }}</span>
-                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['executive_summary'] }}</span>
+                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['executive_summary'] }}</span>
+                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['executive_summary'] }}</span>
             </h2>
         </div>
     </div>
@@ -44,8 +44,8 @@
             <div class="stat-card bg-primary text-white">
                 <div class="stat-value">{{ stats.total_recordings }}</div>
                 <div class="stat-label">
-                    <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['total_recordings'] }}</span>
-                    <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['total_recordings'] }}</span>
+                    <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['total_recordings'] }}</span>
+                    <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['total_recordings'] }}</span>
                 </div>
             </div>
         </div>
@@ -55,8 +55,8 @@
             <div class="stat-card bg-info text-white">
                 <div class="stat-value">{{ stats.total_issues }}</div>
                 <div class="stat-label">
-                    <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['total_issues'] }}</span>
-                    <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['total_issues'] }}</span>
+                    <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['total_issues'] }}</span>
+                    <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['total_issues'] }}</span>
                 </div>
             </div>
         </div>
@@ -66,8 +66,8 @@
             <div class="stat-card bg-danger text-white">
                 <div class="stat-value">{{ stats.high_impact }}</div>
                 <div class="stat-label">
-                    <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['high'] }}</span>
-                    <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['high'] }}</span>
+                    <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['high'] }}</span>
+                    <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['high'] }}</span>
                 </div>
             </div>
         </div>
@@ -77,8 +77,8 @@
             <div class="stat-card bg-warning">
                 <div class="stat-value">{{ stats.medium_impact }}</div>
                 <div class="stat-label">
-                    <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['medium'] }}</span>
-                    <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['medium'] }}</span>
+                    <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['medium'] }}</span>
+                    <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['medium'] }}</span>
                 </div>
             </div>
         </div>
@@ -88,8 +88,8 @@
             <div class="stat-card bg-secondary text-white">
                 <div class="stat-value">{{ stats.low_impact }}</div>
                 <div class="stat-label">
-                    <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['low'] }}</span>
-                    <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['low'] }}</span>
+                    <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['low'] }}</span>
+                    <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['low'] }}</span>
                 </div>
             </div>
         </div>
@@ -100,8 +100,8 @@
     <div class="row mb-4">
         <div class="col-12">
             <h2>
-                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['recordings'] }}</span>
-                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['recordings'] }}</span>
+                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['recordings'] }}</span>
+                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['recordings'] }}</span>
             </h2>
         </div>
     </div>
@@ -120,8 +120,8 @@
                 {% if recording.auditor_name %}
                 <div class="col-md-6">
                     <strong>
-                        <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['auditor'] }}:</span>
-                        <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['auditor'] }} :</span>
+                        <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['auditor'] }}:</span>
+                        <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['auditor'] }} :</span>
                     </strong>
                     {{ recording.auditor_name }}
                 </div>
@@ -129,8 +129,8 @@
                 {% if recording.auditor_role %}
                 <div class="col-md-6">
                     <strong>
-                        <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['role'] }}:</span>
-                        <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['role'] }} :</span>
+                        <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['role'] }}:</span>
+                        <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['role'] }} :</span>
                     </strong>
                     {{ recording.auditor_role }}
                 </div>
@@ -142,8 +142,8 @@
             {% if takeaways %}
             <div class="mb-4">
                 <h4>
-                    <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['key_takeaways'] }}</span>
-                    <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['key_takeaways'] }}</span>
+                    <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['key_takeaways'] }}</span>
+                    <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['key_takeaways'] }}</span>
                 </h4>
                 <ol>
                     {% for takeaway in takeaways %}
@@ -158,8 +158,8 @@
             {% if painpoints %}
             <div class="mb-4">
                 <h4>
-                    <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['user_painpoints'] }}</span>
-                    <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['user_painpoints'] }}</span>
+                    <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['user_painpoints'] }}</span>
+                    <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['user_painpoints'] }}</span>
                 </h4>
                 {% for painpoint in painpoints %}
                 <div class="border-start border-{{ {'high': 'danger', 'medium': 'warning', 'low': 'secondary'}.get(painpoint.impact|lower, 'secondary') }} border-4 ps-3 mb-3">
@@ -174,8 +174,8 @@
                     {% endif %}
                     {% if include_timecodes and painpoint.timecodes %}
                     <p class="small text-muted">
-                        <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['timecodes'] }}:</span>
-                        <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['timecodes'] }} :</span>
+                        <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['timecodes'] }}:</span>
+                        <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['timecodes'] }} :</span>
                         {% for tc in painpoint.timecodes %}
                         {{ tc.start }} - {{ tc.end }}{% if not loop.last %}, {% endif %}
                         {% endfor %}
@@ -191,10 +191,10 @@
             {% if recording_issues %}
             <div class="mb-3">
                 <h4>
-                    <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">
+                    <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">
                         {{ t['accessibility_issues'] }} ({{ recording_issues|length }})
                     </span>
-                    <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">
+                    <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">
                         {{ translations_fr['accessibility_issues'] }} ({{ recording_issues|length }})
                     </span>
                 </h4>
@@ -216,19 +216,19 @@
                         {% if issue.touchpoint %}
                         <p class="small">
                             <strong>
-                                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['touchpoint'] }}:</span>
-                                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['touchpoint'] }} :</span>
+                                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['touchpoint'] }}:</span>
+                                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['touchpoint'] }} :</span>
                             </strong>
-                            <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t.get(issue.touchpoint, issue.touchpoint) }}</span>
-                            <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get(issue.touchpoint, issue.touchpoint) }}</span>
+                            <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t.get(issue.touchpoint, issue.touchpoint) }}</span>
+                            <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get(issue.touchpoint, issue.touchpoint) }}</span>
                         </p>
                         {% endif %}
 
                         {% if include_timecodes and issue.timecodes %}
                         <p class="small text-muted">
                             <strong>
-                                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['timecodes'] }}:</span>
-                                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['timecodes'] }} :</span>
+                                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['timecodes'] }}:</span>
+                                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['timecodes'] }} :</span>
                             </strong>
                             {% for tc in issue.timecodes %}
                             {{ tc.start }} - {{ tc.end }}{% if not loop.last %}, {% endif %}
@@ -239,8 +239,8 @@
                         {% if include_wcag and issue.wcag_criteria %}
                         <p class="small">
                             <strong>
-                                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['wcag_criteria'] }}:</span>
-                                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['wcag_criteria'] }} :</span>
+                                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['wcag_criteria'] }}:</span>
+                                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['wcag_criteria'] }} :</span>
                             </strong>
                             {% for criteria in issue.wcag_criteria %}
                             {{ criteria.criterion_id }}{% if not loop.last %}, {% endif %}
@@ -261,8 +261,8 @@
     <div class="row mt-5">
         <div class="col-12">
             <h2>
-                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['issues_by_touchpoint'] }}</span>
-                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['issues_by_touchpoint'] }}</span>
+                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['issues_by_touchpoint'] }}</span>
+                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['issues_by_touchpoint'] }}</span>
             </h2>
         </div>
     </div>
@@ -271,8 +271,8 @@
     <div class="card mb-3">
         <div class="card-header">
             <h3>
-                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t.get(touchpoint, touchpoint) }}</span>
-                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get(touchpoint, touchpoint) }}</span>
+                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t.get(touchpoint, touchpoint) }}</span>
+                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get(touchpoint, touchpoint) }}</span>
                 <span class="badge bg-secondary">{{ touchpoint_issues|length }}</span>
             </h3>
         </div>
@@ -290,8 +290,8 @@
                 {% endif %}
                 <p class="small text-muted">
                     <strong>
-                        <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['recording'] }}:</span>
-                        <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['recording'] }} :</span>
+                        <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['recording'] }}:</span>
+                        <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['recording'] }} :</span>
                     </strong>
                     {{ issue.recording_id }}
                 </p>

@@ -213,61 +213,61 @@
     <div class="test-info">
         <h2>
             <i class="bi bi-info-circle" aria-hidden="true"></i>
-            <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Test Information</span>
-            <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Informations sur le test</span>
+            <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Test Information</span>
+            <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Informations sur le test</span>
         </h2>
         <div class="test-info-grid">
             <div class="test-info-item">
                 <span class="test-info-label">
-                    <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Project</span>
-                    <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Projet</span>
+                    <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Project</span>
+                    <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Projet</span>
                 </span>
                 <span class="test-info-value">{{ project_name|default('Unknown Project') }}</span>
             </div>
             <div class="test-info-item">
                 <span class="test-info-label">
-                    <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Website URL</span>
-                    <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">URL du site web</span>
+                    <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Website URL</span>
+                    <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">URL du site web</span>
                 </span>
                 <span class="test-info-value">{{ website_url|default('N/A') }}</span>
             </div>
             <div class="test-info-item">
                 <span class="test-info-label">
-                    <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Test Date</span>
-                    <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Date du test</span>
+                    <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Test Date</span>
+                    <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Date du test</span>
                 </span>
                 <span class="test-info-value">{{ generation_date|default('N/A') }}</span>
             </div>
             <div class="test-info-item">
                 <span class="test-info-label">
-                    <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">WCAG Level</span>
-                    <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Niveau WCAG</span>
+                    <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">WCAG Level</span>
+                    <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Niveau WCAG</span>
                 </span>
                 <span class="test-info-value">{{ wcag_level|default('AA') }}</span>
             </div>
             <div class="test-info-item">
                 <span class="test-info-label">
-                    <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Pages Tested</span>
-                    <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Pages testées</span>
+                    <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Pages Tested</span>
+                    <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Pages testées</span>
                 </span>
                 <span class="test-info-value">{{ pages|length }}</span>
             </div>
             <div class="test-info-item">
                 <span class="test-info-label">
-                    <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Touchpoints Tested</span>
-                    <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Points de contact testés</span>
+                    <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Touchpoints Tested</span>
+                    <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Points de contact testés</span>
                 </span>
                 <span class="test-info-value">
                     {% if touchpoints_tested %}
-                        <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">
+                        <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">
                             {% for tp in touchpoints_tested %}{{ translations_en.get(tp|lower, translations_en.get(tp, tp)) }}{% if not loop.last %}, {% endif %}{% endfor %}
                         </span>
-                        <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">
+                        <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">
                             {% for tp in touchpoints_tested %}{{ translations_fr.get(tp|lower, translations_fr.get(tp, tp)) }}{% if not loop.last %}, {% endif %}{% endfor %}
                         </span>
                     {% else %}
-                        <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">All</span>
-                        <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Tous</span>
+                        <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">All</span>
+                        <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Tous</span>
                     {% endif %}
                 </span>
             </div>
@@ -279,43 +279,43 @@
         <div class="stat-card bg-light">
             <div class="stat-value text-dark">{{ pages|length }}</div>
             <div class="stat-label">
-                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Pages Tested</span>
-                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Pages testées</span>
+                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Pages Tested</span>
+                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Pages testées</span>
             </div>
         </div>
         <div class="stat-card bg-severity-high-subtle">
             <div class="stat-value text-danger">{{ summary.total_errors|default(0) }}</div>
             <div class="stat-label">
-                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Total Errors</span>
-                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Total des erreurs</span>
+                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Total Errors</span>
+                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Total des erreurs</span>
             </div>
         </div>
         <div class="stat-card bg-severity-medium-subtle">
             <div class="stat-value text-warning">{{ summary.total_warnings|default(0) }}</div>
             <div class="stat-label">
-                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Total Warnings</span>
-                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Total des avertissements</span>
+                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Total Warnings</span>
+                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Total des avertissements</span>
             </div>
         </div>
         <div class="stat-card bg-info-subtle">
             <div class="stat-value text-info">{{ summary.total_info|default(0) }}</div>
             <div class="stat-label">
-                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Informational</span>
-                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Informatifs</span>
+                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Informational</span>
+                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Informatifs</span>
             </div>
         </div>
         <div class="stat-card bg-discovery-subtle">
             <div class="stat-value text-muted">{{ summary.total_discovery|default(0) }}</div>
             <div class="stat-label">
-                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Discovery Items</span>
-                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Éléments de découverte</span>
+                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Discovery Items</span>
+                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Éléments de découverte</span>
             </div>
         </div>
         <div class="stat-card bg-info-subtle">
             <div class="stat-value text-primary">{{ "%.1f"|format(summary.average_score|default(0)) }}%</div>
             <div class="stat-label">
-                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Average Score</span>
-                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Score moyen</span>
+                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Average Score</span>
+                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Score moyen</span>
             </div>
         </div>
     </div>
@@ -352,13 +352,13 @@
                 </div>
                 <button id="reset-filters" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
-                    <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Reset</span>
-                    <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Réinitialiser</span>
+                    <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Reset</span>
+                    <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Réinitialiser</span>
                 </button>
             </div>
             <div class="results-summary" id="results-summary">
-                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Showing {{ pages|length }} of {{ pages|length }} pages</span>
-                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Affichage de {{ pages|length }} sur {{ pages|length }} pages</span>
+                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Showing {{ pages|length }} of {{ pages|length }} pages</span>
+                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Affichage de {{ pages|length }} sur {{ pages|length }} pages</span>
             </div>
         </div>
     </div>
@@ -405,8 +405,8 @@
                     <span class="issue-badge errors">
                         <i class="bi bi-x-circle-fill" aria-hidden="true"></i>
                         <span>{{ page.issues.errors }}
-                            <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Error{{ 's' if page.issues.errors != 1 }}</span>
-                            <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Erreur{{ 's' if page.issues.errors != 1 }}</span>
+                            <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Error{{ 's' if page.issues.errors != 1 }}</span>
+                            <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Erreur{{ 's' if page.issues.errors != 1 }}</span>
                         </span>
                     </span>
                     {% endif %}
@@ -415,8 +415,8 @@
                     <span class="issue-badge warnings">
                         <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
                         <span>{{ page.issues.warnings }}
-                            <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Warning{{ 's' if page.issues.warnings != 1 }}</span>
-                            <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Avertissement{{ 's' if page.issues.warnings != 1 }}</span>
+                            <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Warning{{ 's' if page.issues.warnings != 1 }}</span>
+                            <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Avertissement{{ 's' if page.issues.warnings != 1 }}</span>
                         </span>
                     </span>
                     {% endif %}
@@ -425,8 +425,8 @@
                     <span class="issue-badge info">
                         <i class="bi bi-info-circle-fill" aria-hidden="true"></i>
                         <span>{{ page.issues.info }}
-                            <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Info</span>
-                            <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Info</span>
+                            <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Info</span>
+                            <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Info</span>
                         </span>
                     </span>
                     {% endif %}
@@ -435,8 +435,8 @@
                     <span class="issue-badge discovery">
                         <i class="bi bi-lightbulb-fill" aria-hidden="true"></i>
                         <span>{{ page.issues.discovery }}
-                            <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Discovery</span>
-                            <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Découverte</span>
+                            <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Discovery</span>
+                            <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Découverte</span>
                         </span>
                     </span>
                     {% endif %}
@@ -444,8 +444,8 @@
                     {% if page.issues.errors == 0 and page.issues.warnings == 0 and page.issues.info == 0 and page.issues.discovery == 0 %}
                     <span class="badge bg-success">
                         <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
-                        <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">No Issues</span>
-                        <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Aucun problème</span>
+                        <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">No Issues</span>
+                        <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Aucun problème</span>
                     </span>
                     {% endif %}
                 </div>
@@ -454,12 +454,12 @@
             <div class="page-card-footer">
                 <div class="text-muted small">
                     <i class="bi bi-clock" aria-hidden="true"></i>
-                    <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Tested {{ page.test_date|default('Recently') }}</span>
-                    <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Testé {{ page.test_date|default('Récemment') }}</span>
+                    <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Tested {{ page.test_date|default('Recently') }}</span>
+                    <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Testé {{ page.test_date|default('Récemment') }}</span>
                 </div>
                 <a href="pages/page_{{ '%03d'|format(loop.index) }}.html" class="view-details-btn">
-                    <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">View Details</span>
-                    <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Voir les détails</span>
+                    <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">View Details</span>
+                    <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Voir les détails</span>
                     <i class="bi bi-arrow-right" aria-hidden="true"></i>
                 </a>
             </div>
@@ -471,12 +471,12 @@
     <div id="no-results" class="no-results" style="display: none;">
         <i class="bi bi-search" aria-hidden="true"></i>
         <h3>
-            <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">No Pages Found</span>
-            <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Aucune page trouvée</span>
+            <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">No Pages Found</span>
+            <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Aucune page trouvée</span>
         </h3>
         <p>
-            <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Try adjusting your search or filter criteria.</span>
-            <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Essayez d'ajuster vos critères de recherche ou de filtre.</span>
+            <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Try adjusting your search or filter criteria.</span>
+            <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Essayez d'ajuster vos critères de recherche ou de filtre.</span>
         </p>
     </div>
 </div>
@@ -555,8 +555,8 @@
             const visibleCount = visiblePages.length;
             const currentLang = localStorage.getItem('reportLanguage') || '{{ language }}';
             resultsSummary.innerHTML = `
-                <span data-lang="en" class="${currentLang === 'en' ? 'lang-active' : 'lang-inactive'}">Showing ${visibleCount} of ${totalPages} pages</span>
-                <span data-lang="fr" class="${currentLang === 'fr' ? 'lang-active' : 'lang-inactive'}">Affichage de ${visibleCount} sur ${totalPages} pages</span>
+                <span data-lang="en" lang="en" class="${currentLang === 'en' ? 'lang-active' : 'lang-inactive'}">Showing ${visibleCount} of ${totalPages} pages</span>
+                <span data-lang="fr" lang="fr" class="${currentLang === 'fr' ? 'lang-active' : 'lang-inactive'}">Affichage de ${visibleCount} sur ${totalPages} pages</span>
             `;
 
             // Show/hide no results message

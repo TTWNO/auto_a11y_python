@@ -18,7 +18,7 @@
         <form method="POST">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <fieldset class="mb-4">
-                <legend class="h5">{{ ftl('groups-group-details') }}</legend>
+                <legend><h3 class="h5 mb-0">{{ ftl('groups-group-details') }}</h3></legend>
                 <div class="mb-3">
                     <label for="name" class="form-label">{{ ftl('common-name') }} <span class="text-danger" aria-hidden="true">*</span></label>
                     <input type="text" class="form-control" id="name" name="name"
@@ -33,7 +33,7 @@
             </fieldset>
 
             <fieldset class="mb-4">
-                <legend class="h5">{{ ftl('groups-permissions') }}</legend>
+                <legend><h3 class="h5 mb-0">{{ ftl('groups-permissions') }}</h3></legend>
                 <p class="text-muted">{{ ftl('groups-each-level-includes-all-lower-levels-read-update') }}</p>
 
                 <div class="table-responsive">

@@ -2254,3 +2254,28 @@ table caption {
         background-color: #5a3580 !important;
     }
 }
+
+/* Utility classes to replace inline font-size styles */
+.empty-state-icon {
+    font-size: 3rem;
+}
+
+.text-size-sm {
+    font-size: 0.875rem;
+}
+
+.text-size-card-title {
+    font-size: 0.9rem;
+}
+
+.text-size-card-subtitle {
+    font-size: 0.9em;
+}
+
+.text-size-card-badge {
+    font-size: 0.7rem;
+}
+
+.text-size-tiny {
+    font-size: 8px;
+}

@@ -185,6 +185,13 @@
         --color-discovery: #6f42c1;
     }
     .text-discovery { color: var(--color-discovery) !important; }
+
+    @media (prefers-reduced-motion: reduce) {
+        * {
+            animation-duration: 0.01ms !important;
+            transition-duration: 0.01ms !important;
+        }
+    }
     </style>
 </head>
 <body>
@@ -341,8 +348,8 @@
                         {% endif %}
                     </div>
                     <div class="mt-1">
-                        <span class="lang-{{ 'active' if language == 'en' else 'inactive' }}" data-lang="en">{{ issue.description_en }}</span>
-                        <span class="lang-{{ 'active' if language == 'fr' else 'inactive' }}" data-lang="fr">{{ issue.description_fr }}</span>
+                        <span class="lang-{{ 'active' if language == 'en' else 'inactive' }}" data-lang="en" lang="en">{{ issue.description_en }}</span>
+                        <span class="lang-{{ 'active' if language == 'fr' else 'inactive' }}" data-lang="fr" lang="fr">{{ issue.description_fr }}</span>
                     </div>
                     <div class="component-meta mt-1">
                         <span>

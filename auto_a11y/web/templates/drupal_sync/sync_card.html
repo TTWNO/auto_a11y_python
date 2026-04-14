@@ -23,12 +23,12 @@
 </div>
 
 <!-- Upload Modal -->
-<div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalTitle">
+<dialog class="modal" id="uploadModal" aria-labelledby="uploadModalTitle">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 class="modal-title" id="uploadModalTitle">{{ ftl('drupal-upload-to-access-labs-portal') }}</h2>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ ftl('common-close') }}"></button>
+                <button type="button" class="btn-close" data-close-modal aria-label="{{ ftl('common-close') }}"></button>
             </div>
             <div class="modal-body">
                 <!-- Step 1: Select Content -->
@@ -114,14 +114,14 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="closeModalBtn">{{ ftl('common-close') }}</button>
+                <button type="button" class="btn btn-secondary" data-close-modal id="closeModalBtn">{{ ftl('common-close') }}</button>
                 <button type="button" class="btn btn-primary" id="startUploadBtn" onclick="startUpload()">
                     <i class="bi bi-cloud-upload" aria-hidden="true"></i> {{ ftl('drupal-start-upload') }}
                 </button>
             </div>
         </div>
     </div>
-</div>
+</dialog>
 
 <script>
 // Global variables
@@ -233,8 +233,7 @@ async function openUploadModal() {
         renderRecordingsList();
 
         // Show modal
-        const modal = new bootstrap.Modal(document.getElementById('uploadModal'));
-        modal.show();
+        document.getElementById('uploadModal').showModal();
     } catch (error) {
         console.error('Error loading content:', error);
         alert({{ ftl('drupal-error-loading-content') | tojson }} + ' ' + error.message);

@@ -185,23 +185,23 @@
 </div>
 
 <!-- Modal for confirmation -->
-<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+<dialog class="modal" id="confirmModal" aria-labelledby="confirmModalLabel">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 class="modal-title" id="confirmModalLabel">{{ ftl('testing-confirm-action') }}</h2>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ ftl('common-close') }}"></button>
+                <button type="button" class="btn-close" data-close-modal aria-label="{{ ftl('common-close') }}"></button>
             </div>
             <div class="modal-body">
                 <p id="confirmMessage"></p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ ftl('common-cancel') }}</button>
+                <button type="button" class="btn btn-secondary" data-close-modal>{{ ftl('common-cancel') }}</button>
                 <button type="button" class="btn btn-danger" id="confirmButton">{{ ftl('testing-confirm') }}</button>
             </div>
         </div>
     </div>
-</div>
+</dialog>
 {% endblock %}
 
 {% block extra_js %}
@@ -236,13 +236,12 @@ function loadJobStats() {
 
 // Clear all jobs
 function clearAllJobs() {
-    const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
     document.getElementById('confirmMessage').textContent =
         {{ ftl('testing-this-will-clear-all-running-and-pending-jobs-this') | tojson }};
 
     const confirmBtn = document.getElementById('confirmButton');
     confirmBtn.onclick = function() {
-        modal.hide();
+        document.getElementById('confirmModal').close();
 
         fetch('/api/v1/jobs/clear-all', {
             method: 'POST',
@@ -265,18 +264,17 @@ function clearAllJobs() {
         });
     };
 
-    modal.show();
+    document.getElementById('confirmModal').showModal();
 }
 
 // Clear stale jobs
 function clearStaleJobs() {
-    const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
     document.getElementById('confirmMessage').textContent =
         {{ ftl('testing-this-will-clear-all-jobs-that-have-been-running') | tojson }};
 
     const confirmBtn = document.getElementById('confirmButton');
     confirmBtn.onclick = function() {
-        modal.hide();
+        document.getElementById('confirmModal').close();
 
         fetch('/api/v1/jobs/clear-stale', {
             method: 'POST',
@@ -299,7 +297,7 @@ function clearStaleJobs() {
         });
     };
 
-    modal.show();
+    document.getElementById('confirmModal').showModal();
 }
 
 // Save configuration

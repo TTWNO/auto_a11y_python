@@ -375,7 +375,7 @@
                             </div>
                         </div>
                         <div class="text-center mt-3">
-                            <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#criteriaBreakdownModal">
+                            <button type="button" class="btn btn-sm btn-outline-primary" data-open-modal="#criteriaBreakdownModal">
                                 <i class="bi bi-list-check" aria-hidden="true"></i> {{ ftl('recordings-view-criteria-details') }}
                             </button>
                         </div>
@@ -688,14 +688,14 @@ function updateIssueStatus(issueId, status) {
 
 <!-- WCAG Criteria Breakdown Modal -->
 {% if scores and scores.compliance_score is not none %}
-<div class="modal fade" id="criteriaBreakdownModal" tabindex="-1" aria-labelledby="criteriaBreakdownModalLabel" aria-hidden="true">
+<dialog class="modal" id="criteriaBreakdownModal" aria-labelledby="criteriaBreakdownModalLabel">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 class="modal-title" id="criteriaBreakdownModalLabel">
                     <i class="bi bi-list-check" aria-hidden="true"></i> {{ ftl('recordings-wcag-success-criteria-breakdown') }}
                 </h2>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ ftl('common-close') }}"></button>
+                <button type="button" class="btn-close" data-close-modal aria-label="{{ ftl('common-close') }}"></button>
             </div>
             <div class="modal-body">
                 <!-- Summary -->
@@ -814,14 +814,14 @@ function updateIssueStatus(issueId, status) {
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ ftl('common-close') }}</button>
+                <button type="button" class="btn btn-secondary" data-close-modal>{{ ftl('common-close') }}</button>
                 <a href="https://www.w3.org/WAI/WCAG22/quickref/" target="_blank" class="btn btn-primary">
                     <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i> {{ ftl('recordings-view-wcag-quick-reference') }}
                 </a>
             </div>
         </div>
     </div>
-</div>
+</dialog>
 {% endif %}
 {% endblock %}
 

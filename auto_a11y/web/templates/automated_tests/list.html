@@ -161,7 +161,7 @@
 </div>
 
 <!-- Upload Progress Modal -->
-<div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalTitle">
+<dialog class="modal" id="uploadModal" aria-labelledby="uploadModalTitle">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -194,11 +194,11 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ ftl('common-close') }}</button>
+                <button type="button" class="btn btn-secondary" data-close-modal>{{ ftl('common-close') }}</button>
             </div>
         </div>
     </div>
-</div>
+</dialog>
 
 <script>
     const projectId = "{{ project.id }}";
@@ -332,8 +332,7 @@
 
     async function uploadToDrupal() {
         // Show upload modal
-        const modal = new bootstrap.Modal(document.getElementById('uploadModal'));
-        modal.show();
+        document.getElementById('uploadModal').showModal();
 
         // Reset modal state
         document.getElementById('uploadProgress').classList.remove('d-none');

@@ -556,25 +556,25 @@ function showHelp(topic) {
 
     // Create modal dynamically
     const modalHtml = `
-        <div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
+        <dialog class="modal" id="helpModal" aria-labelledby="helpModalLabel">
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h2 class="modal-title" id="helpModalLabel">${help.title}</h2>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="` + {{ ftl('common-close') | tojson }} + `"></button>
+                        <button type="button" class="btn-close" data-close-modal aria-label="` + {{ ftl('common-close') | tojson }} + `"></button>
                     </div>
                     <div class="modal-body">
                         ${help.content}
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">` + {{ ftl('common-close') | tojson }} + `</button>
+                        <button type="button" class="btn btn-secondary" data-close-modal>` + {{ ftl('common-close') | tojson }} + `</button>
                         <a href="https://github.com/yourusername/auto_a11y_python/blob/main/FIXTURE_TESTING_GUIDE.md" target="_blank" class="btn btn-primary">
                             ` + {{ ftl('testing-view-full-documentation') | tojson }} + `
                         </a>
                     </div>
                 </div>
             </div>
-        </div>
+        </dialog>
     `;
 
     // Remove existing modal if any
@@ -587,11 +587,10 @@ function showHelp(topic) {
     document.body.insertAdjacentHTML('beforeend', modalHtml);
 
     // Show modal
-    const modal = new bootstrap.Modal(document.getElementById('helpModal'));
-    modal.show();
+    document.getElementById('helpModal').showModal();
 
     // Clean up after modal is hidden
-    document.getElementById('helpModal').addEventListener('hidden.bs.modal', function() {
+    document.getElementById('helpModal').addEventListener('close', function() {
         this.remove();
     });
 }

@@ -286,7 +286,7 @@
                     {{ pagination.start_item }}-{{ pagination.end_item }} {{ ftl('common-of') }} {{ pagination.total_items }}
                 </span>
                 {% endif %}
-                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addPageModal">
+                <button class="btn btn-sm btn-primary" data-open-modal="#addPageModal">
                     <i class="bi bi-plus-circle" aria-hidden="true"></i> <span class="d-none d-sm-inline">{{ ftl('websites-add-page') }}</span><span class="d-sm-none">{{ ftl('common-add') }}</span>
                 </button>
             </div>
@@ -457,12 +457,12 @@
 </div>
 
 <!-- Discovery Options Modal -->
-<div class="modal fade" id="discoveryModal" tabindex="-1" aria-labelledby="discoveryModalLabel">
+<dialog class="modal" id="discoveryModal" aria-labelledby="discoveryModalLabel">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 class="modal-title" id="discoveryModalLabel">{{ ftl('common-discovery-options') }}</h2>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" aria-label="{{ ftl('common-close') }}" data-close-modal></button>
             </div>
             <form id="discoveryForm">
                 <div class="modal-body">
@@ -477,7 +477,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ ftl('common-cancel') }}</button>
+                    <button type="button" class="btn btn-secondary" data-close-modal>{{ ftl('common-cancel') }}</button>
                     <button type="submit" class="btn btn-success">
                         <i class="bi bi-search" aria-hidden="true"></i> {{ ftl('common-start-discovery') }}
                     </button>
@@ -485,15 +485,15 @@
             </form>
         </div>
     </div>
-</div>
+</dialog>
 
 <!-- Add Page Modal -->
-<div class="modal fade" id="addPageModal" tabindex="-1" aria-labelledby="addPageModalLabel">
+<dialog class="modal" id="addPageModal" aria-labelledby="addPageModalLabel">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 class="modal-title" id="addPageModalLabel">{{ ftl('websites-add-page-manually') }}</h2>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" aria-label="{{ ftl('common-close') }}" data-close-modal></button>
             </div>
             <form id="addPageForm">
                 <div class="modal-body">
@@ -512,21 +512,21 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ ftl('common-cancel') }}</button>
+                    <button type="button" class="btn btn-secondary" data-close-modal>{{ ftl('common-cancel') }}</button>
                     <button type="submit" class="btn btn-primary">{{ ftl('websites-add-page') }}</button>
                 </div>
             </form>
         </div>
     </div>
-</div>
+</dialog>
 
 <!-- Test All Pages Modal -->
-<div class="modal fade" id="testAllModal" tabindex="-1" aria-labelledby="testAllModalLabel">
+<dialog class="modal" id="testAllModal" aria-labelledby="testAllModalLabel">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 class="modal-title" id="testAllModalLabel">{{ ftl('websites-test-all-pages-options') }}</h2>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" aria-label="{{ ftl('common-close') }}" data-close-modal></button>
             </div>
             <form id="testAllForm">
                 <div class="modal-body">
@@ -535,7 +535,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ ftl('common-cancel') }}</button>
+                    <button type="button" class="btn btn-secondary" data-close-modal>{{ ftl('common-cancel') }}</button>
                     <button type="submit" class="btn btn-primary">
                         <i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('websites-start-testing') }}
                     </button>
@@ -543,15 +543,15 @@
             </form>
         </div>
     </div>
-</div>
+</dialog>
 
 <!-- Test Untested Pages Modal -->
-<div class="modal fade" id="testUntestedModal" tabindex="-1" aria-labelledby="testUntestedModalLabel">
+<dialog class="modal" id="testUntestedModal" aria-labelledby="testUntestedModalLabel">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 class="modal-title" id="testUntestedModalLabel">{{ ftl('websites-test-untested-pages') }}</h2>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" aria-label="{{ ftl('common-close') }}" data-close-modal></button>
             </div>
             <form id="testUntestedForm">
                 <div class="modal-body">
@@ -569,7 +569,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ ftl('common-cancel') }}</button>
+                    <button type="button" class="btn btn-secondary" data-close-modal>{{ ftl('common-cancel') }}</button>
                     <button type="submit" class="btn btn-primary">
                         <i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('websites-start-testing') }}
                     </button>
@@ -577,15 +577,15 @@
             </form>
         </div>
     </div>
-</div>
+</dialog>
 
 <!-- Screenshot Modal -->
-<div class="modal fade" id="screenshotModal" tabindex="-1">
+<dialog class="modal" id="screenshotModal" aria-labelledby="screenshotModalTitle">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 class="modal-title" id="screenshotModalTitle">{{ ftl('common-screenshot') }}</h2>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" aria-label="{{ ftl('common-close') }}" data-close-modal></button>
             </div>
             <div class="modal-body text-center">
                 <img id="screenshotModalImage" src="" alt="{{ ftl('common-screenshot') }}" style="max-width: 100%; height: auto;">
@@ -594,11 +594,11 @@
                 <a id="screenshotModalLink" href="" target="_blank" class="btn btn-primary">
                     <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i> {{ ftl('common-open-in-new-tab') }}
                 </a>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ ftl('common-close') }}</button>
+                <button type="button" class="btn btn-secondary" data-close-modal>{{ ftl('common-close') }}</button>
             </div>
         </div>
     </div>
-</div>
+</dialog>
 
 {% endblock %}
 
@@ -608,7 +608,7 @@ function showScreenshot(screenshotUrl, pageUrl) {
     $('#screenshotModalTitle').text('{{ ftl('common-screenshot') }}: ' + pageUrl);
     $('#screenshotModalImage').attr('src', screenshotUrl);
     $('#screenshotModalLink').attr('href', screenshotUrl);
-    $('#screenshotModal').modal('show');
+    openModal('screenshotModal');
 }
 </script>
 <script>
@@ -899,7 +899,7 @@ $(document).ready(function() {
         }
         
         // Show the modal for options
-        $('#discoveryModal').modal('show');
+        openModal('discoveryModal');
     });
     
     // Handle discovery form submission
@@ -925,7 +925,7 @@ $(document).ready(function() {
         }
 
         // Hide modal
-        $('#discoveryModal').modal('hide');
+        closeModal('discoveryModal');
 
         // Prepare request data
         const requestData = {
@@ -991,11 +991,11 @@ $(document).ready(function() {
     
     $('#testAllBtn').click(function() {
         // Show the modal for options
-        $('#testAllModal').modal('show');
+        openModal('testAllModal');
     });
 
     $('#testUntestedBtn').click(function() {
-        $('#testUntestedModal').modal('show');
+        openModal('testUntestedModal');
     });
 
     // Handle test untested form submission
@@ -1016,7 +1016,7 @@ $(document).ready(function() {
             return;
         }
 
-        $('#testUntestedModal').modal('hide');
+        closeModal('testUntestedModal');
 
         const btn = $('#testUntestedBtn');
         const testAllBtn = $('#testAllBtn');
@@ -1098,7 +1098,7 @@ $(document).ready(function() {
         }
 
         // Hide modal
-        $('#testAllModal').modal('hide');
+        closeModal('testAllModal');
 
         const btn = $('#testAllBtn');
         const cancelBtn = $('#cancelTestingBtn');
@@ -1178,7 +1178,7 @@ $(document).ready(function() {
             priority: $('#priority').val()
         }, function(data) {
             if (data.success) {
-                $('#addPageModal').modal('hide');
+                closeModal('addPageModal');
                 location.reload();
             } else {
                 alert(data.error || '{{ ftl('websites-failed-to-add-page') }}');

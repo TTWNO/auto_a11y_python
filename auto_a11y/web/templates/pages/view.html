@@ -3701,12 +3701,12 @@
 </div>
 
 <!-- Screenshot Modal -->
-<div class="modal fade" id="screenshotModal" tabindex="-1" aria-labelledby="screenshotModalTitle">
+<dialog class="modal" id="screenshotModal" aria-labelledby="screenshotModalTitle">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 class="modal-title" id="screenshotModalTitle">{{ ftl('pages-page-screenshot') }}</h2>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ ftl('common-close') }}"></button>
+                <button type="button" class="btn-close" data-close-modal aria-label="{{ ftl('common-close') }}"></button>
             </div>
             <div class="modal-body text-center">
                 <img id="screenshotModalImage" src="" alt="{{ ftl('common-screenshot') }}" style="max-width: 100%; height: auto;">
@@ -3715,19 +3715,19 @@
                 <a id="screenshotModalLink" href="" target="_blank" class="btn btn-primary">
                     <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i> {{ ftl('common-open-in-new-tab') }}
                 </a>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ ftl('common-close') }}</button>
+                <button type="button" class="btn btn-secondary" data-close-modal>{{ ftl('common-close') }}</button>
             </div>
         </div>
     </div>
-</div>
+</dialog>
 
 <!-- Test Page Modal -->
-<div class="modal fade" id="testModal" tabindex="-1" aria-labelledby="testModalTitle">
+<dialog class="modal" id="testModal" aria-labelledby="testModalTitle" data-modal-persistent>
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 class="modal-title" id="testModalTitle">{{ ftl('pages-running-test') }}</h2>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ ftl('common-close') }}"></button>
+                <button type="button" class="btn-close" data-close-modal aria-label="{{ ftl('common-close') }}"></button>
             </div>
             <div class="modal-body text-center">
                 <div class="spinner-border text-primary mb-3" role="status">
@@ -3738,7 +3738,7 @@
             </div>
         </div>
     </div>
-</div>
+</dialog>
 {% endblock %}
 
 {% block extra_js %}
@@ -3777,7 +3777,7 @@ function showScreenshot(screenshotUrl, pageUrl) {
     $('#screenshotModalTitle').text(i18n.screenshot + ' ' + pageUrl);
     $('#screenshotModalImage').attr('src', screenshotUrl);
     $('#screenshotModalLink').attr('href', screenshotUrl);
-    $('#screenshotModal').modal('show');
+    openModal('screenshotModal');
 }
 
 let statusPollInterval = null;
@@ -3949,8 +3949,7 @@ function testPage(pageId) {
     }
 
     // Show modal
-    const modal = new bootstrap.Modal(document.getElementById('testModal'));
-    modal.show();
+    document.getElementById('testModal').showModal();
 
     testInProgress = true;
 

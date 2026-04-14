@@ -396,7 +396,7 @@
 </div>
 
 <!-- Test Details Modal -->
-<div class="modal fade test-details-modal" id="testDetailsModal" tabindex="-1" aria-labelledby="testDetailsModalLabel" aria-hidden="true">
+<dialog class="modal test-details-modal" id="testDetailsModal" aria-labelledby="testDetailsModalLabel">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
@@ -404,7 +404,7 @@
                     <i class="bi bi-info-circle me-2" aria-hidden="true"></i>
                     <span id="testDetailsTitle">{{ ftl('common-test-details') }}</span>
                 </h2>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ ftl('common-close') }}"></button>
+                <button type="button" class="btn-close" data-close-modal aria-label="{{ ftl('common-close') }}"></button>
             </div>
             <div class="modal-body" id="testDetailsBody">
                 <div class="text-center py-4">
@@ -415,11 +415,11 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ ftl('common-close') }}</button>
+                <button type="button" class="btn btn-secondary" data-close-modal>{{ ftl('common-close') }}</button>
             </div>
         </div>
     </div>
-</div>
+</dialog>
 
 {% endblock %}
 
@@ -514,7 +514,6 @@ function deselectAllAITests(event) {
 
 // Show test details in modal
 function showTestDetails(testId) {
-    const modal = new bootstrap.Modal(document.getElementById('testDetailsModal'));
     const titleEl = document.getElementById('testDetailsTitle');
     const bodyEl = document.getElementById('testDetailsBody');
 
@@ -532,7 +531,7 @@ function showTestDetails(testId) {
     `;
 
     // Show modal
-    modal.show();
+    document.getElementById('testDetailsModal').showModal();
 
     // Fetch test details
     fetch(`/projects/api/test-details/${testId}`)

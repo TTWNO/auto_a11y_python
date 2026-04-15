@@ -99,11 +99,11 @@
                         </fieldset>
 
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn btn-brand">
                                 <i class="bi bi-check-circle" aria-hidden="true"></i> {{ ftl('websites-update-website') }}
                             </button>
                             <a href="{{ url_for('websites.view_website', website_id=website.id) }}"
-                               class="btn btn-outline-secondary">
+                               class="btn btn-outline-neutral">
                                 <i class="bi bi-x-circle" aria-hidden="true"></i> {{ ftl('common-cancel') }}
                             </a>
                         </div>
@@ -111,7 +111,7 @@
                         <hr class="my-4">
 
                         <div class="d-grid">
-                            <button type="button" class="btn btn-outline-danger" data-open-modal="#deleteWebsiteModal">
+                            <button type="button" class="btn btn-outline-high" data-open-modal="#deleteWebsiteModal">
                                 <i class="bi bi-trash" aria-hidden="true"></i> {{ ftl('websites-delete-website') }}
                             </button>
                         </div>
@@ -132,13 +132,13 @@
             </div>
             <div class="modal-body">
                 <p>{{ ftl('websites-are-you-sure-you-want-to-delete-the-website') }} "{{ website.display_name }}"?</p>
-                <p class="text-danger">{{ ftl('websites-this-will-permanently-delete-all-pages-and-test') }}</p>
+                <p class="text-severity-high">{{ ftl('websites-this-will-permanently-delete-all-pages-and-test') }}</p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-close-modal>{{ ftl('common-cancel') }}</button>
+                <button type="button" class="btn btn-neutral" data-close-modal>{{ ftl('common-cancel') }}</button>
                 <form method="POST" action="{{ url_for('websites.delete_website', website_id=website.id) }}" style="display: inline;">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                    <button type="submit" class="btn btn-danger">{{ ftl('websites-delete-website') }}</button>
+                    <button type="submit" class="btn btn-high">{{ ftl('websites-delete-website') }}</button>
                 </form>
             </div>
         </div>

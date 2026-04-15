@@ -6,7 +6,7 @@
 <div class="row">
     <div class="col-md-6">
         <div class="card shadow mb-4">
-            <div class="card-header bg-primary text-white">
+            <div class="card-header bg-brand text-inverse">
                 <h2 class="mb-0"><i class="bi bi-person-circle" aria-hidden="true"></i> {{ ftl('common-profile') }}</h2>
             </div>
             <div class="card-body">
@@ -33,7 +33,7 @@
                             <label class="form-label">{{ ftl('auth-member-since') }}</label>
                             <input type="text" class="form-control" value="{{ current_user.created_at.strftime('%Y-%m-%d') }}" disabled>
                         </div>
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn btn-brand">
                             <i class="bi bi-check-lg" aria-hidden="true"></i> {{ ftl('common-save-changes') }}
                         </button>
                     </fieldset>
@@ -44,7 +44,7 @@
     
     <div class="col-md-6">
         <div class="card shadow">
-            <div class="card-header bg-warning text-dark">
+            <div class="card-header card-header-medium">
                 <h2 class="mb-0"><i class="bi bi-key" aria-hidden="true"></i> {{ ftl('auth-change-password') }}</h2>
             </div>
             <div class="card-body">
@@ -71,7 +71,7 @@
                             <input type="text" class="form-control" id="password_hint" name="password_hint" value="{{ current_user.password_hint or '' }}" aria-describedby="password_hint_help">
                             <div class="form-text" id="password_hint_help">{{ ftl('auth-optional-a-hint-to-help-you-remember-your') }}</div>
                         </div>
-                        <button type="submit" class="btn btn-warning">
+                        <button type="submit" class="btn btn-medium">
                             <i class="bi bi-key" aria-hidden="true"></i> {{ ftl('auth-change-password') }}
                         </button>
                     </fieldset>

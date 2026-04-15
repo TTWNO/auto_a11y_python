@@ -124,7 +124,7 @@
                             </div>
                         </fieldset>
 
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn btn-brand">
                             <i class="bi bi-save" aria-hidden="true"></i> {{ ftl('common-save-configuration') }}
                         </button>
                     </form>
@@ -135,18 +135,18 @@
         <!-- System Maintenance -->
         <div class="col-md-4">
             <div class="card">
-                <div class="card-header bg-warning text-dark">
+                <div class="card-header card-header-medium">
                     <h2><i class="bi bi-wrench" aria-hidden="true"></i> {{ ftl('testing-system-maintenance') }}</h2>
                 </div>
                 <div class="card-body">
-                    <div class="alert alert-warning" role="alert">
+                    <div class="alert alert-medium" role="alert">
                         <i class="bi bi-exclamation-triangle" aria-hidden="true"></i> <strong>{{ ftl('testing-warning') }}</strong> {{ ftl('testing-these-actions-cannot-be-undone') }}
                     </div>
                     
                     <div class="mb-3">
                         <h3>{{ ftl('testing-clear-outstanding-jobs') }}</h3>
                         <p class="text-muted small">{{ ftl('testing-reset-all-running-and-pending-scrapes-and-tests') }}</p>
-                        <button class="btn btn-danger" onclick="clearAllJobs()">
+                        <button class="btn btn-high" onclick="clearAllJobs()">
                             <i class="bi bi-trash" aria-hidden="true"></i> {{ ftl('testing-clear-all-jobs') }}
                         </button>
                     </div>
@@ -154,7 +154,7 @@
                     <div class="mb-3">
                         <h3>{{ ftl('testing-clear-stale-jobs') }}</h3>
                         <p class="text-muted small">{{ ftl('testing-remove-jobs-that-have-been-running-for-more-than') }}</p>
-                        <button class="btn btn-warning" onclick="clearStaleJobs()">
+                        <button class="btn btn-medium" onclick="clearStaleJobs()">
                             <i class="bi bi-clock-history" aria-hidden="true"></i> {{ ftl('testing-clear-stale-jobs') }}
                         </button>
                     </div>
@@ -196,8 +196,8 @@
                 <p id="confirmMessage"></p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-close-modal>{{ ftl('common-cancel') }}</button>
-                <button type="button" class="btn btn-danger" id="confirmButton">{{ ftl('testing-confirm') }}</button>
+                <button type="button" class="btn btn-neutral" data-close-modal>{{ ftl('common-cancel') }}</button>
+                <button type="button" class="btn btn-high" id="confirmButton">{{ ftl('testing-confirm') }}</button>
             </div>
         </div>
     </div>
@@ -230,7 +230,7 @@ function loadJobStats() {
         .catch(error => {
             console.error('Error loading job stats:', error);
             document.getElementById('job-stats').innerHTML =
-                '<div class="text-danger">{{ ftl('testing-failed-to-load-statistics') }}</div>';
+                '<div class="text-severity-high">{{ ftl('testing-failed-to-load-statistics') }}</div>';
         });
 }
 

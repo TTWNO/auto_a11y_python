@@ -71,7 +71,7 @@
             
             <!-- Fixture Status Notice -->
             {% if debug_mode %}
-            <div class="alert alert-warning mb-3">
+            <div class="alert alert-medium mb-3">
                 <i class="bi bi-exclamation-triangle-fill me-2" aria-hidden="true"></i>
                 <strong>{{ ftl('projects-debug-mode-active') }}</strong> {{ ftl('projects-all-tests-are-available-regardless-of-fixture') }}
                 <a href="{{ url_for('testing.fixture_status') }}" class="alert-link float-end">{{ ftl('projects-view-fixture-status') }}</a>
@@ -217,8 +217,8 @@
 
                             <!-- Global Controls -->
                             <div class="btn-group mb-3" role="group">
-                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAllTests(true)">{{ ftl('projects-enable-all') }}</button>
-                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="selectAllTests(false)">{{ ftl('projects-disable-all') }}</button>
+                                <button type="button" class="btn btn-sm btn-outline-brand" onclick="selectAllTests(true)">{{ ftl('projects-enable-all') }}</button>
+                                <button type="button" class="btn btn-sm btn-outline-neutral" onclick="selectAllTests(false)">{{ ftl('projects-disable-all') }}</button>
                                 <button type="button" class="btn btn-sm btn-outline-info" onclick="applyPreset('minimal')">{{ ftl('projects-minimal') }}</button>
                                 <button type="button" class="btn btn-sm btn-outline-info" onclick="applyPreset('wcag-aa')">{{ ftl('projects-wcag-aa') }}</button>
                             </div>
@@ -248,13 +248,13 @@
                                                 {% set available_count = test_ids|select('in', passing_tests)|list|length %}
                                                 {% set total_count = test_ids|length %}
                                                 {% if debug_mode %}
-                                                    <span class="badge bg-warning ms-2" title="{{ ftl('projects-debug-mode-all-tests-available') }}">{{ total_count }}</span>
+                                                    <span class="badge badge-medium ms-2" title="{{ ftl('projects-debug-mode-all-tests-available') }}">{{ total_count }}</span>
                                                 {% elif available_count == total_count %}
-                                                    <span class="badge bg-success ms-2" title="{{ ftl('projects-all-tests-passed-fixtures') }}">{{ available_count }}</span>
+                                                    <span class="badge badge-pass ms-2" title="{{ ftl('projects-all-tests-passed-fixtures') }}">{{ available_count }}</span>
                                                 {% elif available_count == 0 %}
-                                                    <span class="badge bg-danger ms-2" title="{{ ftl('projects-no-tests-available') }}">0/{{ total_count }}</span>
+                                                    <span class="badge badge-high ms-2" title="{{ ftl('projects-no-tests-available') }}">0/{{ total_count }}</span>
                                                 {% else %}
-                                                    <span class="badge bg-warning ms-2" title="{{ ftl('projects-available-of-total-tests-available', available=available_count, total=total_count) }}">{{ available_count }}/{{ total_count }}</span>
+                                                    <span class="badge badge-medium ms-2" title="{{ ftl('projects-available-of-total-tests-available', available=available_count, total=total_count) }}">{{ available_count }}/{{ total_count }}</span>
                                                 {% endif %}
                                             </label>
                                         </div>
@@ -287,15 +287,15 @@
                                             </button>
                                             {% if not test_passed %}
                                                 {% if test_status %}
-                                                    <span class="badge bg-danger fixture-status-badge" title="{{ ftl('projects-failed-fixture-test') }}">✗</span>
+                                                    <span class="badge badge-high fixture-status-badge" title="{{ ftl('projects-failed-fixture-test') }}">✗</span>
                                                 {% else %}
-                                                    <span class="badge bg-warning fixture-status-badge" title="{{ ftl('projects-no-fixture-test') }}">?</span>
+                                                    <span class="badge badge-medium fixture-status-badge" title="{{ ftl('projects-no-fixture-test') }}">?</span>
                                                 {% endif %}
                                                 {% if is_debug_override %}
-                                                    <span class="badge bg-info fixture-status-badge" title="{{ ftl('projects-enabled-in-debug-mode') }}">{{ ftl('projects-debug') }}</span>
+                                                    <span class="badge badge-info fixture-status-badge" title="{{ ftl('projects-enabled-in-debug-mode') }}">{{ ftl('projects-debug') }}</span>
                                                 {% endif %}
                                             {% else %}
-                                                <span class="badge bg-success fixture-status-badge" title="{{ ftl('projects-passed-fixture-test') }}">✓</span>
+                                                <span class="badge badge-pass fixture-status-badge" title="{{ ftl('projects-passed-fixture-test') }}">✓</span>
                                             {% endif %}
                                             {% set is_production_ready = production_ready_statuses.get(test_id, False) %}
                                             <div class="form-check ms-2">
@@ -381,10 +381,10 @@
                         </fieldset>
 
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn btn-brand">
                                 <i class="bi bi-check-circle" aria-hidden="true"></i> {{ ftl('projects-create-project') }}
                             </button>
-                            <a href="{{ url_for('projects.list_projects') }}" class="btn btn-outline-secondary">
+                            <a href="{{ url_for('projects.list_projects') }}" class="btn btn-outline-neutral">
                                 <i class="bi bi-x-circle" aria-hidden="true"></i> {{ ftl('common-cancel') }}
                             </a>
                         </div>
@@ -408,14 +408,14 @@
             </div>
             <div class="modal-body" id="testDetailsBody">
                 <div class="text-center py-4">
-                    <div class="spinner-border text-primary" role="status">
+                    <div class="spinner-border text-brand" role="status">
                         <span class="visually-hidden">{{ ftl('common-loading') }}</span>
                     </div>
                     <p class="mt-2 text-muted">{{ ftl('projects-loading-test-details') }}</p>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-close-modal>{{ ftl('common-close') }}</button>
+                <button type="button" class="btn btn-neutral" data-close-modal>{{ ftl('common-close') }}</button>
             </div>
         </div>
     </div>
@@ -523,7 +523,7 @@ function showTestDetails(testId) {
     // Show loading state
     bodyEl.innerHTML = `
         <div class="text-center py-4">
-            <div class="spinner-border text-primary" role="status">
+            <div class="spinner-border text-brand" role="status">
                 <span class="visually-hidden">{{ ftl('common-loading') }}</span>
             </div>
             <p class="mt-2 text-muted">{{ ftl('projects-loading-test-details') }}</p>
@@ -550,21 +550,21 @@ function showTestDetails(testId) {
                 // Build WCAG badges
                 let wcagBadges = '';
                 if (test.wcag && test.wcag.length > 0) {
-                    wcagBadges = test.wcag.map(w => `<span class="badge bg-primary me-1">${w}</span>`).join('');
+                    wcagBadges = test.wcag.map(w => `<span class="badge badge-brand me-1">${w}</span>`).join('');
                 }
 
                 // Build modal content
                 // Build production ready toggle
                 const productionReadyBadge = test.production_ready ?
-                    '<span class="badge bg-success me-2"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>{{ ftl('projects-production-ready-2') }}</span>' :
-                    '<span class="badge bg-warning me-2"><i class="bi bi-exclamation-circle me-1" aria-hidden="true"></i>{{ ftl('projects-pending-review') }}</span>';
+                    '<span class="badge badge-pass me-2"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>{{ ftl('projects-production-ready-2') }}</span>' :
+                    '<span class="badge badge-medium me-2"><i class="bi bi-exclamation-circle me-1" aria-hidden="true"></i>{{ ftl('projects-pending-review') }}</span>';
 
                 bodyEl.innerHTML = `
                     <div class="mb-3">
                         <div class="d-flex align-items-center justify-content-between mb-2">
                             <div>
                                 <span class="badge bg-${impactClass} impact-badge me-2">${impactI18n[test.impact] || test.impact} {{ ftl('common-impact-2') }}</span>
-                                <span class="badge bg-secondary me-2">${test.type}</span>
+                                <span class="badge badge-neutral me-2">${test.type}</span>
                                 ${wcagBadges}
                             </div>
                             <div>
@@ -618,35 +618,35 @@ function showTestDetails(testId) {
                     ` : ''}
 
                     ${test.message_template && (test.message_template.title || test.message_template.what) ? `
-                    <div class="test-details-section bg-light border rounded p-3">
+                    <div class="test-details-section bg-subtle border rounded p-3">
                         <h3><i class="bi bi-chat-square-text me-2" aria-hidden="true"></i>{{ ftl('projects-violation-message-templates') }}</h3>
                         <p class="text-muted small mb-3">{{ ftl('projects-these-are-the-actual-message-templates-shown-to') }}</p>
 
                         ${test.message_template.title ? `
                         <div class="mb-2">
                             <strong class="d-block mb-1">{{ ftl('projects-title-template') }}</strong>
-                            <code class="d-block bg-white p-2 rounded">${test.message_template.title}</code>
+                            <code class="d-block bg-elevated p-2 rounded">${test.message_template.title}</code>
                         </div>
                         ` : ''}
 
                         ${test.message_template.what ? `
                         <div class="mb-2">
                             <strong class="d-block mb-1">{{ ftl('projects-what-description-template') }}</strong>
-                            <code class="d-block bg-white p-2 rounded">${test.message_template.what}</code>
+                            <code class="d-block bg-elevated p-2 rounded">${test.message_template.what}</code>
                         </div>
                         ` : ''}
 
                         ${test.message_template.why ? `
                         <div class="mb-2">
                             <strong class="d-block mb-1">{{ ftl('projects-why-rationale-template') }}</strong>
-                            <code class="d-block bg-white p-2 rounded">${test.message_template.why}</code>
+                            <code class="d-block bg-elevated p-2 rounded">${test.message_template.why}</code>
                         </div>
                         ` : ''}
 
                         ${test.message_template.remediation ? `
                         <div>
                             <strong class="d-block mb-1">{{ ftl('projects-remediation-template') }}</strong>
-                            <code class="d-block bg-white p-2 rounded">${test.message_template.remediation}</code>
+                            <code class="d-block bg-elevated p-2 rounded">${test.message_template.remediation}</code>
                         </div>
                         ` : ''}
                     </div>
@@ -654,7 +654,7 @@ function showTestDetails(testId) {
                 `;
             } else {
                 bodyEl.innerHTML = `
-                    <div class="alert alert-warning">
+                    <div class="alert alert-medium">
                         <i class="bi bi-exclamation-triangle me-2" aria-hidden="true"></i>
                         <strong>{{ ftl('projects-test-information-not-available') }}</strong>
                         <p class="mb-0 mt-2">{{ ftl('projects-details-for-test') }} <code>${testId}</code> {{ ftl('projects-are-not-available-in-the-catalog') }}</p>
@@ -665,7 +665,7 @@ function showTestDetails(testId) {
         .catch(error => {
             console.error('Error fetching test details:', error);
             bodyEl.innerHTML = `
-                <div class="alert alert-danger">
+                <div class="alert alert-high">
                     <i class="bi bi-x-circle me-2" aria-hidden="true"></i>
                     <strong>{{ ftl('projects-error-loading-test-details') }}</strong>
                     <p class="mb-0 mt-2">{{ ftl('projects-an-error-occurred-while-loading-the-test-details') }}</p>
@@ -727,7 +727,7 @@ function refreshTestDetailsContent(testId) {
     // Show loading state
     bodyEl.innerHTML = `
         <div class="text-center py-4">
-            <div class="spinner-border text-primary" role="status">
+            <div class="spinner-border text-brand" role="status">
                 <span class="visually-hidden">{{ ftl('common-loading') }}</span>
             </div>
             <p class="mt-2 text-muted">{{ ftl('common-refreshing') }}</p>
@@ -751,20 +751,20 @@ function refreshTestDetailsContent(testId) {
                 // Build WCAG badges
                 let wcagBadges = '';
                 if (test.wcag && test.wcag.length > 0) {
-                    wcagBadges = test.wcag.map(w => `<span class="badge bg-primary me-1">${w}</span>`).join('');
+                    wcagBadges = test.wcag.map(w => `<span class="badge badge-brand me-1">${w}</span>`).join('');
                 }
 
                 // Build production ready toggle
                 const productionReadyBadge = test.production_ready ?
-                    '<span class="badge bg-success me-2"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>{{ ftl('projects-production-ready-2') }}</span>' :
-                    '<span class="badge bg-warning me-2"><i class="bi bi-exclamation-circle me-1" aria-hidden="true"></i>{{ ftl('projects-pending-review') }}</span>';
+                    '<span class="badge badge-pass me-2"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>{{ ftl('projects-production-ready-2') }}</span>' :
+                    '<span class="badge badge-medium me-2"><i class="bi bi-exclamation-circle me-1" aria-hidden="true"></i>{{ ftl('projects-pending-review') }}</span>';
 
                 bodyEl.innerHTML = `
                     <div class="mb-3">
                         <div class="d-flex align-items-center justify-content-between mb-2">
                             <div>
                                 <span class="badge bg-${impactClass} impact-badge me-2">${impactI18n[test.impact] || test.impact} {{ ftl('common-impact-2') }}</span>
-                                <span class="badge bg-secondary me-2">${test.type}</span>
+                                <span class="badge badge-neutral me-2">${test.type}</span>
                                 ${wcagBadges}
                             </div>
                             <div>
@@ -818,35 +818,35 @@ function refreshTestDetailsContent(testId) {
                     ` : ''}
 
                     ${test.message_template && (test.message_template.title || test.message_template.what) ? `
-                    <div class="test-details-section bg-light border rounded p-3">
+                    <div class="test-details-section bg-subtle border rounded p-3">
                         <h3><i class="bi bi-chat-square-text me-2" aria-hidden="true"></i>{{ ftl('projects-violation-message-templates') }}</h3>
                         <p class="text-muted small mb-3">{{ ftl('projects-these-are-the-actual-message-templates-shown-to') }}</p>
 
                         ${test.message_template.title ? `
                         <div class="mb-2">
                             <strong class="d-block mb-1">{{ ftl('projects-title-template') }}</strong>
-                            <code class="d-block bg-white p-2 rounded">${test.message_template.title}</code>
+                            <code class="d-block bg-elevated p-2 rounded">${test.message_template.title}</code>
                         </div>
                         ` : ''}
 
                         ${test.message_template.what ? `
                         <div class="mb-2">
                             <strong class="d-block mb-1">{{ ftl('projects-what-description-template') }}</strong>
-                            <code class="d-block bg-white p-2 rounded">${test.message_template.what}</code>
+                            <code class="d-block bg-elevated p-2 rounded">${test.message_template.what}</code>
                         </div>
                         ` : ''}
 
                         ${test.message_template.why ? `
                         <div class="mb-2">
                             <strong class="d-block mb-1">{{ ftl('projects-why-rationale-template') }}</strong>
-                            <code class="d-block bg-white p-2 rounded">${test.message_template.why}</code>
+                            <code class="d-block bg-elevated p-2 rounded">${test.message_template.why}</code>
                         </div>
                         ` : ''}
 
                         ${test.message_template.remediation ? `
                         <div>
                             <strong class="d-block mb-1">{{ ftl('projects-remediation-template') }}</strong>
-                            <code class="d-block bg-white p-2 rounded">${test.message_template.remediation}</code>
+                            <code class="d-block bg-elevated p-2 rounded">${test.message_template.remediation}</code>
                         </div>
                         ` : ''}
                     </div>
@@ -854,7 +854,7 @@ function refreshTestDetailsContent(testId) {
                 `;
             } else {
                 bodyEl.innerHTML = `
-                    <div class="alert alert-warning">
+                    <div class="alert alert-medium">
                         <i class="bi bi-exclamation-triangle me-2" aria-hidden="true"></i>
                         <strong>{{ ftl('projects-test-information-not-available') }}</strong>
                         <p class="mb-0 mt-2">{{ ftl('projects-details-for-test') }} <code>${testId}</code> {{ ftl('projects-are-not-available-in-the-catalog') }}</p>
@@ -865,7 +865,7 @@ function refreshTestDetailsContent(testId) {
         .catch(error => {
             console.error('Error fetching test details:', error);
             bodyEl.innerHTML = `
-                <div class="alert alert-danger">
+                <div class="alert alert-high">
                     <i class="bi bi-x-circle me-2" aria-hidden="true"></i>
                     <strong>{{ ftl('projects-error-loading-test-details') }}</strong>
                     <p class="mb-0 mt-2">{{ ftl('projects-an-error-occurred-while-loading-the-test-details') }}</p>

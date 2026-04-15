@@ -173,10 +173,10 @@
     }
 
     /* WCAG AA Contrast Overrides */
-    .text-info {
+    .text-info-custom {
         color: #0e7490 !important; /* Dark cyan with 4.5:1 contrast on white */
     }
-    .text-warning {
+    .text-severity-medium {
         color: #856404 !important; /* Dark yellow/brown with 4.6:1 contrast on white */
     }
 
@@ -216,7 +216,7 @@
         <!-- Accessibility Score Card -->
         {% if overall_accessibility_score is defined %}
         <div class="stat-card">
-            <div class="stat-value {% if overall_accessibility_score >= 90 %}text-success{% elif overall_accessibility_score >= 70 %}text-warning{% else %}text-danger{% endif %}">
+            <div class="stat-value {% if overall_accessibility_score >= 90 %}text-severity-pass{% elif overall_accessibility_score >= 70 %}text-severity-medium{% else %}text-severity-high{% endif %}">
                 {{ "%.1f"|format(overall_accessibility_score) }}%
             </div>
             <div class="stat-label" data-i18n="accessibility_score">{{ t['accessibility_score'] }}</div>
@@ -226,7 +226,7 @@
         <!-- Compliance Score Card -->
         {% if overall_compliance_score is defined %}
         <div class="stat-card">
-            <div class="stat-value {% if overall_compliance_score >= 90 %}text-success{% elif overall_compliance_score >= 70 %}text-warning{% else %}text-danger{% endif %}">
+            <div class="stat-value {% if overall_compliance_score >= 90 %}text-severity-pass{% elif overall_compliance_score >= 70 %}text-severity-medium{% else %}text-severity-high{% endif %}">
                 {{ "%.1f"|format(overall_compliance_score) }}%
             </div>
             <div class="stat-label" data-i18n="compliance_score">{{ t['compliance_score'] }}</div>
@@ -234,15 +234,15 @@
         {% endif %}
 
         <div class="stat-card">
-            <div class="stat-value text-danger">{{ total_violations }}</div>
+            <div class="stat-value text-severity-high">{{ total_violations }}</div>
             <div class="stat-label" data-i18n="violations">{{ t['violations'] }}</div>
         </div>
         <div class="stat-card">
-            <div class="stat-value text-warning">{{ total_warnings }}</div>
+            <div class="stat-value text-severity-medium">{{ total_warnings }}</div>
             <div class="stat-label" data-i18n="warnings">{{ t['warnings'] }}</div>
         </div>
         <div class="stat-card">
-            <div class="stat-value text-info">{{ total_info }}</div>
+            <div class="stat-value text-info-custom">{{ total_info }}</div>
             <div class="stat-label" data-i18n="info_items">{{ t['info_items'] }}</div>
         </div>
         {% if total_discovery is defined and total_discovery > 0 %}
@@ -252,11 +252,11 @@
         </div>
         {% endif %}
         <div class="stat-card">
-            <div class="stat-value text-primary">{{ total_components }}</div>
+            <div class="stat-value text-brand">{{ total_components }}</div>
             <div class="stat-label" data-i18n="components">{{ t['components'] }}</div>
         </div>
         <div class="stat-card">
-            <div class="stat-value text-secondary">{{ total_pages }}</div>
+            <div class="stat-value text-muted">{{ total_pages }}</div>
             <div class="stat-label" data-i18n="pages">{{ t['pages'] }}</div>
         </div>
     </div>
@@ -282,7 +282,7 @@
                                 <span><i class="bi bi-file-earmark" aria-hidden="true"></i> {{ comp_data.page_count }} <span data-i18n="page_s">{{ t['page_s'] }}</span></span>
                                 {% if comp_data.score is defined %}
                                 <span><i class="bi bi-graph-up" aria-hidden="true"></i> <span data-i18n="score">{{ t['score'] }}</span>:
-                                    <strong class="{% if comp_data.score >= 90 %}text-success{% elif comp_data.score >= 70 %}text-warning{% else %}text-danger{% endif %}">
+                                    <strong class="{% if comp_data.score >= 90 %}text-severity-pass{% elif comp_data.score >= 70 %}text-severity-medium{% else %}text-severity-high{% endif %}">
                                         {{ "%.1f"|format(comp_data.score) }}%
                                     </strong>
                                 </span>
@@ -408,7 +408,7 @@
                         <div class="component-meta">
                             {% if page_data.dedup_score is defined %}
                             <span><i class="bi bi-graph-up" aria-hidden="true"></i> <span data-i18n="score">{{ t['score'] }}</span>:
-                                <strong class="{% if page_data.dedup_score >= 90 %}text-success{% elif page_data.dedup_score >= 70 %}text-warning{% else %}text-danger{% endif %}">
+                                <strong class="{% if page_data.dedup_score >= 90 %}text-severity-pass{% elif page_data.dedup_score >= 70 %}text-severity-medium{% else %}text-severity-high{% endif %}">
                                     {{ "%.1f"|format(page_data.dedup_score) }}%
                                 </strong>
                             </span>

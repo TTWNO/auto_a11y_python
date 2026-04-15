@@ -349,26 +349,26 @@
     <!-- Overview Cards -->
     <div class="overview-cards">
         <div class="overview-card">
-            <div class="card-icon"><i class="bi bi-file-earmark-text text-primary" aria-hidden="true"></i></div>
-            <div class="card-value text-primary">{{ pages|length }}</div>
+            <div class="card-icon"><i class="bi bi-file-earmark-text text-brand" aria-hidden="true"></i></div>
+            <div class="card-value text-brand">{{ pages|length }}</div>
             <div class="card-label">{{ ftl('common-pages-tested-2') }}</div>
         </div>
 
         <div class="overview-card">
-            <div class="card-icon"><i class="bi bi-exclamation-octagon text-danger" aria-hidden="true"></i></div>
-            <div class="card-value text-danger">{{ summary.total_errors|default(0) }}</div>
+            <div class="card-icon"><i class="bi bi-exclamation-octagon text-severity-high" aria-hidden="true"></i></div>
+            <div class="card-value text-severity-high">{{ summary.total_errors|default(0) }}</div>
             <div class="card-label">{{ ftl('reports-total-errors') }}</div>
         </div>
 
         <div class="overview-card">
-            <div class="card-icon"><i class="bi bi-exclamation-triangle text-warning" aria-hidden="true"></i></div>
-            <div class="card-value text-warning">{{ summary.total_warnings|default(0) }}</div>
+            <div class="card-icon"><i class="bi bi-exclamation-triangle text-severity-medium" aria-hidden="true"></i></div>
+            <div class="card-value text-severity-medium">{{ summary.total_warnings|default(0) }}</div>
             <div class="card-label">{{ ftl('common-total-warnings') }}</div>
         </div>
 
         <div class="overview-card">
-            <div class="card-icon"><i class="bi bi-check-circle text-success" aria-hidden="true"></i></div>
-            <div class="card-value text-success">{{ "%.1f"|format(summary.average_score|default(0)) }}%</div>
+            <div class="card-icon"><i class="bi bi-check-circle text-severity-pass" aria-hidden="true"></i></div>
+            <div class="card-value text-severity-pass">{{ "%.1f"|format(summary.average_score|default(0)) }}%</div>
             <div class="card-label">{{ ftl('reports-average-score') }}</div>
         </div>
     </div>
@@ -400,21 +400,21 @@
         <h2><i class="bi bi-pie-chart" aria-hidden="true"></i> {{ ftl('reports-issue-breakdown-by-type') }}</h2>
         <div class="issue-breakdown">
             <div class="issue-type-card errors">
-                <div class="type-icon text-danger">
+                <div class="type-icon text-severity-high">
                     <i class="bi bi-x-circle-fill" aria-hidden="true"></i>
                 </div>
-                <div class="type-count text-danger">{{ summary.total_errors|default(0) }}</div>
-                <div class="type-label text-danger">{{ ftl('common-errors') }}</div>
+                <div class="type-count text-severity-high">{{ summary.total_errors|default(0) }}</div>
+                <div class="type-label text-severity-high">{{ ftl('common-errors') }}</div>
                 <div class="type-pages">
                     {{ ftl('reports-on') }} {{ summary.pages_with_errors|default(0) }} {{ ftl('common-page') }}{{ 's' if summary.pages_with_errors != 1 }}
                 </div>
             </div>
 
             <div class="issue-type-card warnings">
-                <div class="type-icon text-warning">
+                <div class="type-icon text-severity-medium">
                     <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
                 </div>
-                <div class="type-count text-warning">{{ summary.total_warnings|default(0) }}</div>
+                <div class="type-count text-severity-medium">{{ summary.total_warnings|default(0) }}</div>
                 <div class="type-label text-severity-medium">{{ ftl('common-warnings') }}</div>
                 <div class="type-pages">
                     {{ ftl('reports-on') }} {{ summary.pages_with_warnings|default(0) }} {{ ftl('common-page') }}{{ 's' if summary.pages_with_warnings != 1 }}
@@ -422,11 +422,11 @@
             </div>
 
             <div class="issue-type-card info">
-                <div class="type-icon text-info">
+                <div class="type-icon text-info-custom">
                     <i class="bi bi-info-circle-fill" aria-hidden="true"></i>
                 </div>
-                <div class="type-count text-info">{{ summary.total_info|default(0) }}</div>
-                <div class="type-label text-info">{{ ftl('common-informational') }}</div>
+                <div class="type-count text-info-custom">{{ summary.total_info|default(0) }}</div>
+                <div class="type-label text-info-custom">{{ ftl('common-informational') }}</div>
                 <div class="type-pages">
                     {{ ftl('reports-on') }} {{ summary.pages_with_info|default(0) }} {{ ftl('common-page') }}{{ 's' if summary.pages_with_info != 1 }}
                 </div>
@@ -481,20 +481,20 @@
                 <div class="touchpoint-stats">
                     {% if stats.errors > 0 %}
                     <div class="touchpoint-stat">
-                        <i class="bi bi-x-circle-fill text-danger" aria-hidden="true"></i>
-                        <span class="text-danger fw-bold">{{ stats.errors }}</span>
+                        <i class="bi bi-x-circle-fill text-severity-high" aria-hidden="true"></i>
+                        <span class="text-severity-high fw-bold">{{ stats.errors }}</span>
                     </div>
                     {% endif %}
                     {% if stats.warnings > 0 %}
                     <div class="touchpoint-stat">
-                        <i class="bi bi-exclamation-triangle-fill text-warning" aria-hidden="true"></i>
-                        <span class="text-warning fw-bold">{{ stats.warnings }}</span>
+                        <i class="bi bi-exclamation-triangle-fill text-severity-medium" aria-hidden="true"></i>
+                        <span class="text-severity-medium fw-bold">{{ stats.warnings }}</span>
                     </div>
                     {% endif %}
                     {% if stats.info > 0 %}
                     <div class="touchpoint-stat">
-                        <i class="bi bi-info-circle-fill text-info" aria-hidden="true"></i>
-                        <span class="text-info fw-bold">{{ stats.info }}</span>
+                        <i class="bi bi-info-circle-fill text-info-custom" aria-hidden="true"></i>
+                        <span class="text-info-custom fw-bold">{{ stats.info }}</span>
                     </div>
                     {% endif %}
                 </div>

@@ -78,7 +78,7 @@
                 </div>
                 <div class="col-md-4">
                     {% if selected_project %}
-                    <a href="{{ url_for('schedules.schedules_dashboard') }}" class="btn btn-outline-secondary">
+                    <a href="{{ url_for('schedules.schedules_dashboard') }}" class="btn btn-outline-neutral">
                         <i class="bi bi-x" aria-hidden="true"></i> {{ ftl('schedules-clear-filter') }}
                     </a>
                     {% endif %}
@@ -93,7 +93,7 @@
             <div class="card stat-card h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
-                        <div class="stat-icon bg-primary bg-opacity-10 text-primary me-3">
+                        <div class="stat-icon bg-brand-subtle text-brand me-3">
                             <i class="bi bi-calendar-event" aria-hidden="true"></i>
                         </div>
                         <div>
@@ -108,7 +108,7 @@
             <div class="card stat-card h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
-                        <div class="stat-icon bg-success bg-opacity-10 text-success me-3">
+                        <div class="stat-icon bg-pass-subtle text-severity-pass me-3">
                             <i class="bi bi-check-circle" aria-hidden="true"></i>
                         </div>
                         <div>
@@ -123,7 +123,7 @@
             <div class="card stat-card h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
-                        <div class="stat-icon bg-secondary bg-opacity-10 text-secondary me-3">
+                        <div class="stat-icon bg-neutral-subtle text-muted me-3">
                             <i class="bi bi-pause-circle" aria-hidden="true"></i>
                         </div>
                         <div>
@@ -138,7 +138,7 @@
             <div class="card stat-card h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
-                        <div class="stat-icon bg-info bg-opacity-10 text-info me-3">
+                        <div class="stat-icon bg-info-subtle-bg text-info-custom me-3">
                             <i class="bi bi-clock-history" aria-hidden="true"></i>
                         </div>
                         <div>
@@ -156,10 +156,10 @@
         <div class="col-lg-8">
             <section aria-labelledby="all-schedules-heading">
             <div class="card">
-                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <div class="card-header bg-brand text-inverse d-flex justify-content-between align-items-center">
                     <h2 id="all-schedules-heading" class="mb-0">
                         <i class="bi bi-calendar-event" aria-hidden="true"></i> {{ ftl('schedules-all-schedules') }}
-                        <span class="badge bg-light text-dark ms-2">{{ schedules|length }}</span>
+                        <span class="badge badge-subtle ms-2">{{ schedules|length }}</span>
                     </h2>
                 </div>
                 <div class="card-body p-0">
@@ -167,7 +167,7 @@
                     <div class="table-responsive">
                         <table class="table table-hover mb-0">
                             <caption class="visually-hidden">{{ ftl('schedules-all-schedules-list') }}</caption>
-                            <thead class="table-light">
+                            <thead class="table-subtle">
                                 <tr>
                                     <th>{{ ftl('common-name') }}</th>
                                     <th>{{ ftl('common-project-website') }}</th>
@@ -224,11 +224,11 @@
                                     </td>
                                     <td>
                                         {% if schedule.enabled %}
-                                        <span class="badge bg-success">
+                                        <span class="badge badge-pass">
                                             <i class="bi bi-check-circle" aria-hidden="true"></i> {{ ftl('common-active') }}
                                         </span>
                                         {% else %}
-                                        <span class="badge bg-secondary">
+                                        <span class="badge badge-neutral">
                                             <i class="bi bi-pause-circle" aria-hidden="true"></i> {{ ftl('common-paused') }}
                                         </span>
                                         {% endif %}
@@ -243,7 +243,7 @@
                                     <td>
                                         <div class="btn-group btn-group-sm">
                                             <a href="{{ url_for('schedules.view_schedule', website_id=schedule._website_id, schedule_id=schedule.id) }}"
-                                               class="btn btn-outline-primary" title="{{ ftl('common-view') }}">
+                                               class="btn btn-outline-brand" title="{{ ftl('common-view') }}">
                                                 <i class="bi bi-eye" aria-hidden="true"></i>
                                             </a>
                                             <button type="button"
@@ -282,7 +282,7 @@
             <!-- Upcoming Runs -->
             <section aria-labelledby="upcoming-runs-heading">
             <div class="card mb-4">
-                <div class="card-header bg-info text-white">
+                <div class="card-header card-header-info">
                     <h2 id="upcoming-runs-heading" class="mb-0">
                         <i class="bi bi-clock" aria-hidden="true"></i> {{ ftl('schedules-upcoming-runs') }}
                     </h2>
@@ -315,7 +315,7 @@
             <!-- Schedule Types -->
             <section aria-labelledby="schedule-types-heading">
             <div class="card mb-4">
-                <div class="card-header bg-secondary text-white">
+                <div class="card-header card-header-neutral">
                     <h2 id="schedule-types-heading" class="mb-0">
                         <i class="bi bi-pie-chart" aria-hidden="true"></i> {{ ftl('schedules-by-schedule-type') }}
                     </h2>
@@ -332,7 +332,7 @@
                             {% elif type_name == 'cron' %}{{ ftl('schedules-custom-cron') }}
                             {% else %}{{ type_name }}
                             {% endif %}
-                            <span class="badge bg-primary rounded-pill">{{ count }}</span>
+                            <span class="badge badge-brand rounded-pill">{{ count }}</span>
                         </li>
                         {% endfor %}
                     </ul>
@@ -346,20 +346,20 @@
             <!-- Quick Links -->
             <section aria-labelledby="quick-links-heading">
             <div class="card">
-                <div class="card-header bg-light">
+                <div class="card-header bg-subtle">
                     <h2 id="quick-links-heading" class="mb-0">
                         <i class="bi bi-link-45deg" aria-hidden="true"></i> {{ ftl('schedules-quick-links') }}
                     </h2>
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <a href="{{ url_for('testing.testing_dashboard') }}" class="btn btn-outline-primary btn-sm">
+                        <a href="{{ url_for('testing.testing_dashboard') }}" class="btn btn-outline-brand btn-sm">
                             <i class="bi bi-speedometer2" aria-hidden="true"></i> {{ ftl('common-testing-dashboard') }}
                         </a>
-                        <a href="{{ url_for('testing.trends_page') }}" class="btn btn-outline-primary btn-sm">
+                        <a href="{{ url_for('testing.trends_page') }}" class="btn btn-outline-brand btn-sm">
                             <i class="bi bi-graph-up-arrow" aria-hidden="true"></i> {{ ftl('common-trend-analysis') }}
                         </a>
-                        <a href="{{ url_for('projects.list_projects') }}" class="btn btn-outline-secondary btn-sm">
+                        <a href="{{ url_for('projects.list_projects') }}" class="btn btn-outline-neutral btn-sm">
                             <i class="bi bi-folder" aria-hidden="true"></i> {{ ftl('common-all-projects') }}
                         </a>
                     </div>

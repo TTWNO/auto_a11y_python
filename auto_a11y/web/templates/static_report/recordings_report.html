@@ -41,7 +41,7 @@
     <div class="row g-3 mb-4">
         <!-- Total Recordings -->
         <div class="col-md-3">
-            <div class="stat-card bg-primary text-white">
+            <div class="stat-card bg-brand text-inverse">
                 <div class="stat-value">{{ stats.total_recordings }}</div>
                 <div class="stat-label">
                     <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['total_recordings'] }}</span>
@@ -52,7 +52,7 @@
 
         <!-- Total Issues -->
         <div class="col-md-3">
-            <div class="stat-card bg-info text-white">
+            <div class="stat-card bg-info text-inverse">
                 <div class="stat-value">{{ stats.total_issues }}</div>
                 <div class="stat-label">
                     <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['total_issues'] }}</span>
@@ -63,7 +63,7 @@
 
         <!-- High Impact Issues -->
         <div class="col-md-2">
-            <div class="stat-card bg-danger text-white">
+            <div class="stat-card bg-high text-inverse">
                 <div class="stat-value">{{ stats.high_impact }}</div>
                 <div class="stat-label">
                     <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['high'] }}</span>
@@ -74,7 +74,7 @@
 
         <!-- Medium Impact Issues -->
         <div class="col-md-2">
-            <div class="stat-card bg-warning">
+            <div class="stat-card bg-medium">
                 <div class="stat-value">{{ stats.medium_impact }}</div>
                 <div class="stat-label">
                     <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['medium'] }}</span>
@@ -85,7 +85,7 @@
 
         <!-- Low Impact Issues -->
         <div class="col-md-2">
-            <div class="stat-card bg-secondary text-white">
+            <div class="stat-card bg-neutral text-inverse">
                 <div class="stat-value">{{ stats.low_impact }}</div>
                 <div class="stat-label">
                     <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['low'] }}</span>
@@ -273,7 +273,7 @@
             <h3>
                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t.get(touchpoint, touchpoint) }}</span>
                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get(touchpoint, touchpoint) }}</span>
-                <span class="badge bg-secondary">{{ touchpoint_issues|length }}</span>
+                <span class="badge badge-neutral">{{ touchpoint_issues|length }}</span>
             </h3>
         </div>
         <div class="card-body">

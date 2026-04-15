@@ -8,7 +8,7 @@
         <h1 class="mb-0">
             <i class="bi bi-mic" aria-hidden="true"></i> {{ ftl('common-recordings') }}
         </h1>
-        <a href="{{ url_for('recordings.upload_recording') }}" class="btn btn-primary w-100 w-sm-auto">
+        <a href="{{ url_for('recordings.upload_recording') }}" class="btn btn-brand w-100 w-sm-auto">
             <i class="bi bi-upload" aria-hidden="true"></i> {{ ftl('recordings-upload-recording') }}
         </a>
     </div>
@@ -56,7 +56,7 @@
                     <div class="d-flex justify-content-between align-items-start mb-2">
                         <h2 class="card-title">{{ recording.title }}</h2>
                         <div>
-                            <span class="badge bg-info">{{ ftl_enum(recording.recording_type.value) }}</span>
+                            <span class="badge badge-info">{{ ftl_enum(recording.recording_type.value) }}</span>
                         </div>
                     </div>
 
@@ -66,9 +66,9 @@
                         <span class="ms-2">
                             {% for lang in recording.available_languages %}
                                 {% if lang == 'en' %}
-                                <span class="badge bg-secondary">EN</span>
+                                <span class="badge badge-neutral">EN</span>
                                 {% elif lang == 'fr' %}
-                                <span class="badge bg-secondary">FR</span>
+                                <span class="badge badge-neutral">FR</span>
                                 {% endif %}
                             {% endfor %}
                         </span>
@@ -106,25 +106,25 @@
                         <strong>{{ ftl('common-issues-2') }}: {{ recording.total_issues }}</strong>
                         <div class="mt-1">
                             {% if recording.high_impact_count > 0 %}
-                            <span class="badge bg-danger">{{ recording.high_impact_count }} {{ ftl('common-high') }}</span>
+                            <span class="badge badge-high">{{ recording.high_impact_count }} {{ ftl('common-high') }}</span>
                             {% endif %}
                             {% if recording.medium_impact_count > 0 %}
-                            <span class="badge bg-warning text-dark">{{ recording.medium_impact_count }} {{ ftl('common-medium') }}</span>
+                            <span class="badge badge-medium">{{ recording.medium_impact_count }} {{ ftl('common-medium') }}</span>
                             {% endif %}
                             {% if recording.low_impact_count > 0 %}
-                            <span class="badge bg-secondary">{{ recording.low_impact_count }} {{ ftl('common-low') }}</span>
+                            <span class="badge badge-neutral">{{ recording.low_impact_count }} {{ ftl('common-low') }}</span>
                             {% endif %}
                         </div>
                     </div>
 
                     <div class="d-flex gap-2">
                         <a href="{{ url_for('recordings.view_recording', recording_id=recording.id) }}"
-                           class="btn btn-sm btn-primary flex-grow-1">
+                           class="btn btn-sm btn-brand flex-grow-1">
                             <i class="bi bi-eye" aria-hidden="true"></i> {{ ftl('common-view-details') }}
                         </a>
                         <form method="post" action="{{ url_for('recordings.delete_recording', recording_id=recording.id) }}"
                               onsubmit="return confirm('{{ ftl('recordings-are-you-sure-you-want-to-delete-this-recording') }}')" class="d-inline">
-                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                            <button type="submit" class="btn btn-sm btn-outline-high">
                                 <i class="bi bi-trash" aria-hidden="true"></i>
                             </button>
                         </form>

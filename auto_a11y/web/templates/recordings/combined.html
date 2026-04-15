@@ -33,7 +33,7 @@
             <div class="card">
                 <div class="card-body text-center">
                     <h2 class="text-muted mb-2">{{ ftl('common-high-impact') }}</h2>
-                    <p class="display-6 text-danger mb-0">{{ high_count }}</p>
+                    <p class="display-6 text-severity-high mb-0">{{ high_count }}</p>
                 </div>
             </div>
         </div>
@@ -41,7 +41,7 @@
             <div class="card">
                 <div class="card-body text-center">
                     <h2 class="text-muted mb-2">{{ ftl('common-medium-impact') }}</h2>
-                    <p class="display-6 text-warning mb-0">{{ medium_count }}</p>
+                    <p class="display-6 text-severity-medium mb-0">{{ medium_count }}</p>
                 </div>
             </div>
         </div>
@@ -49,7 +49,7 @@
             <div class="card">
                 <div class="card-body text-center">
                     <h2 class="text-muted mb-2">{{ ftl('common-low-impact') }}</h2>
-                    <p class="display-6 text-info mb-0">{{ low_count }}</p>
+                    <p class="display-6 text-info-custom mb-0">{{ low_count }}</p>
                 </div>
             </div>
         </div>
@@ -65,9 +65,9 @@
                 {% for recording in recordings %}
                 <div class="col-md-6 mb-2">
                     <article class="d-flex align-items-center">
-                        <span class="badge bg-secondary me-2">{{ ftl_enum(recording.recording_type.value) }}</span>
+                        <span class="badge badge-neutral me-2">{{ ftl_enum(recording.recording_type.value) }}</span>
                         <span class="me-2">{{ recording.title }}</span>
-                        <span class="badge bg-danger">{{ recording.total_issues }} {{ ftl('common-issues') }}</span>
+                        <span class="badge badge-high">{{ recording.total_issues }} {{ ftl('common-issues') }}</span>
                     </article>
                 </div>
                 {% endfor %}
@@ -86,7 +86,7 @@
             <div class="mb-4">
                 <h3 class="border-bottom pb-2 mb-3">
                     <i class="bi bi-folder" aria-hidden="true"></i> {{ touchpoint }}
-                    <span class="badge bg-secondary">{{ issues|length }}</span>
+                    <span class="badge badge-neutral">{{ issues|length }}</span>
                 </h3>
 
                 <div class="accordion" id="accordion-{{ touchpoint|replace(' ', '-') }}">
@@ -104,7 +104,7 @@
                                     </span>
                                     <div>
                                         {% if issue.timecodes %}
-                                        <span class="badge bg-info me-2">
+                                        <span class="badge badge-info me-2">
                                             <i class="bi bi-clock" aria-hidden="true"></i> {{ issue.timecodes|length }} {{ ftl('common-timecode-s') }}
                                         </span>
                                         {% endif %}
@@ -127,7 +127,7 @@
                                         </div>
                                         <div class="col-md-6">
                                             <strong>{{ ftl('recordings-auditor-tester') }}</strong> {{ issue.recording_ref.auditor_name or '-' }}<br>
-                                            <a href="{{ url_for('recordings.view_recording', recording_id=issue.recording_ref.id) }}" class="btn btn-sm btn-outline-primary mt-2">
+                                            <a href="{{ url_for('recordings.view_recording', recording_id=issue.recording_ref.id) }}" class="btn btn-sm btn-outline-brand mt-2">
                                                 <i class="bi bi-eye" aria-hidden="true"></i> {{ ftl('recordings-view-recording') }}
                                             </a>
                                         </div>
@@ -168,7 +168,7 @@
                                     <strong>{{ ftl('common-wcag-2') }}</strong>
                                     <div class="mt-1">
                                         {% for wcag_ref in issue.wcag %}
-                                        <span class="badge bg-primary me-1">
+                                        <span class="badge badge-brand me-1">
                                             {{ wcag_ref.criteria }} ({{ ftl('common-level') }} {{ wcag_ref.level }})
                                         </span>
                                         {% endfor %}
@@ -181,7 +181,7 @@
                                     <strong>{{ ftl('common-timecodes') }}</strong>
                                     <div class="mt-1">
                                         {% for tc in issue.timecodes %}
-                                        <span class="badge bg-secondary me-1">{{ tc.start }} - {{ tc.end }}</span>
+                                        <span class="badge badge-neutral me-1">{{ tc.start }} - {{ tc.end }}</span>
                                         {% endfor %}
                                     </div>
                                 </div>

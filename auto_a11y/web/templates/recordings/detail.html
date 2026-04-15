@@ -18,18 +18,18 @@
             <h1 class="mb-0">{{ recording.title }}</h1>
         </div>
         <div>
-            <button type="button" class="btn btn-outline-primary" id="editBtn" onclick="toggleEditMode()">
+            <button type="button" class="btn btn-outline-brand" id="editBtn" onclick="toggleEditMode()">
                 <i class="bi bi-pencil" aria-hidden="true"></i> {{ ftl('common-edit') }}
             </button>
-            <button type="button" class="btn btn-success" id="saveBtn" style="display: none;" onclick="saveRecording()">
+            <button type="button" class="btn btn-pass" id="saveBtn" style="display: none;" onclick="saveRecording()">
                 <i class="bi bi-check-lg" aria-hidden="true"></i> {{ ftl('common-save') }}
             </button>
-            <button type="button" class="btn btn-outline-secondary" id="cancelBtn" style="display: none;" onclick="cancelEdit()">
+            <button type="button" class="btn btn-outline-neutral" id="cancelBtn" style="display: none;" onclick="cancelEdit()">
                 {{ ftl('common-cancel') }}
             </button>
             <form method="post" action="{{ url_for('recordings.delete_recording', recording_id=recording.id) }}"
                   onsubmit="return confirm('{{ ftl('recordings-are-you-sure-you-want-to-delete-this-recording') }}')" class="d-inline">
-                <button type="submit" class="btn btn-outline-danger">
+                <button type="submit" class="btn btn-outline-high">
                     <i class="bi bi-trash" aria-hidden="true"></i> {{ ftl('common-delete') }}
                 </button>
             </form>
@@ -103,7 +103,7 @@
                         <div class="col-md-6 mb-3">
                             <dt class="text-muted mb-1">{{ ftl('recordings-recording-type') }}</dt>
                             <dd class="mb-0">
-                                <span class="badge bg-info">
+                                <span class="badge badge-info">
                                     {{ ftl_enum(recording.recording_type.value) }}
                                 </span>
                             </dd>
@@ -114,9 +114,9 @@
                             <dd class="mb-0">
                                 {% for lang in recording.available_languages %}
                                     {% if lang == 'en' %}
-                                    <span class="badge bg-secondary">{{ ftl('recordings-english') }}</span>
+                                    <span class="badge badge-neutral">{{ ftl('recordings-english') }}</span>
                                     {% elif lang == 'fr' %}
-                                    <span class="badge bg-secondary">{{ ftl('recordings-french') }}</span>
+                                    <span class="badge badge-neutral">{{ ftl('recordings-french') }}</span>
                                     {% endif %}
                                 {% endfor %}
                             </dd>
@@ -206,7 +206,7 @@
                         <h3 class="text-muted mb-2">{{ ftl('common-common-components') }}</h3>
                         <div class="d-flex flex-wrap gap-2">
                             {% for component in recording.component_names %}
-                            <span class="badge bg-secondary">{{ component }}</span>
+                            <span class="badge badge-neutral">{{ component }}</span>
                             {% endfor %}
                         </div>
                     </div>
@@ -217,7 +217,7 @@
                         <h3 class="text-muted mb-2">{{ ftl('recordings-app-screens-views') }}</h3>
                         <div class="d-flex flex-wrap gap-2">
                             {% for screen in recording.app_screens %}
-                            <span class="badge bg-primary">{{ screen }}</span>
+                            <span class="badge badge-brand">{{ screen }}</span>
                             {% endfor %}
                         </div>
                     </div>
@@ -228,7 +228,7 @@
                         <h3 class="text-muted mb-2">{{ ftl('recordings-device-sections') }}</h3>
                         <div class="d-flex flex-wrap gap-2">
                             {% for section in recording.device_sections %}
-                            <span class="badge bg-warning">{{ section }}</span>
+                            <span class="badge badge-medium">{{ section }}</span>
                             {% endfor %}
                         </div>
                     </div>
@@ -271,11 +271,11 @@
                     <div class="mb-2">
                         <div class="d-flex justify-content-between mb-1">
                             <span>{{ ftl('common-high-impact') }}</span>
-                            <span class="badge bg-danger">{{ recording.high_impact_count }}</span>
+                            <span class="badge badge-high">{{ recording.high_impact_count }}</span>
                         </div>
                         {% if recording.total_issues > 0 %}
                         <div class="progress" style="height: 8px;">
-                            <div class="progress-bar bg-danger" role="progressbar"
+                            <div class="progress-bar bg-high" role="progressbar"
                                  style="width: {{ (recording.high_impact_count / recording.total_issues * 100)|round|int }}%"></div>
                         </div>
                         {% endif %}
@@ -284,11 +284,11 @@
                     <div class="mb-2">
                         <div class="d-flex justify-content-between mb-1">
                             <span>{{ ftl('common-medium-impact') }}</span>
-                            <span class="badge bg-warning text-dark">{{ recording.medium_impact_count }}</span>
+                            <span class="badge badge-medium">{{ recording.medium_impact_count }}</span>
                         </div>
                         {% if recording.total_issues > 0 %}
                         <div class="progress" style="height: 8px;">
-                            <div class="progress-bar bg-warning" role="progressbar"
+                            <div class="progress-bar bg-medium" role="progressbar"
                                  style="width: {{ (recording.medium_impact_count / recording.total_issues * 100)|round|int }}%"></div>
                         </div>
                         {% endif %}
@@ -297,11 +297,11 @@
                     <div class="mb-2">
                         <div class="d-flex justify-content-between mb-1">
                             <span>{{ ftl('common-low-impact') }}</span>
-                            <span class="badge bg-secondary">{{ recording.low_impact_count }}</span>
+                            <span class="badge badge-neutral">{{ recording.low_impact_count }}</span>
                         </div>
                         {% if recording.total_issues > 0 %}
                         <div class="progress" style="height: 8px;">
-                            <div class="progress-bar bg-secondary" role="progressbar"
+                            <div class="progress-bar bg-neutral" role="progressbar"
                                  style="width: {{ (recording.low_impact_count / recording.total_issues * 100)|round|int }}%"></div>
                         </div>
                         {% endif %}
@@ -321,12 +321,12 @@
                     <div class="mb-3">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <span class="fw-bold">{{ ftl('recordings-manual-accessibility-score') }}</span>
-                            <span class="badge {% if scores.accessibility_score >= 90 %}bg-success{% elif scores.accessibility_score >= 70 %}bg-warning text-dark{% else %}bg-danger{% endif %} fs-6">
+                            <span class="badge {% if scores.accessibility_score >= 90 %}bg-pass{% elif scores.accessibility_score >= 70 %}bg-medium{% else %}bg-high{% endif %} fs-6">
                                 {{ scores.accessibility_score|round(1) }}%
                             </span>
                         </div>
                         <div class="progress" style="height: 12px;">
-                            <div class="progress-bar {% if scores.accessibility_score >= 90 %}bg-success{% elif scores.accessibility_score >= 70 %}bg-warning{% else %}bg-danger{% endif %}"
+                            <div class="progress-bar {% if scores.accessibility_score >= 90 %}bg-pass{% elif scores.accessibility_score >= 70 %}bg-medium{% else %}bg-high{% endif %}"
                                  role="progressbar"
                                  style="width: {{ scores.accessibility_score }}%"
                                  aria-valuenow="{{ scores.accessibility_score }}"
@@ -342,12 +342,12 @@
                     <div class="mb-3">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <span class="fw-bold">{{ ftl('recordings-manual-wcag-compliance-score') }}</span>
-                            <span class="badge {% if scores.compliance_score >= 90 %}bg-success{% elif scores.compliance_score >= 70 %}bg-warning text-dark{% else %}bg-danger{% endif %} fs-6">
+                            <span class="badge {% if scores.compliance_score >= 90 %}bg-pass{% elif scores.compliance_score >= 70 %}bg-medium{% else %}bg-high{% endif %} fs-6">
                                 {{ scores.compliance_score|round(1) }}%
                             </span>
                         </div>
                         <div class="progress" style="height: 12px;">
-                            <div class="progress-bar {% if scores.compliance_score >= 90 %}bg-success{% elif scores.compliance_score >= 70 %}bg-warning{% else %}bg-danger{% endif %}"
+                            <div class="progress-bar {% if scores.compliance_score >= 90 %}bg-pass{% elif scores.compliance_score >= 70 %}bg-medium{% else %}bg-high{% endif %}"
                                  role="progressbar"
                                  style="width: {{ scores.compliance_score }}%"
                                  aria-valuenow="{{ scores.compliance_score }}"
@@ -367,15 +367,15 @@
                             </div>
                             <div class="col-4">
                                 <div class="small text-muted">{{ ftl('common-passed-2') }}</div>
-                                <div class="fw-bold text-success">{{ scores.passed_criteria }}</div>
+                                <div class="fw-bold text-severity-pass">{{ scores.passed_criteria }}</div>
                             </div>
                             <div class="col-4">
                                 <div class="small text-muted">{{ ftl('common-failed') }}</div>
-                                <div class="fw-bold text-danger">{{ scores.failed_criteria }}</div>
+                                <div class="fw-bold text-severity-high">{{ scores.failed_criteria }}</div>
                             </div>
                         </div>
                         <div class="text-center mt-3">
-                            <button type="button" class="btn btn-sm btn-outline-primary" data-open-modal="#criteriaBreakdownModal">
+                            <button type="button" class="btn btn-sm btn-outline-brand" data-open-modal="#criteriaBreakdownModal">
                                 <i class="bi bi-list-check" aria-hidden="true"></i> {{ ftl('recordings-view-criteria-details') }}
                             </button>
                         </div>
@@ -456,13 +456,13 @@
                             </h4>
                             {% if painpoint.user_quote %}
                             <div class="mb-3">
-                                <strong class="text-primary">{{ ftl('common-user-quote') }}</strong>
+                                <strong class="text-brand">{{ ftl('common-user-quote') }}</strong>
                                 <p class="fst-italic ms-3">"{{ painpoint.user_quote }}"</p>
                             </div>
                             {% endif %}
                             {% if painpoint.timecodes %}
                             <div>
-                                <strong class="text-primary">{{ ftl('recordings-timecode') }}{% if painpoint.timecodes|length > 1 %}{{ ftl('recordings-s') }}{% endif %}:</strong>
+                                <strong class="text-brand">{{ ftl('recordings-timecode') }}{% if painpoint.timecodes|length > 1 %}{{ ftl('recordings-s') }}{% endif %}:</strong>
                                 {% for timecode in painpoint.timecodes %}
                                 <div class="ms-3 mb-2">
                                     <i class="bi bi-clock" aria-hidden="true"></i>
@@ -502,13 +502,13 @@
                             <h4>{{ assertion.number }}. {{ assertion.assertion }}</h4>
                             {% if assertion.user_quote %}
                             <div class="mb-3">
-                                <strong class="text-primary">{{ ftl('common-user-quote') }}</strong>
+                                <strong class="text-brand">{{ ftl('common-user-quote') }}</strong>
                                 <p class="fst-italic ms-3">"{{ assertion.user_quote }}"</p>
                             </div>
                             {% endif %}
                             {% if assertion.timecodes %}
                             <div>
-                                <strong class="text-primary">{{ ftl('recordings-timecode') }}{% if assertion.timecodes|length > 1 %}{{ ftl('recordings-s') }}{% endif %}:</strong>
+                                <strong class="text-brand">{{ ftl('recordings-timecode') }}{% if assertion.timecodes|length > 1 %}{{ ftl('recordings-s') }}{% endif %}:</strong>
                                 {% for timecode in assertion.timecodes %}
                                 <div class="ms-3 mb-2">
                                     <i class="bi bi-clock" aria-hidden="true"></i>
@@ -522,7 +522,7 @@
                             {% endif %}
                             {% if assertion.context %}
                             <div class="mt-2">
-                                <strong class="text-primary">{{ ftl('common-context') }}</strong>
+                                <strong class="text-brand">{{ ftl('common-context') }}</strong>
                                 <p class="ms-3">{{ assertion.context }}</p>
                             </div>
                             {% endif %}
@@ -550,7 +550,7 @@
                 <div class="mb-4">
                     <h3 class="border-bottom pb-2 mb-3">
                         <i class="bi bi-folder" aria-hidden="true"></i> {{ ftl_enum(touchpoint) }}
-                        <span class="badge bg-secondary">{{ touchpoint_issues|length }}</span>
+                        <span class="badge badge-neutral">{{ touchpoint_issues|length }}</span>
                     </h3>
 
                     <div class="accordion" id="accordion-{{ touchpoint|replace(' ', '-') }}">
@@ -567,7 +567,7 @@
                                             {{ issue.title }}
                                         </span>
                                         {% if issue.timecodes %}
-                                        <span class="badge bg-info">
+                                        <span class="badge badge-info">
                                             <i class="bi bi-clock" aria-hidden="true"></i> {{ issue.timecodes|length }} {{ ftl('common-timecode-s') }}
                                         </span>
                                         {% endif %}
@@ -586,7 +586,7 @@
                                         <strong>{{ ftl('common-timecodes') }}</strong>
                                         <div class="mt-1">
                                             {% for tc in issue.timecodes %}
-                                            <span class="badge bg-secondary me-2">
+                                            <span class="badge badge-neutral me-2">
                                                 {{ tc.start }} - {{ tc.end }} ({{ tc.duration }})
                                             </span>
                                             {% endfor %}
@@ -627,7 +627,7 @@
                                         <strong>{{ ftl('common-wcag-2') }}</strong>
                                         <div class="mt-1">
                                             {% for wcag_ref in issue.wcag %}
-                                            <span class="badge bg-primary me-1">
+                                            <span class="badge badge-brand me-1">
                                                 {{ wcag_ref.criteria }} ({{ ftl('common-level') }} {{ wcag_ref.level }})
                                             </span>
                                             {% endfor %}
@@ -709,14 +709,14 @@ function updateIssueStatus(issueId, status) {
 
                 <!-- Testing Scope Summary -->
                 <div class="card mb-4">
-                    <div class="card-header bg-light">
+                    <div class="card-header bg-subtle">
                         <h3 class="mb-0"><i class="bi bi-check-circle" aria-hidden="true"></i> {{ ftl('recordings-testing-scope') }}</h3>
                     </div>
                     <div class="card-body">
                         <div class="row">
                             {% for scope_key, is_tested in recording.testing_scope.items() %}
                             <div class="col-md-4 mb-2">
-                                <span class="badge {% if is_tested %}bg-success{% else %}bg-secondary{% endif %}">
+                                <span class="badge {% if is_tested %}bg-pass{% else %}bg-neutral{% endif %}">
                                     {% if is_tested %}<i class="bi bi-check" aria-hidden="true"></i>{% else %}<i class="bi bi-x" aria-hidden="true"></i>{% endif %}
                                     {{ scope_key|replace('_', ' ')|title }}
                                 </span>
@@ -730,12 +730,12 @@ function updateIssueStatus(issueId, status) {
                 <ul class="nav nav-tabs mb-3" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active" id="applicable-tab" data-bs-toggle="tab" data-bs-target="#applicable-criteria" type="button" role="tab">
-                            <i class="bi bi-check-circle text-success" aria-hidden="true"></i> {{ ftl('recordings-applicable-criteria') }} ({{ applicable_criteria|length }})
+                            <i class="bi bi-check-circle text-severity-pass" aria-hidden="true"></i> {{ ftl('recordings-applicable-criteria') }} ({{ applicable_criteria|length }})
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="removed-tab" data-bs-toggle="tab" data-bs-target="#removed-criteria" type="button" role="tab">
-                            <i class="bi bi-x-circle text-secondary" aria-hidden="true"></i> {{ ftl('recordings-excluded-criteria') }} ({{ removed_criteria|length }})
+                            <i class="bi bi-x-circle text-muted" aria-hidden="true"></i> {{ ftl('recordings-excluded-criteria') }} ({{ removed_criteria|length }})
                         </button>
                     </li>
                 </ul>
@@ -760,8 +760,8 @@ function updateIssueStatus(issueId, status) {
                                         <td><code>{{ criterion.num }}</code></td>
                                         <td>
                                             <span class="badge
-                                                {% if criterion.level == 'A' %}bg-success
-                                                {% elif criterion.level == 'AA' %}bg-primary
+                                                {% if criterion.level == 'A' %}bg-pass
+                                                {% elif criterion.level == 'AA' %}bg-brand
                                                 {% else %}bg-info{% endif %}">
                                                 {{ criterion.level }}
                                             </span>
@@ -796,7 +796,7 @@ function updateIssueStatus(issueId, status) {
                                     <tr>
                                         <td><code>{{ criterion.num }}</code></td>
                                         <td>
-                                            <span class="badge bg-secondary">
+                                            <span class="badge badge-neutral">
                                                 {{ criterion.level }}
                                             </span>
                                         </td>
@@ -814,8 +814,8 @@ function updateIssueStatus(issueId, status) {
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-close-modal>{{ ftl('common-close') }}</button>
-                <a href="https://www.w3.org/WAI/WCAG22/quickref/" target="_blank" class="btn btn-primary">
+                <button type="button" class="btn btn-neutral" data-close-modal>{{ ftl('common-close') }}</button>
+                <a href="https://www.w3.org/WAI/WCAG22/quickref/" target="_blank" class="btn btn-brand">
                     <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i> {{ ftl('recordings-view-wcag-quick-reference') }}
                 </a>
             </div>

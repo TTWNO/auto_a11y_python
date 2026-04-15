@@ -183,7 +183,7 @@
             <p class="text-muted">{{ page.url }}</p>
         </div>
         <div>
-            <a href="{{ url_for('scripts.list_page_scripts', page_id=page.id) }}" class="btn btn-outline-secondary">
+            <a href="{{ url_for('scripts.list_page_scripts', page_id=page.id) }}" class="btn btn-outline-neutral">
                 <i class="bi bi-arrow-left" aria-hidden="true"></i> {{ ftl('pages-back-to-scripts') }}
             </a>
         </div>
@@ -201,12 +201,12 @@
     {% endwith %}
 
     {% if not testable_scripts %}
-    <div class="alert alert-warning">
+    <div class="alert alert-medium">
         <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
         <strong>{{ ftl('pages-no-testable-scripts') }}</strong><br>
         {{ ftl('pages-this-page-has-no-enabled-scripts-with-multi-state') }}
         <div class="mt-3">
-            <a href="{{ url_for('scripts.create_page_script', page_id=page.id) }}" class="btn btn-primary">
+            <a href="{{ url_for('scripts.create_page_script', page_id=page.id) }}" class="btn btn-brand">
                 <i class="bi bi-plus-circle" aria-hidden="true"></i> {{ ftl('common-create-new-script') }}
             </a>
         </div>
@@ -230,19 +230,19 @@
 
     <!-- Preset Buttons -->
     <div class="preset-buttons">
-        <button type="button" class="btn btn-outline-primary" onclick="applyPreset('sequential')">
+        <button type="button" class="btn btn-outline-brand" onclick="applyPreset('sequential')">
             <i class="bi bi-arrow-right-circle" aria-hidden="true"></i> {{ ftl('pages-sequential-only-default') }}
         </button>
-        <button type="button" class="btn btn-outline-secondary" onclick="applyPreset('initial_final')">
+        <button type="button" class="btn btn-outline-neutral" onclick="applyPreset('initial_final')">
             <i class="bi bi-arrow-left-right" aria-hidden="true"></i> {{ ftl('pages-initial-final') }}
         </button>
-        <button type="button" class="btn btn-outline-secondary" onclick="applyPreset('all')">
+        <button type="button" class="btn btn-outline-neutral" onclick="applyPreset('all')">
             <i class="bi bi-grid-fill" aria-hidden="true"></i> {{ ftl('pages-all-combinations') }}
         </button>
-        <button type="button" class="btn btn-outline-secondary" onclick="applyPreset('none')">
+        <button type="button" class="btn btn-outline-neutral" onclick="applyPreset('none')">
             <i class="bi bi-x-circle" aria-hidden="true"></i> {{ ftl('common-clear-all') }}
         </button>
-        <button type="button" class="btn btn-success" onclick="addCombination()">
+        <button type="button" class="btn btn-pass" onclick="addCombination()">
             <i class="bi bi-plus-circle" aria-hidden="true"></i> {{ ftl('pages-add-combination') }}
         </button>
     </div>
@@ -250,9 +250,9 @@
     <!-- Combinations Table -->
     <section aria-labelledby="combinations-heading">
         <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <div class="card-header bg-brand text-inverse d-flex justify-content-between align-items-center">
                 <h2 id="combinations-heading" class="mb-0">{{ ftl('pages-test-combinations') }}</h2>
-                <span class="badge bg-light text-dark"><span id="combinations-count-header">0</span> {{ ftl('pages-combinations') }}</span>
+                <span class="badge badge-subtle"><span id="combinations-count-header">0</span> {{ ftl('pages-combinations') }}</span>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -307,13 +307,13 @@
                         </small>
                     </div>
                     <div class="move-buttons">
-                        <button type="button" class="btn btn-sm btn-outline-secondary btn-move-up"
+                        <button type="button" class="btn btn-sm btn-outline-neutral btn-move-up"
                                 onclick="moveScript('{{ script_def.script_id }}', -1)"
                                 {% if loop.first %}disabled{% endif %}
                                 title="{{ ftl('pages-move-up') }}">
                             <i class="bi bi-arrow-up" aria-hidden="true"></i>
                         </button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary btn-move-down"
+                        <button type="button" class="btn btn-sm btn-outline-neutral btn-move-down"
                                 onclick="moveScript('{{ script_def.script_id }}', 1)"
                                 {% if loop.last %}disabled{% endif %}
                                 title="{{ ftl('pages-move-down') }}">
@@ -333,10 +333,10 @@
         <input type="hidden" name="matrix_data" id="matrix-data-input">
         <div class="d-flex justify-content-between align-items-center">
             <div>
-                <button type="submit" class="btn btn-primary btn-lg">
+                <button type="submit" class="btn btn-brand btn-lg">
                     <i class="bi bi-save" aria-hidden="true"></i> {{ ftl('pages-save-matrix-configuration') }}
                 </button>
-                <a href="{{ url_for('scripts.list_page_scripts', page_id=page.id) }}" class="btn btn-outline-secondary btn-lg">
+                <a href="{{ url_for('scripts.list_page_scripts', page_id=page.id) }}" class="btn btn-outline-neutral btn-lg">
                     {{ ftl('common-cancel') }}
                 </a>
             </div>

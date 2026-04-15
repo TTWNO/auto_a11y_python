@@ -174,7 +174,7 @@
 </head>
 <body>
     <a class="skip-link" href="#main-content" style="position:absolute;top:-40px;left:0;background:var(--color-brand);color:var(--color-text-inverse);padding:8px;text-decoration:none;z-index:1100;">{{ ftl('common-skip-to-main-content') }}</a>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary no-print" aria-label="{{ ftl('reports-report-navigation') }}">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-brand no-print" aria-label="{{ ftl('reports-report-navigation') }}">
         <div class="container-fluid">
             <a class="navbar-brand" href="{{ index_path }}index.html">
                 <i class="bi bi-universal-access-circle" aria-hidden="true"></i>
@@ -338,11 +338,11 @@
                     const icon = button.querySelector('i');
                     const originalClass = icon.className;
                     icon.className = 'bi bi-check';
-                    button.classList.add('text-success');
+                    button.classList.add('text-severity-pass');
 
                     setTimeout(function() {
                         icon.className = originalClass;
-                        button.classList.remove('text-success');
+                        button.classList.remove('text-severity-pass');
                     }, 2000);
                 }).catch(function(err) {
                     alert('{{ ftl('reports-could-not-copy-to-clipboard') }}');

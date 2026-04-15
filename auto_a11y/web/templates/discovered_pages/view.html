@@ -16,18 +16,18 @@
             <h1 class="mb-0" id="pageTitle">{{ page.title }}</h1>
         </div>
         <div>
-            <button type="button" class="btn btn-primary me-2" id="editBtn" onclick="toggleEditMode()">
+            <button type="button" class="btn btn-brand me-2" id="editBtn" onclick="toggleEditMode()">
                 <i class="bi bi-pencil" aria-hidden="true"></i> {{ ftl('common-edit') }}
             </button>
-            <button type="button" class="btn btn-success me-2" id="saveBtn" style="display: none;" onclick="savePage()">
+            <button type="button" class="btn btn-pass me-2" id="saveBtn" style="display: none;" onclick="savePage()">
                 <i class="bi bi-check-lg" aria-hidden="true"></i> {{ ftl('common-save') }}
             </button>
-            <button type="button" class="btn btn-secondary me-2" id="cancelBtn" style="display: none;" onclick="cancelEdit()">
+            <button type="button" class="btn btn-neutral me-2" id="cancelBtn" style="display: none;" onclick="cancelEdit()">
                 <i class="bi bi-x-lg" aria-hidden="true"></i> {{ ftl('common-cancel') }}
             </button>
             <form method="post" action="{{ url_for('discovered_pages.delete_discovered_page', page_id=page.id) }}"
                   onsubmit="return confirm('{{ ftl('pages-are-you-sure-you-want-to-delete-this-discovered') }}')" class="d-inline">
-                <button type="submit" class="btn btn-outline-danger">
+                <button type="submit" class="btn btn-outline-high">
                     <i class="bi bi-trash" aria-hidden="true"></i> {{ ftl('common-delete') }}
                 </button>
             </form>
@@ -58,9 +58,9 @@
                                 <dt class="text-muted mb-1">{{ ftl('pages-source-type') }}</dt>
                                 <dd class="mb-0">
                                     {% if page.source_type == 'drupal_import' %}
-                                        <span class="badge bg-info">{{ ftl('pages-drupal-import') }}</span>
+                                        <span class="badge badge-info">{{ ftl('pages-drupal-import') }}</span>
                                     {% elif page.source_type == 'manual' %}
-                                        <span class="badge bg-secondary">{{ ftl('common-manual') }}</span>
+                                        <span class="badge badge-neutral">{{ ftl('common-manual') }}</span>
                                     {% else %}
                                         {{ page.source_type }}
                                     {% endif %}
@@ -70,15 +70,15 @@
                                 <dt class="text-muted mb-1">{{ ftl('common-status') }}</dt>
                                 <dd class="mb-0">
                                     {% if page.audited %}
-                                        <span class="badge bg-success">{{ ftl('common-audited') }}</span>
+                                        <span class="badge badge-pass">{{ ftl('common-audited') }}</span>
                                     {% else %}
-                                        <span class="badge bg-secondary">{{ ftl('common-not-audited') }}</span>
+                                        <span class="badge badge-neutral">{{ ftl('common-not-audited') }}</span>
                                     {% endif %}
                                     {% if page.manual_audit %}
-                                        <span class="badge bg-warning">{{ ftl('pages-manual-audit') }}</span>
+                                        <span class="badge badge-medium">{{ ftl('pages-manual-audit') }}</span>
                                     {% endif %}
                                     {% if page.include_in_report %}
-                                        <span class="badge bg-primary">{{ ftl('common-include-in-report') }}</span>
+                                        <span class="badge badge-brand">{{ ftl('common-include-in-report') }}</span>
                                     {% endif %}
                                 </dd>
                             </div>
@@ -136,7 +136,7 @@
                                 {% if page.interested_because %}
                                     <div class="d-flex flex-wrap gap-2">
                                         {% for reason in page.interested_because %}
-                                            <span class="badge bg-primary">{{ reason }}</span>
+                                            <span class="badge badge-brand">{{ reason }}</span>
                                         {% endfor %}
                                     </div>
                                 {% else %}
@@ -150,7 +150,7 @@
                                 {% if page.page_elements %}
                                     <div class="d-flex flex-wrap gap-2">
                                         {% for element in page.page_elements %}
-                                            <span class="badge bg-info">{{ element }}</span>
+                                            <span class="badge badge-info">{{ element }}</span>
                                         {% endfor %}
                                     </div>
                                 {% else %}
@@ -303,13 +303,13 @@
                             <dt class="text-muted mb-1">{{ ftl('common-sync-status') }}</dt>
                             <dd class="mb-0">
                                 {% if page.drupal_sync_status.value == 'synced' %}
-                                    <span class="badge bg-success">{{ ftl('common-synced') }}</span>
+                                    <span class="badge badge-pass">{{ ftl('common-synced') }}</span>
                                 {% elif page.drupal_sync_status.value == 'sync_failed' %}
-                                    <span class="badge bg-danger">{{ ftl('common-failed') }}</span>
+                                    <span class="badge badge-high">{{ ftl('common-failed') }}</span>
                                 {% elif page.drupal_sync_status.value == 'pending' %}
-                                    <span class="badge bg-warning">{{ ftl('common-pending') }}</span>
+                                    <span class="badge badge-medium">{{ ftl('common-pending') }}</span>
                                 {% else %}
-                                    <span class="badge bg-secondary">{{ ftl('common-not-synced') }}</span>
+                                    <span class="badge badge-neutral">{{ ftl('common-not-synced') }}</span>
                                 {% endif %}
                             </dd>
                         </div>
@@ -327,7 +327,7 @@
                         {% endif %}
                     </dl>
                     {% if page.drupal_error_message %}
-                    <div class="alert alert-danger mb-0">
+                    <div class="alert alert-high mb-0">
                         <strong>{{ ftl('pages-sync-error') }}</strong>
                         <p class="mb-0 small">{{ page.drupal_error_message }}</p>
                     </div>

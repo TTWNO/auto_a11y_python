@@ -43,11 +43,11 @@
 
     <!-- Lived Experience Testers -->
     <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
+        <div class="card-header bg-brand text-inverse">
             <div class="d-flex justify-content-between align-items-center">
                 <h2 class="mb-0">
                     <i class="bi bi-person-badge" aria-hidden="true"></i> {{ ftl('projects-lived-experience-testers') }}
-                    <span class="badge bg-light text-dark">{{ testers|length }}</span>
+                    <span class="badge badge-subtle">{{ testers|length }}</span>
                 </h2>
                 <a href="{{ url_for('project_participants.create_tester', project_id=project.id) }}" class="btn btn-light btn-sm">
                     <i class="bi bi-plus-circle" aria-hidden="true"></i> {{ ftl('projects-add-tester') }}
@@ -79,7 +79,7 @@
                             </td>
                             <td>
                                 {% if tester.disability_type %}
-                                <span class="badge bg-info">{{ tester.disability_type }}</span>
+                                <span class="badge badge-info">{{ tester.disability_type }}</span>
                                 {% else %}
                                 <span class="text-muted">{{ ftl('projects-not-specified') }}</span>
                                 {% endif %}
@@ -87,7 +87,7 @@
                             <td>
                                 {% if tester.assistive_tech %}
                                     {% for tech in tester.assistive_tech %}
-                                    <span class="badge bg-secondary">{{ tech }}</span>
+                                    <span class="badge badge-neutral">{{ tech }}</span>
                                     {% endfor %}
                                 {% else %}
                                 <span class="text-muted">{{ ftl('projects-none-specified') }}</span>
@@ -103,10 +103,10 @@
                             <td>
                                 <div class="btn-group btn-group-sm" role="group">
                                     <a href="{{ url_for('project_participants.edit_tester', project_id=project.id, tester_id=tester.id) }}"
-                                       class="btn btn-outline-secondary" title="{{ ftl('common-edit') }}">
+                                       class="btn btn-outline-neutral" title="{{ ftl('common-edit') }}">
                                         <i class="bi bi-pencil" aria-hidden="true"></i>
                                     </a>
-                                    <button type="button" class="btn btn-outline-danger"
+                                    <button type="button" class="btn btn-outline-high"
                                             onclick="deleteTester('{{ tester.id }}')" title="{{ ftl('common-delete') }}">
                                         <i class="bi bi-trash" aria-hidden="true"></i>
                                     </button>
@@ -121,7 +121,7 @@
             <div class="text-center py-4">
                 <i class="bi bi-person-badge text-placeholder empty-state-icon" aria-hidden="true"></i>
                 <p class="text-muted mt-3">{{ ftl('projects-no-lived-experience-testers-yet') }}</p>
-                <a href="{{ url_for('project_participants.create_tester', project_id=project.id) }}" class="btn btn-primary">
+                <a href="{{ url_for('project_participants.create_tester', project_id=project.id) }}" class="btn btn-brand">
                     <i class="bi bi-plus-circle" aria-hidden="true"></i> {{ ftl('projects-add-your-first-tester') }}
                 </a>
             </div>
@@ -131,11 +131,11 @@
 
     <!-- Test Supervisors -->
     <div class="card">
-        <div class="card-header bg-success text-white">
+        <div class="card-header bg-pass text-inverse">
             <div class="d-flex justify-content-between align-items-center">
                 <h2 class="mb-0">
                     <i class="bi bi-person-check" aria-hidden="true"></i> {{ ftl('projects-test-supervisors') }}
-                    <span class="badge bg-light text-dark">{{ supervisors|length }}</span>
+                    <span class="badge badge-subtle">{{ supervisors|length }}</span>
                 </h2>
                 <a href="{{ url_for('project_participants.create_supervisor', project_id=project.id) }}" class="btn btn-light btn-sm">
                     <i class="bi bi-plus-circle" aria-hidden="true"></i> {{ ftl('projects-add-supervisor') }}
@@ -167,7 +167,7 @@
                             </td>
                             <td>
                                 {% if supervisor.role %}
-                                <span class="badge bg-primary">{{ supervisor.role }}</span>
+                                <span class="badge badge-brand">{{ supervisor.role }}</span>
                                 {% else %}
                                 <span class="text-muted">{{ ftl('projects-not-specified') }}</span>
                                 {% endif %}
@@ -189,10 +189,10 @@
                             <td>
                                 <div class="btn-group btn-group-sm" role="group">
                                     <a href="{{ url_for('project_participants.edit_supervisor', project_id=project.id, supervisor_id=supervisor.id) }}"
-                                       class="btn btn-outline-secondary" title="{{ ftl('common-edit') }}">
+                                       class="btn btn-outline-neutral" title="{{ ftl('common-edit') }}">
                                         <i class="bi bi-pencil" aria-hidden="true"></i>
                                     </a>
-                                    <button type="button" class="btn btn-outline-danger"
+                                    <button type="button" class="btn btn-outline-high"
                                             onclick="deleteSupervisor('{{ supervisor.id }}')" title="{{ ftl('common-delete') }}">
                                         <i class="bi bi-trash" aria-hidden="true"></i>
                                     </button>
@@ -207,7 +207,7 @@
             <div class="text-center py-4">
                 <i class="bi bi-person-check text-placeholder empty-state-icon" aria-hidden="true"></i>
                 <p class="text-muted mt-3">{{ ftl('projects-no-test-supervisors-yet') }}</p>
-                <a href="{{ url_for('project_participants.create_supervisor', project_id=project.id) }}" class="btn btn-success">
+                <a href="{{ url_for('project_participants.create_supervisor', project_id=project.id) }}" class="btn btn-pass">
                     <i class="bi bi-plus-circle" aria-hidden="true"></i> {{ ftl('projects-add-your-first-supervisor') }}
                 </a>
             </div>

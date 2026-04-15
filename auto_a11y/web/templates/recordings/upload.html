@@ -25,7 +25,7 @@
                         <div class="mb-4">
                             <label class="form-label">{{ ftl('recordings-dictaphone-json-files') }}</label>
 
-                            <div class="border rounded p-3 mb-2 bg-light">
+                            <div class="border rounded p-3 mb-2 bg-subtle">
                                 <label for="json_file_en" class="form-label">{{ ftl('recordings-english-issues-en') }}</label>
                                 <input type="file" class="form-control" id="json_file_en" name="json_file_en"
                                        accept=".json" required aria-describedby="json-file-en-help">
@@ -34,7 +34,7 @@
                                 </div>
                             </div>
 
-                            <div class="border rounded p-3 bg-light">
+                            <div class="border rounded p-3 bg-subtle">
                                 <label for="json_file_fr" class="form-label">{{ ftl('recordings-french-issues-fr') }}</label>
                                 <input type="file" class="form-control" id="json_file_fr" name="json_file_fr"
                                        accept=".json" aria-describedby="json-file-fr-help">
@@ -45,7 +45,7 @@
                         </div>
 
                         <!-- Recording Content Files (HTML/JSON) - Multi-language Support -->
-                        <fieldset class="card mb-4 bg-light">
+                        <fieldset class="card mb-4 bg-subtle">
                             <div class="card-header">
                                 <legend class="mb-0"><i class="bi bi-file-earmark-text" aria-hidden="true"></i> {{ ftl('recordings-recording-content-optional') }}</legend>
                             </div>
@@ -55,8 +55,8 @@
                                 </p>
 
                                 <!-- English Content -->
-                                <div class="border rounded p-3 mb-3 bg-white">
-                                    <h2 class="text-primary mb-3"><i class="bi bi-flag" aria-hidden="true"></i> {{ ftl('recordings-english-content') }}</h2>
+                                <div class="border rounded p-3 mb-3 bg-elevated">
+                                    <h2 class="text-brand mb-3"><i class="bi bi-flag" aria-hidden="true"></i> {{ ftl('recordings-english-content') }}</h2>
 
                                     <div class="mb-3">
                                         <label for="key_takeaways_file_en" class="form-label">{{ ftl('recordings-key-takeaways-en') }}</label>
@@ -87,8 +87,8 @@
                                 </div>
 
                                 <!-- French Content -->
-                                <div class="border rounded p-3 bg-white">
-                                    <h2 class="text-primary mb-3"><i class="bi bi-flag" aria-hidden="true"></i> {{ ftl('recordings-french-content-contenu-français') }}</h2>
+                                <div class="border rounded p-3 bg-elevated">
+                                    <h2 class="text-brand mb-3"><i class="bi bi-flag" aria-hidden="true"></i> {{ ftl('recordings-french-content-contenu-français') }}</h2>
 
                                     <div class="mb-3">
                                         <label for="key_takeaways_file_fr" class="form-label">{{ ftl('recordings-key-takeaways-fr') }}</label>
@@ -350,10 +350,10 @@
 
                         <!-- Action Buttons -->
                         <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn btn-brand">
                                 <i class="bi bi-upload" aria-hidden="true"></i> {{ ftl('recordings-upload-recording') }}
                             </button>
-                            <a href="{{ url_for('recordings.list_recordings') }}" class="btn btn-outline-secondary">
+                            <a href="{{ url_for('recordings.list_recordings') }}" class="btn btn-outline-neutral">
                                 {{ ftl('common-cancel') }}
                             </a>
                         </div>
@@ -382,7 +382,7 @@
                     </ul>
 
                     <h3 class="mt-4">{{ ftl('recordings-example-json-structure') }}</h3>
-                    <pre class="small bg-light p-2" style="font-size: 0.75rem;"><code>{
+                    <pre class="small bg-subtle p-2" style="font-size: 0.75rem;"><code>{
   "recording": "NED-A",
   "issues": [
     {

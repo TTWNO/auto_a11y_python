@@ -240,7 +240,7 @@
             <div class="col-md-3 col-sm-6">
                 <div class="stats-card">
                     <div class="stat-item">
-                        <div class="stat-number text-danger">{{ total_violations }}</div>
+                        <div class="stat-number text-severity-high">{{ total_violations }}</div>
                         <div class="stat-label">{{ ftl('common-violations') }}</div>
                     </div>
                 </div>
@@ -248,7 +248,7 @@
             <div class="col-md-3 col-sm-6">
                 <div class="stats-card">
                     <div class="stat-item">
-                        <div class="stat-number text-warning">{{ total_warnings }}</div>
+                        <div class="stat-number text-severity-medium">{{ total_warnings }}</div>
                         <div class="stat-label">{{ ftl('common-warnings') }}</div>
                     </div>
                 </div>
@@ -256,7 +256,7 @@
             <div class="col-md-3 col-sm-6">
                 <div class="stats-card">
                     <div class="stat-item">
-                        <div class="stat-number text-info">{{ total_info }}</div>
+                        <div class="stat-number text-info-custom">{{ total_info }}</div>
                         <div class="stat-label">{{ ftl('common-info') }}</div>
                     </div>
                 </div>
@@ -264,7 +264,7 @@
             <div class="col-md-3 col-sm-6">
                 <div class="stats-card">
                     <div class="stat-item">
-                        <div class="stat-number text-primary">{{ common_components|length }}</div>
+                        <div class="stat-number text-brand">{{ common_components|length }}</div>
                         <div class="stat-label">{{ ftl('common-common-components') }}</div>
                     </div>
                 </div>
@@ -279,16 +279,16 @@
             <div class="filter-group">
                 <label class="form-label fw-bold small">{{ ftl('common-issue-type') }}</label>
                 <div class="filter-chips">
-                    <button class="btn btn-sm btn-outline-danger filter-chip" data-filter-type="type" data-filter-value="violation">
+                    <button class="btn btn-sm btn-outline-high filter-chip" data-filter-type="type" data-filter-value="violation">
                         <i class="bi bi-x-circle me-1" aria-hidden="true"></i>{{ ftl('common-violations') }}
                     </button>
-                    <button class="btn btn-sm btn-outline-warning filter-chip" data-filter-type="type" data-filter-value="warning">
+                    <button class="btn btn-sm btn-outline-medium filter-chip" data-filter-type="type" data-filter-value="warning">
                         <i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>{{ ftl('common-warnings') }}
                     </button>
                     <button class="btn btn-sm btn-outline-info filter-chip" data-filter-type="type" data-filter-value="info">
                         <i class="bi bi-info-circle me-1" aria-hidden="true"></i>{{ ftl('common-info') }}
                     </button>
-                    <button class="btn btn-sm btn-outline-secondary filter-chip" data-filter-type="type" data-filter-value="discovery">
+                    <button class="btn btn-sm btn-outline-neutral filter-chip" data-filter-type="type" data-filter-value="discovery">
                         <i class="bi bi-search me-1" aria-hidden="true"></i>{{ ftl('common-discovery-2') }}
                     </button>
                 </div>
@@ -298,11 +298,11 @@
             <div class="filter-group">
                 <label class="form-label fw-bold small">{{ ftl('reports-component') }}</label>
                 <div class="filter-chips" id="componentFilterChips">
-                    <button class="btn btn-sm btn-outline-secondary filter-chip" data-filter-type="component" data-filter-value="none">
+                    <button class="btn btn-sm btn-outline-neutral filter-chip" data-filter-type="component" data-filter-value="none">
                         <i class="bi bi-file-earmark me-1" aria-hidden="true"></i>{{ ftl('reports-no-component') }}
                     </button>
                     {% for signature, comp_data in common_components.items() %}
-                    <button class="btn btn-sm btn-outline-secondary filter-chip"
+                    <button class="btn btn-sm btn-outline-neutral filter-chip"
                             data-filter-type="component"
                             data-filter-value="{{ signature }}">
                         <i class="bi bi-box me-1" aria-hidden="true"></i>{{ comp_data.type }}: {{ comp_data.label }} ({{ comp_data.pages|length }} pages)
@@ -315,10 +315,10 @@
             <div class="filter-group">
                 <label class="form-label fw-bold small">{{ ftl('common-impact-2') }}</label>
                 <div class="filter-chips">
-                    <button class="btn btn-sm btn-outline-danger filter-chip" data-filter-type="impact" data-filter-value="high">
+                    <button class="btn btn-sm btn-outline-high filter-chip" data-filter-type="impact" data-filter-value="high">
                         {{ ftl('common-high') }}
                     </button>
-                    <button class="btn btn-sm btn-outline-warning filter-chip" data-filter-type="impact" data-filter-value="medium">
+                    <button class="btn btn-sm btn-outline-medium filter-chip" data-filter-type="impact" data-filter-value="medium">
                         {{ ftl('common-medium') }}
                     </button>
                     <button class="btn btn-sm btn-outline-info filter-chip" data-filter-type="impact" data-filter-value="low">
@@ -329,7 +329,7 @@
 
             <!-- Clear Filters -->
             <div class="mt-3">
-                <button class="btn btn-sm btn-outline-secondary" id="clearFilters">
+                <button class="btn btn-sm btn-outline-neutral" id="clearFilters">
                     <i class="bi bi-x-circle me-1" aria-hidden="true"></i>{{ ftl('common-clear-all-filters') }}
                 </button>
             </div>
@@ -339,7 +339,7 @@
         <div class="row mb-4">
             <div class="col-12">
                 <div class="card">
-                    <div class="card-header bg-primary text-white">
+                    <div class="card-header bg-brand text-inverse">
                         <h2 class="mb-0"><i class="bi bi-boxes" aria-hidden="true"></i> {{ ftl('reports-common-components-found') }}</h2>
                     </div>
                     <div class="card-body">
@@ -439,7 +439,7 @@
                             </div>
                             {% endfor %}
                         {% else %}
-                        <div class="alert alert-success">
+                        <div class="alert alert-pass">
                             <i class="bi bi-check-circle" aria-hidden="true"></i> {{ ftl('reports-no-issues-found') }}
                         </div>
                         {% endif %}

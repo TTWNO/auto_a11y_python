@@ -92,7 +92,7 @@
                     <h2><i class="bi bi-info-circle" aria-hidden="true"></i> {{ ftl('common-basic-information') }}</h2>
 
                     <div class="mb-3">
-                        <label for="name" class="form-label">{{ ftl('scripts-script-name') }} <span class="text-danger">*</span></label>
+                        <label for="name" class="form-label">{{ ftl('scripts-script-name') }} <span class="text-severity-high">*</span></label>
                         <input type="text" class="form-control" id="name" name="name" required
                                placeholder="{{ ftl('scripts-e-g-dismiss-cookie-banner') }}"
                                aria-describedby="name-help">
@@ -122,7 +122,7 @@
                 <div class="form-section">
                     <h2><i class="bi bi-layers" aria-hidden="true"></i> {{ ftl('scripts-multi-state-testing') }}</h2>
 
-                    <div class="alert alert-success">
+                    <div class="alert alert-pass">
                         <i class="bi bi-lightbulb" aria-hidden="true"></i>
                         <strong>{{ ftl('common-example') }}</strong> {{ ftl('scripts-for-a-cookie-banner-check-both-boxes-to-test-the') }}
                     </div>
@@ -134,7 +134,7 @@
                             <strong>{{ ftl('scripts-test-before-executing-script') }}</strong>
                         </label>
                         <div id="test-before-help" class="form-text">
-                            <i class="bi bi-check-circle text-success" aria-hidden="true"></i>
+                            <i class="bi bi-check-circle text-severity-pass" aria-hidden="true"></i>
                             {{ ftl('scripts-recommended-for-cookie-banners-modals-and-any') }}
                         </div>
                     </div>
@@ -146,7 +146,7 @@
                             <strong>{{ ftl('scripts-test-after-executing-script') }}</strong>
                         </label>
                         <div id="test-after-help" class="form-text">
-                            <i class="bi bi-check-circle text-success" aria-hidden="true"></i>
+                            <i class="bi bi-check-circle text-severity-pass" aria-hidden="true"></i>
                             {{ ftl('scripts-usually-checked-test-the-page-in-its-final-state') }}
                         </div>
                     </div>
@@ -249,7 +249,7 @@
                             <strong>{{ ftl('scripts-clear-cookies-before-script') }}</strong>
                         </label>
                         <div id="clear-cookies-help" class="form-text">
-                            <i class="bi bi-check-circle text-success" aria-hidden="true"></i>
+                            <i class="bi bi-check-circle text-severity-pass" aria-hidden="true"></i>
                             {{ ftl('scripts-recommended-for-cookie-banner-testing-ensures') }}
                         </div>
                     </div>
@@ -314,7 +314,7 @@
                         <!-- Steps will be added here dynamically -->
                     </div>
 
-                    <button type="button" class="btn btn-outline-primary" onclick="addStep()">
+                    <button type="button" class="btn btn-outline-brand" onclick="addStep()">
                         <i class="bi bi-plus-circle" aria-hidden="true"></i> {{ ftl('scripts-add-step') }}
                     </button>
                 </div>
@@ -322,10 +322,10 @@
 
                 <!-- Form Actions -->
                 <div class="d-flex justify-content-between mt-4">
-                    <a href="{{ url_for('scripts.list_page_scripts', page_id=page.id) }}" class="btn btn-outline-secondary">
+                    <a href="{{ url_for('scripts.list_page_scripts', page_id=page.id) }}" class="btn btn-outline-neutral">
                         <i class="bi bi-arrow-left" aria-hidden="true"></i> {{ ftl('common-cancel') }}
                     </a>
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" class="btn btn-brand">
                         <i class="bi bi-save" aria-hidden="true"></i> {{ ftl('scripts-create-script') }}
                     </button>
                 </div>
@@ -337,7 +337,7 @@
         <div class="col-lg-2 col-xl-4">
             <section aria-labelledby="quick-help-heading">
             <div class="card">
-                <div class="card-header bg-info text-white">
+                <div class="card-header card-header-info">
                     <h2 id="quick-help-heading" class="mb-0"><i class="bi bi-question-circle" aria-hidden="true"></i> {{ ftl('scripts-quick-help') }}</h2>
                 </div>
                 <div class="card-body">
@@ -395,7 +395,7 @@ function addStep(stepData = null) {
                     <span class="ms-2"><strong>{{ ftl('scripts-step') }} ${stepNum}</strong></span>
                 </div>
                 <div>
-                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeStep(${stepIndex})">
+                    <button type="button" class="btn btn-sm btn-outline-high" onclick="removeStep(${stepIndex})">
                         <i class="bi bi-trash" aria-hidden="true"></i> {{ ftl('scripts-remove') }}
                     </button>
                 </div>
@@ -403,7 +403,7 @@ function addStep(stepData = null) {
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-4 mb-3">
-                        <label class="form-label">{{ ftl('scripts-action-type') }} <span class="text-danger">*</span></label>
+                        <label class="form-label">{{ ftl('scripts-action-type') }} <span class="text-severity-high">*</span></label>
                         <select class="form-select" name="step_${stepIndex}_action" id="step_${stepIndex}_action"
                                 onchange="updateStepFields(${stepIndex})" required>
                             <option value="">{{ ftl('scripts-select-action') }}</option>

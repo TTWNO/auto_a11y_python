@@ -6,7 +6,7 @@
 <div class="row">
     <div class="col-md-6">
         <div class="card shadow mb-4">
-            <div class="card-header bg-primary text-white">
+            <div class="card-header bg-brand text-inverse">
                 <h2 class="mb-0"><i class="bi bi-person-gear" aria-hidden="true"></i> {{ ftl('common-edit-user') }}</h2>
             </div>
             <div class="card-body">
@@ -36,10 +36,10 @@
                         </div>
                         {% endif %}
                         <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn btn-brand">
                                 <i class="bi bi-check-lg" aria-hidden="true"></i> {{ ftl('common-save-changes') }}
                             </button>
-                            <a href="{{ url_for('auth.user_list') }}" class="btn btn-secondary">
+                            <a href="{{ url_for('auth.user_list') }}" class="btn btn-neutral">
                                 {{ ftl('common-cancel') }}
                             </a>
                         </div>
@@ -49,7 +49,7 @@
         </div>
 
         <div class="card shadow mb-4">
-            <div class="card-header bg-info text-white">
+            <div class="card-header card-header-info">
                 <h3 class="mb-0"><i class="bi bi-info-circle" aria-hidden="true"></i> {{ ftl('auth-user-statistics') }}</h3>
             </div>
             <div class="card-body">
@@ -72,7 +72,7 @@
     
     <div class="col-md-6">
         <div class="card shadow mb-4">
-            <div class="card-header bg-warning text-dark">
+            <div class="card-header card-header-medium">
                 <h3 class="mb-0"><i class="bi bi-key" aria-hidden="true"></i> {{ ftl('auth-reset-password') }}</h3>
             </div>
             <div class="card-body">
@@ -91,7 +91,7 @@
                             <input type="text" class="form-control" id="password_hint" name="password_hint" value="{{ user.password_hint or '' }}" aria-describedby="password_hint_help">
                             <div class="form-text" id="password_hint_help">{{ ftl('auth-optional-a-hint-to-help-the-user-remember-their') }}</div>
                         </div>
-                        <button type="submit" class="btn btn-warning">
+                        <button type="submit" class="btn btn-medium">
                             <i class="bi bi-key" aria-hidden="true"></i> {{ ftl('auth-reset-password') }}
                         </button>
                     </fieldset>
@@ -100,7 +100,7 @@
         </div>
         
         <div class="card shadow mb-4">
-            <div class="card-header bg-secondary text-white">
+            <div class="card-header card-header-neutral">
                 <h3 class="mb-0"><i class="bi bi-envelope" aria-hidden="true"></i> {{ ftl('auth-email-password-reset') }}</h3>
             </div>
             <div class="card-body">
@@ -108,11 +108,11 @@
                 <form method="POST" action="{{ url_for('auth.user_edit', user_id=user.id) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <input type="hidden" name="action" value="send_reset_email">
-                    <button type="submit" class="btn btn-secondary" {% if not smtp_enabled %}disabled{% endif %}>
+                    <button type="submit" class="btn btn-neutral" {% if not smtp_enabled %}disabled{% endif %}>
                         <i class="bi bi-send" aria-hidden="true"></i> {{ ftl('auth-send-password-reset-email') }}
                     </button>
                     {% if not smtp_enabled %}
-                    <div class="form-text text-warning mt-2">
+                    <div class="form-text text-severity-medium mt-2">
                         <i class="bi bi-exclamation-triangle" aria-hidden="true"></i> {{ ftl('auth-smtp-is-not-configured-set-smtp_-environment') }}
                     </div>
                     {% endif %}
@@ -122,7 +122,7 @@
 
         {% if user.is_locked() %}
         <div class="card shadow">
-            <div class="card-header bg-danger text-white">
+            <div class="card-header bg-high text-inverse">
                 <h3 class="mb-0"><i class="bi bi-lock" aria-hidden="true"></i> {{ ftl('auth-account-locked') }}</h3>
             </div>
             <div class="card-body">
@@ -131,7 +131,7 @@
                 <form method="POST" action="{{ url_for('auth.user_edit', user_id=user.id) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <input type="hidden" name="action" value="unlock">
-                    <button type="submit" class="btn btn-danger">
+                    <button type="submit" class="btn btn-high">
                         <i class="bi bi-unlock" aria-hidden="true"></i> {{ ftl('auth-unlock-account') }}
                     </button>
                 </form>
@@ -163,7 +163,7 @@
                                 <td><a href="{{ url_for('projects.view_project', project_id=p.id) }}">{{ p.name }}</a></td>
                                 <td>
                                     {% for gname in p.group_names %}
-                                    <span class="badge bg-secondary">{{ gname }}</span>
+                                    <span class="badge badge-neutral">{{ gname }}</span>
                                     {% endfor %}
                                 </td>
                             </tr>

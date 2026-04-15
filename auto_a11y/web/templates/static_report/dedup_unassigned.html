@@ -205,11 +205,11 @@
         background-color: #0e7490 !important;
         color: #ffffff !important;
     }
-    .bg-warning {
+    .bg-medium {
         background-color: #ffc107 !important;
         color: #212529 !important; /* Dark text on yellow background */
     }
-    .badge.bg-warning {
+    .badge.bg-medium {
         background-color: #ffc107 !important;
         color: #212529 !important;
     }
@@ -305,8 +305,8 @@
 {% if violation.metadata.full_remediation_en or violation.metadata.full_remediation_fr %}
 <div class="mb-3">
     <strong data-i18n="how_to_remediate">{{ t.get('how_to_remediate', 'How to remediate:') }}</strong>
-    {% if violation.metadata.full_remediation_en %}<div class="bg-light p-3 rounded {{ 'lang-active' if language == 'en' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;" data-lang="en" lang="en">{{ violation.metadata.full_remediation_en }}</div>{% endif %}
-    {% if violation.metadata.full_remediation_fr %}<div class="bg-light p-3 rounded {{ 'lang-active' if language == 'fr' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;" data-lang="fr" lang="fr">{{ violation.metadata.full_remediation_fr }}</div>{% endif %}
+    {% if violation.metadata.full_remediation_en %}<div class="bg-subtle p-3 rounded {{ 'lang-active' if language == 'en' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;" data-lang="en" lang="en">{{ violation.metadata.full_remediation_en }}</div>{% endif %}
+    {% if violation.metadata.full_remediation_fr %}<div class="bg-subtle p-3 rounded {{ 'lang-active' if language == 'fr' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;" data-lang="fr" lang="fr">{{ violation.metadata.full_remediation_fr }}</div>{% endif %}
 </div>
 {% endif %}
 
@@ -395,7 +395,7 @@
 
 {% if violation.metadata and violation.metadata.breakpoint %}
 <p>
-    <strong data-i18n="responsive_breakpoint">{{ t.get('responsive_breakpoint', 'Responsive Breakpoint:') }}</strong> <span class="badge bg-info">{{ violation.metadata.breakpoint }}px width</span>
+    <strong data-i18n="responsive_breakpoint">{{ t.get('responsive_breakpoint', 'Responsive Breakpoint:') }}</strong> <span class="badge badge-info">{{ violation.metadata.breakpoint }}px width</span>
 </p>
 {% endif %}
 
@@ -404,17 +404,17 @@
     <strong data-i18n="css_state">{{ t.get('css_state', 'CSS State:') }}</strong>
     {% if '@' in violation.metadata.pseudoclass %}
         {% set parts = violation.metadata.pseudoclass.split('@') %}
-        <span class="badge bg-warning">{{ parts[0] }}</span>
-        <span class="badge bg-secondary">{{ parts[1] }}</span>
+        <span class="badge badge-medium">{{ parts[0] }}</span>
+        <span class="badge badge-neutral">{{ parts[1] }}</span>
     {% else %}
-        <span class="badge bg-warning">{{ violation.metadata.pseudoclass }}</span>
+        <span class="badge badge-medium">{{ violation.metadata.pseudoclass }}</span>
     {% endif %}
 </p>
 {% endif %}
 
 {% if violation.html_snippet %}
 <h4 class="mt-3" data-i18n="code_snippet">{{ t.get('code_snippet', 'Code Snippet') }}</h4>
-<pre class="bg-dark text-light p-3 rounded"><code>{{ violation.html_snippet|e }}</code></pre>
+<pre class="bg-header text-inverse p-3 rounded"><code>{{ violation.html_snippet|e }}</code></pre>
 {% endif %}
 {% endmacro %}
 
@@ -452,7 +452,7 @@
                 <div class="card-body">
                     <p class="h6 card-subtitle mb-2 text-muted" data-i18n="status">{{ t['status'] }}</p>
                     <p class="mb-0">
-                        <span class="badge bg-success" data-i18n="tested">{{ t['tested'] }}</span>
+                        <span class="badge badge-pass" data-i18n="tested">{{ t['tested'] }}</span>
                     </p>
                 </div>
             </div>
@@ -472,8 +472,8 @@
                 <div class="card-body">
                     <p class="h6 card-subtitle mb-2 text-muted" data-i18n="issues_found">{{ t['issues_found'] }}</p>
                     <p class="mb-0">
-                        <span class="text-danger fw-bold">{{ errors_count|default(0) }}</span> <span data-i18n="errors">{{ t['errors'] }}</span>,
-                        <span class="text-warning fw-bold">{{ warnings_count|default(0) }}</span> <span data-i18n="warnings">{{ t['warnings'] }}</span>
+                        <span class="text-severity-high fw-bold">{{ errors_count|default(0) }}</span> <span data-i18n="errors">{{ t['errors'] }}</span>,
+                        <span class="text-severity-medium fw-bold">{{ warnings_count|default(0) }}</span> <span data-i18n="warnings">{{ t['warnings'] }}</span>
                     </p>
                 </div>
             </div>
@@ -484,7 +484,7 @@
                     <p class="h6 card-subtitle mb-2 text-muted" data-i18n="score">{{ t['score'] }}</p>
                     <p class="mb-0">
                         {% set score = page.score|default(0) %}
-                        <span class="fw-bold {% if score >= 90 %}text-success{% elif score >= 70 %}text-warning{% else %}text-danger{% endif %}">
+                        <span class="fw-bold {% if score >= 90 %}text-severity-pass{% elif score >= 70 %}text-severity-medium{% else %}text-severity-high{% endif %}">
                             {{ "%.0f"|format(score) }}%
                         </span>
                     </p>
@@ -502,7 +502,7 @@
                 <div class="card-body text-center">
                     {% set score = page.score|default(0) %}
                     <p class="h6 card-title" data-i18n="full_page_accessibility_score">{{ t['full_page_accessibility_score'] }}</p>
-                    <div class="display-4 fw-bold {% if score >= 90 %}text-success{% elif score >= 70 %}text-warning{% else %}text-danger{% endif %}">
+                    <div class="display-4 fw-bold {% if score >= 90 %}text-severity-pass{% elif score >= 70 %}text-severity-medium{% else %}text-severity-high{% endif %}">
                         {{ "%.1f"|format(score) }}%
                     </div>
                     <p class="text-muted small mb-0" data-i18n="all_issues_full_page">{{ t.get('all_issues_full_page', 'All issues (full page)') }}</p>
@@ -516,7 +516,7 @@
                 <div class="card-body text-center">
                     {% set dscore = dedup_score|default(0) %}
                     <p class="h6 card-title" data-i18n="non_component_issues_score">{{ t.get('non_component_issues_score', 'Non-Component Issues Score') }}</p>
-                    <div class="display-4 fw-bold {% if dscore >= 90 %}text-success{% elif dscore >= 70 %}text-warning{% else %}text-danger{% endif %}">
+                    <div class="display-4 fw-bold {% if dscore >= 90 %}text-severity-pass{% elif dscore >= 70 %}text-severity-medium{% else %}text-severity-high{% endif %}">
                         {{ "%.1f"|format(dscore) }}%
                     </div>
                     <p class="text-muted small mb-0" data-i18n="issues_not_in_common_components">{{ t.get('issues_not_in_common_components', 'Issues not in common components') }}</p>
@@ -532,7 +532,7 @@
                 <div class="card-body text-center">
                     <p class="h6 card-title" data-i18n="compliance_score">{{ t['compliance_score'] }}</p>
                     {% if compliance_score %}
-                    <div class="display-4 fw-bold {% if compliance_score.score >= 90 %}text-success{% elif compliance_score.score >= 70 %}text-warning{% else %}text-danger{% endif %}">
+                    <div class="display-4 fw-bold {% if compliance_score.score >= 90 %}text-severity-pass{% elif compliance_score.score >= 70 %}text-severity-medium{% else %}text-severity-high{% endif %}">
                         {{ "%.1f"|format(compliance_score.score) }}%
                     </div>
                     <p class="text-muted small mb-0">{{ compliance_score.passed_tests }} / {{ compliance_score.total_tests }} <span data-i18n="tests_passed">{{ t['tests_passed'] }}</span></p>
@@ -558,7 +558,7 @@
             <div class="row g-3">
                 <div class="col-6 col-lg-3">
                     <div class="d-flex align-items-center">
-                        <i class="bi bi-x-circle text-danger me-2 fs-4" aria-hidden="true"></i>
+                        <i class="bi bi-x-circle text-severity-high me-2 fs-4" aria-hidden="true"></i>
                         <div>
                             <div class="fw-bold">{{ errors_count|default(0) }}</div>
                             <small class="text-muted" data-i18n="errors">{{ t['errors'] }}</small>
@@ -567,7 +567,7 @@
                 </div>
                 <div class="col-6 col-lg-3">
                     <div class="d-flex align-items-center">
-                        <i class="bi bi-exclamation-triangle text-warning me-2 fs-4" aria-hidden="true"></i>
+                        <i class="bi bi-exclamation-triangle text-severity-medium me-2 fs-4" aria-hidden="true"></i>
                         <div>
                             <div class="fw-bold">{{ warnings_count|default(0) }}</div>
                             <small class="text-muted" data-i18n="warnings">{{ t['warnings'] }}</small>
@@ -576,7 +576,7 @@
                 </div>
                 <div class="col-6 col-lg-3">
                     <div class="d-flex align-items-center">
-                        <i class="bi bi-info-circle text-info me-2 fs-4" aria-hidden="true"></i>
+                        <i class="bi bi-info-circle text-info-custom me-2 fs-4" aria-hidden="true"></i>
                         <div>
                             <div class="fw-bold">{{ info_count|default(0) }}</div>
                             <small class="text-muted" data-i18n="info">{{ t['info'] }}</small>
@@ -602,7 +602,7 @@
     <div class="filter-panel">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h2 class="mb-0"><i class="bi bi-funnel" aria-hidden="true"></i> <span data-i18n="filter_test_results">{{ t.get('filter_test_results', 'Filter Test Results') }}</span></h2>
-            <button class="btn btn-sm btn-outline-secondary" id="clearFilters">
+            <button class="btn btn-sm btn-outline-neutral" id="clearFilters">
                 <i class="bi bi-x-circle" aria-hidden="true"></i> <span data-i18n="clear_all_filters">{{ t.get('clear_all_filters', 'Clear All Filters') }}</span>
             </button>
         </div>
@@ -657,15 +657,15 @@
                     <label class="form-label fw-bold" data-i18n="impact_level">{{ t.get('impact_level', 'Impact Level') }}</label>
                     <div class="filter-chips">
                         <button type="button" class="filter-chip" data-filter-type="impact" data-filter-value="high">
-                            <span class="badge bg-danger me-1" data-i18n="high">{{ t['high'] }}</span>
+                            <span class="badge badge-high me-1" data-i18n="high">{{ t['high'] }}</span>
                             <span id="highImpactCount">0</span>
                         </button>
                         <button type="button" class="filter-chip" data-filter-type="impact" data-filter-value="medium">
-                            <span class="badge bg-warning text-dark me-1" data-i18n="medium">{{ t['medium'] }}</span>
+                            <span class="badge badge-medium me-1" data-i18n="medium">{{ t['medium'] }}</span>
                             <span id="mediumImpactCount">0</span>
                         </button>
                         <button type="button" class="filter-chip" data-filter-type="impact" data-filter-value="low">
-                            <span class="badge bg-info me-1" data-i18n="low">{{ t['low'] }}</span>
+                            <span class="badge badge-info me-1" data-i18n="low">{{ t['low'] }}</span>
                             <span id="lowImpactCount">0</span>
                         </button>
                     </div>
@@ -718,7 +718,7 @@
 
     <!-- Violations -->
     {% if violations %}
-    <h3 class="text-danger mb-3">
+    <h3 class="text-severity-high mb-3">
         <i class="bi bi-x-circle" aria-hidden="true"></i> <span data-i18n="errors">{{ t['errors'] }}</span> ({{ violations|length }})
     </h3>
     <div class="accordion mb-4" id="violationsAccordion">
@@ -771,14 +771,14 @@
                                                 data-bs-target="#viol_inst_{{ viol_counter.value }}_{{ loop.index }}">
                                             <strong data-i18n="instance">{{ t.get('instance', 'Instance') }}</strong> {{ loop.index }}:
                                             {% if instance.metadata and instance.metadata.authenticated_user %}
-                                                <span class="badge bg-secondary ms-2">
+                                                <span class="badge badge-neutral ms-2">
                                                     <i class="bi bi-person-fill" aria-hidden="true"></i> {{ instance.metadata.authenticated_user.display_name }}
                                                     {% if instance.metadata.authenticated_user.roles %}
                                                         ({{ instance.metadata.authenticated_user.roles|join(', ') }})
                                                     {% endif %}
                                                 </span>
                                             {% else %}
-                                                <span class="badge bg-secondary ms-2">
+                                                <span class="badge badge-neutral ms-2">
                                                     <i class="bi bi-person" aria-hidden="true"></i> <span data-i18n="guest">{{ t.get('guest', 'Guest') }}</span>
                                                 </span>
                                             {% endif %}
@@ -811,7 +811,7 @@
 
     <!-- Warnings -->
     {% if warnings %}
-    <h3 class="text-warning mb-3">
+    <h3 class="text-severity-medium mb-3">
         <i class="bi bi-exclamation-triangle" aria-hidden="true"></i> <span data-i18n="warnings">{{ t['warnings'] }}</span> ({{ warnings|length }})
     </h3>
     <div class="accordion mb-4" id="warningsAccordion">
@@ -864,14 +864,14 @@
                                                 data-bs-target="#warn_inst_{{ warn_counter.value }}_{{ loop.index }}">
                                             <strong data-i18n="instance">{{ t.get('instance', 'Instance') }}</strong> {{ loop.index }}:
                                             {% if instance.metadata and instance.metadata.authenticated_user %}
-                                                <span class="badge bg-secondary ms-2">
+                                                <span class="badge badge-neutral ms-2">
                                                     <i class="bi bi-person-fill" aria-hidden="true"></i> {{ instance.metadata.authenticated_user.display_name }}
                                                     {% if instance.metadata.authenticated_user.roles %}
                                                         ({{ instance.metadata.authenticated_user.roles|join(', ') }})
                                                     {% endif %}
                                                 </span>
                                             {% else %}
-                                                <span class="badge bg-secondary ms-2">
+                                                <span class="badge badge-neutral ms-2">
                                                     <i class="bi bi-person" aria-hidden="true"></i> <span data-i18n="guest">{{ t.get('guest', 'Guest') }}</span>
                                                 </span>
                                             {% endif %}
@@ -904,7 +904,7 @@
 
     <!-- Info -->
     {% if info %}
-    <h3 class="text-info mb-3">
+    <h3 class="text-info-custom mb-3">
         <i class="bi bi-info-circle" aria-hidden="true"></i> <span data-i18n="info">{{ t['info'] }}</span> ({{ info|length }})
     </h3>
     <div class="accordion mb-4" id="infoAccordion">
@@ -959,14 +959,14 @@
                                                 data-bs-target="#info_inst_{{ info_counter.value }}_{{ loop.index }}">
                                             <strong data-i18n="instance">{{ t.get('instance', 'Instance') }}</strong> {{ loop.index }}:
                                             {% if instance.metadata and instance.metadata.authenticated_user %}
-                                                <span class="badge bg-secondary ms-2">
+                                                <span class="badge badge-neutral ms-2">
                                                     <i class="bi bi-person-fill" aria-hidden="true"></i> {{ instance.metadata.authenticated_user.display_name }}
                                                     {% if instance.metadata.authenticated_user.roles %}
                                                         ({{ instance.metadata.authenticated_user.roles|join(', ') }})
                                                     {% endif %}
                                                 </span>
                                             {% else %}
-                                                <span class="badge bg-secondary ms-2">
+                                                <span class="badge badge-neutral ms-2">
                                                     <i class="bi bi-person" aria-hidden="true"></i> <span data-i18n="guest">{{ t.get('guest', 'Guest') }}</span>
                                                 </span>
                                             {% endif %}
@@ -1051,14 +1051,14 @@
                                                 data-bs-target="#disco_inst_{{ disco_counter.value }}_{{ loop.index }}">
                                             <strong data-i18n="instance">{{ t.get('instance', 'Instance') }}</strong> {{ loop.index }}:
                                             {% if instance.metadata and instance.metadata.authenticated_user %}
-                                                <span class="badge bg-secondary ms-2">
+                                                <span class="badge badge-neutral ms-2">
                                                     <i class="bi bi-person-fill" aria-hidden="true"></i> {{ instance.metadata.authenticated_user.display_name }}
                                                     {% if instance.metadata.authenticated_user.roles %}
                                                         ({{ instance.metadata.authenticated_user.roles|join(', ') }})
                                                     {% endif %}
                                                 </span>
                                             {% else %}
-                                                <span class="badge bg-secondary ms-2">
+                                                <span class="badge badge-neutral ms-2">
                                                     <i class="bi bi-person" aria-hidden="true"></i> <span data-i18n="guest">{{ t.get('guest', 'Guest') }}</span>
                                                 </span>
                                             {% endif %}

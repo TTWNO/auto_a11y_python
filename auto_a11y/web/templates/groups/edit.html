@@ -8,7 +8,7 @@
         <i class="bi bi-shield-lock" aria-hidden="true"></i>
         {{ ftl('groups-edit-group') if group else ftl('groups-create-group') }}
     </h1>
-    <a href="{{ url_for('groups.list_groups') }}" class="btn btn-outline-secondary">
+    <a href="{{ url_for('groups.list_groups') }}" class="btn btn-outline-neutral">
         <i class="bi bi-arrow-left" aria-hidden="true"></i> {{ ftl('groups-back-to-groups') }}
     </a>
 </div>
@@ -20,7 +20,7 @@
             <fieldset class="mb-4">
                 <legend><h3 class="h5 mb-0">{{ ftl('groups-group-details') }}</h3></legend>
                 <div class="mb-3">
-                    <label for="name" class="form-label">{{ ftl('common-name') }} <span class="text-danger" aria-hidden="true">*</span></label>
+                    <label for="name" class="form-label">{{ ftl('common-name') }} <span class="text-severity-high" aria-hidden="true">*</span></label>
                     <input type="text" class="form-control" id="name" name="name"
                            value="{{ group.name if group else '' }}" required maxlength="100"
                            aria-required="true">
@@ -72,11 +72,11 @@
             </fieldset>
 
             <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-primary">
+                <button type="submit" class="btn btn-brand">
                     <i class="bi bi-check-lg" aria-hidden="true"></i>
                     {{ ftl('groups-update-group') if group else ftl('groups-create-group') }}
                 </button>
-                <a href="{{ url_for('groups.list_groups') }}" class="btn btn-secondary">
+                <a href="{{ url_for('groups.list_groups') }}" class="btn btn-neutral">
                     {{ ftl('common-cancel') }}
                 </a>
             </div>

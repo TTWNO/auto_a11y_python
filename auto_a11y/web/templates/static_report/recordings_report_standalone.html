@@ -158,9 +158,9 @@
         <div class="row g-3 mb-4">
             <!-- Total Recordings -->
             <div class="col-md-3">
-                <div class="stat-card bg-primary text-white">
+                <div class="stat-card bg-brand text-inverse">
                     <div class="stat-value">{{ stats.total_recordings }}</div>
-                    <div class="stat-label text-white">
+                    <div class="stat-label text-inverse">
                         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['total_recordings'] }}</span>
                         <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['total_recordings'] }}</span>
                     </div>
@@ -169,9 +169,9 @@
 
             <!-- Total Issues -->
             <div class="col-md-3">
-                <div class="stat-card bg-info text-white">
+                <div class="stat-card bg-info text-inverse">
                     <div class="stat-value">{{ stats.total_issues }}</div>
-                    <div class="stat-label text-white">
+                    <div class="stat-label text-inverse">
                         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['total_issues'] }}</span>
                         <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['total_issues'] }}</span>
                     </div>
@@ -180,9 +180,9 @@
 
             <!-- High Impact Issues -->
             <div class="col-md-2">
-                <div class="stat-card bg-danger text-white">
+                <div class="stat-card bg-high text-inverse">
                     <div class="stat-value">{{ stats.high_count }}</div>
-                    <div class="stat-label text-white">
+                    <div class="stat-label text-inverse">
                         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['high'] }}</span>
                         <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['high'] }}</span>
                     </div>
@@ -191,7 +191,7 @@
 
             <!-- Medium Impact Issues -->
             <div class="col-md-2">
-                <div class="stat-card bg-warning">
+                <div class="stat-card bg-medium">
                     <div class="stat-value">{{ stats.medium_count }}</div>
                     <div class="stat-label">
                         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['medium'] }}</span>
@@ -202,9 +202,9 @@
 
             <!-- Low Impact Issues -->
             <div class="col-md-2">
-                <div class="stat-card bg-secondary text-white">
+                <div class="stat-card bg-neutral text-inverse">
                     <div class="stat-value">{{ stats.low_count }}</div>
-                    <div class="stat-label text-white">
+                    <div class="stat-label text-inverse">
                         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['low'] }}</span>
                         <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['low'] }}</span>
                     </div>
@@ -346,13 +346,13 @@
                                         </h4>
                                         {% if painpoint.user_quote %}
                                         <div class="mb-3">
-                                            <strong class="text-primary">{{ ftl('common-user-quote') }}</strong>
+                                            <strong class="text-brand">{{ ftl('common-user-quote') }}</strong>
                                             <p class="fst-italic ms-3">"{{ painpoint.user_quote }}"</p>
                                         </div>
                                         {% endif %}
                                         {% if include_timecodes and painpoint.timecodes %}
                                         <div>
-                                            <strong class="text-primary">{{ ftl('common-timecodes') }}</strong>
+                                            <strong class="text-brand">{{ ftl('common-timecodes') }}</strong>
                                             {% for tc in painpoint.timecodes %}
                                             <div class="ms-3 mb-2">
                                                 <i class="bi bi-clock" aria-hidden="true"></i>
@@ -381,13 +381,13 @@
                                         </h4>
                                         {% if painpoint.user_quote %}
                                         <div class="mb-3">
-                                            <strong class="text-primary">Citation de l'utilisateur :</strong>
+                                            <strong class="text-brand">Citation de l'utilisateur :</strong>
                                             <p class="fst-italic ms-3">"{{ painpoint.user_quote }}"</p>
                                         </div>
                                         {% endif %}
                                         {% if include_timecodes and painpoint.timecodes %}
                                         <div>
-                                            <strong class="text-primary">Code{% if painpoint.timecodes|length > 1 %}s{% endif %} temporel{% if painpoint.timecodes|length > 1 %}s{% endif %} :</strong>
+                                            <strong class="text-brand">Code{% if painpoint.timecodes|length > 1 %}s{% endif %} temporel{% if painpoint.timecodes|length > 1 %}s{% endif %} :</strong>
                                             {% for tc in painpoint.timecodes %}
                                             <div class="ms-3 mb-2">
                                                 <i class="bi bi-clock" aria-hidden="true"></i>
@@ -432,13 +432,13 @@
                                         <h4>{{ assertion.number }}. {{ assertion.assertion }}</h4>
                                         {% if assertion.user_quote %}
                                         <div class="mb-3">
-                                            <strong class="text-primary">{{ ftl('common-user-quote') }}</strong>
+                                            <strong class="text-brand">{{ ftl('common-user-quote') }}</strong>
                                             <p class="fst-italic ms-3">"{{ assertion.user_quote }}"</p>
                                         </div>
                                         {% endif %}
                                         {% if include_timecodes and assertion.timecodes %}
                                         <div>
-                                            <strong class="text-primary">{{ ftl('common-timecodes') }}</strong>
+                                            <strong class="text-brand">{{ ftl('common-timecodes') }}</strong>
                                             {% for tc in assertion.timecodes %}
                                             <div class="ms-3 mb-2">
                                                 <i class="bi bi-clock" aria-hidden="true"></i>
@@ -452,7 +452,7 @@
                                         {% endif %}
                                         {% if assertion.context %}
                                         <div class="mt-2">
-                                            <strong class="text-primary">{{ ftl('common-context') }}</strong>
+                                            <strong class="text-brand">{{ ftl('common-context') }}</strong>
                                             <p class="ms-3">{{ assertion.context }}</p>
                                         </div>
                                         {% endif %}
@@ -466,13 +466,13 @@
                                         <h4>{{ assertion.number }}. {{ assertion.assertion }}</h4>
                                         {% if assertion.user_quote %}
                                         <div class="mb-3">
-                                            <strong class="text-primary">Citation de l'utilisateur :</strong>
+                                            <strong class="text-brand">Citation de l'utilisateur :</strong>
                                             <p class="fst-italic ms-3">"{{ assertion.user_quote }}"</p>
                                         </div>
                                         {% endif %}
                                         {% if include_timecodes and assertion.timecodes %}
                                         <div>
-                                            <strong class="text-primary">Code{% if assertion.timecodes|length > 1 %}s{% endif %} temporel{% if assertion.timecodes|length > 1 %}s{% endif %} :</strong>
+                                            <strong class="text-brand">Code{% if assertion.timecodes|length > 1 %}s{% endif %} temporel{% if assertion.timecodes|length > 1 %}s{% endif %} :</strong>
                                             {% for tc in assertion.timecodes %}
                                             <div class="ms-3 mb-2">
                                                 <i class="bi bi-clock" aria-hidden="true"></i>
@@ -486,7 +486,7 @@
                                         {% endif %}
                                         {% if assertion.context %}
                                         <div class="mt-2">
-                                            <strong class="text-primary">Contexte :</strong>
+                                            <strong class="text-brand">Contexte :</strong>
                                             <p class="ms-3">{{ assertion.context }}</p>
                                         </div>
                                         {% endif %}
@@ -532,7 +532,7 @@
                                                             {{ issue.title }}
                                                         </span>
                                                         {% if issue.timecodes %}
-                                                        <span class="badge bg-info">
+                                                        <span class="badge badge-info">
                                                             <i class="bi bi-clock" aria-hidden="true"></i> {{ issue.timecodes|length }} {{ ftl('common-timecode-s') }}
                                                         </span>
                                                         {% endif %}
@@ -551,7 +551,7 @@
                                                         <strong>{{ t['timecodes'] }}:</strong>
                                                         <div class="mt-1">
                                                             {% for tc in issue.timecodes %}
-                                                            <span class="badge bg-secondary me-2">
+                                                            <span class="badge badge-neutral me-2">
                                                                 {{ tc.start }} - {{ tc.end }}{% if tc.duration %} ({{ tc.duration }}){% endif %}
                                                             </span>
                                                             {% endfor %}
@@ -592,7 +592,7 @@
                                                         <strong>{{ t['wcag_criteria'] }}:</strong>
                                                         <div class="mt-1">
                                                             {% for wcag_ref in issue.wcag %}
-                                                            <span class="badge bg-primary me-1">
+                                                            <span class="badge badge-brand me-1">
                                                                 {{ wcag_ref.criteria }} (Level {{ wcag_ref.level }})
                                                             </span>
                                                             {% endfor %}
@@ -619,7 +619,7 @@
                                                             {{ issue.title }}
                                                         </span>
                                                         {% if issue.timecodes %}
-                                                        <span class="badge bg-info">
+                                                        <span class="badge badge-info">
                                                             <i class="bi bi-clock" aria-hidden="true"></i> {{ issue.timecodes|length }} code(s) temporel(s)
                                                         </span>
                                                         {% endif %}
@@ -638,7 +638,7 @@
                                                         <strong>{{ translations_fr['timecodes'] }} :</strong>
                                                         <div class="mt-1">
                                                             {% for tc in issue.timecodes %}
-                                                            <span class="badge bg-secondary me-2">
+                                                            <span class="badge badge-neutral me-2">
                                                                 {{ tc.start }} - {{ tc.end }}{% if tc.duration %} ({{ tc.duration }}){% endif %}
                                                             </span>
                                                             {% endfor %}
@@ -679,7 +679,7 @@
                                                         <strong>{{ translations_fr['wcag_criteria'] }} :</strong>
                                                         <div class="mt-1">
                                                             {% for wcag_ref in issue.wcag %}
-                                                            <span class="badge bg-primary me-1">
+                                                            <span class="badge badge-brand me-1">
                                                                 {{ wcag_ref.criteria }} (Niveau {{ wcag_ref.level }})
                                                             </span>
                                                             {% endfor %}

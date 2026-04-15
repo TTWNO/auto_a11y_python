@@ -57,7 +57,7 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="username" class="form-label">{{ ftl('common-username') }} <span class="text-danger">*</span></label>
+                                <label for="username" class="form-label">{{ ftl('common-username') }} <span class="text-severity-high">*</span></label>
                                 <input type="text" class="form-control" id="username" name="username" required
                                        value="{{ user.username }}"
                                        placeholder="{{ ftl('common-e-g-student123') }}" autocomplete="username"
@@ -243,9 +243,9 @@
                             <dt class="col-sm-3">{{ ftl('common-last-login-status') }}</dt>
                             <dd class="col-sm-9">
                                 {% if user.last_login_success == True %}
-                                <span class="badge bg-success"><i class="bi bi-check-circle" aria-hidden="true"></i> {{ ftl('common-success') }}</span>
+                                <span class="badge badge-pass"><i class="bi bi-check-circle" aria-hidden="true"></i> {{ ftl('common-success') }}</span>
                                 {% elif user.last_login_success == False %}
-                                <span class="badge bg-danger"><i class="bi bi-x-circle" aria-hidden="true"></i> {{ ftl('common-failed') }}</span>
+                                <span class="badge badge-high"><i class="bi bi-x-circle" aria-hidden="true"></i> {{ ftl('common-failed') }}</span>
                                 {% else %}
                                 <span class="text-muted">{{ ftl('common-not-attempted-yet') }}</span>
                                 {% endif %}
@@ -254,7 +254,7 @@
                             {% if user.last_login_error %}
                             <dt class="col-sm-3">{{ ftl('common-last-error') }}</dt>
                             <dd class="col-sm-9">
-                                <code class="text-danger">{{ user.last_login_error }}</code>
+                                <code class="text-severity-high">{{ user.last_login_error }}</code>
                             </dd>
                             {% endif %}
                         </dl>
@@ -266,7 +266,7 @@
             <!-- Help Sidebar -->
             <div class="col-md-4">
                 <div class="card sticky-top" style="top: 20px;">
-                    <div class="card-header bg-info text-white">
+                    <div class="card-header card-header-info">
                         <h2 class="mb-0"><i class="bi bi-question-circle" aria-hidden="true"></i> {{ ftl('common-help') }}</h2>
                     </div>
                     <div class="card-body">
@@ -296,10 +296,10 @@
         <div class="row">
             <div class="col-md-8">
                 <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" class="btn btn-brand">
                         <i class="bi bi-check-circle" aria-hidden="true"></i> {{ ftl('common-save-changes') }}
                     </button>
-                    <a href="{{ url_for('website_users.list_users', website_id=website.id) }}" class="btn btn-secondary">
+                    <a href="{{ url_for('website_users.list_users', website_id=website.id) }}" class="btn btn-neutral">
                         <i class="bi bi-x-circle" aria-hidden="true"></i> {{ ftl('common-cancel') }}
                     </a>
                 </div>

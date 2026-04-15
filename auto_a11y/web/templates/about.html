@@ -13,7 +13,7 @@
             <!-- About Auto A11y -->
             <section aria-labelledby="about-heading">
             <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
+                <div class="card-header bg-brand text-inverse">
                     <h2 id="about-heading" class="mb-0"><i class="bi bi-universal-access-circle" aria-hidden="true"></i> {{ ftl('common-about-auto-a11y-2') }}</h2>
                 </div>
                 <div class="card-body">
@@ -34,7 +34,7 @@
             <!-- WCAG Data Attribution -->
             <section aria-labelledby="wcag-attribution-heading">
             <div class="card mb-4">
-                <div class="card-header bg-info text-white">
+                <div class="card-header card-header-info">
                     <h2 id="wcag-attribution-heading" class="mb-0"><i class="bi bi-file-text" aria-hidden="true"></i> {{ ftl('common-wcag-data-attribution') }}</h2>
                 </div>
                 <div class="card-body">
@@ -63,7 +63,7 @@
                         </li>
                     </ul>
 
-                    <div class="alert alert-warning mt-3" role="alert">
+                    <div class="alert alert-medium mt-3" role="alert">
                         <h3 class="alert-heading"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> {{ ftl('common-important-notice') }}</h3>
                         <p class="mb-0">{{ ftl('common-the-wcag-content-is-used-with-attribution-as') }}</p>
                     </div>
@@ -82,7 +82,7 @@
             <!-- Additional Resources -->
             <section aria-labelledby="resources-heading">
             <div class="card mb-4">
-                <div class="card-header bg-success text-white">
+                <div class="card-header bg-pass text-inverse">
                     <h2 id="resources-heading" class="mb-0"><i class="bi bi-book" aria-hidden="true"></i> {{ ftl('common-additional-resources') }}</h2>
                 </div>
                 <div class="card-body">
@@ -118,7 +118,7 @@
         <!-- Sidebar -->
         <aside class="col-lg-4">
             <div class="card sticky-top" style="top: 20px;">
-                <div class="card-header bg-secondary text-white">
+                <div class="card-header card-header-neutral">
                     <h2 class="mb-0"><i class="bi bi-info-square" aria-hidden="true"></i> {{ ftl('common-quick-info') }}</h2>
                 </div>
                 <div class="card-body">
@@ -151,10 +151,10 @@
                     <hr>
 
                     <div class="text-center">
-                        <a href="{{ url_for('help') }}" class="btn btn-primary btn-sm">
+                        <a href="{{ url_for('help') }}" class="btn btn-brand btn-sm">
                             <i class="bi bi-question-circle" aria-hidden="true"></i> {{ ftl('common-view-help') }}
                         </a>
-                        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary btn-sm">
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-neutral btn-sm">
                             <i class="bi bi-speedometer2" aria-hidden="true"></i> {{ ftl('common-dashboard') }}
                         </a>
                     </div>

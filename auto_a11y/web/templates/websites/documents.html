@@ -23,9 +23,9 @@
             <p class="text-muted">{{ ftl('websites-documents-found-during-website-discovery') }}</p>
         </div>
         <div>
-            <span class="badge bg-primary me-2">{{ ftl('common-total') }} {{ total_docs }}</span>
-            <span class="badge bg-success me-2">{{ ftl('websites-internal') }} {{ internal_docs|length }}</span>
-            <span class="badge bg-warning">{{ ftl('websites-external') }} {{ external_docs|length }}</span>
+            <span class="badge badge-brand me-2">{{ ftl('common-total') }} {{ total_docs }}</span>
+            <span class="badge badge-pass me-2">{{ ftl('websites-internal') }} {{ internal_docs|length }}</span>
+            <span class="badge badge-medium">{{ ftl('websites-external') }} {{ external_docs|length }}</span>
         </div>
     </div>
 
@@ -35,7 +35,7 @@
             <div class="card-header">
                 <h2 id="internal-docs-heading" class="mb-0">
                     <i class="bi bi-house-door" aria-hidden="true"></i> {{ ftl('websites-internal-documents') }}
-                    <span class="badge bg-secondary ms-2">{{ internal_docs|length }}</span>
+                    <span class="badge badge-neutral ms-2">{{ internal_docs|length }}</span>
                 </h2>
             </div>
         <div class="card-body">
@@ -65,11 +65,11 @@
                                 </a>
                             </td>
                             <td>
-                                <span class="badge bg-info">{{ doc.document_type_display }}</span>
+                                <span class="badge badge-info">{{ doc.document_type_display }}</span>
                             </td>
                             <td>
                                 {% if doc.language %}
-                                    <span class="badge bg-secondary"
+                                    <span class="badge badge-neutral"
                                           title="{{ ftl('common-confidence') }} {{ (doc.language_confidence * 100)|round(0)|int }}%">
                                         {{ doc.language_display }}
                                     </span>
@@ -89,10 +89,10 @@
                                 {{ doc.discovered_at.strftime('%Y-%m-%d') if doc.discovered_at else '-' }}
                             </td>
                             <td>
-                                <span class="badge bg-secondary">{{ doc.seen_count }}</span>
+                                <span class="badge badge-neutral">{{ doc.seen_count }}</span>
                             </td>
                             <td>
-                                <a href="{{ doc.document_url }}" download class="btn btn-sm btn-outline-primary">
+                                <a href="{{ doc.document_url }}" download class="btn btn-sm btn-outline-brand">
                                     <i class="bi bi-download"></i>
                                 </a>
                             </td>
@@ -113,7 +113,7 @@
             <div class="card-header">
                 <h2 id="external-docs-heading" class="mb-0">
                     <i class="bi bi-globe" aria-hidden="true"></i> {{ ftl('websites-external-documents') }}
-                    <span class="badge bg-secondary ms-2">{{ external_docs|length }}</span>
+                    <span class="badge badge-neutral ms-2">{{ external_docs|length }}</span>
                 </h2>
             </div>
         <div class="card-body">
@@ -143,11 +143,11 @@
                                 </a>
                             </td>
                             <td>
-                                <span class="badge bg-info">{{ doc.document_type_display }}</span>
+                                <span class="badge badge-info">{{ doc.document_type_display }}</span>
                             </td>
                             <td>
                                 {% if doc.language %}
-                                    <span class="badge bg-secondary"
+                                    <span class="badge badge-neutral"
                                           title="{{ ftl('common-confidence') }} {{ (doc.language_confidence * 100)|round(0)|int }}%">
                                         {{ doc.language_display }}
                                     </span>
@@ -167,11 +167,11 @@
                                 {{ doc.discovered_at.strftime('%Y-%m-%d') if doc.discovered_at else '-' }}
                             </td>
                             <td>
-                                <span class="badge bg-secondary">{{ doc.seen_count }}</span>
+                                <span class="badge badge-neutral">{{ doc.seen_count }}</span>
                             </td>
                             <td>
                                 {% if doc.via_redirect %}
-                                <span class="badge bg-warning" title="{{ ftl('websites-found-through-address-rewriting-redirect') }}">
+                                <span class="badge badge-medium" title="{{ ftl('websites-found-through-address-rewriting-redirect') }}">
                                     <i class="bi bi-arrow-right-circle" aria-hidden="true"></i> {{ ftl('websites-yes') }}
                                 </span>
                                 {% else %}
@@ -210,7 +210,7 @@
                 <div class="col-md-3 mb-2">
                     <div class="d-flex justify-content-between align-items-center">
                         <span>{{ doc_type }}:</span>
-                        <span class="badge bg-primary">{{ count }}</span>
+                        <span class="badge badge-brand">{{ count }}</span>
                     </div>
                 </div>
                 {% endfor %}
@@ -243,7 +243,7 @@
                     <div class="col-md-3 mb-2">
                         <div class="d-flex justify-content-between align-items-center">
                             <span>{{ language }}:</span>
-                            <span class="badge bg-primary">{{ count }}</span>
+                            <span class="badge badge-brand">{{ count }}</span>
                         </div>
                     </div>
                     {% endfor %}

@@ -46,7 +46,7 @@
                 <div class="row mb-4">
                     <div class="col-md-6">
                         <div class="card">
-                            <div class="card-header bg-primary text-white">
+                            <div class="card-header bg-brand text-inverse">
                                 <h3 class="mb-0"><i class="bi bi-robot" aria-hidden="true"></i> {{ ftl('common-automated-testing-scores') }}</h3>
                             </div>
                             <div class="card-body">
@@ -62,7 +62,7 @@
                     </div>
                     <div class="col-md-6">
                         <div class="card">
-                            <div class="card-header bg-success text-white">
+                            <div class="card-header bg-pass text-inverse">
                                 <h3 class="mb-0"><i class="bi bi-person-check" aria-hidden="true"></i> {{ ftl('common-manual-testing-scores') }}</h3>
                             </div>
                             <div class="card-body">
@@ -114,12 +114,12 @@
                             <div class="col-md-4">
                                 <strong>{{ ftl('common-accessibility-score-2') }}</strong><br>
                                 {{ ftl('common-90-9-10-passed') }}<br>
-                                <span class="text-success">{{ ftl('common-good-progress') }}</span>
+                                <span class="text-severity-pass">{{ ftl('common-good-progress') }}</span>
                             </div>
                             <div class="col-md-4">
                                 <strong>{{ ftl('common-compliance-score') }}</strong><br>
                                 {{ ftl('common-0-test-has-violations') }}<br>
-                                <span class="text-danger">{{ ftl('common-not-compliant') }}</span>
+                                <span class="text-severity-high">{{ ftl('common-not-compliant') }}</span>
                             </div>
                         </div>
                     </div>
@@ -128,7 +128,7 @@
                 <div class="card help-card">
                     <div class="card-body">
                         <h3 class="card-title">{{ ftl('common-accessibility-score-formula') }}</h3>
-                        <code class="d-block p-3 bg-light mb-3">{{ ftl('common-passed-checks-applicable-checks-100') }}</code>
+                        <code class="d-block p-3 bg-subtle mb-3">{{ ftl('common-passed-checks-applicable-checks-100') }}</code>
                         <p>{{ ftl('common-this-score-helps-you-track-progress-each') }}</p>
                         <ul>
                             <li><strong>{{ ftl('common-90-100') }}</strong> {{ ftl('common-excellent-minor-issues-only') }}</li>
@@ -142,7 +142,7 @@
                 <div class="card help-card">
                     <div class="card-body">
                         <h3 class="card-title">{{ ftl('common-compliance-score-formula') }}</h3>
-                        <code class="d-block p-3 bg-light mb-3">{{ ftl('common-tests-with-zero-violations-total-tests-100') }}</code>
+                        <code class="d-block p-3 bg-subtle mb-3">{{ ftl('common-tests-with-zero-violations-total-tests-100') }}</code>
                         <p>{{ ftl('common-this-score-reflects-true-wcag-compliance-a-test') }}</p>
                         <ul>
                             <li><strong>{{ ftl('common-100') }}</strong> {{ ftl('common-fully-compliant') }}</li>
@@ -163,7 +163,7 @@
                         <div class="row mt-3">
                             <div class="col-md-4">
                                 <h4>{{ ftl('common-level-a-2') }}</h4>
-                                <span class="badge bg-warning text-dark">{{ ftl('common-minimum') }}</span>
+                                <span class="badge badge-medium">{{ ftl('common-minimum') }}</span>
                                 <ul class="mt-2">
                                     <li>{{ ftl('common-basic-features') }}</li>
                                     <li>{{ ftl('common-essential-for-any-site') }}</li>
@@ -172,7 +172,7 @@
                             </div>
                             <div class="col-md-4">
                                 <h4>{{ ftl('common-level-aa-2') }}</h4>
-                                <span class="badge bg-success">{{ ftl('common-recommended') }}</span>
+                                <span class="badge badge-pass">{{ ftl('common-recommended') }}</span>
                                 <ul class="mt-2">
                                     <li>{{ ftl('common-legal-standard') }}</li>
                                     <li>{{ ftl('common-removes-major-barriers') }}</li>
@@ -181,7 +181,7 @@
                             </div>
                             <div class="col-md-4">
                                 <h4>{{ ftl('common-level-aaa-2') }}</h4>
-                                <span class="badge bg-info">{{ ftl('common-enhanced') }}</span>
+                                <span class="badge badge-info">{{ ftl('common-enhanced') }}</span>
                                 <ul class="mt-2">
                                     <li>{{ ftl('common-highest-level') }}</li>
                                     <li>{{ ftl('common-not-always-required') }}</li>
@@ -199,9 +199,9 @@
 
                 <div class="row">
                     <div class="col-md-6">
-                        <div class="card help-card border-danger">
+                        <div class="card help-card border-high">
                             <div class="card-body">
-                                <h3 class="card-title text-danger">{{ ftl('common-high-impact') }}</h3>
+                                <h3 class="card-title text-severity-high">{{ ftl('common-high-impact') }}</h3>
                                 <p>{{ ftl('common-completely-blocks-access-for-some-users') }}</p>
                                 <ul>
                                     <li>{{ ftl('common-missing-alt-text-on-images') }}</li>
@@ -214,9 +214,9 @@
                     </div>
 
                     <div class="col-md-6">
-                        <div class="card help-card border-warning">
+                        <div class="card help-card border-medium">
                             <div class="card-body">
-                                <h3 class="card-title text-warning">{{ ftl('common-medium-impact') }}</h3>
+                                <h3 class="card-title text-severity-medium">{{ ftl('common-medium-impact') }}</h3>
                                 <p>{{ ftl('common-significantly-degrades-experience') }}</p>
                                 <ul>
                                     <li>{{ ftl('common-poor-color-contrast') }}</li>
@@ -229,9 +229,9 @@
                     </div>
 
                     <div class="col-md-6 mt-3">
-                        <div class="card help-card border-success">
+                        <div class="card help-card border-pass">
                             <div class="card-body">
-                                <h3 class="card-title text-success">{{ ftl('common-low-impact') }}</h3>
+                                <h3 class="card-title text-severity-pass">{{ ftl('common-low-impact') }}</h3>
                                 <p>{{ ftl('common-minor-inconvenience') }}</p>
                                 <ul>
                                     <li>{{ ftl('common-redundant-alt-text') }}</li>
@@ -246,7 +246,7 @@
                     <div class="col-md-6 mt-3">
                         <div class="card help-card border-info">
                             <div class="card-body">
-                                <h3 class="card-title text-info">{{ ftl('common-info-discovery') }}</h3>
+                                <h3 class="card-title text-info-custom">{{ ftl('common-info-discovery') }}</h3>
                                 <p>{{ ftl('common-best-practices-and-recommendations') }}</p>
                                 <ul>
                                     <li>{{ ftl('common-optimization-opportunities') }}</li>
@@ -397,7 +397,7 @@
                 </div>
 
                 <div class="card help-card border-info">
-                    <div class="card-header bg-info text-white">
+                    <div class="card-header card-header-info">
                         <h3 class="mb-0"><i class="bi bi-file-text" aria-hidden="true"></i> {{ ftl('common-wcag-data-attribution') }}</h3>
                     </div>
                     <div class="card-body">
@@ -426,7 +426,7 @@
                             </li>
                         </ul>
 
-                        <div class="alert alert-warning mt-3" role="alert">
+                        <div class="alert alert-medium mt-3" role="alert">
                             <h4 class="alert-heading"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> {{ ftl('common-important-notice') }}</h4>
                             <p class="mb-0">{{ ftl('common-the-wcag-content-is-used-with-attribution-as') }}</p>
                         </div>

@@ -55,10 +55,10 @@
     }
 
     /* State selector button text contrast */
-    .state-selector.btn-outline-primary.active small,
-    .state-selector.btn-outline-primary:hover small,
-    .state-selector.btn-outline-primary:focus small,
-    .state-selector.btn-outline-primary:active small {
+    .state-selector.btn-outline-brand.active small,
+    .state-selector.btn-outline-brand:hover small,
+    .state-selector.btn-outline-brand:focus small,
+    .state-selector.btn-outline-brand:active small {
         color: white !important;
     }
 
@@ -81,7 +81,7 @@
     .bg-info {
         background-color: var(--color-info) !important;
     }
-    .text-info {
+    .text-info-custom {
         color: var(--color-info) !important;
     }
     .border-info {
@@ -90,30 +90,30 @@
 
     /* Override Bootstrap warning colors for WCAG AA contrast */
     /* Keep bright yellow background but ensure dark text */
-    .bg-warning {
+    .bg-medium {
         background-color: var(--color-severity-medium) !important;
         color: var(--color-text) !important; /* Dark text on yellow background */
     }
-    .badge.bg-warning {
+    .badge.bg-medium {
         background-color: var(--color-severity-medium) !important;
         color: var(--color-text) !important;
     }
-    .alert-warning {
+    .alert-medium {
         background-color: var(--color-severity-medium) !important;
         color: var(--color-text) !important;
     }
-    .progress-bar.bg-warning {
+    .progress-bar.bg-medium {
         background-color: var(--color-severity-medium) !important;
         color: var(--color-text) !important;
     }
 
-    /* Override text-warning for contrast on white backgrounds */
-    .text-warning {
+    /* Override text-severity-medium for contrast on white backgrounds */
+    .text-severity-medium {
         color: var(--color-severity-medium) !important;
     }
 
     /* Ensure progress bar gray has sufficient contrast with yellow (3:1 for non-text) */
-    .progress-bar.bg-secondary {
+    .progress-bar.bg-neutral {
         background-color: #495057 !important; /* Darker gray for 3:1 contrast with warning */
     }
 </style>
@@ -148,7 +148,7 @@
         <!-- Desktop Actions -->
         <div id="page-actions" class="d-none d-lg-block">
             {% if page.status.value in ['queued', 'testing'] %}
-            <button class="btn btn-danger" onclick="cancelPageTest('{{ page.id }}')" id="cancel-test-btn">
+            <button class="btn btn-high" onclick="cancelPageTest('{{ page.id }}')" id="cancel-test-btn">
                 <i class="bi bi-x-circle" aria-hidden="true"></i> {{ ftl('pages-cancel-test') }}
             </button>
             {% else %}
@@ -160,21 +160,21 @@
                 {% endfor %}
             </select>
             {% endif %}
-            <button class="btn btn-primary" onclick="testPage('{{ page.id }}')" id="run-test-btn">
+            <button class="btn btn-brand" onclick="testPage('{{ page.id }}')" id="run-test-btn">
                 <i class="bi bi-play" aria-hidden="true"></i> {{ ftl('pages-run-test') }}
             </button>
             {% endif %}
-            <a href="{{ url_for('pages.edit_page', page_id=page.id) }}" class="btn btn-outline-primary">
+            <a href="{{ url_for('pages.edit_page', page_id=page.id) }}" class="btn btn-outline-brand">
                 <i class="bi bi-pencil" aria-hidden="true"></i> {{ ftl('common-edit') }}
             </a>
-            <a href="{{ url_for('scripts.list_page_scripts', page_id=page.id) }}" class="btn btn-outline-success">
+            <a href="{{ url_for('scripts.list_page_scripts', page_id=page.id) }}" class="btn btn-outline-pass">
                 <i class="bi bi-code-square" aria-hidden="true"></i> {{ ftl('common-scripts') }}
             </a>
         </div>
         <!-- Mobile Actions -->
         <div id="page-actions-mobile" class="d-lg-none w-100">
             {% if page.status.value in ['queued', 'testing'] %}
-            <button class="btn btn-danger w-100" onclick="cancelPageTest('{{ page.id }}')" id="cancel-test-btn-mobile">
+            <button class="btn btn-high w-100" onclick="cancelPageTest('{{ page.id }}')" id="cancel-test-btn-mobile">
                 <i class="bi bi-x-circle" aria-hidden="true"></i> {{ ftl('pages-cancel-test') }}
             </button>
             {% else %}
@@ -187,13 +187,13 @@
             </select>
             {% endif %}
             <div class="d-flex flex-wrap gap-2">
-                <button class="btn btn-primary flex-grow-1" onclick="testPage('{{ page.id }}')" id="run-test-btn-mobile">
+                <button class="btn btn-brand flex-grow-1" onclick="testPage('{{ page.id }}')" id="run-test-btn-mobile">
                     <i class="bi bi-play" aria-hidden="true"></i> {{ ftl('pages-run-test') }}
                 </button>
-                <a href="{{ url_for('pages.edit_page', page_id=page.id) }}" class="btn btn-outline-primary">
+                <a href="{{ url_for('pages.edit_page', page_id=page.id) }}" class="btn btn-outline-brand">
                     <i class="bi bi-pencil" aria-hidden="true"></i>
                 </a>
-                <a href="{{ url_for('scripts.list_page_scripts', page_id=page.id) }}" class="btn btn-outline-success">
+                <a href="{{ url_for('scripts.list_page_scripts', page_id=page.id) }}" class="btn btn-outline-pass">
                     <i class="bi bi-code-square" aria-hidden="true"></i>
                 </a>
             </div>
@@ -219,23 +219,23 @@
                     <h2 class="card-subtitle mb-2 text-muted">{{ ftl('common-status') }}</h2>
                     <p class="mb-0" id="page-status-container">
                         {% if page.status.value == 'discovered' %}
-                            <span class="badge bg-secondary">{{ ftl('common-discovered') }}</span>
+                            <span class="badge badge-neutral">{{ ftl('common-discovered') }}</span>
                         {% elif page.status.value == 'queued' %}
-                            <span class="badge bg-warning">
+                            <span class="badge badge-medium">
                                 <span class="spinner-border spinner-border-sm me-1" role="status"></span>
                                 {{ ftl('common-queued') }}
                             </span>
                         {% elif page.status.value == 'testing' %}
-                            <span class="badge bg-info">
+                            <span class="badge badge-info">
                                 <span class="spinner-border spinner-border-sm me-1" role="status"></span>
                                 {{ ftl('common-testing') }}
                             </span>
                         {% elif page.status.value == 'tested' %}
-                            <span class="badge bg-success">{{ ftl('common-tested') }}</span>
+                            <span class="badge badge-pass">{{ ftl('common-tested') }}</span>
                         {% elif page.status.value == 'error' %}
-                            <span class="badge bg-danger">{{ ftl('common-error-2') }}</span>
+                            <span class="badge badge-high">{{ ftl('common-error-2') }}</span>
                         {% else %}
-                            <span class="badge bg-secondary">{{ ftl_enum(page.status.value) }}</span>
+                            <span class="badge badge-neutral">{{ ftl_enum(page.status.value) }}</span>
                         {% endif %}
                     </p>
                 </div>
@@ -247,15 +247,15 @@
                     <h2 class="card-subtitle mb-2 text-muted">{{ ftl('common-priority') }}</h2>
                     <p class="mb-0">
                         {% if page.priority == 'critical' %}
-                            <span class="badge bg-danger">{{ ftl('common-critical') }}</span>
+                            <span class="badge badge-high">{{ ftl('common-critical') }}</span>
                         {% elif page.priority == 'high' %}
-                            <span class="badge bg-warning">{{ ftl('common-high') }}</span>
+                            <span class="badge badge-medium">{{ ftl('common-high') }}</span>
                         {% elif page.priority == 'normal' %}
-                            <span class="badge bg-info">{{ ftl('common-normal') }}</span>
+                            <span class="badge badge-info">{{ ftl('common-normal') }}</span>
                         {% elif page.priority == 'low' %}
-                            <span class="badge bg-secondary">{{ ftl('common-low') }}</span>
+                            <span class="badge badge-neutral">{{ ftl('common-low') }}</span>
                         {% else %}
-                            <span class="badge bg-secondary">{{ page.priority|title }}</span>
+                            <span class="badge badge-neutral">{{ page.priority|title }}</span>
                         {% endif %}
                     </p>
                 </div>
@@ -319,9 +319,9 @@
                         <button class="help-icon" data-help="scoring.accessibility_score" aria-label="{{ ftl('pages-get-help-about-accessibility-score') }}">?</button>
                     </h2>
                     <div class="display-4 fw-bold
-                        {% if score >= 90 %}text-success
-                        {% elif score >= 70 %}text-warning
-                        {% else %}text-danger{% endif %}">
+                        {% if score >= 90 %}text-severity-pass
+                        {% elif score >= 70 %}text-severity-medium
+                        {% else %}text-severity-high{% endif %}">
                         {{ score|round(1) }}%
                     </div>
                     <p class="text-muted small mb-0">{{ score_data.passed_checks|default(0) }} / {{ score_data.applicable_checks|default(0) }} {{ ftl('pages-automated-checks-passed') }}</p>
@@ -339,9 +339,9 @@
                     </h2>
                     {% if compliance_score %}
                     <div class="display-4 fw-bold
-                        {% if compliance_score.score >= 90 %}text-success
-                        {% elif compliance_score.score >= 70 %}text-warning
-                        {% else %}text-danger{% endif %}">
+                        {% if compliance_score.score >= 90 %}text-severity-pass
+                        {% elif compliance_score.score >= 70 %}text-severity-medium
+                        {% else %}text-severity-high{% endif %}">
                         {{ compliance_score.score|round(1) }}%
                     </div>
                     <p class="text-muted small mb-0">{{ compliance_score.passed_tests }} / {{ compliance_score.total_tests }} {{ ftl('pages-automated-tests-passed') }}</p>
@@ -362,7 +362,7 @@
         <!-- Section 1: Issue Types Found -->
         <section aria-labelledby="issues-found-heading">
             <div class="card mb-3">
-                <div class="card-header bg-light">
+                <div class="card-header bg-subtle">
                     <h2 id="issues-found-heading" class="mb-0">
                         <i class="bi bi-bug" aria-hidden="true"></i> {{ ftl('pages-accessibility-issues-found') }}
                         <button type="button" class="btn btn-sm btn-link p-0 ms-2" data-bs-toggle="tooltip" data-bs-placement="right"
@@ -375,28 +375,28 @@
                     <div class="d-flex flex-wrap gap-3">
                         <div class="card text-center flex-fill" style="min-width: 140px;">
                             <div class="card-body py-3">
-                                <h3 class="text-danger mb-1">
+                                <h3 class="text-severity-high mb-1">
                                     <i class="bi bi-x-circle" aria-hidden="true"></i> {{ ftl('common-errors') }}
                                 </h3>
-                                <p class="display-6 mb-0 text-danger">{{ page.violation_count }}</p>
+                                <p class="display-6 mb-0 text-severity-high">{{ page.violation_count }}</p>
                                 <small class="text-muted">{{ ftl('pages-types-found') }}</small>
                             </div>
                         </div>
                         <div class="card text-center flex-fill" style="min-width: 140px;">
                             <div class="card-body py-3">
-                                <h3 class="text-warning mb-1">
+                                <h3 class="text-severity-medium mb-1">
                                     <i class="bi bi-exclamation-triangle" aria-hidden="true"></i> {{ ftl('common-warnings') }}
                                 </h3>
-                                <p class="display-6 mb-0 text-warning">{{ page.warning_count }}</p>
+                                <p class="display-6 mb-0 text-severity-medium">{{ page.warning_count }}</p>
                                 <small class="text-muted">{{ ftl('pages-types-found') }}</small>
                             </div>
                         </div>
                         <div class="card text-center flex-fill" style="min-width: 140px;">
                             <div class="card-body py-3">
-                                <h3 class="text-info mb-1">
+                                <h3 class="text-info-custom mb-1">
                                     <i class="bi bi-info-circle" aria-hidden="true"></i> {{ ftl('common-info') }}
                                 </h3>
-                                <p class="display-6 mb-0 text-info">{{ page.info_count|default(0) }}</p>
+                                <p class="display-6 mb-0 text-info-custom">{{ page.info_count|default(0) }}</p>
                                 <small class="text-muted">{{ ftl('pages-types-found') }}</small>
                             </div>
                         </div>
@@ -417,7 +417,7 @@
         <!-- Section 2: Test Checks Performance -->
         <section aria-labelledby="checks-performance-heading">
             <div class="card">
-                <div class="card-header bg-light">
+                <div class="card-header bg-subtle">
                     <h2 id="checks-performance-heading" class="mb-0">
                         <i class="bi bi-check2-square" aria-hidden="true"></i> {{ ftl('pages-accessibility-checks-performance') }}
                         <button type="button" class="btn btn-sm btn-link p-0 ms-2" data-bs-toggle="tooltip" data-bs-placement="right"
@@ -469,17 +469,17 @@
                         <div class="mb-3">
                             <div class="d-flex justify-content-between mb-1">
                                 <span><strong>{{ ftl('pages-overall-pass-rate') }}</strong> <button class="help-icon" data-help="scoring.accessibility_score" aria-label="{{ ftl('pages-get-help-about-overall-pass-rate') }}">?</button></span>
-                                <span class="{% if pass_rate >= 90 %}text-success{% elif pass_rate >= 70 %}text-warning{% else %}text-danger{% endif %}">
+                                <span class="{% if pass_rate >= 90 %}text-severity-pass{% elif pass_rate >= 70 %}text-severity-medium{% else %}text-severity-high{% endif %}">
                                     <strong>{{ "%.1f"|format(pass_rate) }}%</strong>
                                 </span>
                             </div>
                             <div class="progress" style="height: 25px;">
-                                <div class="progress-bar {% if pass_rate >= 90 %}bg-success{% elif pass_rate >= 70 %}bg-warning{% else %}bg-danger{% endif %}"
+                                <div class="progress-bar {% if pass_rate >= 90 %}bg-pass{% elif pass_rate >= 70 %}bg-medium{% else %}bg-high{% endif %}"
                                      role="progressbar" style="width: {{ pass_rate }}%">
                                     {{ actual_passed }} {{ ftl('common-passed') }}
                                 </div>
                                 {% if actual_failed > 0 %}
-                                <div class="progress-bar bg-secondary" role="progressbar"
+                                <div class="progress-bar bg-neutral" role="progressbar"
                                      style="width: {{ 100 - pass_rate }}%">
                                     {{ actual_failed }} {{ ftl('common-failed-2') }}
                                 </div>
@@ -489,16 +489,16 @@
                         
                         <div class="row text-center">
                             <div class="col">
-                                <h3 class="text-success">✓ {{ ftl('common-passed-2') }}</h3>
+                                <h3 class="text-severity-pass">✓ {{ ftl('common-passed-2') }}</h3>
                                 <p class="mb-0 fs-4">{{ actual_passed }}</p>
                             </div>
                             <div class="col">
-                                <h3 class="text-danger">✗ {{ ftl('common-failed') }}</h3>
+                                <h3 class="text-severity-high">✗ {{ ftl('common-failed') }}</h3>
                                 <p class="mb-0 fs-4">{{ actual_failed }}</p>
                             </div>
                             {% if actual_na > 0 %}
                             <div class="col">
-                                <h3 class="text-secondary">{{ ftl('common-n-a') }}</h3>
+                                <h3 class="text-muted">{{ ftl('common-n-a') }}</h3>
                                 <p class="mb-0 fs-4">{{ actual_na }}</p>
                                 <small class="text-muted">{{ ftl('common-tests') }}</small>
                             </div>
@@ -555,29 +555,29 @@
                             </td>
                             <td>
                                 {% for criterion in check.wcag %}
-                                <span class="badge bg-secondary">{{ criterion }}</span>
+                                <span class="badge badge-neutral">{{ criterion }}</span>
                                 {% endfor %}
                             </td>
                             <td class="text-center">{{ check.total }}</td>
-                            <td class="text-center text-success">{{ check.passed }}</td>
-                            <td class="text-center text-danger">{{ check.failed }}</td>
+                            <td class="text-center text-severity-pass">{{ check.passed }}</td>
+                            <td class="text-center text-severity-high">{{ check.failed }}</td>
                             <td class="text-end">
                                 {% if check.total > 0 %}
                                     {% set pass_rate = (check.passed / check.total * 100)|round(1) %}
                                     <span class="badge
-                                        {% if pass_rate == 100 %}bg-success
-                                        {% elif pass_rate >= 80 %}bg-warning
-                                        {% else %}bg-danger{% endif %}">
+                                        {% if pass_rate == 100 %}bg-pass
+                                        {% elif pass_rate >= 80 %}bg-medium
+                                        {% else %}bg-high{% endif %}">
                                         {{ pass_rate }}%
                                     </span>
                                 {% else %}
-                                    <span class="badge bg-secondary">{{ ftl('common-n-a') }}</span>
+                                    <span class="badge badge-neutral">{{ ftl('common-n-a') }}</span>
                                 {% endif %}
                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
-                    <tfoot class="table-light">
+                    <tfoot class="table-subtle">
                         <tr>
                             <th scope="row" colspan="3">{{ ftl('pages-totals') }}</th>
                             {% set total_passed = latest_result.metadata.checks | map(attribute='passed') | map('default', 0) | sum %}
@@ -594,19 +594,19 @@
                                     <br><small class="text-muted">({{ total_elements - total_tested }} {{ ftl('pages-skipped') }})</small>
                                 {% endif %}
                             </th>
-                            <th class="text-center text-success">{{ total_passed }}</th>
-                            <th class="text-center text-danger">{{ total_failed }}</th>
+                            <th class="text-center text-severity-pass">{{ total_passed }}</th>
+                            <th class="text-center text-severity-high">{{ total_failed }}</th>
                             <th class="text-end">
                                 {% if total_tested > 0 %}
                                     {% set overall_rate = (total_passed / total_tested * 100)|round(1) %}
                                     <span class="badge
-                                        {% if overall_rate >= 90 %}bg-success
-                                        {% elif overall_rate >= 70 %}bg-warning
-                                        {% else %}bg-danger{% endif %}">
+                                        {% if overall_rate >= 90 %}bg-pass
+                                        {% elif overall_rate >= 70 %}bg-medium
+                                        {% else %}bg-high{% endif %}">
                                         {{ overall_rate }}%
                                     </span>
                                 {% else %}
-                                    <span class="badge bg-secondary">{{ ftl('common-n-a') }}</span>
+                                    <span class="badge badge-neutral">{{ ftl('common-n-a') }}</span>
                                 {% endif %}
                             </th>
                         </tr>
@@ -632,7 +632,7 @@
 
         <!-- Multi-State Selector -->
         {% if state_results and state_results|length > 1 %}
-        <div class="card-body border-bottom bg-light">
+        <div class="card-body border-bottom bg-subtle">
             <h3 class="mb-3"><i class="bi bi-layers" aria-hidden="true"></i> {{ ftl('pages-page-states-tested') }}</h3>
             <p class="text-muted small mb-3">
                 {{ ftl('pages-this-page-was-tested-in-multiple-states-select-a') }}
@@ -652,13 +652,13 @@
                     {% endif %}
                     {% set is_active = (loop.index0 == selected_state_index) %}
                     <button type="button"
-                            class="btn btn-outline-primary state-selector {% if is_active %}active{% endif %}"
+                            class="btn btn-outline-brand state-selector {% if is_active %}active{% endif %}"
                             data-state-index="{{ loop.index0 }}"
                             onclick="showState({{ loop.index0 }})">
                         <i class="bi bi-circle-fill text-size-tiny" aria-hidden="true"></i>
                         {{ state_desc }}
                         <br>
-                        <small class="{% if is_active %}text-white{% else %}text-muted{% endif %}">
+                        <small class="{% if is_active %}text-inverse{% else %}text-muted{% endif %}">
                             {{ ftl('pages-errors') }} {{ state_result.violations|length }} | {{ ftl('pages-warnings') }} {{ state_result.warnings|length }}
                         </small>
                     </button>
@@ -670,11 +670,11 @@
         <div class="card-body">
             <!-- Test Error Message (if test failed) -->
             {% if latest_result.error %}
-            <div class="alert alert-danger mb-4" role="alert">
+            <div class="alert alert-high mb-4" role="alert">
                 <h3 class="alert-heading"><i class="bi bi-exclamation-triangle-fill me-2" aria-hidden="true"></i>{{ ftl('pages-test-execution-error') }}</h3>
                 <p class="mb-0">{{ ftl('pages-the-accessibility-test-could-not-be-completed-due') }}</p>
                 <hr>
-                <pre class="mb-0 text-danger" style="white-space: pre-wrap; word-break: break-word;">{{ latest_result.error }}</pre>
+                <pre class="mb-0 text-severity-high" style="white-space: pre-wrap; word-break: break-word;">{{ latest_result.error }}</pre>
             </div>
             {% endif %}
 
@@ -685,7 +685,7 @@
                     <div class="section-header severity-header-high" style="padding: 12px 16px;">
                         <h3 id="errors-heading" class="mb-0">
                             <i class="bi bi-x-circle-fill me-2" aria-hidden="true"></i> {{ ftl('common-errors') }}
-                            <span class="badge bg-light text-danger ms-2">{{ latest_result.violations|length }}</span>
+                            <span class="badge badge-subtle text-severity-high ms-2">{{ latest_result.violations|length }}</span>
                         </h3>
                         <small class="opacity-75">{{ ftl('pages-issues-that-must-be-fixed-for-wcag-compliance') }}</small>
                     </div>
@@ -738,7 +738,7 @@
                                                         <button class="accordion-button collapsed" type="button"
                                                                 data-bs-toggle="collapse"
                                                                 data-bs-target="#viol-breakpoint-{{ breakpoint_id }}">
-                                                            <span class="badge bg-info me-2">{{ breakpoint_list|length }}</span>
+                                                            <span class="badge badge-info me-2">{{ breakpoint_list|length }}</span>
                                                             <strong>{{ ftl('common-breakpoint') }} {{ breakpoint }}{{ ftl('pages-px-width') }}</strong>
                                                         </button>
                                                     </h2>
@@ -758,14 +758,14 @@
                                                         <div class="d-flex flex-wrap align-items-center gap-2">
                                                             <strong>{{ ftl('pages-instance') }} {{ loop.index }}:</strong>
                                                             {% if violation.metadata and violation.metadata.authenticated_user %}
-                                                                <span class="badge bg-secondary">
+                                                                <span class="badge badge-neutral">
                                                                     <i class="bi bi-person-fill" aria-hidden="true"></i> {{ violation.metadata.authenticated_user.display_name }}
                                                                     {% if violation.metadata.authenticated_user.roles %}
                                                                         ({{ violation.metadata.authenticated_user.roles|join(', ') }})
                                                                     {% endif %}
                                                                 </span>
                                                             {% else %}
-                                                                <span class="badge bg-secondary">
+                                                                <span class="badge badge-neutral">
                                                                     <i class="bi bi-person" aria-hidden="true"></i> {{ ftl('common-guest') }}
                                                                 </span>
                                                             {% endif %}
@@ -792,7 +792,7 @@
                                                         <!-- Full violation details as before -->
                                                         {% if violation.metadata and violation.metadata.title %}
                                                         <!-- Enhanced description available -->
-                                                        <div class="alert alert-danger mb-3">
+                                                        <div class="alert alert-high mb-3">
                                                             <h4 class="alert-heading">
                                                                 {% if violation.metadata and (violation.metadata.what_generic_en or violation.metadata.what_generic_fr) %}
                                                                     <span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">{{ violation.metadata.what_generic_en }}</span>
@@ -806,7 +806,7 @@
                                                             </h4>
                                                         </div>
 
-                                                        <h4 class="text-danger mb-2">{{ ftl('pages-about-this-issue') }}</h4>
+                                                        <h4 class="text-severity-high mb-2">{{ ftl('pages-about-this-issue') }}</h4>
 
                                                         <div class="mb-3">
                                                             <strong>{{ ftl('pages-what-the-issue-is') }}</strong>
@@ -836,12 +836,12 @@
                                                         
                                                         <div class="mb-3">
                                                             <strong>{{ ftl('pages-how-to-remediate') }}</strong>
-                                                            {% if violation.metadata.full_remediation_en %}<div data-lang="en" class="bg-light p-3 rounded {{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ violation.metadata.full_remediation_en }}</div>{% endif %}
-                                                            {% if violation.metadata.full_remediation_fr %}<div data-lang="fr" class="bg-light p-3 rounded {{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ violation.metadata.full_remediation_fr }}</div>{% endif %}
+                                                            {% if violation.metadata.full_remediation_en %}<div data-lang="en" class="bg-subtle p-3 rounded {{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ violation.metadata.full_remediation_en }}</div>{% endif %}
+                                                            {% if violation.metadata.full_remediation_fr %}<div data-lang="fr" class="bg-subtle p-3 rounded {{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ violation.metadata.full_remediation_fr }}</div>{% endif %}
                                                         </div>
 
                                                         {% if violation.metadata.wcag_full or violation.wcag_criteria %}
-                                                        <h4 class="text-danger mb-2 mt-4">{{ ftl('pages-relevant-test-criteria') }}</h4>
+                                                        <h4 class="text-severity-high mb-2 mt-4">{{ ftl('pages-relevant-test-criteria') }}</h4>
                                                         <div class="mb-3">
                                                             {% if violation.metadata.wcag_full %}
                                                             <strong>{{ ftl('pages-wcag-success-criteria') }}</strong>
@@ -942,10 +942,10 @@
                                                             <strong>{{ ftl('pages-css-state') }}</strong>
                                                             {% if '@' in violation.metadata.pseudoclass %}
                                                                 {% set parts = violation.metadata.pseudoclass.split('@') %}
-                                                                <span class="badge bg-warning">{{ parts[0] }}</span>
-                                                                <span class="badge bg-secondary">{{ parts[1] }}</span>
+                                                                <span class="badge badge-medium">{{ parts[0] }}</span>
+                                                                <span class="badge badge-neutral">{{ parts[1] }}</span>
                                                             {% else %}
-                                                                <span class="badge bg-warning">{{ violation.metadata.pseudoclass }}</span>
+                                                                <span class="badge badge-medium">{{ violation.metadata.pseudoclass }}</span>
                                                             {% endif %}
                                                         </p>
                                                         {% endif %}
@@ -954,9 +954,9 @@
                                                         <h4 class="mt-3">{{ ftl('pages-code-snippet') }}</h4>
                                                         {% if 'ErrSkippedHeadingLevel' in violation.id and violation.metadata and 'previousHeadingHtml' in violation.metadata %}
                                                         <p class="mb-2"><strong>Previous heading (h{{ violation.metadata.skippedFrom }}):</strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ violation.metadata.previousHeadingHtml|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ violation.metadata.previousHeadingHtml|e }}</code></pre>
                                                         <p class="mb-2"><strong>Current heading (h{{ violation.metadata.skippedTo }}) - skipped h{{ violation.metadata.expectedLevel }}:</strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded"><code>{{ violation.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded"><code>{{ violation.html|e }}</code></pre>
                                                         {% elif 'ErrContentObscuring' in violation.id and violation.metadata and 'obscuredElements' in violation.metadata %}
                                                         {% if violation.metadata.breakpoint %}
                                                         <div class="alert alert-info mb-3">
@@ -964,10 +964,10 @@
                                                         </div>
                                                         {% endif %}
                                                         <p class="mb-2"><strong>{{ ftl('pages-obscuring-element-dialog-overlay') }}</strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ violation.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ violation.html|e }}</code></pre>
                                                         <h4 class="mt-4">{{ violation.metadata.obscuredCount }} {{ ftl('pages-interactive-element-s-being-obscured') }}</h4>
                                                         {% for element in violation.metadata.obscuredElements %}
-                                                        <div class="mb-3 border-start border-warning border-3 ps-3">
+                                                        <div class="mb-3 border-start border-medium border-3 ps-3">
                                                             <p class="mb-1"><strong>&lt;{{ element.element }}&gt;:</strong> "{{ element.text }}"</p>
                                                             <p class="mb-1 small text-muted">
                                                             {{ ftl('pages-location') }} <code>{{element.xpath}}</code>
@@ -988,7 +988,7 @@
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
-                                                            <pre class="bg-dark text-light p-2 rounded"><code>{{ h1.html|e }}</code></pre>
+                                                            <pre class="bg-header text-inverse p-2 rounded"><code>{{ h1.html|e }}</code></pre>
                                                         </div>
                                                         {% endfor %}
                                                         {% elif 'ErrFakeListImplementation' in violation.id and violation.metadata and 'sampleItems' in violation.metadata %}
@@ -1006,10 +1006,10 @@
                                                         {% endif %}
                                                         {% endif %}
                                                         <p class="mb-2 mt-3"><strong>Container element:</strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded"><code>{{ violation.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded"><code>{{ violation.html|e }}</code></pre>
                                                         {% elif 'ErrDuplicateLandmarkWithoutName' in violation.id and violation.metadata and 'allInstances' in violation.metadata %}
                                                         <p class="mb-2"><strong>This instance (missing accessible name):</strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ violation.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ violation.html|e }}</code></pre>
                                                         <h4 class="mt-4">All {{ violation.metadata.totalCount }} {{ violation.metadata.role }} landmarks on page:</h4>
                                                         {% for instance in violation.metadata.allInstances %}
                                                         <div class="mb-3">
@@ -1020,7 +1020,7 @@
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
-                                                            <pre class="bg-dark text-light p-2 rounded"><code>{{ instance.html|e }}</code></pre>
+                                                            <pre class="bg-header text-inverse p-2 rounded"><code>{{ instance.html|e }}</code></pre>
                                                         </div>
                                                         {% endfor %}
                                                         {% elif 'ErrDuplicateNavNames' in violation.id and violation.metadata and 'allInstances' in violation.metadata %}
@@ -1034,14 +1034,14 @@
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
-                                                            <pre class="bg-dark text-light p-2 rounded"><code>{{ instance.html|e }}</code></pre>
+                                                            <pre class="bg-header text-inverse p-2 rounded"><code>{{ instance.html|e }}</code></pre>
                                                         </div>
                                                         {% endfor %}
                                                         {% elif 'ErrSmallText' in violation.id and violation.metadata and violation.metadata.get('allInstances') %}
                                                         <h4 class="mt-3">{{ ftl('pages-count-element-s-with-text-smaller-than-16px', count=violation.metadata.allInstances|length) }}</h4>
                                                         {% for instance in violation.metadata.allInstances %}
                                                         <div class="mb-3">
-                                                            <p class="mb-1"><strong>{{ ftl('pages-instance') }} {{ instance.index }}:</strong> &lt;{{ instance.element }}&gt; element - Text size: <span class="badge bg-warning">{{ instance.fontSize }}px</span></p>
+                                                            <p class="mb-1"><strong>{{ ftl('pages-instance') }} {{ instance.index }}:</strong> &lt;{{ instance.element }}&gt; element - Text size: <span class="badge badge-medium">{{ instance.fontSize }}px</span></p>
                                                             <p class="mb-1 small">Text preview: "{{ instance.text }}"</p>
                                                             <p class="mb-1 small text-muted">
                                                             Location: <code>{{instance.xpath}}</code>
@@ -1049,13 +1049,13 @@
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
-                                                            <pre class="bg-dark text-light p-2 rounded"><code>{{ instance.html|e }}</code></pre>
+                                                            <pre class="bg-header text-inverse p-2 rounded"><code>{{ instance.html|e }}</code></pre>
                                                         </div>
                                                         {% endfor %}
                                                         {% elif 'ErrAnchorTargetTabindex' in violation.id and violation.metadata and violation.metadata.anchorLinksCount %}
                                                         <h4 class="mt-3">Link target (needs tabindex="-1"):</h4>
                                                         <p class="mb-2"><strong>Target element:</strong> &lt;{{ violation.element }}&gt; with id="{{ violation.metadata.targetId }}"</p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ violation.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ violation.html|e }}</code></pre>
                                                         <h4 class="mt-4">{{ violation.metadata.anchorLinksCount }} anchor link(s) pointing to this target:</h4>
                                                         {% for anchor in violation.metadata.anchorLinks %}
                                                         <div class="mb-3">
@@ -1066,21 +1066,21 @@
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
-                                                            <pre class="bg-dark text-light p-2 rounded"><code>{{ anchor.html|e }}</code></pre>
+                                                            <pre class="bg-header text-inverse p-2 rounded"><code>{{ anchor.html|e }}</code></pre>
                                                         </div>
                                                         {% endfor %}
                                                         {% elif 'ErrTabOrderViolation' in violation.id and violation.metadata and 'previousElement' in violation.metadata %}
                                                         <p class="mb-2"><strong>This element (comes later in tab order but appears visually left):</strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ violation.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ violation.html|e }}</code></pre>
                                                         <p class="mb-2"><strong>Previous element in tab order (visually to the right):</strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ violation.metadata.previousElement.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ violation.metadata.previousElement.html|e }}</code></pre>
                                                         <div class="alert alert-info">
                                                             <p class="mb-1"><strong>Visual positions:</strong></p>
                                                             <p class="mb-1">• This element: x={{ violation.metadata.currentElement.position.x }}, y={{ violation.metadata.currentElement.position.y }} (tab stop #{{ violation.metadata.currentElement.tabIndex }})</p>
                                                             <p class="mb-0">• Previous element: x={{ violation.metadata.previousElement.position.x }}, y={{ violation.metadata.previousElement.position.y }} (tab stop #{{ violation.metadata.previousElement.tabIndex }})</p>
                                                         </div>
                                                         {% else %}
-                                                        <pre class="bg-dark text-light p-3 rounded"><code>{{ violation.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded"><code>{{ violation.html|e }}</code></pre>
                                                         {% endif %}
                                                         {% endif %}
 
@@ -1134,14 +1134,14 @@
                                                         <div class="d-flex flex-wrap align-items-center gap-2">
                                                             <strong>{{ ftl('pages-instance') }} {{ loop.index }}:</strong>
                                                             {% if violation.metadata and violation.metadata.authenticated_user %}
-                                                                <span class="badge bg-secondary">
+                                                                <span class="badge badge-neutral">
                                                                     <i class="bi bi-person-fill" aria-hidden="true"></i> {{ violation.metadata.authenticated_user.display_name }}
                                                                     {% if violation.metadata.authenticated_user.roles %}
                                                                         ({{ violation.metadata.authenticated_user.roles|join(', ') }})
                                                                     {% endif %}
                                                                 </span>
                                                             {% else %}
-                                                                <span class="badge bg-secondary">
+                                                                <span class="badge badge-neutral">
                                                                     <i class="bi bi-person" aria-hidden="true"></i> {{ ftl('common-guest') }}
                                                                 </span>
                                                             {% endif %}
@@ -1168,7 +1168,7 @@
                                                         <!-- Full violation details as before -->
                                                         {% if violation.metadata and violation.metadata.title %}
                                                         <!-- Enhanced description available -->
-                                                        <div class="alert alert-danger mb-3">
+                                                        <div class="alert alert-high mb-3">
                                                             <h4 class="alert-heading">
                                                                 {% if violation.metadata and (violation.metadata.what_generic_en or violation.metadata.what_generic_fr) %}
                                                                     <span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">{{ violation.metadata.what_generic_en }}</span>
@@ -1182,7 +1182,7 @@
                                                             </h4>
                                                         </div>
 
-                                                        <h4 class="text-danger mb-2">{{ ftl('pages-about-this-issue') }}</h4>
+                                                        <h4 class="text-severity-high mb-2">{{ ftl('pages-about-this-issue') }}</h4>
 
                                                         <div class="mb-3">
                                                             <strong>{{ ftl('pages-what-the-issue-is') }}</strong>
@@ -1212,12 +1212,12 @@
                                                         
                                                         <div class="mb-3">
                                                             <strong>{{ ftl('pages-how-to-remediate') }}</strong>
-                                                            {% if violation.metadata.full_remediation_en %}<div data-lang="en" class="bg-light p-3 rounded {{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ violation.metadata.full_remediation_en }}</div>{% endif %}
-                                                            {% if violation.metadata.full_remediation_fr %}<div data-lang="fr" class="bg-light p-3 rounded {{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ violation.metadata.full_remediation_fr }}</div>{% endif %}
+                                                            {% if violation.metadata.full_remediation_en %}<div data-lang="en" class="bg-subtle p-3 rounded {{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ violation.metadata.full_remediation_en }}</div>{% endif %}
+                                                            {% if violation.metadata.full_remediation_fr %}<div data-lang="fr" class="bg-subtle p-3 rounded {{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ violation.metadata.full_remediation_fr }}</div>{% endif %}
                                                         </div>
 
                                                         {% if violation.metadata.wcag_full or violation.wcag_criteria %}
-                                                        <h4 class="text-danger mb-2 mt-4">{{ ftl('pages-relevant-test-criteria') }}</h4>
+                                                        <h4 class="text-severity-high mb-2 mt-4">{{ ftl('pages-relevant-test-criteria') }}</h4>
                                                         <div class="mb-3">
                                                             {% if violation.metadata.wcag_full %}
                                                             <strong>{{ ftl('pages-wcag-success-criteria') }}</strong>
@@ -1318,10 +1318,10 @@
                                                             <strong>{{ ftl('pages-css-state') }}</strong>
                                                             {% if '@' in violation.metadata.pseudoclass %}
                                                                 {% set parts = violation.metadata.pseudoclass.split('@') %}
-                                                                <span class="badge bg-warning">{{ parts[0] }}</span>
-                                                                <span class="badge bg-secondary">{{ parts[1] }}</span>
+                                                                <span class="badge badge-medium">{{ parts[0] }}</span>
+                                                                <span class="badge badge-neutral">{{ parts[1] }}</span>
                                                             {% else %}
-                                                                <span class="badge bg-warning">{{ violation.metadata.pseudoclass }}</span>
+                                                                <span class="badge badge-medium">{{ violation.metadata.pseudoclass }}</span>
                                                             {% endif %}
                                                         </p>
                                                         {% endif %}
@@ -1330,9 +1330,9 @@
                                                         <h4 class="mt-3">{{ ftl('pages-code-snippet') }}</h4>
                                                         {% if 'ErrSkippedHeadingLevel' in violation.id and violation.metadata and 'previousHeadingHtml' in violation.metadata %}
                                                         <p class="mb-2"><strong>Previous heading (h{{ violation.metadata.skippedFrom }}):</strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ violation.metadata.previousHeadingHtml|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ violation.metadata.previousHeadingHtml|e }}</code></pre>
                                                         <p class="mb-2"><strong>Current heading (h{{ violation.metadata.skippedTo }}) - skipped h{{ violation.metadata.expectedLevel }}:</strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded"><code>{{ violation.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded"><code>{{ violation.html|e }}</code></pre>
                                                         {% elif 'ErrContentObscuring' in violation.id and violation.metadata and 'obscuredElements' in violation.metadata %}
                                                         {% if violation.metadata.breakpoint %}
                                                         <div class="alert alert-info mb-3">
@@ -1340,10 +1340,10 @@
                                                         </div>
                                                         {% endif %}
                                                         <p class="mb-2"><strong>{{ ftl('pages-obscuring-element-dialog-overlay') }}</strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ violation.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ violation.html|e }}</code></pre>
                                                         <h4 class="mt-4">{{ violation.metadata.obscuredCount }} {{ ftl('pages-interactive-element-s-being-obscured') }}</h4>
                                                         {% for element in violation.metadata.obscuredElements %}
-                                                        <div class="mb-3 border-start border-warning border-3 ps-3">
+                                                        <div class="mb-3 border-start border-medium border-3 ps-3">
                                                             <p class="mb-1"><strong>&lt;{{ element.element }}&gt;:</strong> "{{ element.text }}"</p>
                                                             <p class="mb-1 small text-muted">
                                                             {{ ftl('pages-location') }} <code>{{element.xpath}}</code>
@@ -1364,7 +1364,7 @@
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
-                                                            <pre class="bg-dark text-light p-2 rounded"><code>{{ h1.html|e }}</code></pre>
+                                                            <pre class="bg-header text-inverse p-2 rounded"><code>{{ h1.html|e }}</code></pre>
                                                         </div>
                                                         {% endfor %}
                                                         {% elif 'ErrFakeListImplementation' in violation.id and violation.metadata and 'sampleItems' in violation.metadata %}
@@ -1382,10 +1382,10 @@
                                                         {% endif %}
                                                         {% endif %}
                                                         <p class="mb-2 mt-3"><strong>Container element:</strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded"><code>{{ violation.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded"><code>{{ violation.html|e }}</code></pre>
                                                         {% elif 'ErrDuplicateLandmarkWithoutName' in violation.id and violation.metadata and 'allInstances' in violation.metadata %}
                                                         <p class="mb-2"><strong>This instance (missing accessible name):</strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ violation.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ violation.html|e }}</code></pre>
                                                         <h4 class="mt-4">All {{ violation.metadata.totalCount }} {{ violation.metadata.role }} landmarks on page:</h4>
                                                         {% for instance in violation.metadata.allInstances %}
                                                         <div class="mb-3">
@@ -1396,7 +1396,7 @@
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
-                                                            <pre class="bg-dark text-light p-2 rounded"><code>{{ instance.html|e }}</code></pre>
+                                                            <pre class="bg-header text-inverse p-2 rounded"><code>{{ instance.html|e }}</code></pre>
                                                         </div>
                                                         {% endfor %}
                                                         {% elif 'ErrDuplicateNavNames' in violation.id and violation.metadata and 'allInstances' in violation.metadata %}
@@ -1410,14 +1410,14 @@
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
-                                                            <pre class="bg-dark text-light p-2 rounded"><code>{{ instance.html|e }}</code></pre>
+                                                            <pre class="bg-header text-inverse p-2 rounded"><code>{{ instance.html|e }}</code></pre>
                                                         </div>
                                                         {% endfor %}
                                                         {% elif 'ErrSmallText' in violation.id and violation.metadata and violation.metadata.get('allInstances') %}
                                                         <h4 class="mt-3">{{ ftl('pages-count-element-s-with-text-smaller-than-16px', count=violation.metadata.allInstances|length) }}</h4>
                                                         {% for instance in violation.metadata.allInstances %}
                                                         <div class="mb-3">
-                                                            <p class="mb-1"><strong>{{ ftl('pages-instance') }} {{ instance.index }}:</strong> &lt;{{ instance.element }}&gt; element - Text size: <span class="badge bg-warning">{{ instance.fontSize }}px</span></p>
+                                                            <p class="mb-1"><strong>{{ ftl('pages-instance') }} {{ instance.index }}:</strong> &lt;{{ instance.element }}&gt; element - Text size: <span class="badge badge-medium">{{ instance.fontSize }}px</span></p>
                                                             <p class="mb-1 small">Text preview: "{{ instance.text }}"</p>
                                                             <p class="mb-1 small text-muted">
                                                             Location: <code>{{instance.xpath}}</code>
@@ -1425,13 +1425,13 @@
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
-                                                            <pre class="bg-dark text-light p-2 rounded"><code>{{ instance.html|e }}</code></pre>
+                                                            <pre class="bg-header text-inverse p-2 rounded"><code>{{ instance.html|e }}</code></pre>
                                                         </div>
                                                         {% endfor %}
                                                         {% elif 'ErrAnchorTargetTabindex' in violation.id and violation.metadata and violation.metadata.anchorLinksCount %}
                                                         <h4 class="mt-3">Link target (needs tabindex="-1"):</h4>
                                                         <p class="mb-2"><strong>Target element:</strong> &lt;{{ violation.element }}&gt; with id="{{ violation.metadata.targetId }}"</p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ violation.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ violation.html|e }}</code></pre>
                                                         <h4 class="mt-4">{{ violation.metadata.anchorLinksCount }} anchor link(s) pointing to this target:</h4>
                                                         {% for anchor in violation.metadata.anchorLinks %}
                                                         <div class="mb-3">
@@ -1442,21 +1442,21 @@
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
-                                                            <pre class="bg-dark text-light p-2 rounded"><code>{{ anchor.html|e }}</code></pre>
+                                                            <pre class="bg-header text-inverse p-2 rounded"><code>{{ anchor.html|e }}</code></pre>
                                                         </div>
                                                         {% endfor %}
                                                         {% elif 'ErrTabOrderViolation' in violation.id and violation.metadata and 'previousElement' in violation.metadata %}
                                                         <p class="mb-2"><strong>This element (comes later in tab order but appears visually left):</strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ violation.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ violation.html|e }}</code></pre>
                                                         <p class="mb-2"><strong>Previous element in tab order (visually to the right):</strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ violation.metadata.previousElement.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ violation.metadata.previousElement.html|e }}</code></pre>
                                                         <div class="alert alert-info">
                                                             <p class="mb-1"><strong>Visual positions:</strong></p>
                                                             <p class="mb-1">• This element: x={{ violation.metadata.currentElement.position.x }}, y={{ violation.metadata.currentElement.position.y }} (tab stop #{{ violation.metadata.currentElement.tabIndex }})</p>
                                                             <p class="mb-0">• Previous element: x={{ violation.metadata.previousElement.position.x }}, y={{ violation.metadata.previousElement.position.y }} (tab stop #{{ violation.metadata.previousElement.tabIndex }})</p>
                                                         </div>
                                                         {% else %}
-                                                        <pre class="bg-dark text-light p-3 rounded"><code>{{ violation.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded"><code>{{ violation.html|e }}</code></pre>
                                                         {% endif %}
                                                         {% endif %}
 
@@ -1506,19 +1506,19 @@
                                         <div class="d-flex flex-wrap align-items-center gap-2">
                                             <span class="badge bg-{{ {'high': 'danger', 'medium': 'warning', 'low': 'info'}[violation.impact.value|lower if violation.impact.value else violation.impact|lower] or 'secondary' }} impact-badge">{{ ftl_enum(violation.impact.value if violation.impact.value else violation.impact) }}</span>
                                             {% if violation.metadata.ai_detected %}
-                                            <span class="badge bg-info" title="Detected by AI analysis">
+                                            <span class="badge badge-info" title="Detected by AI analysis">
                                                 <i class="bi bi-robot" aria-hidden="true"></i> AI
                                             </span>
                                             {% endif %}
                                             {% if violation.metadata and violation.metadata.authenticated_user %}
-                                                <span class="badge bg-secondary">
+                                                <span class="badge badge-neutral">
                                                     <i class="bi bi-person-fill" aria-hidden="true"></i> {{ violation.metadata.authenticated_user.display_name }}
                                                     {% if violation.metadata.authenticated_user.roles %}
                                                         ({{ violation.metadata.authenticated_user.roles|join(', ') }})
                                                     {% endif %}
                                                 </span>
                                             {% else %}
-                                                <span class="badge bg-secondary">
+                                                <span class="badge badge-neutral">
                                                     <i class="bi bi-person" aria-hidden="true"></i> Guest
                                                 </span>
                                             {% endif %}
@@ -1545,7 +1545,7 @@
                         <div class="accordion-body">
                             {% if violation.metadata and violation.metadata.title %}
                             <!-- Enhanced description available -->
-                            <div class="alert alert-danger mb-3">
+                            <div class="alert alert-high mb-3">
                                 <h4 class="alert-heading">
                                     {% if violation.metadata.what_generic_en or violation.metadata.what_generic_fr %}
                                         <span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">{{ violation.metadata.what_generic_en }}</span>
@@ -1556,7 +1556,7 @@
                                 </h4>
                             </div>
 
-                            <h4 class="text-danger mb-2">{{ ftl('pages-about-this-issue') }}</h4>
+                            <h4 class="text-severity-high mb-2">{{ ftl('pages-about-this-issue') }}</h4>
 
                             <div class="mb-3">
                                 <strong>{{ ftl('pages-what-the-issue-is') }}</strong>
@@ -1581,12 +1581,12 @@
 
                             <div class="mb-3">
                                 <strong>{{ ftl('pages-how-to-remediate') }}</strong>
-                                {% if violation.metadata.full_remediation_en %}<div data-lang="en" class="bg-light p-3 rounded {{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ violation.metadata.full_remediation_en }}</div>{% endif %}
-                                {% if violation.metadata.full_remediation_fr %}<div data-lang="fr" class="bg-light p-3 rounded {{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ violation.metadata.full_remediation_fr }}</div>{% endif %}
+                                {% if violation.metadata.full_remediation_en %}<div data-lang="en" class="bg-subtle p-3 rounded {{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ violation.metadata.full_remediation_en }}</div>{% endif %}
+                                {% if violation.metadata.full_remediation_fr %}<div data-lang="fr" class="bg-subtle p-3 rounded {{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ violation.metadata.full_remediation_fr }}</div>{% endif %}
                             </div>
 
                             {% if violation.metadata.wcag_full or violation.wcag_criteria %}
-                            <h4 class="text-danger mb-2 mt-4">{{ ftl('pages-relevant-test-criteria') }}</h4>
+                            <h4 class="text-severity-high mb-2 mt-4">{{ ftl('pages-relevant-test-criteria') }}</h4>
                             <div class="mb-3">
                                 {% if violation.metadata.wcag_full %}
                                 <strong>{{ ftl('pages-wcag-success-criteria') }}</strong>
@@ -1698,7 +1698,7 @@
 
                             {% if violation.metadata and violation.metadata.breakpoint %}
                             <p>
-                                <strong>Responsive Breakpoint:</strong> <span class="badge bg-info">{{ violation.metadata.breakpoint }}px width</span>
+                                <strong>Responsive Breakpoint:</strong> <span class="badge badge-info">{{ violation.metadata.breakpoint }}px width</span>
                             </p>
                             {% endif %}
 
@@ -1707,10 +1707,10 @@
                                 <strong>CSS State:</strong>
                                 {% if '@' in violation.metadata.pseudoclass %}
                                     {% set parts = violation.metadata.pseudoclass.split('@') %}
-                                    <span class="badge bg-warning">{{ parts[0] }}</span>
-                                    <span class="badge bg-secondary">{{ parts[1] }}</span>
+                                    <span class="badge badge-medium">{{ parts[0] }}</span>
+                                    <span class="badge badge-neutral">{{ parts[1] }}</span>
                                 {% else %}
-                                    <span class="badge bg-warning">{{ violation.metadata.pseudoclass }}</span>
+                                    <span class="badge badge-medium">{{ violation.metadata.pseudoclass }}</span>
                                 {% endif %}
                             </p>
                             {% endif %}
@@ -1721,8 +1721,8 @@
                                 <h4>{{ ftl('pages-affected-elements') }}</h4>
                                 <p class="mb-2">{{ ftl('pages-count-element-s-with-text-smaller-than-16px', count=violation.metadata.allInstances|length) }}</p>
                                 {% for instance in violation.metadata.allInstances %}
-                                <div class="mb-3 border-start border-warning border-3 ps-3">
-                                    <p class="mb-1"><strong>{{ ftl('pages-instance') }} {{ instance.index }}:</strong> &lt;{{ instance.element }}&gt; - {{ ftl('pages-text-size') }} <span class="badge bg-warning">{{ instance.fontSize }}px</span></p>
+                                <div class="mb-3 border-start border-medium border-3 ps-3">
+                                    <p class="mb-1"><strong>{{ ftl('pages-instance') }} {{ instance.index }}:</strong> &lt;{{ instance.element }}&gt; - {{ ftl('pages-text-size') }} <span class="badge badge-medium">{{ instance.fontSize }}px</span></p>
                                     <p class="mb-1 small">{{ ftl('pages-text-preview') }} "{{ instance.text|truncate(80) }}"</p>
                                     <p class="mb-1 small text-muted">
                                         {{ ftl('pages-location') }} <code>{{ instance.xpath }}</code>
@@ -1730,7 +1730,7 @@
                                             <i class="bi bi-clipboard" aria-hidden="true"></i>
                                         </button>
                                     </p>
-                                    <pre class="bg-dark text-light p-2 rounded"><code>{{ instance.html|e }}</code></pre>
+                                    <pre class="bg-header text-inverse p-2 rounded"><code>{{ instance.html|e }}</code></pre>
                                 </div>
                                 {% endfor %}
                             </div>
@@ -1742,7 +1742,7 @@
                                 <h4>{{ ftl('pages-elements-outside-landmarks') }}</h4>
                                 <p class="mb-2">{{ violation.metadata.elementCount }} immediate child element(s) of &lt;body&gt; contain content outside landmark regions ({{ violation.metadata.textNodeCount }} text nodes total):</p>
                                 {% for instance in violation.metadata.allInstances %}
-                                <div class="mb-3 border-start border-warning border-3 ps-3">
+                                <div class="mb-3 border-start border-medium border-3 ps-3">
                                     <p class="mb-1"><strong>{{ ftl('pages-element') }} {{ instance.index }}:</strong> <code>&lt;{{ instance.element }}&gt;</code> {% if instance.selector != instance.element %}<span class="text-muted small">({{ instance.selector }})</span>{% endif %}</p>
                                     <p class="mb-1 small">{{ ftl('pages-content-preview') }} "{{ instance.text|truncate(100) }}"</p>
                                     <p class="mb-1 small text-muted">
@@ -1751,7 +1751,7 @@
                                             <i class="bi bi-clipboard" aria-hidden="true"></i>
                                         </button>
                                     </p>
-                                    <pre class="bg-dark text-light p-2 rounded"><code>{{ instance.html|e }}</code></pre>
+                                    <pre class="bg-header text-inverse p-2 rounded"><code>{{ instance.html|e }}</code></pre>
                                 </div>
                                 {% endfor %}
                             </div>
@@ -1794,9 +1794,9 @@
                                 <h4>{{ ftl('pages-code-snippet') }}</h4>
                                 {% if 'ErrSkippedHeadingLevel' in violation.id and violation.metadata and 'previousHeadingHtml' in violation.metadata %}
                                 <p class="mb-2"><strong>Previous heading (h{{ violation.metadata.skippedFrom }}):</strong></p>
-                                <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ violation.metadata.previousHeadingHtml|e }}</code></pre>
+                                <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ violation.metadata.previousHeadingHtml|e }}</code></pre>
                                 <p class="mb-2"><strong>Current heading (h{{ violation.metadata.skippedTo }}) - skipped h{{ violation.metadata.expectedLevel }}:</strong></p>
-                                <pre class="bg-dark text-light p-3 rounded"><code>{{ violation.html|e }}</code></pre>
+                                <pre class="bg-header text-inverse p-3 rounded"><code>{{ violation.html|e }}</code></pre>
                                 {% elif 'ErrContentObscuring' in violation.id and violation.metadata and 'obscuredElements' in violation.metadata %}
                                 {% if violation.metadata.breakpoint %}
                                 <div class="alert alert-info mb-3">
@@ -1804,10 +1804,10 @@
                                 </div>
                                 {% endif %}
                                 <p class="mb-2"><strong>{{ ftl('pages-obscuring-element-dialog-overlay') }}</strong></p>
-                                <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ violation.html|e }}</code></pre>
+                                <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ violation.html|e }}</code></pre>
                                 <h4 class="mt-4">{{ violation.metadata.obscuredCount }} {{ ftl('pages-interactive-element-s-being-obscured') }}</h4>
                                 {% for element in violation.metadata.obscuredElements %}
-                                <div class="mb-3 border-start border-warning border-3 ps-3">
+                                <div class="mb-3 border-start border-medium border-3 ps-3">
                                     <p class="mb-1"><strong>&lt;{{ element.element }}&gt;:</strong> "{{ element.text }}"</p>
                                     <p class="mb-1 small text-muted">
                                                             Location: <code>{{element.xpath}}</code>
@@ -1828,7 +1828,7 @@
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
-                                    <pre class="bg-dark text-light p-2 rounded"><code>{{ h1.html|e }}</code></pre>
+                                    <pre class="bg-header text-inverse p-2 rounded"><code>{{ h1.html|e }}</code></pre>
                                 </div>
                                 {% endfor %}
                                 {% elif 'ErrFakeListImplementation' in violation.id and violation.metadata and 'sampleItems' in violation.metadata %}
@@ -1846,10 +1846,10 @@
                                 {% endif %}
                                 {% endif %}
                                 <p class="mb-2 mt-3"><strong>Container element:</strong></p>
-                                <pre class="bg-dark text-light p-3 rounded"><code>{{ violation.html|e }}</code></pre>
+                                <pre class="bg-header text-inverse p-3 rounded"><code>{{ violation.html|e }}</code></pre>
                                 {% elif 'ErrDuplicateLandmarkWithoutName' in violation.id and violation.metadata and 'allInstances' in violation.metadata %}
                                 <p class="mb-2"><strong>This instance (missing accessible name):</strong></p>
-                                <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ violation.html|e }}</code></pre>
+                                <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ violation.html|e }}</code></pre>
                                 <h4 class="mt-4">All {{ violation.metadata.totalCount }} {{ violation.metadata.role }} landmarks on page:</h4>
                                 {% for instance in violation.metadata.allInstances %}
                                 <div class="mb-3">
@@ -1860,7 +1860,7 @@
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
-                                    <pre class="bg-dark text-light p-2 rounded"><code>{{ instance.html|e }}</code></pre>
+                                    <pre class="bg-header text-inverse p-2 rounded"><code>{{ instance.html|e }}</code></pre>
                                 </div>
                                 {% endfor %}
                                 {% elif 'ErrDuplicateNavNames' in violation.id and violation.metadata and 'allInstances' in violation.metadata %}
@@ -1874,14 +1874,14 @@
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
-                                    <pre class="bg-dark text-light p-2 rounded"><code>{{ instance.html|e }}</code></pre>
+                                    <pre class="bg-header text-inverse p-2 rounded"><code>{{ instance.html|e }}</code></pre>
                                 </div>
                                 {% endfor %}
                                 {% elif 'ErrSmallText' in violation.id and violation.metadata and violation.metadata.get('allInstances') %}
                                 <h4 class="mt-3">{{ ftl('pages-count-element-s-with-text-smaller-than-16px', count=violation.metadata.allInstances|length) }}</h4>
                                 {% for instance in violation.metadata.allInstances %}
                                 <div class="mb-3">
-                                    <p class="mb-1"><strong>{{ ftl('pages-instance') }} {{ instance.index }}:</strong> &lt;{{ instance.element }}&gt; element - Text size: <span class="badge bg-warning">{{ instance.fontSize }}px</span></p>
+                                    <p class="mb-1"><strong>{{ ftl('pages-instance') }} {{ instance.index }}:</strong> &lt;{{ instance.element }}&gt; element - Text size: <span class="badge badge-medium">{{ instance.fontSize }}px</span></p>
                                     <p class="mb-1 small">Text preview: "{{ instance.text }}"</p>
                                     <p class="mb-1 small text-muted">
                                     Location: <code>{{instance.xpath}}</code>
@@ -1889,13 +1889,13 @@
                                         <i class="bi bi-clipboard" aria-hidden="true"></i>
                                     </button>
                                 </p>
-                                    <pre class="bg-dark text-light p-2 rounded"><code>{{ instance.html|e }}</code></pre>
+                                    <pre class="bg-header text-inverse p-2 rounded"><code>{{ instance.html|e }}</code></pre>
                                 </div>
                                 {% endfor %}
                                 {% elif 'ErrAnchorTargetTabindex' in violation.id and violation.metadata and violation.metadata.anchorLinksCount %}
                                 <h4 class="mt-3">Link target (needs tabindex="-1"):</h4>
                                 <p class="mb-2"><strong>Target element:</strong> &lt;{{ violation.element }}&gt; with id="{{ violation.metadata.targetId }}"</p>
-                                <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ violation.html|e }}</code></pre>
+                                <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ violation.html|e }}</code></pre>
                                 <h4 class="mt-4">{{ violation.metadata.anchorLinksCount }} anchor link(s) pointing to this target:</h4>
                                 {% for anchor in violation.metadata.anchorLinks %}
                                 <div class="mb-3">
@@ -1906,21 +1906,21 @@
                                         <i class="bi bi-clipboard" aria-hidden="true"></i>
                                     </button>
                                 </p>
-                                    <pre class="bg-dark text-light p-2 rounded"><code>{{ anchor.html|e }}</code></pre>
+                                    <pre class="bg-header text-inverse p-2 rounded"><code>{{ anchor.html|e }}</code></pre>
                                 </div>
                                 {% endfor %}
                                                         {% elif 'ErrTabOrderViolation' in violation.id and violation.metadata and 'previousElement' in violation.metadata %}
                                                         <p class="mb-2"><strong>This element (comes later in tab order but appears visually left):</strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ violation.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ violation.html|e }}</code></pre>
                                                         <p class="mb-2"><strong>Previous element in tab order (visually to the right):</strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ violation.metadata.previousElement.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ violation.metadata.previousElement.html|e }}</code></pre>
                                                         <div class="alert alert-info">
                                                             <p class="mb-1"><strong>Visual positions:</strong></p>
                                                             <p class="mb-1">• This element: x={{ violation.metadata.currentElement.position.x }}, y={{ violation.metadata.currentElement.position.y }} (tab stop #{{ violation.metadata.currentElement.tabIndex }})</p>
                                                             <p class="mb-0">• Previous element: x={{ violation.metadata.previousElement.position.x }}, y={{ violation.metadata.previousElement.position.y }} (tab stop #{{ violation.metadata.previousElement.tabIndex }})</p>
                                                         </div>
                                                         {% else %}
-                                <pre class="bg-dark text-light p-3 rounded"><code>{{ violation.html|e }}</code></pre>
+                                <pre class="bg-header text-inverse p-3 rounded"><code>{{ violation.html|e }}</code></pre>
                                 {% endif %}
                             </div>
                             {% endif %}
@@ -1978,7 +1978,7 @@
                     <div class="section-header severity-header-medium" style="padding: 12px 16px;">
                         <h3 id="warnings-heading" class="mb-0">
                             <i class="bi bi-exclamation-triangle-fill me-2" aria-hidden="true"></i> {{ ftl('common-warnings') }}
-                            <span class="badge bg-dark text-warning ms-2">{{ latest_result.warnings|length }}</span>
+                            <span class="badge bg-header text-severity-medium ms-2">{{ latest_result.warnings|length }}</span>
                         </h3>
                         <small class="opacity-75">{{ ftl('pages-potential-issues-that-should-be-reviewed') }}</small>
                     </div>
@@ -2031,7 +2031,7 @@
                                                         <button class="accordion-button collapsed" type="button"
                                                                 data-bs-toggle="collapse"
                                                                 data-bs-target="#warn-breakpoint-{{ breakpoint_id }}">
-                                                            <span class="badge bg-info me-2">{{ breakpoint_list|length }}</span>
+                                                            <span class="badge badge-info me-2">{{ breakpoint_list|length }}</span>
                                                             <strong>{{ ftl('common-breakpoint') }} {{ breakpoint }}{{ ftl('pages-px-width') }}</strong>
                                                         </button>
                                                     </h2>
@@ -2050,7 +2050,7 @@
                                                         <div class="d-flex flex-wrap align-items-center gap-2">
                                                             <strong>{{ ftl('pages-instance') }} {{ loop.index }}:</strong>
                                                             {% if warning.metadata and warning.metadata.authenticated_user %}
-                                                                <span class="badge bg-secondary">
+                                                                <span class="badge badge-neutral">
                                                                     <i class="bi bi-person-fill" aria-hidden="true"></i> {{ warning.metadata.authenticated_user.display_name }}
                                                                     {% if warning.metadata.authenticated_user.roles %}
                                                                         ({{ warning.metadata.authenticated_user.roles|join(', ') }})
@@ -2070,7 +2070,7 @@
                                                         <!-- Full warning details as before -->
                                                         {% if warning.metadata and warning.metadata.title %}
                                                         <!-- Enhanced description available -->
-                                                        <div class="alert alert-warning mb-3">
+                                                        <div class="alert alert-medium mb-3">
                                                             <h4 class="alert-heading">
                                                                 {% if warning.metadata and (warning.metadata.what_en or warning.metadata.what_fr) %}
                                                                     <span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">{{ warning.metadata.what_en or warning.description }}</span>
@@ -2081,7 +2081,7 @@
                                                             </h4>
                                                         </div>
 
-                                                        <h4 class="text-warning mb-2">{{ ftl('pages-about-this-issue') }}</h4>
+                                                        <h4 class="text-severity-medium mb-2">{{ ftl('pages-about-this-issue') }}</h4>
 
                                                         <div class="mb-3">
                                                             <strong>{{ ftl('pages-what-the-issue-is') }}</strong>
@@ -2109,12 +2109,12 @@
 
                                                         <div class="mb-3">
                                                             <strong>{{ ftl('pages-how-to-remediate') }}</strong>
-                                                            {% if warning.metadata.full_remediation_en %}<div data-lang="en" class="bg-light p-3 rounded {{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ warning.metadata.full_remediation_en }}</div>{% endif %}
-                                                            {% if warning.metadata.full_remediation_fr %}<div data-lang="fr" class="bg-light p-3 rounded {{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ warning.metadata.full_remediation_fr }}</div>{% endif %}
+                                                            {% if warning.metadata.full_remediation_en %}<div data-lang="en" class="bg-subtle p-3 rounded {{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ warning.metadata.full_remediation_en }}</div>{% endif %}
+                                                            {% if warning.metadata.full_remediation_fr %}<div data-lang="fr" class="bg-subtle p-3 rounded {{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ warning.metadata.full_remediation_fr }}</div>{% endif %}
                                                         </div>
 
                                                         {% if warning.metadata.wcag_full or warning.wcag_criteria %}
-                                                        <h4 class="text-warning mb-2 mt-4">{{ ftl('pages-relevant-test-criteria') }}</h4>
+                                                        <h4 class="text-severity-medium mb-2 mt-4">{{ ftl('pages-relevant-test-criteria') }}</h4>
                                                         <div class="mb-3">
                                                             {% if warning.metadata.wcag_full %}
                                                             <strong>{{ ftl('pages-wcag-success-criteria') }}</strong>
@@ -2213,12 +2213,12 @@
                                                         <h4 class="mt-3">{{ ftl('pages-code-snippet') }}</h4>
                                                         {% if 'ErrSkippedHeadingLevel' in warning.id and warning.metadata and 'previousHeadingHtml' in warning.metadata %}
                                                         <p class="mb-2"><strong>Previous heading (h{{ warning.metadata.skippedFrom }}):</strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ warning.metadata.previousHeadingHtml|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ warning.metadata.previousHeadingHtml|e }}</code></pre>
                                                         <p class="mb-2"><strong>Current heading (h{{ warning.metadata.skippedTo }}) - skipped h{{ warning.metadata.expectedLevel }}:</strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded"><code>{{ warning.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded"><code>{{ warning.html|e }}</code></pre>
                                                         {% elif 'ErrDuplicateLandmarkWithoutName' in warning.id and warning.metadata and 'allInstances' in warning.metadata %}
                                                         <p class="mb-2"><strong>This instance (missing accessible name):</strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ warning.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ warning.html|e }}</code></pre>
                                                         <h4 class="mt-4">All {{ warning.metadata.totalCount }} {{ warning.metadata.role }} landmarks on page:</h4>
                                                         {% for instance in warning.metadata.allInstances %}
                                                         <div class="mb-3">
@@ -2229,21 +2229,21 @@
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
-                                                            <pre class="bg-dark text-light p-2 rounded"><code>{{ instance.html|e }}</code></pre>
+                                                            <pre class="bg-header text-inverse p-2 rounded"><code>{{ instance.html|e }}</code></pre>
                                                         </div>
                                                         {% endfor %}
                                                         {% elif 'ErrTabOrderViolation' in warning.id and warning.metadata and 'previousElement' in warning.metadata %}
                                                         <p class="mb-2"><strong>This element (comes later in tab order but appears visually left):</strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ warning.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ warning.html|e }}</code></pre>
                                                         <p class="mb-2"><strong>Previous element in tab order (visually to the right):</strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ warning.metadata.previousElement.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ warning.metadata.previousElement.html|e }}</code></pre>
                                                         <div class="alert alert-info">
                                                             <p class="mb-1"><strong>Visual positions:</strong></p>
                                                             <p class="mb-1">• This element: x={{ warning.metadata.currentElement.position.x }}, y={{ warning.metadata.currentElement.position.y }} (tab stop #{{ warning.metadata.currentElement.tabIndex }})</p>
                                                             <p class="mb-0">• Previous element: x={{ warning.metadata.previousElement.position.x }}, y={{ warning.metadata.previousElement.position.y }} (tab stop #{{ warning.metadata.previousElement.tabIndex }})</p>
                                                         </div>
                                                         {% else %}
-                                                        <pre class="bg-dark text-light p-3 rounded"><code>{{ warning.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded"><code>{{ warning.html|e }}</code></pre>
                                                         {% endif %}
                                                         {% endif %}
 
@@ -2285,7 +2285,7 @@
                                                         <div class="d-flex flex-wrap align-items-center gap-2">
                                                             <strong>{{ ftl('pages-instance') }} {{ loop.index }}:</strong>
                                                             {% if warning.metadata and warning.metadata.authenticated_user %}
-                                                                <span class="badge bg-secondary">
+                                                                <span class="badge badge-neutral">
                                                                     <i class="bi bi-person-fill" aria-hidden="true"></i> {{ warning.metadata.authenticated_user.display_name }}
                                                                     {% if warning.metadata.authenticated_user.roles %}
                                                                         ({{ warning.metadata.authenticated_user.roles|join(', ') }})
@@ -2305,7 +2305,7 @@
                                                         <!-- Full warning details as before -->
                                                         {% if warning.metadata and warning.metadata.title %}
                                                         <!-- Enhanced description available -->
-                                                        <div class="alert alert-warning mb-3">
+                                                        <div class="alert alert-medium mb-3">
                                                             <h4 class="alert-heading">
                                                                 {% if warning.metadata and (warning.metadata.what_en or warning.metadata.what_fr) %}
                                                                     <span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">{{ warning.metadata.what_en or warning.description }}</span>
@@ -2316,7 +2316,7 @@
                                                             </h4>
                                                         </div>
 
-                                                        <h4 class="text-warning mb-2">{{ ftl('pages-about-this-issue') }}</h4>
+                                                        <h4 class="text-severity-medium mb-2">{{ ftl('pages-about-this-issue') }}</h4>
 
                                                         <div class="mb-3">
                                                             <strong>{{ ftl('pages-what-the-issue-is') }}</strong>
@@ -2344,12 +2344,12 @@
 
                                                         <div class="mb-3">
                                                             <strong>{{ ftl('pages-how-to-remediate') }}</strong>
-                                                            {% if warning.metadata.full_remediation_en %}<div data-lang="en" class="bg-light p-3 rounded {{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ warning.metadata.full_remediation_en }}</div>{% endif %}
-                                                            {% if warning.metadata.full_remediation_fr %}<div data-lang="fr" class="bg-light p-3 rounded {{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ warning.metadata.full_remediation_fr }}</div>{% endif %}
+                                                            {% if warning.metadata.full_remediation_en %}<div data-lang="en" class="bg-subtle p-3 rounded {{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ warning.metadata.full_remediation_en }}</div>{% endif %}
+                                                            {% if warning.metadata.full_remediation_fr %}<div data-lang="fr" class="bg-subtle p-3 rounded {{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ warning.metadata.full_remediation_fr }}</div>{% endif %}
                                                         </div>
 
                                                         {% if warning.metadata.wcag_full or warning.wcag_criteria %}
-                                                        <h4 class="text-warning mb-2 mt-4">{{ ftl('pages-relevant-test-criteria') }}</h4>
+                                                        <h4 class="text-severity-medium mb-2 mt-4">{{ ftl('pages-relevant-test-criteria') }}</h4>
                                                         <div class="mb-3">
                                                             {% if warning.metadata.wcag_full %}
                                                             <strong>{{ ftl('pages-wcag-success-criteria') }}</strong>
@@ -2392,7 +2392,7 @@
                                                         {% endif %}
                                                         {% if warning.html %}
                                                         <h4 class="mt-3">{{ ftl('pages-code-snippet') }}</h4>
-                                                        <pre class="bg-dark text-light p-3 rounded"><code>{{ warning.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded"><code>{{ warning.html|e }}</code></pre>
                                                         {% endif %}
                                                     </div>
                                                 </article>
@@ -2416,12 +2416,12 @@
                                                 {{ ftl_enum(warning.impact.value if warning.impact.value else warning.impact) }}
                                             </span>
                                             {% if warning.metadata.ai_detected %}
-                                            <span class="badge bg-info" title="Detected by AI analysis">
+                                            <span class="badge badge-info" title="Detected by AI analysis">
                                                 <i class="bi bi-robot" aria-hidden="true"></i> AI
                                             </span>
                                             {% endif %}
                                             {% if warning.metadata and warning.metadata.authenticated_user %}
-                                            <span class="badge bg-secondary">
+                                            <span class="badge badge-neutral">
                                                 <i class="bi bi-person-fill" aria-hidden="true"></i> {{ warning.metadata.authenticated_user.display_name }}
                                                 {% if warning.metadata.authenticated_user.roles %}
                                                     ({{ warning.metadata.authenticated_user.roles|join(', ') }})
@@ -2454,7 +2454,7 @@
                         <div class="accordion-body">
                             {% if warning.metadata and warning.metadata.title %}
                             <!-- Enhanced description available -->
-                            <div class="alert alert-warning mb-3">
+                            <div class="alert alert-medium mb-3">
                                 <h4 class="alert-heading">
                                     {% if warning.metadata.what_generic_en or warning.metadata.what_generic_fr %}
                                         <span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">{{ warning.metadata.what_generic_en }}</span>
@@ -2465,7 +2465,7 @@
                                 </h4>
                             </div>
 
-                            <h4 class="text-warning mb-2">{{ ftl('pages-about-this-issue') }}</h4>
+                            <h4 class="text-severity-medium mb-2">{{ ftl('pages-about-this-issue') }}</h4>
 
                             <div class="mb-3">
                                 <strong>{{ ftl('pages-what-the-issue-is') }}</strong>
@@ -2486,12 +2486,12 @@
 
                             <div class="mb-3">
                                 <strong>{{ ftl('pages-how-to-remediate') }}</strong>
-                                {% if warning.metadata.full_remediation_en %}<div data-lang="en" class="bg-light p-3 rounded {{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ warning.metadata.full_remediation_en }}</div>{% endif %}
-                                {% if warning.metadata.full_remediation_fr %}<div data-lang="fr" class="bg-light p-3 rounded {{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ warning.metadata.full_remediation_fr }}</div>{% endif %}
+                                {% if warning.metadata.full_remediation_en %}<div data-lang="en" class="bg-subtle p-3 rounded {{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ warning.metadata.full_remediation_en }}</div>{% endif %}
+                                {% if warning.metadata.full_remediation_fr %}<div data-lang="fr" class="bg-subtle p-3 rounded {{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ warning.metadata.full_remediation_fr }}</div>{% endif %}
                             </div>
 
                             {% if warning.metadata.wcag_full or warning.wcag_criteria %}
-                            <h4 class="text-warning mb-2 mt-4">{{ ftl('pages-relevant-test-criteria') }}</h4>
+                            <h4 class="text-severity-medium mb-2 mt-4">{{ ftl('pages-relevant-test-criteria') }}</h4>
                             <div class="mb-3">
                                 {% if warning.metadata.wcag_full %}
                                 <strong>{{ ftl('pages-wcag-success-criteria') }}</strong>
@@ -2583,12 +2583,12 @@
                                 <h4>{{ ftl('pages-code-snippet') }}</h4>
                                 {% if 'ErrSkippedHeadingLevel' in warning.id and warning.metadata and 'previousHeadingHtml' in warning.metadata %}
                                 <p class="mb-2"><strong>Previous heading (h{{ warning.metadata.skippedFrom }}):</strong></p>
-                                <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ warning.metadata.previousHeadingHtml|e }}</code></pre>
+                                <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ warning.metadata.previousHeadingHtml|e }}</code></pre>
                                 <p class="mb-2"><strong>Current heading (h{{ warning.metadata.skippedTo }}) - skipped h{{ warning.metadata.expectedLevel }}:</strong></p>
-                                <pre class="bg-dark text-light p-3 rounded"><code>{{ warning.html|e }}</code></pre>
+                                <pre class="bg-header text-inverse p-3 rounded"><code>{{ warning.html|e }}</code></pre>
                                 {% elif 'ErrDuplicateLandmarkWithoutName' in warning.id and warning.metadata and 'allInstances' in warning.metadata %}
                                                         <p class="mb-2"><strong>This instance (missing accessible name):</strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ warning.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ warning.html|e }}</code></pre>
                                                         <h4 class="mt-4">All {{ warning.metadata.totalCount }} {{ warning.metadata.role }} landmarks on page:</h4>
                                                         {% for instance in warning.metadata.allInstances %}
                                                         <div class="mb-3">
@@ -2599,21 +2599,21 @@
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
-                                                            <pre class="bg-dark text-light p-2 rounded"><code>{{ instance.html|e }}</code></pre>
+                                                            <pre class="bg-header text-inverse p-2 rounded"><code>{{ instance.html|e }}</code></pre>
                                                         </div>
                                                         {% endfor %}
                                                         {% elif 'ErrTabOrderViolation' in warning.id and warning.metadata and 'previousElement' in warning.metadata %}
                                                         <p class="mb-2"><strong>This element (comes later in tab order but appears visually left):</strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ warning.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ warning.html|e }}</code></pre>
                                                         <p class="mb-2"><strong>Previous element in tab order (visually to the right):</strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ warning.metadata.previousElement.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ warning.metadata.previousElement.html|e }}</code></pre>
                                                         <div class="alert alert-info">
                                                             <p class="mb-1"><strong>Visual positions:</strong></p>
                                                             <p class="mb-1">• This element: x={{ warning.metadata.currentElement.position.x }}, y={{ warning.metadata.currentElement.position.y }} (tab stop #{{ warning.metadata.currentElement.tabIndex }})</p>
                                                             <p class="mb-0">• Previous element: x={{ warning.metadata.previousElement.position.x }}, y={{ warning.metadata.previousElement.position.y }} (tab stop #{{ warning.metadata.previousElement.tabIndex }})</p>
                                                         </div>
                                                         {% else %}
-                                                        <pre class="bg-dark text-light p-3 rounded"><code>{{ warning.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded"><code>{{ warning.html|e }}</code></pre>
                                                         {% endif %}
                             </div>
                             {% endif %}
@@ -2709,7 +2709,7 @@
                     <div class="section-header severity-header-info" style="padding: 12px 16px;">
                         <h3 id="info-heading" class="mb-0">
                             <i class="bi bi-info-circle-fill me-2" aria-hidden="true"></i> {{ ftl('common-info-notes') }}
-                            <span class="badge bg-light text-info ms-2">{{ latest_result.info|length }}</span>
+                            <span class="badge badge-subtle text-info-custom ms-2">{{ latest_result.info|length }}</span>
                         </h3>
                         <small class="opacity-75">{{ ftl('pages-additional-information-and-best-practice') }}</small>
                     </div>
@@ -2761,7 +2761,7 @@
                                                             data-bs-target="#info-instance-{{ info_instance_id }}">
                                                         <strong>{{ ftl('pages-instance') }} {{ loop.index }}:</strong>
                                                         {% if info.metadata and info.metadata.authenticated_user %}
-                                                            <span class="badge bg-secondary ms-2">
+                                                            <span class="badge badge-neutral ms-2">
                                                                 <i class="bi bi-person-fill" aria-hidden="true"></i> {{ info.metadata.authenticated_user.display_name }}
                                                                 {% if info.metadata.authenticated_user.roles %}
                                                                     ({{ info.metadata.authenticated_user.roles|join(', ') }})
@@ -2784,7 +2784,7 @@
                                                             <h4 class="alert-heading">{{ (info.metadata.what if info.metadata.what else info.description)|translate_issue }}</h4>
                                                         </div>
 
-                                                        <h4 class="text-info mb-2">{{ ftl('pages-about-this-issue') }}</h4>
+                                                        <h4 class="text-info-custom mb-2">{{ ftl('pages-about-this-issue') }}</h4>
 
                                                         <div class="mb-3">
                                                             <strong>{{ ftl('pages-what-the-issue-is') }}</strong>
@@ -2805,12 +2805,12 @@
 
                                                         <div class="mb-3">
                                                             <strong>{{ ftl('pages-how-to-remediate') }}</strong>
-                                                            {% if info.metadata.full_remediation_en %}<div data-lang="en" class="bg-light p-3 rounded {{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ info.metadata.full_remediation_en }}</div>{% endif %}
-                                                            {% if info.metadata.full_remediation_fr %}<div data-lang="fr" class="bg-light p-3 rounded {{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ info.metadata.full_remediation_fr }}</div>{% endif %}
+                                                            {% if info.metadata.full_remediation_en %}<div data-lang="en" class="bg-subtle p-3 rounded {{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ info.metadata.full_remediation_en }}</div>{% endif %}
+                                                            {% if info.metadata.full_remediation_fr %}<div data-lang="fr" class="bg-subtle p-3 rounded {{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ info.metadata.full_remediation_fr }}</div>{% endif %}
                                                         </div>
 
                                                         {% if info.metadata.wcag_full or info.wcag_criteria %}
-                                                        <h4 class="text-info mb-2 mt-4">{{ ftl('pages-relevant-test-criteria') }}</h4>
+                                                        <h4 class="text-info-custom mb-2 mt-4">{{ ftl('pages-relevant-test-criteria') }}</h4>
                                                         <div class="mb-3">
                                                             {% if info.metadata.wcag_full %}
                                                             <strong>{{ ftl('pages-wcag-success-criteria') }}</strong>
@@ -2853,12 +2853,12 @@
                                                         <h4 class="mt-3">{{ ftl('pages-code-snippet') }}</h4>
                                                         {% if 'ErrSkippedHeadingLevel' in info.id and info.metadata and 'previousHeadingHtml' in info.metadata %}
                                                         <p class="mb-2"><strong>Previous heading (h{{ info.metadata.skippedFrom }}):</strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ info.metadata.previousHeadingHtml|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ info.metadata.previousHeadingHtml|e }}</code></pre>
                                                         <p class="mb-2"><strong>Current heading (h{{ info.metadata.skippedTo }}) - skipped h{{ info.metadata.expectedLevel }}:</strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded"><code>{{ info.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded"><code>{{ info.html|e }}</code></pre>
                                                         {% elif 'ErrDuplicateLandmarkWithoutName' in info.id and info.metadata and 'allInstances' in info.metadata %}
                                                         <p class="mb-2"><strong>This instance (missing accessible name):</strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ info.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ info.html|e }}</code></pre>
                                                         <h4 class="mt-4">All {{ info.metadata.totalCount }} {{ info.metadata.role }} landmarks on page:</h4>
                                                         {% for instance in info.metadata.allInstances %}
                                                         <div class="mb-3">
@@ -2869,21 +2869,21 @@
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
-                                                            <pre class="bg-dark text-light p-2 rounded"><code>{{ instance.html|e }}</code></pre>
+                                                            <pre class="bg-header text-inverse p-2 rounded"><code>{{ instance.html|e }}</code></pre>
                                                         </div>
                                                         {% endfor %}
                                                         {% elif 'ErrTabOrderViolation' in info.id and info.metadata and 'previousElement' in info.metadata %}
                                                         <p class="mb-2"><strong>This element (comes later in tab order but appears visually left):</strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ info.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ info.html|e }}</code></pre>
                                                         <p class="mb-2"><strong>Previous element in tab order (visually to the right):</strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ info.metadata.previousElement.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ info.metadata.previousElement.html|e }}</code></pre>
                                                         <div class="alert alert-info">
                                                             <p class="mb-1"><strong>Visual positions:</strong></p>
                                                             <p class="mb-1">• This element: x={{ info.metadata.currentElement.position.x }}, y={{ info.metadata.currentElement.position.y }} (tab stop #{{ info.metadata.currentElement.tabIndex }})</p>
                                                             <p class="mb-0">• Previous element: x={{ info.metadata.previousElement.position.x }}, y={{ info.metadata.previousElement.position.y }} (tab stop #{{ info.metadata.previousElement.tabIndex }})</p>
                                                         </div>
                                                         {% else %}
-                                                        <pre class="bg-dark text-light p-3 rounded"><code>{{ info.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded"><code>{{ info.html|e }}</code></pre>
                                                         {% endif %}
                                                         {% endif %}
 
@@ -2949,7 +2949,7 @@
                                 </h4>
                             </div>
 
-                            <h4 class="text-info mb-2">{{ ftl('pages-about-this-issue') }}</h4>
+                            <h4 class="text-info-custom mb-2">{{ ftl('pages-about-this-issue') }}</h4>
 
                             <div class="mb-3">
                                 <strong>{{ ftl('pages-what-the-issue-is') }}</strong>
@@ -2970,12 +2970,12 @@
 
                             <div class="mb-3">
                                 <strong>{{ ftl('pages-how-to-remediate') }}</strong>
-                                {% if info.metadata.full_remediation_en %}<div data-lang="en" class="bg-light p-3 rounded {{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ info.metadata.full_remediation_en }}</div>{% endif %}
-                                {% if info.metadata.full_remediation_fr %}<div data-lang="fr" class="bg-light p-3 rounded {{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ info.metadata.full_remediation_fr }}</div>{% endif %}
+                                {% if info.metadata.full_remediation_en %}<div data-lang="en" class="bg-subtle p-3 rounded {{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ info.metadata.full_remediation_en }}</div>{% endif %}
+                                {% if info.metadata.full_remediation_fr %}<div data-lang="fr" class="bg-subtle p-3 rounded {{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ info.metadata.full_remediation_fr }}</div>{% endif %}
                             </div>
 
                             {% if info.metadata.wcag_full or info.wcag_criteria %}
-                            <h4 class="text-info mb-2 mt-4">{{ ftl('pages-relevant-test-criteria') }}</h4>
+                            <h4 class="text-info-custom mb-2 mt-4">{{ ftl('pages-relevant-test-criteria') }}</h4>
                             <div class="mb-3">
                                 {% if info.metadata.wcag_full %}
                                 <strong>{{ ftl('pages-wcag-success-criteria') }}</strong>
@@ -3014,12 +3014,12 @@
                                 <h4>{{ ftl('pages-code-snippet') }}</h4>
                                 {% if 'ErrSkippedHeadingLevel' in info.id and info.metadata and 'previousHeadingHtml' in info.metadata %}
                                 <p class="mb-2"><strong>Previous heading (h{{ info.metadata.skippedFrom }}):</strong></p>
-                                <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ info.metadata.previousHeadingHtml|e }}</code></pre>
+                                <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ info.metadata.previousHeadingHtml|e }}</code></pre>
                                 <p class="mb-2"><strong>Current heading (h{{ info.metadata.skippedTo }}) - skipped h{{ info.metadata.expectedLevel }}:</strong></p>
-                                <pre class="bg-dark text-light p-3 rounded"><code>{{ info.html|e }}</code></pre>
+                                <pre class="bg-header text-inverse p-3 rounded"><code>{{ info.html|e }}</code></pre>
                                 {% elif 'ErrDuplicateLandmarkWithoutName' in info.id and info.metadata and 'allInstances' in info.metadata %}
                                                         <p class="mb-2"><strong>This instance (missing accessible name):</strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ info.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ info.html|e }}</code></pre>
                                                         <h4 class="mt-4">All {{ info.metadata.totalCount }} {{ info.metadata.role }} landmarks on page:</h4>
                                                         {% for instance in info.metadata.allInstances %}
                                                         <div class="mb-3">
@@ -3030,21 +3030,21 @@
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
-                                                            <pre class="bg-dark text-light p-2 rounded"><code>{{ instance.html|e }}</code></pre>
+                                                            <pre class="bg-header text-inverse p-2 rounded"><code>{{ instance.html|e }}</code></pre>
                                                         </div>
                                                         {% endfor %}
                                                         {% elif 'ErrTabOrderViolation' in info.id and info.metadata and 'previousElement' in info.metadata %}
                                                         <p class="mb-2"><strong>This element (comes later in tab order but appears visually left):</strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ info.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ info.html|e }}</code></pre>
                                                         <p class="mb-2"><strong>Previous element in tab order (visually to the right):</strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ info.metadata.previousElement.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ info.metadata.previousElement.html|e }}</code></pre>
                                                         <div class="alert alert-info">
                                                             <p class="mb-1"><strong>Visual positions:</strong></p>
                                                             <p class="mb-1">• This element: x={{ info.metadata.currentElement.position.x }}, y={{ info.metadata.currentElement.position.y }} (tab stop #{{ info.metadata.currentElement.tabIndex }})</p>
                                                             <p class="mb-0">• Previous element: x={{ info.metadata.previousElement.position.x }}, y={{ info.metadata.previousElement.position.y }} (tab stop #{{ info.metadata.previousElement.tabIndex }})</p>
                                                         </div>
                                                         {% else %}
-                                                        <pre class="bg-dark text-light p-3 rounded"><code>{{ info.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded"><code>{{ info.html|e }}</code></pre>
                                                         {% endif %}
 
                                                         <!-- Thumbnail of the page at time of test -->
@@ -3129,7 +3129,7 @@
                     <div class="section-header severity-header-discovery" style="padding: 12px 16px;">
                         <h3 id="discovery-heading" class="mb-0">
                             <i class="bi bi-search me-2" aria-hidden="true"></i> {{ ftl('pages-discovery-items') }}
-                            <span class="badge bg-light text-discovery ms-2">{{ latest_result.discovery|length }}</span>
+                            <span class="badge badge-subtle text-discovery ms-2">{{ latest_result.discovery|length }}</span>
                         </h3>
                         <small class="opacity-75">{{ ftl('pages-elements-found-that-may-need-manual-review') }}</small>
                     </div>
@@ -3181,7 +3181,7 @@
                                                             data-bs-target="#disc-instance-{{ disc_instance_id }}">
                                                         <strong>{{ ftl('pages-instance') }} {{ loop.index }}:</strong>
                                                         {% if discovery.metadata and discovery.metadata.authenticated_user %}
-                                                            <span class="badge bg-secondary ms-2">
+                                                            <span class="badge badge-neutral ms-2">
                                                                 <i class="bi bi-person-fill" aria-hidden="true"></i> {{ discovery.metadata.authenticated_user.display_name }}
                                                                 {% if discovery.metadata.authenticated_user.roles %}
                                                                     ({{ discovery.metadata.authenticated_user.roles|join(', ') }})
@@ -3247,8 +3247,8 @@
 
                                                         <div class="mb-3">
                                                             <strong>{{ ftl('pages-what-to-check-manually') }}</strong>
-                                                            {% if discovery.metadata.full_remediation_en %}<div data-lang="en" class="bg-light p-3 rounded {{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ discovery.metadata.full_remediation_en }}</div>{% endif %}
-                                                            {% if discovery.metadata.full_remediation_fr %}<div data-lang="fr" class="bg-light p-3 rounded {{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ discovery.metadata.full_remediation_fr }}</div>{% endif %}
+                                                            {% if discovery.metadata.full_remediation_en %}<div data-lang="en" class="bg-subtle p-3 rounded {{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ discovery.metadata.full_remediation_en }}</div>{% endif %}
+                                                            {% if discovery.metadata.full_remediation_fr %}<div data-lang="fr" class="bg-subtle p-3 rounded {{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ discovery.metadata.full_remediation_fr }}</div>{% endif %}
                                                         </div>
 
                                                         {% if discovery.metadata.wcag_full or discovery.wcag_criteria %}
@@ -3297,12 +3297,12 @@
                                                         <h4 class="mt-3">{{ ftl('pages-code-snippet') }}</h4>
                                                         {% if 'ErrSkippedHeadingLevel' in discovery.id and discovery.metadata and 'previousHeadingHtml' in discovery.metadata %}
                                                         <p class="mb-2"><strong><span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">Previous heading</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Titre précédent</span> (h{{ discovery.metadata.skippedFrom }}):</strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ discovery.metadata.previousHeadingHtml|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ discovery.metadata.previousHeadingHtml|e }}</code></pre>
                                                         <p class="mb-2"><strong><span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">Current heading</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Titre actuel</span> (h{{ discovery.metadata.skippedTo }}) - <span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">skipped</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">sauté</span> h{{ discovery.metadata.expectedLevel }}:</strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded"><code>{{ discovery.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded"><code>{{ discovery.html|e }}</code></pre>
                                                         {% elif 'ErrDuplicateLandmarkWithoutName' in discovery.id and discovery.metadata and 'allInstances' in discovery.metadata %}
                                                         <p class="mb-2"><strong><span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">This instance (missing accessible name):</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Cette instance (nom accessible manquant) :</span></strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ discovery.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ discovery.html|e }}</code></pre>
                                                         <h4 class="mt-4"><span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">All {{ discovery.metadata.totalCount }} {{ discovery.metadata.role }} landmarks on page:</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Tous les {{ discovery.metadata.totalCount }} points de repère {{ discovery.metadata.role }} sur la page :</span></h4>
                                                         {% for instance in discovery.metadata.allInstances %}
                                                         <div class="mb-3">
@@ -3313,37 +3313,37 @@
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
-                                                            <pre class="bg-dark text-light p-2 rounded"><code>{{ instance.html|e }}</code></pre>
+                                                            <pre class="bg-header text-inverse p-2 rounded"><code>{{ instance.html|e }}</code></pre>
                                                         </div>
                                                         {% endfor %}
                                                         {% elif 'ErrStyleAttrColorFont' in discovery.id and discovery.metadata and 'styleContent' in discovery.metadata %}
                                                         <p class="mb-2"><strong><span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">Element with inline color/font style:</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Élément avec style couleur/police en ligne :</span></strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ discovery.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ discovery.html|e }}</code></pre>
                                                         <p class="mb-2"><strong><span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">Inline style attribute:</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Attribut style en ligne :</span></strong></p>
-                                                        <pre class="bg-danger text-light p-3 rounded"><code>{{ discovery.metadata.styleContent|e }}</code></pre>
-                                                        <div class="alert alert-danger">
+                                                        <pre class="bg-high text-light p-3 rounded"><code>{{ discovery.metadata.styleContent|e }}</code></pre>
+                                                        <div class="alert alert-high">
                                                             <p class="mb-0"><strong><span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">Error:</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Erreur :</span></strong> <span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">Inline color and font styles prevent users from customizing colors and fonts to their needs. Move these styles to a CSS file to support user preferences and accessibility features.</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Les styles de couleur et de police en ligne empêchent les utilisateurs de personnaliser les couleurs et les polices selon leurs besoins. Déplacez ces styles vers un fichier CSS pour prendre en charge les préférences utilisateur et les fonctionnalités d'accessibilité.</span></p>
                                                         </div>
                                                         {% elif 'WarnStyleAttrOther' in discovery.id and discovery.metadata and 'styleContent' in discovery.metadata %}
                                                         <p class="mb-2"><strong><span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">Element with inline layout style:</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Élément avec style de mise en page en ligne :</span></strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ discovery.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ discovery.html|e }}</code></pre>
                                                         <p class="mb-2"><strong><span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">Inline style attribute:</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Attribut style en ligne :</span></strong></p>
-                                                        <pre class="bg-warning text-dark p-3 rounded"><code>{{ discovery.metadata.styleContent|e }}</code></pre>
-                                                        <div class="alert alert-warning">
+                                                        <pre class="bg-medium p-3 rounded"><code>{{ discovery.metadata.styleContent|e }}</code></pre>
+                                                        <div class="alert alert-medium">
                                                             <p class="mb-0"><strong><span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">Warning:</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Avertissement :</span></strong> <span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">While layout styles are less critical than color/font styles, it's better to move these styles to a CSS class for better maintainability and separation of concerns.</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Bien que les styles de mise en page soient moins critiques que les styles de couleur/police, il est préférable de déplacer ces styles vers une classe CSS pour une meilleure maintenabilité et séparation des préoccupations.</span></p>
                                                         </div>
                                                         {% elif 'ErrTabOrderViolation' in discovery.id and discovery.metadata and 'previousElement' in discovery.metadata %}
                                                         <p class="mb-2"><strong><span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">This element (comes later in tab order but appears visually left):</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Cet élément (vient plus tard dans l'ordre de tabulation mais apparaît visuellement à gauche) :</span></strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ discovery.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ discovery.html|e }}</code></pre>
                                                         <p class="mb-2"><strong><span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">Previous element in tab order (visually to the right):</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Élément précédent dans l'ordre de tabulation (visuellement à droite) :</span></strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ discovery.metadata.previousElement.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ discovery.metadata.previousElement.html|e }}</code></pre>
                                                         <div class="alert alert-info">
                                                             <p class="mb-1"><strong><span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">Visual positions:</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Positions visuelles :</span></strong></p>
                                                             <p class="mb-1">• <span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">This element:</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Cet élément :</span> x={{ discovery.metadata.currentElement.position.x }}, y={{ discovery.metadata.currentElement.position.y }} (<span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">tab stop</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">arrêt de tabulation</span> #{{ discovery.metadata.currentElement.tabIndex }})</p>
                                                             <p class="mb-0">• <span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">Previous element:</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Élément précédent :</span> x={{ discovery.metadata.previousElement.position.x }}, y={{ discovery.metadata.previousElement.position.y }} (<span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">tab stop</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">arrêt de tabulation</span> #{{ discovery.metadata.previousElement.tabIndex }})</p>
                                                         </div>
                                                         {% else %}
-                                                        <pre class="bg-dark text-light p-3 rounded"><code>{{ discovery.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded"><code>{{ discovery.html|e }}</code></pre>
                                                         {% endif %}
                                                         {% endif %}
 
@@ -3443,8 +3443,8 @@
 
                             <div class="mb-3">
                                 <strong>{{ ftl('pages-what-to-check-manually') }}</strong>
-                                {% if discovery.metadata.full_remediation_en %}<div data-lang="en" class="bg-light p-3 rounded {{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ discovery.metadata.full_remediation_en }}</div>{% endif %}
-                                {% if discovery.metadata.full_remediation_fr %}<div data-lang="fr" class="bg-light p-3 rounded {{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ discovery.metadata.full_remediation_fr }}</div>{% endif %}
+                                {% if discovery.metadata.full_remediation_en %}<div data-lang="en" class="bg-subtle p-3 rounded {{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ discovery.metadata.full_remediation_en }}</div>{% endif %}
+                                {% if discovery.metadata.full_remediation_fr %}<div data-lang="fr" class="bg-subtle p-3 rounded {{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ discovery.metadata.full_remediation_fr }}</div>{% endif %}
                             </div>
 
                             {% if discovery.metadata.wcag_full or discovery.wcag_criteria %}
@@ -3490,12 +3490,12 @@
                                 <h4>{{ ftl('pages-code-snippet') }}</h4>
                                 {% if 'ErrSkippedHeadingLevel' in discovery.id and discovery.metadata and 'previousHeadingHtml' in discovery.metadata %}
                                 <p class="mb-2"><strong>Previous heading (h{{ discovery.metadata.skippedFrom }}):</strong></p>
-                                <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ discovery.metadata.previousHeadingHtml|e }}</code></pre>
+                                <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ discovery.metadata.previousHeadingHtml|e }}</code></pre>
                                 <p class="mb-2"><strong>Current heading (h{{ discovery.metadata.skippedTo }}) - skipped h{{ discovery.metadata.expectedLevel }}:</strong></p>
-                                <pre class="bg-dark text-light p-3 rounded"><code>{{ discovery.html|e }}</code></pre>
+                                <pre class="bg-header text-inverse p-3 rounded"><code>{{ discovery.html|e }}</code></pre>
                                 {% elif 'ErrDuplicateLandmarkWithoutName' in discovery.id and discovery.metadata and 'allInstances' in discovery.metadata %}
                                                         <p class="mb-2"><strong>This instance (missing accessible name):</strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ discovery.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ discovery.html|e }}</code></pre>
                                                         <h4 class="mt-4">All {{ discovery.metadata.totalCount }} {{ discovery.metadata.role }} landmarks on page:</h4>
                                                         {% for instance in discovery.metadata.allInstances %}
                                                         <div class="mb-3">
@@ -3506,37 +3506,37 @@
                                                                 <i class="bi bi-clipboard" aria-hidden="true"></i>
                                                             </button>
                                                         </p>
-                                                            <pre class="bg-dark text-light p-2 rounded"><code>{{ instance.html|e }}</code></pre>
+                                                            <pre class="bg-header text-inverse p-2 rounded"><code>{{ instance.html|e }}</code></pre>
                                                         </div>
                                                         {% endfor %}
                                                         {% elif 'ErrStyleAttrColorFont' in discovery.id and discovery.metadata and 'styleContent' in discovery.metadata %}
                                                         <p class="mb-2"><strong><span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">Element with inline color/font style:</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Élément avec style couleur/police en ligne :</span></strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ discovery.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ discovery.html|e }}</code></pre>
                                                         <p class="mb-2"><strong><span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">Inline style attribute:</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Attribut style en ligne :</span></strong></p>
-                                                        <pre class="bg-danger text-light p-3 rounded"><code>{{ discovery.metadata.styleContent|e }}</code></pre>
-                                                        <div class="alert alert-danger">
+                                                        <pre class="bg-high text-light p-3 rounded"><code>{{ discovery.metadata.styleContent|e }}</code></pre>
+                                                        <div class="alert alert-high">
                                                             <p class="mb-0"><strong><span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">Error:</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Erreur :</span></strong> <span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">Inline color and font styles prevent users from customizing colors and fonts to their needs. Move these styles to a CSS file to support user preferences and accessibility features.</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Les styles de couleur et de police en ligne empêchent les utilisateurs de personnaliser les couleurs et les polices selon leurs besoins. Déplacez ces styles vers un fichier CSS pour prendre en charge les préférences utilisateur et les fonctionnalités d'accessibilité.</span></p>
                                                         </div>
                                                         {% elif 'WarnStyleAttrOther' in discovery.id and discovery.metadata and 'styleContent' in discovery.metadata %}
                                                         <p class="mb-2"><strong><span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">Element with inline layout style:</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Élément avec style de mise en page en ligne :</span></strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ discovery.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ discovery.html|e }}</code></pre>
                                                         <p class="mb-2"><strong><span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">Inline style attribute:</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Attribut style en ligne :</span></strong></p>
-                                                        <pre class="bg-warning text-dark p-3 rounded"><code>{{ discovery.metadata.styleContent|e }}</code></pre>
-                                                        <div class="alert alert-warning">
+                                                        <pre class="bg-medium p-3 rounded"><code>{{ discovery.metadata.styleContent|e }}</code></pre>
+                                                        <div class="alert alert-medium">
                                                             <p class="mb-0"><strong><span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">Warning:</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Avertissement :</span></strong> <span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">While layout styles are less critical than color/font styles, it's better to move these styles to a CSS class for better maintainability and separation of concerns.</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Bien que les styles de mise en page soient moins critiques que les styles de couleur/police, il est préférable de déplacer ces styles vers une classe CSS pour une meilleure maintenabilité et séparation des préoccupations.</span></p>
                                                         </div>
                                                         {% elif 'ErrTabOrderViolation' in discovery.id and discovery.metadata and 'previousElement' in discovery.metadata %}
                                                         <p class="mb-2"><strong><span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">This element (comes later in tab order but appears visually left):</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Cet élément (vient plus tard dans l'ordre de tabulation mais apparaît visuellement à gauche) :</span></strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ discovery.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ discovery.html|e }}</code></pre>
                                                         <p class="mb-2"><strong><span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">Previous element in tab order (visually to the right):</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Élément précédent dans l'ordre de tabulation (visuellement à droite) :</span></strong></p>
-                                                        <pre class="bg-dark text-light p-3 rounded mb-3"><code>{{ discovery.metadata.previousElement.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ discovery.metadata.previousElement.html|e }}</code></pre>
                                                         <div class="alert alert-info">
                                                             <p class="mb-1"><strong><span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">Visual positions:</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Positions visuelles :</span></strong></p>
                                                             <p class="mb-1">• <span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">This element:</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Cet élément :</span> x={{ discovery.metadata.currentElement.position.x }}, y={{ discovery.metadata.currentElement.position.y }} (<span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">tab stop</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">arrêt de tabulation</span> #{{ discovery.metadata.currentElement.tabIndex }})</p>
                                                             <p class="mb-0">• <span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">Previous element:</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Élément précédent :</span> x={{ discovery.metadata.previousElement.position.x }}, y={{ discovery.metadata.previousElement.position.y }} (<span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">tab stop</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">arrêt de tabulation</span> #{{ discovery.metadata.previousElement.tabIndex }})</p>
                                                         </div>
                                                         {% else %}
-                                                        <pre class="bg-dark text-light p-3 rounded"><code>{{ discovery.html|e }}</code></pre>
+                                                        <pre class="bg-header text-inverse p-3 rounded"><code>{{ discovery.html|e }}</code></pre>
                                                         {% endif %}
                             </div>
                             {% endif %}
@@ -3677,15 +3677,15 @@
                                     <i class="bi bi-person" aria-hidden="true"></i> {{ ftl('common-guest') }}
                                 {% endif %}
                             </td>
-                            <td><span class="badge bg-danger">{{ result.violation_count }}</span></td>
-                            <td><span class="badge bg-warning text-dark">{{ result.warning_count }}</span></td>
-                            <td><span class="badge bg-info">{{ result.info_count|default(0) }}</span></td>
+                            <td><span class="badge badge-high">{{ result.violation_count }}</span></td>
+                            <td><span class="badge badge-medium">{{ result.warning_count }}</span></td>
+                            <td><span class="badge badge-info">{{ result.info_count|default(0) }}</span></td>
                             <td><span class="badge" style="background-color: var(--color-discovery);">{{ result.discovery_count|default(0) }}</span></td>
-                            <td><span class="badge bg-success">{{ result.pass_count }}</span></td>
+                            <td><span class="badge badge-pass">{{ result.pass_count }}</span></td>
                             <td>{{ "%.2f"|format(result.duration_ms / 1000) }}s</td>
                             <td>
                                 <a href="{{ url_for('testing.view_result', result_id=result.id) }}"
-                                   class="btn btn-sm btn-primary">
+                                   class="btn btn-sm btn-brand">
                                     <i class="bi bi-eye" aria-hidden="true"></i> {{ ftl('common-view') }}
                                 </a>
                             </td>
@@ -3712,10 +3712,10 @@
                 <img id="screenshotModalImage" src="" alt="{{ ftl('common-screenshot') }}" style="max-width: 100%; height: auto;">
             </div>
             <div class="modal-footer">
-                <a id="screenshotModalLink" href="" target="_blank" class="btn btn-primary">
+                <a id="screenshotModalLink" href="" target="_blank" class="btn btn-brand">
                     <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i> {{ ftl('common-open-in-new-tab') }}
                 </a>
-                <button type="button" class="btn btn-secondary" data-close-modal>{{ ftl('common-close') }}</button>
+                <button type="button" class="btn btn-neutral" data-close-modal>{{ ftl('common-close') }}</button>
             </div>
         </div>
     </div>
@@ -3730,7 +3730,7 @@
                 <button type="button" class="btn-close" data-close-modal aria-label="{{ ftl('common-close') }}"></button>
             </div>
             <div class="modal-body text-center">
-                <div class="spinner-border text-primary mb-3" role="status">
+                <div class="spinner-border text-brand mb-3" role="status">
                     <span class="visually-hidden">{{ ftl('common-testing-2') }}</span>
                 </div>
                 <p>{{ ftl('pages-running-accessibility-tests-on-this-page') }}</p>
@@ -3790,27 +3790,27 @@ function updateStatusBadge(status) {
     
     switch(status) {
         case 'discovered':
-            badgeHtml = `<span class="badge bg-secondary">${i18n.discovered}</span>`;
+            badgeHtml = `<span class="badge badge-neutral">${i18n.discovered}</span>`;
             progressAlert.classList.add('d-none');
             break;
         case 'queued':
-            badgeHtml = `<span class="badge bg-warning"><span class="spinner-border spinner-border-sm me-1" role="status"></span>${i18n.queued}</span>`;
+            badgeHtml = `<span class="badge badge-medium"><span class="spinner-border spinner-border-sm me-1" role="status"></span>${i18n.queued}</span>`;
             progressAlert.classList.remove('d-none');
             break;
         case 'testing':
-            badgeHtml = `<span class="badge bg-info"><span class="spinner-border spinner-border-sm me-1" role="status"></span>${i18n.testing}</span>`;
+            badgeHtml = `<span class="badge badge-info"><span class="spinner-border spinner-border-sm me-1" role="status"></span>${i18n.testing}</span>`;
             progressAlert.classList.remove('d-none');
             break;
         case 'tested':
-            badgeHtml = `<span class="badge bg-success">${i18n.tested}</span>`;
+            badgeHtml = `<span class="badge badge-pass">${i18n.tested}</span>`;
             progressAlert.classList.add('d-none');
             break;
         case 'error':
-            badgeHtml = `<span class="badge bg-danger">${i18n.error}</span>`;
+            badgeHtml = `<span class="badge badge-high">${i18n.error}</span>`;
             progressAlert.classList.add('d-none');
             break;
         default:
-            badgeHtml = `<span class="badge bg-secondary">${status.charAt(0).toUpperCase() + status.slice(1)}</span>`;
+            badgeHtml = `<span class="badge badge-neutral">${status.charAt(0).toUpperCase() + status.slice(1)}</span>`;
             progressAlert.classList.add('d-none');
     }
     
@@ -3871,7 +3871,7 @@ function updateActionButtons(mode) {
     if (mode === 'cancel') {
         // Replace with cancel button
         actionsDiv.innerHTML = `
-            <button class="btn btn-danger" onclick="cancelPageTest('{{ page.id }}')" id="cancel-test-btn">
+            <button class="btn btn-high" onclick="cancelPageTest('{{ page.id }}')" id="cancel-test-btn">
                 <i class="bi bi-x-circle" aria-hidden="true"></i> ${i18n.cancelTest}
             </button>
             ${editBtn ? editBtn.outerHTML : ''}
@@ -3879,7 +3879,7 @@ function updateActionButtons(mode) {
     } else if (mode === 'run') {
         // Replace with run test button
         actionsDiv.innerHTML = `
-            <button class="btn btn-primary" onclick="testPage('{{ page.id }}')" id="run-test-btn">
+            <button class="btn btn-brand" onclick="testPage('{{ page.id }}')" id="run-test-btn">
                 <i class="bi bi-play" aria-hidden="true"></i> ${i18n.runTest}
             </button>
             ${editBtn ? editBtn.outerHTML : ''}
@@ -4064,24 +4064,24 @@ function copyXpathToClipboard(xpath, button) {
     navigator.clipboard.writeText(xpath).then(function() {
         // Show temporary success feedback
         const originalHTML = button.innerHTML;
-        button.innerHTML = '<i class="bi bi-check text-success" aria-hidden="true"></i>';
-        button.classList.add('text-success');
+        button.innerHTML = '<i class="bi bi-check text-severity-pass" aria-hidden="true"></i>';
+        button.classList.add('text-severity-pass');
 
         // Reset after 2 seconds
         setTimeout(function() {
             button.innerHTML = originalHTML;
-            button.classList.remove('text-success');
+            button.classList.remove('text-severity-pass');
         }, 2000);
     }).catch(function(err) {
         console.error('Failed to copy xpath: ', err);
         // Show error feedback
         const originalHTML = button.innerHTML;
-        button.innerHTML = '<i class="bi bi-x text-danger" aria-hidden="true"></i>';
-        button.classList.add('text-danger');
+        button.innerHTML = '<i class="bi bi-x text-severity-high" aria-hidden="true"></i>';
+        button.classList.add('text-severity-high');
 
         setTimeout(function() {
             button.innerHTML = originalHTML;
-            button.classList.remove('text-danger');
+            button.classList.remove('text-severity-high');
         }, 2000);
     });
 }

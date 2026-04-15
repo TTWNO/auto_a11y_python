@@ -160,7 +160,7 @@
     <a class="skip-link" href="#main-content" style="position:absolute;top:-40px;left:0;background:var(--color-brand);color:var(--color-text-inverse);padding:8px;text-decoration:none;z-index:1100;">{{ ftl('common-skip-to-main-content') }}</a>
     <div class="container-fluid py-4" id="main-content">
         <!-- Header with Language Switcher -->
-        <header class="bg-white rounded shadow-sm p-4 mb-4">
+        <header class="bg-elevated rounded shadow-sm p-4 mb-4">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <h1 class="mb-2">
@@ -180,7 +180,7 @@
         </header>
 
         <!-- Executive Summary Section -->
-        <section class="bg-white rounded shadow-sm p-4 mb-4">
+        <section class="bg-elevated rounded shadow-sm p-4 mb-4">
             <h2 class="mb-4">
                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.executive_summary }}</span>
                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.executive_summary }}</span>
@@ -255,7 +255,7 @@
                 <div data-lang="en" lang="en" class="lang-active col-12">
                     {% if ai_summary_en.key_strengths %}
                     <div class="mb-4">
-                        <h4 class="text-success">{{ translations_en.key_strengths }}</h4>
+                        <h4 class="text-severity-pass">{{ translations_en.key_strengths }}</h4>
                         <ul>
                         {% for strength in ai_summary_en.key_strengths %}
                             <li>{{ strength }}</li>
@@ -266,7 +266,7 @@
 
                     {% if ai_summary_en.critical_risks %}
                     <div class="mb-4">
-                        <h4 class="text-danger">{{ translations_en.critical_risks }}</h4>
+                        <h4 class="text-severity-high">{{ translations_en.critical_risks }}</h4>
                         <ul>
                         {% for risk in ai_summary_en.critical_risks %}
                             <li>{{ risk }}</li>
@@ -276,7 +276,7 @@
                     {% endif %}
 
                     {% if ai_summary_en.show_stoppers %}
-                    <div class="alert alert-danger">
+                    <div class="alert alert-high">
                         <h4><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> {{ translations_en.show_stoppers }}</h4>
                         <ul>
                         {% for stopper in ai_summary_en.show_stoppers %}
@@ -293,7 +293,7 @@
                 <div data-lang="fr" lang="fr" class="lang-inactive col-12">
                     {% if ai_summary_fr.key_strengths %}
                     <div class="mb-4">
-                        <h4 class="text-success">{{ translations_fr.key_strengths }}</h4>
+                        <h4 class="text-severity-pass">{{ translations_fr.key_strengths }}</h4>
                         <ul>
                         {% for strength in ai_summary_fr.key_strengths %}
                             <li>{{ strength }}</li>
@@ -304,7 +304,7 @@
 
                     {% if ai_summary_fr.critical_risks %}
                     <div class="mb-4">
-                        <h4 class="text-danger">{{ translations_fr.critical_risks }}</h4>
+                        <h4 class="text-severity-high">{{ translations_fr.critical_risks }}</h4>
                         <ul>
                         {% for risk in ai_summary_fr.critical_risks %}
                             <li>{{ risk }}</li>
@@ -314,7 +314,7 @@
                     {% endif %}
 
                     {% if ai_summary_fr.show_stoppers %}
-                    <div class="alert alert-danger">
+                    <div class="alert alert-high">
                         <h4><i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> {{ translations_fr.show_stoppers }}</h4>
                         <ul>
                         {% for stopper in ai_summary_fr.show_stoppers %}
@@ -330,7 +330,7 @@
         </section>
 
         <!-- Key Metrics Section -->
-        <section class="bg-white rounded shadow-sm p-4 mb-4">
+        <section class="bg-elevated rounded shadow-sm p-4 mb-4">
             <h2 class="mb-4">
                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.key_metrics }}</span>
                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.key_metrics }}</span>
@@ -339,7 +339,7 @@
             <div class="row g-3">
                 <div class="col-md-3">
                     <div class="metric-card">
-                        <div class="metric-value text-danger">{{ data.statistics.total_violations + data.statistics.total_warnings }}</div>
+                        <div class="metric-value text-severity-high">{{ data.statistics.total_violations + data.statistics.total_warnings }}</div>
                         <div class="metric-label">
                             <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.violations }}</span>
                             <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.violations }}</span>
@@ -399,7 +399,7 @@
 
         <!-- Action Plan Section -->
         {% if ai_summary_en or ai_summary_fr %}
-        <section class="bg-white rounded shadow-sm p-4 mb-4">
+        <section class="bg-elevated rounded shadow-sm p-4 mb-4">
             <h2 class="mb-4">
                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.action_plan }}</span>
                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.action_plan }}</span>
@@ -410,7 +410,7 @@
             <div data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">
                 {% if ai_summary_en.recommendations.quick_wins %}
                 <div class="mb-4">
-                    <h4 class="text-success"><i class="bi bi-lightning-fill" aria-hidden="true"></i> {{ translations_en.immediate_actions }}</h4>
+                    <h4 class="text-severity-pass"><i class="bi bi-lightning-fill" aria-hidden="true"></i> {{ translations_en.immediate_actions }}</h4>
                     <ul>
                     {% for action in ai_summary_en.recommendations.quick_wins %}
                         <li>{{ action }}</li>
@@ -421,7 +421,7 @@
 
                 {% if ai_summary_en.recommendations.short_term %}
                 <div class="mb-4">
-                    <h4 class="text-primary"><i class="bi bi-calendar-check" aria-hidden="true"></i> {{ translations_en.short_term_goals }}</h4>
+                    <h4 class="text-brand"><i class="bi bi-calendar-check" aria-hidden="true"></i> {{ translations_en.short_term_goals }}</h4>
                     <ul>
                     {% for goal in ai_summary_en.recommendations.short_term %}
                         <li>{{ goal }}</li>
@@ -432,7 +432,7 @@
 
                 {% if ai_summary_en.recommendations.long_term %}
                 <div class="mb-4">
-                    <h4 class="text-info"><i class="bi bi-graph-up-arrow" aria-hidden="true"></i> {{ translations_en.long_term_strategy }}</h4>
+                    <h4 class="text-info-custom"><i class="bi bi-graph-up-arrow" aria-hidden="true"></i> {{ translations_en.long_term_strategy }}</h4>
                     <ul>
                     {% for strategy in ai_summary_en.recommendations.long_term %}
                         <li>{{ strategy }}</li>
@@ -448,7 +448,7 @@
             <div data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">
                 {% if ai_summary_fr.recommendations.quick_wins %}
                 <div class="mb-4">
-                    <h4 class="text-success"><i class="bi bi-lightning-fill" aria-hidden="true"></i> {{ translations_fr.immediate_actions }}</h4>
+                    <h4 class="text-severity-pass"><i class="bi bi-lightning-fill" aria-hidden="true"></i> {{ translations_fr.immediate_actions }}</h4>
                     <ul>
                     {% for action in ai_summary_fr.recommendations.quick_wins %}
                         <li>{{ action }}</li>
@@ -459,7 +459,7 @@
 
                 {% if ai_summary_fr.recommendations.short_term %}
                 <div class="mb-4">
-                    <h4 class="text-primary"><i class="bi bi-calendar-check" aria-hidden="true"></i> {{ translations_fr.short_term_goals }}</h4>
+                    <h4 class="text-brand"><i class="bi bi-calendar-check" aria-hidden="true"></i> {{ translations_fr.short_term_goals }}</h4>
                     <ul>
                     {% for goal in ai_summary_fr.recommendations.short_term %}
                         <li>{{ goal }}</li>
@@ -470,7 +470,7 @@
 
                 {% if ai_summary_fr.recommendations.long_term %}
                 <div class="mb-4">
-                    <h4 class="text-info"><i class="bi bi-graph-up-arrow" aria-hidden="true"></i> {{ translations_fr.long_term_strategy }}</h4>
+                    <h4 class="text-info-custom"><i class="bi bi-graph-up-arrow" aria-hidden="true"></i> {{ translations_fr.long_term_strategy }}</h4>
                     <ul>
                     {% for strategy in ai_summary_fr.recommendations.long_term %}
                         <li>{{ strategy }}</li>
@@ -484,7 +484,7 @@
         {% endif %}
 
         <!-- Impact Analysis Section -->
-        <section class="bg-white rounded shadow-sm p-4 mb-4">
+        <section class="bg-elevated rounded shadow-sm p-4 mb-4">
             <h2 class="mb-4">
                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.impact_analysis }}</span>
                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.impact_analysis }}</span>
@@ -565,7 +565,7 @@
         </section>
 
         <!-- WCAG Analysis Section -->
-        <section class="bg-white rounded shadow-sm p-4 mb-4">
+        <section class="bg-elevated rounded shadow-sm p-4 mb-4">
             <h2 class="mb-4">
                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.wcag_analysis }}</span>
                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.wcag_analysis }}</span>
@@ -713,7 +713,7 @@
                                         </span>
                                     </td>
                                     <td><strong>{{ count.count }}</strong></td>
-                                    <td><span class="badge bg-secondary">{{ count.level }}</span></td>
+                                    <td><span class="badge badge-neutral">{{ count.level }}</span></td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -724,7 +724,7 @@
         </section>
 
         <!-- Issue Category Breakdown Section -->
-        <section class="bg-white rounded shadow-sm p-4 mb-4">
+        <section class="bg-elevated rounded shadow-sm p-4 mb-4">
             <h2 class="mb-4">
                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.issue_categories }}</span>
                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.issue_categories }}</span>
@@ -910,7 +910,7 @@
         </section>
 
         <!-- Historical Trends Section -->
-        <section class="bg-white rounded shadow-sm p-4 mb-4">
+        <section class="bg-elevated rounded shadow-sm p-4 mb-4">
             <h2 class="mb-4">
                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.historical_trends }}</span>
                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.historical_trends }}</span>
@@ -954,7 +954,7 @@
         </section>
 
         <!-- Detailed Issues Section -->
-        <section class="bg-white rounded shadow-sm p-4 mb-4">
+        <section class="bg-elevated rounded shadow-sm p-4 mb-4">
             <h2 class="mb-4">
                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.top_issues }}</span>
                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.top_issues }}</span>
@@ -1028,7 +1028,7 @@
         </section>
 
         <!-- Page-by-Page Analysis Section -->
-        <section class="bg-white rounded shadow-sm p-4 mb-4">
+        <section class="bg-elevated rounded shadow-sm p-4 mb-4">
             <h2 class="mb-4">
                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.page_analysis }}</span>
                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.page_analysis }}</span>
@@ -1092,7 +1092,7 @@
         </section>
 
         <!-- Implementation Roadmap Section -->
-        <section class="bg-white rounded shadow-sm p-4 mb-4">
+        <section class="bg-elevated rounded shadow-sm p-4 mb-4">
             <h2 class="mb-4">
                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.implementation_roadmap }}</span>
                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.implementation_roadmap }}</span>
@@ -1128,8 +1128,8 @@
             {% endfor %}
 
             {% if critical_issues|length > 0 %}
-            <div class="card border-danger mb-3">
-                <div class="card-header bg-danger text-white">
+            <div class="card border-high mb-3">
+                <div class="card-header bg-high text-inverse">
                     <h4 class="mb-0">
                         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.critical_priority }}</span>
                         <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.critical_priority }}</span>
@@ -1176,8 +1176,8 @@
             {% endfor %}
 
             {% if high_issues|length > 0 %}
-            <div class="card border-warning mb-3">
-                <div class="card-header bg-warning">
+            <div class="card border-medium mb-3">
+                <div class="card-header bg-medium">
                     <h4 class="mb-0">
                         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.high_priority }}</span>
                         <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.high_priority }}</span>
@@ -1225,7 +1225,7 @@
 
             {% if medium_issues|length > 0 %}
             <div class="card border-info mb-3">
-                <div class="card-header bg-info text-white">
+                <div class="card-header card-header-info">
                     <h4 class="mb-0">
                         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.medium_priority }}</span>
                         <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.medium_priority }}</span>

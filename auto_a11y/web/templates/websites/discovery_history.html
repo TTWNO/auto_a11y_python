@@ -23,7 +23,7 @@
             <p class="text-muted">{{ ftl('websites-all-discovery-runs-for-name', name=website.name) }}</p>
         </div>
         <div>
-            <button class="btn btn-primary" onclick="startDiscovery()">
+            <button class="btn btn-brand" onclick="startDiscovery()">
                 <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> {{ ftl('websites-start-new-discovery') }}
             </button>
         </div>
@@ -54,34 +54,34 @@
                             <td>
                                 {{ run.started_at.strftime('%Y-%m-%d %H:%M') }}
                                 {% if run.is_latest %}
-                                <span class="badge bg-primary ms-2">{{ ftl('websites-latest') }}</span>
+                                <span class="badge badge-brand ms-2">{{ ftl('websites-latest') }}</span>
                                 {% endif %}
                             </td>
                             <td>
                                 {% if run.status.value == 'completed' %}
-                                <span class="badge bg-success">{{ ftl('common-completed') }}</span>
+                                <span class="badge badge-pass">{{ ftl('common-completed') }}</span>
                                 {% elif run.status.value == 'running' %}
-                                <span class="badge bg-warning">{{ ftl('common-running-2') }}</span>
+                                <span class="badge badge-medium">{{ ftl('common-running-2') }}</span>
                                 {% elif run.status.value == 'failed' %}
-                                <span class="badge bg-danger">{{ ftl('common-failed') }}</span>
+                                <span class="badge badge-high">{{ ftl('common-failed') }}</span>
                                 {% elif run.status.value == 'cancelled' %}
-                                <span class="badge bg-secondary">{{ ftl('common-cancelled') }}</span>
+                                <span class="badge badge-neutral">{{ ftl('common-cancelled') }}</span>
                                 {% else %}
-                                <span class="badge bg-secondary">{{ ftl_enum(run.status.value) }}</span>
+                                <span class="badge badge-neutral">{{ ftl_enum(run.status.value) }}</span>
                                 {% endif %}
                             </td>
                             <td>{{ run.pages_discovered }}</td>
                             <td>
                                 {% if run.pages_failed > 0 %}
-                                <span class="text-danger">{{ run.pages_failed }}</span>
+                                <span class="text-severity-high">{{ run.pages_failed }}</span>
                                 {% else %}
                                 0
                                 {% endif %}
                             </td>
                             <td>
                                 {% if run.pages_added > 0 or run.pages_removed > 0 %}
-                                    <span class="text-success">+{{ run.pages_added }}</span> /
-                                    <span class="text-danger">-{{ run.pages_removed }}</span>
+                                    <span class="text-severity-pass">+{{ run.pages_added }}</span> /
+                                    <span class="text-severity-high">-{{ run.pages_removed }}</span>
                                 {% else %}
                                     <span class="text-muted">-</span>
                                 {% endif %}
@@ -90,7 +90,7 @@
                             <td>{{ run.triggered_by or ftl('common-manual') }}</td>
                             <td>
                                 <a href="{{ url_for('websites.view_discovery_run', website_id=website.id, discovery_run_id=run.id) }}" 
-                                   class="btn btn-sm btn-outline-primary">
+                                   class="btn btn-sm btn-outline-brand">
                                     <i class="bi bi-eye" aria-hidden="true"></i> {{ ftl('common-view') }}
                                 </a>
                                 {% if not run.is_latest and run.status.value == 'completed' %}
@@ -130,7 +130,7 @@
                 <div class="card">
                     <div class="card-body text-center">
                         <h3 class="card-title">{{ ftl('websites-successful') }}</h3>
-                        <p class="h2 text-success">{{ discovery_runs|selectattr('status.value', 'equalto', 'completed')|list|length }}</p>
+                        <p class="h2 text-severity-pass">{{ discovery_runs|selectattr('status.value', 'equalto', 'completed')|list|length }}</p>
                     </div>
                 </div>
             </div>
@@ -138,7 +138,7 @@
                 <div class="card">
                     <div class="card-body text-center">
                         <h3 class="card-title">{{ ftl('common-failed') }}</h3>
-                        <p class="h2 text-danger">{{ discovery_runs|selectattr('status.value', 'equalto', 'failed')|list|length }}</p>
+                        <p class="h2 text-severity-high">{{ discovery_runs|selectattr('status.value', 'equalto', 'failed')|list|length }}</p>
                     </div>
                 </div>
             </div>

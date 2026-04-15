@@ -53,7 +53,7 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="username" class="form-label">{{ ftl('common-username') }} <span class="text-danger">*</span></label>
+                                <label for="username" class="form-label">{{ ftl('common-username') }} <span class="text-severity-high">*</span></label>
                                 <input type="text" class="form-control" id="username" name="username" required
                                        placeholder="{{ ftl('common-e-g-student123') }}" autocomplete="username"
                                        aria-describedby="username-help">
@@ -61,7 +61,7 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="password" class="form-label">{{ ftl('common-password') }} <span class="text-danger">*</span></label>
+                                <label for="password" class="form-label">{{ ftl('common-password') }} <span class="text-severity-high">*</span></label>
                                 <input type="password" class="form-control" id="password" name="password" required autocomplete="new-password"
                                        aria-describedby="password-help">
                                 <div class="form-text" id="password-help">{{ ftl('common-password-for-login-stored-securely') }}</div>
@@ -214,7 +214,7 @@
             <!-- Help Sidebar -->
             <div class="col-md-4">
                 <div class="card sticky-top" style="top: 20px;">
-                    <div class="card-header bg-info text-white">
+                    <div class="card-header card-header-info">
                         <h2 class="mb-0"><i class="bi bi-question-circle" aria-hidden="true"></i> {{ ftl('common-help') }}</h2>
                     </div>
                     <div class="card-body">
@@ -246,7 +246,7 @@
                             <li>{{ ftl('common-by-id') }} <code>#login-form</code></li>
                             <li>{{ ftl('common-by-name') }} <code>input[name="username"]</code></li>
                             <li>{{ ftl('common-by-type') }} <code>input[type="password"]</code></li>
-                            <li>{{ ftl('common-by-class') }} <code>.btn-primary</code></li>
+                            <li>{{ ftl('common-by-class') }} <code>.btn-brand</code></li>
                         </ul>
                     </div>
                 </div>
@@ -256,10 +256,10 @@
         <div class="row">
             <div class="col-md-8">
                 <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" class="btn btn-brand">
                         <i class="bi bi-check-circle" aria-hidden="true"></i> {{ ftl('common-create-test-user') }}
                     </button>
-                    <a href="{{ url_for('project_users.list_users', project_id=project.id) }}" class="btn btn-secondary">
+                    <a href="{{ url_for('project_users.list_users', project_id=project.id) }}" class="btn btn-neutral">
                         <i class="bi bi-x-circle" aria-hidden="true"></i> {{ ftl('common-cancel') }}
                     </a>
                 </div>

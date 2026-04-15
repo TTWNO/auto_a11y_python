@@ -11,7 +11,7 @@
         <div class="col-md-8 col-lg-6">
             <div class="card text-center">
                 <div class="card-body py-5">
-                    <i class="bi bi-person-check display-1 text-primary mb-3" aria-hidden="true"></i>
+                    <i class="bi bi-person-check display-1 text-brand mb-3" aria-hidden="true"></i>
                     <h2 class="card-title">{{ ftl('common-welcome-to-auto-a11y') }}</h2>
                     <p class="card-text text-muted">
                         {{ ftl('common-your-account-has-been-created-an-administrator') }}
@@ -32,7 +32,7 @@
     <div class="row mb-4 g-3">
         <!-- First Row - General Stats -->
         <div class="col-6 col-sm-6 col-lg-3">
-            <div class="card stat-card bg-primary text-white h-100">
+            <div class="card stat-card bg-brand text-inverse h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -45,7 +45,7 @@
             </div>
         </div>
         <div class="col-6 col-sm-6 col-lg-3">
-            <div class="card stat-card bg-primary text-white h-100">
+            <div class="card stat-card bg-brand text-inverse h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -58,7 +58,7 @@
             </div>
         </div>
         <div class="col-6 col-sm-6 col-lg-3">
-            <div class="card stat-card bg-success text-white h-100">
+            <div class="card stat-card bg-pass text-inverse h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -71,7 +71,7 @@
             </div>
         </div>
         <div class="col-6 col-sm-6 col-lg-3">
-            <div class="card stat-card bg-secondary text-white h-100">
+            <div class="card stat-card bg-neutral text-inverse h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -88,7 +88,7 @@
     <!-- Second Row - Issue Breakdown -->
     <div class="row mb-4 g-3">
         <div class="col-6 col-sm-6 col-lg-3">
-            <div class="card stat-card bg-danger text-white h-100">
+            <div class="card stat-card bg-high text-inverse h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -101,7 +101,7 @@
             </div>
         </div>
         <div class="col-6 col-sm-6 col-lg-3">
-            <div class="card stat-card bg-warning text-dark h-100">
+            <div class="card stat-card bg-medium h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -114,7 +114,7 @@
             </div>
         </div>
         <div class="col-6 col-sm-6 col-lg-3">
-            <div class="card stat-card bg-info text-white h-100">
+            <div class="card stat-card bg-info text-inverse h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -127,7 +127,7 @@
             </div>
         </div>
         <div class="col-6 col-sm-6 col-lg-3">
-            <div class="card stat-card bg-discovery text-white h-100">
+            <div class="card stat-card bg-discovery text-inverse h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -152,10 +152,10 @@
                 </div>
                 <div class="card-body">
                     <div class="d-flex flex-wrap gap-2">
-                        <a href="{{ url_for('projects.create_project') }}" class="btn btn-primary">
+                        <a href="{{ url_for('projects.create_project') }}" class="btn btn-brand">
                             <i class="bi bi-plus-circle" aria-hidden="true"></i> {{ ftl('common-new-project') }}
                         </a>
-                        <a href="{{ url_for('testing.testing_dashboard') }}" class="btn btn-success">
+                        <a href="{{ url_for('testing.testing_dashboard') }}" class="btn btn-pass">
                             <i class="bi bi-play-circle" aria-hidden="true"></i> {{ ftl('common-run-tests') }}
                         </a>
                         <a href="{{ url_for('reports.reports_dashboard') }}" class="btn btn-info">
@@ -179,7 +179,7 @@
                 <div class="card-body">
                     {% set coverage = (stats.tested_pages / stats.total_pages * 100) if stats.total_pages > 0 else 0 %}
                     <div class="progress" style="height: 30px;" role="progressbar" aria-valuenow="{{ "%.1f"|format(coverage) }}" aria-valuemin="0" aria-valuemax="100" aria-label="{{ ftl('common-test-coverage-2') }}">
-                        <div class="progress-bar bg-success" style="width: {{ coverage }}%">
+                        <div class="progress-bar bg-pass" style="width: {{ coverage }}%">
                             {{ "%.1f"|format(coverage) }}% {{ ftl('common-tested') }}
                         </div>
                     </div>
@@ -199,11 +199,11 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-2">
                         <span>{{ ftl('common-database') }}</span>
-                        <span class="badge bg-success">{{ ftl('common-connected') }}</span>
+                        <span class="badge badge-pass">{{ ftl('common-connected') }}</span>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <span>{{ ftl('common-browser-engine') }}</span>
-                        <span class="badge bg-success">{{ ftl('common-ready') }}</span>
+                        <span class="badge badge-pass">{{ ftl('common-ready') }}</span>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <span>{{ ftl('common-ai-analysis') }}</span>

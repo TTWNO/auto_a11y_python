@@ -255,11 +255,11 @@
         background-color: #0e7490 !important;
         color: #ffffff !important;
     }
-    .bg-warning {
+    .bg-medium {
         background-color: #ffc107 !important;
         color: #212529 !important; /* Dark text on yellow background */
     }
-    .badge.bg-warning {
+    .badge.bg-medium {
         background-color: #ffc107 !important;
         color: #212529 !important;
     }
@@ -371,8 +371,8 @@
         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['how_to_remediate'] }}</span>
         <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['how_to_remediate'] }}</span>
     </strong>
-    <div data-lang="en" lang="en" class="bg-light p-3 rounded {{ 'lang-active' if language == 'en' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ issue.full_remediation_en }}</div>
-    <div data-lang="fr" lang="fr" class="bg-light p-3 rounded {{ 'lang-active' if language == 'fr' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ issue.full_remediation_fr }}</div>
+    <div data-lang="en" lang="en" class="bg-subtle p-3 rounded {{ 'lang-active' if language == 'en' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ issue.full_remediation_en }}</div>
+    <div data-lang="fr" lang="fr" class="bg-subtle p-3 rounded {{ 'lang-active' if language == 'fr' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ issue.full_remediation_fr }}</div>
 </div>
 {% endif %}
 
@@ -484,7 +484,7 @@
         <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('tested_by', 'Testé par') }}</span>
     </strong>
     {% for user in issue.test_users %}
-    <span class="badge bg-secondary ms-1">
+    <span class="badge badge-neutral ms-1">
         <i class="bi bi-person-fill" aria-hidden="true"></i> {{ user }}
         {% if issue.user_roles %}
         ({% for role in issue.user_roles %}<span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get(role|lower, role) }}</span><span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get(role|lower, role) }}</span>{% if not loop.last %}, {% endif %}{% endfor %})
@@ -511,7 +511,7 @@
 {% endif %}
 {% if issue.xpath %}
 <p><strong>{{ ftl('common-xpath') }}</strong></p>
-<div class="bg-light p-2 rounded" style="font-family: monospace; font-size: 0.875rem; overflow-x: auto;">
+<div class="bg-subtle p-2 rounded" style="font-family: monospace; font-size: 0.875rem; overflow-x: auto;">
     {{ issue.xpath }}
 </div>
 {% endif %}
@@ -536,10 +536,10 @@
             {% if show_error_codes %}<code class="me-2">{{ issue.rule_id }}</code>{% endif %}
             <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ issue.description_en }}</span>
             <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ issue.description_fr }}</span>
-            <span class="badge bg-secondary ms-auto me-2">{{ issue.page_count }} <span data-i18n="page_s">{{ t['page_s'] }}</span></span>
+            <span class="badge badge-neutral ms-auto me-2">{{ issue.page_count }} <span data-i18n="page_s">{{ t['page_s'] }}</span></span>
             {% if issue.test_users %}
             {% for user in issue.test_users %}
-            <span class="badge bg-secondary ms-1">
+            <span class="badge badge-neutral ms-1">
                 <i class="bi bi-person-fill" aria-hidden="true"></i> {{ user }}
             </span>
             {% endfor %}
@@ -578,7 +578,7 @@
             <span><i class="bi bi-bug" aria-hidden="true"></i> {{ total_issues }} <span data-i18n="deduplicated_issue_s">{{ t['deduplicated_issue_s'] }}</span></span>
             {% if component_score is defined %}
             <span><i class="bi bi-graph-up" aria-hidden="true"></i> <span data-i18n="accessibility_score">{{ t['accessibility_score'] }}</span>:
-                <strong class="{% if component_score >= 90 %}text-success{% elif component_score >= 70 %}text-warning{% else %}text-danger{% endif %}">
+                <strong class="{% if component_score >= 90 %}text-severity-pass{% elif component_score >= 70 %}text-severity-medium{% else %}text-severity-high{% endif %}">
                     {{ "%.1f"|format(component_score) }}%
                 </strong>
             </span>
@@ -636,7 +636,7 @@
                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('filter_test_results', 'Filter Test Results') }}</span>
                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('filter_test_results', 'Filtrer les résultats de test') }}</span>
             </h2>
-            <button class="btn btn-sm btn-outline-secondary" id="clearFilters">
+            <button class="btn btn-sm btn-outline-neutral" id="clearFilters">
                 <i class="bi bi-x-circle" aria-hidden="true"></i>
                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('clear_all_filters', 'Clear All Filters') }}</span>
                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('clear_all_filters', 'Effacer tous les filtres') }}</span>
@@ -718,21 +718,21 @@
                     </label>
                     <div class="filter-chips">
                         <button type="button" class="filter-chip" data-filter-type="impact" data-filter-value="high">
-                            <span class="badge bg-danger me-1">
+                            <span class="badge badge-high me-1">
                                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['high'] }}</span>
                                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['high'] }}</span>
                             </span>
                             <span id="highImpactCount">0</span>
                         </button>
                         <button type="button" class="filter-chip" data-filter-type="impact" data-filter-value="medium">
-                            <span class="badge bg-warning text-dark me-1">
+                            <span class="badge badge-medium me-1">
                                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['medium'] }}</span>
                                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['medium'] }}</span>
                             </span>
                             <span id="mediumImpactCount">0</span>
                         </button>
                         <button type="button" class="filter-chip" data-filter-type="impact" data-filter-value="low">
-                            <span class="badge bg-info me-1">
+                            <span class="badge badge-info me-1">
                                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['low'] }}</span>
                                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['low'] }}</span>
                             </span>
@@ -799,7 +799,7 @@
                         <i class="bi bi-x-circle-fill me-2" aria-hidden="true"></i>
                         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['errors'] }}</span>
                         <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['errors'] }}</span>
-                        <span class="badge bg-light text-danger ms-2">{{ violations|length }}</span>
+                        <span class="badge badge-subtle text-severity-high ms-2">{{ violations|length }}</span>
                     </h3>
                     <small class="opacity-75">
                         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Issues that must be fixed for WCAG compliance</span>
@@ -834,7 +834,7 @@
                         <i class="bi bi-exclamation-triangle-fill me-2" aria-hidden="true"></i>
                         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['warnings'] }}</span>
                         <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['warnings'] }}</span>
-                        <span class="badge bg-dark ms-2">{{ warnings|length }}</span>
+                        <span class="badge bg-header ms-2">{{ warnings|length }}</span>
                     </h3>
                     <small>
                         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Potential issues that should be reviewed</span>
@@ -869,7 +869,7 @@
                         <i class="bi bi-info-circle-fill me-2" aria-hidden="true"></i>
                         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['info'] }}</span>
                         <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['info'] }}</span>
-                        <span class="badge bg-dark ms-2">{{ info_items|length }}</span>
+                        <span class="badge bg-header ms-2">{{ info_items|length }}</span>
                     </h3>
                     <small>
                         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Informational items for awareness</span>
@@ -904,7 +904,7 @@
                         <i class="bi bi-lightbulb-fill me-2" aria-hidden="true"></i>
                         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('discovery', 'Discovery') }}</span>
                         <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('discovery', 'Découverte') }}</span>
-                        <span class="badge bg-light text-dark ms-2">{{ discovery_items|length }}</span>
+                        <span class="badge badge-subtle ms-2">{{ discovery_items|length }}</span>
                     </h3>
                     <small class="opacity-75">
                         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Items discovered during testing that may need review</span>

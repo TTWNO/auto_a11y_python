@@ -437,6 +437,7 @@ common-once-per-session = Une fois par session
 common-once-you-have-been-added-to-a-project-you-will-be = Une fois ajouté à un projet, vous pourrez consulter les rapports et les résultats ici.
 common-only-enter-a-password-if-you-want-to-change-it = Entrez un mot de passe uniquement si vous souhaitez le modifier
 common-open-in-new-tab = Ouvrir dans un nouvel onglet
+common-opens-in-new-tab = s'ouvre dans un nouvel onglet
 common-optimization-opportunities = Opportunités d'optimisation
 common-option-name-r-does-not-take-a-value = L'option { $name } n'accepte pas de valeur.
 common-option-name-r-requires-an-argument = Option { $name } requires an argument.

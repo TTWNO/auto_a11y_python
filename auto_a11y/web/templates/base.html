@@ -271,6 +271,7 @@
 
     <!-- Global Test Tracking System -->
     <script>
+    window.i18nNewWindow = {{ ftl('common-opens-in-new-tab') | tojson }};
     // Global activity tracking system (tests and discoveries)
     const TestTracker = {
         STORAGE_KEY: 'active_activities',  // Renamed from 'active_tests' for clarity
@@ -583,6 +584,16 @@
         // Clean up on page load - remove anything older than 10 minutes for discovery
         TestTracker.getActiveTests();  // This triggers cleanup
         TestTracker.init();
+
+        // Add new-window warning to all external links for screen readers
+        document.querySelectorAll('a[target="_blank"]').forEach(function(link) {
+            if (!link.querySelector('.visually-hidden')) {
+                var span = document.createElement('span');
+                span.className = 'visually-hidden';
+                span.textContent = ' (' + window.i18nNewWindow + ')';
+                link.appendChild(span);
+            }
+        });
     });
 
     // Add manual clear function to window for debugging

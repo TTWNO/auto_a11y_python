@@ -437,6 +437,7 @@ common-once-per-session = Once Per Session
 common-once-you-have-been-added-to-a-project-you-will-be = Once you have been added to a project, you will be able to view reports and results here.
 common-only-enter-a-password-if-you-want-to-change-it = Only enter a password if you want to change it
 common-open-in-new-tab = Open in New Tab
+common-opens-in-new-tab = opens in new tab
 common-optimization-opportunities = Optimization opportunities
 common-option-name-r-does-not-take-a-value = Option { $name } does not take a value.
 common-option-name-r-requires-an-argument = Option { $name } requires an argument.

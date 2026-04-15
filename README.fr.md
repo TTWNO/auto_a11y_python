@@ -582,6 +582,16 @@ resources/
 
 Contenu : `settings.json`, `mongodb/data/` (fichiers de la base de données), `logs/`, `reports/`, `screenshots/`.
 
+## Système de couleurs
+
+Cette application utilise un **système de jetons de design personnalisés** pour toutes les couleurs. Les classes utilitaires de couleur Bootstrap (par ex. `btn-primary`, `bg-danger`, `text-warning`) **ne sont pas utilisées** — à la place, des classes personnalisées sont directement liées aux jetons de design définis dans `auto_a11y/web/static/public/css/tokens.css`.
+
+Cela donne un contrôle total sur toutes les couleurs en mode clair, mode sombre et impression, avec une conformité WCAG 2.2 AA intégrée. Consultez la section `Colour System` dans `CLAUDE.md` pour la référence complète des classes.
+
+**Fichiers clés :**
+- `auto_a11y/web/static/public/css/tokens.css` — jetons de design (toutes les valeurs de couleur)
+- `auto_a11y/web/static/css/style.css` — classes utilitaires personnalisées
+
 ## Contribuer
 
 Les contributions sont les bienvenues ! Veuillez :

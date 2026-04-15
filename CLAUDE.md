@@ -380,6 +380,49 @@ search-input = Search pages
 
 The project maintains a French README (`README.fr.md`) alongside the English `README.md`. **Any change to `README.md` MUST be reflected in `README.fr.md`** — they must stay in sync. When editing the README, update both files in the same change.
 
+## Colour System (MANDATORY)
+
+**Bootstrap colour classes are PROHIBITED.** Do not use `btn-primary`, `bg-danger`, `text-warning`, `alert-success`, `badge bg-info`, `border-secondary`, or any other Bootstrap colour utility class. The application uses a custom colour system built on design tokens for full control over all colours in both light and dark mode.
+
+### Architecture
+
+```
+tokens.css (design tokens)  →  style.css (utility classes)  →  templates/JS/Python (usage)
+   Defines colours               Maps tokens to classes           Uses custom classes
+   Light + dark mode              No Bootstrap overrides           Never Bootstrap colours
+```
+
+### Token File
+
+- **Design tokens:** `auto_a11y/web/static/public/css/tokens.css` — all colour values live here
+- Defines light mode, dark mode (OS preference + manual toggle), and print overrides
+- All text colours meet WCAG 2.2 AA (4.5:1+), all non-text UI meets 3:1+ (SC 1.4.11)
+
+### Custom Class Reference
+
+| Purpose | Custom Class | Replaces (DO NOT USE) |
+|---------|-------------|----------------------|
+| **Buttons** | `btn-brand`, `btn-neutral`, `btn-pass`, `btn-high`, `btn-medium`, `btn-info`, `btn-dark` | ~~btn-primary, btn-secondary, btn-success, btn-danger, btn-warning~~ |
+| **Outline Buttons** | `btn-outline-brand`, `btn-outline-neutral`, `btn-outline-pass`, `btn-outline-high`, `btn-outline-medium` | ~~btn-outline-primary, btn-outline-secondary~~ |
+| **Alerts** | `alert-info`, `alert-pass`, `alert-high`, `alert-medium`, `alert-neutral` | ~~alert-success, alert-danger, alert-warning, alert-secondary~~ |
+| **Badges** | `badge-brand`, `badge-neutral`, `badge-pass`, `badge-high`, `badge-medium`, `badge-info`, `badge-subtle`, `badge-discovery` | ~~badge bg-primary, badge bg-danger~~ |
+| **Text** | `text-brand`, `text-severity-high`, `text-severity-medium`, `text-severity-pass`, `text-info-custom`, `text-muted`, `text-inverse`, `text-discovery` | ~~text-primary, text-danger, text-warning, text-success, text-white~~ |
+| **Backgrounds** | `bg-brand`, `bg-neutral`, `bg-pass`, `bg-high`, `bg-medium`, `bg-info`, `bg-subtle`, `bg-header`, `bg-elevated` | ~~bg-primary, bg-danger, bg-dark, bg-light~~ |
+| **Borders** | `border-brand`, `border-neutral`, `border-pass`, `border-high`, `border-medium`, `border-info` | ~~border-primary, border-danger, border-warning~~ |
+| **Tables** | `table-subtle`, `table-info`, `table-medium`, `table-high`, `table-pass`, `table-neutral` | ~~table-light, table-warning, table-danger~~ |
+| **Progress Bars** | `progress-pass`, `progress-medium`, `progress-high`, `progress-neutral` | ~~bg-success on .progress-bar~~ |
+| **Card Headers** | `card-header-medium`, `card-header-info`, `card-header-pass`, `card-header-neutral` | ~~card-header bg-warning text-dark~~ |
+| **Toasts** | `toast-pass`, `toast-high`, `toast-medium`, `toast-info` | ~~text-bg-success, text-bg-danger~~ |
+
+### Rules
+
+1. **NEVER use Bootstrap colour classes** — they bypass the design token system and break in dark mode
+2. **To change a colour**, edit the token in `tokens.css` — all classes update automatically
+3. **New severity/status colours** should be added as tokens first, then as utility classes in `style.css`
+4. **Bootstrap structural classes are fine** — `btn`, `badge`, `alert`, `card`, `table`, `form-control`, layout utilities (`d-flex`, `row`, `col-*`, `mb-3`), etc. Only the **colour** variants are prohibited
+5. **In Jinja2 dynamic patterns**, use dictionary lookups that map to custom class names (e.g., `badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'info'}[impact] }}`)
+6. **In standalone JS files**, use the custom class names in `classList.add()`, `querySelector()`, and template literals
+
 ## Common Gotchas
 
 1. **Port Conflict:** macOS AirPlay Receiver uses 5000 → We use 5001
@@ -389,6 +432,7 @@ The project maintains a French README (`README.fr.md`) alongside the English `RE
 5. **Browser Download:** First run requires: `python -m playwright install chromium`
 6. **AI Analysis:** Costs money per request → Test with `RUN_AI_ANALYSIS=False` first
 7. **Async Operations:** Most browser/AI operations use async/await
+8. **Bootstrap Colours:** NEVER use Bootstrap colour classes — see Colour System section above
 
 ## File Organization
 

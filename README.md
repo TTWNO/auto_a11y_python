@@ -582,6 +582,16 @@ At runtime, the app stores its data in the platform's user data directory:
 
 Contents: `settings.json`, `mongodb/data/` (database files), `logs/`, `reports/`, `screenshots/`.
 
+## Colour System
+
+This application uses a **custom design token system** for all colours. Bootstrap colour utility classes (e.g., `btn-primary`, `bg-danger`, `text-warning`) are **not used** — instead, custom classes map directly to design tokens defined in `auto_a11y/web/static/public/css/tokens.css`.
+
+This gives full control over all colours in light mode, dark mode, and print, with WCAG 2.2 AA contrast compliance built in. See the `Colour System` section in `CLAUDE.md` for the complete class reference.
+
+**Key files:**
+- `auto_a11y/web/static/public/css/tokens.css` — design tokens (all colour values)
+- `auto_a11y/web/static/css/style.css` — custom utility classes
+
 ## Contributing
 
 Contributions are welcome! Please:

@@ -499,6 +499,7 @@ common-reports = Reports
 common-reports-dashboard = Reports Dashboard
 common-reports-exports = Reports & Exports
 common-required = required
+common-required-field = Required field
 common-responsive-design = Responsive Design
 common-review-for-improvements = Review for improvements
 common-right-click-in-the-html-panel = Right-click in the HTML panel
@@ -789,7 +790,10 @@ enum-hover = Hover
 enum-screenshot = Screenshot
 
 # Touchpoint enums
+enum-animation = Animation
 enum-colors = Colors
 enum-event-handling = Event Handling
 enum-lists = Lists
+enum-styles = Styles
 enum-tabindex = Tabindex
+enum-timers = Timers

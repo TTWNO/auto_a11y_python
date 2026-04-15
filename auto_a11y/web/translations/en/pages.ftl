@@ -163,6 +163,7 @@ pages-starting-test = Starting Test...
 pages-state = State
 pages-sync-error = Sync Error
 pages-test-as-guest-no-login = Test as guest (no login)
+pages-test-as-user = Test as user
 pages-test-cancelled-successfully = Test cancelled successfully
 pages-test-check-details = Test Check Details
 pages-test-combinations = Test Combinations

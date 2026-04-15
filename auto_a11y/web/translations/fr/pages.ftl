@@ -163,6 +163,7 @@ pages-starting-test = Démarrage...
 pages-state = État
 pages-sync-error = Erreur de synchronisation
 pages-test-as-guest-no-login = Tester en tant qu'invité (sans connexion)
+pages-test-as-user = Tester en tant qu'utilisateur
 pages-test-cancelled-successfully = Test annulé avec succès
 pages-test-check-details = Détails du test
 pages-test-combinations = Combinaisons de test

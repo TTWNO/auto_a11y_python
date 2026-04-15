@@ -54,6 +54,13 @@ main {
     color: var(--color-border) !important;
 }
 
+.navbar-dark .nav-link:focus-visible,
+.navbar-dark .navbar-brand:focus-visible,
+.navbar-dark .dropdown-toggle:focus-visible {
+    outline: 2px solid var(--color-text-inverse);
+    outline-offset: 2px;
+}
+
 /* Card hover effects */
 .card {
     transition: transform 0.2s, box-shadow 0.2s;
@@ -129,7 +136,15 @@ textarea:focus {
 /* Remove outline on mouse click for :focus-visible browsers */
 a:focus:not(:focus-visible),
 button:focus:not(:focus-visible) {
-    outline: none;
+    outline-color: transparent;
+}
+
+.form-control:focus-visible,
+.form-select:focus-visible,
+.form-check-input:focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 2px;
+    box-shadow: none;
 }
 
 /* Skip to main content link */

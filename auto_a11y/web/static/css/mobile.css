@@ -38,11 +38,11 @@ input[type="radio"],
 
 /* Prevent content overflow in cards */
 .card {
-    overflow: hidden;
+    overflow: clip;
 }
 
 .card-body {
-    overflow: hidden;
+    overflow: clip;
 }
 
 .card-title {

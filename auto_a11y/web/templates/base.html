@@ -58,31 +58,31 @@
                     </li>
                     <!-- Testing dropdown -->
                     <li class="nav-item dropdown">
-                        <button type="button" class="nav-link dropdown-toggle" id="testingDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button type="button" class="nav-link dropdown-toggle" id="testingDropdown" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">
                             <i class="bi bi-check2-square" aria-hidden="true"></i> {{ ftl('common-testing') }}
                         </button>
-                        <ul class="dropdown-menu" aria-labelledby="testingDropdown">
-                            <li><a class="dropdown-item" href="{{ url_for('testing.testing_dashboard') }}">
+                        <ul class="dropdown-menu" aria-labelledby="testingDropdown" role="menu">
+                            <li role="none"><a class="dropdown-item" role="menuitem" href="{{ url_for('testing.testing_dashboard') }}" {% if request.endpoint and request.endpoint.startswith('testing.') %}aria-current="page"{% endif %}>
                                 <i class="bi bi-speedometer2" aria-hidden="true"></i> {{ ftl('common-testing-dashboard') }}
                             </a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('testing.trends_page') }}">
+                            <li role="none"><a class="dropdown-item" role="menuitem" href="{{ url_for('testing.trends_page') }}" {% if request.endpoint and request.endpoint.startswith('testing.') %}aria-current="page"{% endif %}>
                                 <i class="bi bi-graph-up-arrow" aria-hidden="true"></i> {{ ftl('common-trend-analysis') }}
                             </a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('schedules.schedules_dashboard') }}">
+                            <li role="none"><a class="dropdown-item" role="menuitem" href="{{ url_for('schedules.schedules_dashboard') }}" {% if request.endpoint and request.endpoint.startswith('schedules.') %}aria-current="page"{% endif %}>
                                 <i class="bi bi-calendar-check" aria-hidden="true"></i> {{ ftl('common-schedules') }}
                             </a></li>
                         </ul>
                     </li>
                     <!-- Reports dropdown -->
                     <li class="nav-item dropdown">
-                        <button type="button" class="nav-link dropdown-toggle" id="reportsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button type="button" class="nav-link dropdown-toggle" id="reportsDropdown" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">
                             <i class="bi bi-file-earmark-text" aria-hidden="true"></i> {{ ftl('common-reports') }}
                         </button>
-                        <ul class="dropdown-menu" aria-labelledby="reportsDropdown">
-                            <li><a class="dropdown-item" href="{{ url_for('reports.reports_dashboard') }}">
+                        <ul class="dropdown-menu" aria-labelledby="reportsDropdown" role="menu">
+                            <li role="none"><a class="dropdown-item" role="menuitem" href="{{ url_for('reports.reports_dashboard') }}" {% if request.endpoint and request.endpoint.startswith('reports.') %}aria-current="page"{% endif %}>
                                 <i class="bi bi-file-earmark-bar-graph" aria-hidden="true"></i> {{ ftl('common-reports-dashboard') }}
                             </a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('recordings.list_recordings') }}">
+                            <li role="none"><a class="dropdown-item" role="menuitem" href="{{ url_for('recordings.list_recordings') }}" {% if request.endpoint and request.endpoint.startswith('recordings.') %}aria-current="page"{% endif %}>
                                 <i class="bi bi-mic" aria-hidden="true"></i> {{ ftl('common-recordings') }}
                             </a></li>
                         </ul>
@@ -96,29 +96,29 @@
                     </li>
                     <!-- Language selector - compact -->
                     <li class="nav-item dropdown">
-                        <button type="button" class="nav-link dropdown-toggle py-2 px-2" id="languageDropdown" data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ ftl('common-language') }}">
+                        <button type="button" class="nav-link dropdown-toggle py-2 px-2" id="languageDropdown" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="{{ ftl('common-language') }}: {{ get_locale().upper() }}">
                             <i class="bi bi-translate" aria-hidden="true"></i> <span class="d-none d-lg-inline" id="current-language">{{ get_locale().upper() }}</span>
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item language-switch" href="#" data-lang="en" lang="en">English</a></li>
-                            <li><a class="dropdown-item language-switch" href="#" data-lang="fr" lang="fr">Fran&ccedil;ais</a></li>
+                        <ul class="dropdown-menu dropdown-menu-end" role="menu">
+                            <li role="none"><a class="dropdown-item language-switch" role="menuitem" href="#" data-lang="en" lang="en">English</a></li>
+                            <li role="none"><a class="dropdown-item language-switch" role="menuitem" href="#" data-lang="fr" lang="fr">Fran&ccedil;ais</a></li>
                         </ul>
                     </li>
                     <!-- Settings dropdown - includes Help -->
                     <li class="nav-item dropdown">
-                        <button type="button" class="nav-link dropdown-toggle py-2 px-2" id="settingsDropdown" data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ ftl('common-settings') }}">
+                        <button type="button" class="nav-link dropdown-toggle py-2 px-2" id="settingsDropdown" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="{{ ftl('common-settings') }}">
                             <i class="bi bi-gear" aria-hidden="true"></i>
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="{{ url_for('help') }}">
+                        <ul class="dropdown-menu dropdown-menu-end" role="menu">
+                            <li role="none"><a class="dropdown-item" role="menuitem" href="{{ url_for('help') }}" {% if request.endpoint and request.endpoint.startswith('help') %}aria-current="page"{% endif %}>
                                 <i class="bi bi-question-circle" aria-hidden="true"></i> {{ ftl('common-help') }}
                             </a></li>
                             {% if current_user.is_authenticated and (is_superadmin or user_has_projects) %}
-                            <li role="none"><hr class="dropdown-divider" role="separator"></li>
-                            <li><a class="dropdown-item" href="{{ url_for('testing.configure_testing') }}">
+                            <li role="separator"><hr class="dropdown-divider"></li>
+                            <li role="none"><a class="dropdown-item" role="menuitem" href="{{ url_for('testing.configure_testing') }}" {% if request.endpoint == 'testing.configure_testing' %}aria-current="page"{% endif %}>
                                 <i class="bi bi-sliders" aria-hidden="true"></i> {{ ftl('common-configuration') }}
                             </a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('testing.fixture_status') }}">
+                            <li role="none"><a class="dropdown-item" role="menuitem" href="{{ url_for('testing.fixture_status') }}" {% if request.endpoint == 'testing.fixture_status' %}aria-current="page"{% endif %}>
                                 <i class="bi bi-check2-square" aria-hidden="true"></i> {{ ftl('common-fixture-status') }}
                             </a></li>
                             {% endif %}
@@ -126,31 +126,31 @@
                     </li>
                     {% if current_user.is_authenticated %}
                     <li class="nav-item dropdown">
-                        <button type="button" class="nav-link dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button type="button" class="nav-link dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">
                             <i class="bi bi-person-circle" aria-hidden="true"></i> {{ current_user.name_display }}
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end">
+                        <ul class="dropdown-menu dropdown-menu-end" role="menu">
                             {% if is_superadmin %}
-                            <li><span class="dropdown-item-text text-muted small">
+                            <li role="none"><span class="dropdown-item-text text-muted small">
                                 {{ ftl('common-superadmin') }}
                             </span></li>
                             {% endif %}
-                            <li role="none"><hr class="dropdown-divider" role="separator"></li>
-                            <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">
+                            <li role="separator"><hr class="dropdown-divider"></li>
+                            <li role="none"><a class="dropdown-item" role="menuitem" href="{{ url_for('auth.profile') }}" {% if request.endpoint == 'auth.profile' %}aria-current="page"{% endif %}>
                                 <i class="bi bi-person" aria-hidden="true"></i> {{ ftl('common-profile') }}
                             </a></li>
                             {% if user_can('users', 'read') %}
-                            <li><a class="dropdown-item" href="{{ url_for('auth.user_list') }}">
+                            <li role="none"><a class="dropdown-item" role="menuitem" href="{{ url_for('auth.user_list') }}" {% if request.endpoint == 'auth.user_list' %}aria-current="page"{% endif %}>
                                 <i class="bi bi-people" aria-hidden="true"></i> {{ ftl('common-user-management') }}
                             </a></li>
                             {% endif %}
                             {% if user_can('groups', 'read') %}
-                            <li><a class="dropdown-item" href="{{ url_for('groups.list_groups') }}">
+                            <li role="none"><a class="dropdown-item" role="menuitem" href="{{ url_for('groups.list_groups') }}" {% if request.endpoint and request.endpoint.startswith('groups.') %}aria-current="page"{% endif %}>
                                 <i class="bi bi-shield-lock" aria-hidden="true"></i> {{ ftl('common-groups') }}
                             </a></li>
                             {% endif %}
-                            <li role="none"><hr class="dropdown-divider" role="separator"></li>
-                            <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">
+                            <li role="separator"><hr class="dropdown-divider"></li>
+                            <li role="none"><a class="dropdown-item" role="menuitem" href="{{ url_for('auth.logout') }}">
                                 <i class="bi bi-box-arrow-right" aria-hidden="true"></i> {{ ftl('common-logout') }}
                             </a></li>
                         </ul>

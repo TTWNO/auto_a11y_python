@@ -10,7 +10,7 @@
             <div>
                 <h1 class="mb-2">
                     {{ project.name }}
-                    <span class="badge bg-{{ {'active': 'success', 'paused': 'warning', 'completed': 'info', 'archived': 'secondary'}[project.status.value] }}">
+                    <span class="badge badge-{{ {'active': 'pass', 'paused': 'medium', 'completed': 'info', 'archived': 'neutral'}[project.status.value] }}">
                         {{ ftl_enum(project.status.value) }}
                     </span>
                 </h1>

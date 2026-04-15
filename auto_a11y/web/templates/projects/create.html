@@ -542,9 +542,9 @@ function showTestDetails(testId) {
 
                 // Build impact badge
                 const impactI18n = {'High': '{{ ftl('common-high') }}', 'Medium': '{{ ftl('common-medium') }}', 'Low': '{{ ftl('common-low') }}', 'Critical': '{{ ftl('common-critical') }}'};
-                let impactClass = 'secondary';
-                if (test.impact === 'High' || test.impact === 'Critical') impactClass = 'danger';
-                else if (test.impact === 'Medium') impactClass = 'warning';
+                let impactClass = 'neutral';
+                if (test.impact === 'High' || test.impact === 'Critical') impactClass = 'high';
+                else if (test.impact === 'Medium') impactClass = 'medium';
                 else if (test.impact === 'Low') impactClass = 'info';
 
                 // Build WCAG badges
@@ -563,7 +563,7 @@ function showTestDetails(testId) {
                     <div class="mb-3">
                         <div class="d-flex align-items-center justify-content-between mb-2">
                             <div>
-                                <span class="badge bg-${impactClass} impact-badge me-2">${impactI18n[test.impact] || test.impact} {{ ftl('common-impact-2') }}</span>
+                                <span class="badge badge-${impactClass} impact-badge me-2">${impactI18n[test.impact] || test.impact} {{ ftl('common-impact-2') }}</span>
                                 <span class="badge badge-neutral me-2">${test.type}</span>
                                 ${wcagBadges}
                             </div>
@@ -574,7 +574,7 @@ function showTestDetails(testId) {
                         ${test.wcag_full ? `<small class="text-muted">${test.wcag_full}</small>` : ''}
                     </div>
 
-                    <div class="alert alert-${test.production_ready ? 'success' : 'warning'} alert-dismissible fade show" role="alert">
+                    <div class="alert alert-${test.production_ready ? 'pass' : 'medium'} alert-dismissible fade show" role="alert">
                         <div class="d-flex align-items-center justify-content-between">
                             <div class="flex-grow-1">
                                 <strong>{{ ftl('projects-documentation-status') }}</strong>
@@ -582,7 +582,7 @@ function showTestDetails(testId) {
                                     '{{ ftl('projects-this-test-has-production-ready-documentation') }}' :
                                     '{{ ftl('projects-this-test-documentation-is-pending-review-and-may') }}'}
                             </div>
-                            <button type="button" class="btn btn-sm btn-${test.production_ready ? 'outline-warning' : 'outline-success'} ms-3"
+                            <button type="button" class="btn btn-sm btn-${test.production_ready ? 'outline-medium' : 'outline-pass'} ms-3"
                                     onclick="toggleProductionReady('${test.id}', ${!test.production_ready})"
                                     id="productionReadyToggle">
                                 <i class="bi bi-${test.production_ready ? 'x-circle' : 'check-circle'} me-1" aria-hidden="true"></i>
@@ -743,9 +743,9 @@ function refreshTestDetailsContent(testId) {
 
                 // Build impact badge
                 const impactI18n = {'High': '{{ ftl('common-high') }}', 'Medium': '{{ ftl('common-medium') }}', 'Low': '{{ ftl('common-low') }}', 'Critical': '{{ ftl('common-critical') }}'};
-                let impactClass = 'secondary';
-                if (test.impact === 'High' || test.impact === 'Critical') impactClass = 'danger';
-                else if (test.impact === 'Medium') impactClass = 'warning';
+                let impactClass = 'neutral';
+                if (test.impact === 'High' || test.impact === 'Critical') impactClass = 'high';
+                else if (test.impact === 'Medium') impactClass = 'medium';
                 else if (test.impact === 'Low') impactClass = 'info';
 
                 // Build WCAG badges
@@ -763,7 +763,7 @@ function refreshTestDetailsContent(testId) {
                     <div class="mb-3">
                         <div class="d-flex align-items-center justify-content-between mb-2">
                             <div>
-                                <span class="badge bg-${impactClass} impact-badge me-2">${impactI18n[test.impact] || test.impact} {{ ftl('common-impact-2') }}</span>
+                                <span class="badge badge-${impactClass} impact-badge me-2">${impactI18n[test.impact] || test.impact} {{ ftl('common-impact-2') }}</span>
                                 <span class="badge badge-neutral me-2">${test.type}</span>
                                 ${wcagBadges}
                             </div>
@@ -774,7 +774,7 @@ function refreshTestDetailsContent(testId) {
                         ${test.wcag_full ? `<small class="text-muted">${test.wcag_full}</small>` : ''}
                     </div>
 
-                    <div class="alert alert-${test.production_ready ? 'success' : 'warning'} alert-dismissible fade show" role="alert">
+                    <div class="alert alert-${test.production_ready ? 'pass' : 'medium'} alert-dismissible fade show" role="alert">
                         <div class="d-flex align-items-center justify-content-between">
                             <div class="flex-grow-1">
                                 <strong>{{ ftl('projects-documentation-status') }}</strong>
@@ -782,7 +782,7 @@ function refreshTestDetailsContent(testId) {
                                     '{{ ftl('projects-this-test-has-production-ready-documentation') }}' :
                                     '{{ ftl('projects-this-test-documentation-is-pending-review-and-may') }}'}
                             </div>
-                            <button type="button" class="btn btn-sm btn-${test.production_ready ? 'outline-warning' : 'outline-success'} ms-3"
+                            <button type="button" class="btn btn-sm btn-${test.production_ready ? 'outline-medium' : 'outline-pass'} ms-3"
                                     onclick="toggleProductionReady('${test.id}', ${!test.production_ready})"
                                     id="productionReadyToggle">
                                 <i class="bi bi-${test.production_ready ? 'x-circle' : 'check-circle'} me-1" aria-hidden="true"></i>

@@ -709,8 +709,8 @@
                                             data-bs-toggle="collapse" 
                                             data-bs-target="#viol-group-{{ viol_counter.value }}">
                                         {% set first_violation = group_list[0] %}
-                                        <span class="badge bg-{{ {'high': 'danger', 'medium': 'warning', 'low': 'info'}[first_violation.impact.value|lower if first_violation.impact.value else first_violation.impact|lower] or 'secondary' }} me-2">{{ group_list|length }}</span>
-                                        <span class="badge bg-{{ {'high': 'danger', 'medium': 'warning', 'low': 'info'}[first_violation.impact.value|lower if first_violation.impact.value else first_violation.impact|lower] or 'secondary' }} me-2 impact-badge">
+                                        <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'info'}[first_violation.impact.value|lower if first_violation.impact.value else first_violation.impact|lower] or 'neutral' }} me-2">{{ group_list|length }}</span>
+                                        <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'info'}[first_violation.impact.value|lower if first_violation.impact.value else first_violation.impact|lower] or 'neutral' }} me-2 impact-badge">
                                             {{ ftl_enum(first_violation.impact.value if first_violation.impact.value else first_violation.impact) }}
                                         </span>
                                         {% if show_error_codes %}<code class="me-2">{{ error_code|error_code_only }}</code>{% endif %}
@@ -878,7 +878,7 @@
                                                             <div class="col-md-6">
                                                                 <p><strong>{{ ftl('pages-touchpoint') }}</strong> {{ touchpoint_names.get(violation.touchpoint, violation.touchpoint)|default(ftl('pages-general')) }}</p>
                                                                 <p><strong>{{ ftl('common-impact') }}</strong> 
-                                                                    <span class="badge bg-{{ {'high': 'danger', 'medium': 'warning', 'low': 'info'}[violation.impact.value|lower if violation.impact.value else violation.impact|lower] or 'secondary' }} impact-badge">
+                                                                    <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'info'}[violation.impact.value|lower if violation.impact.value else violation.impact|lower] or 'neutral' }} impact-badge">
                                                                         {{ ftl_enum(violation.impact.value if violation.impact.value else violation.impact) }}
                                                                     </span>
                                                                 </p>
@@ -1254,7 +1254,7 @@
                                                             <div class="col-md-6">
                                                                 <p><strong>{{ ftl('pages-touchpoint') }}</strong> {{ touchpoint_names.get(violation.touchpoint, violation.touchpoint)|default(ftl('pages-general')) }}</p>
                                                                 <p><strong>{{ ftl('common-impact') }}</strong> 
-                                                                    <span class="badge bg-{{ {'high': 'danger', 'medium': 'warning', 'low': 'info'}[violation.impact.value|lower if violation.impact.value else violation.impact|lower] or 'secondary' }} impact-badge">
+                                                                    <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'info'}[violation.impact.value|lower if violation.impact.value else violation.impact|lower] or 'neutral' }} impact-badge">
                                                                         {{ ftl_enum(violation.impact.value if violation.impact.value else violation.impact) }}
                                                                     </span>
                                                                 </p>
@@ -1504,7 +1504,7 @@
                                             data-bs-toggle="collapse"
                                             data-bs-target="#viol-single-{{ viol_counter.value }}">
                                         <div class="d-flex flex-wrap align-items-center gap-2">
-                                            <span class="badge bg-{{ {'high': 'danger', 'medium': 'warning', 'low': 'info'}[violation.impact.value|lower if violation.impact.value else violation.impact|lower] or 'secondary' }} impact-badge">{{ ftl_enum(violation.impact.value if violation.impact.value else violation.impact) }}</span>
+                                            <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'info'}[violation.impact.value|lower if violation.impact.value else violation.impact|lower] or 'neutral' }} impact-badge">{{ ftl_enum(violation.impact.value if violation.impact.value else violation.impact) }}</span>
                                             {% if violation.metadata.ai_detected %}
                                             <span class="badge badge-info" title="Detected by AI analysis">
                                                 <i class="bi bi-robot" aria-hidden="true"></i> AI
@@ -1637,7 +1637,7 @@
                                 <div class="col-md-6">
                                     <p><strong>{{ ftl('pages-touchpoint') }}</strong> {{ touchpoint_names.get(violation.touchpoint, violation.touchpoint)|default(ftl('pages-general')) }}</p>
                                     <p><strong>{{ ftl('common-impact') }}</strong>
-                                        <span class="badge bg-{{ {'high': 'danger', 'medium': 'warning', 'low': 'info'}[violation.impact.value|lower if violation.impact.value else violation.impact|lower] or 'secondary' }} impact-badge">
+                                        <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'info'}[violation.impact.value|lower if violation.impact.value else violation.impact|lower] or 'neutral' }} impact-badge">
                                             {{ ftl_enum(violation.impact.value if violation.impact.value else violation.impact) }}
                                         </span>
                                     </p>
@@ -2002,8 +2002,8 @@
                                             data-bs-toggle="collapse" 
                                             data-bs-target="#warn-group-{{ warn_counter.value }}">
                                         {% set first_warning = group_list[0] %}
-                                        <span class="badge bg-{{ {'high': 'danger', 'medium': 'warning', 'low': 'info'}[first_warning.impact.value|lower if first_warning.impact.value else first_warning.impact|lower] or 'secondary' }} me-2">{{ group_list|length }}</span>
-                                        <span class="badge bg-{{ {'high': 'danger', 'medium': 'warning', 'low': 'info'}[first_warning.impact.value|lower if first_warning.impact.value else first_warning.impact|lower] or 'secondary' }} me-2 impact-badge">
+                                        <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'info'}[first_warning.impact.value|lower if first_warning.impact.value else first_warning.impact|lower] or 'neutral' }} me-2">{{ group_list|length }}</span>
+                                        <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'info'}[first_warning.impact.value|lower if first_warning.impact.value else first_warning.impact|lower] or 'neutral' }} me-2 impact-badge">
                                             {{ ftl_enum(first_warning.impact.value if first_warning.impact.value else first_warning.impact) }}
                                         </span>
                                         {% if show_error_codes %}<code class="me-2">{{ error_code|error_code_only }}</code>{% endif %}
@@ -2151,7 +2151,7 @@
                                                             <div class="col-md-6">
                                                                 <p><strong>{{ ftl('pages-touchpoint') }}</strong> {{ touchpoint_names.get(warning.touchpoint, warning.touchpoint)|default(ftl('pages-general')) }}</p>
                                                                 <p><strong>{{ ftl('common-impact') }}</strong>
-                                                                    <span class="badge bg-{{ {'high': 'danger', 'medium': 'warning', 'low': 'info'}[warning.impact.value|lower if warning.impact.value else warning.impact|lower] or 'secondary' }} impact-badge">
+                                                                    <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'info'}[warning.impact.value|lower if warning.impact.value else warning.impact|lower] or 'neutral' }} impact-badge">
                                                                         {{ ftl_enum(warning.impact.value if warning.impact.value else warning.impact) }}
                                                                     </span>
                                                                 </p>
@@ -2412,7 +2412,7 @@
                                             data-bs-toggle="collapse" 
                                             data-bs-target="#warn-single-{{ warn_counter.value }}">
                                         <div class="d-flex flex-wrap align-items-center gap-2">
-                                            <span class="badge bg-{{ {'high': 'danger', 'medium': 'warning', 'low': 'info'}[warning.impact.value|lower if warning.impact.value else warning.impact|lower] or 'warning' }} impact-badge">
+                                            <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'info'}[warning.impact.value|lower if warning.impact.value else warning.impact|lower] or 'medium' }} impact-badge">
                                                 {{ ftl_enum(warning.impact.value if warning.impact.value else warning.impact) }}
                                             </span>
                                             {% if warning.metadata.ai_detected %}
@@ -2520,7 +2520,7 @@
                                 <div class="col-md-6">
                                     <p><strong>{{ ftl('pages-touchpoint') }}</strong> {{ touchpoint_names.get(warning.touchpoint, warning.touchpoint) }}</p>
                                     <p><strong>{{ ftl('common-impact') }}</strong>
-                                        <span class="badge bg-{{ {'high': 'danger', 'medium': 'warning', 'low': 'info'}[warning.impact.value|lower if warning.impact.value else warning.impact|lower] or 'secondary' }} impact-badge">
+                                        <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'info'}[warning.impact.value|lower if warning.impact.value else warning.impact|lower] or 'neutral' }} impact-badge">
                                             {{ ftl_enum(warning.impact.value if warning.impact.value else warning.impact) }}
                                         </span>
                                     </p>
@@ -2638,7 +2638,7 @@
                                 <div class="col-md-6">
                                     <p><strong>{{ ftl('pages-touchpoint') }}</strong> {{ touchpoint_names.get(warning.touchpoint, warning.touchpoint) }}</p>
                                     <p><strong>{{ ftl('common-impact') }}</strong>
-                                        <span class="badge bg-{{ {'high': 'danger', 'medium': 'warning', 'low': 'info'}[warning.impact.value|lower if warning.impact.value else warning.impact|lower] or 'secondary' }} impact-badge">
+                                        <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'info'}[warning.impact.value|lower if warning.impact.value else warning.impact|lower] or 'neutral' }} impact-badge">
                                             {{ ftl_enum(warning.impact.value if warning.impact.value else warning.impact) }}
                                         </span>
                                     </p>
@@ -2732,9 +2732,9 @@
                                             data-bs-toggle="collapse" 
                                             data-bs-target="#info-group-{{ info_counter.value }}">
                                         {% set first_info = group_list[0] %}
-                                        <span class="badge bg-{{ {'high': 'danger', 'medium': 'warning', 'low': 'info'}[first_info.impact.value|lower if first_info.impact.value else first_info.impact|lower] or 'info' }} me-2">{{ group_list|length }}</span>
+                                        <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'info'}[first_info.impact.value|lower if first_info.impact.value else first_info.impact|lower] or 'info' }} me-2">{{ group_list|length }}</span>
                                         {% if first_info.impact %}
-                                        <span class="badge bg-{{ {'high': 'danger', 'medium': 'warning', 'low': 'info'}[first_info.impact.value|lower if first_info.impact.value else first_info.impact|lower] or 'info' }} me-2 impact-badge">
+                                        <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'info'}[first_info.impact.value|lower if first_info.impact.value else first_info.impact|lower] or 'info' }} me-2 impact-badge">
                                             {{ ftl_enum(first_info.impact.value if first_info.impact.value else first_info.impact) }}
                                         </span>
                                         {% endif %}
@@ -3152,9 +3152,9 @@
                                             data-bs-toggle="collapse" 
                                             data-bs-target="#disc-group-{{ disc_counter.value }}">
                                         {% set first_discovery = group_list[0] %}
-                                        <span class="badge bg-{{ {'high': 'danger', 'medium': 'warning', 'low': 'info'}[first_discovery.impact.value|lower if first_discovery.impact.value else first_discovery.impact|lower] or 'secondary' }} me-2">{{ group_list|length }}</span>
+                                        <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'info'}[first_discovery.impact.value|lower if first_discovery.impact.value else first_discovery.impact|lower] or 'neutral' }} me-2">{{ group_list|length }}</span>
                                         {% if first_discovery.impact %}
-                                        <span class="badge bg-{{ {'high': 'danger', 'medium': 'warning', 'low': 'info'}[first_discovery.impact.value|lower if first_discovery.impact.value else first_discovery.impact|lower] or 'secondary' }} me-2 impact-badge">
+                                        <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'info'}[first_discovery.impact.value|lower if first_discovery.impact.value else first_discovery.impact|lower] or 'neutral' }} me-2 impact-badge">
                                             {{ ftl_enum(first_discovery.impact.value if first_discovery.impact.value else first_discovery.impact) }}
                                         </span>
                                         {% endif %}

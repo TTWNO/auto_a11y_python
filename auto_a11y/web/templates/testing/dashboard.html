@@ -898,10 +898,10 @@ function showToast(title, message, type = 'info') {
     toastBody.textContent = message;
 
     // Set color based on type
-    toast.classList.remove('bg-pass', 'bg-high', 'bg-medium', 'bg-info');
-    if (type === 'success') toast.classList.add('text-bg-pass');
-    else if (type === 'danger') toast.classList.add('text-bg-high');
-    else if (type === 'warning') toast.classList.add('text-bg-medium');
+    const toastMap = {success: 'toast-pass', danger: 'toast-high', warning: 'toast-medium', info: 'toast-info'};
+    toast.classList.remove('toast-pass', 'toast-high', 'toast-medium', 'toast-info');
+    const toastClass = toastMap[type];
+    if (toastClass) toast.classList.add(toastClass);
 
     const bsToast = new bootstrap.Toast(toast);
     bsToast.show();

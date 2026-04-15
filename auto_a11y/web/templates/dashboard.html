@@ -207,7 +207,7 @@
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <span>{{ ftl('common-ai-analysis') }}</span>
-                        <span class="badge bg-{{ 'success' if config.RUN_AI_ANALYSIS else 'secondary' }}">
+                        <span class="badge badge-{{ 'pass' if config.RUN_AI_ANALYSIS else 'neutral' }}">
                             {{ ftl('common-enabled') if config.RUN_AI_ANALYSIS else ftl('common-disabled') }}
                         </span>
                     </div>

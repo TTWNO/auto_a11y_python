@@ -338,7 +338,7 @@
                         <button class="accordion-button collapsed" type="button" 
                                 data-bs-toggle="collapse" 
                                 data-bs-target="#violation-{{ loop.index }}">
-                            <span class="badge bg-{{ {'high': 'danger', 'medium': 'warning', 'low': 'info'}[violation.impact.value|lower if violation.impact.value else violation.impact|lower] or 'secondary' }} me-2">
+                            <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'info'}[violation.impact.value|lower if violation.impact.value else violation.impact|lower] or 'neutral' }} me-2">
                                 {{ ftl_enum(violation.impact.value if violation.impact.value else violation.impact)|upper }}
                             </span>
                             <span class="me-2">{{ violation.id }}</span>

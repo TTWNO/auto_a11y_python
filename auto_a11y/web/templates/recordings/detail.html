@@ -448,7 +448,7 @@
                         <div class="painpoint-item mb-4{% if not loop.last %} pb-3 border-bottom{% endif %}">
                             <h4>
                                 {% if painpoint.impact %}
-                                <span class="badge bg-{{ {'high': 'danger', 'medium': 'warning', 'low': 'secondary'}[painpoint.impact|lower] or 'secondary' }} me-2">
+                                <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'neutral'}[painpoint.impact|lower] or 'neutral' }} me-2">
                                     {{ ftl_enum(painpoint.impact)|upper }}
                                 </span>
                                 {% endif %}
@@ -561,7 +561,7 @@
                                         data-bs-toggle="collapse" data-bs-target="#issue-{{ loop.index }}-{{ touchpoint|replace(' ', '-') }}">
                                     <div class="w-100 d-flex justify-content-between align-items-center me-2">
                                         <span>
-                                            <span class="badge bg-{{ {'high': 'danger', 'medium': 'warning', 'low': 'secondary'}[issue.impact.value] }} me-2">
+                                            <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'neutral'}[issue.impact.value] }} me-2">
                                                 {{ ftl_enum(issue.impact.value)|upper }}
                                             </span>
                                             {{ issue.title }}

@@ -398,7 +398,7 @@
 
                                 <!-- Issue Header -->
                                 <div class="d-flex align-items-start mb-2">
-                                    <span class="badge bg-{{ {'high': 'danger', 'medium': 'warning', 'low': 'info'}[issue_data.impact|lower] or 'secondary' }} me-2 impact-badge">
+                                    <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'info'}[issue_data.impact|lower] or 'neutral' }} me-2 impact-badge">
                                         {{ issue_data.impact|upper }}
                                     </span>
                                     {% if issue_data.component_signature %}

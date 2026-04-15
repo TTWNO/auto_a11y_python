@@ -666,9 +666,9 @@ function showTestDetails(testId) {
                 const test = data.test;
 
                 // Build impact badge
-                let impactClass = 'secondary';
-                if (test.impact === 'High' || test.impact === 'Critical') impactClass = 'danger';
-                else if (test.impact === 'Medium') impactClass = 'warning';
+                let impactClass = 'neutral';
+                if (test.impact === 'High' || test.impact === 'Critical') impactClass = 'high';
+                else if (test.impact === 'Medium') impactClass = 'medium';
                 else if (test.impact === 'Low') impactClass = 'info';
 
                 // Build WCAG badges
@@ -681,7 +681,7 @@ function showTestDetails(testId) {
                 bodyEl.innerHTML = `
                     <div class="mb-3">
                         <div class="d-flex align-items-center mb-2">
-                            <span class="badge bg-${impactClass} impact-badge me-2">${test.impact} {{ ftl('common-impact-2') }}</span>
+                            <span class="badge badge-${impactClass} impact-badge me-2">${test.impact} {{ ftl('common-impact-2') }}</span>
                             <span class="badge badge-neutral me-2">${test.type}</span>
                             ${wcagBadges}
                         </div>

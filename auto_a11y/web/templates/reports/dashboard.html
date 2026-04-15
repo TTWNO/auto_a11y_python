@@ -251,12 +251,12 @@
                                 {{ report.name }}
                             </td>
                             <td>
-                                <span class="badge bg-{{ {'pdf': 'danger',
-                                                          'excel': 'success',
-                                                          'xlsx': 'success',
+                                <span class="badge badge-{{ {'pdf': 'high',
+                                                          'excel': 'pass',
+                                                          'xlsx': 'pass',
                                                           'json': 'info',
-                                                          'html': 'primary',
-                                                          'zip': 'warning'}[report.type] or 'secondary' }}">
+                                                          'html': 'brand',
+                                                          'zip': 'medium'}[report.type] or 'neutral' }}">
                                     {{ report.type|upper }}
                                 </span>
                             </td>

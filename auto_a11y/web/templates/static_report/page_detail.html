@@ -326,6 +326,7 @@
 {% endmacro %}
 
 {% macro render_violation_details(violation, alert_type) %}
+{% set text_class = {'high': 'text-severity-high', 'medium': 'text-severity-medium', 'info': 'text-info-custom', 'pass': 'text-severity-pass', 'brand': 'text-brand'}.get(alert_type, 'text-info-custom') %}
 <!-- Issue Details -->
 {% if violation.metadata and (violation.metadata.what_en or violation.metadata.what_fr) %}
 <!-- Enhanced description available -->
@@ -336,7 +337,7 @@
     </h4>
 </div>
 
-<h4 class="text-{{ alert_type }} mb-2">
+<h4 class="{{ text_class }} mb-2">
     <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t.get('about_this_issue', 'About this issue:') }}</span>
     <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('about_this_issue', 'À propos de ce problème :') }}</span>
 </h4>
@@ -384,7 +385,7 @@
 {% endif %}
 
 {% if violation.metadata.wcag_full %}
-<h4 class="text-{{ alert_type }} mb-2 mt-4">
+<h4 class="{{ text_class }} mb-2 mt-4">
     <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('relevant_test_criteria', 'Relevant test criteria:') }}</span>
     <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('relevant_test_criteria', 'Critères de test pertinents :') }}</span>
 </h4>
@@ -424,7 +425,7 @@
         </p>
         <p><strong data-i18n="impact">{{ t.get('impact', 'Impact:') }}</strong>
             {% set impact_clean = violation.impact|string|replace('IMPACT_LEVEL.', '')|replace('ImpactLevel.', '') %}
-            <span class="badge bg-{{ {'high': 'danger', 'serious': 'danger', 'critical': 'danger', 'medium': 'warning', 'moderate': 'warning', 'low': 'info', 'minor': 'info'}[impact_clean|lower] or 'secondary' }} impact-badge">
+            <span class="badge badge-{{ {'high': 'high', 'serious': 'high', 'critical': 'high', 'medium': 'medium', 'moderate': 'medium', 'low': 'info', 'minor': 'info'}[impact_clean|lower] or 'neutral' }} impact-badge">
                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get(impact_clean|lower, impact_clean|upper) }}</span>
                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get(impact_clean|lower, impact_clean|upper) }}</span>
             </span>
@@ -987,9 +988,9 @@
                                                 data-bs-toggle="collapse"
                                                 data-bs-target="#viol_state{{ loop.index0 }}_group_{{ viol_counter.value }}">
                                             {% if group_list|length > 1 %}
-                                            <span class="badge bg-{{ {'high': 'danger', 'medium': 'warning', 'low': 'info'}[first_violation.impact|lower] or 'secondary' }} me-2">{{ group_list|length }}</span>
+                                            <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'info'}[first_violation.impact|lower] or 'neutral' }} me-2">{{ group_list|length }}</span>
                                             {% endif %}
-                                            <span class="badge bg-{{ {'high': 'danger', 'medium': 'warning', 'low': 'info'}[first_violation.impact|lower] or 'secondary' }} me-2 impact-badge">
+                                            <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'info'}[first_violation.impact|lower] or 'neutral' }} me-2 impact-badge">
                                                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get(first_violation.impact|lower, first_violation.impact|upper) }}</span>
                                                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get(first_violation.impact|lower, first_violation.impact|upper) }}</span>
                                             </span>
@@ -1129,9 +1130,9 @@
                                                 data-bs-toggle="collapse"
                                                 data-bs-target="#warn_state{{ loop.index0 }}_group_{{ warn_counter.value }}">
                                             {% if group_list|length > 1 %}
-                                            <span class="badge bg-{{ {'high': 'danger', 'medium': 'warning', 'low': 'info'}[first_warning.impact|lower] or 'secondary' }} me-2">{{ group_list|length }}</span>
+                                            <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'info'}[first_warning.impact|lower] or 'neutral' }} me-2">{{ group_list|length }}</span>
                                             {% endif %}
-                                            <span class="badge bg-{{ {'high': 'danger', 'medium': 'warning', 'low': 'info'}[first_warning.impact|lower] or 'secondary' }} me-2 impact-badge">
+                                            <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'info'}[first_warning.impact|lower] or 'neutral' }} me-2 impact-badge">
                                                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get(first_warning.impact|lower, first_warning.impact|upper) }}</span>
                                                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get(first_warning.impact|lower, first_warning.impact|upper) }}</span>
                                             </span>
@@ -1418,9 +1419,9 @@
                                         data-bs-toggle="collapse"
                                         data-bs-target="#viol-group-{{ viol_counter.value }}">
                                     {% if group_list|length > 1 %}
-                                    <span class="badge bg-{{ {'high': 'danger', 'serious': 'danger', 'critical': 'danger', 'medium': 'warning', 'moderate': 'warning', 'low': 'info', 'minor': 'info'}[impact_text|lower] or 'secondary' }} me-2">{{ group_list|length }}</span>
+                                    <span class="badge badge-{{ {'high': 'high', 'serious': 'high', 'critical': 'high', 'medium': 'medium', 'moderate': 'medium', 'low': 'info', 'minor': 'info'}[impact_text|lower] or 'neutral' }} me-2">{{ group_list|length }}</span>
                                     {% endif %}
-                                    <span class="badge bg-{{ {'high': 'danger', 'serious': 'danger', 'critical': 'danger', 'medium': 'warning', 'moderate': 'warning', 'low': 'info', 'minor': 'info'}[impact_text|lower] or 'secondary' }} me-2 impact-badge">
+                                    <span class="badge badge-{{ {'high': 'high', 'serious': 'high', 'critical': 'high', 'medium': 'medium', 'moderate': 'medium', 'low': 'info', 'minor': 'info'}[impact_text|lower] or 'neutral' }} me-2 impact-badge">
                                         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get(impact_text|lower, impact_text|upper) }}</span>
                                         <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get(impact_text|lower, impact_text|upper) }}</span>
                                     </span>
@@ -1488,7 +1489,7 @@
                                                             {% for violation in breakpoint_list %}
                                                             {% set instance_id = 'viol-instance-' ~ breakpoint_id ~ '-' ~ loop.index %}
                                                             {% set parent_id = 'viol-breakpoint-instances-' ~ breakpoint_id %}
-                                                            {{ render_instance_accordion(violation, instance_id, parent_id, 'danger', loop.index) }}
+                                                            {{ render_instance_accordion(violation, instance_id, parent_id, 'high', loop.index) }}
                                                             {% endfor %}
                                                             </div> {# Close viol-breakpoint-instances #}
                                                         </div> {# Close accordion-body #}
@@ -1502,13 +1503,13 @@
                                             {% for violation in group_list %}
                                             {% set instance_id = 'viol-instance-' ~ viol_counter.value ~ '-' ~ loop.index %}
                                             {% set parent_id = 'viol-group-instances-' ~ viol_counter.value %}
-                                            {{ render_instance_accordion(violation, instance_id, parent_id, 'danger', loop.index) }}
+                                            {{ render_instance_accordion(violation, instance_id, parent_id, 'high', loop.index) }}
                                             {% endfor %}
                                             </div> {# Close viol-group-instances #}
                                         {% endif %}
                                     {% else %}
                                         <!-- Single instance - show directly -->
-                                        {{ render_violation_details(group_list[0], 'danger') }}
+                                        {{ render_violation_details(group_list[0], 'high') }}
                                     {% endif %}
                                 </div>
                             </div>
@@ -1567,7 +1568,7 @@
                                     {% if group_list|length > 1 %}
                                     <span class="badge badge-medium me-2">{{ group_list|length }}</span>
                                     {% endif %}
-                                    <span class="badge bg-{{ {'high': 'danger', 'serious': 'danger', 'critical': 'danger', 'medium': 'warning', 'moderate': 'warning', 'low': 'info', 'minor': 'info'}[impact_text|lower] or 'secondary' }} me-2 impact-badge">
+                                    <span class="badge badge-{{ {'high': 'high', 'serious': 'high', 'critical': 'high', 'medium': 'medium', 'moderate': 'medium', 'low': 'info', 'minor': 'info'}[impact_text|lower] or 'neutral' }} me-2 impact-badge">
                                         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get(impact_text|lower, impact_text|upper) }}</span>
                                         <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get(impact_text|lower, impact_text|upper) }}</span>
                                     </span>
@@ -1634,7 +1635,7 @@
                                                             {% for warning in breakpoint_list %}
                                                             {% set instance_id = 'warn-instance-' ~ breakpoint_id ~ '-' ~ loop.index %}
                                                             {% set parent_id = 'warn-breakpoint-instances-' ~ breakpoint_id %}
-                                                            {{ render_instance_accordion(warning, instance_id, parent_id, 'warning', loop.index) }}
+                                                            {{ render_instance_accordion(warning, instance_id, parent_id, 'medium', loop.index) }}
                                                             {% endfor %}
                                                             </div> {# Close warn-breakpoint-instances #}
                                                         </div> {# Close accordion-body #}
@@ -1648,12 +1649,12 @@
                                             {% for warning in group_list %}
                                             {% set instance_id = 'warn-instance-' ~ warn_counter.value ~ '-' ~ loop.index %}
                                             {% set parent_id = 'warn-group-instances-' ~ warn_counter.value %}
-                                            {{ render_instance_accordion(warning, instance_id, parent_id, 'warning', loop.index) }}
+                                            {{ render_instance_accordion(warning, instance_id, parent_id, 'medium', loop.index) }}
                                             {% endfor %}
                                             </div> {# Close warn-group-instances #}
                                         {% endif %}
                                     {% else %}
-                                        {{ render_violation_details(group_list[0], 'warning') }}
+                                        {{ render_violation_details(group_list[0], 'medium') }}
                                     {% endif %}
                                 </div>
                             </div>
@@ -1795,11 +1796,11 @@
                                         {% for disc_item in group_list %}
                                         {% set instance_id = 'disc-instance-' ~ disc_counter.value ~ '-' ~ loop.index %}
                                         {% set parent_id = 'disc-group-instances-' ~ disc_counter.value %}
-                                        {{ render_instance_accordion(disc_item, instance_id, parent_id, 'discovery', loop.index) }}
+                                        {{ render_instance_accordion(disc_item, instance_id, parent_id, 'info', loop.index) }}
                                         {% endfor %}
                                         </div>
                                     {% else %}
-                                        {{ render_violation_details(group_list[0], 'discovery') }}
+                                        {{ render_violation_details(group_list[0], 'info') }}
                                     {% endif %}
                                 </div>
                             </div>

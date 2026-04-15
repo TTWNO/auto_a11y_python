@@ -210,9 +210,9 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        {% set type_colors = {'daily': 'primary', 'weekly': 'info', 'monthly': 'secondary', 'one_time': 'warning', 'cron': 'dark'} %}
+                                        {% set type_colors = {'daily': 'brand', 'weekly': 'info', 'monthly': 'neutral', 'one_time': 'medium', 'cron': 'neutral'} %}
                                         {% set type_value = schedule.schedule_type.value if schedule.schedule_type.value is defined else schedule.schedule_type %}
-                                        <span class="badge type-badge bg-{{ type_colors.get(type_value, 'secondary') }}">
+                                        <span class="badge type-badge badge-{{ type_colors.get(type_value, 'neutral') }}">
                                             {% if type_value == 'one_time' %}{{ ftl('schedules-one-time') }}
                                             {% elif type_value == 'daily' %}{{ ftl('common-daily') }}
                                             {% elif type_value == 'weekly' %}{{ ftl('common-weekly') }}

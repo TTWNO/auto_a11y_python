@@ -360,7 +360,7 @@ function updateTestRunInfo(summary) {
     
     const completedAt = new Date(summary.completed_at);
     const successRate = summary.success_rate || 0;
-    const badgeClass = successRate >= 80 ? 'success' : successRate >= 60 ? 'warning' : 'danger';
+    const badgeClass = successRate >= 80 ? 'pass' : successRate >= 60 ? 'medium' : 'high';
     
     container.innerHTML = `
         <div class="row g-3">
@@ -374,7 +374,7 @@ function updateTestRunInfo(summary) {
                     <strong>` + {{ ftl('testing-results') | tojson }} + `</strong>
                     <span class="badge badge-pass">${summary.passed} ` + {{ ftl('common-passed') | tojson }} + `</span>
                     <span class="badge badge-high ms-1">${summary.failed} ` + {{ ftl('common-failed-2') | tojson }} + `</span>
-                    <span class="badge bg-${badgeClass} ms-2">${successRate.toFixed(1)}% ` + {{ ftl('testing-success-rate') | tojson }} + `</span>
+                    <span class="badge badge-${badgeClass} ms-2">${successRate.toFixed(1)}% ` + {{ ftl('testing-success-rate') | tojson }} + `</span>
                 </p>
             </div>
         </div>

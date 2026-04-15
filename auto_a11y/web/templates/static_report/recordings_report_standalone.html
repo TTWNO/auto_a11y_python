@@ -338,7 +338,7 @@
                                     <div class="mb-4{% if not loop.last %} pb-3 border-bottom{% endif %}">
                                         <h4>
                                             {% if painpoint.impact %}
-                                            <span class="badge bg-{{ {'high': 'danger', 'medium': 'warning', 'low': 'secondary'}.get(painpoint.impact|lower, 'secondary') }} me-2">
+                                            <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'neutral'}.get(painpoint.impact|lower, 'neutral') }} me-2">
                                                 {{ t.get(painpoint.impact|lower, painpoint.impact|upper) }}
                                             </span>
                                             {% endif %}
@@ -373,7 +373,7 @@
                                     <div class="mb-4{% if not loop.last %} pb-3 border-bottom{% endif %}">
                                         <h4>
                                             {% if painpoint.impact %}
-                                            <span class="badge bg-{{ {'high': 'danger', 'medium': 'warning', 'low': 'secondary'}.get(painpoint.impact|lower, 'secondary') }} me-2">
+                                            <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'neutral'}.get(painpoint.impact|lower, 'neutral') }} me-2">
                                                 {{ translations_fr.get(painpoint.impact|lower, painpoint.impact|upper) }}
                                             </span>
                                             {% endif %}
@@ -526,7 +526,7 @@
                                                         data-bs-toggle="collapse" data-bs-target="#issue-en-{{ loop.index }}-{{ recording.recording_id|replace(' ', '-') }}">
                                                     <div class="w-100 d-flex justify-content-between align-items-center me-2">
                                                         <span>
-                                                            <span class="badge bg-{{ {'high': 'danger', 'medium': 'warning', 'low': 'secondary'}[issue.impact.value] }} me-2">
+                                                            <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'neutral'}[issue.impact.value] }} me-2">
                                                                 {{ t.get(issue.impact.value, issue.impact.value|upper) }}
                                                             </span>
                                                             {{ issue.title }}
@@ -613,7 +613,7 @@
                                                         data-bs-toggle="collapse" data-bs-target="#issue-fr-{{ loop.index }}-{{ recording.recording_id|replace(' ', '-') }}">
                                                     <div class="w-100 d-flex justify-content-between align-items-center me-2">
                                                         <span>
-                                                            <span class="badge bg-{{ {'high': 'danger', 'medium': 'warning', 'low': 'secondary'}[issue.impact.value] }} me-2">
+                                                            <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'neutral'}[issue.impact.value] }} me-2">
                                                                 {{ translations_fr.get(issue.impact.value, issue.impact.value|upper) }}
                                                             </span>
                                                             {{ issue.title }}

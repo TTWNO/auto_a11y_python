@@ -112,7 +112,7 @@
                                 <button class="accordion-button collapsed" type="button" 
                                         data-bs-toggle="collapse" 
                                         data-bs-target="#violation-{{ loop.index }}">
-                                    <span class="badge bg-{{ {'critical': 'danger', 'serious': 'danger', 'moderate': 'warning', 'minor': 'info'}[violation.impact] or 'secondary' }} me-2">
+                                    <span class="badge badge-{{ {'critical': 'high', 'serious': 'high', 'moderate': 'medium', 'minor': 'info'}[violation.impact] or 'neutral' }} me-2">
                                         {{ violation.impact|upper }}
                                     </span>
                                     <span class="me-auto">{{ violation.description }}</span>

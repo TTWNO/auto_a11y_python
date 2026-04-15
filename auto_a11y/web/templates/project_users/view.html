@@ -31,7 +31,7 @@
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
-            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+            <div class="alert alert-{{ {'error': 'high', 'success': 'pass', 'warning': 'medium', 'info': 'info'}.get(category, 'info') }} alert-dismissible fade show" role="alert">
                 {{ message }}
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
@@ -180,7 +180,7 @@
 
                         <form action="{{ url_for('project_users.toggle_user', user_id=user.id) }}" method="POST" style="display: inline;">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                            <button type="submit" class="btn btn-{{ 'warning' if user.enabled else 'success' }} w-100">
+                            <button type="submit" class="btn btn-{{ 'medium' if user.enabled else 'pass' }} w-100">
                                 <i class="bi bi-{{ 'pause-circle' if user.enabled else 'play-circle' }}" aria-hidden="true"></i>
                                 {{ ftl('common-disable') if user.enabled else ftl('common-enable') }}
                             </button>

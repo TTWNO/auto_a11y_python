@@ -243,7 +243,7 @@
                             <tr>
                                 <td>{{ attempt.started_at.strftime('%Y-%m-%d %H:%M') if attempt.started_at else ftl('common-unknown') }}</td>
                                 <td>
-                                    <span class="badge bg-{{ {'completed': 'success', 'failed': 'danger', 'running': 'warning'}[attempt.status] }}">
+                                    <span class="badge badge-{{ {'completed': 'pass', 'failed': 'high', 'running': 'medium'}[attempt.status] }}">
                                         {{ attempt.status|title }}
                                     </span>
                                 </td>
@@ -356,14 +356,14 @@
                                 </a>
                             </div>
                         </div>
-                        <span class="badge bg-{{ {
-                            'discovered': 'secondary',
+                        <span class="badge badge-{{ {
+                            'discovered': 'neutral',
                             'queued': 'info',
-                            'testing': 'warning',
-                            'tested': 'success',
-                            'error': 'danger',
-                            'skipped': 'secondary',
-                            'discovery_failed': 'dark'
+                            'testing': 'medium',
+                            'tested': 'pass',
+                            'error': 'high',
+                            'skipped': 'neutral',
+                            'discovery_failed': 'neutral'
                         }[page.status.value] }} page-status flex-shrink-0" data-page-id="{{ page.id }}"
                         {% if page.error_reason %}title="{{ page.error_reason }}" data-bs-toggle="tooltip"{% endif %}>
                             {% if page.status.value in ['queued', 'testing'] %}
@@ -704,30 +704,30 @@ function updatePageStatus(pageId, status) {
     const statusCell = document.querySelector(`td[data-page-id="${pageId}"]`);
     if (!statusCell) return;
     
-    let badgeClass = 'secondary';
+    let badgeClass = 'neutral';
     let spinner = '';
-    
+
     switch(status) {
         case 'discovered':
-            badgeClass = 'secondary';
+            badgeClass = 'neutral';
             break;
         case 'queued':
             badgeClass = 'info';
             spinner = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>';
             break;
         case 'testing':
-            badgeClass = 'warning';
+            badgeClass = 'medium';
             spinner = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>';
             break;
         case 'tested':
-            badgeClass = 'success';
+            badgeClass = 'pass';
             break;
         case 'error':
-            badgeClass = 'danger';
+            badgeClass = 'high';
             break;
     }
-    
-    statusCell.innerHTML = `<span class="badge bg-${badgeClass}">${spinner}${status.charAt(0).toUpperCase() + status.slice(1)}</span>`;
+
+    statusCell.innerHTML = `<span class="badge badge-${badgeClass}">${spinner}${status.charAt(0).toUpperCase() + status.slice(1)}</span>`;
 }
 
 function startWebsiteStatusPolling() {

@@ -268,6 +268,7 @@
 
 {# Macro for rendering violation details - defined at top so it's available throughout #}
 {% macro render_violation_details(violation, alert_type) %}
+{% set text_class = {'high': 'text-severity-high', 'medium': 'text-severity-medium', 'info': 'text-info-custom', 'pass': 'text-severity-pass', 'brand': 'text-brand'}.get(alert_type, 'text-info-custom') %}
 <!-- Issue Details -->
 {% if violation.metadata and (violation.metadata.what_en or violation.metadata.what_fr) %}
 <!-- Enhanced description available -->
@@ -278,7 +279,7 @@
     </h4>
 </div>
 
-<h4 class="text-{{ alert_type }} mb-2" data-i18n="about_this_issue">{{ t.get('about_this_issue', 'About this issue:') }}</h4>
+<h4 class="{{ text_class }} mb-2" data-i18n="about_this_issue">{{ t.get('about_this_issue', 'About this issue:') }}</h4>
 
 <div class="mb-3">
     <strong data-i18n="what_the_issue_is">{{ t.get('what_the_issue_is', 'What the issue is:') }}</strong>
@@ -311,7 +312,7 @@
 {% endif %}
 
 {% if violation.metadata.wcag_full %}
-<h4 class="text-{{ alert_type }} mb-2 mt-4" data-i18n="relevant_test_criteria">{{ t.get('relevant_test_criteria', 'Relevant test criteria:') }}</h4>
+<h4 class="{{ text_class }} mb-2 mt-4" data-i18n="relevant_test_criteria">{{ t.get('relevant_test_criteria', 'Relevant test criteria:') }}</h4>
 <div class="mb-3">
     <strong>WCAG <span data-i18n="success_criteria">{{ t.get('success_criteria', 'Success Criteria:') }}</span></strong>
     <ul>
@@ -342,7 +343,7 @@
         </p>
         <p><strong data-i18n="impact">{{ t.get('impact', 'Impact:') }}</strong>
             {% set impact_clean = violation.impact|string|replace('IMPACT_LEVEL.', '')|replace('ImpactLevel.', '') %}
-            <span class="badge bg-{{ {'high': 'danger', 'serious': 'danger', 'critical': 'danger', 'medium': 'warning', 'moderate': 'warning', 'low': 'info', 'minor': 'info'}[impact_clean|lower] or 'secondary' }} impact-badge">
+            <span class="badge badge-{{ {'high': 'high', 'serious': 'high', 'critical': 'high', 'medium': 'medium', 'moderate': 'medium', 'low': 'info', 'minor': 'info'}[impact_clean|lower] or 'neutral' }} impact-badge">
                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get(impact_clean|lower, impact_clean|upper) }}</span>
                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get(impact_clean|lower, impact_clean|upper) }}</span>
             </span>
@@ -748,9 +749,9 @@
                     <h4 class="accordion-header">
                         <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#viol-{{ viol_counter.value }}">
                             {% if group_list|length > 1 %}
-                            <span class="badge bg-{{ {'high': 'danger', 'serious': 'danger', 'critical': 'danger', 'medium': 'warning', 'moderate': 'warning', 'low': 'info', 'minor': 'info'}[impact_text|lower] or 'secondary' }} me-2">{{ group_list|length }}</span>
+                            <span class="badge badge-{{ {'high': 'high', 'serious': 'high', 'critical': 'high', 'medium': 'medium', 'moderate': 'medium', 'low': 'info', 'minor': 'info'}[impact_text|lower] or 'neutral' }} me-2">{{ group_list|length }}</span>
                             {% endif %}
-                            <span class="badge bg-{{ {'high': 'danger', 'serious': 'danger', 'critical': 'danger', 'medium': 'warning', 'moderate': 'warning', 'low': 'info', 'minor': 'info'}[impact_text|lower] or 'secondary' }} me-2 impact-badge" data-i18n="{{ impact_text|lower }}">
+                            <span class="badge badge-{{ {'high': 'high', 'serious': 'high', 'critical': 'high', 'medium': 'medium', 'moderate': 'medium', 'low': 'info', 'minor': 'info'}[impact_text|lower] or 'neutral' }} me-2 impact-badge" data-i18n="{{ impact_text|lower }}">
                                 {{ translations_en.get(impact_text|lower, impact_text|upper) if language == 'en' else translations_fr.get(impact_text|lower, impact_text|upper) }}
                             </span>
                             {% if show_error_codes %}<code class="me-2">{{ error_code }}</code>{% endif %}
@@ -791,7 +792,7 @@
                                          class="accordion-collapse collapse"
                                          data-bs-parent="#viol_instances_{{ viol_counter.value }}">
                                         <div class="accordion-body">
-                                            {{ render_violation_details(instance, 'danger') }}
+                                            {{ render_violation_details(instance, 'high') }}
                                         </div>
                                     </div>
                                 </div>
@@ -799,7 +800,7 @@
                             </div>
                             {% else %}
                             <!-- Single instance - show details directly -->
-                            {{ render_violation_details(first_violation, 'danger') }}
+                            {{ render_violation_details(first_violation, 'high') }}
                             {% endif %}
                         </div>
                     </div>
@@ -841,9 +842,9 @@
                     <h4 class="accordion-header">
                         <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#warn-{{ warn_counter.value }}">
                             {% if group_list|length > 1 %}
-                            <span class="badge bg-{{ {'high': 'danger', 'serious': 'danger', 'critical': 'danger', 'medium': 'warning', 'moderate': 'warning', 'low': 'info', 'minor': 'info'}[impact_text|lower] or 'warning' }} me-2">{{ group_list|length }}</span>
+                            <span class="badge badge-{{ {'high': 'high', 'serious': 'high', 'critical': 'high', 'medium': 'medium', 'moderate': 'medium', 'low': 'info', 'minor': 'info'}[impact_text|lower] or 'medium' }} me-2">{{ group_list|length }}</span>
                             {% endif %}
-                            <span class="badge bg-{{ {'high': 'danger', 'serious': 'danger', 'critical': 'danger', 'medium': 'warning', 'moderate': 'warning', 'low': 'info', 'minor': 'info'}[impact_text|lower] or 'warning' }} me-2 impact-badge" data-i18n="{{ impact_text|lower }}">
+                            <span class="badge badge-{{ {'high': 'high', 'serious': 'high', 'critical': 'high', 'medium': 'medium', 'moderate': 'medium', 'low': 'info', 'minor': 'info'}[impact_text|lower] or 'medium' }} me-2 impact-badge" data-i18n="{{ impact_text|lower }}">
                                 {{ translations_en.get(impact_text|lower, impact_text|upper) if language == 'en' else translations_fr.get(impact_text|lower, impact_text|upper) }}
                             </span>
                             <code class="me-2">{{ warning_code }}</code>
@@ -884,7 +885,7 @@
                                          class="accordion-collapse collapse"
                                          data-bs-parent="#warn_instances_{{ warn_counter.value }}">
                                         <div class="accordion-body">
-                                            {{ render_violation_details(instance, 'warning') }}
+                                            {{ render_violation_details(instance, 'medium') }}
                                         </div>
                                     </div>
                                 </div>
@@ -892,7 +893,7 @@
                             </div>
                             {% else %}
                             <!-- Single instance -->
-                            {{ render_violation_details(first_warning, 'warning') }}
+                            {{ render_violation_details(first_warning, 'medium') }}
                             {% endif %}
                         </div>
                     </div>
@@ -934,10 +935,10 @@
                     <h4 class="accordion-header">
                         <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#info-{{ info_counter.value }}">
                             {% if group_list|length > 1 %}
-                            <span class="badge bg-{{ {'high': 'danger', 'serious': 'danger', 'critical': 'danger', 'medium': 'warning', 'moderate': 'warning', 'low': 'info', 'minor': 'info'}[impact_text|lower] or 'secondary' }} me-2">{{ group_list|length }}</span>
+                            <span class="badge badge-{{ {'high': 'high', 'serious': 'high', 'critical': 'high', 'medium': 'medium', 'moderate': 'medium', 'low': 'info', 'minor': 'info'}[impact_text|lower] or 'neutral' }} me-2">{{ group_list|length }}</span>
                             {% endif %}
                             {% if impact_text %}
-                            <span class="badge bg-{{ {'high': 'danger', 'serious': 'danger', 'critical': 'danger', 'medium': 'warning', 'moderate': 'warning', 'low': 'info', 'minor': 'info'}[impact_text|lower] or 'info' }} me-2 impact-badge" data-i18n="{{ impact_text|lower }}">
+                            <span class="badge badge-{{ {'high': 'high', 'serious': 'high', 'critical': 'high', 'medium': 'medium', 'moderate': 'medium', 'low': 'info', 'minor': 'info'}[impact_text|lower] or 'info' }} me-2 impact-badge" data-i18n="{{ impact_text|lower }}">
                                 {{ translations_en.get(impact_text|lower, impact_text|upper) if language == 'en' else translations_fr.get(impact_text|lower, impact_text|upper) }}
                             </span>
                             {% endif %}
@@ -1071,7 +1072,7 @@
                                          class="accordion-collapse collapse"
                                          data-bs-parent="#disco_instances_{{ disco_counter.value }}">
                                         <div class="accordion-body">
-                                            {{ render_violation_details(instance, 'primary') }}
+                                            {{ render_violation_details(instance, 'info') }}
                                         </div>
                                     </div>
                                 </div>
@@ -1079,7 +1080,7 @@
                             </div>
                             {% else %}
                             <!-- Single instance -->
-                            {{ render_violation_details(first_disco, 'primary') }}
+                            {{ render_violation_details(first_disco, 'info') }}
                             {% endif %}
                         </div>
                     </div>

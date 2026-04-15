@@ -318,6 +318,7 @@
 
 {# Macro for rendering issue details #}
 {% macro render_issue_details(issue, alert_type) %}
+{% set text_class = {'high': 'text-severity-high', 'medium': 'text-severity-medium', 'info': 'text-info-custom', 'pass': 'text-severity-pass', 'brand': 'text-brand'}.get(alert_type, 'text-info-custom') %}
 <div class="alert alert-{{ alert_type }} mb-3">
     <h4 class="alert-heading">
         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ issue.description_en }}</span>
@@ -325,7 +326,7 @@
     </h4>
 </div>
 
-<h4 class="text-{{ alert_type }} mb-2">
+<h4 class="{{ text_class }} mb-2">
     <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['about_this_issue'] }}</span>
     <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['about_this_issue'] }}</span>
 </h4>
@@ -378,7 +379,7 @@
 
 <!-- WCAG Criteria -->
 {% if issue.wcag_full %}
-<h4 class="text-{{ alert_type }} mb-2 mt-4">
+<h4 class="{{ text_class }} mb-2 mt-4">
     <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['relevant_test_criteria'] }}</span>
     <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['relevant_test_criteria'] }}</span>
 </h4>
@@ -419,7 +420,7 @@
                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['impact'] }}</span>
             </strong>
             {% set impact_lower = issue.impact|lower %}
-            <span class="badge bg-{{ {'critical': 'danger', 'high': 'danger', 'serious': 'danger', 'moderate': 'warning', 'medium': 'warning', 'minor': 'info', 'low': 'info'}[impact_lower] or 'secondary' }} impact-badge">
+            <span class="badge badge-{{ {'critical': 'high', 'high': 'high', 'serious': 'high', 'moderate': 'medium', 'medium': 'medium', 'minor': 'info', 'low': 'info'}[impact_lower] or 'neutral' }} impact-badge">
                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get(impact_lower, issue.impact|upper) }}</span>
                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get(impact_lower, issue.impact|upper) }}</span>
             </span>
@@ -497,7 +498,7 @@
 <!-- Element Details -->
 {% if issue.element or issue.xpath %}
 <hr>
-<h4 class="text-{{ alert_type }} mb-2">
+<h4 class="{{ text_class }} mb-2">
     <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['element_details'] }}</span>
     <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['element_details'] }}</span>
 </h4>
@@ -529,7 +530,7 @@
      data-description="{{ issue.description_en|lower if issue.description_en else issue.description|lower }}">
     <h4 class="accordion-header">
         <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#issue-{{ issue_id }}">
-            <span class="badge bg-{{ {'critical': 'danger', 'high': 'danger', 'serious': 'danger', 'moderate': 'warning', 'medium': 'warning', 'minor': 'info', 'low': 'info'}[impact_lower] or 'secondary' }} me-2 impact-badge">
+            <span class="badge badge-{{ {'critical': 'high', 'high': 'high', 'serious': 'high', 'moderate': 'medium', 'medium': 'medium', 'minor': 'info', 'low': 'info'}[impact_lower] or 'neutral' }} me-2 impact-badge">
                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get(impact_lower, impact_lower|upper) }}</span>
                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get(impact_lower, impact_lower|upper) }}</span>
             </span>
@@ -818,7 +819,7 @@
                         </div>
                         {% for issue in touchpoint_violations %}
                         {% set viol_counter.value = viol_counter.value + 1 %}
-                        {{ render_issue_accordion(issue, 'viol-' ~ viol_counter.value, 'violationsAccordion', 'danger') }}
+                        {{ render_issue_accordion(issue, 'viol-' ~ viol_counter.value, 'violationsAccordion', 'high') }}
                         {% endfor %}
                     {% endfor %}
                     </div>
@@ -853,7 +854,7 @@
                         </div>
                         {% for issue in touchpoint_warnings %}
                         {% set warn_counter.value = warn_counter.value + 1 %}
-                        {{ render_issue_accordion(issue, 'warn-' ~ warn_counter.value, 'warningsAccordion', 'warning') }}
+                        {{ render_issue_accordion(issue, 'warn-' ~ warn_counter.value, 'warningsAccordion', 'medium') }}
                         {% endfor %}
                     {% endfor %}
                     </div>
@@ -923,7 +924,7 @@
                         </div>
                         {% for issue in touchpoint_discovery %}
                         {% set disco_counter.value = disco_counter.value + 1 %}
-                        {{ render_issue_accordion(issue, 'disco-' ~ disco_counter.value, 'discoveryAccordion', 'primary') }}
+                        {{ render_issue_accordion(issue, 'disco-' ~ disco_counter.value, 'discoveryAccordion', 'info') }}
                         {% endfor %}
                     {% endfor %}
                     </div>

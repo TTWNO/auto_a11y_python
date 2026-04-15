@@ -189,7 +189,7 @@
         {% if messages %}
             <div class="container-fluid mt-3">
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                    <div class="alert alert-{{ {'error': 'high', 'success': 'pass', 'warning': 'medium', 'info': 'info'}.get(category, 'info') }} alert-dismissible fade show" role="alert">
                         {{ message }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ ftl('common-dismiss') }}"></button>
                     </div>
@@ -558,7 +558,8 @@
         window.showNotification = function(title, message, type) {
             // Simple notification using Bootstrap toast or alert
             const alertDiv = document.createElement('div');
-            alertDiv.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
+            const alertMap = {error: 'high', danger: 'high', success: 'pass', warning: 'medium', info: 'info'};
+            alertDiv.className = `alert alert-${alertMap[type] || 'info'} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
             alertDiv.style.zIndex = '9999';
             alertDiv.setAttribute('role', 'alert');
             alertDiv.innerHTML = `

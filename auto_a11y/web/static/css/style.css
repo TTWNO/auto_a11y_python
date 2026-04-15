@@ -1,30 +1,5 @@
 /* Auto A11y Custom Styles */
 
-/* Re-point Bootstrap variables to our design tokens */
-:root {
-    --bs-primary: var(--color-brand);
-    --bs-primary-rgb: 26, 82, 118;
-    --bs-info: var(--color-info);
-    --bs-info-rgb: 14, 116, 144;
-    --bs-success: var(--color-severity-pass);
-    --bs-danger: var(--color-severity-high);
-    --bs-warning: var(--color-severity-medium);
-    --bs-body-color: var(--color-text);
-    --bs-body-bg: var(--color-bg);
-    --bs-border-color: var(--color-border);
-}
-
-@media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-        --bs-primary-rgb: 93, 169, 233;
-        --bs-info-rgb: 100, 181, 246;
-    }
-}
-[data-theme="dark"] {
-    --bs-primary-rgb: 93, 169, 233;
-    --bs-info-rgb: 100, 181, 246;
-}
-
 * {
     box-sizing: border-box;
 }
@@ -335,86 +310,6 @@ button:focus:not(:focus-visible) {
 
 ::-webkit-scrollbar-thumb:hover {
     background: var(--color-text-muted);
-}
-
-/* WCAG AA Contrast Overrides */
-/* Override Bootstrap primary color for WCAG AA contrast (4.5:1 minimum) */
-.btn-primary {
-    background-color: var(--color-link) !important;
-    border-color: var(--color-link) !important;
-}
-.btn-primary:hover,
-.btn-primary:active {
-    background-color: var(--color-link-hover) !important;
-    border-color: var(--color-link-hover) !important;
-}
-.btn-outline-primary.active,
-.btn-outline-primary:active {
-    background-color: var(--color-link) !important;
-    border-color: var(--color-link) !important;
-}
-.bg-primary {
-    background-color: var(--color-link) !important;
-}
-.text-primary {
-    color: var(--color-link) !important;
-}
-.border-primary {
-    border-color: var(--color-link) !important;
-}
-
-/* Override Bootstrap info color for WCAG AA contrast (4.5:1 minimum) */
-.bg-info {
-    background-color: var(--color-info) !important;
-}
-.text-info {
-    color: var(--color-info) !important;
-}
-.border-info {
-    border-color: var(--color-info) !important;
-}
-
-/* Override Bootstrap warning colors for WCAG AA contrast */
-/* Warning backgrounds are bright yellow/amber — always use dark text */
-.bg-warning {
-    background-color: var(--color-severity-medium) !important;
-    color: var(--color-text) !important;
-}
-.badge.bg-warning {
-    background-color: var(--color-severity-medium-bg) !important;
-    color: var(--color-severity-medium) !important;
-    border: 1px solid var(--color-severity-medium-border);
-}
-.alert-warning {
-    background-color: var(--color-severity-medium) !important;
-    color: var(--color-text) !important;
-}
-.progress-bar.bg-warning {
-    background-color: var(--color-severity-medium) !important;
-    color: var(--color-text) !important;
-}
-
-/* Override text-warning for contrast on white backgrounds */
-.text-warning {
-    color: var(--color-severity-medium) !important;
-}
-
-/* Fix outline warning buttons to use proper contrast */
-.btn-outline-warning {
-    color: var(--color-severity-medium) !important;
-    border-color: var(--color-severity-medium-border) !important;
-}
-.btn-outline-warning:hover,
-.btn-outline-warning:active,
-.btn-outline-warning.active {
-    background-color: var(--color-severity-medium) !important;
-    border-color: var(--color-severity-medium) !important;
-    color: var(--color-text) !important;
-}
-
-/* Ensure progress bar gray has sufficient contrast with yellow (3:1 for non-text) */
-.progress-bar.bg-secondary {
-    background-color: var(--color-text-muted) !important;
 }
 
 /* Override Bootstrap form borders for WCAG 1.4.11 Non-text Contrast (3:1 minimum) */
@@ -880,16 +775,6 @@ table caption {
 .toast-medium { background-color: var(--color-severity-medium) !important; color: var(--color-text) !important; }
 .toast-info { background-color: var(--color-info) !important; color: var(--color-text-inverse) !important; }
 
-/* Dark mode: Bootstrap text-secondary override */
-[data-theme="dark"] .text-secondary {
-    color: var(--color-text-muted) !important;
-}
-@media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .text-secondary {
-        color: var(--color-text-muted) !important;
-    }
-}
-
 /* Dark mode: gradient severity headers use darker badge tokens */
 [data-theme="dark"] .severity-header-high {
     background: linear-gradient(135deg, var(--color-severity-high-badge), var(--color-severity-high-gradient-end));
@@ -968,122 +853,16 @@ table caption {
     }
 }
 
-/* --- B. Background Utilities --- */
-[data-theme="dark"] .bg-light {
-    background-color: var(--color-bg-subtle) !important;
-    color: var(--color-text) !important;
-}
-[data-theme="dark"] .bg-dark {
-    background-color: var(--color-bg-header) !important;
-    color: var(--color-text-inverse) !important;
-}
-[data-theme="dark"] .bg-success {
-    background-color: var(--color-severity-pass) !important;
-}
-[data-theme="dark"] .bg-danger {
-    background-color: var(--color-severity-high) !important;
-}
-[data-theme="dark"] .bg-secondary {
-    background-color: var(--color-severity-low-badge) !important;
-}
-[data-theme="dark"] .bg-white {
-    background-color: var(--color-bg-elevated) !important;
-    color: var(--color-text) !important;
-}
-[data-theme="dark"] .bg-body {
-    background-color: var(--color-bg) !important;
-    color: var(--color-text) !important;
-}
-@media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .bg-light {
-        background-color: var(--color-bg-subtle) !important;
-        color: var(--color-text) !important;
-    }
-    :root:not([data-theme="light"]) .bg-dark {
-        background-color: var(--color-bg-header) !important;
-        color: var(--color-text-inverse) !important;
-    }
-    :root:not([data-theme="light"]) .bg-success {
-        background-color: var(--color-severity-pass) !important;
-    }
-    :root:not([data-theme="light"]) .bg-danger {
-        background-color: var(--color-severity-high) !important;
-    }
-    :root:not([data-theme="light"]) .bg-secondary {
-        background-color: var(--color-severity-low-badge) !important;
-    }
-    :root:not([data-theme="light"]) .bg-white {
-        background-color: var(--color-bg-elevated) !important;
-        color: var(--color-text) !important;
-    }
-    :root:not([data-theme="light"]) .bg-body {
-        background-color: var(--color-bg) !important;
-        color: var(--color-text) !important;
-    }
-}
-
-/* --- B2. Navbar Dark Mode --- */
-[data-theme="dark"] .navbar.bg-primary {
-    background-color: var(--color-bg-header) !important;
-}
-[data-theme="dark"] .navbar.bg-primary .nav-link {
-    color: var(--color-text-inverse) !important;
-}
-[data-theme="dark"] .navbar.bg-primary .nav-link:hover,
-[data-theme="dark"] .navbar.bg-primary .nav-link:focus {
-    color: var(--color-border) !important;
-}
-@media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .navbar.bg-primary {
-        background-color: var(--color-bg-header) !important;
-    }
-    :root:not([data-theme="light"]) .navbar.bg-primary .nav-link {
-        color: var(--color-text-inverse) !important;
-    }
-    :root:not([data-theme="light"]) .navbar.bg-primary .nav-link:hover,
-    :root:not([data-theme="light"]) .navbar.bg-primary .nav-link:focus {
-        color: var(--color-border) !important;
-    }
-}
-
-/* --- C. Text Utilities --- */
-[data-theme="dark"] .text-muted {
-    color: var(--color-text-muted) !important;
-}
-[data-theme="dark"] .text-dark {
-    color: var(--color-text) !important;
-}
-[data-theme="dark"] .text-body {
-    color: var(--color-text) !important;
-}
-[data-theme="dark"] .text-light {
-    color: var(--color-text-muted) !important;
-}
-@media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .text-muted {
-        color: var(--color-text-muted) !important;
-    }
-    :root:not([data-theme="light"]) .text-dark {
-        color: var(--color-text) !important;
-    }
-    :root:not([data-theme="light"]) .text-body {
-        color: var(--color-text) !important;
-    }
-    :root:not([data-theme="light"]) .text-light {
-        color: var(--color-text-muted) !important;
-    }
-}
-
 /* --- D. Card Component --- */
 /* Only set bg-elevated on cards that don't have an explicit bg-* colour class */
-[data-theme="dark"] .card:not(.bg-primary):not(.bg-secondary):not(.bg-success):not(.bg-danger):not(.bg-warning):not(.bg-info):not(.bg-dark):not(.bg-discovery) {
+[data-theme="dark"] .card:not(.bg-brand):not(.bg-neutral):not(.bg-pass):not(.bg-high):not(.bg-medium):not(.bg-info):not(.bg-header):not(.bg-discovery) {
     background-color: var(--color-bg-elevated) !important;
 }
 [data-theme="dark"] .card {
     border-color: var(--color-border) !important;
     color: var(--color-text) !important;
 }
-[data-theme="dark"] .card-header:not(.bg-white):not(.bg-primary):not(.bg-secondary):not(.bg-success):not(.bg-danger):not(.bg-warning):not(.bg-info) {
+[data-theme="dark"] .card-header:not(.card-header-medium):not(.card-header-info):not(.card-header-pass):not(.card-header-neutral) {
     background-color: var(--color-bg-subtle) !important;
 }
 [data-theme="dark"] .card-header {
@@ -1095,20 +874,15 @@ table caption {
     border-top-color: var(--color-border) !important;
     color: var(--color-text) !important;
 }
-[data-theme="dark"] .card-header.bg-warning.text-dark,
-[data-theme="dark"] .card-header.bg-info.text-dark,
-[data-theme="dark"] .card-header.bg-success.text-dark {
-    color: var(--color-text) !important;
-}
 @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .card:not(.bg-primary):not(.bg-secondary):not(.bg-success):not(.bg-danger):not(.bg-warning):not(.bg-info):not(.bg-dark):not(.bg-discovery) {
+    :root:not([data-theme="light"]) .card:not(.bg-brand):not(.bg-neutral):not(.bg-pass):not(.bg-high):not(.bg-medium):not(.bg-info):not(.bg-header):not(.bg-discovery) {
         background-color: var(--color-bg-elevated) !important;
     }
     :root:not([data-theme="light"]) .card {
         border-color: var(--color-border) !important;
         color: var(--color-text) !important;
     }
-    :root:not([data-theme="light"]) .card-header:not(.bg-white):not(.bg-primary):not(.bg-secondary):not(.bg-success):not(.bg-danger):not(.bg-warning):not(.bg-info) {
+    :root:not([data-theme="light"]) .card-header:not(.card-header-medium):not(.card-header-info):not(.card-header-pass):not(.card-header-neutral) {
         background-color: var(--color-bg-subtle) !important;
     }
     :root:not([data-theme="light"]) .card-header {
@@ -1118,11 +892,6 @@ table caption {
     :root:not([data-theme="light"]) .card-footer {
         background-color: var(--color-bg-subtle) !important;
         border-top-color: var(--color-border) !important;
-        color: var(--color-text) !important;
-    }
-    :root:not([data-theme="light"]) .card-header.bg-warning.text-dark,
-    :root:not([data-theme="light"]) .card-header.bg-info.text-dark,
-    :root:not([data-theme="light"]) .card-header.bg-success.text-dark {
         color: var(--color-text) !important;
     }
 }
@@ -1142,9 +911,9 @@ table caption {
     color: var(--color-text) !important;
     background-color: transparent;
 }
-[data-theme="dark"] .table-light,
-[data-theme="dark"] .table-light > th,
-[data-theme="dark"] .table-light > td {
+[data-theme="dark"] .table-subtle,
+[data-theme="dark"] .table-subtle > th,
+[data-theme="dark"] .table-subtle > td {
     background-color: var(--color-bg-subtle) !important;
     color: var(--color-text) !important;
 }
@@ -1162,27 +931,27 @@ table caption {
     background-color: var(--color-info-bg) !important;
     color: var(--color-text) !important;
 }
-[data-theme="dark"] .table-warning,
-[data-theme="dark"] .table-warning > th,
-[data-theme="dark"] .table-warning > td {
+[data-theme="dark"] .table-medium,
+[data-theme="dark"] .table-medium > th,
+[data-theme="dark"] .table-medium > td {
     background-color: var(--color-severity-medium-bg) !important;
     color: var(--color-text) !important;
 }
-[data-theme="dark"] .table-danger,
-[data-theme="dark"] .table-danger > th,
-[data-theme="dark"] .table-danger > td {
+[data-theme="dark"] .table-high,
+[data-theme="dark"] .table-high > th,
+[data-theme="dark"] .table-high > td {
     background-color: var(--color-severity-high-bg) !important;
     color: var(--color-text) !important;
 }
-[data-theme="dark"] .table-secondary,
-[data-theme="dark"] .table-secondary > th,
-[data-theme="dark"] .table-secondary > td {
+[data-theme="dark"] .table-neutral,
+[data-theme="dark"] .table-neutral > th,
+[data-theme="dark"] .table-neutral > td {
     background-color: var(--color-bg-subtle) !important;
     color: var(--color-text) !important;
 }
-[data-theme="dark"] .table-success,
-[data-theme="dark"] .table-success > th,
-[data-theme="dark"] .table-success > td {
+[data-theme="dark"] .table-pass,
+[data-theme="dark"] .table-pass > th,
+[data-theme="dark"] .table-pass > td {
     background-color: var(--color-severity-pass-bg) !important;
     color: var(--color-text) !important;
 }
@@ -1201,9 +970,9 @@ table caption {
         color: var(--color-text) !important;
         background-color: transparent;
     }
-    :root:not([data-theme="light"]) .table-light,
-    :root:not([data-theme="light"]) .table-light > th,
-    :root:not([data-theme="light"]) .table-light > td {
+    :root:not([data-theme="light"]) .table-subtle,
+    :root:not([data-theme="light"]) .table-subtle > th,
+    :root:not([data-theme="light"]) .table-subtle > td {
         background-color: var(--color-bg-subtle) !important;
         color: var(--color-text) !important;
     }
@@ -1221,27 +990,27 @@ table caption {
         background-color: var(--color-info-bg) !important;
         color: var(--color-text) !important;
     }
-    :root:not([data-theme="light"]) .table-warning,
-    :root:not([data-theme="light"]) .table-warning > th,
-    :root:not([data-theme="light"]) .table-warning > td {
+    :root:not([data-theme="light"]) .table-medium,
+    :root:not([data-theme="light"]) .table-medium > th,
+    :root:not([data-theme="light"]) .table-medium > td {
         background-color: var(--color-severity-medium-bg) !important;
         color: var(--color-text) !important;
     }
-    :root:not([data-theme="light"]) .table-danger,
-    :root:not([data-theme="light"]) .table-danger > th,
-    :root:not([data-theme="light"]) .table-danger > td {
+    :root:not([data-theme="light"]) .table-high,
+    :root:not([data-theme="light"]) .table-high > th,
+    :root:not([data-theme="light"]) .table-high > td {
         background-color: var(--color-severity-high-bg) !important;
         color: var(--color-text) !important;
     }
-    :root:not([data-theme="light"]) .table-secondary,
-    :root:not([data-theme="light"]) .table-secondary > th,
-    :root:not([data-theme="light"]) .table-secondary > td {
+    :root:not([data-theme="light"]) .table-neutral,
+    :root:not([data-theme="light"]) .table-neutral > th,
+    :root:not([data-theme="light"]) .table-neutral > td {
         background-color: var(--color-bg-subtle) !important;
         color: var(--color-text) !important;
     }
-    :root:not([data-theme="light"]) .table-success,
-    :root:not([data-theme="light"]) .table-success > th,
-    :root:not([data-theme="light"]) .table-success > td {
+    :root:not([data-theme="light"]) .table-pass,
+    :root:not([data-theme="light"]) .table-pass > th,
+    :root:not([data-theme="light"]) .table-pass > td {
         background-color: var(--color-severity-pass-bg) !important;
         color: var(--color-text) !important;
     }
@@ -1345,128 +1114,6 @@ table caption {
     }
 }
 
-/* --- H. Alert Component --- */
-[data-theme="dark"] .alert-info {
-    background-color: var(--color-info-bg) !important;
-    color: var(--color-info) !important;
-    border-color: var(--color-info-border) !important;
-}
-[data-theme="dark"] .alert-success {
-    background-color: var(--color-severity-pass-bg) !important;
-    color: var(--color-severity-pass) !important;
-    border-color: var(--color-severity-pass-border) !important;
-}
-[data-theme="dark"] .alert-danger {
-    background-color: var(--color-severity-high-bg) !important;
-    color: var(--color-severity-high) !important;
-    border-color: var(--color-severity-high-border) !important;
-}
-[data-theme="dark"] .alert-warning {
-    background-color: var(--color-severity-medium-bg) !important;
-    color: var(--color-severity-medium) !important;
-    border-color: var(--color-severity-medium-border) !important;
-}
-[data-theme="dark"] .alert-secondary {
-    background-color: var(--color-bg-subtle) !important;
-    color: var(--color-text) !important;
-    border-color: var(--color-border) !important;
-}
-[data-theme="dark"] .alert a {
-    color: inherit !important;
-    text-decoration: underline !important;
-}
-@media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .alert-info {
-        background-color: var(--color-info-bg) !important;
-        color: var(--color-info) !important;
-        border-color: var(--color-info-border) !important;
-    }
-    :root:not([data-theme="light"]) .alert-success {
-        background-color: var(--color-severity-pass-bg) !important;
-        color: var(--color-severity-pass) !important;
-        border-color: var(--color-severity-pass-border) !important;
-    }
-    :root:not([data-theme="light"]) .alert-danger {
-        background-color: var(--color-severity-high-bg) !important;
-        color: var(--color-severity-high) !important;
-        border-color: var(--color-severity-high-border) !important;
-    }
-    :root:not([data-theme="light"]) .alert-warning {
-        background-color: var(--color-severity-medium-bg) !important;
-        color: var(--color-severity-medium) !important;
-        border-color: var(--color-severity-medium-border) !important;
-    }
-    :root:not([data-theme="light"]) .alert-secondary {
-        background-color: var(--color-bg-subtle) !important;
-        color: var(--color-text) !important;
-        border-color: var(--color-border) !important;
-    }
-    :root:not([data-theme="light"]) .alert a {
-        color: inherit !important;
-        text-decoration: underline !important;
-    }
-}
-
-/* --- I. Badge Component (all meet WCAG AAA 7:1+ in dark mode) --- */
-[data-theme="dark"] .badge.bg-success {
-    background-color: var(--color-severity-pass-badge) !important;
-    color: var(--color-text-inverse) !important;
-}
-[data-theme="dark"] .badge.bg-danger {
-    background-color: var(--color-severity-high-badge) !important;
-    color: var(--color-text-inverse) !important;
-}
-[data-theme="dark"] .badge.bg-warning {
-    background-color: var(--color-severity-medium) !important;
-    color: #0e1525 !important;
-}
-[data-theme="dark"] .badge.bg-info {
-    background-color: var(--color-info) !important;
-    color: #0e1525 !important;
-}
-[data-theme="dark"] .badge.bg-primary {
-    background-color: var(--color-link) !important;
-    color: #0e1525 !important;
-}
-[data-theme="dark"] .badge.bg-secondary {
-    background-color: var(--color-severity-low-badge) !important;
-    color: var(--color-text-inverse) !important;
-}
-[data-theme="dark"] .badge.bg-light {
-    background-color: var(--color-bg-subtle) !important;
-    color: var(--color-text) !important;
-}
-@media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .badge.bg-success {
-        background-color: var(--color-severity-pass-badge) !important;
-        color: var(--color-text-inverse) !important;
-    }
-    :root:not([data-theme="light"]) .badge.bg-danger {
-        background-color: var(--color-severity-high-badge) !important;
-        color: var(--color-text-inverse) !important;
-    }
-    :root:not([data-theme="light"]) .badge.bg-warning {
-        background-color: var(--color-severity-medium) !important;
-        color: #0e1525 !important;
-    }
-    :root:not([data-theme="light"]) .badge.bg-info {
-        background-color: var(--color-info) !important;
-        color: #0e1525 !important;
-    }
-    :root:not([data-theme="light"]) .badge.bg-primary {
-        background-color: var(--color-link) !important;
-        color: #0e1525 !important;
-    }
-    :root:not([data-theme="light"]) .badge.bg-secondary {
-        background-color: var(--color-severity-low-badge) !important;
-        color: var(--color-text-inverse) !important;
-    }
-    :root:not([data-theme="light"]) .badge.bg-light {
-        background-color: var(--color-bg-subtle) !important;
-        color: var(--color-text) !important;
-    }
-}
-
 /* --- J. Form Controls --- */
 [data-theme="dark"] .form-control {
     background-color: var(--color-bg-input) !important;
@@ -1560,239 +1207,6 @@ table caption {
     }
     :root:not([data-theme="light"]) .form-text {
         color: var(--color-text-muted) !important;
-    }
-}
-
-/* --- K0. Base Button Overrides for dark mode --- */
-/* Give all outline buttons an explicit dark background so they never
-   inherit a white container background via transparency. */
-[data-theme="dark"] .btn-outline-primary,
-[data-theme="dark"] .btn-outline-secondary,
-[data-theme="dark"] .btn-outline-success,
-[data-theme="dark"] .btn-outline-danger,
-[data-theme="dark"] .btn-outline-warning,
-[data-theme="dark"] .btn-outline-info,
-[data-theme="dark"] .btn-outline-light,
-[data-theme="dark"] .btn-outline-dark {
-    background-color: var(--color-bg) !important;
-}
-/* btn-primary uses a light bg in dark mode — switch to dark text for AA contrast */
-[data-theme="dark"] .btn-primary {
-    color: var(--color-button-primary-text) !important;
-}
-[data-theme="dark"] .btn-primary:hover,
-[data-theme="dark"] .btn-primary:active {
-    color: var(--color-button-primary-text) !important;
-}
-/* btn-warning: bright yellow bg needs dark text */
-[data-theme="dark"] .btn-warning {
-    background-color: var(--color-severity-medium) !important;
-    border-color: var(--color-severity-medium) !important;
-    color: #0e1525 !important;
-}
-/* btn-dark: invert for dark mode */
-[data-theme="dark"] .btn-dark {
-    background-color: var(--color-text) !important;
-    border-color: var(--color-text) !important;
-    color: var(--color-bg) !important;
-}
-@media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .btn-outline-primary,
-    :root:not([data-theme="light"]) .btn-outline-secondary,
-    :root:not([data-theme="light"]) .btn-outline-success,
-    :root:not([data-theme="light"]) .btn-outline-danger,
-    :root:not([data-theme="light"]) .btn-outline-warning,
-    :root:not([data-theme="light"]) .btn-outline-info,
-    :root:not([data-theme="light"]) .btn-outline-light,
-    :root:not([data-theme="light"]) .btn-outline-dark {
-        background-color: var(--color-bg) !important;
-    }
-    :root:not([data-theme="light"]) .btn-primary {
-        color: var(--color-button-primary-text) !important;
-    }
-    :root:not([data-theme="light"]) .btn-primary:hover,
-    :root:not([data-theme="light"]) .btn-primary:active {
-        color: var(--color-button-primary-text) !important;
-    }
-    :root:not([data-theme="light"]) .btn-warning {
-        background-color: var(--color-severity-medium) !important;
-        border-color: var(--color-severity-medium) !important;
-        color: #0e1525 !important;
-    }
-    :root:not([data-theme="light"]) .btn-dark {
-        background-color: var(--color-text) !important;
-        border-color: var(--color-text) !important;
-        color: var(--color-bg) !important;
-    }
-}
-
-/* --- K. Button Variants --- */
-[data-theme="dark"] .btn-success {
-    background-color: var(--color-severity-pass) !important;
-    border-color: var(--color-severity-pass) !important;
-    color: #0e1525 !important;
-}
-[data-theme="dark"] .btn-success:hover {
-    background-color: var(--color-severity-pass-badge) !important;
-    border-color: var(--color-severity-pass-badge) !important;
-    color: var(--color-text-inverse) !important;
-}
-[data-theme="dark"] .btn-danger {
-    background-color: var(--color-severity-high) !important;
-    border-color: var(--color-severity-high) !important;
-    color: #0e1525 !important;
-}
-[data-theme="dark"] .btn-danger:hover {
-    background-color: var(--color-severity-high-badge) !important;
-    border-color: var(--color-severity-high-badge) !important;
-    color: var(--color-text-inverse) !important;
-}
-[data-theme="dark"] .btn-info {
-    background-color: var(--color-info) !important;
-    border-color: var(--color-info) !important;
-    color: #0e1525 !important;
-}
-[data-theme="dark"] .btn-secondary {
-    background-color: var(--color-severity-low-badge) !important;
-    border-color: var(--color-severity-low-badge) !important;
-    color: var(--color-text-inverse) !important;
-}
-[data-theme="dark"] .btn-light {
-    background-color: var(--color-bg-subtle) !important;
-    border-color: var(--color-border) !important;
-    color: var(--color-text) !important;
-}
-[data-theme="dark"] .btn-outline-success {
-    color: var(--color-severity-pass) !important;
-    border-color: var(--color-severity-pass) !important;
-}
-[data-theme="dark"] .btn-outline-success:hover,
-[data-theme="dark"] .btn-outline-success:active,
-[data-theme="dark"] .btn-outline-success.active {
-    background-color: var(--color-severity-pass) !important;
-    color: #0e1525 !important;
-}
-[data-theme="dark"] .btn-outline-danger {
-    color: var(--color-severity-high) !important;
-    border-color: var(--color-severity-high) !important;
-}
-[data-theme="dark"] .btn-outline-danger:hover,
-[data-theme="dark"] .btn-outline-danger:active,
-[data-theme="dark"] .btn-outline-danger.active {
-    background-color: var(--color-severity-high) !important;
-    color: #0e1525 !important;
-}
-[data-theme="dark"] .btn-outline-info {
-    color: var(--color-info) !important;
-    border-color: var(--color-info) !important;
-}
-[data-theme="dark"] .btn-outline-info:hover,
-[data-theme="dark"] .btn-outline-info:active,
-[data-theme="dark"] .btn-outline-info.active {
-    background-color: var(--color-info) !important;
-    color: #0e1525 !important;
-}
-[data-theme="dark"] .btn-outline-secondary {
-    color: var(--color-text-muted) !important;
-    border-color: var(--color-border) !important;
-}
-[data-theme="dark"] .btn-outline-secondary:hover,
-[data-theme="dark"] .btn-outline-secondary:active,
-[data-theme="dark"] .btn-outline-secondary.active {
-    background-color: var(--color-severity-low-badge) !important;
-    color: var(--color-text-inverse) !important;
-}
-[data-theme="dark"] .btn-outline-light {
-    color: var(--color-text) !important;
-    border-color: var(--color-border) !important;
-}
-[data-theme="dark"] .btn-outline-light:hover {
-    background-color: var(--color-bg-subtle) !important;
-    color: var(--color-text) !important;
-}
-@media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .btn-success {
-        background-color: var(--color-severity-pass) !important;
-        border-color: var(--color-severity-pass) !important;
-        color: #0e1525 !important;
-    }
-    :root:not([data-theme="light"]) .btn-success:hover {
-        background-color: var(--color-severity-pass-badge) !important;
-        border-color: var(--color-severity-pass-badge) !important;
-        color: var(--color-text-inverse) !important;
-    }
-    :root:not([data-theme="light"]) .btn-danger {
-        background-color: var(--color-severity-high) !important;
-        border-color: var(--color-severity-high) !important;
-        color: #0e1525 !important;
-    }
-    :root:not([data-theme="light"]) .btn-danger:hover {
-        background-color: var(--color-severity-high-badge) !important;
-        border-color: var(--color-severity-high-badge) !important;
-        color: var(--color-text-inverse) !important;
-    }
-    :root:not([data-theme="light"]) .btn-info {
-        background-color: var(--color-info) !important;
-        border-color: var(--color-info) !important;
-        color: #0e1525 !important;
-    }
-    :root:not([data-theme="light"]) .btn-secondary {
-        background-color: var(--color-severity-low-badge) !important;
-        border-color: var(--color-severity-low-badge) !important;
-        color: var(--color-text-inverse) !important;
-    }
-    :root:not([data-theme="light"]) .btn-light {
-        background-color: var(--color-bg-subtle) !important;
-        border-color: var(--color-border) !important;
-        color: var(--color-text) !important;
-    }
-    :root:not([data-theme="light"]) .btn-outline-success {
-        color: var(--color-severity-pass) !important;
-        border-color: var(--color-severity-pass) !important;
-    }
-    :root:not([data-theme="light"]) .btn-outline-success:hover,
-    :root:not([data-theme="light"]) .btn-outline-success:active,
-    :root:not([data-theme="light"]) .btn-outline-success.active {
-        background-color: var(--color-severity-pass) !important;
-        color: #0e1525 !important;
-    }
-    :root:not([data-theme="light"]) .btn-outline-danger {
-        color: var(--color-severity-high) !important;
-        border-color: var(--color-severity-high) !important;
-    }
-    :root:not([data-theme="light"]) .btn-outline-danger:hover,
-    :root:not([data-theme="light"]) .btn-outline-danger:active,
-    :root:not([data-theme="light"]) .btn-outline-danger.active {
-        background-color: var(--color-severity-high) !important;
-        color: #0e1525 !important;
-    }
-    :root:not([data-theme="light"]) .btn-outline-info {
-        color: var(--color-info) !important;
-        border-color: var(--color-info) !important;
-    }
-    :root:not([data-theme="light"]) .btn-outline-info:hover,
-    :root:not([data-theme="light"]) .btn-outline-info:active,
-    :root:not([data-theme="light"]) .btn-outline-info.active {
-        background-color: var(--color-info) !important;
-        color: #0e1525 !important;
-    }
-    :root:not([data-theme="light"]) .btn-outline-secondary {
-        color: var(--color-text-muted) !important;
-        border-color: var(--color-border) !important;
-    }
-    :root:not([data-theme="light"]) .btn-outline-secondary:hover,
-    :root:not([data-theme="light"]) .btn-outline-secondary:active,
-    :root:not([data-theme="light"]) .btn-outline-secondary.active {
-        background-color: var(--color-severity-low-badge) !important;
-        color: var(--color-text-inverse) !important;
-    }
-    :root:not([data-theme="light"]) .btn-outline-light {
-        color: var(--color-text) !important;
-        border-color: var(--color-border) !important;
-    }
-    :root:not([data-theme="light"]) .btn-outline-light:hover {
-        background-color: var(--color-bg-subtle) !important;
-        color: var(--color-text) !important;
     }
 }
 
@@ -2109,9 +1523,9 @@ table caption {
     padding: 0;
     list-style: none;
     background: var(--color-bg-elevated);
-    border: 1px solid var(--color-border, var(--bs-border-color));
+    border: 1px solid var(--color-border);
     border-top: none;
-    border-radius: 0 0 var(--bs-border-radius) var(--bs-border-radius);
+    border-radius: 0 0 0.375rem 0.375rem;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
@@ -2132,16 +1546,16 @@ table caption {
 
 .combobox-option-name {
     font-weight: 500;
-    color: var(--color-text, var(--bs-body-color));
+    color: var(--color-text);
 }
 
 .combobox-option-email {
     font-size: 0.85em;
-    color: var(--color-text-muted, var(--bs-secondary-color));
+    color: var(--color-text-muted);
 }
 
 .combobox-option mark {
-    background: rgba(var(--bs-primary-rgb), 0.2);
+    background: var(--color-brand-subtle);
     color: inherit;
     padding: 0;
     border-radius: 2px;
@@ -2153,10 +1567,10 @@ table caption {
     gap: 0.375rem;
     padding: 0.25rem 0.625rem;
     background: var(--color-bg-subtle);
-    border: 1px solid var(--color-border, var(--bs-border-color));
+    border: 1px solid var(--color-border);
     border-radius: 1rem;
     font-size: 0.85rem;
-    color: var(--color-text, var(--bs-body-color));
+    color: var(--color-text);
     margin-bottom: 0.25rem;
 }
 
@@ -2166,7 +1580,7 @@ table caption {
     padding: 0;
     font-size: 1.1rem;
     line-height: 1;
-    color: var(--color-text-muted, var(--bs-secondary-color));
+    color: var(--color-text-muted);
     cursor: pointer;
     opacity: 0.7;
 }
@@ -2182,7 +1596,7 @@ table caption {
 .combobox-no-results {
     padding: 0.75rem;
     text-align: center;
-    color: var(--color-text-muted, var(--bs-secondary-color));
+    color: var(--color-text-muted);
     font-style: italic;
 }
 
@@ -2474,34 +1888,29 @@ table caption {
     background-color: var(--color-discovery);
 }
 
-/* Light mode: brighter warning stat card (dark text #1c1c1c → 8.2:1) */
-.stat-card.bg-warning {
-    background-color: #e8a817 !important;
-}
-
-/* Manual toggle */
-[data-theme="dark"] .stat-card.bg-primary {
+/* Manual toggle — darker stat-card backgrounds for WCAG AA white-text contrast */
+[data-theme="dark"] .stat-card.bg-brand {
     background-color: #2563a0 !important;  /* white 6.3:1 */
 }
-[data-theme="dark"] .stat-card.bg-success {
+[data-theme="dark"] .stat-card.bg-pass {
     background-color: #1a6b38 !important;  /* white 6.6:1 */
 }
-[data-theme="dark"] .stat-card.bg-secondary {
+[data-theme="dark"] .stat-card.bg-neutral {
     background-color: #4a535e !important;  /* white 5.8:1 */
 }
-[data-theme="dark"] .stat-card.bg-danger {
+[data-theme="dark"] .stat-card.bg-high {
     background-color: #9b2335 !important;  /* white 7.8:1 */
 }
 [data-theme="dark"] .stat-card.bg-info {
     background-color: #1a6b8a !important;  /* white 6.0:1 */
 }
-[data-theme="dark"] .stat-card.bg-warning {
+[data-theme="dark"] .stat-card.bg-medium {
     background-color: #f9a825 !important;  /* dark text 7.6:1 */
 }
-/* Keep dark text on the warning card (override global .text-dark flip) */
-[data-theme="dark"] .stat-card.bg-warning,
-[data-theme="dark"] .stat-card.bg-warning .card-subtitle,
-[data-theme="dark"] .stat-card.bg-warning .card-title {
+/* Keep dark text on the medium (warning) card */
+[data-theme="dark"] .stat-card.bg-medium,
+[data-theme="dark"] .stat-card.bg-medium .card-subtitle,
+[data-theme="dark"] .stat-card.bg-medium .card-title {
     color: #212529 !important;
 }
 [data-theme="dark"] .stat-card.bg-discovery {
@@ -2510,27 +1919,27 @@ table caption {
 
 /* OS preference */
 @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .stat-card.bg-primary {
+    :root:not([data-theme="light"]) .stat-card.bg-brand {
         background-color: #2563a0 !important;
     }
-    :root:not([data-theme="light"]) .stat-card.bg-success {
+    :root:not([data-theme="light"]) .stat-card.bg-pass {
         background-color: #1a6b38 !important;
     }
-    :root:not([data-theme="light"]) .stat-card.bg-secondary {
+    :root:not([data-theme="light"]) .stat-card.bg-neutral {
         background-color: #4a535e !important;
     }
-    :root:not([data-theme="light"]) .stat-card.bg-danger {
+    :root:not([data-theme="light"]) .stat-card.bg-high {
         background-color: #9b2335 !important;
     }
     :root:not([data-theme="light"]) .stat-card.bg-info {
         background-color: #1a6b8a !important;
     }
-    :root:not([data-theme="light"]) .stat-card.bg-warning {
+    :root:not([data-theme="light"]) .stat-card.bg-medium {
         background-color: #f9a825 !important;
     }
-    :root:not([data-theme="light"]) .stat-card.bg-warning,
-    :root:not([data-theme="light"]) .stat-card.bg-warning .card-subtitle,
-    :root:not([data-theme="light"]) .stat-card.bg-warning .card-title {
+    :root:not([data-theme="light"]) .stat-card.bg-medium,
+    :root:not([data-theme="light"]) .stat-card.bg-medium .card-subtitle,
+    :root:not([data-theme="light"]) .stat-card.bg-medium .card-title {
         color: #212529 !important;
     }
     :root:not([data-theme="light"]) .stat-card.bg-discovery {

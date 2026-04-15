@@ -474,7 +474,7 @@ table caption {
 }
 .severity-header-medium {
     background: linear-gradient(135deg, var(--color-severity-medium), var(--color-severity-medium-gradient-end));
-    color: var(--color-text);
+    color: var(--color-text-inverse);
 }
 .severity-header-pass {
     background: linear-gradient(135deg, var(--color-severity-pass), var(--color-severity-pass-gradient-end));
@@ -554,13 +554,13 @@ table caption {
     color: var(--color-text-inverse);
 }
 .btn-medium {
-    color: var(--color-text);
+    color: var(--color-text-inverse);
     background-color: var(--color-severity-medium);
     border-color: var(--color-severity-medium);
 }
 .btn-medium:hover, .btn-medium:active, .btn-medium:focus {
     filter: brightness(0.85);
-    color: var(--color-text);
+    color: var(--color-text-inverse);
 }
 .btn-info {
     color: var(--color-text-inverse);
@@ -610,7 +610,7 @@ table caption {
 .btn-outline-medium:hover, .btn-outline-medium:active, .btn-outline-medium.active {
     background-color: var(--color-severity-medium);
     border-color: var(--color-severity-medium);
-    color: var(--color-text);
+    color: var(--color-text-inverse);
 }
 .btn-outline-pass {
     color: var(--color-severity-pass);
@@ -704,7 +704,7 @@ table caption {
 .bg-neutral { background-color: var(--color-severity-low-badge) !important; }
 .bg-pass { background-color: var(--color-severity-pass) !important; }
 .bg-high { background-color: var(--color-severity-high) !important; }
-.bg-medium { background-color: var(--color-severity-medium) !important; }
+.bg-medium { background-color: var(--color-severity-medium) !important; color: var(--color-text-inverse) !important; }
 .bg-info { background-color: var(--color-info) !important; }
 .bg-subtle { background-color: var(--color-bg-subtle) !important; }
 .bg-header { background-color: var(--color-bg-header) !important; }
@@ -758,7 +758,7 @@ table caption {
 
 /* --- Progress Bars --- */
 .progress-pass { background-color: var(--color-severity-pass) !important; }
-.progress-medium { background-color: var(--color-severity-medium) !important; color: var(--color-text) !important; }
+.progress-medium { background-color: var(--color-severity-medium) !important; color: var(--color-text-inverse) !important; }
 .progress-high { background-color: var(--color-severity-high) !important; }
 .progress-neutral { background-color: var(--color-text-muted) !important; }
 
@@ -787,7 +787,7 @@ table caption {
 /* --- Toasts --- */
 .toast-pass { background-color: var(--color-severity-pass) !important; color: var(--color-text-inverse) !important; }
 .toast-high { background-color: var(--color-severity-high) !important; color: var(--color-text-inverse) !important; }
-.toast-medium { background-color: var(--color-severity-medium) !important; color: var(--color-text) !important; }
+.toast-medium { background-color: var(--color-severity-medium) !important; color: var(--color-text-inverse) !important; }
 .toast-info { background-color: var(--color-info) !important; color: var(--color-text-inverse) !important; }
 
 /* Dark mode: gradient severity headers use darker badge tokens */
@@ -815,6 +815,52 @@ table caption {
     :root:not([data-theme="light"]) .severity-header-pass {
         background: linear-gradient(135deg, var(--color-severity-pass-badge), var(--color-severity-pass-gradient-end));
         color: var(--color-text-inverse);
+    }
+}
+
+/* Dark mode: medium severity solid backgrounds use bright yellow (#f9a825) —
+   switch back to dark text so white-on-yellow (1.6:1) is avoided.
+   Light mode uses var(--color-text-inverse) (white, 5.56:1) on #7d6608. */
+[data-theme="dark"] .btn-medium,
+[data-theme="dark"] .btn-medium:hover,
+[data-theme="dark"] .btn-medium:active,
+[data-theme="dark"] .btn-medium:focus {
+    color: var(--color-text);
+}
+[data-theme="dark"] .btn-outline-medium:hover,
+[data-theme="dark"] .btn-outline-medium:active,
+[data-theme="dark"] .btn-outline-medium.active {
+    color: var(--color-text);
+}
+[data-theme="dark"] .toast-medium {
+    color: var(--color-text) !important;
+}
+[data-theme="dark"] .progress-medium {
+    color: var(--color-text) !important;
+}
+[data-theme="dark"] .bg-medium {
+    color: var(--color-text) !important;
+}
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .btn-medium,
+    :root:not([data-theme="light"]) .btn-medium:hover,
+    :root:not([data-theme="light"]) .btn-medium:active,
+    :root:not([data-theme="light"]) .btn-medium:focus {
+        color: var(--color-text);
+    }
+    :root:not([data-theme="light"]) .btn-outline-medium:hover,
+    :root:not([data-theme="light"]) .btn-outline-medium:active,
+    :root:not([data-theme="light"]) .btn-outline-medium.active {
+        color: var(--color-text);
+    }
+    :root:not([data-theme="light"]) .toast-medium {
+        color: var(--color-text) !important;
+    }
+    :root:not([data-theme="light"]) .progress-medium {
+        color: var(--color-text) !important;
+    }
+    :root:not([data-theme="light"]) .bg-medium {
+        color: var(--color-text) !important;
     }
 }
 

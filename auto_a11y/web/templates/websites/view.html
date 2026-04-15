@@ -9,7 +9,7 @@
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ url_for('projects.list_projects') }}">{{ ftl('common-projects') }}</a></li>
             <li class="breadcrumb-item"><a href="{{ url_for('projects.view_project', project_id=project.id) }}">{{ project.name }}</a></li>
-            <li class="breadcrumb-item active">{{ website.display_name }}</li>
+            <li class="breadcrumb-item active" aria-current="page">{{ website.display_name }}</li>
         </ol>
     </nav>
 

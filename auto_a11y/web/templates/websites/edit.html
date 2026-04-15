@@ -12,7 +12,7 @@
                     <li class="breadcrumb-item"><a href="{{ url_for('projects.list_projects') }}">{{ ftl('common-projects') }}</a></li>
                     <li class="breadcrumb-item"><a href="{{ url_for('projects.view_project', project_id=project.id) }}">{{ project.name }}</a></li>
                     <li class="breadcrumb-item"><a href="{{ url_for('websites.view_website', website_id=website.id) }}">{{ website.display_name }}</a></li>
-                    <li class="breadcrumb-item active">{{ ftl('common-edit') }}</li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ ftl('common-edit') }}</li>
                 </ol>
             </nav>
 

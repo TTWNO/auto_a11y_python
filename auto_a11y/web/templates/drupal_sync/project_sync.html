@@ -10,7 +10,7 @@
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="{{ url_for('projects.list_projects') }}">{{ ftl('common-projects') }}</a></li>
                     <li class="breadcrumb-item"><a href="{{ url_for('projects.view_project', project_id=project.id) }}">{{ project.name }}</a></li>
-                    <li class="breadcrumb-item active">{{ ftl('common-drupal-sync') }}</li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ ftl('common-drupal-sync') }}</li>
                 </ol>
             </nav>
             <h1>

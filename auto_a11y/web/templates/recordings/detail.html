@@ -12,7 +12,7 @@
             <nav aria-label="{{ ftl('common-breadcrumb') }}">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="{{ url_for('recordings.list_recordings') }}">{{ ftl('common-recordings') }}</a></li>
-                    <li class="breadcrumb-item active">{{ recording.recording_id }}</li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ recording.recording_id }}</li>
                 </ol>
             </nav>
             <h1 class="mb-0">{{ recording.title }}</h1>

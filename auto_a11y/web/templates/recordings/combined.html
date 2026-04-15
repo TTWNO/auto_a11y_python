@@ -11,7 +11,7 @@
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="{{ url_for('projects.view_project', project_id=project.id) }}">{{ project.name }}</a></li>
                     <li class="breadcrumb-item"><a href="{{ url_for('recordings.list_recordings') }}?project_id={{ project.id }}">{{ ftl('common-recordings') }}</a></li>
-                    <li class="breadcrumb-item active">{{ ftl('recordings-combined-view') }}</li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ ftl('recordings-combined-view') }}</li>
                 </ol>
             </nav>
             <h1 class="mb-0">{{ ftl('common-all-recordings-combined') }}</h1>

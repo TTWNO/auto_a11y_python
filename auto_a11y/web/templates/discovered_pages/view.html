@@ -10,7 +10,7 @@
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="{{ url_for('projects.view_project', project_id=project.id) }}">{{ project.name }}</a></li>
-                    <li class="breadcrumb-item active">{{ ftl('pages-discovered-page') }}</li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ ftl('pages-discovered-page') }}</li>
                 </ol>
             </nav>
             <h1 class="mb-0" id="pageTitle">{{ page.title }}</h1>

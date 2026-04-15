@@ -230,7 +230,7 @@
                     {% endif %}
                 </select>
             </div>
-            <a href="{{ url_for('testing.testing_dashboard') }}{% if selected_project %}?project_id={{ selected_project.id }}{% endif %}{% if selected_website %}&website_id={{ selected_website.id }}{% endif %}" class="btn btn-outline-neutral" title="{{ ftl('testing-back-to-dashboard') }}">
+            <a href="{{ url_for('testing.testing_dashboard') }}{% if selected_project %}?project_id={{ selected_project.id }}{% endif %}{% if selected_website %}&website_id={{ selected_website.id }}{% endif %}" class="btn btn-outline-neutral" aria-label="{{ ftl('testing-back-to-dashboard') }}">
                 <i class="bi bi-speedometer2" aria-hidden="true"></i>
             </a>
         </div>

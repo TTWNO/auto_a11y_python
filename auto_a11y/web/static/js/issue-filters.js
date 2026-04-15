@@ -88,9 +88,9 @@ class IssueFilterManager {
         const filterPanelHTML = `
             <div class="filter-panel mb-3" style="background: var(--color-bg-subtle); border-radius: 8px; padding: 1.5rem;">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0"><i class="bi bi-funnel"></i> ${translate('Filter Test Results')}</h5>
+                    <h3 class="mb-0"><i class="bi bi-funnel" aria-hidden="true"></i> ${translate('Filter Test Results')}</h3>
                     <button class="btn btn-sm btn-outline-neutral" id="clearFilters">
-                        <i class="bi bi-x-circle"></i> ${translate('Clear All')}
+                        <i class="bi bi-x-circle" aria-hidden="true"></i> ${translate('Clear All')}
                     </button>
                 </div>
 
@@ -168,19 +168,19 @@ class IssueFilterManager {
                         <label class="form-label fw-bold small">${translate('Affected User Groups')}</label>
                         <div class="filter-chips">
                             <button class="btn btn-sm btn-outline-neutral filter-chip me-2 mb-2" data-filter-type="user" data-filter-value="vision">
-                                <i class="bi bi-eye-slash me-1"></i>${translate('Vision')}
+                                <i class="bi bi-eye-slash me-1" aria-hidden="true"></i>${translate('Vision')}
                             </button>
                             <button class="btn btn-sm btn-outline-neutral filter-chip me-2 mb-2" data-filter-type="user" data-filter-value="hearing">
-                                <i class="bi bi-ear me-1"></i>${translate('Hearing')}
+                                <i class="bi bi-ear me-1" aria-hidden="true"></i>${translate('Hearing')}
                             </button>
                             <button class="btn btn-sm btn-outline-neutral filter-chip me-2 mb-2" data-filter-type="user" data-filter-value="motor">
-                                <i class="bi bi-hand-index me-1"></i>${translate('Motor')}
+                                <i class="bi bi-hand-index me-1" aria-hidden="true"></i>${translate('Motor')}
                             </button>
                             <button class="btn btn-sm btn-outline-neutral filter-chip me-2 mb-2" data-filter-type="user" data-filter-value="cognitive">
-                                <i class="bi bi-brain me-1"></i>${translate('Cognitive')}
+                                <i class="bi bi-brain me-1" aria-hidden="true"></i>${translate('Cognitive')}
                             </button>
                             <button class="btn btn-sm btn-outline-neutral filter-chip me-2 mb-2" data-filter-type="user" data-filter-value="seizure">
-                                <i class="bi bi-lightning me-1"></i>${translate('Seizure')}
+                                <i class="bi bi-lightning me-1" aria-hidden="true"></i>${translate('Seizure')}
                             </button>
                         </div>
                     </div>
@@ -200,8 +200,9 @@ class IssueFilterManager {
                 <div class="row g-3 mt-2">
                     <div class="col-12">
                         <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
                             <input type="text" class="form-control" id="quickSearch"
+                                   aria-label="${translate('Search in issue descriptions, IDs, or code...')}"
                                    placeholder="${translate('Search in issue descriptions, IDs, or code...')}">
                         </div>
                     </div>
@@ -388,7 +389,7 @@ class IssueFilterManager {
 
                 const icon = userId === 'guest' ? 'bi-person' : 'bi-person-fill';
                 const roleText = userInfo.roles ? ` (${userInfo.roles})` : '';
-                chip.innerHTML = `<i class="bi ${icon} me-1"></i>${userInfo.displayName}${roleText}`;
+                chip.innerHTML = `<i class="bi ${icon} me-1" aria-hidden="true"></i>${userInfo.displayName}${roleText}`;
 
                 testUserChips.appendChild(chip);
             });

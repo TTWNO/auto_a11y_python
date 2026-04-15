@@ -201,6 +201,7 @@ pages-this-page-was-tested-in-multiple-states-select-a = This page was tested in
 pages-this-server-is-configured-for-remote-browser = This server is configured for remote browser testing only. Submit tests via the remote worker.
 pages-thumbnail-not-available = Thumbnail not available
 pages-thumbnail-of = Thumbnail of
+pages-page-thumbnail = Page thumbnail
 pages-to-describe-what-the-map-shows-e-g-office = to describe what the map shows (e.g., \"Office locations map\")
 pages-to-identify-this-as-a = to identify this as a
 pages-total-individual-checks-performed-on-all-page = Total individual checks performed on all page elements. High pass rate is good but doesn't guarantee full compliance if critical issues exist.

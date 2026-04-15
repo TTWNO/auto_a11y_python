@@ -201,6 +201,7 @@ pages-this-page-was-tested-in-multiple-states-select-a = Cette page a été test
 pages-this-server-is-configured-for-remote-browser = Ce serveur est configuré pour les tests navigateur à distance uniquement. Soumettez les tests via le travailleur distant.
 pages-thumbnail-not-available = Vignette non disponible
 pages-thumbnail-of = Vignette de
+pages-page-thumbnail = Miniature de la page
 pages-to-describe-what-the-map-shows-e-g-office = pour décrire ce que la carte affiche (ex. \"Carte des bureaux\")
 pages-to-identify-this-as-a = pour identifier ceci comme
 pages-total-individual-checks-performed-on-all-page = Total des vérifications individuelles effectuées sur tous les éléments de la page. Un taux de réussite élevé est bon, mais ne garantit pas la pleine conformité si des problèmes critiques existent.

@@ -367,7 +367,7 @@
                         }[page.status.value] }} page-status flex-shrink-0" data-page-id="{{ page.id }}"
                         {% if page.error_reason %}title="{{ page.error_reason }}" data-bs-toggle="tooltip"{% endif %}>
                             {% if page.status.value in ['queued', 'testing'] %}
-                            <span class="spinner-border spinner-border-sm me-1" role="status" style="width: 10px; height: 10px;"></span>
+                            <span class="spinner-border spinner-border-sm me-1" role="status" style="width: 10px; height: 10px;"><span class="visually-hidden">{{ ftl('common-loading') }}</span></span>
                             {% elif page.status.value == 'discovery_failed' %}
                             <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
                             {% endif %}
@@ -713,11 +713,11 @@ function updatePageStatus(pageId, status) {
             break;
         case 'queued':
             badgeClass = 'info';
-            spinner = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>';
+            spinner = '<span class="spinner-border spinner-border-sm me-1" role="status"><span class="visually-hidden">{{ ftl('common-loading') }}</span></span>';
             break;
         case 'testing':
             badgeClass = 'medium';
-            spinner = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>';
+            spinner = '<span class="spinner-border spinner-border-sm me-1" role="status"><span class="visually-hidden">{{ ftl('common-loading') }}</span></span>';
             break;
         case 'tested':
             badgeClass = 'pass';

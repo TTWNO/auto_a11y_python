@@ -204,7 +204,7 @@
     <!-- Test Progress Alert (shown during testing) -->
     <div id="test-progress-alert" class="alert alert-info d-none" role="alert">
         <div class="d-flex align-items-center">
-            <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+            <div class="spinner-border spinner-border-sm me-2" role="status"><span class="visually-hidden">{{ ftl('common-loading') }}</span></div>
             <div>
                 <strong>{{ ftl('pages-test-in-progress') }}</strong> - {{ ftl('pages-the-page-will-automatically-refresh-when-testing') }}
             </div>
@@ -222,12 +222,12 @@
                             <span class="badge badge-neutral">{{ ftl('common-discovered') }}</span>
                         {% elif page.status.value == 'queued' %}
                             <span class="badge badge-medium">
-                                <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                <span class="spinner-border spinner-border-sm me-1" role="status"><span class="visually-hidden">{{ ftl('common-loading') }}</span></span>
                                 {{ ftl('common-queued') }}
                             </span>
                         {% elif page.status.value == 'testing' %}
                             <span class="badge badge-info">
-                                <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                <span class="spinner-border spinner-border-sm me-1" role="status"><span class="visually-hidden">{{ ftl('common-loading') }}</span></span>
                                 {{ ftl('common-testing') }}
                             </span>
                         {% elif page.status.value == 'tested' %}
@@ -3769,7 +3769,8 @@ const i18n = {
     'noWcagCriteriaFound': {{ ftl('pages-no-wcag-criteria-found') | tojson }},
     'noTouchpointsFound': {{ ftl('pages-no-touchpoints-found') | tojson }},
     'allTouchpoints': {{ ftl('common-all-touchpoints') | tojson }},
-    'allWcag': {{ ftl('common-all-wcag-criteria') | tojson }}
+    'allWcag': {{ ftl('common-all-wcag-criteria') | tojson }},
+    'loading': {{ ftl('common-loading') | tojson }}
 };
 window.i18n = i18n;
 
@@ -3794,11 +3795,11 @@ function updateStatusBadge(status) {
             progressAlert.classList.add('d-none');
             break;
         case 'queued':
-            badgeHtml = `<span class="badge badge-medium"><span class="spinner-border spinner-border-sm me-1" role="status"></span>${i18n.queued}</span>`;
+            badgeHtml = `<span class="badge badge-medium"><span class="spinner-border spinner-border-sm me-1" role="status"><span class="visually-hidden">${i18n.loading}</span></span>${i18n.queued}</span>`;
             progressAlert.classList.remove('d-none');
             break;
         case 'testing':
-            badgeHtml = `<span class="badge badge-info"><span class="spinner-border spinner-border-sm me-1" role="status"></span>${i18n.testing}</span>`;
+            badgeHtml = `<span class="badge badge-info"><span class="spinner-border spinner-border-sm me-1" role="status"><span class="visually-hidden">${i18n.loading}</span></span>${i18n.testing}</span>`;
             progressAlert.classList.remove('d-none');
             break;
         case 'tested':
@@ -3945,7 +3946,7 @@ function testPage(pageId) {
     const testBtn = document.getElementById('run-test-btn');
     if (testBtn) {
         testBtn.disabled = true;
-        testBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status"></span> ${i18n.startingTest}`;
+        testBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status"><span class="visually-hidden">${i18n.loading}</span></span> ${i18n.startingTest}`;
     }
 
     // Show modal

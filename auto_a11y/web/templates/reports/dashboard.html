@@ -207,7 +207,7 @@
                             {{ job.metadata.get('display_name', ftl('reports-report')) }}
                         </td>
                         <td colspan="2">
-                            <progress value="{{ job.progress.current|default(0) }}" max="{{ job.progress.total|default(1) }}"></progress>
+                            <progress value="{{ job.progress.current|default(0) }}" max="{{ job.progress.total|default(1) }}" aria-label="{{ ftl('reports-generation-progress') }}"></progress>
                             <span class="progress-text ms-2" role="status" aria-live="polite">{{ job.progress.message|default('Starting...') }}</span>
                         </td>
                         <td>{{ ftl('reports-just-now') }}</td>
@@ -427,7 +427,8 @@ const _i18n = {
     failedToDropJob: {{ ftl('reports-failed-to-drop-job') | tojson }},
     failedToRestartJob: {{ ftl('reports-failed-to-restart-job') | tojson }},
     errorPrefix: {{ ftl('common-error') | tojson }},
-    report: {{ ftl('reports-report') | tojson }}
+    report: {{ ftl('reports-report') | tojson }},
+    generationProgress: {{ ftl('reports-generation-progress') | tojson }}
 };
 
 function cloneRowTemplate(templateId, replacements) {
@@ -495,7 +496,7 @@ function startJobPoll(jobId, displayName) {
                 ${displayName}
             </td>
             <td colspan="2">
-                <progress value="0" max="1"></progress>
+                <progress value="0" max="1" aria-label="${_i18n.generationProgress}"></progress>
                 <span class="progress-text ms-2" role="status" aria-live="polite">${_i18n.starting}</span>
             </td>
             <td>${new Date().toLocaleString()}</td>

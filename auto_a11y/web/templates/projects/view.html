@@ -985,7 +985,7 @@ function startWebsiteStatusPolling(websiteId) {
     }
     
     // Show testing status immediately
-    updateWebsiteStatus(websiteId, '<span class="badge badge-info"><span class="spinner-border spinner-border-sm me-1" role="status"></span>{{ ftl('common-testing-2') }}</span>');
+    updateWebsiteStatus(websiteId, '<span class="badge badge-info"><span class="spinner-border spinner-border-sm me-1" role="status"><span class="visually-hidden">{{ ftl('common-loading') }}</span></span>{{ ftl('common-testing-2') }}</span>');
     websitesBeingTested.add(websiteId);
     
     // Poll for website testing status
@@ -1009,13 +1009,13 @@ function startWebsiteStatusPolling(websiteId) {
                 // Still testing - show progress
                 const progressText = `{{ ftl('common-testing') }}: ${data.tested_pages}/${data.total_pages} {{ ftl('common-pages-2') }}`;
                 updateWebsiteStatus(websiteId,
-                    `<span class="badge badge-info"><span class="spinner-border spinner-border-sm me-1" role="status"></span>${progressText}</span>`
+                    `<span class="badge badge-info"><span class="spinner-border spinner-border-sm me-1" role="status"><span class="visually-hidden">{{ ftl('common-loading') }}</span></span>${progressText}</span>`
                 );
             }
         }).fail(function() {
             // On error, just show generic testing message
             updateWebsiteStatus(websiteId,
-                '<span class="badge badge-info"><span class="spinner-border spinner-border-sm me-1" role="status"></span>{{ ftl('common-testing-2') }}</span>'
+                '<span class="badge badge-info"><span class="spinner-border spinner-border-sm me-1" role="status"><span class="visually-hidden">{{ ftl('common-loading') }}</span></span>{{ ftl('common-testing-2') }}</span>'
             );
         });
     }, 3000); // Poll every 3 seconds
@@ -1092,7 +1092,7 @@ $('#discoveryForm').submit(function(e) {
 
     if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> {{ ftl('common-starting') }}';
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"><span class="visually-hidden">{{ ftl('common-loading') }}</span></span> {{ ftl('common-starting') }}';
     }
 
     $.ajax({
@@ -1275,7 +1275,7 @@ function testAllWebsites() {
 function testWebsite(websiteId) {
     const btn = event.target.closest('button');
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Starting...';
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"><span class="visually-hidden">{{ ftl('common-loading') }}</span></span> {{ ftl('common-starting') }}';
     
     // Get website name for tracking
     const websiteRow = btn.closest('tr');

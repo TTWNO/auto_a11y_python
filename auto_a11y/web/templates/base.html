@@ -32,6 +32,7 @@
     <a class="skip-link" href="#main-content">{{ ftl('common-skip-to-main-content') }}</a>
 
     <!-- Navigation -->
+    <header>
     <nav class="navbar navbar-expand-lg navbar-dark bg-brand" aria-label="{{ ftl('common-main-navigation') }}">
         <div class="container-fluid">
             <a class="navbar-brand" href="{{ url_for('index') }}">
@@ -165,6 +166,7 @@
             </div>
         </div>
     </nav>
+    </header>
 
     <!-- Global Test Status Indicator -->
     <div id="global-test-status" class="d-none">
@@ -618,6 +620,14 @@
             console.log('No discovery entries to clear');
         }
     };
+
+    // Make link-styled-as-button elements respond to Space key (a11y)
+    document.addEventListener('keydown', function(e) {
+        if (e.key === ' ' && e.target.matches('a.btn')) {
+            e.preventDefault();
+            e.target.click();
+        }
+    });
 
     // Language switching functionality
     document.addEventListener('DOMContentLoaded', function() {

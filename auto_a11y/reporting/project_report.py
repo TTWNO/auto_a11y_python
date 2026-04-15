@@ -211,13 +211,13 @@ class ProjectReport:
             </div>
             <div class="col-md-2">
                 <div class="stat-card">
-                    <div class="stat-value text-danger">{self.report_data['summary']['total_violations']}</div>
+                    <div class="stat-value text-severity-high">{self.report_data['summary']['total_violations']}</div>
                     <div class="stat-label">Violations</div>
                 </div>
             </div>
             <div class="col-md-2">
                 <div class="stat-card">
-                    <div class="stat-value text-warning">{self.report_data['summary']['total_warnings']}</div>
+                    <div class="stat-value text-severity-medium">{self.report_data['summary']['total_warnings']}</div>
                     <div class="stat-label">Warnings</div>
                 </div>
             </div>
@@ -234,7 +234,7 @@ class ProjectReport:
             <div class="col-12">
                 <h5>Overall Test Coverage</h5>
                 <div class="progress" style="height: 30px;">
-                    <div class="progress-bar {'bg-success' if self.report_data['summary']['test_coverage'] >= 80 else 'bg-warning' if self.report_data['summary']['test_coverage'] >= 50 else 'bg-danger'}" 
+                    <div class="progress-bar {'progress-pass' if self.report_data['summary']['test_coverage'] >= 80 else 'progress-medium' if self.report_data['summary']['test_coverage'] >= 50 else 'progress-high'}" 
                          role="progressbar" 
                          style="width: {self.report_data['summary']['test_coverage']}%"
                          aria-valuenow="{self.report_data['summary']['test_coverage']}"
@@ -258,7 +258,7 @@ class ProjectReport:
         
         # Add website cards
         for website in self.report_data['websites']:
-            coverage_color = 'success' if website['test_coverage'] >= 80 else 'warning' if website['test_coverage'] >= 50 else 'danger'
+            coverage_color = 'pass' if website['test_coverage'] >= 80 else 'medium' if website['test_coverage'] >= 50 else 'high'
             
             html += f"""
             <div class="col-md-6 col-lg-4">
@@ -274,7 +274,7 @@ class ProjectReport:
                         
                         <div class="mb-3">
                             <div class="progress" style="height: 20px;">
-                                <div class="progress-bar bg-{coverage_color}" 
+                                <div class="progress-bar progress-{coverage_color}" 
                                      role="progressbar" 
                                      style="width: {website['test_coverage']}%">
                                     {website['test_coverage']:.0f}% tested
@@ -288,11 +288,11 @@ class ProjectReport:
                                 <small class="text-muted">Pages</small>
                             </div>
                             <div class="col-4">
-                                <div class="fw-bold text-danger">{website['total_violations']}</div>
+                                <div class="fw-bold text-severity-high">{website['total_violations']}</div>
                                 <small class="text-muted">Violations</small>
                             </div>
                             <div class="col-4">
-                                <div class="fw-bold text-warning">{website['total_warnings']}</div>
+                                <div class="fw-bold text-severity-medium">{website['total_warnings']}</div>
                                 <small class="text-muted">Warnings</small>
                             </div>
                         </div>

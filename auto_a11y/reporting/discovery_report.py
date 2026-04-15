@@ -1923,7 +1923,7 @@ class DiscoveryReportGenerator:
                 pages_html_parts.append(self._generate_page_section_html(page_data, idx, t))
             except Exception as e:
                 logger.error(f"Error generating HTML for page {idx + 1} ({page_data.get('url', 'unknown')}): {e}")
-                pages_html_parts.append(f'<div class="accordion-item"><p class="text-danger">Error rendering page: {html.escape(str(e))}</p></div>')
+                pages_html_parts.append(f'<div class="accordion-item"><p class="text-severity-high">Error rendering page: {html.escape(str(e))}</p></div>')
 
         pages_html = ''.join(pages_html_parts)
         logger.info(f"Completed generating HTML for all {total_pages} pages")

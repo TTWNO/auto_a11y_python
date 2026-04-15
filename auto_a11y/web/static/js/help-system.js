@@ -227,7 +227,7 @@ class HelpSystem {
                 <div class="help-modal-body" id="help-modal-body">
                 </div>
                 <div class="help-modal-footer">
-                    <button class="btn btn-primary help-modal-close">Close</button>
+                    <button class="btn btn-brand help-modal-close">Close</button>
                 </div>
             </div>
         `;

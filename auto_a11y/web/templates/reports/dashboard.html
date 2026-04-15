@@ -295,7 +295,7 @@
                 <h2 class="modal-title" id="generateReportModalTitle">{{ ftl('common-generate-report') }}</h2>
                 <button type="button" class="btn-close" data-close-modal aria-label="{{ ftl('common-close') }}"></button>
             </div>
-            <form id="generateReportForm">
+            <form id="generateReportForm" aria-labelledby="generateReportModalTitle">
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-md-6">
@@ -1036,7 +1036,7 @@ function generateDiscoveryReport() {
                 <h2 class="modal-title" id="siteStructureModalTitle">{{ ftl('reports-generate-site-structure-report') }}</h2>
                 <button type="button" class="btn-close" data-close-modal aria-label="{{ ftl('common-close') }}"></button>
             </div>
-            <form id="siteStructureForm">
+            <form id="siteStructureForm" aria-labelledby="siteStructureModalTitle">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="structureProject" class="form-label">{{ ftl('reports-select-project') }}</label>
@@ -1083,7 +1083,7 @@ function generateDiscoveryReport() {
                 <h2 class="modal-title" id="discoveryModalTitle">{{ ftl('reports-generate-discovery-report') }}</h2>
                 <button type="button" class="btn-close" data-close-modal aria-label="{{ ftl('common-close') }}"></button>
             </div>
-            <form id="discoveryForm">
+            <form id="discoveryForm" aria-labelledby="discoveryModalTitle">
                 <div class="modal-body">
                     <div class="alert alert-info mb-3">
                         <i class="bi bi-info-circle" aria-hidden="true"></i> {{ ftl('reports-this-report-discovers-pages-with-content') }}
@@ -1150,7 +1150,7 @@ function generateDiscoveryReport() {
                 <h2 class="modal-title" id="staticHtmlModalTitle">{{ ftl('reports-generate-offline-report-static-html') }}</h2>
                 <button type="button" class="btn-close" data-close-modal aria-label="{{ ftl('common-close') }}"></button>
             </div>
-            <form id="staticHtmlForm">
+            <form id="staticHtmlForm" aria-labelledby="staticHtmlModalTitle">
                 <div class="modal-body">
                     <div class="alert alert-info mb-3">
                         <i class="bi bi-info-circle" aria-hidden="true"></i> {{ ftl('reports-this-report-generates-a-complete-offline-website') }}
@@ -1306,7 +1306,7 @@ if (staticHtmlModal) {
                 <h2 class="modal-title" id="deduplicatedModalTitle">{{ ftl('reports-generate-deduplicated-report') }}</h2>
                 <button type="button" class="btn-close" data-close-modal aria-label="{{ ftl('common-close') }}"></button>
             </div>
-            <form id="deduplicatedForm">
+            <form id="deduplicatedForm" aria-labelledby="deduplicatedModalTitle">
                 <div class="modal-body">
                     <div class="alert alert-info mb-3">
                         <i class="bi bi-info-circle" aria-hidden="true"></i> {{ ftl('reports-this-report-generates-a-single-page-offline-html') }}
@@ -1436,7 +1436,7 @@ if (deduplicatedModal) {
                 <h2 class="modal-title" id="recordingsModalTitle">{{ ftl('reports-generate-recordings-report') }}</h2>
                 <button type="button" class="btn-close" data-close-modal aria-label="{{ ftl('common-close') }}"></button>
             </div>
-            <form id="recordingsForm">
+            <form id="recordingsForm" aria-labelledby="recordingsModalTitle">
                 <div class="modal-body">
                     <div class="alert alert-info mb-3">
                         <i class="bi bi-info-circle" aria-hidden="true"></i> {{ ftl('reports-this-report-includes-manual-accessibility') }}

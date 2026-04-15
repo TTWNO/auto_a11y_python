@@ -7,10 +7,10 @@
     <div class="col-md-6">
         <div class="card shadow">
             <div class="card-header bg-brand text-inverse">
-                <h1 class="mb-0"><i class="bi bi-person-plus" aria-hidden="true"></i> {{ ftl('auth-create-user') }}</h1>
+                <h1 class="mb-0" id="create-user-heading"><i class="bi bi-person-plus" aria-hidden="true"></i> {{ ftl('auth-create-user') }}</h1>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('auth.user_create') }}">
+                <form method="POST" action="{{ url_for('auth.user_create') }}" aria-labelledby="create-user-heading">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <fieldset>
                         <legend class="visually-hidden">{{ ftl('auth-new-user-account') }}</legend>

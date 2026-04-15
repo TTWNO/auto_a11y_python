@@ -20,13 +20,13 @@
         </ol>
     </nav>
 
-    <h1 class="mb-4">{{ ftl('pages-edit-page') }}</h1>
+    <h1 class="mb-4" id="edit-page-heading">{{ ftl('pages-edit-page') }}</h1>
 
     <div class="row">
         <div class="col-md-8">
             <div class="card">
                 <div class="card-body">
-                    <form method="POST" action="{{ url_for('pages.edit_page', page_id=page.id) }}">
+                    <form method="POST" action="{{ url_for('pages.edit_page', page_id=page.id) }}" aria-labelledby="edit-page-heading">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <fieldset>
                             <legend class="visually-hidden">{{ ftl('pages-page-details') }}</legend>

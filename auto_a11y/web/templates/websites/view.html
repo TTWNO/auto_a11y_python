@@ -464,7 +464,7 @@
                 <h2 class="modal-title" id="discoveryModalLabel">{{ ftl('common-discovery-options') }}</h2>
                 <button type="button" class="btn-close" aria-label="{{ ftl('common-close') }}" data-close-modal></button>
             </div>
-            <form id="discoveryForm">
+            <form id="discoveryForm" aria-labelledby="discoveryModalLabel">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="maxPages" class="form-label">{{ ftl('common-maximum-pages-to-discover') }}</label>
@@ -495,7 +495,7 @@
                 <h2 class="modal-title" id="addPageModalLabel">{{ ftl('websites-add-page-manually') }}</h2>
                 <button type="button" class="btn-close" aria-label="{{ ftl('common-close') }}" data-close-modal></button>
             </div>
-            <form id="addPageForm">
+            <form id="addPageForm" aria-labelledby="addPageModalLabel">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="pageUrl" class="form-label">{{ ftl('common-page-url') }} *</label>
@@ -528,7 +528,7 @@
                 <h2 class="modal-title" id="testAllModalLabel">{{ ftl('websites-test-all-pages-options') }}</h2>
                 <button type="button" class="btn-close" aria-label="{{ ftl('common-close') }}" data-close-modal></button>
             </div>
-            <form id="testAllForm">
+            <form id="testAllForm" aria-labelledby="testAllModalLabel">
                 <div class="modal-body">
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle" aria-hidden="true"></i> {{ ftl('websites-this-will-run-accessibility-tests-on-all-pages') }}
@@ -553,7 +553,7 @@
                 <h2 class="modal-title" id="testUntestedModalLabel">{{ ftl('websites-test-untested-pages') }}</h2>
                 <button type="button" class="btn-close" aria-label="{{ ftl('common-close') }}" data-close-modal></button>
             </div>
-            <form id="testUntestedForm">
+            <form id="testUntestedForm" aria-labelledby="testUntestedModalLabel">
                 <div class="modal-body">
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle" aria-hidden="true"></i>

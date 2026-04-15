@@ -16,11 +16,11 @@
                 </ol>
             </nav>
 
-            <h1 class="mb-4">{{ ftl('websites-edit-website') }}</h1>
+            <h1 class="mb-4" id="edit-website-heading">{{ ftl('websites-edit-website') }}</h1>
 
             <div class="card">
                 <div class="card-body">
-                    <form method="POST" action="{{ url_for('websites.edit_website', website_id=website.id) }}">
+                    <form method="POST" action="{{ url_for('websites.edit_website', website_id=website.id) }}" aria-labelledby="edit-website-heading">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <fieldset>
                             <legend id="basic-info-heading">{{ ftl('common-basic-information') }}</legend>
@@ -136,7 +136,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-neutral" data-close-modal>{{ ftl('common-cancel') }}</button>
-                <form method="POST" action="{{ url_for('websites.delete_website', website_id=website.id) }}" style="display: inline;">
+                <form method="POST" action="{{ url_for('websites.delete_website', website_id=website.id) }}" style="display: inline;" aria-labelledby="deleteWebsiteModalLabel">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <button type="submit" class="btn btn-high">{{ ftl('websites-delete-website') }}</button>
                 </form>

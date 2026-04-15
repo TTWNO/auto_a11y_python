@@ -204,3 +204,5 @@ recordings-which-project-should-this-recording-be-associated = Which project sho
 recordings-who-is-affected = Who is affected:
 recordings-why = Why:
 recordings-zoom-text-resize = Zoom / Text Resize
+
+recordings-filter-recordings = Filter recordings

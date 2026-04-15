@@ -20,7 +20,7 @@
         </ol>
     </nav>
 
-    <h1 class="mb-4">
+    <h1 class="mb-4" id="edit-website-user-heading">
         <i class="bi bi-pencil" aria-hidden="true"></i> {{ ftl('common-edit-test-user') }}
     </h1>
 
@@ -35,7 +35,7 @@
         {% endif %}
     {% endwith %}
 
-    <form method="POST" class="needs-validation" novalidate>
+    <form method="POST" class="needs-validation" novalidate aria-labelledby="edit-website-user-heading">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <div class="row">
             <div class="col-md-8">

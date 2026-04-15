@@ -106,3 +106,5 @@ schedules-tuesday = Mardi
 schedules-upcoming-runs = Prochaines exécutions
 schedules-wednesday = Mercredi
 schedules-weekly-on = Chaque semaine le
+
+schedules-filter-schedules = Filtrer les calendriers

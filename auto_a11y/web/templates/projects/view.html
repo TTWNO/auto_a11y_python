@@ -474,7 +474,7 @@
                 <h2 class="modal-title" id="addWebsiteModalLabel">{{ ftl('projects-add-website') }}</h2>
                 <button type="button" class="btn-close" data-close-modal aria-label="{{ ftl('common-close') }}"></button>
             </div>
-            <form method="POST" action="{{ url_for('projects.add_website', project_id=project.id) }}">
+            <form method="POST" action="{{ url_for('projects.add_website', project_id=project.id) }}" aria-labelledby="addWebsiteModalLabel">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <div class="modal-body">
                     <div class="mb-3">
@@ -505,7 +505,7 @@
                 <h2 class="modal-title" id="discoveryModalLabel">{{ ftl('common-discovery-options') }}</h2>
                 <button type="button" class="btn-close" data-close-modal aria-label="{{ ftl('common-close') }}"></button>
             </div>
-            <form id="discoveryForm">
+            <form id="discoveryForm" aria-labelledby="discoveryModalLabel">
                 <input type="hidden" id="discoveryWebsiteId" />
                 <input type="hidden" id="discoveryWebsiteName" />
                 <div class="modal-body">
@@ -571,7 +571,7 @@
                 <h2 class="modal-title" id="testAllModalLabel">{{ ftl('projects-test-all-websites-in-project') }}</h2>
                 <button type="button" class="btn-close" data-close-modal aria-label="{{ ftl('common-close') }}"></button>
             </div>
-            <form id="testAllForm" method="POST" action="{{ url_for('projects.test_project', project_id=project.id) }}">
+            <form id="testAllForm" method="POST" action="{{ url_for('projects.test_project', project_id=project.id) }}" aria-labelledby="testAllModalLabel">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <div class="modal-body">
                     <p>{{ ftl('projects-this-will-test-all-websites-in-the-project') }} "{{ project.name }}".</p>
@@ -627,7 +627,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-neutral" data-close-modal>{{ ftl('common-cancel') }}</button>
-                <form method="POST" action="{{ url_for('projects.delete_project', project_id=project.id) }}" style="display: inline;">
+                <form method="POST" action="{{ url_for('projects.delete_project', project_id=project.id) }}" style="display: inline;" aria-labelledby="deleteModalLabel">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <button type="submit" class="btn btn-high">{{ ftl('projects-delete-project') }}</button>
                 </form>

@@ -7,7 +7,7 @@
     <div class="col-md-6 col-lg-4">
         <div class="card shadow">
             <div class="card-header bg-brand text-inverse">
-                <h1 class="mb-0"><i class="bi bi-person-plus" aria-hidden="true"></i> {{ ftl('auth-register') }}</h1>
+                <h1 class="mb-0" id="register-heading"><i class="bi bi-person-plus" aria-hidden="true"></i> {{ ftl('auth-register') }}</h1>
             </div>
             <div class="card-body">
                 {% if is_first_user %}
@@ -16,7 +16,7 @@
                 </div>
                 {% endif %}
                 
-                <form method="POST" action="{{ url_for('auth.register') }}">
+                <form method="POST" action="{{ url_for('auth.register') }}" aria-labelledby="register-heading">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <fieldset>
                         <legend class="visually-hidden">{{ ftl('auth-account-details') }}</legend>

@@ -28,7 +28,7 @@
                 {{ ftl('common-cancel') }}
             </button>
             <form method="post" action="{{ url_for('recordings.delete_recording', recording_id=recording.id) }}"
-                  onsubmit="return confirm('{{ ftl('recordings-are-you-sure-you-want-to-delete-this-recording') }}')" class="d-inline">
+                  onsubmit="return confirm('{{ ftl('recordings-are-you-sure-you-want-to-delete-this-recording') }}')" class="d-inline" aria-label="{{ ftl('common-delete') }}">
                 <button type="submit" class="btn btn-outline-high">
                     <i class="bi bi-trash" aria-hidden="true"></i> {{ ftl('common-delete') }}
                 </button>

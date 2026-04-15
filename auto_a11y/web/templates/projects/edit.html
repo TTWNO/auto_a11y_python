@@ -48,11 +48,11 @@
 <div class="container">
     <div class="row">
         <div class="col-md-8 col-lg-6 mx-auto">
-            <h1 class="mb-4">{{ ftl('projects-edit-project') }}</h1>
+            <h1 class="mb-4" id="edit-project-heading">{{ ftl('projects-edit-project') }}</h1>
             
             <div class="card">
                 <div class="card-body">
-                    <form method="POST" action="{{ url_for('projects.edit_project', project_id=project.id) }}">
+                    <form method="POST" action="{{ url_for('projects.edit_project', project_id=project.id) }}" aria-labelledby="edit-project-heading">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <fieldset class="mb-4">
                             <legend><h3 class="h5 mb-0">{{ ftl('projects-project-details') }}</h3></legend>
@@ -472,7 +472,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-neutral" data-close-modal>{{ ftl('common-cancel') }}</button>
-                <form method="POST" action="{{ url_for('projects.delete_project', project_id=project.id) }}" style="display: inline;">
+                <form method="POST" action="{{ url_for('projects.delete_project', project_id=project.id) }}" style="display: inline;" aria-labelledby="deleteProjectModalLabel">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <button type="submit" class="btn btn-high">{{ ftl('projects-delete-project') }}</button>
                 </form>

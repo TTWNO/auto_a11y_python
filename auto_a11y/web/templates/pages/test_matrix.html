@@ -177,7 +177,7 @@
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h1>
+            <h1 id="matrix-form-heading">
                 <i class="bi bi-grid-3x3" aria-hidden="true"></i> {{ ftl('common-configure-test-matrix') }}
             </h1>
             <p class="text-muted">{{ page.url }}</p>
@@ -328,7 +328,7 @@
     </section>
 
     <!-- Save Form -->
-    <form method="POST" id="matrix-form">
+    <form method="POST" id="matrix-form" aria-labelledby="matrix-form-heading">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <input type="hidden" name="matrix_data" id="matrix-data-input">
         <div class="d-flex justify-content-between align-items-center">

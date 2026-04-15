@@ -67,7 +67,7 @@
 <div class="container">
     <div class="row">
         <div class="col-md-10 col-lg-9 mx-auto">
-            <h1 class="mb-4">{{ ftl('projects-create-new-project') }}</h1>
+            <h1 class="mb-4" id="create-project-heading">{{ ftl('projects-create-new-project') }}</h1>
             
             <!-- Fixture Status Notice -->
             {% if debug_mode %}
@@ -86,7 +86,7 @@
             
             <div class="card">
                 <div class="card-body">
-                    <form method="POST" action="{{ url_for('projects.create_project') }}">
+                    <form method="POST" action="{{ url_for('projects.create_project') }}" aria-labelledby="create-project-heading">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <fieldset class="mb-4">
                             <legend><h3 class="h5 mb-0">{{ ftl('projects-project-details') }}</h3></legend>

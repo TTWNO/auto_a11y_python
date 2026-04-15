@@ -66,7 +66,7 @@
 
     <div class="row">
         <div class="col-lg-10 col-xl-8">
-            <h1 class="mb-4">
+            <h1 class="mb-4" id="script-form-heading">
                 <i class="bi bi-code-square" aria-hidden="true"></i> {{ ftl('scripts-create-level-setup-script', level=(ftl('scripts-website-level') if is_website_script else ftl('scripts-page-level'))) }}
             </h1>
 
@@ -82,7 +82,7 @@
                 {{ ftl('scripts-with-multi-state-testing-you-can-test-pages-both') }}
             </div>
 
-            <form method="POST" id="script-form">
+            <form method="POST" id="script-form" aria-labelledby="script-form-heading">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
 
                 <!-- Basic Information -->

@@ -2,7 +2,7 @@
    Pass: scope ("project" or "website"), scope_id (the ObjectId string) #}
 <div class="card mb-3" id="share-tokens-section">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <h3 class="mb-0">{{ ftl('settings-share-links') }}</h3>
+        <h3 class="mb-0" id="share-links-heading">{{ ftl('settings-share-links') }}</h3>
         <button type="button" class="btn btn-sm btn-brand" data-bs-toggle="collapse"
                 data-bs-target="#create-token-form" aria-expanded="false"
                 aria-controls="create-token-form">
@@ -12,7 +12,7 @@
 
     <div class="collapse" id="create-token-form">
         <div class="card-body border-bottom">
-            <form id="token-create-form" onsubmit="return createShareToken(event, '{{ scope }}', '{{ scope_id }}')">
+            <form id="token-create-form" aria-labelledby="share-links-heading" onsubmit="return createShareToken(event, '{{ scope }}', '{{ scope_id }}')">
                 <div class="row g-2 align-items-end">
                     <div class="col-md-4">
                         <label for="token-label" class="form-label">{{ ftl('common-label') }}</label>

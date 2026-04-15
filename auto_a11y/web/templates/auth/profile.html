@@ -7,10 +7,10 @@
     <div class="col-md-6">
         <div class="card shadow mb-4">
             <div class="card-header bg-brand text-inverse">
-                <h2 class="mb-0"><i class="bi bi-person-circle" aria-hidden="true"></i> {{ ftl('common-profile') }}</h2>
+                <h2 class="mb-0" id="profile-heading"><i class="bi bi-person-circle" aria-hidden="true"></i> {{ ftl('common-profile') }}</h2>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('auth.profile') }}">
+                <form method="POST" action="{{ url_for('auth.profile') }}" aria-labelledby="profile-heading">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <input type="hidden" name="action" value="update_profile">
                     <fieldset>
@@ -45,10 +45,10 @@
     <div class="col-md-6">
         <div class="card shadow">
             <div class="card-header card-header-medium">
-                <h2 class="mb-0"><i class="bi bi-key" aria-hidden="true"></i> {{ ftl('auth-change-password') }}</h2>
+                <h2 class="mb-0" id="change-password-heading"><i class="bi bi-key" aria-hidden="true"></i> {{ ftl('auth-change-password') }}</h2>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('auth.profile') }}">
+                <form method="POST" action="{{ url_for('auth.profile') }}" aria-labelledby="change-password-heading">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <input type="hidden" name="action" value="change_password">
                     <fieldset>

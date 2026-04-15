@@ -22,7 +22,7 @@
         </ol>
     </nav>
 
-    <h1 class="mb-4">
+    <h1 class="mb-4" id="schedule-form-heading">
         <i class="bi bi-calendar-event" aria-hidden="true"></i>
         {% if is_edit %}{{ ftl('schedules-edit-schedule') }}{% else %}{{ ftl('common-create-schedule') }}{% endif %}
     </h1>
@@ -38,7 +38,7 @@
         {% endif %}
     {% endwith %}
 
-    <form method="POST" id="scheduleForm">
+    <form method="POST" id="scheduleForm" aria-labelledby="schedule-form-heading">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <div class="row">
             <!-- Left Column - Basic Info & Schedule -->

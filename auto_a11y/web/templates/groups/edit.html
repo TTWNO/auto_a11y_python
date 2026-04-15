@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4 gap-2">
-    <h1 class="mb-0">
+    <h1 class="mb-0" id="group-form-heading">
         <i class="bi bi-shield-lock" aria-hidden="true"></i>
         {{ ftl('groups-edit-group') if group else ftl('groups-create-group') }}
     </h1>
@@ -15,7 +15,7 @@
 
 <div class="card shadow">
     <div class="card-body">
-        <form method="POST">
+        <form method="POST" aria-labelledby="group-form-heading">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <fieldset class="mb-4">
                 <legend><h3 class="h5 mb-0">{{ ftl('groups-group-details') }}</h3></legend>

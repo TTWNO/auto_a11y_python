@@ -597,6 +597,289 @@ table caption {
 .text-link { color: var(--color-link) !important; }
 .text-placeholder { color: var(--color-border) !important; }
 
+/* ============================================================
+   Custom Colour Utility Classes (replaces Bootstrap colour classes)
+   All classes use design tokens — automatic light/dark support.
+   DO NOT use Bootstrap colour classes (btn-primary, bg-danger,
+   text-warning, etc.) — use these custom classes instead.
+   ============================================================ */
+
+/* --- Buttons --- */
+.btn-brand {
+    color: var(--color-button-primary-text);
+    background-color: var(--color-link);
+    border-color: var(--color-link);
+}
+.btn-brand:hover, .btn-brand:active, .btn-brand:focus {
+    background-color: var(--color-link-hover);
+    border-color: var(--color-link-hover);
+    color: var(--color-button-primary-text);
+}
+.btn-neutral {
+    color: var(--color-text);
+    background-color: var(--color-bg-subtle);
+    border-color: var(--color-border);
+}
+.btn-neutral:hover, .btn-neutral:active, .btn-neutral:focus {
+    background-color: var(--color-border);
+    border-color: var(--color-border-strong);
+    color: var(--color-text);
+}
+.btn-pass {
+    color: var(--color-text-inverse);
+    background-color: var(--color-severity-pass);
+    border-color: var(--color-severity-pass);
+}
+.btn-pass:hover, .btn-pass:active, .btn-pass:focus {
+    filter: brightness(0.85);
+    color: var(--color-text-inverse);
+}
+.btn-high {
+    color: var(--color-text-inverse);
+    background-color: var(--color-severity-high);
+    border-color: var(--color-severity-high);
+}
+.btn-high:hover, .btn-high:active, .btn-high:focus {
+    filter: brightness(0.85);
+    color: var(--color-text-inverse);
+}
+.btn-medium {
+    color: var(--color-text);
+    background-color: var(--color-severity-medium);
+    border-color: var(--color-severity-medium);
+}
+.btn-medium:hover, .btn-medium:active, .btn-medium:focus {
+    filter: brightness(0.85);
+    color: var(--color-text);
+}
+.btn-info {
+    color: var(--color-text-inverse);
+    background-color: var(--color-info);
+    border-color: var(--color-info);
+}
+.btn-info:hover, .btn-info:active, .btn-info:focus {
+    filter: brightness(0.85);
+    color: var(--color-text-inverse);
+}
+.btn-dark {
+    color: var(--color-text-inverse);
+    background-color: var(--color-bg-header);
+    border-color: var(--color-bg-header);
+}
+.btn-dark:hover, .btn-dark:active, .btn-dark:focus {
+    filter: brightness(1.2);
+    color: var(--color-text-inverse);
+}
+
+/* Outline buttons */
+.btn-outline-brand {
+    color: var(--color-link);
+    border-color: var(--color-link);
+    background-color: transparent;
+}
+.btn-outline-brand:hover, .btn-outline-brand:active, .btn-outline-brand.active {
+    background-color: var(--color-link);
+    border-color: var(--color-link);
+    color: var(--color-button-primary-text);
+}
+.btn-outline-neutral {
+    color: var(--color-text-muted);
+    border-color: var(--color-border);
+    background-color: transparent;
+}
+.btn-outline-neutral:hover, .btn-outline-neutral:active, .btn-outline-neutral.active {
+    background-color: var(--color-bg-subtle);
+    border-color: var(--color-border-strong);
+    color: var(--color-text);
+}
+.btn-outline-medium {
+    color: var(--color-severity-medium);
+    border-color: var(--color-severity-medium-border);
+    background-color: transparent;
+}
+.btn-outline-medium:hover, .btn-outline-medium:active, .btn-outline-medium.active {
+    background-color: var(--color-severity-medium);
+    border-color: var(--color-severity-medium);
+    color: var(--color-text);
+}
+.btn-outline-pass {
+    color: var(--color-severity-pass);
+    border-color: var(--color-severity-pass);
+    background-color: transparent;
+}
+.btn-outline-pass:hover, .btn-outline-pass:active, .btn-outline-pass.active {
+    background-color: var(--color-severity-pass);
+    border-color: var(--color-severity-pass);
+    color: var(--color-text-inverse);
+}
+.btn-outline-high {
+    color: var(--color-severity-high);
+    border-color: var(--color-severity-high);
+    background-color: transparent;
+}
+.btn-outline-high:hover, .btn-outline-high:active, .btn-outline-high.active {
+    background-color: var(--color-severity-high);
+    border-color: var(--color-severity-high);
+    color: var(--color-text-inverse);
+}
+
+/* --- Alerts --- */
+.alert-info {
+    background-color: var(--color-info-bg);
+    color: var(--color-info);
+    border-color: var(--color-info-border);
+}
+.alert-pass {
+    background-color: var(--color-severity-pass-bg);
+    color: var(--color-severity-pass);
+    border-color: var(--color-severity-pass-border);
+}
+.alert-high {
+    background-color: var(--color-severity-high-bg);
+    color: var(--color-severity-high);
+    border-color: var(--color-severity-high-border);
+}
+.alert-medium {
+    background-color: var(--color-severity-medium-bg);
+    color: var(--color-severity-medium);
+    border-color: var(--color-severity-medium-border);
+}
+.alert-neutral {
+    background-color: var(--color-bg-subtle);
+    color: var(--color-text);
+    border-color: var(--color-border);
+}
+.alert a { color: inherit; text-decoration: underline; }
+
+/* --- Badges --- */
+.badge-brand {
+    background-color: var(--color-brand);
+    color: var(--color-text-inverse);
+}
+.badge-neutral {
+    background-color: var(--color-severity-low-badge);
+    color: var(--color-text-inverse);
+}
+.badge-pass {
+    background-color: var(--color-severity-pass-badge);
+    color: var(--color-text-inverse);
+}
+.badge-high {
+    background-color: var(--color-severity-high-badge);
+    color: var(--color-text-inverse);
+}
+.badge-medium {
+    background-color: var(--color-severity-medium-bg);
+    color: var(--color-severity-medium);
+    border: 1px solid var(--color-severity-medium-border);
+}
+.badge-info {
+    background-color: var(--color-info-bg);
+    color: var(--color-info);
+    border: 1px solid var(--color-info-border);
+}
+.badge-subtle {
+    background-color: var(--color-bg-subtle);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+}
+.badge-discovery {
+    background-color: var(--color-discovery-bg);
+    color: var(--color-discovery);
+    border: 1px solid var(--color-discovery-border);
+}
+
+/* --- Backgrounds --- */
+.bg-brand { background-color: var(--color-link) !important; }
+.bg-neutral { background-color: var(--color-severity-low-badge) !important; }
+.bg-pass { background-color: var(--color-severity-pass) !important; }
+.bg-high { background-color: var(--color-severity-high) !important; }
+.bg-medium { background-color: var(--color-severity-medium) !important; }
+.bg-info { background-color: var(--color-info) !important; }
+.bg-subtle { background-color: var(--color-bg-subtle) !important; }
+.bg-header { background-color: var(--color-bg-header) !important; }
+.bg-elevated { background-color: var(--color-bg-elevated) !important; }
+
+/* Tinted backgrounds (10% opacity equivalent, no --bs-*-rgb needed) */
+.bg-brand-subtle { background-color: var(--color-brand-subtle) !important; }
+.bg-pass-subtle { background-color: var(--color-severity-pass-bg) !important; }
+.bg-high-subtle { background-color: var(--color-severity-high-bg) !important; }
+.bg-medium-subtle { background-color: var(--color-severity-medium-bg) !important; }
+.bg-info-subtle-bg { background-color: var(--color-info-bg) !important; }
+.bg-neutral-subtle { background-color: var(--color-bg-subtle) !important; }
+
+/* --- Text --- */
+.text-muted { color: var(--color-text-muted) !important; }
+.text-inverse { color: var(--color-text-inverse) !important; }
+
+/* --- Borders (colour only — add to elements that already have border-* structural classes) --- */
+.border-brand { border-color: var(--color-link) !important; }
+.border-neutral { border-color: var(--color-border) !important; }
+.border-pass { border-color: var(--color-severity-pass) !important; }
+.border-high { border-color: var(--color-severity-high) !important; }
+.border-medium { border-color: var(--color-severity-medium) !important; }
+.border-info { border-color: var(--color-info) !important; }
+
+/* --- Tables --- */
+.table-subtle, .table-subtle > th, .table-subtle > td {
+    background-color: var(--color-bg-subtle);
+    color: var(--color-text);
+}
+.table-info, .table-info > th, .table-info > td {
+    background-color: var(--color-info-bg);
+    color: var(--color-text);
+}
+.table-medium, .table-medium > th, .table-medium > td {
+    background-color: var(--color-severity-medium-bg);
+    color: var(--color-text);
+}
+.table-high, .table-high > th, .table-high > td {
+    background-color: var(--color-severity-high-bg);
+    color: var(--color-text);
+}
+.table-pass, .table-pass > th, .table-pass > td {
+    background-color: var(--color-severity-pass-bg);
+    color: var(--color-text);
+}
+.table-neutral, .table-neutral > th, .table-neutral > td {
+    background-color: var(--color-bg-subtle);
+    color: var(--color-text);
+}
+
+/* --- Progress Bars --- */
+.progress-pass { background-color: var(--color-severity-pass) !important; }
+.progress-medium { background-color: var(--color-severity-medium) !important; color: var(--color-text) !important; }
+.progress-high { background-color: var(--color-severity-high) !important; }
+.progress-neutral { background-color: var(--color-text-muted) !important; }
+
+/* --- Card Headers --- */
+.card-header-medium {
+    background-color: var(--color-severity-medium-bg) !important;
+    color: var(--color-severity-medium) !important;
+    border-bottom-color: var(--color-severity-medium-border) !important;
+}
+.card-header-info {
+    background-color: var(--color-info-bg) !important;
+    color: var(--color-info) !important;
+    border-bottom-color: var(--color-info-border) !important;
+}
+.card-header-pass {
+    background-color: var(--color-severity-pass-bg) !important;
+    color: var(--color-severity-pass) !important;
+    border-bottom-color: var(--color-severity-pass-border) !important;
+}
+.card-header-neutral {
+    background-color: var(--color-bg-subtle) !important;
+    color: var(--color-text) !important;
+    border-bottom-color: var(--color-border) !important;
+}
+
+/* --- Toasts --- */
+.toast-pass { background-color: var(--color-severity-pass) !important; color: var(--color-text-inverse) !important; }
+.toast-high { background-color: var(--color-severity-high) !important; color: var(--color-text-inverse) !important; }
+.toast-medium { background-color: var(--color-severity-medium) !important; color: var(--color-text) !important; }
+.toast-info { background-color: var(--color-info) !important; color: var(--color-text-inverse) !important; }
+
 /* Dark mode: Bootstrap text-secondary override */
 [data-theme="dark"] .text-secondary {
     color: var(--color-text-muted) !important;

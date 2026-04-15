@@ -55,7 +55,7 @@
                     <form method="POST" action="{{ url_for('projects.edit_project', project_id=project.id) }}" aria-labelledby="edit-project-heading">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <fieldset class="mb-4">
-                            <legend><h3 class="h5 mb-0">{{ ftl('projects-project-details') }}</h3></legend>
+                            <legend><h2 class="h5 mb-0">{{ ftl('projects-project-details') }}</h2></legend>
                             <div class="mb-3">
                                 <label for="name" class="form-label">{{ ftl('projects-project-name') }} *</label>
                                 <input type="text" class="form-control" id="name" name="name"
@@ -91,7 +91,7 @@
                         </fieldset>
 
                         <fieldset class="mb-4">
-                            <legend><h3 class="h5 mb-0">{{ ftl('projects-compliance-settings') }}</h3></legend>
+                            <legend><h2 class="h5 mb-0">{{ ftl('projects-compliance-settings') }}</h2></legend>
                             <div class="mb-3">
                                 <label for="wcag_level" class="form-label">{{ ftl('projects-wcag-compliance-level') }}</label>
                                 <select class="form-select" id="wcag_level" name="wcag_level" aria-describedby="wcag-level-help">
@@ -291,7 +291,7 @@
 
                         <!-- Touchpoint Testing Configuration -->
                         <fieldset class="mb-4">
-                            <legend><h3 class="h5 mb-0">{{ ftl('projects-touchpoint-tests') }}</h3></legend>
+                            <legend><h2 class="h5 mb-0">{{ ftl('projects-touchpoint-tests') }}</h2></legend>
                             <div class="mb-3">
                             <label class="form-label">{{ ftl('projects-touchpoint-tests-configuration') }}</label>
                             <div class="form-text mb-2">
@@ -361,7 +361,7 @@
 
                         <!-- AI Testing Configuration -->
                         <fieldset class="mb-4">
-                            <legend><h3 class="h5 mb-0">{{ ftl('projects-ai-assisted-testing') }}</h3></legend>
+                            <legend><h2 class="h5 mb-0">{{ ftl('projects-ai-assisted-testing') }}</h2></legend>
                             <div class="mb-3">
                                 <div class="form-check form-switch mb-2">
                                     <input class="form-check-input" type="checkbox" id="enable_ai_testing" name="enable_ai_testing"

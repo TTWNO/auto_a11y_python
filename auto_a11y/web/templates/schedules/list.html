@@ -175,7 +175,7 @@
                                             onclick="toggleSchedule('{{ schedule.id }}')" title="{% if schedule.enabled %}{{ ftl('common-disable') }}{% else %}{{ ftl('common-enable') }}{% endif %}">
                                         <i class="bi bi-toggle-{% if schedule.enabled %}on{% else %}off{% endif %}" aria-hidden="true"></i>
                                     </button>
-                                    <button type="button" class="btn btn-outline-info"
+                                    <button type="button" class="btn btn-outline-brand"
                                             onclick="runNow('{{ schedule.id }}')" title="{{ ftl('schedules-run-now') }}">
                                         <i class="bi bi-play-fill" aria-hidden="true"></i>
                                     </button>

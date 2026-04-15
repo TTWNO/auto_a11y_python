@@ -115,10 +115,10 @@
         
         <!-- Secondary Actions -->
         <div class="d-flex flex-wrap gap-2">
-            <a href="{{ url_for('websites.view_discovery_history', website_id=website.id) }}" class="btn btn-outline-info">
+            <a href="{{ url_for('websites.view_discovery_history', website_id=website.id) }}" class="btn btn-outline-brand">
                 <i class="bi bi-clock-history" aria-hidden="true"></i> {{ ftl('websites-discovery-history') }}
             </a>
-            <a href="{{ url_for('websites.view_documents', website_id=website.id) }}" class="btn btn-outline-info">
+            <a href="{{ url_for('websites.view_documents', website_id=website.id) }}" class="btn btn-outline-brand">
                 <i class="bi bi-file-earmark" aria-hidden="true"></i> {{ ftl('common-documents') }}
             </a>
             <a href="{{ url_for('scripts.list_website_scripts', website_id=website.id) }}" class="btn btn-outline-brand">

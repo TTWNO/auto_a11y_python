@@ -5,8 +5,8 @@
 {% block extra_css %}
 <style>
     .info-box {
-        background: #e7f3ff;
-        border-left: 4px solid #0d6efd;
+        background: var(--color-info-bg);
+        border-left: 4px solid var(--color-brand);
         padding: 15px;
         margin: 20px 0;
     }
@@ -24,17 +24,17 @@
     }
 
     .combination-row:hover {
-        background-color: #f8f9fa;
+        background-color: var(--color-bg-subtle);
     }
 
     .combination-row.drag-over {
-        background-color: #e7f3ff;
-        border-top: 2px solid #0d6efd;
+        background-color: var(--color-info-bg);
+        border-top: 2px solid var(--color-brand);
     }
 
     .drag-handle {
         cursor: grab;
-        color: #6c757d;
+        color: var(--color-text-muted);
     }
 
     .drag-handle:active {

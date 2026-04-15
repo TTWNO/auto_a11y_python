@@ -60,15 +60,15 @@
     
     /* Hover effect for table rows */
     #test-status-table tbody tr:hover {
-        background-color: rgba(var(--bs-primary-rgb), 0.05);
+        background-color: var(--color-brand-subtle);
     }
 
     .table-medium {
-        background-color: rgba(var(--bs-warning-rgb), 0.1) !important;
+        background-color: var(--color-severity-medium-bg) !important;
     }
 
     .table-medium:hover {
-        background-color: rgba(var(--bs-warning-rgb), 0.15) !important;
+        background-color: color-mix(in srgb, var(--color-severity-medium-bg) 85%, var(--color-severity-medium) 15%) !important;
     }
 </style>
 {% endblock %}
@@ -214,7 +214,7 @@
                             <label class="btn btn-outline-medium" for="type-warn">Warn</label>
 
                             <input type="radio" class="btn-check" name="type-filter" id="type-info" value="Info" autocomplete="off">
-                            <label class="btn btn-outline-info" for="type-info">Info</label>
+                            <label class="btn btn-outline-brand" for="type-info">Info</label>
 
                             <input type="radio" class="btn-check" name="type-filter" id="type-disco" value="Disco" autocomplete="off">
                             <label class="btn btn-outline-brand" for="type-disco">Disco</label>

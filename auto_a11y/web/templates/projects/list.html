@@ -27,7 +27,7 @@
             {{ ftl('common-paused') }}
         </a>
         <a href="{{ url_for('projects.list_projects', status='completed') }}"
-           class="btn btn-sm btn-outline-info {{ 'active' if request.args.get('status') == 'completed' }}">
+           class="btn btn-sm btn-outline-brand {{ 'active' if request.args.get('status') == 'completed' }}">
             {{ ftl('common-completed') }}
         </a>
         <a href="{{ url_for('projects.list_projects', status='archived') }}"

@@ -834,12 +834,12 @@ function updateIssueStatus(issueId, status) {
     }
 
     .recording-content h4 {
-        color: #2c3e50;
+        color: var(--color-text-heading);
         font-size: 1.1rem;
         font-weight: 600;
         margin-top: 1.5rem;
         margin-bottom: 0.75rem;
-        border-bottom: 2px solid #e9ecef;
+        border-bottom: 2px solid var(--color-border-table);
         padding-bottom: 0.5rem;
     }
 
@@ -848,7 +848,7 @@ function updateIssueStatus(issueId, status) {
     }
 
     .recording-content h5 {
-        color: #495057;
+        color: var(--color-text-muted);
         font-size: 0.9rem;
         font-weight: 600;
         margin-top: 1rem;
@@ -859,17 +859,17 @@ function updateIssueStatus(issueId, status) {
 
     .recording-content p {
         margin-bottom: 0.75rem;
-        color: #333;
+        color: var(--color-text);
     }
 
     .recording-content code,
     .recording-content p:contains("00:") {
         font-family: 'Courier New', monospace;
-        background-color: #f8f9fa;
+        background-color: var(--color-bg-subtle);
         padding: 0.2rem 0.4rem;
         border-radius: 3px;
         font-size: 0.85rem;
-        color: #0056b3;
+        color: var(--color-link);
     }
 
     /* Add visual separation between items */

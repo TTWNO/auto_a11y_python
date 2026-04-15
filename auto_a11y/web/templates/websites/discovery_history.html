@@ -94,7 +94,7 @@
                                     <i class="bi bi-eye" aria-hidden="true"></i> {{ ftl('common-view') }}
                                 </a>
                                 {% if not run.is_latest and run.status.value == 'completed' %}
-                                <button class="btn btn-sm btn-outline-info" 
+                                <button class="btn btn-sm btn-outline-brand" 
                                         onclick="compareWithLatest('{{ run.id }}')">
                                     <i class="bi bi-arrow-left-right" aria-hidden="true"></i> {{ ftl('websites-compare') }}
                                 </button>

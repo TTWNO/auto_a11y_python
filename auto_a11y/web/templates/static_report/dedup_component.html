@@ -55,7 +55,7 @@
     }
 
     .touchpoint-header {
-        background-color: #f8f9fa;
+        background-color: var(--color-bg-subtle);
         padding: 8px;
         margin-top: 1rem;
         margin-bottom: 0.5rem;
@@ -134,8 +134,8 @@
 
     .filter-chip {
         padding: 0.25rem 0.75rem;
-        background: white;
-        border: 1px solid #dee2e6;
+        background: var(--color-bg);
+        border: 1px solid var(--color-border-table);
         border-radius: 20px;
         cursor: pointer;
         transition: all 0.2s;
@@ -143,27 +143,27 @@
     }
 
     .filter-chip:hover {
-        background: #e9ecef;
+        background: var(--color-progress-track);
     }
 
     .filter-chip.active {
-        background: #0d6efd;
-        color: white;
-        border-color: #0d6efd;
+        background: var(--color-brand);
+        color: var(--color-text-inverse);
+        border-color: var(--color-brand);
     }
 
     .active-filters {
         padding: 1rem;
-        background: #e7f3ff;
+        background: var(--color-info-bg);
         border-radius: 8px;
         margin-bottom: 1rem;
     }
 
     .filter-stats {
         padding: 0.75rem;
-        background: white;
+        background: var(--color-bg);
         border-radius: 8px;
-        border: 1px solid #dee2e6;
+        border: 1px solid var(--color-border-table);
         margin-bottom: 1rem;
     }
 
@@ -200,7 +200,7 @@
     .no-issues {
         text-align: center;
         padding: 3rem;
-        color: #6c757d;
+        color: var(--color-text-muted);
     }
 
     /* Language Switcher */
@@ -231,7 +231,7 @@
 
     .lang-switcher button.active {
         background: rgba(255, 255, 255, 0.9);
-        color: #0d6efd;
+        color: var(--color-brand);
     }
 
     .lang-inactive {
@@ -248,20 +248,20 @@
 
     /* WCAG AA Contrast Overrides */
     .bg-info {
-        background-color: #0e7490 !important;
-        color: #ffffff !important; /* White text on dark cyan background */
+        background-color: var(--color-info) !important;
+        color: var(--color-text-inverse) !important; /* White text on dark cyan background */
     }
     .badge.bg-info {
-        background-color: #0e7490 !important;
-        color: #ffffff !important;
+        background-color: var(--color-info) !important;
+        color: var(--color-text-inverse) !important;
     }
     .bg-medium {
-        background-color: #ffc107 !important;
-        color: #212529 !important; /* Dark text on yellow background */
+        background-color: var(--color-severity-medium) !important;
+        color: var(--color-text) !important; /* Dark text on yellow background */
     }
     .badge.bg-medium {
-        background-color: #ffc107 !important;
-        color: #212529 !important;
+        background-color: var(--color-severity-medium) !important;
+        color: var(--color-text) !important;
     }
 
     /* Severity color utility classes */
@@ -282,6 +282,12 @@
         --color-discovery-bg: #f3eefa;
         --color-text-inverse: #ffffff;
         --color-text: #212529;
+        --color-text-muted: #4a4a4a;
+        --color-bg: #ffffff;
+        --color-bg-subtle: #f4f6f7;
+        --color-brand: #1a5276;
+        --color-border-table: #dee2e6;
+        --color-progress-track: #e9ecef;
     }
     .severity-header-high {
         background: linear-gradient(135deg, var(--color-severity-high), var(--color-severity-high-gradient-end));

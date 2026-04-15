@@ -29,18 +29,18 @@
     }
     .stat-label {
         font-size: 0.875rem;
-        color: #6c757d;
+        color: var(--color-text-muted);
     }
     .schedule-row:hover {
-        background-color: #f8f9fa;
+        background-color: var(--color-bg-subtle);
     }
     .upcoming-item {
-        border-left: 3px solid #0d6efd;
+        border-left: 3px solid var(--color-brand);
         padding-left: 12px;
         margin-bottom: 12px;
     }
     .upcoming-item.soon {
-        border-left-color: #ffc107;
+        border-left-color: var(--color-severity-medium-border);
     }
     .type-badge {
         font-size: 0.75rem;
@@ -252,7 +252,7 @@
                                                     title="{% if schedule.enabled %}{{ ftl('common-disable') }}{% else %}{{ ftl('common-enable') }}{% endif %}">
                                                 <i class="bi bi-toggle-{% if schedule.enabled %}on{% else %}off{% endif %}" aria-hidden="true"></i>
                                             </button>
-                                            <button type="button" class="btn btn-outline-info"
+                                            <button type="button" class="btn btn-outline-brand"
                                                     onclick="runNow('{{ schedule._website_id }}', '{{ schedule.id }}')"
                                                     title="{{ ftl('schedules-run-now') }}"
                                                     {% if not schedule.enabled %}disabled{% endif %}>

@@ -17,14 +17,14 @@
 
     .matrix-table th,
     .matrix-table td {
-        border: 1px solid #dee2e6;
+        border: 1px solid var(--color-border-table);
         padding: 12px;
         text-align: center;
         min-width: 120px;
     }
 
     .matrix-table th {
-        background-color: #f8f9fa;
+        background-color: var(--color-bg-subtle);
         font-weight: 600;
         position: sticky;
         z-index: 10;
@@ -33,7 +33,7 @@
     .matrix-table th.row-header {
         position: sticky;
         left: 0;
-        background-color: #f8f9fa;
+        background-color: var(--color-bg-subtle);
         text-align: left;
         min-width: 200px;
         z-index: 11;
@@ -43,7 +43,7 @@
         left: 0;
         top: 0;
         z-index: 12;
-        background-color: #e9ecef;
+        background-color: var(--color-progress-track);
     }
 
     .matrix-cell {
@@ -53,7 +53,7 @@
     }
 
     .matrix-cell:hover {
-        background-color: #e7f3ff;
+        background-color: var(--color-info-bg);
     }
 
     .matrix-cell.enabled {
@@ -67,8 +67,8 @@
     }
 
     .matrix-cell.disabled {
-        background-color: #f8f9fa;
-        color: #6c757d;
+        background-color: var(--color-bg-subtle);
+        color: var(--color-text-muted);
     }
 
     .matrix-cell .check-icon {
@@ -83,8 +83,8 @@
     }
 
     .info-box {
-        background: #e7f3ff;
-        border-left: 4px solid #0d6efd;
+        background: var(--color-info-bg);
+        border-left: 4px solid var(--color-brand);
         padding: 15px;
         margin: 20px 0;
     }
@@ -97,8 +97,8 @@
         display: flex;
         align-items: center;
         padding: 10px;
-        background: white;
-        border: 1px solid #dee2e6;
+        background: var(--color-bg);
+        border: 1px solid var(--color-border-table);
         border-radius: 4px;
         margin-bottom: 8px;
     }
@@ -108,7 +108,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #6c757d;
+        color: var(--color-text-muted);
         cursor: grab;
         font-size: 1.2em;
     }
@@ -121,7 +121,7 @@
         width: 40px;
         text-align: center;
         font-weight: bold;
-        color: #0d6efd;
+        color: var(--color-brand);
     }
 
     .script-order-item .script-name {
@@ -139,12 +139,12 @@
     }
 
     .script-order-item:hover {
-        background-color: #f8f9fa;
+        background-color: var(--color-bg-subtle);
     }
 
     .script-order-item.drag-over {
-        background-color: #e7f3ff;
-        border-color: #0d6efd;
+        background-color: var(--color-info-bg);
+        border-color: var(--color-brand);
         transform: scale(1.02);
     }
 

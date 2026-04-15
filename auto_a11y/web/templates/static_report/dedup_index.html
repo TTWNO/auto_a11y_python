@@ -21,8 +21,8 @@
     }
 
     .stat-card {
-        background: white;
-        border: 1px solid #dee2e6;
+        background: var(--color-bg);
+        border: 1px solid var(--color-border-table);
         border-radius: 8px;
         padding: 1.5rem;
         text-align: center;
@@ -35,15 +35,15 @@
     }
 
     .stat-label {
-        color: #6c757d;
+        color: var(--color-text-muted);
         font-size: 0.875rem;
         text-transform: uppercase;
         letter-spacing: 0.05em;
     }
 
     .component-card {
-        background: white;
-        border: 1px solid #dee2e6;
+        background: var(--color-bg);
+        border: 1px solid var(--color-border-table);
         border-radius: 8px;
         padding: 1.5rem;
         margin-bottom: 1rem;
@@ -69,7 +69,7 @@
     }
 
     .component-label {
-        color: #6c757d;
+        color: var(--color-text-muted);
         margin-bottom: 0.5rem;
     }
 
@@ -77,7 +77,7 @@
         display: flex;
         gap: 1rem;
         font-size: 0.875rem;
-        color: #6c757d;
+        color: var(--color-text-muted);
     }
 
     .component-badge {
@@ -117,7 +117,7 @@
     .no-components {
         text-align: center;
         padding: 3rem;
-        color: #6c757d;
+        color: var(--color-text-muted);
     }
 
     .common-issue-card {
@@ -132,7 +132,7 @@
     /* Language Switcher */
     .lang-switcher {
         display: inline-flex;
-        background: #f8f9fa;
+        background: var(--color-bg-subtle);
         border-radius: 6px;
         padding: 4px;
         gap: 4px;
@@ -147,17 +147,17 @@
         font-weight: 500;
         font-size: 0.875rem;
         transition: all 0.2s;
-        color: #6c757d;
+        color: var(--color-text-muted);
     }
 
     .lang-switcher button:hover {
-        background: #e9ecef;
-        color: #495057;
+        background: var(--color-progress-track);
+        color: var(--color-text-muted);
     }
 
     .lang-switcher button.active {
-        background: #0d6efd;
-        color: white;
+        background: var(--color-brand);
+        color: var(--color-text-inverse);
     }
 
     .lang-inactive {
@@ -183,6 +183,13 @@
     /* Severity color utility classes */
     :root {
         --color-discovery: #6f42c1;
+        --color-text-muted: #4a4a4a;
+        --color-bg: #ffffff;
+        --color-bg-subtle: #f4f6f7;
+        --color-brand: #1a5276;
+        --color-border-table: #dee2e6;
+        --color-progress-track: #e9ecef;
+        --color-text-inverse: #ffffff;
     }
     .text-discovery { color: var(--color-discovery) !important; }
 

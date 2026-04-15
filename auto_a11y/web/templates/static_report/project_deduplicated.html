@@ -56,7 +56,7 @@
     }
 
     .touchpoint-header {
-        background-color: #f8f9fa;
+        background-color: var(--color-bg-subtle);
         padding: 8px;
         margin-top: 1rem;
         margin-bottom: 0.5rem;
@@ -105,7 +105,7 @@
 
     /* Filter Panel Styling */
     .filter-panel {
-        background: #f8f9fa;
+        background: var(--color-bg-subtle);
         border-radius: 8px;
         padding: 1.5rem;
         margin-bottom: 2rem;
@@ -127,8 +127,8 @@
 
     .filter-chip {
         padding: 0.25rem 0.75rem;
-        background: white;
-        border: 1px solid #dee2e6;
+        background: var(--color-bg);
+        border: 1px solid var(--color-border-table);
         border-radius: 20px;
         cursor: pointer;
         transition: all 0.2s;
@@ -136,13 +136,13 @@
     }
 
     .filter-chip:hover {
-        background: #e9ecef;
+        background: var(--color-progress-track);
     }
 
     .filter-chip.active {
-        background: #0d6efd;
-        color: white;
-        border-color: #0d6efd;
+        background: var(--color-brand);
+        color: var(--color-text-inverse);
+        border-color: var(--color-brand);
     }
 
     .filtered-out {
@@ -166,11 +166,11 @@
     .stat-number {
         font-size: 2rem;
         font-weight: bold;
-        color: #0d6efd;
+        color: var(--color-brand);
     }
 
     .stat-label {
-        color: #6c757d;
+        color: var(--color-text-muted);
         font-size: 0.875rem;
         text-transform: uppercase;
         letter-spacing: 0.5px;
@@ -197,18 +197,18 @@
     .component-badge.form { background-color: #f57c00; }
     .component-badge.aside { background-color: #c2185b; }
     .component-badge.section { background-color: #689f38; }
-    .component-badge.none { background-color: #6c757d; }
+    .component-badge.none { background-color: var(--color-text-muted); }
 
     /* Page list styling */
     .page-list {
         font-size: 0.85rem;
-        color: #6c757d;
+        color: var(--color-text-muted);
         margin-top: 0.5rem;
     }
 
     .page-list-item {
         padding: 0.25rem 0;
-        border-bottom: 1px solid #e9ecef;
+        border-bottom: 1px solid var(--color-progress-track);
     }
 
     .page-list-item:last-child {
@@ -220,6 +220,17 @@
             animation-duration: 0.01ms !important;
             transition-duration: 0.01ms !important;
         }
+    }
+
+    /* Design tokens */
+    :root {
+        --color-text-muted: #4a4a4a;
+        --color-bg: #ffffff;
+        --color-bg-subtle: #f4f6f7;
+        --color-brand: #1a5276;
+        --color-border-table: #dee2e6;
+        --color-progress-track: #e9ecef;
+        --color-text-inverse: #ffffff;
     }
     </style>
 </head>
@@ -285,7 +296,7 @@
                     <button class="btn btn-sm btn-outline-medium filter-chip" data-filter-type="type" data-filter-value="warning">
                         <i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>{{ ftl('common-warnings') }}
                     </button>
-                    <button class="btn btn-sm btn-outline-info filter-chip" data-filter-type="type" data-filter-value="info">
+                    <button class="btn btn-sm btn-outline-brand filter-chip" data-filter-type="type" data-filter-value="info">
                         <i class="bi bi-info-circle me-1" aria-hidden="true"></i>{{ ftl('common-info') }}
                     </button>
                     <button class="btn btn-sm btn-outline-neutral filter-chip" data-filter-type="type" data-filter-value="discovery">
@@ -321,7 +332,7 @@
                     <button class="btn btn-sm btn-outline-medium filter-chip" data-filter-type="impact" data-filter-value="medium">
                         {{ ftl('common-medium') }}
                     </button>
-                    <button class="btn btn-sm btn-outline-info filter-chip" data-filter-type="impact" data-filter-value="low">
+                    <button class="btn btn-sm btn-outline-brand filter-chip" data-filter-type="impact" data-filter-value="low">
                         {{ ftl('common-low') }}
                     </button>
                 </div>

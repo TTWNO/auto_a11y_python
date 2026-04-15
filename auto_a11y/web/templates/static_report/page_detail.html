@@ -97,8 +97,8 @@
 
     .filter-chip {
         padding: 0.25rem 0.75rem;
-        background: white;
-        border: 1px solid #dee2e6;
+        background: var(--color-bg);
+        border: 1px solid var(--color-border-table);
         border-radius: 20px;
         cursor: pointer;
         transition: all 0.2s;
@@ -106,18 +106,18 @@
     }
 
     .filter-chip:hover {
-        background: #e9ecef;
+        background: var(--color-progress-track);
     }
 
     .filter-chip.active {
-        background: #0d6efd;
-        color: white;
-        border-color: #0d6efd;
+        background: var(--color-brand);
+        color: var(--color-text-inverse);
+        border-color: var(--color-brand);
     }
 
     .active-filters {
         padding: 1rem;
-        background: #e7f3ff;
+        background: var(--color-info-bg);
         border-radius: 8px;
         margin-bottom: 1rem;
     }
@@ -125,8 +125,8 @@
     .active-filter-tag {
         display: inline-block;
         padding: 0.25rem 0.75rem;
-        background: #0d6efd;
-        color: white;
+        background: var(--color-brand);
+        color: var(--color-text-inverse);
         border-radius: 15px;
         margin: 0.25rem;
         font-size: 0.875rem;
@@ -139,9 +139,9 @@
 
     .filter-stats {
         padding: 0.75rem;
-        background: white;
+        background: var(--color-bg);
         border-radius: 8px;
-        border: 1px solid #dee2e6;
+        border: 1px solid var(--color-border-table);
         margin-bottom: 1rem;
     }
 
@@ -162,7 +162,7 @@
     }
 
     .state-selector.btn-outline-brand .state-counts {
-        color: #6c757d;
+        color: var(--color-text-muted);
     }
 
     .state-content {
@@ -206,35 +206,35 @@
         font-weight: 500;
         font-size: 0.875rem;
         transition: all 0.2s;
-        color: #6c757d;
+        color: var(--color-text-muted);
     }
 
     .lang-switcher button:hover {
-        background: #e9ecef;
-        color: #495057;
+        background: var(--color-progress-track);
+        color: var(--color-text-muted);
     }
 
     .lang-switcher button.active {
-        background: #0d6efd;
-        color: white;
+        background: var(--color-brand);
+        color: var(--color-text-inverse);
     }
 
     /* WCAG AA Contrast Overrides */
     .bg-info {
-        background-color: #0e7490 !important;
-        color: #ffffff !important; /* White text on dark cyan background */
+        background-color: var(--color-info) !important;
+        color: var(--color-text-inverse) !important; /* White text on dark cyan background */
     }
     .badge.bg-info {
-        background-color: #0e7490 !important;
-        color: #ffffff !important;
+        background-color: var(--color-info) !important;
+        color: var(--color-text-inverse) !important;
     }
     .bg-medium {
-        background-color: #ffc107 !important;
-        color: #212529 !important; /* Dark text on yellow background */
+        background-color: var(--color-severity-medium) !important;
+        color: var(--color-text) !important; /* Dark text on yellow background */
     }
     .badge.bg-medium {
-        background-color: #ffc107 !important;
-        color: #212529 !important;
+        background-color: var(--color-severity-medium) !important;
+        color: var(--color-text) !important;
     }
     .text-severity-medium {
         color: #856404 !important; /* Dark yellow/brown with 4.6:1 contrast on white */
@@ -256,6 +256,14 @@
         --color-discovery: #6f42c1;
         --color-discovery-gradient-end: #5a32a3;
         --color-discovery-bg: #f3eefa;
+        --color-text-inverse: #ffffff;
+        --color-text: #212529;
+        --color-text-muted: #4a4a4a;
+        --color-bg: #ffffff;
+        --color-bg-subtle: #f4f6f7;
+        --color-brand: #1a5276;
+        --color-border-table: #dee2e6;
+        --color-progress-track: #e9ecef;
     }
 
     /* Severity header gradients */

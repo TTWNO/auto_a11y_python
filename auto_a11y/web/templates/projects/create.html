@@ -20,7 +20,7 @@
     }
 
     .touchpoint-disabled .form-check-label {
-        color: #6c757d;
+        color: var(--color-text-muted);
     }
 
     .test-help-btn {
@@ -36,8 +36,8 @@
     }
 
     .test-details-modal .modal-header {
-        background-color: #f8f9fa;
-        border-bottom: 2px solid #dee2e6;
+        background-color: var(--color-bg-subtle);
+        border-bottom: 2px solid var(--color-border-table);
     }
 
     .test-details-section {
@@ -45,7 +45,7 @@
     }
 
     .test-details-section h6 {
-        color: #495057;
+        color: var(--color-text-muted);
         font-weight: 600;
         margin-bottom: 0.5rem;
         font-size: 0.95rem;
@@ -219,8 +219,8 @@
                             <div class="btn-group mb-3" role="group">
                                 <button type="button" class="btn btn-sm btn-outline-brand" onclick="selectAllTests(true)">{{ ftl('projects-enable-all') }}</button>
                                 <button type="button" class="btn btn-sm btn-outline-neutral" onclick="selectAllTests(false)">{{ ftl('projects-disable-all') }}</button>
-                                <button type="button" class="btn btn-sm btn-outline-info" onclick="applyPreset('minimal')">{{ ftl('projects-minimal') }}</button>
-                                <button type="button" class="btn btn-sm btn-outline-info" onclick="applyPreset('wcag-aa')">{{ ftl('projects-wcag-aa') }}</button>
+                                <button type="button" class="btn btn-sm btn-outline-brand" onclick="applyPreset('minimal')">{{ ftl('projects-minimal') }}</button>
+                                <button type="button" class="btn btn-sm btn-outline-brand" onclick="applyPreset('wcag-aa')">{{ ftl('projects-wcag-aa') }}</button>
                             </div>
                             
                             <!-- Touchpoint Tree -->
@@ -280,7 +280,7 @@
                                                     <code>{{ test_id }}</code>
                                                 </label>
                                             </div>
-                                            <button type="button" class="btn btn-sm btn-outline-info test-help-btn"
+                                            <button type="button" class="btn btn-sm btn-outline-brand test-help-btn"
                                                     onclick="showTestDetails('{{ test_id }}')"
                                                     title="{{ ftl('projects-view-test-details') }}">
                                                 <i class="bi bi-question-circle" aria-hidden="true"></i>

@@ -189,7 +189,7 @@
                         <a href="{{ url_for('scripts.edit_script', script_id=script.id) }}" class="btn btn-brand">
                             <i class="bi bi-pencil" aria-hidden="true"></i> {{ ftl('scripts-edit-script') }}
                         </a>
-                        <button class="btn btn-outline-info" onclick="toggleScript('{{ script.id }}')">
+                        <button class="btn btn-outline-brand" onclick="toggleScript('{{ script.id }}')">
                             <i class="bi bi-toggle-on" aria-hidden="true"></i> {{ ftl('common-disable') if script.enabled else ftl('common-enable') }} {{ ftl('scripts-script') }}
                         </button>
                         <button class="btn btn-outline-high" onclick="deleteScript('{{ script.id }}')">

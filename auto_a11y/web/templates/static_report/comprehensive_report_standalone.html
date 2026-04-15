@@ -965,20 +965,20 @@
                     <caption class="visually-hidden">{{ ftl('reports-top-issues-details') }}</caption>
                     <thead>
                         <tr>
-                            <th>
+                            <th scope="col">
                                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.issue_type }}</span>
                                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.issue_type }}</span>
                             </th>
-                            <th>
+                            <th scope="col">
                                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.occurrences }}</span>
                                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.occurrences }}</span>
                             </th>
-                            <th>
+                            <th scope="col">
                                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Impact</span>
                                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Impact</span>
                             </th>
-                            <th>WCAG</th>
-                            <th>
+                            <th scope="col">WCAG</th>
+                            <th scope="col">
                                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.pages_affected }}</span>
                                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.pages_affected }}</span>
                             </th>
@@ -1039,27 +1039,27 @@
                     <caption class="visually-hidden">{{ ftl('reports-page-by-page-analysis') }}</caption>
                     <thead>
                         <tr>
-                            <th>
+                            <th scope="col">
                                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.page_url }}</span>
                                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.page_url }}</span>
                             </th>
-                            <th>
+                            <th scope="col">
                                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.total_issues_label }}</span>
                                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.total_issues_label }}</span>
                             </th>
-                            <th>
+                            <th scope="col">
                                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.errors }}</span>
                                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.errors }}</span>
                             </th>
-                            <th>
+                            <th scope="col">
                                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.warnings }}</span>
                                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.warnings }}</span>
                             </th>
-                            <th>
+                            <th scope="col">
                                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.info_items }}</span>
                                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.info_items }}</span>
                             </th>
-                            <th>
+                            <th scope="col">
                                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.discovery }}</span>
                                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.discovery }}</span>
                             </th>

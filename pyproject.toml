@@ -1,0 +1,137 @@
+# =========================================================================
+# Strict type-checking config.
+# Spec: docs/superpowers/specs/2026-04-16-strict-type-checking-design.md
+# Plan: docs/superpowers/plans/2026-04-16-strict-type-checking.md
+# =========================================================================
+
+# Project-namespaced flag: lets the .githooks/pre-commit script and the
+# CI workflow skip `ty` in the narrow case of an upstream ty bug that no
+# refactor can satisfy. MUST NOT be used for any other purpose. Flip
+# back on the next ty release that fixes the upstream bug.
+[tool.auto_a11y_typecheck]
+ty_enabled = true
+
+[tool.mypy]
+python_version = "3.11"
+files = [
+    "auto_a11y",
+    "tests",
+    "stubs",
+    "config.py",
+    "run.py",
+    "wsgi.py",
+    "test_fixtures.py",
+]
+mypy_path = "stubs"
+namespace_packages = true
+explicit_package_bases = true
+
+# Strict mode and everything above it
+strict = true
+disallow_any_unimported = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+strict_equality = true
+extra_checks = true
+implicit_reexport = false
+
+[tool.pyright]
+pythonVersion = "3.11"
+include = [
+    "auto_a11y",
+    "tests",
+    "stubs",
+    "config.py",
+    "run.py",
+    "wsgi.py",
+    "test_fixtures.py",
+]
+stubPath = "stubs"
+typeCheckingMode = "strict"
+
+reportMissingTypeStubs = "error"
+reportImplicitOverride = "error"
+reportUninitializedInstanceVariable = "error"
+reportUnknownParameterType = "error"
+reportUnknownVariableType = "error"
+reportUnknownArgumentType = "error"
+reportUnknownMemberType = "error"
+reportUnnecessaryTypeIgnoreComment = "error"
+reportUnusedExpression = "error"
+reportImplicitStringConcatenation = "error"
+# reportShadowedImports: not present in pyright 1.1.408 — re-add on upgrade if added upstream
+
+[tool.ty]
+# ty 0.0.31 (pre-alpha); config surface consulted via `ty check --help`
+# and `ty explain rule --output-format json`.
+#
+# ty's config sections: environment, src, rules, terminal, analysis, overrides.
+# There is no single "strict mode" flag equivalent to mypy's `strict = true` or
+# pyright's `typeCheckingMode = "strict"`. Strictness is achieved by escalating
+# individual rules from their defaults (warn / ignore) to "error", and by
+# enabling analysis options that correspond to permissive defaults.
+
+# ── Environment ───────────────────────────────────────────────────────────────
+[tool.ty.environment]
+python-version = "3.11"
+# no ty equivalent: mypy `mypy_path` / pyright `stubPath` — ty resolves stubs
+# via the standard typeshed + extra-paths; no dedicated stub-path key at 0.0.31.
+
+# ── Source / file selection ───────────────────────────────────────────────────
+[tool.ty.src]
+# include / exclude: ty uses the src.root heuristic; no per-file include list
+# equivalent to mypy `files` / pyright `include` at this release.
+# no ty equivalent: mypy `files` list / pyright `include` list
+
+# ── Analysis options ──────────────────────────────────────────────────────────
+[tool.ty.analysis]
+# Honour `# type: ignore` and `# ty: ignore` suppression comments.
+# Setting to false would ignore ALL suppressions — too aggressive; leave true.
+respect-type-ignore-comments = true
+# no ty equivalent: mypy `disallow_any_unimported` — no `Any`-import knob at 0.0.31
+# no ty equivalent: mypy `implicit_reexport` — no re-export strictness knob at 0.0.31
+# no ty equivalent: mypy `strict_equality` — no equality strictness knob at 0.0.31
+
+# ── Terminal / output ─────────────────────────────────────────────────────────
+[tool.ty.terminal]
+# Treat warning-level diagnostics as errors, matching mypy's `--strict` posture.
+error-on-warning = true
+
+# ── Rules: escalate every non-error default to "error" ───────────────────────
+# All rules whose default_level is "warn" or "ignore" at ty 0.0.31 are listed
+# here. Escalating them to "error" is the closest available equivalent of
+# mypy strict / pyright strict.
+[tool.ty.rules]
+# Default "warn" → escalate to "error"
+ambiguous-protocol-member = "error"
+deprecated = "error"
+ignore-comment-unknown-rule = "error"
+ineffective-final = "error"
+invalid-enum-member-annotation = "error"
+invalid-ignore-comment = "error"
+invalid-legacy-positional-parameter = "error"
+invalid-named-tuple-override = "error"
+mismatched-type-name = "error"
+possibly-missing-implicit-call = "error"
+possibly-missing-submodule = "error"
+redundant-cast = "error"
+redundant-final-classvar = "error"
+undefined-reveal = "error"
+unresolved-global = "error"
+unsupported-base = "error"
+unused-awaitable = "error"
+unused-ignore-comment = "error"
+unused-type-ignore-comment = "error"
+useless-overload-body = "error"
+
+# Default "ignore" → escalate to "error" where safe at pre-alpha
+# division-by-zero: escalate — catches real bugs
+division-by-zero = "error"
+# possibly-missing-attribute: escalate — equivalent to pyright strict member checks
+possibly-missing-attribute = "error"
+# possibly-missing-import: escalate — equivalent to mypy `disallow_any_unimported` intent
+possibly-missing-import = "error"
+# possibly-unresolved-reference: escalate — catches undefined names
+possibly-unresolved-reference = "error"
+# unsupported-dynamic-base: escalate — dynamic bases obscure type errors
+unsupported-dynamic-base = "error"

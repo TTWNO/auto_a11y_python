@@ -791,13 +791,36 @@ enum-hover = Survol
 enum-screenshot = Capture d'écran
 
 # Touchpoint enums
+enum-accessible-names = Noms accessibles
 enum-animation = Animation
+enum-buttons = Boutons
 enum-colors = Couleurs
+enum-dialogs = Boîtes de dialogue
+enum-electronic-documents = Documents électroniques
 enum-event-handling = Gestion des événements
+enum-floating-content = Contenu flottant
+enum-focus-management = Gestion du focus
+enum-fonts = Polices
+enum-forms = Formulaires
+enum-headings = Titres
+enum-images = Images
+enum-landmarks = Points de repère
+enum-language = Langue
+enum-links = Liens
 enum-lists = Listes
+enum-maps = Cartes
+enum-navigation = Navigation
+enum-page = Page
+enum-read-more-links = Liens « En savoir plus »
 enum-styles = Styles
-enum-tabindex = Tabindex
+enum-tabindex = Index de tabulation
+enum-tables = Tableaux
 enum-timers = Minuteries
+enum-title-attributes = Attributs title
+enum-videos = Vidéos
+
+# WCAG
+wcag-criteria-not-specified = Critères non spécifiés
 
 # Landmark labels for global notification regions
 common-notifications-region = Notifications

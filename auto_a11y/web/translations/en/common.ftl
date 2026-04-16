@@ -791,13 +791,36 @@ enum-hover = Hover
 enum-screenshot = Screenshot
 
 # Touchpoint enums
+enum-accessible-names = Accessible Names
 enum-animation = Animation
+enum-buttons = Buttons
 enum-colors = Colors
+enum-dialogs = Dialogs
+enum-electronic-documents = Electronic Documents
 enum-event-handling = Event Handling
+enum-floating-content = Floating Content
+enum-focus-management = Focus Management
+enum-fonts = Fonts
+enum-forms = Forms
+enum-headings = Headings
+enum-images = Images
+enum-landmarks = Landmarks
+enum-language = Language
+enum-links = Links
 enum-lists = Lists
+enum-maps = Maps
+enum-navigation = Navigation
+enum-page = Page
+enum-read-more-links = Read More Links
 enum-styles = Styles
 enum-tabindex = Tabindex
+enum-tables = Tables
 enum-timers = Timers
+enum-title-attributes = Title Attributes
+enum-videos = Videos
+
+# WCAG
+wcag-criteria-not-specified = Criteria not specified
 
 # Landmark labels for global notification regions
 common-notifications-region = Notifications

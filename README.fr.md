@@ -86,7 +86,7 @@ docker compose up
 
 L'interface est ensuite accessible à l'adresse http://localhost:5001.
 
-### Tester des serveurs locaux à l'hôte
+### Tester des serveurs locaux sur l'hôte
 
 Pour exécuter des tests d'accessibilité sur un serveur HTTP qui tourne
 sur **votre machine hôte** (par exemple un serveur de développement

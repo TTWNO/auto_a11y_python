@@ -178,7 +178,7 @@
                 </div>
                 <div class="card-body">
                     {% set coverage = (stats.tested_pages / stats.total_pages * 100) if stats.total_pages > 0 else 0 %}
-                    <div class="progress" style="height: 30px;" role="progressbar" aria-valuenow="{{ "%.1f"|format(coverage) }}" aria-valuemin="0" aria-valuemax="100" aria-label="{{ ftl('common-test-coverage-2') }}">
+                    <div class="progress" style="height: 30px;" role="progressbar" aria-valuenow="{{ "%.1f"|format(coverage) }}" aria-valuemin="0" aria-valuemax="100" aria-labelledby="coverage-heading">
                         <div class="progress-bar bg-pass" style="width: {{ coverage }}%">
                             {{ "%.1f"|format(coverage) }}% {{ ftl('common-tested') }}
                         </div>

@@ -304,9 +304,10 @@
 </head>
 <body>
 
-{% macro render_instance_accordion(violation, instance_id, parent_id, alert_type, loop_index) %}
+{% macro render_instance_accordion(violation, instance_id, parent_id, alert_type, loop_index, heading_level=5) %}
+{% set h_tag = 'h' ~ heading_level %}
 <div class="accordion-item">
-    <h2 class="accordion-header">
+    <{{ h_tag }} class="accordion-header">
         <button class="accordion-button collapsed" type="button"
                 data-bs-toggle="collapse"
                 data-bs-target="#{{ instance_id }}"
@@ -328,33 +329,34 @@
             <code class="ms-2">{{ violation.xpath }}</code>
             {% endif %}
         </button>
-    </h2>
+    </{{ h_tag }}>
     <div id="{{ instance_id }}"
          class="accordion-collapse collapse"
          data-bs-parent="#{{ parent_id }}">
         <div class="accordion-body">
-            {{ render_violation_details(violation, alert_type) }}
+            {{ render_violation_details(violation, alert_type, heading_level + 1) }}
         </div>
     </div>
 </div>
 {% endmacro %}
 
-{% macro render_violation_details(violation, alert_type) %}
+{% macro render_violation_details(violation, alert_type, heading_level=5) %}
 {% set text_class = {'high': 'text-severity-high', 'medium': 'text-severity-medium', 'info': 'text-info-custom', 'pass': 'text-severity-pass', 'brand': 'text-brand'}.get(alert_type, 'text-info-custom') %}
+{% set h_tag = 'h' ~ ([heading_level, 6]|min) %}
 <!-- Issue Details -->
 {% if violation.metadata and (violation.metadata.what_en or violation.metadata.what_fr) %}
 <!-- Enhanced description available -->
 <div class="alert alert-{{ alert_type }} mb-3">
-    <h4 class="alert-heading">
+    <{{ h_tag }} class="alert-heading">
         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ violation.description_en }}</span>
         <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ violation.description_fr }}</span>
-    </h4>
+    </{{ h_tag }}>
 </div>
 
-<h4 class="{{ text_class }} mb-2">
+<{{ h_tag }} class="{{ text_class }} mb-2">
     <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t.get('about_this_issue', 'About this issue:') }}</span>
     <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('about_this_issue', 'À propos de ce problème :') }}</span>
-</h4>
+</{{ h_tag }}>
 
 <div class="mb-3">
     <strong>
@@ -399,10 +401,10 @@
 {% endif %}
 
 {% if violation.metadata.wcag_full %}
-<h4 class="{{ text_class }} mb-2 mt-4">
+<{{ h_tag }} class="{{ text_class }} mb-2 mt-4">
     <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('relevant_test_criteria', 'Relevant test criteria:') }}</span>
     <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('relevant_test_criteria', 'Critères de test pertinents :') }}</span>
-</h4>
+</{{ h_tag }}>
 <div class="mb-3">
     <strong>
         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">WCAG {{ translations_en.get('success_criteria', 'Success Criteria:') }}</span>
@@ -515,7 +517,7 @@
 {% endif %}
 
 {% if violation.html_snippet %}
-<h4 class="mt-3" data-i18n="code_snippet">{{ t.get('code_snippet', 'Code Snippet') }}</h4>
+<{{ h_tag }} class="mt-3" data-i18n="code_snippet">{{ t.get('code_snippet', 'Code Snippet') }}</{{ h_tag }}>
 <pre class="bg-header text-inverse p-3 rounded"><code>{{ violation.html_snippet|e }}</code></pre>
 {% endif %}
 {% endmacro %}

@@ -222,7 +222,7 @@ class HelpSystem {
             <div class="help-modal-content">
                 <div class="help-modal-header">
                     <h2 id="help-modal-title">Help</h2>
-                    <button class="help-modal-close" aria-label="Close help">&times;</button>
+                    <button class="help-modal-close" aria-label="Close help (\u00d7)">&times;</button>
                 </div>
                 <div class="help-modal-body" id="help-modal-body">
                 </div>

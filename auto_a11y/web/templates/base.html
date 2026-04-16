@@ -170,7 +170,7 @@
     </header>
 
     <!-- Global Test Status Indicator -->
-    <div id="global-test-status" class="d-none">
+    <section id="global-test-status" class="d-none" aria-label="{{ ftl('common-activity-status-region') }}">
         <div class="container-fluid">
             <div class="alert alert-info alert-dismissible fade show mt-2" role="alert">
                 <div class="d-flex align-items-center">
@@ -185,19 +185,19 @@
                 <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert" aria-label="{{ ftl('common-dismiss') }}" onclick="pauseGlobalTestTracking()"></button>
             </div>
         </div>
-    </div>
+    </section>
 
     <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-            <div class="container-fluid mt-3">
+            <section class="container-fluid mt-3" aria-label="{{ ftl('common-notifications-region') }}">
                 {% for category, message in messages %}
                     <div class="alert alert-{{ {'error': 'high', 'success': 'pass', 'warning': 'medium', 'info': 'info'}.get(category, 'info') }} alert-dismissible fade show" role="alert">
                         {{ message }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ ftl('common-dismiss') }}"></button>
                     </div>
                 {% endfor %}
-            </div>
+            </section>
         {% endif %}
     {% endwith %}
 

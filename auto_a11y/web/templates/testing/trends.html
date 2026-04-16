@@ -1300,7 +1300,7 @@ function createFilterTag(label, value, type, filterValue) {
     }
     return `<span class="filter-tag">
         ${label}: ${displayValue}
-        <button type="button" class="remove-filter btn btn-link p-0 border-0" onclick="removeFilter('${type}', '${filterValue}')" aria-label="Remove filter: ${filterValue}">&times;</button>
+        <button type="button" class="remove-filter btn btn-link p-0 border-0" onclick="removeFilter('${type}', '${filterValue}')" aria-label="{{ ftl('common-remove-filter') }}: ${filterValue} (\u00d7)">&times;</button>
     </span>`;
 }
 

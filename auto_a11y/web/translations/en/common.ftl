@@ -798,3 +798,10 @@ enum-lists = Lists
 enum-styles = Styles
 enum-tabindex = Tabindex
 enum-timers = Timers
+
+# Landmark labels for global notification regions
+common-notifications-region = Notifications
+common-activity-status-region = Activity status
+
+# Generic actions
+common-remove-filter = Remove filter

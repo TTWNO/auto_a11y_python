@@ -316,7 +316,7 @@
                     <h2 class="mb-0"><i class="bi bi-graph-up" aria-hidden="true"></i> {{ ftl('common-trends') }}</h2>
                     <div class="d-flex align-items-center gap-2">
                         <small class="text-muted">{{ ftl('testing-last-14-days') }}</small>
-                        <a href="{{ url_for('testing.trends_page') }}{% if selected_project %}?project_id={{ selected_project.id }}{% endif %}{% if selected_website %}&website_id={{ selected_website.id }}{% endif %}" class="btn btn-sm btn-outline-brand" aria-label="{{ ftl('testing-view-detailed-trends') }}">
+                        <a href="{{ url_for('testing.trends_page') }}{% if selected_project %}?project_id={{ selected_project.id }}{% endif %}{% if selected_website %}&website_id={{ selected_website.id }}{% endif %}" class="btn btn-sm btn-outline-brand" aria-label="{{ ftl('common-details') }}: {{ ftl('testing-view-detailed-trends') }}">
                             <i class="bi bi-graph-up-arrow" aria-hidden="true"></i> {{ ftl('common-details') }}
                         </a>
                     </div>

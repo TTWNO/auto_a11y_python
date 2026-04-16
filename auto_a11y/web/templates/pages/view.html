@@ -318,7 +318,7 @@
                     {% set score = score_data.score|default(0) %}
                     <h2 class="card-title">
                         <i class="bi bi-robot" aria-hidden="true"></i> {{ ftl('pages-automated-accessibility-score') }}
-                        <button class="help-icon" data-help="scoring.accessibility_score" aria-label="{{ ftl('pages-get-help-about-accessibility-score') }}">?</button>
+                        <button class="help-icon" data-help="scoring.accessibility_score" aria-label="{{ ftl('pages-get-help-about-accessibility-score') }}"></button>
                     </h2>
                     <div class="display-4 fw-bold
                         {% if score >= 90 %}text-severity-pass
@@ -337,7 +337,7 @@
                 <div class="card-body text-center">
                     <h2 class="card-title">
                         <i class="bi bi-robot" aria-hidden="true"></i> {{ ftl('pages-automated-wcag-compliance-score') }}
-                        <button class="help-icon" data-help="scoring.compliance_score" aria-label="{{ ftl('pages-get-help-about-compliance-score') }}">?</button>
+                        <button class="help-icon" data-help="scoring.compliance_score" aria-label="{{ ftl('pages-get-help-about-compliance-score') }}"></button>
                     </h2>
                     {% if compliance_score %}
                     <div class="display-4 fw-bold
@@ -470,7 +470,7 @@
                         <!-- Progress bar visualization -->
                         <div class="mb-3">
                             <div class="d-flex justify-content-between mb-1">
-                                <span><strong>{{ ftl('pages-overall-pass-rate') }}</strong> <button class="help-icon" data-help="scoring.accessibility_score" aria-label="{{ ftl('pages-get-help-about-overall-pass-rate') }}">?</button></span>
+                                <span><strong>{{ ftl('pages-overall-pass-rate') }}</strong> <button class="help-icon" data-help="scoring.accessibility_score" aria-label="{{ ftl('pages-get-help-about-overall-pass-rate') }}"></button></span>
                                 <span class="{% if pass_rate >= 90 %}text-severity-pass{% elif pass_rate >= 70 %}text-severity-medium{% else %}text-severity-high{% endif %}">
                                     <strong>{{ "%.1f"|format(pass_rate) }}%</strong>
                                 </span>
@@ -635,11 +635,11 @@
         <!-- Multi-State Selector -->
         {% if state_results and state_results|length > 1 %}
         <div class="card-body border-bottom bg-subtle">
-            <h3 class="mb-3"><i class="bi bi-layers" aria-hidden="true"></i> {{ ftl('pages-page-states-tested') }}</h3>
+            <h3 id="page-states-tested-heading" class="mb-3"><i class="bi bi-layers" aria-hidden="true"></i> {{ ftl('pages-page-states-tested') }}</h3>
             <p class="text-muted small mb-3">
                 {{ ftl('pages-this-page-was-tested-in-multiple-states-select-a') }}
             </p>
-            <div class="btn-group" role="group" aria-label="{{ ftl('common-page-states') }}">
+            <div class="btn-group" role="group" aria-labelledby="page-states-tested-heading">
                 {% for state_result in state_results %}
                     {% set raw_state_desc = state_result.page_state.get('description', '') if state_result.page_state else "" %}
                     {% if raw_state_desc.startswith('Initial page state') %}

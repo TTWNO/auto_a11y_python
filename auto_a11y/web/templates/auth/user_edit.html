@@ -152,7 +152,8 @@
             <div class="card-body">
                 {% if user_projects %}
                 <div class="table-responsive">
-                    <table class="table table-sm" aria-label="{{ ftl('auth-project-memberships-for-this-user') }}">
+                    <table class="table table-sm">
+                        <caption class="visually-hidden">{{ ftl('auth-project-memberships-for-this-user') }}</caption>
                         <thead>
                             <tr>
                                 <th scope="col">{{ ftl('common-project') }}</th>

@@ -247,8 +247,12 @@
     }
 
     .lang-switcher button:focus-visible {
-        outline: 2px solid var(--color-brand);
+        /* The container sits on the gradient component-header; an inverse (white)
+           ring surrounding the white container guarantees 3:1 contrast against
+           the gradient regardless of which colour variant is in use. */
+        outline: 2px solid var(--color-focus-ring-inverse, #ffffff);
         outline-offset: 2px;
+        box-shadow: 0 0 0 4px var(--color-focus-ring, #0a58ca);
     }
 
     .lang-inactive {
@@ -305,6 +309,10 @@
         --color-brand: #1a5276;
         --color-border-table: #dee2e6;
         --color-progress-track: #e9ecef;
+        /* Link + focus tokens - mirror tokens.css so inline styles below resolve */
+        --color-link: #0a58ca;
+        --color-focus-ring: #0a58ca;
+        --color-focus-ring-inverse: #ffffff;
     }
     .severity-header-high {
         background: linear-gradient(135deg, var(--color-severity-high), var(--color-severity-high-gradient-end));

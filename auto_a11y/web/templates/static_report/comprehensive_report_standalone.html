@@ -102,6 +102,17 @@
             opacity: 0.8;
         }
 
+        .lang-switcher button:focus-visible {
+            outline: 2px solid var(--color-brand, #1a5276);
+            outline-offset: 2px;
+        }
+
+        /* Visible focus indicator for any interactive element (WCAG 2.4.7) */
+        *:focus-visible {
+            outline: 2px solid var(--color-focus-ring, #0a58ca);
+            outline-offset: 2px;
+        }
+
         .skip-link:focus {
             top: 0;
             z-index: 1100;

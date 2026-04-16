@@ -150,8 +150,27 @@
     }
 
     .active-filter-tag .remove-filter {
+        /* Reset native button so the inline remove control reads as part of the
+           tag chrome, while remaining a real button for screen readers. */
+        background: transparent;
+        border: 0;
+        color: inherit;
+        font: inherit;
         margin-left: 0.5rem;
+        padding: 0 0.25rem;
         cursor: pointer;
+        line-height: 1;
+        border-radius: 4px;
+    }
+
+    .active-filter-tag .remove-filter:hover,
+    .active-filter-tag .remove-filter:focus-visible {
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    .active-filter-tag .remove-filter:focus-visible {
+        outline: 2px solid var(--color-text-inverse, #ffffff);
+        outline-offset: 1px;
     }
 
     .filter-stats {
@@ -289,6 +308,10 @@
         --color-brand: #1a5276;
         --color-border-table: #dee2e6;
         --color-progress-track: #e9ecef;
+        /* Link + focus tokens - mirror tokens.css so inline styles below resolve */
+        --color-link: #0a58ca;
+        --color-focus-ring: #0a58ca;
+        --color-focus-ring-inverse: #ffffff;
     }
 
     /* Severity header gradients */

@@ -9,6 +9,7 @@ public-no-issues-found-on-this-page = No issues found on this page.
 public-no-pages-have-been-tested-yet = No pages have been tested yet.
 public-no-projects-available = No projects available.
 public-opens-in-new-window = opens in new window
+public-page-report = Page report
 public-pages-tested-on-url = Pages tested on { $url }
 public-project-overview = Project Overview
 public-tested-of-total-pages-tested = { $tested } of { $total } pages tested

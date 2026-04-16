@@ -136,7 +136,7 @@
 
     <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center mb-4 gap-3">
         <div>
-            <h1>{{ page.title or ftl('pages-untitled-page') }}</h1>
+            <h1 class="text-break">{{ page.title|truncate(60) if page.title else ftl('pages-untitled-page') }}</h1>
             <p class="text-muted mb-0 text-break">
                 <a href="{{ page.url }}" target="_blank">
                     <span class="d-none d-md-inline">{{ page.url }}</span>
@@ -796,7 +796,7 @@
                                                         {% if violation.metadata and violation.metadata.title %}
                                                         <!-- Enhanced description available -->
                                                         <div class="alert alert-high mb-3">
-                                                            <h4 class="alert-heading">
+                                                            <h3 class="h4 alert-heading">
                                                                 {% if violation.metadata and (violation.metadata.what_generic_en or violation.metadata.what_generic_fr) %}
                                                                     <span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">{{ violation.metadata.what_generic_en }}</span>
                                                                     <span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">{{ violation.metadata.what_generic_fr }}</span>
@@ -806,10 +806,10 @@
                                                                 {% else %}
                                                                     {{ (violation.metadata.what if violation.metadata.what else violation.description)|translate_issue }}
                                                                 {% endif %}
-                                                            </h4>
+                                                            </h3>
                                                         </div>
 
-                                                        <h4 class="text-severity-high mb-2">{{ ftl('pages-about-this-issue') }}</h4>
+                                                        <h3 class="h4 text-severity-high mb-2">{{ ftl('pages-about-this-issue') }}</h3>
 
                                                         <div class="mb-3">
                                                             <strong>{{ ftl('pages-what-the-issue-is') }}</strong>
@@ -844,7 +844,7 @@
                                                         </div>
 
                                                         {% if violation.metadata.wcag_full or violation.wcag_criteria %}
-                                                        <h4 class="text-severity-high mb-2 mt-4">{{ ftl('pages-relevant-test-criteria') }}</h4>
+                                                        <h3 class="h4 text-severity-high mb-2 mt-4">{{ ftl('pages-relevant-test-criteria') }}</h3>
                                                         <div class="mb-3">
                                                             {% if violation.metadata.wcag_full %}
                                                             <strong>{{ ftl('pages-wcag-success-criteria') }}</strong>
@@ -954,7 +954,7 @@
                                                         {% endif %}
 
                                                         {% if violation.html %}
-                                                        <h4 class="mt-3">{{ ftl('pages-code-snippet') }}</h4>
+                                                        <h3 class="h4 mt-3">{{ ftl('pages-code-snippet') }}</h3>
                                                         {% if 'ErrSkippedHeadingLevel' in violation.id and violation.metadata and 'previousHeadingHtml' in violation.metadata %}
                                                         <p class="mb-2"><strong>Previous heading (h{{ violation.metadata.skippedFrom }}):</strong></p>
                                                         <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ violation.metadata.previousHeadingHtml|e }}</code></pre>
@@ -968,7 +968,7 @@
                                                         {% endif %}
                                                         <p class="mb-2"><strong>{{ ftl('pages-obscuring-element-dialog-overlay') }}</strong></p>
                                                         <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ violation.html|e }}</code></pre>
-                                                        <h4 class="mt-4">{{ violation.metadata.obscuredCount }} {{ ftl('pages-interactive-element-s-being-obscured') }}</h4>
+                                                        <h3 class="h4 mt-4">{{ violation.metadata.obscuredCount }} {{ ftl('pages-interactive-element-s-being-obscured') }}</h3>
                                                         {% for element in violation.metadata.obscuredElements %}
                                                         <div class="mb-3 border-start border-medium border-3 ps-3">
                                                             <p class="mb-1"><strong>&lt;{{ element.element }}&gt;:</strong> "{{ element.text }}"</p>
@@ -981,7 +981,7 @@
                                                         </div>
                                                         {% endfor %}
                                                         {% elif 'ErrMultipleH1' in violation.id and violation.metadata and 'allH1s' in violation.metadata %}
-                                                        <h4 class="mt-3">All {{ violation.metadata.count }} H1 elements found on page:</h4>
+                                                        <h3 class="h4 mt-3">All {{ violation.metadata.count }} H1 elements found on page:</h3>
                                                         {% for h1 in violation.metadata.allH1s %}
                                                         <div class="mb-3">
                                                             <p class="mb-1"><strong>H1 #{{ h1.index }}:</strong> {{ h1.text }}</p>
@@ -998,7 +998,7 @@
                                                         <p class="mb-2"><strong>Detected pattern:</strong> {{ violation.metadata.pattern }}</p>
                                                         <p class="mb-2"><strong>Number of items found:</strong> {{ violation.metadata.itemCount }}</p>
                                                         {% if violation.metadata.sampleItems %}
-                                                        <h4 class="mt-4">Sample list items detected:</h4>
+                                                        <h3 class="h4 mt-4">Sample list items detected:</h3>
                                                         {% for item in violation.metadata.sampleItems %}
                                                         <div class="mb-2 border-start border-info border-3 ps-3">
                                                             <p class="mb-0"><strong>Item {{ item.index }}:</strong> {{ item.text }}</p>
@@ -1013,7 +1013,7 @@
                                                         {% elif 'ErrDuplicateLandmarkWithoutName' in violation.id and violation.metadata and 'allInstances' in violation.metadata %}
                                                         <p class="mb-2"><strong>This instance (missing accessible name):</strong></p>
                                                         <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ violation.html|e }}</code></pre>
-                                                        <h4 class="mt-4">All {{ violation.metadata.totalCount }} {{ violation.metadata.role }} landmarks on page:</h4>
+                                                        <h3 class="h4 mt-4">All {{ violation.metadata.totalCount }} {{ violation.metadata.role }} landmarks on page:</h3>
                                                         {% for instance in violation.metadata.allInstances %}
                                                         <div class="mb-3">
                                                             <p class="mb-1"><strong>{{ ftl('pages-instance') }} {{ instance.index }}:</strong> {{ instance.name }}</p>
@@ -1027,7 +1027,7 @@
                                                         </div>
                                                         {% endfor %}
                                                         {% elif 'ErrDuplicateNavNames' in violation.id and violation.metadata and 'allInstances' in violation.metadata %}
-                                                        <h4 class="mt-3">All {{ violation.metadata.totalCount }} navigation elements with the name "{{ violation.metadata.duplicateName }}":</h4>
+                                                        <h3 class="h4 mt-3">All {{ violation.metadata.totalCount }} navigation elements with the name "{{ violation.metadata.duplicateName }}":</h3>
                                                         {% for instance in violation.metadata.allInstances %}
                                                         <div class="mb-3">
                                                             <p class="mb-1"><strong>Navigation {{ instance.index }}:</strong></p>
@@ -1041,7 +1041,7 @@
                                                         </div>
                                                         {% endfor %}
                                                         {% elif 'ErrSmallText' in violation.id and violation.metadata and violation.metadata.get('allInstances') %}
-                                                        <h4 class="mt-3">{{ ftl('pages-count-element-s-with-text-smaller-than-16px', count=violation.metadata.allInstances|length) }}</h4>
+                                                        <h3 class="h4 mt-3">{{ ftl('pages-count-element-s-with-text-smaller-than-16px', count=violation.metadata.allInstances|length) }}</h3>
                                                         {% for instance in violation.metadata.allInstances %}
                                                         <div class="mb-3">
                                                             <p class="mb-1"><strong>{{ ftl('pages-instance') }} {{ instance.index }}:</strong> &lt;{{ instance.element }}&gt; element - Text size: <span class="badge badge-medium">{{ instance.fontSize }}px</span></p>
@@ -1056,10 +1056,10 @@
                                                         </div>
                                                         {% endfor %}
                                                         {% elif 'ErrAnchorTargetTabindex' in violation.id and violation.metadata and violation.metadata.anchorLinksCount %}
-                                                        <h4 class="mt-3">Link target (needs tabindex="-1"):</h4>
+                                                        <h3 class="h4 mt-3">Link target (needs tabindex="-1"):</h3>
                                                         <p class="mb-2"><strong>Target element:</strong> &lt;{{ violation.element }}&gt; with id="{{ violation.metadata.targetId }}"</p>
                                                         <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ violation.html|e }}</code></pre>
-                                                        <h4 class="mt-4">{{ violation.metadata.anchorLinksCount }} anchor link(s) pointing to this target:</h4>
+                                                        <h3 class="h4 mt-4">{{ violation.metadata.anchorLinksCount }} anchor link(s) pointing to this target:</h3>
                                                         {% for anchor in violation.metadata.anchorLinks %}
                                                         <div class="mb-3">
                                                             <p class="mb-1"><strong>Link {{ anchor.index }}:</strong> "{{ anchor.text }}"</p>
@@ -1173,7 +1173,7 @@
                                                         {% if violation.metadata and violation.metadata.title %}
                                                         <!-- Enhanced description available -->
                                                         <div class="alert alert-high mb-3">
-                                                            <h4 class="alert-heading">
+                                                            <h3 class="h4 alert-heading">
                                                                 {% if violation.metadata and (violation.metadata.what_generic_en or violation.metadata.what_generic_fr) %}
                                                                     <span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">{{ violation.metadata.what_generic_en }}</span>
                                                                     <span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">{{ violation.metadata.what_generic_fr }}</span>
@@ -1183,10 +1183,10 @@
                                                                 {% else %}
                                                                     {{ (violation.metadata.what if violation.metadata.what else violation.description)|translate_issue }}
                                                                 {% endif %}
-                                                            </h4>
+                                                            </h3>
                                                         </div>
 
-                                                        <h4 class="text-severity-high mb-2">{{ ftl('pages-about-this-issue') }}</h4>
+                                                        <h3 class="h4 text-severity-high mb-2">{{ ftl('pages-about-this-issue') }}</h3>
 
                                                         <div class="mb-3">
                                                             <strong>{{ ftl('pages-what-the-issue-is') }}</strong>
@@ -1221,7 +1221,7 @@
                                                         </div>
 
                                                         {% if violation.metadata.wcag_full or violation.wcag_criteria %}
-                                                        <h4 class="text-severity-high mb-2 mt-4">{{ ftl('pages-relevant-test-criteria') }}</h4>
+                                                        <h3 class="h4 text-severity-high mb-2 mt-4">{{ ftl('pages-relevant-test-criteria') }}</h3>
                                                         <div class="mb-3">
                                                             {% if violation.metadata.wcag_full %}
                                                             <strong>{{ ftl('pages-wcag-success-criteria') }}</strong>
@@ -1331,7 +1331,7 @@
                                                         {% endif %}
 
                                                         {% if violation.html %}
-                                                        <h4 class="mt-3">{{ ftl('pages-code-snippet') }}</h4>
+                                                        <h3 class="h4 mt-3">{{ ftl('pages-code-snippet') }}</h3>
                                                         {% if 'ErrSkippedHeadingLevel' in violation.id and violation.metadata and 'previousHeadingHtml' in violation.metadata %}
                                                         <p class="mb-2"><strong>Previous heading (h{{ violation.metadata.skippedFrom }}):</strong></p>
                                                         <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ violation.metadata.previousHeadingHtml|e }}</code></pre>
@@ -1345,7 +1345,7 @@
                                                         {% endif %}
                                                         <p class="mb-2"><strong>{{ ftl('pages-obscuring-element-dialog-overlay') }}</strong></p>
                                                         <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ violation.html|e }}</code></pre>
-                                                        <h4 class="mt-4">{{ violation.metadata.obscuredCount }} {{ ftl('pages-interactive-element-s-being-obscured') }}</h4>
+                                                        <h3 class="h4 mt-4">{{ violation.metadata.obscuredCount }} {{ ftl('pages-interactive-element-s-being-obscured') }}</h3>
                                                         {% for element in violation.metadata.obscuredElements %}
                                                         <div class="mb-3 border-start border-medium border-3 ps-3">
                                                             <p class="mb-1"><strong>&lt;{{ element.element }}&gt;:</strong> "{{ element.text }}"</p>
@@ -1358,7 +1358,7 @@
                                                         </div>
                                                         {% endfor %}
                                                         {% elif 'ErrMultipleH1' in violation.id and violation.metadata and 'allH1s' in violation.metadata %}
-                                                        <h4 class="mt-3">All {{ violation.metadata.count }} H1 elements found on page:</h4>
+                                                        <h3 class="h4 mt-3">All {{ violation.metadata.count }} H1 elements found on page:</h3>
                                                         {% for h1 in violation.metadata.allH1s %}
                                                         <div class="mb-3">
                                                             <p class="mb-1"><strong>H1 #{{ h1.index }}:</strong> {{ h1.text }}</p>
@@ -1375,7 +1375,7 @@
                                                         <p class="mb-2"><strong>Detected pattern:</strong> {{ violation.metadata.pattern }}</p>
                                                         <p class="mb-2"><strong>Number of items found:</strong> {{ violation.metadata.itemCount }}</p>
                                                         {% if violation.metadata.sampleItems %}
-                                                        <h4 class="mt-4">Sample list items detected:</h4>
+                                                        <h3 class="h4 mt-4">Sample list items detected:</h3>
                                                         {% for item in violation.metadata.sampleItems %}
                                                         <div class="mb-2 border-start border-info border-3 ps-3">
                                                             <p class="mb-0"><strong>Item {{ item.index }}:</strong> {{ item.text }}</p>
@@ -1390,7 +1390,7 @@
                                                         {% elif 'ErrDuplicateLandmarkWithoutName' in violation.id and violation.metadata and 'allInstances' in violation.metadata %}
                                                         <p class="mb-2"><strong>This instance (missing accessible name):</strong></p>
                                                         <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ violation.html|e }}</code></pre>
-                                                        <h4 class="mt-4">All {{ violation.metadata.totalCount }} {{ violation.metadata.role }} landmarks on page:</h4>
+                                                        <h3 class="h4 mt-4">All {{ violation.metadata.totalCount }} {{ violation.metadata.role }} landmarks on page:</h3>
                                                         {% for instance in violation.metadata.allInstances %}
                                                         <div class="mb-3">
                                                             <p class="mb-1"><strong>{{ ftl('pages-instance') }} {{ instance.index }}:</strong> {{ instance.name }}</p>
@@ -1404,7 +1404,7 @@
                                                         </div>
                                                         {% endfor %}
                                                         {% elif 'ErrDuplicateNavNames' in violation.id and violation.metadata and 'allInstances' in violation.metadata %}
-                                                        <h4 class="mt-3">All {{ violation.metadata.totalCount }} navigation elements with the name "{{ violation.metadata.duplicateName }}":</h4>
+                                                        <h3 class="h4 mt-3">All {{ violation.metadata.totalCount }} navigation elements with the name "{{ violation.metadata.duplicateName }}":</h3>
                                                         {% for instance in violation.metadata.allInstances %}
                                                         <div class="mb-3">
                                                             <p class="mb-1"><strong>Navigation {{ instance.index }}:</strong></p>
@@ -1418,7 +1418,7 @@
                                                         </div>
                                                         {% endfor %}
                                                         {% elif 'ErrSmallText' in violation.id and violation.metadata and violation.metadata.get('allInstances') %}
-                                                        <h4 class="mt-3">{{ ftl('pages-count-element-s-with-text-smaller-than-16px', count=violation.metadata.allInstances|length) }}</h4>
+                                                        <h3 class="h4 mt-3">{{ ftl('pages-count-element-s-with-text-smaller-than-16px', count=violation.metadata.allInstances|length) }}</h3>
                                                         {% for instance in violation.metadata.allInstances %}
                                                         <div class="mb-3">
                                                             <p class="mb-1"><strong>{{ ftl('pages-instance') }} {{ instance.index }}:</strong> &lt;{{ instance.element }}&gt; element - Text size: <span class="badge badge-medium">{{ instance.fontSize }}px</span></p>
@@ -1433,10 +1433,10 @@
                                                         </div>
                                                         {% endfor %}
                                                         {% elif 'ErrAnchorTargetTabindex' in violation.id and violation.metadata and violation.metadata.anchorLinksCount %}
-                                                        <h4 class="mt-3">Link target (needs tabindex="-1"):</h4>
+                                                        <h3 class="h4 mt-3">Link target (needs tabindex="-1"):</h3>
                                                         <p class="mb-2"><strong>Target element:</strong> &lt;{{ violation.element }}&gt; with id="{{ violation.metadata.targetId }}"</p>
                                                         <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ violation.html|e }}</code></pre>
-                                                        <h4 class="mt-4">{{ violation.metadata.anchorLinksCount }} anchor link(s) pointing to this target:</h4>
+                                                        <h3 class="h4 mt-4">{{ violation.metadata.anchorLinksCount }} anchor link(s) pointing to this target:</h3>
                                                         {% for anchor in violation.metadata.anchorLinks %}
                                                         <div class="mb-3">
                                                             <p class="mb-1"><strong>Link {{ anchor.index }}:</strong> "{{ anchor.text }}"</p>
@@ -1551,17 +1551,17 @@
                             {% if violation.metadata and violation.metadata.title %}
                             <!-- Enhanced description available -->
                             <div class="alert alert-high mb-3">
-                                <h4 class="alert-heading">
+                                <h3 class="h4 alert-heading">
                                     {% if violation.metadata.what_generic_en or violation.metadata.what_generic_fr %}
                                         <span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">{{ violation.metadata.what_generic_en }}</span>
                                         <span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">{{ violation.metadata.what_generic_fr }}</span>
                                     {% else %}
                                         {{ violation.metadata.title|translate_issue }}
                                     {% endif %}
-                                </h4>
+                                </h3>
                             </div>
 
-                            <h4 class="text-severity-high mb-2">{{ ftl('pages-about-this-issue') }}</h4>
+                            <h3 class="h4 text-severity-high mb-2">{{ ftl('pages-about-this-issue') }}</h3>
 
                             <div class="mb-3">
                                 <strong>{{ ftl('pages-what-the-issue-is') }}</strong>
@@ -1591,7 +1591,7 @@
                             </div>
 
                             {% if violation.metadata.wcag_full or violation.wcag_criteria %}
-                            <h4 class="text-severity-high mb-2 mt-4">{{ ftl('pages-relevant-test-criteria') }}</h4>
+                            <h3 class="h4 text-severity-high mb-2 mt-4">{{ ftl('pages-relevant-test-criteria') }}</h3>
                             <div class="mb-3">
                                 {% if violation.metadata.wcag_full %}
                                 <strong>{{ ftl('pages-wcag-success-criteria') }}</strong>
@@ -1723,7 +1723,7 @@
                             {# Special case: ErrSmallText with allInstances but no html #}
                             {% if 'ErrSmallText' in violation.id and violation.metadata and violation.metadata.get('allInstances') and not violation.html %}
                             <div class="mt-3">
-                                <h4>{{ ftl('pages-affected-elements') }}</h4>
+                                <h3 class="h4">{{ ftl('pages-affected-elements') }}</h3>
                                 <p class="mb-2">{{ ftl('pages-count-element-s-with-text-smaller-than-16px', count=violation.metadata.allInstances|length) }}</p>
                                 {% for instance in violation.metadata.allInstances %}
                                 <div class="mb-3 border-start border-medium border-3 ps-3">
@@ -1744,7 +1744,7 @@
                             {# Special case: ErrContentOutsideLandmarks with allInstances #}
                             {% if 'ErrContentOutsideLandmarks' in violation.id and violation.metadata and violation.metadata.get('allInstances') %}
                             <div class="mt-3">
-                                <h4>{{ ftl('pages-elements-outside-landmarks') }}</h4>
+                                <h3 class="h4">{{ ftl('pages-elements-outside-landmarks') }}</h3>
                                 <p class="mb-2">{{ violation.metadata.elementCount }} immediate child element(s) of &lt;body&gt; contain content outside landmark regions ({{ violation.metadata.textNodeCount }} text nodes total):</p>
                                 {% for instance in violation.metadata.allInstances %}
                                 <div class="mb-3 border-start border-medium border-3 ps-3">
@@ -1765,7 +1765,7 @@
                             {# Special case: ErrDivMapMissingAttributes with structured metadata #}
                             {% if 'ErrDivMapMissingAttributes' in violation.id and violation.metadata and violation.metadata.get('elementId') %}
                             <div class="mt-3">
-                                <h4>{{ ftl('pages-missing-accessibility-attributes') }}</h4>
+                                <h3 class="h4">{{ ftl('pages-missing-accessibility-attributes') }}</h3>
                                 <p class="mb-2">{{ ftl('pages-map-container') }} <code>{{ violation.metadata.elementId }}</code>
                                 {% if violation.metadata.containedContent %}
                                     {{ ftl('pages-containing') }} {{ violation.metadata.containedContent|join(', ') }}
@@ -1782,7 +1782,7 @@
                             {# Special case: ErrMapAriaHidden with interactive element counts #}
                             {% if 'ErrMapAriaHidden' in violation.id and violation.metadata and violation.metadata.get('interactiveCount') %}
                             <div class="mt-3">
-                                <h4>{{ ftl('pages-silent-focus-trap-details') }}</h4>
+                                <h3 class="h4">{{ ftl('pages-silent-focus-trap-details') }}</h3>
                                 <p class="mb-2">{{ ftl('pages-this-map-container-has') }} <code>aria-hidden="true"</code> {{ ftl('pages-but-contains') }} <strong>{{ violation.metadata.interactiveCount }}</strong> {{ ftl('pages-focusable-element-s-that-keyboard-users-can-still') }}</p>
                                 <ul class="mb-3">
                                     {% if violation.metadata.buttonCount > 0 %}<li>{{ violation.metadata.buttonCount }} {{ ftl('pages-button-s') }}</li>{% endif %}
@@ -1796,7 +1796,7 @@
 
                             {% if violation.html %}
                             <div class="mt-3">
-                                <h4>{{ ftl('pages-code-snippet') }}</h4>
+                                <h3 class="h4">{{ ftl('pages-code-snippet') }}</h3>
                                 {% if 'ErrSkippedHeadingLevel' in violation.id and violation.metadata and 'previousHeadingHtml' in violation.metadata %}
                                 <p class="mb-2"><strong>Previous heading (h{{ violation.metadata.skippedFrom }}):</strong></p>
                                 <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ violation.metadata.previousHeadingHtml|e }}</code></pre>
@@ -1810,7 +1810,7 @@
                                 {% endif %}
                                 <p class="mb-2"><strong>{{ ftl('pages-obscuring-element-dialog-overlay') }}</strong></p>
                                 <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ violation.html|e }}</code></pre>
-                                <h4 class="mt-4">{{ violation.metadata.obscuredCount }} {{ ftl('pages-interactive-element-s-being-obscured') }}</h4>
+                                <h3 class="h4 mt-4">{{ violation.metadata.obscuredCount }} {{ ftl('pages-interactive-element-s-being-obscured') }}</h3>
                                 {% for element in violation.metadata.obscuredElements %}
                                 <div class="mb-3 border-start border-medium border-3 ps-3">
                                     <p class="mb-1"><strong>&lt;{{ element.element }}&gt;:</strong> "{{ element.text }}"</p>
@@ -1823,7 +1823,7 @@
                                 </div>
                                 {% endfor %}
                                 {% elif 'ErrMultipleH1' in violation.id and violation.metadata and 'allH1s' in violation.metadata %}
-                                <h4 class="mt-3">All {{ violation.metadata.count }} H1 elements found on page:</h4>
+                                <h3 class="h4 mt-3">All {{ violation.metadata.count }} H1 elements found on page:</h3>
                                 {% for h1 in violation.metadata.allH1s %}
                                 <div class="mb-3">
                                     <p class="mb-1"><strong>H1 #{{ h1.index }}:</strong> {{ h1.text }}</p>
@@ -1840,7 +1840,7 @@
                                 <p class="mb-2"><strong>Detected pattern:</strong> {{ violation.metadata.pattern }}</p>
                                 <p class="mb-2"><strong>Number of items found:</strong> {{ violation.metadata.itemCount }}</p>
                                 {% if violation.metadata.sampleItems %}
-                                <h4 class="mt-4">Sample list items detected:</h4>
+                                <h3 class="h4 mt-4">Sample list items detected:</h3>
                                 {% for item in violation.metadata.sampleItems %}
                                 <div class="mb-2 border-start border-info border-3 ps-3">
                                     <p class="mb-0"><strong>Item {{ item.index }}:</strong> {{ item.text }}</p>
@@ -1855,7 +1855,7 @@
                                 {% elif 'ErrDuplicateLandmarkWithoutName' in violation.id and violation.metadata and 'allInstances' in violation.metadata %}
                                 <p class="mb-2"><strong>This instance (missing accessible name):</strong></p>
                                 <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ violation.html|e }}</code></pre>
-                                <h4 class="mt-4">All {{ violation.metadata.totalCount }} {{ violation.metadata.role }} landmarks on page:</h4>
+                                <h3 class="h4 mt-4">All {{ violation.metadata.totalCount }} {{ violation.metadata.role }} landmarks on page:</h3>
                                 {% for instance in violation.metadata.allInstances %}
                                 <div class="mb-3">
                                     <p class="mb-1"><strong>{{ ftl('pages-instance') }} {{ instance.index }}:</strong> {{ instance.name }}</p>
@@ -1869,7 +1869,7 @@
                                 </div>
                                 {% endfor %}
                                 {% elif 'ErrDuplicateNavNames' in violation.id and violation.metadata and 'allInstances' in violation.metadata %}
-                                <h4 class="mt-3">All {{ violation.metadata.totalCount }} navigation elements with the name "{{ violation.metadata.duplicateName }}":</h4>
+                                <h3 class="h4 mt-3">All {{ violation.metadata.totalCount }} navigation elements with the name "{{ violation.metadata.duplicateName }}":</h3>
                                 {% for instance in violation.metadata.allInstances %}
                                 <div class="mb-3">
                                     <p class="mb-1"><strong>Navigation {{ instance.index }}:</strong></p>
@@ -1883,7 +1883,7 @@
                                 </div>
                                 {% endfor %}
                                 {% elif 'ErrSmallText' in violation.id and violation.metadata and violation.metadata.get('allInstances') %}
-                                <h4 class="mt-3">{{ ftl('pages-count-element-s-with-text-smaller-than-16px', count=violation.metadata.allInstances|length) }}</h4>
+                                <h3 class="h4 mt-3">{{ ftl('pages-count-element-s-with-text-smaller-than-16px', count=violation.metadata.allInstances|length) }}</h3>
                                 {% for instance in violation.metadata.allInstances %}
                                 <div class="mb-3">
                                     <p class="mb-1"><strong>{{ ftl('pages-instance') }} {{ instance.index }}:</strong> &lt;{{ instance.element }}&gt; element - Text size: <span class="badge badge-medium">{{ instance.fontSize }}px</span></p>
@@ -1898,10 +1898,10 @@
                                 </div>
                                 {% endfor %}
                                 {% elif 'ErrAnchorTargetTabindex' in violation.id and violation.metadata and violation.metadata.anchorLinksCount %}
-                                <h4 class="mt-3">Link target (needs tabindex="-1"):</h4>
+                                <h3 class="h4 mt-3">Link target (needs tabindex="-1"):</h3>
                                 <p class="mb-2"><strong>Target element:</strong> &lt;{{ violation.element }}&gt; with id="{{ violation.metadata.targetId }}"</p>
                                 <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ violation.html|e }}</code></pre>
-                                <h4 class="mt-4">{{ violation.metadata.anchorLinksCount }} anchor link(s) pointing to this target:</h4>
+                                <h3 class="h4 mt-4">{{ violation.metadata.anchorLinksCount }} anchor link(s) pointing to this target:</h3>
                                 {% for anchor in violation.metadata.anchorLinks %}
                                 <div class="mb-3">
                                     <p class="mb-1"><strong>Link {{ anchor.index }}:</strong> "{{ anchor.text }}"</p>
@@ -1932,7 +1932,7 @@
 
                             <!-- Thumbnail of the page at time of test -->
                             {% if screenshot_filename %}
-                            <h4 class="mt-4">{{ ftl('pages-page-thumbnail-at-time-of-test') }}</h4>
+                            <h3 class="h4 mt-4">{{ ftl('pages-page-thumbnail-at-time-of-test') }}</h3>
                             <a href="#" onclick="showScreenshot('{{ url_for('serve_screenshot', filename=screenshot_filename) }}', '{{ page.url }}'); return false;">
                                 <img src="{{ url_for('serve_screenshot', filename=screenshot_filename) }}"
                                      alt="{{ ftl('pages-page-thumbnail') }}"
@@ -1946,7 +1946,7 @@
 
                             {% if violation.metadata.ai_detected %}
                             <div class="mt-3">
-                                <h4><i class="bi bi-robot" aria-hidden="true"></i> AI Detection Details</h4>
+                                <h3 class="h4"><i class="bi bi-robot" aria-hidden="true"></i> AI Detection Details</h3>
                                 <div class="small text-muted">
                                     {% if violation.metadata.visual_location %}
                                     <p><strong>Visual Location:</strong> {{ violation.metadata.visual_location }}</p>
@@ -2079,17 +2079,17 @@
                                                         {% if warning.metadata and warning.metadata.title %}
                                                         <!-- Enhanced description available -->
                                                         <div class="alert alert-medium mb-3">
-                                                            <h4 class="alert-heading">
+                                                            <h3 class="h4 alert-heading">
                                                                 {% if warning.metadata and (warning.metadata.what_en or warning.metadata.what_fr) %}
                                                                     <span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">{{ warning.metadata.what_en or warning.description }}</span>
                                                                     <span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">{{ warning.metadata.what_fr or warning.description }}</span>
                                                                 {% else %}
                                                                     {{ (warning.metadata.what if warning.metadata.what else warning.description)|translate_issue }}
                                                                 {% endif %}
-                                                            </h4>
+                                                            </h3>
                                                         </div>
 
-                                                        <h4 class="text-severity-medium mb-2">{{ ftl('pages-about-this-issue') }}</h4>
+                                                        <h3 class="h4 text-severity-medium mb-2">{{ ftl('pages-about-this-issue') }}</h3>
 
                                                         <div class="mb-3">
                                                             <strong>{{ ftl('pages-what-the-issue-is') }}</strong>
@@ -2122,7 +2122,7 @@
                                                         </div>
 
                                                         {% if warning.metadata.wcag_full or warning.wcag_criteria %}
-                                                        <h4 class="text-severity-medium mb-2 mt-4">{{ ftl('pages-relevant-test-criteria') }}</h4>
+                                                        <h3 class="h4 text-severity-medium mb-2 mt-4">{{ ftl('pages-relevant-test-criteria') }}</h3>
                                                         <div class="mb-3">
                                                             {% if warning.metadata.wcag_full %}
                                                             <strong>{{ ftl('pages-wcag-success-criteria') }}</strong>
@@ -2218,7 +2218,7 @@
                             </p>
                                                         {% endif %}
                                                         {% if warning.html %}
-                                                        <h4 class="mt-3">{{ ftl('pages-code-snippet') }}</h4>
+                                                        <h3 class="h4 mt-3">{{ ftl('pages-code-snippet') }}</h3>
                                                         {% if 'ErrSkippedHeadingLevel' in warning.id and warning.metadata and 'previousHeadingHtml' in warning.metadata %}
                                                         <p class="mb-2"><strong>Previous heading (h{{ warning.metadata.skippedFrom }}):</strong></p>
                                                         <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ warning.metadata.previousHeadingHtml|e }}</code></pre>
@@ -2227,7 +2227,7 @@
                                                         {% elif 'ErrDuplicateLandmarkWithoutName' in warning.id and warning.metadata and 'allInstances' in warning.metadata %}
                                                         <p class="mb-2"><strong>This instance (missing accessible name):</strong></p>
                                                         <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ warning.html|e }}</code></pre>
-                                                        <h4 class="mt-4">All {{ warning.metadata.totalCount }} {{ warning.metadata.role }} landmarks on page:</h4>
+                                                        <h3 class="h4 mt-4">All {{ warning.metadata.totalCount }} {{ warning.metadata.role }} landmarks on page:</h3>
                                                         {% for instance in warning.metadata.allInstances %}
                                                         <div class="mb-3">
                                                             <p class="mb-1"><strong>{{ ftl('pages-instance') }} {{ instance.index }}:</strong> {{ instance.name }}</p>
@@ -2315,17 +2315,17 @@
                                                         {% if warning.metadata and warning.metadata.title %}
                                                         <!-- Enhanced description available -->
                                                         <div class="alert alert-medium mb-3">
-                                                            <h4 class="alert-heading">
+                                                            <h3 class="h4 alert-heading">
                                                                 {% if warning.metadata and (warning.metadata.what_en or warning.metadata.what_fr) %}
                                                                     <span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">{{ warning.metadata.what_en or warning.description }}</span>
                                                                     <span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">{{ warning.metadata.what_fr or warning.description }}</span>
                                                                 {% else %}
                                                                     {{ (warning.metadata.what if warning.metadata.what else warning.description)|translate_issue }}
                                                                 {% endif %}
-                                                            </h4>
+                                                            </h3>
                                                         </div>
 
-                                                        <h4 class="text-severity-medium mb-2">{{ ftl('pages-about-this-issue') }}</h4>
+                                                        <h3 class="h4 text-severity-medium mb-2">{{ ftl('pages-about-this-issue') }}</h3>
 
                                                         <div class="mb-3">
                                                             <strong>{{ ftl('pages-what-the-issue-is') }}</strong>
@@ -2358,7 +2358,7 @@
                                                         </div>
 
                                                         {% if warning.metadata.wcag_full or warning.wcag_criteria %}
-                                                        <h4 class="text-severity-medium mb-2 mt-4">{{ ftl('pages-relevant-test-criteria') }}</h4>
+                                                        <h3 class="h4 text-severity-medium mb-2 mt-4">{{ ftl('pages-relevant-test-criteria') }}</h3>
                                                         <div class="mb-3">
                                                             {% if warning.metadata.wcag_full %}
                                                             <strong>{{ ftl('pages-wcag-success-criteria') }}</strong>
@@ -2400,7 +2400,7 @@
                             </p>
                                                         {% endif %}
                                                         {% if warning.html %}
-                                                        <h4 class="mt-3">{{ ftl('pages-code-snippet') }}</h4>
+                                                        <h3 class="h4 mt-3">{{ ftl('pages-code-snippet') }}</h3>
                                                         <pre class="bg-header text-inverse p-3 rounded"><code>{{ warning.html|e }}</code></pre>
                                                         {% endif %}
                                                     </div>
@@ -2465,17 +2465,17 @@
                             {% if warning.metadata and warning.metadata.title %}
                             <!-- Enhanced description available -->
                             <div class="alert alert-medium mb-3">
-                                <h4 class="alert-heading">
+                                <h3 class="h4 alert-heading">
                                     {% if warning.metadata.what_generic_en or warning.metadata.what_generic_fr %}
                                         <span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">{{ warning.metadata.what_generic_en }}</span>
                                         <span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">{{ warning.metadata.what_generic_fr }}</span>
                                     {% else %}
                                         {{ warning.metadata.title|translate_issue }}
                                     {% endif %}
-                                </h4>
+                                </h3>
                             </div>
 
-                            <h4 class="text-severity-medium mb-2">{{ ftl('pages-about-this-issue') }}</h4>
+                            <h3 class="h4 text-severity-medium mb-2">{{ ftl('pages-about-this-issue') }}</h3>
 
                             <div class="mb-3">
                                 <strong>{{ ftl('pages-what-the-issue-is') }}</strong>
@@ -2501,7 +2501,7 @@
                             </div>
 
                             {% if warning.metadata.wcag_full or warning.wcag_criteria %}
-                            <h4 class="text-severity-medium mb-2 mt-4">{{ ftl('pages-relevant-test-criteria') }}</h4>
+                            <h3 class="h4 text-severity-medium mb-2 mt-4">{{ ftl('pages-relevant-test-criteria') }}</h3>
                             <div class="mb-3">
                                 {% if warning.metadata.wcag_full %}
                                 <strong>{{ ftl('pages-wcag-success-criteria') }}</strong>
@@ -2590,7 +2590,7 @@
                             {% endif %}
                             {% if warning.html %}
                             <div class="mt-3">
-                                <h4>{{ ftl('pages-code-snippet') }}</h4>
+                                <h3 class="h4">{{ ftl('pages-code-snippet') }}</h3>
                                 {% if 'ErrSkippedHeadingLevel' in warning.id and warning.metadata and 'previousHeadingHtml' in warning.metadata %}
                                 <p class="mb-2"><strong>Previous heading (h{{ warning.metadata.skippedFrom }}):</strong></p>
                                 <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ warning.metadata.previousHeadingHtml|e }}</code></pre>
@@ -2599,7 +2599,7 @@
                                 {% elif 'ErrDuplicateLandmarkWithoutName' in warning.id and warning.metadata and 'allInstances' in warning.metadata %}
                                                         <p class="mb-2"><strong>This instance (missing accessible name):</strong></p>
                                                         <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ warning.html|e }}</code></pre>
-                                                        <h4 class="mt-4">All {{ warning.metadata.totalCount }} {{ warning.metadata.role }} landmarks on page:</h4>
+                                                        <h3 class="h4 mt-4">All {{ warning.metadata.totalCount }} {{ warning.metadata.role }} landmarks on page:</h3>
                                                         {% for instance in warning.metadata.allInstances %}
                                                         <div class="mb-3">
                                                             <p class="mb-1"><strong>{{ ftl('pages-instance') }} {{ instance.index }}:</strong> {{ instance.name }}</p>
@@ -2630,7 +2630,7 @@
 
                             <!-- Thumbnail of the page at time of test -->
                             {% if screenshot_filename %}
-                            <h4 class="mt-4">{{ ftl('pages-page-thumbnail-at-time-of-test') }}</h4>
+                            <h3 class="h4 mt-4">{{ ftl('pages-page-thumbnail-at-time-of-test') }}</h3>
                             <a href="#" onclick="showScreenshot('{{ url_for('serve_screenshot', filename=screenshot_filename) }}', '{{ page.url }}'); return false;">
                                 <img src="{{ url_for('serve_screenshot', filename=screenshot_filename) }}"
                                      alt="{{ ftl('pages-page-thumbnail') }}"
@@ -2687,7 +2687,7 @@
 
                             <!-- Thumbnail of the page at time of test -->
                             {% if screenshot_filename %}
-                            <h4 class="mt-4">{{ ftl('pages-page-thumbnail-at-time-of-test') }}</h4>
+                            <h3 class="h4 mt-4">{{ ftl('pages-page-thumbnail-at-time-of-test') }}</h3>
                             <a href="#" onclick="showScreenshot('{{ url_for('serve_screenshot', filename=screenshot_filename) }}', '{{ page.url }}'); return false;">
                                 <img src="{{ url_for('serve_screenshot', filename=screenshot_filename) }}"
                                      alt="{{ ftl('pages-page-thumbnail') }}"
@@ -2793,10 +2793,10 @@
                                                         {% if info.metadata and info.metadata.title %}
                                                         <!-- Enhanced description available -->
                                                         <div class="alert alert-info mb-3">
-                                                            <h4 class="alert-heading">{{ (info.metadata.what if info.metadata.what else info.description)|translate_issue }}</h4>
+                                                            <h3 class="h4 alert-heading">{{ (info.metadata.what if info.metadata.what else info.description)|translate_issue }}</h3>
                                                         </div>
 
-                                                        <h4 class="text-info-custom mb-2">{{ ftl('pages-about-this-issue') }}</h4>
+                                                        <h3 class="h4 text-info-custom mb-2">{{ ftl('pages-about-this-issue') }}</h3>
 
                                                         <div class="mb-3">
                                                             <strong>{{ ftl('pages-what-the-issue-is') }}</strong>
@@ -2822,7 +2822,7 @@
                                                         </div>
 
                                                         {% if info.metadata.wcag_full or info.wcag_criteria %}
-                                                        <h4 class="text-info-custom mb-2 mt-4">{{ ftl('pages-relevant-test-criteria') }}</h4>
+                                                        <h3 class="h4 text-info-custom mb-2 mt-4">{{ ftl('pages-relevant-test-criteria') }}</h3>
                                                         <div class="mb-3">
                                                             {% if info.metadata.wcag_full %}
                                                             <strong>{{ ftl('pages-wcag-success-criteria') }}</strong>
@@ -2862,7 +2862,7 @@
                             </p>
                                                         {% endif %}
                                                         {% if info.html %}
-                                                        <h4 class="mt-3">{{ ftl('pages-code-snippet') }}</h4>
+                                                        <h3 class="h4 mt-3">{{ ftl('pages-code-snippet') }}</h3>
                                                         {% if 'ErrSkippedHeadingLevel' in info.id and info.metadata and 'previousHeadingHtml' in info.metadata %}
                                                         <p class="mb-2"><strong>Previous heading (h{{ info.metadata.skippedFrom }}):</strong></p>
                                                         <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ info.metadata.previousHeadingHtml|e }}</code></pre>
@@ -2871,7 +2871,7 @@
                                                         {% elif 'ErrDuplicateLandmarkWithoutName' in info.id and info.metadata and 'allInstances' in info.metadata %}
                                                         <p class="mb-2"><strong>This instance (missing accessible name):</strong></p>
                                                         <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ info.html|e }}</code></pre>
-                                                        <h4 class="mt-4">All {{ info.metadata.totalCount }} {{ info.metadata.role }} landmarks on page:</h4>
+                                                        <h3 class="h4 mt-4">All {{ info.metadata.totalCount }} {{ info.metadata.role }} landmarks on page:</h3>
                                                         {% for instance in info.metadata.allInstances %}
                                                         <div class="mb-3">
                                                             <p class="mb-1"><strong>{{ ftl('pages-instance') }} {{ instance.index }}:</strong> {{ instance.name }}</p>
@@ -2952,17 +2952,17 @@
                             {% if info.metadata and info.metadata.title %}
                             <!-- Enhanced description available -->
                             <div class="alert alert-info mb-3">
-                                <h4 class="alert-heading">
+                                <h3 class="h4 alert-heading">
                                     {% if info.metadata.what_generic_en or info.metadata.what_generic_fr %}
                                         <span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">{{ info.metadata.what_generic_en }}</span>
                                         <span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">{{ info.metadata.what_generic_fr }}</span>
                                     {% else %}
                                         {{ info.metadata.title|translate_issue }}
                                     {% endif %}
-                                </h4>
+                                </h3>
                             </div>
 
-                            <h4 class="text-info-custom mb-2">{{ ftl('pages-about-this-issue') }}</h4>
+                            <h3 class="h4 text-info-custom mb-2">{{ ftl('pages-about-this-issue') }}</h3>
 
                             <div class="mb-3">
                                 <strong>{{ ftl('pages-what-the-issue-is') }}</strong>
@@ -2988,7 +2988,7 @@
                             </div>
 
                             {% if info.metadata.wcag_full or info.wcag_criteria %}
-                            <h4 class="text-info-custom mb-2 mt-4">{{ ftl('pages-relevant-test-criteria') }}</h4>
+                            <h3 class="h4 text-info-custom mb-2 mt-4">{{ ftl('pages-relevant-test-criteria') }}</h3>
                             <div class="mb-3">
                                 {% if info.metadata.wcag_full %}
                                 <strong>{{ ftl('pages-wcag-success-criteria') }}</strong>
@@ -3024,7 +3024,7 @@
                             {% endif %}
                             {% if info.html %}
                             <div class="mt-3">
-                                <h4>{{ ftl('pages-code-snippet') }}</h4>
+                                <h3 class="h4">{{ ftl('pages-code-snippet') }}</h3>
                                 {% if 'ErrSkippedHeadingLevel' in info.id and info.metadata and 'previousHeadingHtml' in info.metadata %}
                                 <p class="mb-2"><strong>Previous heading (h{{ info.metadata.skippedFrom }}):</strong></p>
                                 <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ info.metadata.previousHeadingHtml|e }}</code></pre>
@@ -3033,7 +3033,7 @@
                                 {% elif 'ErrDuplicateLandmarkWithoutName' in info.id and info.metadata and 'allInstances' in info.metadata %}
                                                         <p class="mb-2"><strong>This instance (missing accessible name):</strong></p>
                                                         <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ info.html|e }}</code></pre>
-                                                        <h4 class="mt-4">All {{ info.metadata.totalCount }} {{ info.metadata.role }} landmarks on page:</h4>
+                                                        <h3 class="h4 mt-4">All {{ info.metadata.totalCount }} {{ info.metadata.role }} landmarks on page:</h3>
                                                         {% for instance in info.metadata.allInstances %}
                                                         <div class="mb-3">
                                                             <p class="mb-1"><strong>{{ ftl('pages-instance') }} {{ instance.index }}:</strong> {{ instance.name }}</p>
@@ -3110,7 +3110,7 @@
 
                             <!-- Thumbnail of the page at time of test -->
                             {% if screenshot_filename %}
-                            <h4 class="mt-4">{{ ftl('pages-page-thumbnail-at-time-of-test') }}</h4>
+                            <h3 class="h4 mt-4">{{ ftl('pages-page-thumbnail-at-time-of-test') }}</h3>
                             <a href="#" onclick="showScreenshot('{{ url_for('serve_screenshot', filename=screenshot_filename) }}', '{{ page.url }}'); return false;">
                                 <img src="{{ url_for('serve_screenshot', filename=screenshot_filename) }}"
                                      alt="{{ ftl('pages-page-thumbnail') }}"
@@ -3223,7 +3223,7 @@
                                                         {% if discovery.metadata and discovery.metadata.title %}
                                                         <!-- Enhanced description available -->
                                                         <div class="alert mb-3 bg-discovery-subtle border-discovery">
-                                                            <h4 class="alert-heading text-discovery">
+                                                            <h3 class="h4 alert-heading text-discovery">
                                                                 {% if discovery.metadata.get('what_generic_en') or discovery.metadata.get('what_generic_fr') %}
                                                                     <span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">{{ discovery.metadata['what_generic_en'] }}</span>
                                                                     <span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">{{ discovery.metadata['what_generic_fr'] }}</span>
@@ -3233,10 +3233,10 @@
                                                                 {% else %}
                                                                     {{ (discovery.metadata.what if discovery.metadata.what else discovery.description)|translate_issue }}
                                                                 {% endif %}
-                                                            </h4>
+                                                            </h3>
                                                         </div>
 
-                                                        <h4 class="mb-2 text-discovery">{{ ftl('pages-about-this-discovery-item') }}</h4>
+                                                        <h3 class="h4 mb-2 text-discovery">{{ ftl('pages-about-this-discovery-item') }}</h3>
 
                                                         <div class="mb-3">
                                                             <strong>{{ ftl('pages-what-was-found') }}</strong>
@@ -3267,7 +3267,7 @@
                                                         </div>
 
                                                         {% if discovery.metadata.wcag_full or discovery.wcag_criteria %}
-                                                        <h4 class="mb-2 mt-4 text-discovery">{{ ftl('pages-relevant-test-criteria') }}</h4>
+                                                        <h3 class="h4 mb-2 mt-4 text-discovery">{{ ftl('pages-relevant-test-criteria') }}</h3>
                                                         <div class="mb-3">
                                                             {% if discovery.metadata.wcag_full %}
                                                             <strong>{{ ftl('pages-wcag-success-criteria') }}</strong>
@@ -3309,7 +3309,7 @@
                             </p>
                                                         {% endif %}
                                                         {% if discovery.html %}
-                                                        <h4 class="mt-3">{{ ftl('pages-code-snippet') }}</h4>
+                                                        <h3 class="h4 mt-3">{{ ftl('pages-code-snippet') }}</h3>
                                                         {% if 'ErrSkippedHeadingLevel' in discovery.id and discovery.metadata and 'previousHeadingHtml' in discovery.metadata %}
                                                         <p class="mb-2"><strong><span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">Previous heading</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Titre précédent</span> (h{{ discovery.metadata.skippedFrom }}):</strong></p>
                                                         <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ discovery.metadata.previousHeadingHtml|e }}</code></pre>
@@ -3318,7 +3318,7 @@
                                                         {% elif 'ErrDuplicateLandmarkWithoutName' in discovery.id and discovery.metadata and 'allInstances' in discovery.metadata %}
                                                         <p class="mb-2"><strong><span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">This instance (missing accessible name):</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Cette instance (nom accessible manquant) :</span></strong></p>
                                                         <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ discovery.html|e }}</code></pre>
-                                                        <h4 class="mt-4"><span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">All {{ discovery.metadata.totalCount }} {{ discovery.metadata.role }} landmarks on page:</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Tous les {{ discovery.metadata.totalCount }} points de repère {{ discovery.metadata.role }} sur la page :</span></h4>
+                                                        <h3 class="h4 mt-4"><span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">All {{ discovery.metadata.totalCount }} {{ discovery.metadata.role }} landmarks on page:</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Tous les {{ discovery.metadata.totalCount }} points de repère {{ discovery.metadata.role }} sur la page :</span></h3>
                                                         {% for instance in discovery.metadata.allInstances %}
                                                         <div class="mb-3">
                                                             <p class="mb-1"><strong><span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">Instance</span><span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">Instance</span> {{ instance.index }}:</strong> {{ instance.name }}</p>
@@ -3420,7 +3420,7 @@
                             {% if discovery.metadata and discovery.metadata.title %}
                             <!-- Enhanced description available -->
                             <div class="alert mb-3 bg-discovery-subtle border-discovery">
-                                <h4 class="alert-heading text-discovery">
+                                <h3 class="h4 alert-heading text-discovery">
                                     {% if discovery.metadata.what_generic_en or discovery.metadata.what_generic_fr %}
                                         <span data-lang="en" class="{{ 'lang-active' if get_locale()|string == 'en' else 'lang-inactive' }}">{{ discovery.metadata.what_generic_en }}</span>
                                         <span data-lang="fr" class="{{ 'lang-active' if get_locale()|string == 'fr' else 'lang-inactive' }}">{{ discovery.metadata.what_generic_fr }}</span>
@@ -3430,10 +3430,10 @@
                                     {% else %}
                                         {{ discovery.metadata.title|translate_issue }}
                                     {% endif %}
-                                </h4>
+                                </h3>
                             </div>
 
-                            <h4 class="mb-2 text-discovery">{{ ftl('pages-about-this-discovery-item') }}</h4>
+                            <h3 class="h4 mb-2 text-discovery">{{ ftl('pages-about-this-discovery-item') }}</h3>
 
                             <div class="mb-3">
                                 <strong>{{ ftl('pages-what-was-found') }}</strong>
@@ -3464,7 +3464,7 @@
                             </div>
 
                             {% if discovery.metadata.wcag_full or discovery.wcag_criteria %}
-                            <h4 class="mb-2 mt-4 text-discovery">{{ ftl('pages-relevant-test-criteria') }}</h4>
+                            <h3 class="h4 mb-2 mt-4 text-discovery">{{ ftl('pages-relevant-test-criteria') }}</h3>
                             <div class="mb-3">
                                 {% if discovery.metadata.wcag_full %}
                                 <strong>{{ ftl('pages-wcag-success-criteria') }}</strong>
@@ -3503,7 +3503,7 @@
                             {% endif %}
                             {% if discovery.html %}
                             <div class="mt-3">
-                                <h4>{{ ftl('pages-code-snippet') }}</h4>
+                                <h3 class="h4">{{ ftl('pages-code-snippet') }}</h3>
                                 {% if 'ErrSkippedHeadingLevel' in discovery.id and discovery.metadata and 'previousHeadingHtml' in discovery.metadata %}
                                 <p class="mb-2"><strong>Previous heading (h{{ discovery.metadata.skippedFrom }}):</strong></p>
                                 <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ discovery.metadata.previousHeadingHtml|e }}</code></pre>
@@ -3512,7 +3512,7 @@
                                 {% elif 'ErrDuplicateLandmarkWithoutName' in discovery.id and discovery.metadata and 'allInstances' in discovery.metadata %}
                                                         <p class="mb-2"><strong>This instance (missing accessible name):</strong></p>
                                                         <pre class="bg-header text-inverse p-3 rounded mb-3"><code>{{ discovery.html|e }}</code></pre>
-                                                        <h4 class="mt-4">All {{ discovery.metadata.totalCount }} {{ discovery.metadata.role }} landmarks on page:</h4>
+                                                        <h3 class="h4 mt-4">All {{ discovery.metadata.totalCount }} {{ discovery.metadata.role }} landmarks on page:</h3>
                                                         {% for instance in discovery.metadata.allInstances %}
                                                         <div class="mb-3">
                                                             <p class="mb-1"><strong>{{ ftl('pages-instance') }} {{ instance.index }}:</strong> {{ instance.name }}</p>
@@ -3559,7 +3559,7 @@
 
                             <!-- Thumbnail of the page at time of test -->
                             {% if screenshot_filename %}
-                            <h4 class="mt-4">{{ ftl('pages-page-thumbnail-at-time-of-test') }}</h4>
+                            <h3 class="h4 mt-4">{{ ftl('pages-page-thumbnail-at-time-of-test') }}</h3>
                             <a href="#" onclick="showScreenshot('{{ url_for('serve_screenshot', filename=screenshot_filename) }}', '{{ page.url }}'); return false;">
                                 <img src="{{ url_for('serve_screenshot', filename=screenshot_filename) }}"
                                      alt="{{ ftl('pages-page-thumbnail') }}"
@@ -3606,7 +3606,7 @@
 
                             <!-- Thumbnail of the page at time of test -->
                             {% if screenshot_filename %}
-                            <h4 class="mt-4">{{ ftl('pages-page-thumbnail-at-time-of-test') }}</h4>
+                            <h3 class="h4 mt-4">{{ ftl('pages-page-thumbnail-at-time-of-test') }}</h3>
                             <a href="#" onclick="showScreenshot('{{ url_for('serve_screenshot', filename=screenshot_filename) }}', '{{ page.url }}'); return false;">
                                 <img src="{{ url_for('serve_screenshot', filename=screenshot_filename) }}"
                                      alt="{{ ftl('pages-page-thumbnail') }}"

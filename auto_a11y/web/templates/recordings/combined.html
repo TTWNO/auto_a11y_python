@@ -84,10 +84,12 @@
             {% if issues_by_touchpoint %}
             {% for touchpoint, issues in issues_by_touchpoint.items()|sort %}
             <div class="mb-4">
-                <h3 class="border-bottom pb-2 mb-3">
-                    <i class="bi bi-folder" aria-hidden="true"></i> {{ touchpoint }}
+                <div class="d-flex align-items-center gap-2 border-bottom pb-2 mb-3">
+                    <h3 class="mb-0">
+                        <i class="bi bi-folder" aria-hidden="true"></i> {{ touchpoint }}
+                    </h3>
                     <span class="badge badge-neutral">{{ issues|length }}</span>
-                </h3>
+                </div>
 
                 <div class="accordion" id="accordion-{{ touchpoint|replace(' ', '-') }}">
                     {% for issue in issues %}

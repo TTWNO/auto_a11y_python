@@ -8,12 +8,12 @@
     <div class="mb-4">
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
             <div>
-                <h1 class="mb-2">
-                    {{ project.name }}
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                    <h1 class="mb-0">{{ project.name }}</h1>
                     <span class="badge badge-{{ {'active': 'pass', 'paused': 'medium', 'completed': 'info', 'archived': 'neutral'}[project.status.value] }}">
                         {{ ftl_enum(project.status.value) }}
                     </span>
-                </h1>
+                </div>
                 <p class="text-muted mb-0">{{ project.description or ftl('projects-no-description') }}</p>
             </div>
         </div>

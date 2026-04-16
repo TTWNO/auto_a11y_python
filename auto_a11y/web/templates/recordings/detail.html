@@ -412,7 +412,7 @@
                     <div class="recording-content">
                         {% for takeaway in key_takeaways_list %}
                         <div class="takeaway-item mb-4{% if not loop.last %} pb-3 border-bottom{% endif %}">
-                            <h4>{{ takeaway.number }}. {{ takeaway.topic }}</h4>
+                            <h3 class="h4">{{ takeaway.number }}. {{ takeaway.topic }}</h3>
                             <p>{{ takeaway.description }}</p>
                             {% if takeaway.timecodes %}
                             <p class="text-muted small mb-0">
@@ -446,14 +446,14 @@
                     <div class="recording-content">
                         {% for painpoint in user_painpoints_list %}
                         <div class="painpoint-item mb-4{% if not loop.last %} pb-3 border-bottom{% endif %}">
-                            <h4>
+                            <h3 class="h4">
                                 {% if painpoint.impact %}
                                 <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'neutral'}[painpoint.impact|lower] or 'neutral' }} me-2">
                                     {{ ftl_enum(painpoint.impact)|upper }}
                                 </span>
                                 {% endif %}
                                 {{ painpoint.title }}
-                            </h4>
+                            </h3>
                             {% if painpoint.user_quote %}
                             <div class="mb-3">
                                 <strong class="text-brand">{{ ftl('common-user-quote') }}</strong>
@@ -499,7 +499,7 @@
                     <div class="recording-content">
                         {% for assertion in user_assertions_list %}
                         <div class="assertion-item mb-4{% if not loop.last %} pb-3 border-bottom{% endif %}">
-                            <h4>{{ assertion.number }}. {{ assertion.assertion }}</h4>
+                            <h3 class="h4">{{ assertion.number }}. {{ assertion.assertion }}</h3>
                             {% if assertion.user_quote %}
                             <div class="mb-3">
                                 <strong class="text-brand">{{ ftl('common-user-quote') }}</strong>
@@ -548,10 +548,12 @@
             {% if issues %}
                 {% for touchpoint, touchpoint_issues in issues_by_touchpoint.items()|sort %}
                 <div class="mb-4">
-                    <h3 class="border-bottom pb-2 mb-3">
-                        <i class="bi bi-folder" aria-hidden="true"></i> {{ ftl_enum(touchpoint) }}
+                    <div class="d-flex align-items-center gap-2 border-bottom pb-2 mb-3">
+                        <h3 class="mb-0">
+                            <i class="bi bi-folder" aria-hidden="true"></i> {{ ftl_enum(touchpoint) }}
+                        </h3>
                         <span class="badge badge-neutral">{{ touchpoint_issues|length }}</span>
-                    </h3>
+                    </div>
 
                     <div class="accordion" id="accordion-{{ touchpoint|replace(' ', '-') }}">
                         {% for issue in touchpoint_issues %}
@@ -834,6 +836,7 @@ function updateIssueStatus(issueId, status) {
         line-height: 1.6;
     }
 
+    .recording-content h3,
     .recording-content h4 {
         color: var(--color-text-heading);
         font-size: 1.1rem;
@@ -844,6 +847,7 @@ function updateIssueStatus(issueId, status) {
         padding-bottom: 0.5rem;
     }
 
+    .recording-content h3:first-child,
     .recording-content h4:first-child {
         margin-top: 0;
     }
@@ -874,6 +878,7 @@ function updateIssueStatus(issueId, status) {
     }
 
     /* Add visual separation between items */
+    .recording-content h3 + h5,
     .recording-content h4 + h5 {
         margin-top: 0.5rem;
     }

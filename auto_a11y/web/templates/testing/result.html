@@ -109,9 +109,10 @@
                         {% for violation in result.violations %}
                         <div class="accordion-item">
                             <h2 class="accordion-header" id="violation-heading-{{ loop.index }}">
-                                <button class="accordion-button collapsed" type="button" 
-                                        data-bs-toggle="collapse" 
-                                        data-bs-target="#violation-{{ loop.index }}">
+                                <button class="accordion-button collapsed" type="button"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#violation-{{ loop.index }}"
+                                        aria-expanded="false" aria-controls="violation-{{ loop.index }}">
                                     <span class="badge badge-{{ {'critical': 'high', 'serious': 'high', 'moderate': 'medium', 'minor': 'info'}[violation.impact] or 'neutral' }} me-2">
                                         {{ violation.impact|upper }}
                                     </span>

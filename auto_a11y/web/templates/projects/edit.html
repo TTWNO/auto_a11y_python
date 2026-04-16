@@ -206,13 +206,13 @@
 
                             <div class="accordion mb-3" id="fontDefaultsAccordion">
                                 <div class="accordion-item">
-                                    <h2 class="accordion-header">
+                                    <h2 class="accordion-header" id="fontDefaultsListHeading">
                                         <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                                                data-bs-target="#fontDefaultsList" aria-expanded="false">
+                                                data-bs-target="#fontDefaultsList" aria-expanded="false" aria-controls="fontDefaultsList">
                                             {{ ftl('projects-view-system-default-inaccessible-fonts-list') }}
                                         </button>
                                     </h2>
-                                    <div id="fontDefaultsList" class="accordion-collapse collapse" data-bs-parent="#fontDefaultsAccordion">
+                                    <div id="fontDefaultsList" class="accordion-collapse collapse" data-bs-parent="#fontDefaultsAccordion" role="region" aria-labelledby="fontDefaultsListHeading">
                                         <div class="accordion-body">
                                             <div class="row">
                                                 <div class="col-md-6">
@@ -592,18 +592,30 @@ function applyPreset(presetName) {
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(button => {
         const targetId = button.getAttribute('data-bs-target');
-        const target = document.querySelector(targetId);
+        const target = targetId ? document.querySelector(targetId) : null;
         const chevron = button.querySelector('i');
 
         if (target) {
             target.addEventListener('show.bs.collapse', function() {
-                chevron.classList.remove('bi-chevron-right');
-                chevron.classList.add('bi-chevron-down');
+                if (chevron) {
+                    chevron.classList.remove('bi-chevron-right');
+                    chevron.classList.add('bi-chevron-down');
+                }
             });
 
             target.addEventListener('hide.bs.collapse', function() {
-                chevron.classList.remove('bi-chevron-down');
-                chevron.classList.add('bi-chevron-right');
+                if (chevron) {
+                    chevron.classList.remove('bi-chevron-down');
+                    chevron.classList.add('bi-chevron-right');
+                }
+            });
+
+            target.addEventListener('shown.bs.collapse', function() {
+                button.setAttribute('aria-expanded', 'true');
+            });
+
+            target.addEventListener('hidden.bs.collapse', function() {
+                button.setAttribute('aria-expanded', 'false');
             });
         }
     });

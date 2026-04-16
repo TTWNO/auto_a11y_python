@@ -324,12 +324,12 @@
 
                 <div class="accordion" id="faqAccordion">
                     <div class="accordion-item">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                        <h2 class="accordion-header" id="faq1Heading">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1" aria-expanded="true" aria-controls="faq1">
                                 {{ ftl('common-why-is-my-compliance-score-so-much-lower-than-my') }}
                             </button>
                         </h2>
-                        <div id="faq1" class="accordion-collapse collapse show">
+                        <div id="faq1" class="accordion-collapse collapse show" role="region" aria-labelledby="faq1Heading">
                             <div class="accordion-body">
                                 {{ ftl('common-the-compliance-score-requires-perfect-passes-zero') }}
                             </div>
@@ -337,12 +337,12 @@
                     </div>
 
                     <div class="accordion-item">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                        <h2 class="accordion-header" id="faq2Heading">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2" aria-expanded="false" aria-controls="faq2">
                                 {{ ftl('common-what-wcag-level-should-i-aim-for') }}
                             </button>
                         </h2>
-                        <div id="faq2" class="accordion-collapse collapse">
+                        <div id="faq2" class="accordion-collapse collapse" role="region" aria-labelledby="faq2Heading">
                             <div class="accordion-body">
                                 {{ ftl('common-level-aa-is-the-recommended-target-and-legal') }}
                             </div>
@@ -350,12 +350,12 @@
                     </div>
 
                     <div class="accordion-item">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                        <h2 class="accordion-header" id="faq3Heading">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3" aria-expanded="false" aria-controls="faq3">
                                 {{ ftl('common-how-often-should-i-run-accessibility-tests') }}
                             </button>
                         </h2>
-                        <div id="faq3" class="accordion-collapse collapse">
+                        <div id="faq3" class="accordion-collapse collapse" role="region" aria-labelledby="faq3Heading">
                             <div class="accordion-body">
                                 {{ ftl('common-test-after-every-significant-change-to-your-site') }}
                             </div>
@@ -363,12 +363,12 @@
                     </div>
 
                     <div class="accordion-item">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                        <h2 class="accordion-header" id="faq4Heading">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4" aria-expanded="false" aria-controls="faq4">
                                 {{ ftl('common-what-s-the-difference-between-automated-and') }}
                             </button>
                         </h2>
-                        <div id="faq4" class="accordion-collapse collapse">
+                        <div id="faq4" class="accordion-collapse collapse" role="region" aria-labelledby="faq4Heading">
                             <div class="accordion-body">
                                 {{ ftl('common-automated-testing-like-auto-a11y-can-catch-about') }}
                             </div>

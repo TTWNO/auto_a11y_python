@@ -705,9 +705,10 @@
                             <!-- Multiple instances - create sub-accordion -->
                             <article class="accordion-item">
                                 <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed" type="button" 
-                                            data-bs-toggle="collapse" 
-                                            data-bs-target="#viol-group-{{ viol_counter.value }}">
+                                    <button class="accordion-button collapsed" type="button"
+                                            data-bs-toggle="collapse"
+                                            data-bs-target="#viol-group-{{ viol_counter.value }}"
+                                            aria-expanded="false" aria-controls="viol-group-{{ viol_counter.value }}">
                                         {% set first_violation = group_list[0] %}
                                         <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'info'}[first_violation.impact.value|lower if first_violation.impact.value else first_violation.impact|lower] or 'neutral' }} me-2">{{ group_list|length }}</span>
                                         <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'info'}[first_violation.impact.value|lower if first_violation.impact.value else first_violation.impact|lower] or 'neutral' }} me-2 impact-badge">
@@ -737,7 +738,8 @@
                                                     <h2 class="accordion-header">
                                                         <button class="accordion-button collapsed" type="button"
                                                                 data-bs-toggle="collapse"
-                                                                data-bs-target="#viol-breakpoint-{{ breakpoint_id }}">
+                                                                data-bs-target="#viol-breakpoint-{{ breakpoint_id }}"
+                                                                aria-expanded="false" aria-controls="viol-breakpoint-{{ breakpoint_id }}">
                                                             <span class="badge badge-info me-2">{{ breakpoint_list|length }}</span>
                                                             <strong>{{ ftl('common-breakpoint') }} {{ breakpoint }}{{ ftl('pages-px-width') }}</strong>
                                                         </button>
@@ -754,7 +756,8 @@
                                                 <h2 class="accordion-header">
                                                     <button class="accordion-button collapsed d-flex flex-column align-items-start" type="button"
                                                             data-bs-toggle="collapse"
-                                                            data-bs-target="#viol-instance-{{ instance_id }}">
+                                                            data-bs-target="#viol-instance-{{ instance_id }}"
+                                                            aria-expanded="false" aria-controls="viol-instance-{{ instance_id }}">
                                                         <div class="d-flex flex-wrap align-items-center gap-2">
                                                             <strong>{{ ftl('pages-instance') }} {{ loop.index }}:</strong>
                                                             {% if violation.metadata and violation.metadata.authenticated_user %}
@@ -1130,7 +1133,8 @@
                                                 <h2 class="accordion-header">
                                                     <button class="accordion-button collapsed d-flex flex-column align-items-start" type="button"
                                                             data-bs-toggle="collapse"
-                                                            data-bs-target="#viol-instance-{{ instance_id }}">
+                                                            data-bs-target="#viol-instance-{{ instance_id }}"
+                                                            aria-expanded="false" aria-controls="viol-instance-{{ instance_id }}">
                                                         <div class="d-flex flex-wrap align-items-center gap-2">
                                                             <strong>{{ ftl('pages-instance') }} {{ loop.index }}:</strong>
                                                             {% if violation.metadata and violation.metadata.authenticated_user %}
@@ -1502,7 +1506,8 @@
                                 <h2 class="accordion-header">
                                     <button class="accordion-button collapsed d-flex flex-column align-items-start" type="button"
                                             data-bs-toggle="collapse"
-                                            data-bs-target="#viol-single-{{ viol_counter.value }}">
+                                            data-bs-target="#viol-single-{{ viol_counter.value }}"
+                                            aria-expanded="false" aria-controls="viol-single-{{ viol_counter.value }}">
                                         <div class="d-flex flex-wrap align-items-center gap-2">
                                             <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'info'}[violation.impact.value|lower if violation.impact.value else violation.impact|lower] or 'neutral' }} impact-badge">{{ ftl_enum(violation.impact.value if violation.impact.value else violation.impact) }}</span>
                                             {% if violation.metadata.ai_detected %}
@@ -1998,9 +2003,10 @@
                             <!-- Multiple instances - create sub-accordion -->
                             <article class="accordion-item">
                                 <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed" type="button" 
-                                            data-bs-toggle="collapse" 
-                                            data-bs-target="#warn-group-{{ warn_counter.value }}">
+                                    <button class="accordion-button collapsed" type="button"
+                                            data-bs-toggle="collapse"
+                                            data-bs-target="#warn-group-{{ warn_counter.value }}"
+                                            aria-expanded="false" aria-controls="warn-group-{{ warn_counter.value }}">
                                         {% set first_warning = group_list[0] %}
                                         <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'info'}[first_warning.impact.value|lower if first_warning.impact.value else first_warning.impact|lower] or 'neutral' }} me-2">{{ group_list|length }}</span>
                                         <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'info'}[first_warning.impact.value|lower if first_warning.impact.value else first_warning.impact|lower] or 'neutral' }} me-2 impact-badge">
@@ -2030,7 +2036,8 @@
                                                     <h2 class="accordion-header">
                                                         <button class="accordion-button collapsed" type="button"
                                                                 data-bs-toggle="collapse"
-                                                                data-bs-target="#warn-breakpoint-{{ breakpoint_id }}">
+                                                                data-bs-target="#warn-breakpoint-{{ breakpoint_id }}"
+                                                                aria-expanded="false" aria-controls="warn-breakpoint-{{ breakpoint_id }}">
                                                             <span class="badge badge-info me-2">{{ breakpoint_list|length }}</span>
                                                             <strong>{{ ftl('common-breakpoint') }} {{ breakpoint }}{{ ftl('pages-px-width') }}</strong>
                                                         </button>
@@ -2044,9 +2051,10 @@
                                                             {% set warn_instance_id = breakpoint_id ~ '-' ~ loop.index %}
                                                             <article class="accordion-item">
                                                 <h2 class="accordion-header">
-                                                    <button class="accordion-button collapsed d-flex flex-column align-items-start" type="button" 
-                                                            data-bs-toggle="collapse" 
-                                                            data-bs-target="#warn-instance-{{ warn_instance_id }}">
+                                                    <button class="accordion-button collapsed d-flex flex-column align-items-start" type="button"
+                                                            data-bs-toggle="collapse"
+                                                            data-bs-target="#warn-instance-{{ warn_instance_id }}"
+                                                            aria-expanded="false" aria-controls="warn-instance-{{ warn_instance_id }}">
                                                         <div class="d-flex flex-wrap align-items-center gap-2">
                                                             <strong>{{ ftl('pages-instance') }} {{ loop.index }}:</strong>
                                                             {% if warning.metadata and warning.metadata.authenticated_user %}
@@ -2279,9 +2287,10 @@
                                             {% set warn_instance_id = warn_counter.value ~ '-' ~ loop.index %}
                                             <article class="accordion-item">
                                                 <h2 class="accordion-header">
-                                                    <button class="accordion-button collapsed d-flex flex-column align-items-start" type="button" 
-                                                            data-bs-toggle="collapse" 
-                                                            data-bs-target="#warn-instance-{{ warn_instance_id }}">
+                                                    <button class="accordion-button collapsed d-flex flex-column align-items-start" type="button"
+                                                            data-bs-toggle="collapse"
+                                                            data-bs-target="#warn-instance-{{ warn_instance_id }}"
+                                                            aria-expanded="false" aria-controls="warn-instance-{{ warn_instance_id }}">
                                                         <div class="d-flex flex-wrap align-items-center gap-2">
                                                             <strong>{{ ftl('pages-instance') }} {{ loop.index }}:</strong>
                                                             {% if warning.metadata and warning.metadata.authenticated_user %}
@@ -2408,9 +2417,10 @@
                             {% for warning in group_list %}
                             <article class="accordion-item">
                                 <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed d-flex flex-column align-items-start" type="button" 
-                                            data-bs-toggle="collapse" 
-                                            data-bs-target="#warn-single-{{ warn_counter.value }}">
+                                    <button class="accordion-button collapsed d-flex flex-column align-items-start" type="button"
+                                            data-bs-toggle="collapse"
+                                            data-bs-target="#warn-single-{{ warn_counter.value }}"
+                                            aria-expanded="false" aria-controls="warn-single-{{ warn_counter.value }}">
                                         <div class="d-flex flex-wrap align-items-center gap-2">
                                             <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'info'}[warning.impact.value|lower if warning.impact.value else warning.impact|lower] or 'medium' }} impact-badge">
                                                 {{ ftl_enum(warning.impact.value if warning.impact.value else warning.impact) }}
@@ -2728,9 +2738,10 @@
                             <!-- Multiple instances - create sub-accordion -->
                             <article class="accordion-item">
                                 <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed" type="button" 
-                                            data-bs-toggle="collapse" 
-                                            data-bs-target="#info-group-{{ info_counter.value }}">
+                                    <button class="accordion-button collapsed" type="button"
+                                            data-bs-toggle="collapse"
+                                            data-bs-target="#info-group-{{ info_counter.value }}"
+                                            aria-expanded="false" aria-controls="info-group-{{ info_counter.value }}">
                                         {% set first_info = group_list[0] %}
                                         <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'info'}[first_info.impact.value|lower if first_info.impact.value else first_info.impact|lower] or 'info' }} me-2">{{ group_list|length }}</span>
                                         {% if first_info.impact %}
@@ -2756,9 +2767,10 @@
                                             {% set info_instance_id = info_counter.value ~ '-' ~ loop.index %}
                                             <article class="accordion-item">
                                                 <h2 class="accordion-header">
-                                                    <button class="accordion-button collapsed" type="button" 
-                                                            data-bs-toggle="collapse" 
-                                                            data-bs-target="#info-instance-{{ info_instance_id }}">
+                                                    <button class="accordion-button collapsed" type="button"
+                                                            data-bs-toggle="collapse"
+                                                            data-bs-target="#info-instance-{{ info_instance_id }}"
+                                                            aria-expanded="false" aria-controls="info-instance-{{ info_instance_id }}">
                                                         <strong>{{ ftl('pages-instance') }} {{ loop.index }}:</strong>
                                                         {% if info.metadata and info.metadata.authenticated_user %}
                                                             <span class="badge badge-neutral ms-2">
@@ -2917,7 +2929,8 @@
                                 <h2 class="accordion-header">
                                     <button class="accordion-button collapsed" type="button"
                                             data-bs-toggle="collapse"
-                                            data-bs-target="#info-single-{{ info_counter.value }}">
+                                            data-bs-target="#info-single-{{ info_counter.value }}"
+                                            aria-expanded="false" aria-controls="info-single-{{ info_counter.value }}">
                             {% if show_error_codes %}<code class="me-2">{{ error_code|error_code_only }}</code>{% endif %}
                             {% if info.metadata and info.metadata.title %}
                                 {{ info.metadata.title|translate_issue }}
@@ -3148,9 +3161,10 @@
                             <!-- Multiple instances - create sub-accordion -->
                             <article class="accordion-item">
                                 <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed" type="button" 
-                                            data-bs-toggle="collapse" 
-                                            data-bs-target="#disc-group-{{ disc_counter.value }}">
+                                    <button class="accordion-button collapsed" type="button"
+                                            data-bs-toggle="collapse"
+                                            data-bs-target="#disc-group-{{ disc_counter.value }}"
+                                            aria-expanded="false" aria-controls="disc-group-{{ disc_counter.value }}">
                                         {% set first_discovery = group_list[0] %}
                                         <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'info'}[first_discovery.impact.value|lower if first_discovery.impact.value else first_discovery.impact|lower] or 'neutral' }} me-2">{{ group_list|length }}</span>
                                         {% if first_discovery.impact %}
@@ -3176,9 +3190,10 @@
                                             {% set disc_instance_id = disc_counter.value ~ '-' ~ loop.index %}
                                             <article class="accordion-item">
                                                 <h2 class="accordion-header">
-                                                    <button class="accordion-button collapsed" type="button" 
-                                                            data-bs-toggle="collapse" 
-                                                            data-bs-target="#disc-instance-{{ disc_instance_id }}">
+                                                    <button class="accordion-button collapsed" type="button"
+                                                            data-bs-toggle="collapse"
+                                                            data-bs-target="#disc-instance-{{ disc_instance_id }}"
+                                                            aria-expanded="false" aria-controls="disc-instance-{{ disc_instance_id }}">
                                                         <strong>{{ ftl('pages-instance') }} {{ loop.index }}:</strong>
                                                         {% if discovery.metadata and discovery.metadata.authenticated_user %}
                                                             <span class="badge badge-neutral ms-2">
@@ -3377,7 +3392,8 @@
                                 <h2 class="accordion-header">
                                     <button class="accordion-button collapsed" type="button"
                                             data-bs-toggle="collapse"
-                                            data-bs-target="#disc-single-{{ disc_counter.value }}">
+                                            data-bs-target="#disc-single-{{ disc_counter.value }}"
+                                            aria-expanded="false" aria-controls="disc-single-{{ disc_counter.value }}">
                             {% if show_error_codes %}<code class="me-2">{{ error_code|error_code_only }}</code>{% endif %}
                             {% if 'DiscoFontFound' in discovery.id and discovery.metadata.fontName %}
                                 Font '{{ discovery.metadata.fontName }}' at {{ discovery.metadata.sizeCount }} size{{ 's' if discovery.metadata.sizeCount != 1 else '' }}: {{ discovery.metadata.fontSizes|join(', ') }}

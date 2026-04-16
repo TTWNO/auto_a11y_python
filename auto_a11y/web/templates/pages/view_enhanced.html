@@ -335,9 +335,10 @@
                      data-description="{{ violation.description|lower }}"
                      data-html="{{ violation.html|lower if violation.html else '' }}">
                     <h2 class="accordion-header" id="violation-heading-{{ loop.index }}">
-                        <button class="accordion-button collapsed" type="button" 
-                                data-bs-toggle="collapse" 
-                                data-bs-target="#violation-{{ loop.index }}">
+                        <button class="accordion-button collapsed" type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#violation-{{ loop.index }}"
+                                aria-expanded="false" aria-controls="violation-{{ loop.index }}">
                             <span class="badge badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'info'}[violation.impact.value|lower if violation.impact.value else violation.impact|lower] or 'neutral' }} me-2">
                                 {{ ftl_enum(violation.impact.value if violation.impact.value else violation.impact)|upper }}
                             </span>

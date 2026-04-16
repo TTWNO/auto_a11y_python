@@ -276,21 +276,29 @@
 
     <!-- Filter Panel (Collapsible) -->
     <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-elevated py-2" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#filterPanel" aria-expanded="true">
+        <div class="card-header bg-elevated py-2">
             <div class="d-flex justify-content-between align-items-center">
-                <h2 class="mb-0">
-                    <i class="bi bi-funnel" aria-hidden="true"></i> {{ ftl('testing-filter-trends') }}
-                    <span id="activeFilterCount" class="badge badge-brand ms-2" style="display: none;">0</span>
-                </h6>
+                <h2 id="filter-panel-heading" class="mb-0 flex-grow-1">
+                    <button type="button"
+                            class="btn btn-link text-decoration-none p-0 text-start d-flex align-items-center gap-2 w-100"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#filterPanel"
+                            aria-expanded="true"
+                            aria-controls="filterPanel">
+                        <i class="bi bi-funnel" aria-hidden="true"></i>
+                        <span>{{ ftl('testing-filter-trends') }}</span>
+                        <span id="activeFilterCount" class="badge badge-brand" style="display: none;">0</span>
+                    </button>
+                </h2>
                 <div class="d-flex align-items-center gap-2">
-                    <button type="button" class="btn btn-sm btn-outline-neutral" id="clearAllFilters" onclick="event.stopPropagation();">
+                    <button type="button" class="btn btn-sm btn-outline-neutral" id="clearAllFilters">
                         <i class="bi bi-x-circle" aria-hidden="true"></i> {{ ftl('common-clear-all') }}
                     </button>
                     <i class="bi bi-chevron-up" aria-hidden="true" id="filterToggleIcon"></i>
                 </div>
             </div>
         </div>
-        <div class="collapse show" id="filterPanel">
+        <div class="collapse show" id="filterPanel" role="region" aria-labelledby="filter-panel-heading">
             <div class="card-body">
                 <!-- Active Filters Display -->
                 <div id="activeFiltersDisplay" class="mb-3" style="display: none;">

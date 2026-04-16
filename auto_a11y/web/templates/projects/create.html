@@ -435,6 +435,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 chevron.classList.toggle('bi-chevron-down');
             }
         });
+
+        const targetId = button.getAttribute('data-bs-target');
+        const target = targetId ? document.querySelector(targetId) : null;
+        if (target) {
+            target.addEventListener('shown.bs.collapse', function() {
+                button.setAttribute('aria-expanded', 'true');
+            });
+            target.addEventListener('hidden.bs.collapse', function() {
+                button.setAttribute('aria-expanded', 'false');
+            });
+        }
     });
 });
 

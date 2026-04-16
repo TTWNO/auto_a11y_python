@@ -88,6 +88,12 @@ This satisfies:
 - `python run.py` plain → strict off, current behavior preserved
   byte-for-byte.
 
+**Test isolation.** The module-level `_strict_mode` is last-write-wins
+across multiple `init_fluent` calls, which matters if a test suite
+constructs several app instances with different `debug` settings. Tests
+that need to control strict-mode behavior should monkey-patch
+`_is_strict` directly rather than rely on per-app isolation.
+
 #### 2. `auto_a11y/web/fluent.py` — new exception class
 
 ```python
@@ -120,6 +126,20 @@ and return the string.
 `_resolve()` stays exactly as it is today — the "try one locale"
 primitive. Keeping it None-returning preserves the existing fallback
 chain in production. The strictness policy lives in exactly one place.
+
+**Format-error surfacing.** Today `_resolve` swallows format errors via
+`logger.warning` (fluent.py:313) and returns the value anyway. For
+strict mode to raise on them, `_resolve` must either:
+
+- return the `(value, errors)` tuple unchanged (recommended), letting
+  `ftl()` decide what to do with `errors` based on strict mode; or
+- be bypassed in the strict-path by calling `bundle.format()` directly
+  from `ftl()`.
+
+The first option is cleaner — it's a pure refactor of `_resolve`'s
+return type (None-or-value becomes None-or-(value, errors)), and
+non-strict callers ignore the errors list. The plan should use this
+approach.
 
 #### 4. Wrapper behavior
 
@@ -266,7 +286,9 @@ infrastructure change.
 
 ## Rollback
 
-If strict mode surfaces too much at once and blocks all CI, a single
-revert of the two `ci.yml` edits (DEBUG flip + `--no-reloader` flag)
-disables strict mode everywhere without touching `fluent.py`. The
-`--no-reloader` flag on `run.py` is harmless when left in place.
+If strict mode surfaces too much at once and blocks all CI, reverting
+the single `DEBUG=True` line in `ci.yml` disables strict mode
+everywhere — `_strict_mode` becomes `False` and `fluent.py` behaves
+exactly as it does today. The `--no-reloader` flag addition (both the
+`ci.yml` invocation and the `run.py` CLI flag) is harmless to leave in
+place and does not need to be reverted.

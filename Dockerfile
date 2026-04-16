@@ -48,4 +48,4 @@ RUN mkdir -p data reports screenshots logs temp
 
 EXPOSE 5001
 
-CMD ["python", "run.py", "--host", "0.0.0.0"]
+CMD ["python", "run.py", "--host", "0.0.0.0", "--debug"]

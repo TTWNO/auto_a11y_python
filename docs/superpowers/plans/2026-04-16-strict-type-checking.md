@@ -796,7 +796,11 @@ Expected: no output.
 
 - [ ] **Step 3: Open the draft PR for Phase 0**
 
-Push the `remove-bootstrap-colours` branch (or the currently active branch) and open a draft PR titled `Phase 0: Strict type-checking infrastructure (non-enforcing)`. Phase 0 is complete when the informational `typecheck` job appears in the PR's CI output for both `3.11` and `3.12`.
+Push the `typecheck/phase-0-infrastructure` branch created in the ground-rules block above:
+```bash
+git push -u origin typecheck/phase-0-infrastructure
+```
+Open a draft PR titled `Phase 0: Strict type-checking infrastructure (non-enforcing)`. Phase 0 is complete when the informational `typecheck` job appears in the PR's CI output for both `3.11` and `3.12` and passes green (via step-level `continue-on-error`).
 
 ---
 
@@ -1162,11 +1166,34 @@ Expected: no output.
 
 - [ ] **Step 3: Push and verify**
 
-Push the branch. In the PR's CI output, the `typecheck (3.11)` and `typecheck (3.12)` jobs should both go green because Phase 3 is complete.
+Push the cutover branch. In the PR's CI output, the `typecheck (3.11)` and `typecheck (3.12)` jobs should both go green because Phase 3 is complete.
 
-Confirm they are now failing-closed: on a disposable scratch branch, introduce an intentional type error (e.g., add `x: int = "string"` to the top of `tests/test_install_hooks.py`), `git add tests/test_install_hooks.py`, `git commit --no-verify -m "scratch"` (locally), push. Watch the `typecheck` job fail. Then discard: `git restore --source=HEAD~1 --staged --worktree tests/test_install_hooks.py && git reset --hard HEAD~1 && git push --force-with-lease` on the scratch branch (never on a shared branch). Delete the scratch branch.
+Confirm they are now failing-closed. **Create a disposable scratch branch first** so the safety rail for the subsequent `git reset --hard` is unambiguous:
 
-(NB: this is the one place the plan explicitly authorises `--no-verify`, and only on a disposable scratch branch, to test that CI blocks.)
+```bash
+# Explicit scratch branch — do NOT skip this step.
+git checkout -b typecheck/cutover-scratch
+
+# Introduce an intentional type error and commit, bypassing the local hook
+# (this is the ONE place the plan authorises --no-verify, and only here).
+echo 'x: int = "string"' >> tests/test_install_hooks.py
+git add tests/test_install_hooks.py
+git commit --no-verify -m "scratch: deliberate type error to verify CI blocks"
+
+git push -u origin typecheck/cutover-scratch
+# Open a draft PR or watch the Actions run directly; confirm the
+# typecheck (3.11) and typecheck (3.12) jobs FAIL.
+```
+
+Then discard the scratch branch fully:
+```bash
+# Switch back before deleting the branch.
+git checkout -   # or: git checkout <your-cutover-branch>
+git branch -D typecheck/cutover-scratch
+git push origin --delete typecheck/cutover-scratch
+```
+
+Do NOT `git reset --hard` on your main cutover branch; the scratch branch contains the bad commit and is deleted whole. Never perform this procedure on a shared branch.
 
 - [ ] **Step 4: Commit**
 

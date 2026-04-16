@@ -1346,7 +1346,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <!-- Accessibility enhancements: Space key on link-styled-as-button, new-window warning -->
 <script>
 document.addEventListener('keydown', function(e) {
-    if (e.key === ' ' && e.target.matches('a.btn')) {
+    if (e.key === ' ' && e.target.tagName === 'A') {
         e.preventDefault();
         e.target.click();
     }

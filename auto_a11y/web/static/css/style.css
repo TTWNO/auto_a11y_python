@@ -186,12 +186,12 @@ summary:focus-visible {
     box-shadow: 0 0 0 4px var(--color-focus-ring-shadow, rgba(10, 88, 202, 0.6));
 }
 
-/* Remove outline on mouse click for :focus-visible browsers */
-a:focus:not(:focus-visible),
-button:focus:not(:focus-visible) {
-    outline-color: transparent;
-    box-shadow: none;
-}
+/* Note: We previously removed the outline for :focus:not(:focus-visible)
+   (mouse-click focus) but the focus_management test uses programmatic
+   .focus() which triggers :focus but NOT :focus-visible, so the test
+   saw no focus indicator and flagged every interactive element.
+   Keeping outline on ALL focus states (mouse + keyboard) is also more
+   accessible for power users who navigate via mouse. */
 
 /* Form controls: border changes on focus too (forms_WarnInputNoBorderOutline) */
 .form-control:focus,
@@ -2322,8 +2322,8 @@ footer {
     line-height: 1.5;
 }
 
-/* Exceptions for compact UI controls where 1.5 would break layout.
-   These are single-line interactive elements, not body copy. */
+/* All interactive controls must also meet 1.5 (WCAG 1.4.12).
+   Using 1.5 with appropriate padding keeps them looking compact. */
 .badge,
 .btn,
 .nav-link,
@@ -2336,8 +2336,9 @@ footer {
 .input-group-text,
 .toast-header,
 .pagination .page-item,
-.page-item .page-link {
-    line-height: 1.2;
+.page-item .page-link,
+a, button, input, select, textarea {
+    line-height: 1.5;
 }
 
 /* ============================================

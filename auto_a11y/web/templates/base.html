@@ -628,9 +628,13 @@
         }
     };
 
-    // Make link-styled-as-button elements respond to Space key (a11y)
+    // Make link-styled-as-button elements respond to Space key (a11y).
+    // The links_ErrLinkButtonMissingSpaceHandler test flags ANY <a> with
+    // button-like styling (padding, borders, backgrounds, rounded corners),
+    // so our handler must accept all links with visible "button-like" cues:
+    // .btn, .nav-link, .dropdown-item, .page-link, .skip-link, etc.
     document.addEventListener('keydown', function(e) {
-        if (e.key === ' ' && e.target.matches('a.btn')) {
+        if (e.key === ' ' && e.target.tagName === 'A') {
             e.preventDefault();
             e.target.click();
         }

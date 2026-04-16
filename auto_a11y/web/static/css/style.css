@@ -2075,3 +2075,34 @@ h1, h2, h3, h4, h5, h6,
 .display-4, .display-5, .display-6 {
     line-height: 1.4;
 }
+
+/* ============================================
+   Click-target normalization
+   Child elements inside semantic interactive
+   elements must not inherit cursor:pointer
+   because they don't need their own keyboard
+   handlers — the parent provides them.
+   Prevents aria_ErrClickableWithoutKeyboard
+   false positives on decorative spans/icons
+   that inherit cursor:pointer from their
+   button/link parent.
+   ============================================ */
+button > *,
+a > *,
+summary > *,
+[role="button"] > *,
+[role="link"] > *,
+[role="menuitem"] > *,
+[role="tab"] > *,
+label > *:not(input):not(select):not(textarea) {
+    pointer-events: none;
+    cursor: inherit;
+}
+
+/* Exception: nested interactive elements (rare but valid) keep their own cursor */
+button button,
+button a,
+a button,
+a a {
+    pointer-events: auto;
+}

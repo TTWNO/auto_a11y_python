@@ -25,6 +25,29 @@ from auto_a11y.core.browser_manager import BrowserManager
 logger = logging.getLogger(__name__)
 
 
+# Error-reason prefixes that mark a failed-page record as an "expected skip" —
+# a valid outcome of visiting a URL (external redirect, outside base path) that
+# is tracked for reporting but must NOT count toward the failure thresholds
+# that can stop discovery early. Real scraper errors (timeouts, navigation
+# failures, browser crashes) still count.
+_EXPECTED_SKIP_REASON_PREFIXES = (
+    "Redirected to external domain",
+    "Redirected outside base path",
+)
+
+
+def _is_expected_skip(page) -> bool:
+    """
+    Return True if ``page`` represents an expected skip rather than a real
+    scraper failure. Expected skips are tracked in ``failed_pages`` for
+    reporting but should not increment the counters that can abort discovery.
+    """
+    if not page or page.status != PageStatus.DISCOVERY_FAILED:
+        return False
+    reason = page.error_reason or ""
+    return reason.startswith(_EXPECTED_SKIP_REASON_PREFIXES)
+
+
 class ScrapingEngine:
     """Web scraping engine for page discovery"""
     
@@ -296,10 +319,15 @@ class ScrapingEngine:
                     
                     # Pre-filter URLs that are known to cause problems
                     # These often redirect to external sites or cause timeouts
-                    problematic_params = ['?share=', '&share=', '?nb=', '&nb=', 'utm_', 'fbclid=', 'gclid=', 
-                                        '#disqus_thread', '#comments', '?print=', '&print=', 
-                                        'javascript:', 'mailto:', 'tel:', '.pdf', '.doc', '.ppt', '.xls']
-                    if any(param in url.lower() for param in problematic_params):
+                    problematic_params = ['?share=', '&share=', '?nb=', '&nb=', 'utm_', 'fbclid=', 'gclid=',
+                                        '#disqus_thread', '#comments', '?print=', '&print=',
+                                        'javascript:', 'mailto:', 'tel:']
+                    # Document-file extensions are matched only against the URL path
+                    # (not the hostname), so hostnames like host.docker.internal that
+                    # happen to contain ".doc" as a substring are not rejected.
+                    document_extensions = ('.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx')
+                    url_path_lower = urlparse(url).path.lower()
+                    if any(param in url.lower() for param in problematic_params) or url_path_lower.endswith(document_extensions):
                         logger.info(f"Skipping URL with problematic parameters: {url}")
                         # Track as failed for error reporting but don't save to DB
                         failed_page = Page(
@@ -343,15 +371,27 @@ class ScrapingEngine:
                         # Track failures separately - don't add to discovered_pages
                         if page.status == PageStatus.DISCOVERY_FAILED:
                             failed_pages.append(page)  # Track for error reporting only
-                            consecutive_failures += 1
-                            total_failures += 1
-                            logger.warning(f"Failed pages: {total_failures} total, {consecutive_failures} consecutive")
-                            
-                            # Stop if too many total failures
-                            if total_failures >= max_total_failures:
-                                logger.error(f"Too many total failures ({total_failures}), stopping discovery")
-                                max_pages_reached = True
-                                break
+
+                            if _is_expected_skip(page):
+                                # Expected skip (external redirect, outside base path).
+                                # Not a scraper error — don't count toward failure
+                                # thresholds that can stop discovery. Reset the
+                                # consecutive-failure counter since this wasn't a
+                                # browser/connection problem.
+                                logger.info(
+                                    f"Expected skip (not counted as failure): {page.error_reason}"
+                                )
+                                consecutive_failures = 0
+                            else:
+                                consecutive_failures += 1
+                                total_failures += 1
+                                logger.warning(f"Failed pages: {total_failures} total, {consecutive_failures} consecutive")
+
+                                # Stop if too many total failures
+                                if total_failures >= max_total_failures:
+                                    logger.error(f"Too many total failures ({total_failures}), stopping discovery")
+                                    max_pages_reached = True
+                                    break
                         else:
                             # Save page to database immediately
                             self.db.save_discovered_page(page, discovery_run_id)

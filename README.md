@@ -69,9 +69,37 @@ python run.py --setup
 
 The setup process will:
 - Create necessary directories
-- Set up database indexes  
+- Set up database indexes
 - Download Chromium browser for Pyppeteer
 - Create a sample project to get started
+
+## Docker
+
+Auto A11y ships with a `docker-compose.yml` that runs the app and
+MongoDB together. With Docker (20.10+) or Podman (4.1+) installed:
+
+```bash
+docker compose up
+# or: podman-compose up
+```
+
+The UI is then available at http://localhost:5001.
+
+### Testing host-local servers
+
+To run accessibility tests against an HTTP server running on **your
+host machine** (for example a dev server on port `8080`), use the
+hostname `host.docker.internal` instead of `localhost`:
+
+| Running on host as | Enter in Auto A11y as |
+|---|---|
+| `http://localhost:80` | `http://host.docker.internal` |
+| `http://localhost:8080` | `http://host.docker.internal:8080` |
+| `http://localhost:8000` | `http://host.docker.internal:8000` |
+
+This is enabled by the `extra_hosts` entry in `docker-compose.yml`. No
+extra configuration is required. If the host server is bound only to
+`127.0.0.1`, rebind it to `0.0.0.0` so the container can reach it.
 
 ## Configuration
 

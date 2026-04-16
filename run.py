@@ -130,6 +130,30 @@ def download_browser():
         return False
 
 
+def install_hooks(cwd: Path | None = None) -> bool:
+    """Configure the given git worktree (default: repo root) to use .githooks/.
+
+    Returns True if configured, False if the directory is not a git worktree
+    (in which case this is a no-op).
+    """
+    import subprocess
+
+    # Default to the directory containing run.py so the command works from any CWD.
+    target_dir = cwd if cwd is not None else Path(__file__).resolve().parent
+    git_dir = target_dir / ".git"
+    if not git_dir.exists():
+        logging.info("Not a git worktree; skipping hook install.")
+        return False
+
+    subprocess.run(
+        ["git", "config", "--local", "core.hooksPath", ".githooks"],
+        cwd=target_dir,
+        check=True,
+    )
+    logging.info("Configured git core.hooksPath -> .githooks")
+    return True
+
+
 def main():
     """Main application entry point"""
     parser = argparse.ArgumentParser(description='Auto A11y Python - Accessibility Testing Tool')
@@ -141,6 +165,8 @@ def main():
     parser.add_argument('--download-browser', action='store_true', help='Download Chromium browser')
     parser.add_argument('--skip-browser', action='store_true', help='Skip browser download during setup')
     parser.add_argument('--desktop', action='store_true', help='Enable desktop mode (Electron distribution)')
+    parser.add_argument('--install-hooks', action='store_true',
+                        help='Configure git to use .githooks/ for this worktree')
 
     args = parser.parse_args()
 
@@ -191,7 +217,16 @@ def main():
             logger.error("Browser download failed")
             sys.exit(1)
         return
-    
+
+    # Install git hooks if requested
+    if args.install_hooks:
+        if install_hooks():
+            logger.info("✓ Hooks installed")
+            return
+        else:
+            logger.error("✗ Not a git worktree; hooks not installed")
+            sys.exit(1)
+
     # Run setup if requested
     if args.setup:
         logger.info("Running initial setup...")

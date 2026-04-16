@@ -19,7 +19,7 @@
 | File | Lines (approx.) | What Changes |
 |------|-----------------|--------------|
 | `auto_a11y/web/fluent.py` | 298-316 | `_resolve()` returns `(value, errors)` tuple instead of `value \| None` |
-| `auto_a11y/web/fluent.py` | new, after line 34 | Add `_strict_mode` module flag + `_is_strict()` helper |
+| `auto_a11y/web/fluent.py` | new, after line 34 (after `_DEFAULT_LOCALE`) | Add `_strict_mode` module flag + `_is_strict()` helper |
 | `auto_a11y/web/fluent.py` | new, near top | Add `MissingTranslationError(KeyError)` class |
 | `auto_a11y/web/fluent.py` | 196-221 | `init_fluent()` sets `_strict_mode = app.debug` |
 | `auto_a11y/web/fluent.py` | 41-64 | `ftl()` gains strict-mode raise paths (missing locales, format errors) |
@@ -260,34 +260,27 @@ class TestStrictModeFlag:
         monkeypatch.setattr(fluent_mod, "_strict_mode", True)
         assert fluent_mod._is_strict() is True
 
-    def test_init_fluent_sets_flag_from_app_debug(self, tmp_path):
-        """init_fluent(app) sets _strict_mode from app.debug."""
+    def test_init_fluent_sets_flag_from_app_debug(self, monkeypatch):
+        """init_fluent(app) sets _strict_mode from app.debug.
+
+        Uses monkeypatch so init_fluent's side effects on _strict_mode
+        and _bundles (it reloads the real production bundles) are
+        automatically reverted at test teardown, preventing state leak
+        into other tests.
+        """
         import auto_a11y.web.fluent as fluent_mod
         from auto_a11y.web.fluent import init_fluent
 
-        # Minimal translations dir so init_fluent is happy
-        (tmp_path / "en").mkdir()
-        (tmp_path / "en" / "m.ftl").write_text("hello = Hi\n", encoding="utf-8")
-        (tmp_path / "fr").mkdir()
-        (tmp_path / "fr" / "m.ftl").write_text("hello = Salut\n", encoding="utf-8")
-
-        # Reset before each scenario
-        fluent_mod._strict_mode = False
+        # Monkey-patched values auto-restore on teardown.
+        # Snapshotting _bundles via dict() gives us an independent copy
+        # that init_fluent's global reassignment won't mutate.
+        monkeypatch.setattr(fluent_mod, "_strict_mode", False)
+        monkeypatch.setattr(fluent_mod, "_bundles", dict(fluent_mod._bundles))
 
         # app.debug=True -> strict
         app = Flask(__name__)
         app.debug = True
-        # Monkey-patch translations dir location
-        original_dirname = os.path.dirname
-        monkey_dir = str(tmp_path.parent)
-
-        # init_fluent uses os.path.dirname(__file__) + '/translations'.
-        # We avoid that by directly calling _load_bundles then setting flag:
-        fluent_mod._load_bundles(str(tmp_path))
-        # Now simulate what init_fluent does re: the flag:
         init_fluent(app)
-        # init_fluent will also re-call _load_bundles with the real path;
-        # that's fine — we only care about the flag.
         assert fluent_mod._strict_mode is True
 
         # app.debug=False -> non-strict
@@ -307,7 +300,7 @@ Expected: FAIL — `_strict_mode` and `_is_strict` don't exist yet.
 
 - [ ] **Step 3.3: Add the flag, helper, and init wiring**
 
-In `auto_a11y/web/fluent.py`, after the `_bundles: dict = {}` line (around line 30), add:
+In `auto_a11y/web/fluent.py`, after the `_DEFAULT_LOCALE = 'en'` line (around line 34 — place the new flag with the rest of the module-level locale config), add:
 
 ```python
 # Module-level strict-mode flag. Set by init_fluent() from app.debug.
@@ -972,12 +965,12 @@ python run.py --help
 
 Expected: output includes a line describing `--no-reloader`.
 
-- [ ] **Step 8.4: Verify `--no-reloader` does not affect non-debug runs**
+- [ ] **Step 8.4: Verify `run.py` still parses**
 
-(Just a syntax / import check — we don't actually start MongoDB here.)
+Pure AST syntax check — avoids actually importing `run`, because importing triggers `config.py`'s module-level `.env` validation which may fail in a bare checkout.
 
 ```bash
-python -c "import run; p = run.argparse.ArgumentParser(); print('OK')"
+python -c "import ast; ast.parse(open('run.py').read()); print('OK')"
 ```
 
 Expected: prints `OK` with no error.

@@ -2208,3 +2208,66 @@ a a {
 .list-inline > li::marker {
     content: "";
 }
+
+/* ============================================
+   Specific contrast overrides (WCAG 2.2 AA)
+   Targets specific elements where Bootstrap's
+   defaults or token combinations fail 4.5:1.
+   ============================================ */
+
+/* <code> elements: Bootstrap default #d63384 on bg-subtle = 4.15:1 (fails)
+   Use our --color-text-code (#dd1144 light, #f28b82 dark) which has higher contrast */
+code,
+.code,
+kbd,
+samp {
+    color: var(--color-text-code) !important;
+    background-color: var(--color-bg-code);
+}
+
+/* Bootstrap's primary blue #0d6efd is 4.20:1 on white (fails)
+   Override .text-primary and link defaults to use our darker --color-link */
+.text-primary,
+a:not(.btn):not(.nav-link):not(.dropdown-item):not(.page-link):not(.navbar-brand):not(.skip-link) {
+    color: var(--color-link);
+}
+
+/* Force white text on severity-pass backgrounds (was 4.45:1 with dark text on green) */
+.bg-pass,
+.btn-pass,
+.toast-pass,
+.progress-pass,
+.card-header-pass,
+.severity-header-pass {
+    color: var(--color-text-inverse) !important;
+}
+
+.bg-pass *:not(.btn):not(input):not(select):not(textarea),
+.btn-pass *,
+.toast-pass *:not(.btn):not(.btn-close),
+.card-header-pass *:not(.btn) {
+    color: inherit;
+}
+
+/* Force white text on info backgrounds (was 3.92:1 with dark text on teal) */
+.bg-info,
+.btn-info,
+.toast-info,
+.card-header-info,
+.severity-header-info {
+    color: var(--color-text-inverse) !important;
+}
+
+.bg-info *:not(.btn):not(input):not(select):not(textarea),
+.btn-info *,
+.toast-info *:not(.btn):not(.btn-close),
+.card-header-info *:not(.btn) {
+    color: inherit;
+}
+
+/* If any custom #3498db or similar bright blue button exists, ensure dark text or override */
+button[id="testAllBtn"] {
+    color: var(--color-text-inverse) !important;
+    background-color: var(--color-link);
+    border-color: var(--color-link);
+}

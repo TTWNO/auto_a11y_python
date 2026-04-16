@@ -380,6 +380,31 @@ python test_fixtures.py --type Err --category Headings --limit 10
 
 Only tests that pass ALL their fixtures are enabled in production. View fixture status at `http://localhost:5001/testing/fixture-status`
 
+## Type Checking
+
+This project enforces strict static type checking via three complementary tools: **mypy**, **pyright**, and **ty**. All three must pass on every commit and in CI.
+
+### One-time setup (per clone)
+
+After cloning:
+```bash
+python run.py --install-hooks
+```
+
+This configures `git` to use the repo's `.githooks/` directory. The pre-commit hook runs all three type checkers against the scoped paths and blocks the commit on any failure.
+
+### Running checks manually
+
+```bash
+.venv/bin/python -m mypy
+.venv/bin/python -m pyright
+.venv/bin/python -m ty check
+```
+
+### Policy
+
+No `# type: ignore` or equivalent suppression comments. No `cast(Any, ...)` workarounds. No `git commit --no-verify`. Type errors are fixed, not suppressed. See [CLAUDE.md](./CLAUDE.md#type-checking-mandatory) for the full policy.
+
 ## API Usage
 
 The application provides REST API endpoints for automation:

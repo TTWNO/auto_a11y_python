@@ -384,6 +384,31 @@ python test_fixtures.py --type Err --category Headings --limit 10
 
 Seuls les tests qui réussissent TOUTES leurs fixtures sont activés en production. Consultez l'état des fixtures à l'adresse `http://localhost:5001/testing/fixture-status`
 
+## Vérification des types
+
+Ce projet impose une vérification stricte des types au moyen de trois outils complémentaires : **mypy**, **pyright** et **ty**. Les trois doivent réussir à chaque commit et dans la CI.
+
+### Configuration unique (par clone)
+
+Après le clonage :
+```bash
+python run.py --install-hooks
+```
+
+Cela configure `git` pour utiliser le répertoire `.githooks/` du dépôt. Le crochet pre-commit exécute les trois vérificateurs de types sur les chemins ciblés et bloque le commit en cas d'échec.
+
+### Exécution manuelle des vérifications
+
+```bash
+.venv/bin/python -m mypy
+.venv/bin/python -m pyright
+.venv/bin/python -m ty check
+```
+
+### Politique
+
+Aucun commentaire `# type: ignore` ni équivalent. Aucun contournement `cast(Any, ...)`. Aucun `git commit --no-verify`. Les erreurs de typage doivent être corrigées, pas supprimées. Voir [CLAUDE.md](./CLAUDE.md#type-checking-mandatory) pour la politique complète.
+
 ## Utilisation de l'API
 
 L'application fournit des points d'accès API REST pour l'automatisation :

@@ -112,7 +112,7 @@ class IssueFilterManager {
                 <div class="row g-3">
                     <!-- Issue Type Filter -->
                     <div class="col-md-6 col-lg-3">
-                        <label class="form-label fw-bold small">${translate('Issue Type')}</label>
+                        <p class="form-label fw-bold small">${translate('Issue Type')}</p>
                         <div class="filter-chips">
                             <button class="btn btn-sm btn-outline-neutral filter-chip me-2 mb-2" data-filter-type="type" data-filter-value="error">
                                 ${translate('Errors')} <span class="badge badge-high ms-1 error-count">0</span>
@@ -131,7 +131,7 @@ class IssueFilterManager {
 
                     <!-- Impact Level Filter -->
                     <div class="col-md-6 col-lg-3">
-                        <label class="form-label fw-bold small">${translate('Impact Level')}</label>
+                        <p class="form-label fw-bold small">${translate('Impact Level')}</p>
                         <div class="filter-chips">
                             <button class="btn btn-sm btn-outline-neutral filter-chip me-2 mb-2" data-filter-type="impact" data-filter-value="high">
                                 ${translate('High')} <span class="badge badge-high ms-1" id="highImpactCount">0</span>
@@ -147,7 +147,7 @@ class IssueFilterManager {
 
                     <!-- WCAG Criteria Filter -->
                     <div class="col-md-6 col-lg-3">
-                        <label class="form-label fw-bold small">${translate('WCAG Criteria')}</label>
+                        <label class="form-label fw-bold small" for="wcagFilter">${translate('WCAG Criteria')}</label>
                         <select class="form-select form-select-sm" id="wcagFilter" multiple style="height: 100px;">
                             <option value="">${translate('Loading...')}</option>
                         </select>
@@ -155,7 +155,7 @@ class IssueFilterManager {
 
                     <!-- Touchpoint Filter -->
                     <div class="col-md-6 col-lg-3">
-                        <label class="form-label fw-bold small">${translate('Touchpoint')}</label>
+                        <label class="form-label fw-bold small" for="touchpointFilter">${translate('Touchpoint')}</label>
                         <select class="form-select form-select-sm" id="touchpointFilter" multiple style="height: 100px;">
                             <option value="">${translate('Loading...')}</option>
                         </select>
@@ -165,7 +165,7 @@ class IssueFilterManager {
                 <!-- User Impact Filter -->
                 <div class="row g-3 mt-2">
                     <div class="col-12">
-                        <label class="form-label fw-bold small">${translate('Affected User Groups')}</label>
+                        <p class="form-label fw-bold small">${translate('Affected User Groups')}</p>
                         <div class="filter-chips">
                             <button class="btn btn-sm btn-outline-neutral filter-chip me-2 mb-2" data-filter-type="user" data-filter-value="vision">
                                 <i class="bi bi-eye-slash me-1" aria-hidden="true"></i>${translate('Vision')}
@@ -189,7 +189,7 @@ class IssueFilterManager {
                 <!-- Test User Filter -->
                 <div class="row g-3 mt-2">
                     <div class="col-12">
-                        <label class="form-label fw-bold small">${translate('Test User')}</label>
+                        <p class="form-label fw-bold small">${translate('Test User')}</p>
                         <div class="filter-chips" id="testUserFilterChips">
                             <!-- Dynamically populated based on test results -->
                         </div>
@@ -199,10 +199,10 @@ class IssueFilterManager {
                 <!-- Quick Search -->
                 <div class="row g-3 mt-2">
                     <div class="col-12">
+                        <label for="quickSearch" class="form-label fw-bold small">${translate('Quick Search')}</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
                             <input type="text" class="form-control" id="quickSearch"
-                                   aria-label="${translate('Search in issue descriptions, IDs, or code...')}"
                                    placeholder="${translate('Search in issue descriptions, IDs, or code...')}">
                         </div>
                     </div>

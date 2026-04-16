@@ -241,51 +241,52 @@
 </head>
 <body>
     <a href="#main-content" class="visually-hidden-focusable">{{ ftl('common-skip-to-main-content') }}</a>
-    <main id="main-content" tabindex="-1" class="container-fluid py-4">
-        <!-- Header -->
-        <div class="row mb-4">
+    <header role="banner" class="container-fluid py-3">
+        <div class="row">
             <div class="col-12">
                 <h1><i class="bi bi-collection" aria-hidden="true"></i> {{ project.name }}</h1>
                 <p class="text-muted">{{ ftl('reports-deduplicated-accessibility-report') }} - {{ ftl('reports-generated') }} {{ report_date }}</p>
                 <p class="lead">{{ ftl('reports-issues-grouped-by-common-components-across') }} {{ websites|length }} {{ ftl('reports-website-s-and') }} {{ total_pages }} {{ ftl('common-pages-2') }}</p>
             </div>
         </div>
+    </header>
+    <main id="main-content" tabindex="-1" class="container-fluid py-4">
 
         <!-- Summary Statistics -->
-        <div class="row mb-4">
-            <div class="col-md-3 col-sm-6">
+        <ul class="row mb-4 list-unstyled" role="list">
+            <li class="col-md-3 col-sm-6">
                 <div class="stats-card">
                     <div class="stat-item">
                         <div class="stat-number text-severity-high">{{ total_violations }}</div>
                         <div class="stat-label">{{ ftl('common-violations') }}</div>
                     </div>
                 </div>
-            </div>
-            <div class="col-md-3 col-sm-6">
+            </li>
+            <li class="col-md-3 col-sm-6">
                 <div class="stats-card">
                     <div class="stat-item">
                         <div class="stat-number text-severity-medium">{{ total_warnings }}</div>
                         <div class="stat-label">{{ ftl('common-warnings') }}</div>
                     </div>
                 </div>
-            </div>
-            <div class="col-md-3 col-sm-6">
+            </li>
+            <li class="col-md-3 col-sm-6">
                 <div class="stats-card">
                     <div class="stat-item">
                         <div class="stat-number text-info-custom">{{ total_info }}</div>
                         <div class="stat-label">{{ ftl('common-info') }}</div>
                     </div>
                 </div>
-            </div>
-            <div class="col-md-3 col-sm-6">
+            </li>
+            <li class="col-md-3 col-sm-6">
                 <div class="stats-card">
                     <div class="stat-item">
                         <div class="stat-number text-brand">{{ common_components|length }}</div>
                         <div class="stat-label">{{ ftl('common-common-components') }}</div>
                     </div>
                 </div>
-            </div>
-        </div>
+            </li>
+        </ul>
 
         <!-- Filter Panel -->
         <div class="filter-panel">
@@ -464,6 +465,10 @@
             </div>
         </div>
     </main>
+
+    <footer role="contentinfo" class="container-fluid py-3 mt-4 border-top text-muted small">
+        <p class="mb-0">{{ ftl('reports-generated-by-auto-a11y') }} &middot; {{ report_date }}</p>
+    </footer>
 
     <!-- Inlined Bootstrap JS -->
     <script>

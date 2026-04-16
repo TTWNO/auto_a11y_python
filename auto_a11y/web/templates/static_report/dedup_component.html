@@ -589,60 +589,62 @@
 {% set info_items = issues|selectattr('type', 'equalto', 'info')|list %}
 {% set discovery_items = issues|selectattr('type', 'equalto', 'discovery')|list %}
 
-<main id="main-content" tabindex="-1" class="container py-4">
-    <!-- Component Header with Language Switcher -->
-    <div class="component-header {{ component_type|lower }}">
-        <div class="d-flex justify-content-between align-items-start mb-3">
-            <a href="../index.html" class="back-link">
-                <i class="bi bi-arrow-left" aria-hidden="true"></i> <span data-i18n="back_to_index">{{ t['back_to_index'] }}</span>
-            </a>
-            <div class="lang-switcher">
-                <button onclick="switchLanguage('en')" id="lang-en" class="{{ 'active' if language == 'en' else '' }}" lang="en" aria-label="{{ ftl('reports-switch-to-english') }}" aria-pressed="{{ 'true' if language == 'en' else 'false' }}">EN</button>
-                <button onclick="switchLanguage('fr')" id="lang-fr" class="{{ 'active' if language == 'fr' else '' }}" lang="fr" aria-label="{{ ftl('reports-switch-to-french') }}" aria-pressed="{{ 'true' if language == 'fr' else 'false' }}">FR</button>
-            </div>
+<header role="banner" class="container py-3">
+    <div class="d-flex justify-content-between align-items-start">
+        <a href="../index.html" class="back-link">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i> <span data-i18n="back_to_index">{{ t['back_to_index'] }}</span>
+        </a>
+        <div class="lang-switcher">
+            <button onclick="switchLanguage('en')" id="lang-en" class="{{ 'active' if language == 'en' else '' }}" lang="en" aria-label="{{ ftl('reports-switch-to-english') }}" aria-pressed="{{ 'true' if language == 'en' else 'false' }}">EN</button>
+            <button onclick="switchLanguage('fr')" id="lang-fr" class="{{ 'active' if language == 'fr' else '' }}" lang="fr" aria-label="{{ ftl('reports-switch-to-french') }}" aria-pressed="{{ 'true' if language == 'fr' else 'false' }}">FR</button>
         </div>
+    </div>
+</header>
+<main id="main-content" tabindex="-1" class="container py-4">
+    <!-- Component Header -->
+    <div class="component-header {{ component_type|lower }}">
         <h1 class="mb-0"><span data-i18n="{{ component_type|lower }}">{{ t.get(component_type|lower, component_type) }}</span>: {% if component_type == 'Form' %}{{ component_label }} <span data-i18n="fields">{{ t.get('fields', 'fields') }}</span>{% else %}{{ component_label }}{% endif %} <code class="text-light opacity-75">{{ component_signature[:8] }}</code></h1>
-        <div class="component-meta">
-            <span><i class="bi bi-file-earmark" aria-hidden="true"></i> <span data-i18n="found_on">{{ t['found_on'] }}</span> {{ page_count }} <span data-i18n="page_s">{{ t['page_s'] }}</span></span>
-            <span><i class="bi bi-bug" aria-hidden="true"></i> {{ total_issues }} <span data-i18n="deduplicated_issue_s">{{ t['deduplicated_issue_s'] }}</span></span>
+        <ul class="component-meta list-unstyled mb-0" role="list">
+            <li><i class="bi bi-file-earmark" aria-hidden="true"></i> <span data-i18n="found_on">{{ t['found_on'] }}</span> {{ page_count }} <span data-i18n="page_s">{{ t['page_s'] }}</span></li>
+            <li><i class="bi bi-bug" aria-hidden="true"></i> {{ total_issues }} <span data-i18n="deduplicated_issue_s">{{ t['deduplicated_issue_s'] }}</span></li>
             {% if component_score is defined %}
-            <span><i class="bi bi-graph-up" aria-hidden="true"></i> <span data-i18n="accessibility_score">{{ t['accessibility_score'] }}</span>:
+            <li><i class="bi bi-graph-up" aria-hidden="true"></i> <span data-i18n="accessibility_score">{{ t['accessibility_score'] }}</span>:
                 <strong class="{% if component_score >= 90 %}text-severity-pass{% elif component_score >= 70 %}text-severity-medium{% else %}text-severity-high{% endif %}">
                     {{ "%.1f"|format(component_score) }}%
                 </strong>
-            </span>
+            </li>
             {% endif %}
-        </div>
+        </ul>
 
         <!-- Issue Breakdown in Header -->
-        <div class="issue-breakdown mt-3">
-            <div class="issue-breakdown-item">
+        <ul class="issue-breakdown mt-3 list-unstyled" role="list">
+            <li class="issue-breakdown-item">
                 <i class="bi bi-x-circle-fill" aria-hidden="true"></i>
                 <span class="count">{{ violations|length }}</span>
                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['errors'] }}</span>
                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['errors'] }}</span>
-            </div>
-            <div class="issue-breakdown-item">
+            </li>
+            <li class="issue-breakdown-item">
                 <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
                 <span class="count">{{ warnings|length }}</span>
                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['warnings'] }}</span>
                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['warnings'] }}</span>
-            </div>
-            <div class="issue-breakdown-item">
+            </li>
+            <li class="issue-breakdown-item">
                 <i class="bi bi-info-circle-fill" aria-hidden="true"></i>
                 <span class="count">{{ info_items|length }}</span>
                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['info'] }}</span>
                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['info'] }}</span>
-            </div>
+            </li>
             {% if discovery_items %}
-            <div class="issue-breakdown-item">
+            <li class="issue-breakdown-item">
                 <i class="bi bi-lightbulb-fill" aria-hidden="true"></i>
                 <span class="count">{{ discovery_items|length }}</span>
                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('discovery', 'Discovery') }}</span>
                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('discovery', 'Découverte') }}</span>
-            </div>
+            </li>
             {% endif %}
-        </div>
+        </ul>
 
         <!-- Component Pages List -->
         <div class="component-pages mt-3">
@@ -682,7 +684,7 @@
         </div>
 
         <!-- Filter Statistics -->
-        <div class="filter-stats">
+        <div class="filter-stats" role="status" aria-live="polite" aria-atomic="true">
             <strong>
                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('showing', 'Showing:') }}</span>
                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('showing', 'Affichage :') }}</span>
@@ -794,6 +796,7 @@
         <!-- Quick Search -->
         <div class="row mt-3">
             <div class="col-12">
+                <label for="quickSearch" class="visually-hidden" data-i18n="search_placeholder">{{ t.get('search_placeholder', 'Search in issue descriptions, error codes...') }}</label>
                 <div class="input-group">
                     <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
                     <input type="text" class="form-control" id="quickSearch"
@@ -969,6 +972,10 @@
         </div>
     {% endif %}
 </main>
+
+<footer role="contentinfo" class="container py-3 mt-4 border-top text-muted small">
+    <p class="mb-0">{{ ftl('reports-generated-by-auto-a11y') }}</p>
+</footer>
 
 <script>
 /* Bootstrap JS */

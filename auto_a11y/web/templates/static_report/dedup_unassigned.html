@@ -440,20 +440,17 @@
 {% endif %}
 {% endmacro %}
 
-<main id="main-content" tabindex="-1" class="container py-4">
-    <!-- Page Navigation -->
-    <nav aria-label="breadcrumb" class="mb-3 no-print">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item">
-                <a href="../index.html" data-i18n="index">{{ t['index'] }}</a>
-            </li>
-            <li class="breadcrumb-item active" aria-current="page">{{ page.title|default('Untitled Page') }}</li>
-        </ol>
-    </nav>
-
-    <!-- Page Header with Language Switcher -->
-    <div class="d-flex justify-content-between align-items-start mb-4">
+<header role="banner" class="container py-3">
+    <div class="d-flex justify-content-between align-items-start mb-3">
         <div>
+            <nav aria-label="breadcrumb" class="no-print">
+                <ol class="breadcrumb mb-2">
+                    <li class="breadcrumb-item">
+                        <a href="../index.html" data-i18n="index">{{ t['index'] }}</a>
+                    </li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ page.title|default('Untitled Page') }}</li>
+                </ol>
+            </nav>
             <h1>{{ page.title|default('Untitled Page') }}</h1>
             <p class="text-muted">
                 <a href="{{ page.url }}" target="_blank" rel="noopener noreferrer">
@@ -466,10 +463,12 @@
             <button onclick="switchLanguage('fr')" id="lang-fr" class="{{ 'active' if language == 'fr' else '' }}" lang="fr" aria-label="{{ ftl('reports-switch-to-french') }}" aria-pressed="{{ 'true' if language == 'fr' else 'false' }}">FR</button>
         </div>
     </div>
+</header>
+<main id="main-content" tabindex="-1" class="container py-4">
 
     <!-- Page Status Cards -->
-    <div class="row mb-4 g-3">
-        <div class="col-6 col-md-3">
+    <ul class="row mb-4 g-3 list-unstyled" role="list">
+        <li class="col-6 col-md-3">
             <div class="card">
                 <div class="card-body">
                     <p class="h6 card-subtitle mb-2 text-muted" data-i18n="status">{{ t['status'] }}</p>
@@ -478,8 +477,8 @@
                     </p>
                 </div>
             </div>
-        </div>
-        <div class="col-6 col-md-3">
+        </li>
+        <li class="col-6 col-md-3">
             <div class="card">
                 <div class="card-body">
                     <p class="h6 card-subtitle mb-2 text-muted" data-i18n="last_tested">{{ t['last_tested'] }}</p>
@@ -488,8 +487,8 @@
                     </p>
                 </div>
             </div>
-        </div>
-        <div class="col-6 col-md-3">
+        </li>
+        <li class="col-6 col-md-3">
             <div class="card">
                 <div class="card-body">
                     <p class="h6 card-subtitle mb-2 text-muted" data-i18n="issues_found">{{ t['issues_found'] }}</p>
@@ -499,8 +498,8 @@
                     </p>
                 </div>
             </div>
-        </div>
-        <div class="col-6 col-md-3">
+        </li>
+        <li class="col-6 col-md-3">
             <div class="card">
                 <div class="card-body">
                     <p class="h6 card-subtitle mb-2 text-muted" data-i18n="score">{{ t['score'] }}</p>
@@ -512,8 +511,8 @@
                     </p>
                 </div>
             </div>
-        </div>
-    </div>
+        </li>
+    </ul>
 
     <!-- Accessibility & Compliance Scores -->
     {% if page.score is defined %}
@@ -636,7 +635,7 @@
         </div>
 
         <!-- Filter Statistics -->
-        <div class="filter-stats">
+        <div class="filter-stats" role="status" aria-live="polite" aria-atomic="true">
             <strong data-i18n="showing">{{ t.get('showing', 'Showing:') }}</strong>
             <span id="visibleCount">0</span> <span data-i18n="of">{{ t.get('of', 'of') }}</span> <span id="totalCount">0</span> <span data-i18n="items">{{ t.get('items', 'items') }}</span>
             | <span id="filterSummary"></span>
@@ -713,6 +712,7 @@
         <!-- Quick Search -->
         <div class="row mt-3">
             <div class="col-12">
+                <label for="quickSearch" class="visually-hidden" data-i18n="search_placeholder">{{ t.get('search_placeholder', 'Search in issue descriptions, error codes, or XPaths...') }}</label>
                 <div class="input-group">
                     <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
                     <input type="text" class="form-control" id="quickSearch"
@@ -1118,6 +1118,10 @@
         </div><!-- End card-body -->
     </div><!-- End card -->
 </main><!-- End container -->
+
+<footer role="contentinfo" class="container py-3 mt-4 border-top text-muted small">
+    <p class="mb-0">{{ ftl('reports-generated-by-auto-a11y') }}</p>
+</footer>
 
 <script>
 /* Bootstrap JS */

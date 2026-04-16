@@ -128,11 +128,15 @@
             // Update active button
             document.querySelectorAll('.lang-switcher button').forEach(btn => {
                 btn.classList.remove('active');
+                btn.setAttribute('aria-pressed', 'false');
             });
             const langButton = document.getElementById(`lang-${lang}`);
             if (langButton) {
                 langButton.classList.add('active');
+                langButton.setAttribute('aria-pressed', 'true');
             }
+            // Keep the document language in sync with the user's selection
+            document.documentElement.lang = lang;
 
             // Toggle visibility of language-specific content
             document.querySelectorAll('[data-lang]').forEach(element => {
@@ -158,9 +162,9 @@
 </head>
 <body style="background-color: var(--color-bg-subtle); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
     <a class="skip-link" href="#main-content" style="position:absolute;top:-40px;left:0;background:var(--color-brand);color:var(--color-text-inverse);padding:8px;text-decoration:none;z-index:1100;">{{ ftl('common-skip-to-main-content') }}</a>
-    <div class="container-fluid py-4" id="main-content">
+    <header role="banner" class="container-fluid py-4">
         <!-- Header with Language Switcher -->
-        <header class="bg-elevated rounded shadow-sm p-4 mb-4">
+        <div class="bg-elevated rounded shadow-sm p-4 mb-4">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <h1 class="mb-2">
@@ -171,13 +175,15 @@
                 </div>
                 <div class="text-end">
                     <div class="lang-switcher">
-                        <button id="lang-en" class="{{ 'active' if language == 'en' else '' }}" onclick="switchLanguage('en')" lang="en" aria-label="{{ ftl('reports-switch-to-english') }}">English</button>
-                        <button id="lang-fr" class="{{ 'active' if language == 'fr' else '' }}" onclick="switchLanguage('fr')" lang="fr" aria-label="{{ ftl('reports-switch-to-french') }}">Français</button>
+                        <button id="lang-en" class="{{ 'active' if language == 'en' else '' }}" onclick="switchLanguage('en')" lang="en" aria-label="{{ ftl('reports-switch-to-english') }}" aria-pressed="{{ 'true' if language == 'en' else 'false' }}">English</button>
+                        <button id="lang-fr" class="{{ 'active' if language == 'fr' else '' }}" onclick="switchLanguage('fr')" lang="fr" aria-label="{{ ftl('reports-switch-to-french') }}" aria-pressed="{{ 'true' if language == 'fr' else 'false' }}">Français</button>
                     </div>
                     <small class="text-muted d-block mt-2">{{ report_date }}</small>
                 </div>
             </div>
-        </header>
+        </div>
+    </header>
+    <main id="main-content" tabindex="-1" class="container-fluid py-4">
 
         <!-- Executive Summary Section -->
         <section class="bg-elevated rounded shadow-sm p-4 mb-4">
@@ -336,8 +342,8 @@
                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.key_metrics }}</span>
             </h2>
 
-            <div class="row g-3">
-                <div class="col-md-3">
+            <ul class="row g-3 list-unstyled" role="list">
+                <li class="col-md-3">
                     <div class="metric-card">
                         <div class="metric-value text-severity-high">{{ data.statistics.total_violations + data.statistics.total_warnings }}</div>
                         <div class="metric-label">
@@ -345,8 +351,8 @@
                             <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.violations }}</span>
                         </div>
                     </div>
-                </div>
-                <div class="col-md-3">
+                </li>
+                <li class="col-md-3">
                     <div class="metric-card">
                         <div class="metric-value text-severity-high">{{ analytics.by_impact.high }}</div>
                         <div class="metric-label">
@@ -354,8 +360,8 @@
                             <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.high_impact }}</span>
                         </div>
                     </div>
-                </div>
-                <div class="col-md-3">
+                </li>
+                <li class="col-md-3">
                     <div class="metric-card">
                         <div class="metric-value text-severity-medium">{{ analytics.by_impact.medium }}</div>
                         <div class="metric-label">
@@ -363,8 +369,8 @@
                             <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.medium_impact }}</span>
                         </div>
                     </div>
-                </div>
-                <div class="col-md-3">
+                </li>
+                <li class="col-md-3">
                     <div class="metric-card">
                         <div class="metric-value text-info-custom">{{ analytics.by_impact.low }}</div>
                         <div class="metric-label">
@@ -372,10 +378,10 @@
                             <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.low_impact }}</span>
                         </div>
                     </div>
-                </div>
+                </li>
 
                 {% if data.statistics.total_recordings > 0 %}
-                <div class="col-md-3">
+                <li class="col-md-3">
                     <div class="metric-card">
                         <div class="metric-value text-discovery">{{ data.statistics.total_recordings }}</div>
                         <div class="metric-label">
@@ -383,8 +389,8 @@
                             <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.total_recordings }}</span>
                         </div>
                     </div>
-                </div>
-                <div class="col-md-3">
+                </li>
+                <li class="col-md-3">
                     <div class="metric-card">
                         <div class="metric-value text-discovery">{{ data.statistics.total_recording_issues }}</div>
                         <div class="metric-label">
@@ -392,9 +398,9 @@
                             <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.recording_issues }}</span>
                         </div>
                     </div>
-                </div>
+                </li>
                 {% endif %}
-            </div>
+            </ul>
         </section>
 
         <!-- Action Plan Section -->
@@ -410,7 +416,7 @@
             <div data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">
                 {% if ai_summary_en.recommendations.quick_wins %}
                 <div class="mb-4">
-                    <h4 class="text-severity-pass"><i class="bi bi-lightning-fill" aria-hidden="true"></i> {{ translations_en.immediate_actions }}</h4>
+                    <h3 class="text-severity-pass"><i class="bi bi-lightning-fill" aria-hidden="true"></i> {{ translations_en.immediate_actions }}</h3>
                     <ul>
                     {% for action in ai_summary_en.recommendations.quick_wins %}
                         <li>{{ action }}</li>
@@ -421,7 +427,7 @@
 
                 {% if ai_summary_en.recommendations.short_term %}
                 <div class="mb-4">
-                    <h4 class="text-brand"><i class="bi bi-calendar-check" aria-hidden="true"></i> {{ translations_en.short_term_goals }}</h4>
+                    <h3 class="text-brand"><i class="bi bi-calendar-check" aria-hidden="true"></i> {{ translations_en.short_term_goals }}</h3>
                     <ul>
                     {% for goal in ai_summary_en.recommendations.short_term %}
                         <li>{{ goal }}</li>
@@ -432,7 +438,7 @@
 
                 {% if ai_summary_en.recommendations.long_term %}
                 <div class="mb-4">
-                    <h4 class="text-info-custom"><i class="bi bi-graph-up-arrow" aria-hidden="true"></i> {{ translations_en.long_term_strategy }}</h4>
+                    <h3 class="text-info-custom"><i class="bi bi-graph-up-arrow" aria-hidden="true"></i> {{ translations_en.long_term_strategy }}</h3>
                     <ul>
                     {% for strategy in ai_summary_en.recommendations.long_term %}
                         <li>{{ strategy }}</li>
@@ -448,7 +454,7 @@
             <div data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">
                 {% if ai_summary_fr.recommendations.quick_wins %}
                 <div class="mb-4">
-                    <h4 class="text-severity-pass"><i class="bi bi-lightning-fill" aria-hidden="true"></i> {{ translations_fr.immediate_actions }}</h4>
+                    <h3 class="text-severity-pass"><i class="bi bi-lightning-fill" aria-hidden="true"></i> {{ translations_fr.immediate_actions }}</h3>
                     <ul>
                     {% for action in ai_summary_fr.recommendations.quick_wins %}
                         <li>{{ action }}</li>
@@ -459,7 +465,7 @@
 
                 {% if ai_summary_fr.recommendations.short_term %}
                 <div class="mb-4">
-                    <h4 class="text-brand"><i class="bi bi-calendar-check" aria-hidden="true"></i> {{ translations_fr.short_term_goals }}</h4>
+                    <h3 class="text-brand"><i class="bi bi-calendar-check" aria-hidden="true"></i> {{ translations_fr.short_term_goals }}</h3>
                     <ul>
                     {% for goal in ai_summary_fr.recommendations.short_term %}
                         <li>{{ goal }}</li>
@@ -470,7 +476,7 @@
 
                 {% if ai_summary_fr.recommendations.long_term %}
                 <div class="mb-4">
-                    <h4 class="text-info-custom"><i class="bi bi-graph-up-arrow" aria-hidden="true"></i> {{ translations_fr.long_term_strategy }}</h4>
+                    <h3 class="text-info-custom"><i class="bi bi-graph-up-arrow" aria-hidden="true"></i> {{ translations_fr.long_term_strategy }}</h3>
                     <ul>
                     {% for strategy in ai_summary_fr.recommendations.long_term %}
                         <li>{{ strategy }}</li>
@@ -1254,7 +1260,11 @@
             </div>
             {% endif %}
         </section>
-    </div>
+    </main>
+
+    <footer role="contentinfo" class="container-fluid py-3 mt-4 border-top text-muted small">
+        <p class="mb-0">{{ ftl('reports-generated-by-auto-a11y') }} &middot; {{ report_date }}</p>
+    </footer>
 
     <!-- Embedded Bootstrap JS -->
     <script>

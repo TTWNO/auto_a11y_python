@@ -37,6 +37,14 @@
         text-align: center;
     }
 
+    /* Card subtitle label (replaces semantic h2 for non-heading labels) */
+    .card-subtitle-label {
+        font-size: 0.875rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
     /* Move accordion indicators to the left for accessibility */
     .accordion-button {
         padding-left: 2.5rem;
@@ -98,21 +106,30 @@
     .filter-chip {
         padding: 0.25rem 0.75rem;
         background: var(--color-bg);
+        color: var(--color-text);
         border: 1px solid var(--color-border-table);
         border-radius: 20px;
         cursor: pointer;
         transition: all 0.2s;
         font-size: 0.875rem;
+        font-family: inherit;
+        line-height: 1.5;
     }
 
     .filter-chip:hover {
         background: var(--color-progress-track);
     }
 
-    .filter-chip.active {
+    .filter-chip.active,
+    .filter-chip[aria-pressed="true"] {
         background: var(--color-brand);
         color: var(--color-text-inverse);
         border-color: var(--color-brand);
+    }
+
+    .filter-chip:focus-visible {
+        outline: 2px solid var(--color-focus-ring, #0d6efd);
+        outline-offset: 2px;
     }
 
     .active-filters {
@@ -192,6 +209,7 @@
     .lang-switcher {
         display: inline-flex;
         background: var(--color-bg-subtle);
+        border: 1px solid var(--color-border-table);
         border-radius: 6px;
         padding: 4px;
         gap: 4px;
@@ -205,18 +223,25 @@
         border-radius: 4px;
         font-weight: 500;
         font-size: 0.875rem;
-        transition: all 0.2s;
-        color: var(--color-text-muted);
+        transition: background-color 0.2s, color 0.2s;
+        color: var(--color-text);
+        font-family: inherit;
     }
 
     .lang-switcher button:hover {
         background: var(--color-progress-track);
-        color: var(--color-text-muted);
+        color: var(--color-text);
     }
 
-    .lang-switcher button.active {
+    .lang-switcher button.active,
+    .lang-switcher button[aria-pressed="true"] {
         background: var(--color-brand);
         color: var(--color-text-inverse);
+    }
+
+    .lang-switcher button:focus-visible {
+        outline: 2px solid var(--color-brand);
+        outline-offset: 2px;
     }
 
     /* WCAG AA Contrast Overrides */
@@ -303,6 +328,7 @@
     </style>
 </head>
 <body>
+<a href="#main-content" class="visually-hidden-focusable">{{ ftl('common-skip-to-main-content') }}</a>
 
 {% macro render_instance_accordion(violation, instance_id, parent_id, alert_type, loop_index, heading_level=5) %}
 {% set h_tag = 'h' ~ heading_level %}
@@ -522,32 +548,34 @@
 {% endif %}
 {% endmacro %}
 
-    <!-- Navigation Bar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-brand no-print">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="../index.html">
-                <i class="bi bi-universal-access-circle" aria-hidden="true"></i>
-                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('auto_a11y_report', 'Auto A11y Report') }}</span>
-                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('auto_a11y_report', 'Rapport Auto A11y') }}</span>
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-expanded="false" aria-controls="navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="../index.html">
-                            <i class="bi bi-house" aria-hidden="true"></i>
-                            <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['index'] }}</span>
-                            <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['index'] }}</span>
-                        </a>
-                    </li>
-                </ul>
+    <header role="banner">
+        <!-- Navigation Bar -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-brand no-print" aria-label="{{ ftl('reports-primary-navigation') }}">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="../index.html">
+                    <i class="bi bi-universal-access-circle" aria-hidden="true"></i>
+                    <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('auto_a11y_report', 'Auto A11y Report') }}</span>
+                    <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('auto_a11y_report', 'Rapport Auto A11y') }}</span>
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-expanded="false" aria-controls="navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="../index.html">
+                                <i class="bi bi-house" aria-hidden="true"></i>
+                                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['index'] }}</span>
+                                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['index'] }}</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
             </div>
-        </div>
-    </nav>
+        </nav>
+    </header>
 
-    <main class="container-fluid py-4">
+    <main id="main-content" tabindex="-1" class="container-fluid py-4">
 <div class="container-fluid">
     <!-- Page Navigation -->
     {% if navigation %}
@@ -575,20 +603,20 @@
             </p>
         </div>
         <div class="lang-switcher">
-            <button onclick="switchLanguage('en')" id="lang-en" class="{{ 'active' if language == 'en' else '' }}" lang="en" aria-label="{{ ftl('reports-switch-to-english') }}">EN</button>
-            <button onclick="switchLanguage('fr')" id="lang-fr" class="{{ 'active' if language == 'fr' else '' }}" lang="fr" aria-label="{{ ftl('reports-switch-to-french') }}">FR</button>
+            <button onclick="switchLanguage('en')" id="lang-en" class="{{ 'active' if language == 'en' else '' }}" lang="en" aria-label="{{ ftl('reports-switch-to-english') }}" aria-pressed="{{ 'true' if language == 'en' else 'false' }}">EN</button>
+            <button onclick="switchLanguage('fr')" id="lang-fr" class="{{ 'active' if language == 'fr' else '' }}" lang="fr" aria-label="{{ ftl('reports-switch-to-french') }}" aria-pressed="{{ 'true' if language == 'fr' else 'false' }}">FR</button>
         </div>
     </div>
 
     <!-- Page Status Cards -->
-    <div class="row mb-4 g-3">
-        <div class="col-6 col-md-3">
+    <ul class="row mb-4 g-3 list-unstyled" role="list">
+        <li class="col-6 col-md-3">
             <div class="card">
                 <div class="card-body">
-                    <h2 class="card-subtitle mb-2 text-muted">
+                    <p class="card-subtitle-label mb-2 text-muted">
                         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['status'] }}</span>
                         <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['status'] }}</span>
-                    </h2>
+                    </p>
                     <p class="mb-0">
                         <span class="badge badge-pass">
                             <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['tested'] }}</span>
@@ -597,27 +625,27 @@
                     </p>
                 </div>
             </div>
-        </div>
-        <div class="col-6 col-md-3">
+        </li>
+        <li class="col-6 col-md-3">
             <div class="card">
                 <div class="card-body">
-                    <h2 class="card-subtitle mb-2 text-muted">
+                    <p class="card-subtitle-label mb-2 text-muted">
                         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['last_tested'] }}</span>
                         <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['last_tested'] }}</span>
-                    </h2>
+                    </p>
                     <p class="mb-0">
                         {{ page.test_date|default('Recently') }}
                     </p>
                 </div>
             </div>
-        </div>
-        <div class="col-6 col-md-3">
+        </li>
+        <li class="col-6 col-md-3">
             <div class="card">
                 <div class="card-body">
-                    <h2 class="card-subtitle mb-2 text-muted">
+                    <p class="card-subtitle-label mb-2 text-muted">
                         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['issues_found'] }}</span>
                         <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['issues_found'] }}</span>
-                    </h2>
+                    </p>
                     <p class="mb-0">
                         <span class="text-severity-high fw-bold">{{ errors_count|default(0) }}</span>
                         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['errors'] }}</span>
@@ -628,14 +656,14 @@
                     </p>
                 </div>
             </div>
-        </div>
-        <div class="col-6 col-md-3">
+        </li>
+        <li class="col-6 col-md-3">
             <div class="card">
                 <div class="card-body">
-                    <h2 class="card-subtitle mb-2 text-muted">
+                    <p class="card-subtitle-label mb-2 text-muted">
                         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['score'] }}</span>
                         <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['score'] }}</span>
-                    </h2>
+                    </p>
                     <p class="mb-0">
                         {% set score = page.score|default(0) %}
                         <span class="fw-bold {% if score >= 90 %}text-severity-pass{% elif score >= 70 %}text-severity-medium{% else %}text-severity-high{% endif %}">
@@ -644,8 +672,8 @@
                     </p>
                 </div>
             </div>
-        </div>
-    </div>
+        </li>
+    </ul>
 
     <!-- Accessibility & Compliance Scores -->
     {% if page.score is defined %}
@@ -709,8 +737,8 @@
             </h2>
         </div>
         <div class="card-body">
-            <div class="row g-3">
-                <div class="col-6 col-lg-3">
+            <ul class="row g-3 list-unstyled mb-0" role="list">
+                <li class="col-6 col-lg-3">
                     <div class="d-flex align-items-center">
                         <i class="bi bi-x-circle text-severity-high me-2 fs-4" aria-hidden="true"></i>
                         <div>
@@ -721,8 +749,8 @@
                             </small>
                         </div>
                     </div>
-                </div>
-                <div class="col-6 col-lg-3">
+                </li>
+                <li class="col-6 col-lg-3">
                     <div class="d-flex align-items-center">
                         <i class="bi bi-exclamation-triangle text-severity-medium me-2 fs-4" aria-hidden="true"></i>
                         <div>
@@ -733,8 +761,8 @@
                             </small>
                         </div>
                     </div>
-                </div>
-                <div class="col-6 col-lg-3">
+                </li>
+                <li class="col-6 col-lg-3">
                     <div class="d-flex align-items-center">
                         <i class="bi bi-info-circle text-info-custom me-2 fs-4" aria-hidden="true"></i>
                         <div>
@@ -745,8 +773,8 @@
                             </small>
                         </div>
                     </div>
-                </div>
-                <div class="col-6 col-lg-3">
+                </li>
+                <li class="col-6 col-lg-3">
                     <div class="d-flex align-items-center">
                         <i class="bi bi-search me-2 fs-4 text-discovery" aria-hidden="true"></i>
                         <div>
@@ -757,8 +785,8 @@
                             </small>
                         </div>
                     </div>
-                </div>
-            </div>
+                </li>
+            </ul>
         </div>
     </div>
     {% endif %}
@@ -786,7 +814,7 @@
         </div>
 
         <!-- Filter Statistics -->
-        <div class="filter-stats">
+        <div class="filter-stats" role="status" aria-live="polite" aria-atomic="true">
             <strong data-i18n="showing">{{ t.get('showing', 'Showing:') }}</strong>
             <span id="visibleCount">0</span>
             <span data-i18n="of">{{ t.get('of', 'of') }}</span>
@@ -804,27 +832,27 @@
                         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('issue_type', 'Issue Type') }}</span>
                         <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('issue_type', 'Type de problème') }}</span>
                     </p>
-                    <div class="filter-chips">
-                        <div class="filter-chip" data-filter-type="type" data-filter-value="error">
+                    <div class="filter-chips" role="group" aria-label="{{ ftl('reports-filter-by-issue-type') }}">
+                        <button type="button" class="filter-chip" data-filter-type="type" data-filter-value="error" aria-pressed="false">
                             <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['errors'] }}</span>
                             <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['errors'] }}</span>
                             ({{ violations|length }})
-                        </div>
-                        <div class="filter-chip" data-filter-type="type" data-filter-value="warning">
+                        </button>
+                        <button type="button" class="filter-chip" data-filter-type="type" data-filter-value="warning" aria-pressed="false">
                             <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['warnings'] }}</span>
                             <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['warnings'] }}</span>
                             ({{ warnings|length }})
-                        </div>
-                        <div class="filter-chip" data-filter-type="type" data-filter-value="info">
+                        </button>
+                        <button type="button" class="filter-chip" data-filter-type="type" data-filter-value="info" aria-pressed="false">
                             <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['info'] }}</span>
                             <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['info'] }}</span>
                             ({{ informational|length }})
-                        </div>
-                        <div class="filter-chip" data-filter-type="type" data-filter-value="discovery">
+                        </button>
+                        <button type="button" class="filter-chip" data-filter-type="type" data-filter-value="discovery" aria-pressed="false">
                             <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['discovery'] }}</span>
                             <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['discovery'] }}</span>
                             ({{ discovery|length }})
-                        </div>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -832,32 +860,32 @@
             <!-- Impact Level Filter -->
             <div class="col-md-3">
                 <div class="filter-group">
-                    <p class="form-label fw-bold">
+                    <p class="form-label fw-bold" id="impactLevelLabel">
                         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('impact_level', 'Impact Level') }}</span>
                         <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('impact_level', 'Niveau d\'impact') }}</span>
                     </p>
-                    <div class="filter-chips">
-                        <div class="filter-chip" data-filter-type="impact" data-filter-value="high">
+                    <div class="filter-chips" role="group" aria-label="{{ ftl('reports-filter-by-impact') }}">
+                        <button type="button" class="filter-chip" data-filter-type="impact" data-filter-value="high" aria-pressed="false">
                             <span class="badge badge-high me-1">
                                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['high'] }}</span>
                                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['high'] }}</span>
                             </span>
                             <span id="highImpactCount">0</span>
-                        </div>
-                        <div class="filter-chip" data-filter-type="impact" data-filter-value="medium">
+                        </button>
+                        <button type="button" class="filter-chip" data-filter-type="impact" data-filter-value="medium" aria-pressed="false">
                             <span class="badge badge-medium me-1">
                                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['medium'] }}</span>
                                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['medium'] }}</span>
                             </span>
                             <span id="mediumImpactCount">0</span>
-                        </div>
-                        <div class="filter-chip" data-filter-type="impact" data-filter-value="low">
+                        </button>
+                        <button type="button" class="filter-chip" data-filter-type="impact" data-filter-value="low" aria-pressed="false">
                             <span class="badge badge-info me-1">
                                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['low'] }}</span>
                                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['low'] }}</span>
                             </span>
                             <span id="lowImpactCount">0</span>
-                        </div>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -882,6 +910,7 @@
         <!-- Quick Search -->
         <div class="row mt-3">
             <div class="col-12">
+                <label for="quickSearch" class="visually-hidden" data-i18n="search_placeholder">{{ t.get('search_placeholder', 'Search in issue descriptions, error codes, or XPaths...') }}</label>
                 <div class="input-group">
                     <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
                     <input type="text" class="form-control" id="quickSearch"
@@ -999,7 +1028,7 @@
                                      data-id="{{ error_code }}"
                                      data-description="{{ first_violation.metadata.what_generic|lower if first_violation.metadata.what_generic else first_violation.description|lower }}"
                                      data-xpath="{{ first_violation.xpath|lower if first_violation.xpath else '' }}">
-                                    <h2 class="accordion-header">
+                                    <h4 class="accordion-header">
                                         <button class="accordion-button collapsed" type="button"
                                                 data-bs-toggle="collapse"
                                                 data-bs-target="#viol_state{{ loop.index0 }}_group_{{ viol_counter.value }}"
@@ -1015,22 +1044,22 @@
                                             <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ first_violation.metadata.what_generic_en if first_violation.metadata and first_violation.metadata.what_generic_en else (first_violation.description_en if first_violation.description_en else first_violation.description) }}</span>
                                             <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ first_violation.metadata.what_generic_fr if first_violation.metadata and first_violation.metadata.what_generic_fr else (first_violation.description_fr if first_violation.description_fr else first_violation.description) }}</span>
                                         </button>
-                                    </h2>
+                                    </h4>
                                     <div id="viol_state{{ loop.index0 }}_group_{{ viol_counter.value }}"
                                          class="accordion-collapse collapse">
                                         <div class="accordion-body">
                                             {% if first_violation.metadata and (first_violation.metadata.what_en or first_violation.metadata.what_fr) %}
                                             <div class="alert alert-high mb-3">
-                                                <h4 class="alert-heading">
+                                                <h5 class="alert-heading">
                                                     <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ first_violation.metadata.title_en or first_violation.metadata.what_en or first_violation.description }}</span>
                                                     <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ first_violation.metadata.title_fr or first_violation.metadata.what_fr or first_violation.description }}</span>
-                                                </h4>
+                                                </h5>
                                             </div>
 
-                                            <h4 class="text-severity-high mb-2">
+                                            <h5 class="text-severity-high mb-2">
                                                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">About this issue:</span>
                                                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">À propos de ce problème :</span>
-                                            </h4>
+                                            </h5>
                                             
                                             <div class="mb-3">
                                                 <strong>
@@ -1142,7 +1171,7 @@
                                      data-id="{{ warning_code }}"
                                      data-description="{{ first_warning.metadata.what_generic|lower if first_warning.metadata.what_generic else first_warning.description|lower }}"
                                      data-xpath="{{ first_warning.xpath|lower if first_warning.xpath else '' }}">
-                                    <h2 class="accordion-header">
+                                    <h4 class="accordion-header">
                                         <button class="accordion-button collapsed" type="button"
                                                 data-bs-toggle="collapse"
                                                 data-bs-target="#warn_state{{ loop.index0 }}_group_{{ warn_counter.value }}"
@@ -1158,22 +1187,22 @@
                                             <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ first_warning.metadata.what_generic_en if first_warning.metadata and first_warning.metadata.what_generic_en else (first_warning.description_en if first_warning.description_en else first_warning.description) }}</span>
                                             <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ first_warning.metadata.what_generic_fr if first_warning.metadata and first_warning.metadata.what_generic_fr else (first_warning.description_fr if first_warning.description_fr else first_warning.description) }}</span>
                                         </button>
-                                    </h2>
+                                    </h4>
                                     <div id="warn_state{{ loop.index0 }}_group_{{ warn_counter.value }}"
                                          class="accordion-collapse collapse">
                                         <div class="accordion-body">
                                             {% if first_warning.metadata and (first_warning.metadata.what_en or first_warning.metadata.what_fr) %}
                                             <div class="alert alert-medium mb-3">
-                                                <h4 class="alert-heading">
+                                                <h5 class="alert-heading">
                                                     <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ first_warning.metadata.title_en or first_warning.metadata.what_en or first_warning.description }}</span>
                                                     <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ first_warning.metadata.title_fr or first_warning.metadata.what_fr or first_warning.description }}</span>
-                                                </h4>
+                                                </h5>
                                             </div>
 
-                                            <h4 class="text-severity-medium mb-2">
+                                            <h5 class="text-severity-medium mb-2">
                                                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">About this issue:</span>
                                                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">À propos de ce problème :</span>
-                                            </h4>
+                                            </h5>
                                             
                                             <div class="mb-3">
                                                 <strong>
@@ -1282,7 +1311,7 @@
                                      data-type="info"
                                      data-touchpoint="{{ first_info.touchpoint|lower }}"
                                      data-id="{{ info_code }}">
-                                    <h2 class="accordion-header">
+                                    <h4 class="accordion-header">
                                         <button class="accordion-button collapsed" type="button"
                                                 data-bs-toggle="collapse"
                                                 data-bs-target="#info_state{{ loop.index0 }}_group_{{ info_counter.value }}"
@@ -1294,7 +1323,7 @@
                                             <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ first_info.metadata.what_generic_en if first_info.metadata and first_info.metadata.what_generic_en else (first_info.description_en if first_info.description_en else first_info.description) }}</span>
                                             <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ first_info.metadata.what_generic_fr if first_info.metadata and first_info.metadata.what_generic_fr else (first_info.description_fr if first_info.description_fr else first_info.description) }}</span>
                                         </button>
-                                    </h2>
+                                    </h4>
                                     <div id="info_state{{ loop.index0 }}_group_{{ info_counter.value }}"
                                          class="accordion-collapse collapse">
                                         <div class="accordion-body">
@@ -1350,7 +1379,7 @@
                                      data-type="discovery"
                                      data-touchpoint="{{ first_disco.touchpoint|lower }}"
                                      data-id="{{ disco_code }}">
-                                    <h2 class="accordion-header">
+                                    <h4 class="accordion-header">
                                         <button class="accordion-button collapsed" type="button"
                                                 data-bs-toggle="collapse"
                                                 data-bs-target="#disco_state{{ loop.index0 }}_group_{{ disco_counter.value }}"
@@ -1362,7 +1391,7 @@
                                             <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ first_disco.metadata.what_generic_en if first_disco.metadata and first_disco.metadata.what_generic_en else (first_disco.description_en if first_disco.description_en else first_disco.description) }}</span>
                                             <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ first_disco.metadata.what_generic_fr if first_disco.metadata and first_disco.metadata.what_generic_fr else (first_disco.description_fr if first_disco.description_fr else first_disco.description) }}</span>
                                         </button>
-                                    </h2>
+                                    </h4>
                                     <div id="disco_state{{ loop.index0 }}_group_{{ disco_counter.value }}"
                                          class="accordion-collapse collapse">
                                         <div class="accordion-body">
@@ -1434,7 +1463,7 @@
                              data-instance-count="{{ group_list|length }}"
                              data-description="{{ first_violation.metadata.what_generic_en|lower if first_violation.metadata and first_violation.metadata.what_generic_en else first_violation.description_en|lower if first_violation.description_en else first_violation.description|lower }}"
                              data-xpath="{{ first_violation.xpath|lower if first_violation.xpath else '' }}">
-                            <h2 class="accordion-header">
+                            <h4 class="accordion-header">
                                 <button class="accordion-button collapsed" type="button"
                                         data-bs-toggle="collapse"
                                         data-bs-target="#viol-group-{{ viol_counter.value }}"
@@ -1475,7 +1504,7 @@
                                         {% endif %}
                                     {% endif %}
                                 </button>
-                            </h2>
+                            </h4>
                             <div id="viol-group-{{ viol_counter.value }}"
                                  class="accordion-collapse collapse">
                                 <div class="accordion-body">
@@ -1491,7 +1520,7 @@
                                                 {% set breakpoint_list = breakpoint_violations|list %}
                                                 {% set breakpoint_id = viol_counter.value ~ '-bp-' ~ (breakpoint if breakpoint else 'none') %}
                                                 <div class="accordion-item">
-                                                    <h2 class="accordion-header">
+                                                    <h5 class="accordion-header">
                                                         <button class="accordion-button collapsed" type="button"
                                                                 data-bs-toggle="collapse"
                                                                 data-bs-target="#viol-breakpoint-{{ breakpoint_id }}"
@@ -1502,7 +1531,7 @@
                                                                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Point de rupture : {{ breakpoint }}px de largeur</span>
                                                             </strong>
                                                         </button>
-                                                    </h2>
+                                                    </h5>
                                                     <div id="viol-breakpoint-{{ breakpoint_id }}"
                                                          class="accordion-collapse collapse"
                                                          data-bs-parent="#viol-group-breakpoints-{{ viol_counter.value }}">
@@ -1511,7 +1540,7 @@
                                                             {% for violation in breakpoint_list %}
                                                             {% set instance_id = 'viol-instance-' ~ breakpoint_id ~ '-' ~ loop.index %}
                                                             {% set parent_id = 'viol-breakpoint-instances-' ~ breakpoint_id %}
-                                                            {{ render_instance_accordion(violation, instance_id, parent_id, 'high', loop.index) }}
+                                                            {{ render_instance_accordion(violation, instance_id, parent_id, 'high', loop.index, 6) }}
                                                             {% endfor %}
                                                             </div> {# Close viol-breakpoint-instances #}
                                                         </div> {# Close accordion-body #}
@@ -1583,7 +1612,7 @@
                              data-instance-count="{{ group_list|length }}"
                              data-description="{{ first_warning.metadata.what_generic_en|lower if first_warning.metadata and first_warning.metadata.what_generic_en else first_warning.description_en|lower if first_warning.description_en else first_warning.description|lower }}"
                              data-xpath="{{ first_warning.xpath|lower if first_warning.xpath else '' }}">
-                            <h2 class="accordion-header">
+                            <h4 class="accordion-header">
                                 <button class="accordion-button collapsed" type="button"
                                         data-bs-toggle="collapse"
                                         data-bs-target="#warn-group-{{ warn_counter.value }}"
@@ -1624,7 +1653,7 @@
                                         {% endif %}
                                     {% endif %}
                                 </button>
-                            </h2>
+                            </h4>
                             <div id="warn-group-{{ warn_counter.value }}"
                                  class="accordion-collapse collapse">
                                 <div class="accordion-body">
@@ -1639,7 +1668,7 @@
                                                 {% set breakpoint_list = breakpoint_violations|list %}
                                                 {% set breakpoint_id = warn_counter.value ~ '-bp-' ~ (breakpoint if breakpoint else 'none') %}
                                                 <div class="accordion-item">
-                                                    <h2 class="accordion-header">
+                                                    <h5 class="accordion-header">
                                                         <button class="accordion-button collapsed" type="button"
                                                                 data-bs-toggle="collapse"
                                                                 data-bs-target="#warn-breakpoint-{{ breakpoint_id }}"
@@ -1650,7 +1679,7 @@
                                                                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Point de rupture : {{ breakpoint }}px de largeur</span>
                                                             </strong>
                                                         </button>
-                                                    </h2>
+                                                    </h5>
                                                     <div id="warn-breakpoint-{{ breakpoint_id }}"
                                                          class="accordion-collapse collapse"
                                                          data-bs-parent="#warn-group-breakpoints-{{ warn_counter.value }}">
@@ -1659,7 +1688,7 @@
                                                             {% for warning in breakpoint_list %}
                                                             {% set instance_id = 'warn-instance-' ~ breakpoint_id ~ '-' ~ loop.index %}
                                                             {% set parent_id = 'warn-breakpoint-instances-' ~ breakpoint_id %}
-                                                            {{ render_instance_accordion(warning, instance_id, parent_id, 'medium', loop.index) }}
+                                                            {{ render_instance_accordion(warning, instance_id, parent_id, 'medium', loop.index, 6) }}
                                                             {% endfor %}
                                                             </div> {# Close warn-breakpoint-instances #}
                                                         </div> {# Close accordion-body #}
@@ -1727,7 +1756,7 @@
                              data-id="{{ info_code }}"
                              data-instance-count="{{ group_list|length }}"
                              data-description="{{ first_info.description_en|lower if first_info.description_en else first_info.description|lower }}">
-                            <h2 class="accordion-header">
+                            <h4 class="accordion-header">
                                 <button class="accordion-button collapsed" type="button"
                                         data-bs-toggle="collapse"
                                         data-bs-target="#info-group-{{ info_counter.value }}"
@@ -1739,7 +1768,7 @@
                                     <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ first_info.description_en if first_info.description_en else first_info.description }}</span>
                                     <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ first_info.description_fr if first_info.description_fr else first_info.description }}</span>
                                 </button>
-                            </h2>
+                            </h4>
                             <div id="info-group-{{ info_counter.value }}"
                                  class="accordion-collapse collapse">
                                 <div class="accordion-body">
@@ -1801,7 +1830,7 @@
                              data-id="{{ disc_code }}"
                              data-instance-count="{{ group_list|length }}"
                              data-description="{{ first_disc.description_en|lower if first_disc.description_en else first_disc.description|lower }}">
-                            <h2 class="accordion-header">
+                            <h4 class="accordion-header">
                                 <button class="accordion-button collapsed" type="button"
                                         data-bs-toggle="collapse"
                                         data-bs-target="#disc-group-{{ disc_counter.value }}"
@@ -1813,7 +1842,7 @@
                                     <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ first_disc.description_en if first_disc.description_en else first_disc.description }}</span>
                                     <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ first_disc.description_fr if first_disc.description_fr else first_disc.description }}</span>
                                 </button>
-                            </h2>
+                            </h4>
                             <div id="disc-group-{{ disc_counter.value }}"
                                  class="accordion-collapse collapse">
                                 <div class="accordion-body">
@@ -1881,7 +1910,7 @@
 </main>
 
 <!-- Footer -->
-<footer class="mt-auto bg-subtle border-top py-3">
+<footer role="contentinfo" class="mt-auto bg-subtle border-top py-3">
     <div class="container-fluid">
         <div class="row">
             <div class="col-md-6">
@@ -2002,8 +2031,11 @@ function switchLanguage(lang) {
     // Update active button
     document.querySelectorAll('.lang-switcher button').forEach(btn => {
         btn.classList.remove('active');
+            btn.setAttribute('aria-pressed', 'false');
     });
     document.getElementById(`lang-${lang}`).classList.add('active');
+            const _btn = document.getElementById(`lang-${lang}`);
+            if (_btn) _btn.setAttribute('aria-pressed', 'true');
 
     // Update HTML lang attribute
     document.documentElement.lang = lang;

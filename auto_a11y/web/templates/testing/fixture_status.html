@@ -2,76 +2,7 @@
 
 {% block title %}{{ ftl('testing-fixture-test-status') }} - {{ ftl('common-auto-a11y') }}{% endblock %}
 
-{% block extra_css %}
-<style>
-    /* Improve table layout */
-    #test-status-table {
-        table-layout: fixed;
-    }
-    
-    #test-status-table th,
-    #test-status-table td {
-        vertical-align: middle;
-        padding: 0.75rem 0.5rem;
-    }
-    
-    #test-status-table code {
-        font-size: 0.875rem;
-        padding: 0.125rem 0.25rem;
-        background-color: var(--color-bg-subtle);
-        border-radius: 0.25rem;
-    }
-    
-    /* Improve badge appearance */
-    #test-status-table .badge {
-        font-weight: 500;
-        padding: 0.375rem 0.5rem;
-    }
-    
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
-        #test-status-table th:first-child,
-        #test-status-table td:first-child {
-            width: 60% !important;
-        }
-        
-        #test-status-table th:nth-child(2),
-        #test-status-table td:nth-child(2) {
-            width: 40% !important;
-        }
-    }
-    
-    @media (min-width: 768px) and (max-width: 992px) {
-        #test-status-table th:first-child,
-        #test-status-table td:first-child {
-            width: 30% !important;
-        }
-        
-        #test-status-table th:nth-child(2),
-        #test-status-table td:nth-child(2) {
-            width: 15% !important;
-        }
-        
-        #test-status-table th:nth-child(3),
-        #test-status-table td:nth-child(3) {
-            width: 55% !important;
-        }
-    }
-    
-    /* Hover effect for table rows */
-    #test-status-table tbody tr:hover {
-        background-color: var(--color-brand-subtle);
-    }
-
-    .table-medium {
-        background-color: var(--color-severity-medium-bg) !important;
-    }
-
-    .table-medium:hover {
-        background-color: color-mix(in srgb, var(--color-severity-medium-bg) 85%, var(--color-severity-medium) 15%) !important;
-    }
-</style>
-{% endblock %}
+{# Styles for this page live in static/css/style.css under "Fixture status page" #}
 
 {% block content %}
 <div class="container-fluid">

@@ -20,6 +20,7 @@
             <p class="text-muted mb-0 text-break">
                 <a href="{{ website.url }}" target="_blank">
                     {{ website.url }} <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+                    <span class="visually-hidden"> ({{ ftl('common-opens-in-new-tab') }})</span>
                 </a>
             </p>
         </div>
@@ -359,6 +360,7 @@
                             <div style="min-width: 0;">
                                 <a href="{{ page.url }}" target="_blank" class="text-break d-block mb-1">
                                     {{ page.url }}
+                                    <span class="visually-hidden"> ({{ ftl('common-opens-in-new-tab') }})</span>
                                 </a>
                             </div>
                         </div>
@@ -598,6 +600,7 @@
             <div class="modal-footer">
                 <a id="screenshotModalLink" href="" target="_blank" class="btn btn-brand">
                     <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i> {{ ftl('common-open-in-new-tab') }}
+                    <span class="visually-hidden"> ({{ ftl('common-opens-in-new-tab') }})</span>
                 </a>
                 <button type="button" class="btn btn-neutral" data-close-modal>{{ ftl('common-close') }}</button>
             </div>

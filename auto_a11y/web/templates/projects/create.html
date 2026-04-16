@@ -2,66 +2,7 @@
 
 {% block title %}{{ ftl('projects-create-project') }} - {{ ftl('common-auto-a11y') }}{% endblock %}
 
-{% block extra_css %}
-<style>
-    .test-disabled {
-        opacity: 0.5;
-        text-decoration: line-through;
-    }
-
-    .test-debug-override {
-        opacity: 0.7;
-    }
-
-    .fixture-status-badge {
-        font-size: 0.7rem;
-        padding: 0.1rem 0.3rem;
-        margin-left: 0.5rem;
-    }
-
-    .touchpoint-disabled .form-check-label {
-        color: var(--color-text-muted);
-    }
-
-    .test-help-btn {
-        font-size: 0.85rem;
-        padding: 0.1rem 0.4rem;
-        margin-left: 0.5rem;
-        opacity: 0.7;
-        transition: opacity 0.2s;
-    }
-
-    .test-help-btn:hover {
-        opacity: 1;
-    }
-
-    .test-details-modal .modal-header {
-        background-color: var(--color-bg-subtle);
-        border-bottom: 2px solid var(--color-border-table);
-    }
-
-    .test-details-section {
-        margin-bottom: 1.5rem;
-    }
-
-    .test-details-section h6 {
-        color: var(--color-text-muted);
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-        font-size: 0.95rem;
-    }
-
-    .test-details-section p {
-        margin-bottom: 0;
-        line-height: 1.6;
-    }
-
-    .impact-badge {
-        font-size: 0.85rem;
-        padding: 0.3rem 0.6rem;
-    }
-</style>
-{% endblock %}
+{# Styles for this page live in static/css/style.css under "Projects create page" #}
 
 {% block content %}
 <div class="container">

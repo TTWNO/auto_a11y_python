@@ -2,178 +2,7 @@
 
 {% block title %}{{ ftl('common-trend-analysis') }} - {{ ftl('common-auto-a11y') }}{% endblock %}
 
-{% block extra_css %}
-<style>
-    .stat-card {
-        transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .stat-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-    .stat-icon {
-        font-size: 1.5rem;
-        opacity: 0.7;
-    }
-    .trend-indicator {
-        font-size: 0.85rem;
-        font-weight: 600;
-    }
-    .trend-improving {
-        color: var(--color-severity-pass);
-    }
-    .trend-worsening {
-        color: var(--color-severity-high);
-    }
-    .trend-stable {
-        color: var(--color-text-muted);
-    }
-    .chart-container {
-        position: relative;
-        height: 300px;
-    }
-    .chart-container-small {
-        position: relative;
-        height: 250px;
-    }
-    .time-range-btn.active {
-        background-color: var(--color-brand);
-        color: white;
-    }
-    .top-issues-table th {
-        font-weight: 600;
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    .issue-code {
-        font-family: monospace;
-        font-size: 0.9rem;
-        background: var(--color-bg-subtle);
-        padding: 2px 6px;
-        border-radius: 3px;
-    }
-    .empty-state {
-        padding: 2rem;
-        text-align: center;
-        color: var(--color-text-muted);
-    }
-    .empty-state i {
-        font-size: 3rem;
-        margin-bottom: 1rem;
-        opacity: 0.5;
-    }
-    .comparison-card {
-        border-left: 3px solid var(--color-discovery);
-    }
-    .progress-card {
-        border-left: 3px solid var(--color-severity-pass);
-    }
-    .page-loading-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: var(--color-bg);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 9999;
-        transition: opacity 0.3s ease;
-    }
-    .page-loading-overlay.hidden {
-        opacity: 0;
-        pointer-events: none;
-        visibility: hidden;
-    }
-    /* Card loading spinner */
-    .card-loading {
-        position: relative;
-        min-height: 150px;
-    }
-    .card-loading-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(255, 255, 255, 0.9);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 10;
-        border-radius: 0.375rem;
-    }
-    .card-loading-overlay.hidden {
-        display: none;
-    }
-    .loading-spinner {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 0.5rem;
-    }
-    .loading-spinner .spinner-border {
-        width: 2rem;
-        height: 2rem;
-    }
-    .loading-spinner .loading-text {
-        font-size: 0.85rem;
-        color: var(--color-text-muted);
-    }
-    /* Filter chip styles */
-    .filter-chip {
-        transition: all 0.2s ease;
-    }
-    .filter-chip.active {
-        background-color: var(--color-brand) !important;
-        border-color: var(--color-brand) !important;
-        color: white !important;
-    }
-    .filter-chip.active .badge {
-        background-color: rgba(255,255,255,0.9) !important;
-        color: var(--color-brand) !important;
-    }
-    .filter-chip:hover:not(.active) {
-        background-color: var(--color-bg-subtle);
-    }
-    #filterPanel .form-select {
-        font-size: 0.875rem;
-    }
-    #filterToggleIcon {
-        transition: transform 0.3s ease;
-    }
-    #filterPanel.show ~ .card-header #filterToggleIcon,
-    .card-header[aria-expanded="true"] #filterToggleIcon {
-        transform: rotate(180deg);
-    }
-    .filter-tag {
-        display: inline-flex;
-        align-items: center;
-        background: var(--color-brand);
-        color: white;
-        padding: 0.25rem 0.5rem;
-        border-radius: 0.25rem;
-        font-size: 0.75rem;
-        margin-right: 0.25rem;
-        margin-bottom: 0.25rem;
-    }
-    .filter-tag .remove-filter {
-        margin-left: 0.25rem;
-        cursor: pointer;
-        opacity: 0.8;
-        font-size: inherit;
-        line-height: inherit;
-        vertical-align: baseline;
-        text-decoration: none;
-        color: inherit;
-    }
-    .filter-tag .remove-filter:hover {
-        opacity: 1;
-    }
-</style>
-{% endblock %}
+{# Styles for this page live in static/css/style.css under "Testing trends page" #}
 
 {% block content %}
 <!-- Loading Overlay -->
@@ -205,8 +34,8 @@
         <div class="d-flex flex-wrap gap-2 align-items-center">
             <!-- Project/Website Selectors -->
             <div class="input-group" style="width: auto;">
-                <span class="input-group-text"><i class="bi bi-folder" aria-hidden="true"></i></span>
-                <select id="projectSelect" class="form-select" style="min-width: 180px;">
+                <label for="projectSelect" class="input-group-text"><i class="bi bi-folder" aria-hidden="true"></i><span class="visually-hidden">{{ ftl('common-project') }}</span></label>
+                <select id="projectSelect" class="form-select" style="min-width: 180px;" aria-label="{{ ftl('common-project') }}">
                     <option value="">{{ ftl('common-all-projects') }}</option>
                     {% for p in projects %}
                     <option value="{{ p.id }}" {% if selected_project and p.id == selected_project.id %}selected{% endif %}>
@@ -216,8 +45,8 @@
                 </select>
             </div>
             <div class="input-group" style="width: auto;">
-                <span class="input-group-text"><i class="bi bi-globe" aria-hidden="true"></i></span>
-                <select id="websiteSelect" class="form-select" style="min-width: 180px;" {% if not selected_project %}disabled{% endif %}>
+                <label for="websiteSelect" class="input-group-text"><i class="bi bi-globe" aria-hidden="true"></i><span class="visually-hidden">{{ ftl('common-website-2') }}</span></label>
+                <select id="websiteSelect" class="form-select" style="min-width: 180px;" aria-label="{{ ftl('common-website-2') }}" {% if not selected_project %}disabled{% endif %}>
                     {% if selected_project %}
                         <option value="">{{ ftl('common-all-websites') }}</option>
                         {% for w in websites %}
@@ -263,10 +92,12 @@
 
                 <!-- Custom Date Range -->
                 <div class="d-flex align-items-center gap-2">
-                    <input type="date" id="startDate" class="form-control form-control-sm" style="width: 140px;">
+                    <label for="startDate" class="visually-hidden">{{ ftl('testing-start-date') }}</label>
+                    <input type="date" id="startDate" class="form-control form-control-sm" style="width: 140px;" aria-label="{{ ftl('testing-start-date') }}">
                     <span class="text-muted">{{ ftl('testing-to') }}</span>
-                    <input type="date" id="endDate" class="form-control form-control-sm" style="width: 140px;">
-                    <button type="button" id="applyDateRange" class="btn btn-sm btn-brand">
+                    <label for="endDate" class="visually-hidden">{{ ftl('testing-end-date') }}</label>
+                    <input type="date" id="endDate" class="form-control form-control-sm" style="width: 140px;" aria-label="{{ ftl('testing-end-date') }}">
+                    <button type="button" id="applyDateRange" class="btn btn-sm btn-brand" aria-label="{{ ftl('testing-apply-date-range') }}">
                         <i class="bi bi-arrow-right" aria-hidden="true"></i>
                     </button>
                 </div>

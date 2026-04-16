@@ -18,10 +18,12 @@
 {# ── Row-fragment macros (single source of truth for every row state) ── #}
 
 {% macro report_actions(filename) %}
+{% set file_ext = filename.rsplit('.', 1)[1] | upper if '.' in filename else '' %}
 <div class="btn-group" role="group">
     <a href="{{ url_for('reports.download_report', filename=filename) }}"
-       class="btn btn-sm btn-brand" aria-label="{{ ftl('reports-download') }}">
+       class="btn btn-sm btn-brand" aria-label="{{ ftl('reports-download') }} ({{ file_ext }})">
         <i class="bi bi-download" aria-hidden="true"></i>
+        <span class="visually-hidden"> ({{ file_ext }})</span>
     </a>
     <button class="btn btn-sm btn-high"
             onclick="deleteReport('{{ filename }}')" aria-label="{{ ftl('common-delete') }}">
@@ -1041,16 +1043,17 @@ function generateDiscoveryReport() {
             </div>
             <form id="siteStructureForm" aria-labelledby="siteStructureModalTitle">
                 <div class="modal-body">
+                    <p class="form-text mb-3"><span class="text-severity-high" aria-hidden="true">*</span> {{ ftl('common-required-field') }}</p>
                     <div class="mb-3">
-                        <label for="structureProject" class="form-label">{{ ftl('reports-select-project') }}</label>
-                        <select class="form-select" id="structureProject" required>
+                        <label for="structureProject" class="form-label">{{ ftl('reports-select-project') }} <span class="text-severity-high" aria-hidden="true">*</span><span class="visually-hidden">{{ ftl('common-required') }}</span></label>
+                        <select class="form-select" id="structureProject" required aria-required="true">
                             <option value="">{{ ftl('reports-choose-a-project') }}</option>
                         </select>
                         <small class="text-muted">{{ ftl('reports-select-the-project-containing-the-website') }}</small>
                     </div>
                     <div class="mb-3">
-                        <label for="structureWebsite" class="form-label">{{ ftl('reports-select-website') }}</label>
-                        <select class="form-select" id="structureWebsite" required disabled>
+                        <label for="structureWebsite" class="form-label">{{ ftl('reports-select-website') }} <span class="text-severity-high" aria-hidden="true">*</span><span class="visually-hidden">{{ ftl('common-required') }}</span></label>
+                        <select class="form-select" id="structureWebsite" required aria-required="true" disabled>
                             <option value="">{{ ftl('reports-first-select-a-project') }}</option>
                         </select>
                         <small class="text-muted">{{ ftl('reports-select-the-website-to-analyze-its-structure') }}</small>
@@ -1112,16 +1115,17 @@ function generateDiscoveryReport() {
                             </label>
                         </div>
                     </fieldset>
+                    <p class="form-text mb-3"><span class="text-severity-high" aria-hidden="true">*</span> {{ ftl('common-required-field') }}</p>
                     <div class="mb-3" id="discoveryProjectGroup">
-                        <label for="discoveryProject" class="form-label">{{ ftl('reports-select-project') }}</label>
-                        <select class="form-select" id="discoveryProject" required>
+                        <label for="discoveryProject" class="form-label">{{ ftl('reports-select-project') }} <span class="text-severity-high" aria-hidden="true">*</span><span class="visually-hidden">{{ ftl('common-required') }}</span></label>
+                        <select class="form-select" id="discoveryProject" required aria-required="true">
                             <option value="">{{ ftl('reports-choose-a-project') }}</option>
                         </select>
                         <small class="text-muted" id="discoveryProjectHelpText">{{ ftl('common-select-a-project-first-2') }}</small>
                     </div>
                     <div class="mb-3" id="discoveryWebsiteGroup">
-                        <label for="discoveryWebsite" class="form-label">{{ ftl('reports-select-website') }}</label>
-                        <select class="form-select" id="discoveryWebsite" required disabled>
+                        <label for="discoveryWebsite" class="form-label">{{ ftl('reports-select-website') }} <span class="text-severity-high" aria-hidden="true">*</span><span class="visually-hidden">{{ ftl('common-required') }}</span></label>
+                        <select class="form-select" id="discoveryWebsite" required aria-required="true" disabled>
                             <option value="">{{ ftl('reports-first-select-a-project') }}</option>
                         </select>
                         <small class="text-muted">{{ ftl('reports-select-the-specific-website-to-analyze') }}</small>
@@ -1451,11 +1455,12 @@ if (deduplicatedModal) {
                             <li>{{ ftl('reports-wcag-criteria-mappings-and-remediation-guidance') }}</li>
                         </ul>
                     </div>
+                    <p class="form-text mb-3"><span class="text-severity-high" aria-hidden="true">*</span> {{ ftl('common-required-field') }}</p>
                     <div class="row">
                         <div class="col-md-12">
                             <div class="mb-3">
-                                <label for="recordingsProject" class="form-label">{{ ftl('common-project') }}</label>
-                                <select class="form-select" id="recordingsProject" required>
+                                <label for="recordingsProject" class="form-label">{{ ftl('common-project') }} <span class="text-severity-high" aria-hidden="true">*</span><span class="visually-hidden">{{ ftl('common-required') }}</span></label>
+                                <select class="form-select" id="recordingsProject" required aria-required="true">
                                     <option value="">{{ ftl('reports-choose-a-project') }}</option>
                                     {% for project in projects %}
                                     <option value="{{ project.id }}">{{ project.name }}</option>

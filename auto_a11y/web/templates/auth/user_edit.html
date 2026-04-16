@@ -7,7 +7,7 @@
     <div class="col-md-6">
         <div class="card shadow mb-4">
             <div class="card-header bg-brand text-inverse">
-                <h2 class="mb-0" id="edit-user-heading"><i class="bi bi-person-gear" aria-hidden="true"></i> {{ ftl('common-edit-user') }}</h2>
+                <h1 class="mb-0 h4" id="edit-user-heading"><i class="bi bi-person-gear" aria-hidden="true"></i> {{ ftl('common-edit-user') }}</h1>
             </div>
             <div class="card-body">
                 <form method="POST" action="{{ url_for('auth.user_edit', user_id=user.id) }}" aria-labelledby="edit-user-heading">

@@ -2,84 +2,7 @@
 
 {% block title %}{{ ftl('common-testing-dashboard') }} - {{ ftl('common-auto-a11y') }}{% endblock %}
 
-{% block extra_css %}
-<style>
-    .stat-card {
-        transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .stat-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-    .stat-icon {
-        font-size: 1.5rem;
-        opacity: 0.7;
-    }
-    .progress-thin {
-        height: 4px;
-    }
-    .active-test-item {
-        border-left: 3px solid var(--color-brand);
-        background: var(--color-bg-subtle);
-    }
-    .schedule-item {
-        border-left: 3px solid var(--color-discovery);
-    }
-    .filter-badge {
-        font-size: 0.75rem;
-    }
-    .table-results th {
-        font-weight: 600;
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    .truncate-url {
-        max-width: 250px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        display: inline-block;
-        vertical-align: middle;
-    }
-    .empty-state {
-        padding: 2rem;
-        text-align: center;
-        color: var(--color-text-muted);
-    }
-    .empty-state i {
-        font-size: 3rem;
-        margin-bottom: 1rem;
-        opacity: 0.5;
-    }
-    .breadcrumb-link {
-        text-decoration: underline;
-        color: var(--color-brand) !important;
-    }
-    .breadcrumb-link:hover {
-        color: var(--color-link-hover) !important;
-    }
-    /* Page loading overlay */
-    .page-loading-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: var(--color-bg);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 9999;
-        transition: opacity 0.3s ease;
-    }
-    .page-loading-overlay.hidden {
-        opacity: 0;
-        pointer-events: none;
-        visibility: hidden;
-    }
-</style>
-{% endblock %}
+{# Styles for this page live in static/css/style.css under "Testing dashboard page" #}
 
 {% block content %}
 {% if greeting_only %}
@@ -455,7 +378,7 @@
             <div class="card shadow-sm">
                 <div class="card-header bg-elevated d-flex justify-content-between align-items-center">
                     <h2 class="mb-0"><i class="bi bi-calendar-check text-discovery" aria-hidden="true"></i> {{ ftl('testing-scheduled-tests') }}</h2>
-                    <span class="badge" style="background-color: var(--color-discovery);">{{ schedules|length }}</span>
+                    <span class="badge badge-discovery">{{ schedules|length }}</span>
                 </div>
                 <div class="card-body">
                     {% if schedules %}

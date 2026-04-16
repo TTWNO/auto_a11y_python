@@ -2,52 +2,7 @@
 
 {% block title %}{{ ftl('schedules-schedules-dashboard') }} - {{ ftl('common-auto-a11y') }}{% endblock %}
 
-{% block extra_css %}
-<style>
-    .stat-card {
-        transition: transform 0.2s, box-shadow 0.2s;
-        border: none;
-        border-radius: 12px;
-    }
-    .stat-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-    .stat-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.5rem;
-    }
-    .stat-value {
-        font-size: 2rem;
-        font-weight: 700;
-        line-height: 1;
-    }
-    .stat-label {
-        font-size: 0.875rem;
-        color: var(--color-text-muted);
-    }
-    .schedule-row:hover {
-        background-color: var(--color-bg-subtle);
-    }
-    .upcoming-item {
-        border-left: 3px solid var(--color-brand);
-        padding-left: 12px;
-        margin-bottom: 12px;
-    }
-    .upcoming-item.soon {
-        border-left-color: var(--color-severity-medium-border);
-    }
-    .type-badge {
-        font-size: 0.75rem;
-        padding: 0.25em 0.6em;
-    }
-</style>
-{% endblock %}
+{# Styles for this page live in static/css/style.css under "Schedules dashboard page" #}
 
 {% block content %}
 <div class="container-fluid">

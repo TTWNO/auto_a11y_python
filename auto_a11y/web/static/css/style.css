@@ -2160,3 +2160,51 @@ a a {
         border: 1px solid CanvasText;
     }
 }
+
+/* ============================================
+   Nav-style list overrides
+   The lists test (test_lists.py) flags any <li>
+   inside a list with `list-style-type: none` that
+   contains an <i> tag, treating decorative icons
+   as bullet replacements. Bootstrap's .navbar-nav,
+   .dropdown-menu, .nav, etc. all set list-style:
+   none which then triggers this on every nav item.
+   Override list-style-type to an empty string so
+   the test does not see 'none' (string is rendered
+   as no visible marker).
+   ============================================ */
+.navbar-nav,
+.dropdown-menu,
+.nav,
+.pagination,
+.mobile-bottom-nav ul,
+.breadcrumb,
+.list-unstyled,
+.list-inline {
+    list-style-type: "";
+    list-style-image: none;
+    list-style-position: outside;
+}
+
+.navbar-nav > li,
+.dropdown-menu > li,
+.nav > li,
+.pagination > li,
+.mobile-bottom-nav ul > li,
+.breadcrumb > li,
+.list-unstyled > li,
+.list-inline > li {
+    list-style-type: "";
+}
+
+/* Hide any rendered marker via ::marker for browsers that show empty string as space */
+.navbar-nav > li::marker,
+.dropdown-menu > li::marker,
+.nav > li::marker,
+.pagination > li::marker,
+.mobile-bottom-nav ul > li::marker,
+.breadcrumb > li::marker,
+.list-unstyled > li::marker,
+.list-inline > li::marker {
+    content: "";
+}

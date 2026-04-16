@@ -314,7 +314,7 @@
                     </li>
 
                     {% if pagination.start_page > 1 %}
-                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    <li class="page-item disabled"><span class="page-link" aria-hidden="true">…</span><span class="visually-hidden">{{ ftl('websites-more-pages') }}</span></li>
                     {% endif %}
 
                     {% for page_num in range(pagination.start_page, pagination.end_page + 1) %}
@@ -324,7 +324,7 @@
                     {% endfor %}
 
                     {% if pagination.end_page < pagination.total_pages %}
-                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    <li class="page-item disabled"><span class="page-link" aria-hidden="true">…</span><span class="visually-hidden">{{ ftl('websites-more-pages') }}</span></li>
                     {% endif %}
 
                     <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
@@ -428,7 +428,7 @@
                     </li>
 
                     {% if pagination.start_page > 1 %}
-                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    <li class="page-item disabled"><span class="page-link" aria-hidden="true">…</span><span class="visually-hidden">{{ ftl('websites-more-pages') }}</span></li>
                     {% endif %}
 
                     {% for page_num in range(pagination.start_page, pagination.end_page + 1) %}
@@ -438,7 +438,7 @@
                     {% endfor %}
 
                     {% if pagination.end_page < pagination.total_pages %}
-                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    <li class="page-item disabled"><span class="page-link" aria-hidden="true">…</span><span class="visually-hidden">{{ ftl('websites-more-pages') }}</span></li>
                     {% endif %}
 
                     <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">

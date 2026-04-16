@@ -135,21 +135,30 @@
     .filter-chip {
         padding: 0.25rem 0.75rem;
         background: var(--color-bg);
+        color: var(--color-text);
         border: 1px solid var(--color-border-table);
         border-radius: 20px;
         cursor: pointer;
         transition: all 0.2s;
         font-size: 0.875rem;
+        font-family: inherit;
+        line-height: 1.5;
     }
 
     .filter-chip:hover {
         background: var(--color-progress-track);
     }
 
-    .filter-chip.active {
+    .filter-chip.active,
+    .filter-chip[aria-pressed="true"] {
         background: var(--color-brand);
         color: var(--color-text-inverse);
         border-color: var(--color-brand);
+    }
+
+    .filter-chip:focus-visible {
+        outline: 2px solid var(--color-focus-ring, #0d6efd);
+        outline-offset: 2px;
     }
 
     .active-filters {
@@ -203,10 +212,11 @@
         color: var(--color-text-muted);
     }
 
-    /* Language Switcher */
+    /* Language Switcher (sits on the gradient component-header) */
     .lang-switcher {
         display: inline-flex;
-        background: rgba(255, 255, 255, 0.2);
+        background: var(--color-bg);
+        border: 1px solid var(--color-bg);
         border-radius: 6px;
         padding: 4px;
         gap: 4px;
@@ -220,18 +230,25 @@
         border-radius: 4px;
         font-weight: 500;
         font-size: 0.875rem;
-        transition: all 0.2s;
-        color: rgba(255, 255, 255, 0.8);
+        transition: background-color 0.2s, color 0.2s;
+        color: var(--color-brand);
+        font-family: inherit;
     }
 
     .lang-switcher button:hover {
-        background: rgba(255, 255, 255, 0.3);
-        color: white;
+        background: var(--color-bg-subtle);
+        color: var(--color-brand);
     }
 
-    .lang-switcher button.active {
-        background: rgba(255, 255, 255, 0.9);
-        color: var(--color-brand);
+    .lang-switcher button.active,
+    .lang-switcher button[aria-pressed="true"] {
+        background: var(--color-brand);
+        color: var(--color-text-inverse);
+    }
+
+    .lang-switcher button:focus-visible {
+        outline: 2px solid var(--color-brand);
+        outline-offset: 2px;
     }
 
     .lang-inactive {
@@ -331,16 +348,16 @@
 {% macro render_issue_details(issue, alert_type) %}
 {% set text_class = {'high': 'text-severity-high', 'medium': 'text-severity-medium', 'info': 'text-info-custom', 'pass': 'text-severity-pass', 'brand': 'text-brand'}.get(alert_type, 'text-info-custom') %}
 <div class="alert alert-{{ alert_type }} mb-3">
-    <h4 class="alert-heading">
+    <h5 class="alert-heading">
         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ issue.description_en }}</span>
         <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ issue.description_fr }}</span>
-    </h4>
+    </h5>
 </div>
 
-<h4 class="{{ text_class }} mb-2">
+<h5 class="{{ text_class }} mb-2">
     <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['about_this_issue'] }}</span>
     <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['about_this_issue'] }}</span>
-</h4>
+</h5>
 
 <!-- What -->
 <div class="mb-3">
@@ -390,10 +407,10 @@
 
 <!-- WCAG Criteria -->
 {% if issue.wcag_full %}
-<h4 class="{{ text_class }} mb-2 mt-4">
+<h5 class="{{ text_class }} mb-2 mt-4">
     <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['relevant_test_criteria'] }}</span>
     <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['relevant_test_criteria'] }}</span>
-</h4>
+</h5>
 <div class="mb-3">
     <strong>
         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['wcag_success_criteria'] }}</span>
@@ -509,10 +526,10 @@
 <!-- Element Details -->
 {% if issue.element or issue.xpath %}
 <hr>
-<h4 class="{{ text_class }} mb-2">
+<h5 class="{{ text_class }} mb-2">
     <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['element_details'] }}</span>
     <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['element_details'] }}</span>
-</h4>
+</h5>
 {% if issue.element %}
 <p>
     <strong>
@@ -572,7 +589,7 @@
 {% set info_items = issues|selectattr('type', 'equalto', 'info')|list %}
 {% set discovery_items = issues|selectattr('type', 'equalto', 'discovery')|list %}
 
-<main id="main-content" class="container py-4">
+<main id="main-content" tabindex="-1" class="container py-4">
     <!-- Component Header with Language Switcher -->
     <div class="component-header {{ component_type|lower }}">
         <div class="d-flex justify-content-between align-items-start mb-3">
@@ -580,8 +597,8 @@
                 <i class="bi bi-arrow-left" aria-hidden="true"></i> <span data-i18n="back_to_index">{{ t['back_to_index'] }}</span>
             </a>
             <div class="lang-switcher">
-                <button onclick="switchLanguage('en')" id="lang-en" class="{{ 'active' if language == 'en' else '' }}" lang="en" aria-label="{{ ftl('reports-switch-to-english') }}">EN</button>
-                <button onclick="switchLanguage('fr')" id="lang-fr" class="{{ 'active' if language == 'fr' else '' }}" lang="fr" aria-label="{{ ftl('reports-switch-to-french') }}">FR</button>
+                <button onclick="switchLanguage('en')" id="lang-en" class="{{ 'active' if language == 'en' else '' }}" lang="en" aria-label="{{ ftl('reports-switch-to-english') }}" aria-pressed="{{ 'true' if language == 'en' else 'false' }}">EN</button>
+                <button onclick="switchLanguage('fr')" id="lang-fr" class="{{ 'active' if language == 'fr' else '' }}" lang="fr" aria-label="{{ ftl('reports-switch-to-french') }}" aria-pressed="{{ 'true' if language == 'fr' else 'false' }}">FR</button>
             </div>
         </div>
         <h1 class="mb-0"><span data-i18n="{{ component_type|lower }}">{{ t.get(component_type|lower, component_type) }}</span>: {% if component_type == 'Form' %}{{ component_label }} <span data-i18n="fields">{{ t.get('fields', 'fields') }}</span>{% else %}{{ component_label }}{% endif %} <code class="text-light opacity-75">{{ component_signature[:8] }}</code></h1>
@@ -688,30 +705,30 @@
                         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('issue_type', 'Issue Type') }}</span>
                         <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('issue_type', 'Type de problème') }}</span>
                     </span>
-                    <div class="filter-chips">
+                    <div class="filter-chips" role="group" aria-label="{{ ftl('reports-filter-by-issue-type') }}">
                         {% if violations %}
-                        <button type="button" class="filter-chip" data-filter-type="type" data-filter-value="violation">
+                        <button type="button" class="filter-chip" data-filter-type="type" data-filter-value="violation" aria-pressed="false">
                             <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['errors'] }}</span>
                             <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['errors'] }}</span>
                             ({{ violations|length }})
                         </button>
                         {% endif %}
                         {% if warnings %}
-                        <button type="button" class="filter-chip" data-filter-type="type" data-filter-value="warning">
+                        <button type="button" class="filter-chip" data-filter-type="type" data-filter-value="warning" aria-pressed="false">
                             <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['warnings'] }}</span>
                             <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['warnings'] }}</span>
                             ({{ warnings|length }})
                         </button>
                         {% endif %}
                         {% if info_items %}
-                        <button type="button" class="filter-chip" data-filter-type="type" data-filter-value="info">
+                        <button type="button" class="filter-chip" data-filter-type="type" data-filter-value="info" aria-pressed="false">
                             <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['info'] }}</span>
                             <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['info'] }}</span>
                             ({{ info_items|length }})
                         </button>
                         {% endif %}
                         {% if discovery_items %}
-                        <button type="button" class="filter-chip" data-filter-type="type" data-filter-value="discovery">
+                        <button type="button" class="filter-chip" data-filter-type="type" data-filter-value="discovery" aria-pressed="false">
                             <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('discovery', 'Discovery') }}</span>
                             <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('discovery', 'Découverte') }}</span>
                             ({{ discovery_items|length }})
@@ -728,22 +745,22 @@
                         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('impact_level', 'Impact Level') }}</span>
                         <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('impact_level', 'Niveau d\'impact') }}</span>
                     </span>
-                    <div class="filter-chips">
-                        <button type="button" class="filter-chip" data-filter-type="impact" data-filter-value="high">
+                    <div class="filter-chips" role="group" aria-label="{{ ftl('reports-filter-by-impact') }}">
+                        <button type="button" class="filter-chip" data-filter-type="impact" data-filter-value="high" aria-pressed="false">
                             <span class="badge badge-high me-1">
                                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['high'] }}</span>
                                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['high'] }}</span>
                             </span>
                             <span id="highImpactCount">0</span>
                         </button>
-                        <button type="button" class="filter-chip" data-filter-type="impact" data-filter-value="medium">
+                        <button type="button" class="filter-chip" data-filter-type="impact" data-filter-value="medium" aria-pressed="false">
                             <span class="badge badge-medium me-1">
                                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['medium'] }}</span>
                                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['medium'] }}</span>
                             </span>
                             <span id="mediumImpactCount">0</span>
                         </button>
-                        <button type="button" class="filter-chip" data-filter-type="impact" data-filter-value="low">
+                        <button type="button" class="filter-chip" data-filter-type="impact" data-filter-value="low" aria-pressed="false">
                             <span class="badge badge-info me-1">
                                 <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['low'] }}</span>
                                 <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['low'] }}</span>
@@ -966,8 +983,11 @@ function switchLanguage(lang) {
     localStorage.setItem('reportLanguage', lang);
     document.querySelectorAll('.lang-switcher button').forEach(btn => {
         btn.classList.remove('active');
+            btn.setAttribute('aria-pressed', 'false');
     });
     document.getElementById(`lang-${lang}`).classList.add('active');
+            const _btn = document.getElementById(`lang-${lang}`);
+            if (_btn) _btn.setAttribute('aria-pressed', 'true');
     document.documentElement.lang = lang;
     document.documentElement.setAttribute('data-current-lang', lang);
 
@@ -1108,8 +1128,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const filterValue = chip.dataset.filterValue;
             if (activeFilters[filterType] && activeFilters[filterType].includes(filterValue)) {
                 chip.classList.add('active');
+                chip.setAttribute('aria-pressed', 'true');
             } else {
                 chip.classList.remove('active');
+                chip.setAttribute('aria-pressed', 'false');
             }
         });
 

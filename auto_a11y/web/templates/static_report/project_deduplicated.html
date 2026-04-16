@@ -241,7 +241,7 @@
 </head>
 <body>
     <a href="#main-content" class="visually-hidden-focusable">{{ ftl('common-skip-to-main-content') }}</a>
-    <main id="main-content" class="container-fluid py-4">
+    <main id="main-content" tabindex="-1" class="container-fluid py-4">
         <!-- Header -->
         <div class="row mb-4">
             <div class="col-12">
@@ -295,16 +295,16 @@
             <div class="filter-group">
                 <p class="form-label fw-bold small">{{ ftl('common-issue-type') }}</p>
                 <div class="filter-chips">
-                    <button class="btn btn-sm btn-outline-high filter-chip" data-filter-type="type" data-filter-value="violation">
+                    <button class="btn btn-sm btn-outline-high filter-chip" data-filter-type="type" data-filter-value="violation" aria-pressed="false">
                         <i class="bi bi-x-circle me-1" aria-hidden="true"></i>{{ ftl('common-violations') }}
                     </button>
-                    <button class="btn btn-sm btn-outline-medium filter-chip" data-filter-type="type" data-filter-value="warning">
+                    <button class="btn btn-sm btn-outline-medium filter-chip" data-filter-type="type" data-filter-value="warning" aria-pressed="false">
                         <i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>{{ ftl('common-warnings') }}
                     </button>
-                    <button class="btn btn-sm btn-outline-brand filter-chip" data-filter-type="type" data-filter-value="info">
+                    <button class="btn btn-sm btn-outline-brand filter-chip" data-filter-type="type" data-filter-value="info" aria-pressed="false">
                         <i class="bi bi-info-circle me-1" aria-hidden="true"></i>{{ ftl('common-info') }}
                     </button>
-                    <button class="btn btn-sm btn-outline-neutral filter-chip" data-filter-type="type" data-filter-value="discovery">
+                    <button class="btn btn-sm btn-outline-neutral filter-chip" data-filter-type="type" data-filter-value="discovery" aria-pressed="false">
                         <i class="bi bi-search me-1" aria-hidden="true"></i>{{ ftl('common-discovery-2') }}
                     </button>
                 </div>
@@ -314,13 +314,13 @@
             <div class="filter-group">
                 <p class="form-label fw-bold small">{{ ftl('reports-component') }}</p>
                 <div class="filter-chips" id="componentFilterChips">
-                    <button class="btn btn-sm btn-outline-neutral filter-chip" data-filter-type="component" data-filter-value="none">
+                    <button class="btn btn-sm btn-outline-neutral filter-chip" data-filter-type="component" data-filter-value="none" aria-pressed="false">
                         <i class="bi bi-file-earmark me-1" aria-hidden="true"></i>{{ ftl('reports-no-component') }}
                     </button>
                     {% for signature, comp_data in common_components.items() %}
                     <button class="btn btn-sm btn-outline-neutral filter-chip"
                             data-filter-type="component"
-                            data-filter-value="{{ signature }}">
+                            data-filter-value="{{ signature }}" aria-pressed="false">
                         <i class="bi bi-box me-1" aria-hidden="true"></i>{{ comp_data.type }}: {{ comp_data.label }} ({{ comp_data.pages|length }} pages)
                     </button>
                     {% endfor %}
@@ -331,13 +331,13 @@
             <div class="filter-group">
                 <p class="form-label fw-bold small">{{ ftl('common-impact-2') }}</p>
                 <div class="filter-chips">
-                    <button class="btn btn-sm btn-outline-high filter-chip" data-filter-type="impact" data-filter-value="high">
+                    <button class="btn btn-sm btn-outline-high filter-chip" data-filter-type="impact" data-filter-value="high" aria-pressed="false">
                         {{ ftl('common-high') }}
                     </button>
-                    <button class="btn btn-sm btn-outline-medium filter-chip" data-filter-type="impact" data-filter-value="medium">
+                    <button class="btn btn-sm btn-outline-medium filter-chip" data-filter-type="impact" data-filter-value="medium" aria-pressed="false">
                         {{ ftl('common-medium') }}
                     </button>
-                    <button class="btn btn-sm btn-outline-brand filter-chip" data-filter-type="impact" data-filter-value="low">
+                    <button class="btn btn-sm btn-outline-brand filter-chip" data-filter-type="impact" data-filter-value="low" aria-pressed="false">
                         {{ ftl('common-low') }}
                     </button>
                 </div>

@@ -93,8 +93,11 @@
     }
 
     .filter-chip {
+        font-family: inherit;
+        line-height: 1.5;
         padding: 0.25rem 0.75rem;
         background: var(--color-bg);
+        color: var(--color-text);
         border: 1px solid var(--color-border-table);
         border-radius: 20px;
         cursor: pointer;
@@ -106,10 +109,16 @@
         background: var(--color-progress-track);
     }
 
-    .filter-chip.active {
+    .filter-chip.active,
+    .filter-chip[aria-pressed="true"] {
         background: var(--color-brand);
         color: var(--color-text-inverse);
         border-color: var(--color-brand);
+    }
+
+    .filter-chip:focus-visible {
+        outline: 2px solid var(--color-focus-ring, #0d6efd);
+        outline-offset: 2px;
     }
 
     .active-filters {
@@ -278,19 +287,20 @@
 <a href="#main-content" class="visually-hidden-focusable">{{ ftl('common-skip-to-main-content') }}</a>
 
 {# Macro for rendering violation details - defined at top so it's available throughout #}
-{% macro render_violation_details(violation, alert_type) %}
+{% macro render_violation_details(violation, alert_type, heading_level=5) %}
 {% set text_class = {'high': 'text-severity-high', 'medium': 'text-severity-medium', 'info': 'text-info-custom', 'pass': 'text-severity-pass', 'brand': 'text-brand'}.get(alert_type, 'text-info-custom') %}
+{% set h_tag = 'h' ~ ([heading_level, 6]|min) %}
 <!-- Issue Details -->
 {% if violation.metadata and (violation.metadata.what_en or violation.metadata.what_fr) %}
 <!-- Enhanced description available -->
 <div class="alert alert-{{ alert_type }} mb-3">
-    <h4 class="alert-heading">
+    <{{ h_tag }} class="alert-heading">
         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ violation.description_en }}</span>
         <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ violation.description_fr }}</span>
-    </h4>
+    </{{ h_tag }}>
 </div>
 
-<h4 class="{{ text_class }} mb-2" data-i18n="about_this_issue">{{ t.get('about_this_issue', 'About this issue:') }}</h4>
+<{{ h_tag }} class="{{ text_class }} mb-2" data-i18n="about_this_issue">{{ t.get('about_this_issue', 'About this issue:') }}</{{ h_tag }}>
 
 <div class="mb-3">
     <strong data-i18n="what_the_issue_is">{{ t.get('what_the_issue_is', 'What the issue is:') }}</strong>
@@ -323,7 +333,7 @@
 {% endif %}
 
 {% if violation.metadata.wcag_full %}
-<h4 class="{{ text_class }} mb-2 mt-4" data-i18n="relevant_test_criteria">{{ t.get('relevant_test_criteria', 'Relevant test criteria:') }}</h4>
+<{{ h_tag }} class="{{ text_class }} mb-2 mt-4" data-i18n="relevant_test_criteria">{{ t.get('relevant_test_criteria', 'Relevant test criteria:') }}</{{ h_tag }}>
 <div class="mb-3">
     <strong>WCAG <span data-i18n="success_criteria">{{ t.get('success_criteria', 'Success Criteria:') }}</span></strong>
     <ul>
@@ -425,12 +435,12 @@
 {% endif %}
 
 {% if violation.html_snippet %}
-<h4 class="mt-3" data-i18n="code_snippet">{{ t.get('code_snippet', 'Code Snippet') }}</h4>
+<{{ h_tag }} class="mt-3" data-i18n="code_snippet">{{ t.get('code_snippet', 'Code Snippet') }}</{{ h_tag }}>
 <pre class="bg-header text-inverse p-3 rounded"><code>{{ violation.html_snippet|e }}</code></pre>
 {% endif %}
 {% endmacro %}
 
-<main id="main-content" class="container py-4">
+<main id="main-content" tabindex="-1" class="container py-4">
     <!-- Page Navigation -->
     <nav aria-label="breadcrumb" class="mb-3 no-print">
         <ol class="breadcrumb">
@@ -452,8 +462,8 @@
             </p>
         </div>
         <div class="lang-switcher">
-            <button onclick="switchLanguage('en')" id="lang-en" class="{{ 'active' if language == 'en' else '' }}" lang="en" aria-label="{{ ftl('reports-switch-to-english') }}">EN</button>
-            <button onclick="switchLanguage('fr')" id="lang-fr" class="{{ 'active' if language == 'fr' else '' }}" lang="fr" aria-label="{{ ftl('reports-switch-to-french') }}">FR</button>
+            <button onclick="switchLanguage('en')" id="lang-en" class="{{ 'active' if language == 'en' else '' }}" lang="en" aria-label="{{ ftl('reports-switch-to-english') }}" aria-pressed="{{ 'true' if language == 'en' else 'false' }}">EN</button>
+            <button onclick="switchLanguage('fr')" id="lang-fr" class="{{ 'active' if language == 'fr' else '' }}" lang="fr" aria-label="{{ ftl('reports-switch-to-french') }}" aria-pressed="{{ 'true' if language == 'fr' else 'false' }}">FR</button>
         </div>
     </div>
 
@@ -638,24 +648,24 @@
             <div class="col-md-3">
                 <div class="filter-group">
                     <p class="form-label fw-bold" data-i18n="issue_type">{{ t.get('issue_type', 'Issue Type') }}</p>
-                    <div class="filter-chips">
+                    <div class="filter-chips" role="group" aria-label="{{ ftl('reports-filter-by-issue-type') }}">
                         {% if violations %}
-                        <button type="button" class="filter-chip" data-filter-type="type" data-filter-value="error">
+                        <button type="button" class="filter-chip" data-filter-type="type" data-filter-value="error" aria-pressed="false">
                             <span data-i18n="errors">{{ t['errors'] }}</span> ({{ violations|length }})
                         </button>
                         {% endif %}
                         {% if warnings %}
-                        <button type="button" class="filter-chip" data-filter-type="type" data-filter-value="warning">
+                        <button type="button" class="filter-chip" data-filter-type="type" data-filter-value="warning" aria-pressed="false">
                             <span data-i18n="warnings">{{ t['warnings'] }}</span> ({{ warnings|length }})
                         </button>
                         {% endif %}
                         {% if info %}
-                        <button type="button" class="filter-chip" data-filter-type="type" data-filter-value="info">
+                        <button type="button" class="filter-chip" data-filter-type="type" data-filter-value="info" aria-pressed="false">
                             <span data-i18n="info">{{ t['info'] }}</span> ({{ info|length }})
                         </button>
                         {% endif %}
                         {% if discovery %}
-                        <button type="button" class="filter-chip" data-filter-type="type" data-filter-value="discovery">
+                        <button type="button" class="filter-chip" data-filter-type="type" data-filter-value="discovery" aria-pressed="false">
                             <span data-i18n="discovery">{{ t['discovery'] }}</span> ({{ discovery|length }})
                         </button>
                         {% endif %}
@@ -667,16 +677,16 @@
             <div class="col-md-3">
                 <div class="filter-group">
                     <p class="form-label fw-bold" data-i18n="impact_level">{{ t.get('impact_level', 'Impact Level') }}</p>
-                    <div class="filter-chips">
-                        <button type="button" class="filter-chip" data-filter-type="impact" data-filter-value="high">
+                    <div class="filter-chips" role="group" aria-label="{{ ftl('reports-filter-by-impact') }}">
+                        <button type="button" class="filter-chip" data-filter-type="impact" data-filter-value="high" aria-pressed="false">
                             <span class="badge badge-high me-1" data-i18n="high">{{ t['high'] }}</span>
                             <span id="highImpactCount">0</span>
                         </button>
-                        <button type="button" class="filter-chip" data-filter-type="impact" data-filter-value="medium">
+                        <button type="button" class="filter-chip" data-filter-type="impact" data-filter-value="medium" aria-pressed="false">
                             <span class="badge badge-medium me-1" data-i18n="medium">{{ t['medium'] }}</span>
                             <span id="mediumImpactCount">0</span>
                         </button>
-                        <button type="button" class="filter-chip" data-filter-type="impact" data-filter-value="low">
+                        <button type="button" class="filter-chip" data-filter-type="impact" data-filter-value="low" aria-pressed="false">
                             <span class="badge badge-info me-1" data-i18n="low">{{ t['low'] }}</span>
                             <span id="lowImpactCount">0</span>
                         </button>
@@ -777,7 +787,7 @@
                             <div class="accordion" id="viol_instances_{{ viol_counter.value }}">
                                 {% for instance in group_list %}
                                 <div class="accordion-item">
-                                    <h4 class="accordion-header">
+                                    <h5 class="accordion-header">
                                         <button class="accordion-button collapsed" type="button"
                                                 data-bs-toggle="collapse"
                                                 data-bs-target="#viol_inst_{{ viol_counter.value }}_{{ loop.index }}"
@@ -799,12 +809,12 @@
                                             <code class="ms-2">{{ instance.xpath }}</code>
                                             {% endif %}
                                         </button>
-                                    </h4>
+                                    </h5>
                                     <div id="viol_inst_{{ viol_counter.value }}_{{ loop.index }}"
                                          class="accordion-collapse collapse"
                                          data-bs-parent="#viol_instances_{{ viol_counter.value }}">
                                         <div class="accordion-body">
-                                            {{ render_violation_details(instance, 'high') }}
+                                            {{ render_violation_details(instance, 'high', 6) }}
                                         </div>
                                     </div>
                                 </div>
@@ -871,7 +881,7 @@
                             <div class="accordion" id="warn_instances_{{ warn_counter.value }}">
                                 {% for instance in group_list %}
                                 <div class="accordion-item">
-                                    <h4 class="accordion-header">
+                                    <h5 class="accordion-header">
                                         <button class="accordion-button collapsed" type="button"
                                                 data-bs-toggle="collapse"
                                                 data-bs-target="#warn_inst_{{ warn_counter.value }}_{{ loop.index }}"
@@ -893,12 +903,12 @@
                                             <code class="ms-2">{{ instance.xpath }}</code>
                                             {% endif %}
                                         </button>
-                                    </h4>
+                                    </h5>
                                     <div id="warn_inst_{{ warn_counter.value }}_{{ loop.index }}"
                                          class="accordion-collapse collapse"
                                          data-bs-parent="#warn_instances_{{ warn_counter.value }}">
                                         <div class="accordion-body">
-                                            {{ render_violation_details(instance, 'medium') }}
+                                            {{ render_violation_details(instance, 'medium', 6) }}
                                         </div>
                                     </div>
                                 </div>
@@ -967,7 +977,7 @@
                             <div class="accordion" id="info_instances_{{ info_counter.value }}">
                                 {% for instance in group_list %}
                                 <div class="accordion-item">
-                                    <h4 class="accordion-header">
+                                    <h5 class="accordion-header">
                                         <button class="accordion-button collapsed" type="button"
                                                 data-bs-toggle="collapse"
                                                 data-bs-target="#info_inst_{{ info_counter.value }}_{{ loop.index }}"
@@ -989,12 +999,12 @@
                                             <code class="ms-2">{{ instance.xpath }}</code>
                                             {% endif %}
                                         </button>
-                                    </h4>
+                                    </h5>
                                     <div id="info_inst_{{ info_counter.value }}_{{ loop.index }}"
                                          class="accordion-collapse collapse"
                                          data-bs-parent="#info_instances_{{ info_counter.value }}">
                                         <div class="accordion-body">
-                                            {{ render_violation_details(instance, 'info') }}
+                                            {{ render_violation_details(instance, 'info', 6) }}
                                         </div>
                                     </div>
                                 </div>
@@ -1060,7 +1070,7 @@
                             <div class="accordion" id="disco_instances_{{ disco_counter.value }}">
                                 {% for instance in group_list %}
                                 <div class="accordion-item">
-                                    <h4 class="accordion-header">
+                                    <h5 class="accordion-header">
                                         <button class="accordion-button collapsed" type="button"
                                                 data-bs-toggle="collapse"
                                                 data-bs-target="#disco_inst_{{ disco_counter.value }}_{{ loop.index }}"
@@ -1082,12 +1092,12 @@
                                             <code class="ms-2">{{ instance.xpath }}</code>
                                             {% endif %}
                                         </button>
-                                    </h4>
+                                    </h5>
                                     <div id="disco_inst_{{ disco_counter.value }}_{{ loop.index }}"
                                          class="accordion-collapse collapse"
                                          data-bs-parent="#disco_instances_{{ disco_counter.value }}">
                                         <div class="accordion-body">
-                                            {{ render_violation_details(instance, 'info') }}
+                                            {{ render_violation_details(instance, 'info', 6) }}
                                         </div>
                                     </div>
                                 </div>
@@ -1130,8 +1140,11 @@ function switchLanguage(lang) {
     // Update active button
     document.querySelectorAll('.lang-switcher button').forEach(btn => {
         btn.classList.remove('active');
+            btn.setAttribute('aria-pressed', 'false');
     });
     document.getElementById(`lang-${lang}`).classList.add('active');
+            const _btn = document.getElementById(`lang-${lang}`);
+            if (_btn) _btn.setAttribute('aria-pressed', 'true');
 
     // Update HTML lang attribute
     document.documentElement.lang = lang;
@@ -1271,8 +1284,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const filterValue = chip.dataset.filterValue;
             if (activeFilters[filterType] && activeFilters[filterType].includes(filterValue)) {
                 chip.classList.add('active');
+                chip.setAttribute('aria-pressed', 'true');
             } else {
                 chip.classList.remove('active');
+                chip.setAttribute('aria-pressed', 'false');
             }
         });
 

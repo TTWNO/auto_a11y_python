@@ -46,7 +46,7 @@
 
     /* Focus & Interaction */
     --color-focus-ring: #0a58ca;
-    --color-focus-ring-shadow: rgba(10, 88, 202, 0.25);
+    --color-focus-ring-shadow: rgba(10, 88, 202, 0.6);
     --color-focus-ring-inverse: #ffffff;
     --color-button-primary-bg: #1a5276;
     --color-button-primary-text: #ffffff;
@@ -179,7 +179,7 @@
         --color-border-table: #7a7a9c;
 
         --color-focus-ring: #6db3f2;
-        --color-focus-ring-shadow: rgba(109, 179, 242, 0.35);
+        --color-focus-ring-shadow: rgba(109, 179, 242, 0.6);
         --color-focus-ring-inverse: #ffffff;
         --color-button-primary-bg: #5da9e9;
         --color-button-primary-text: #0e1525;
@@ -273,7 +273,7 @@
     --color-border-table: #7a7a9c;
 
     --color-focus-ring: #6db3f2;
-    --color-focus-ring-shadow: rgba(109, 179, 242, 0.35);
+    --color-focus-ring-shadow: rgba(109, 179, 242, 0.6);
     --color-focus-ring-inverse: #ffffff;
     --color-button-primary-bg: #5da9e9;
     --color-button-primary-text: #0e1525;

@@ -27,25 +27,33 @@
         }
 
         .lang-switcher button {
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: white;
+            /* Solid background ensures 3:1+ non-text contrast on the brand navbar */
+            background: var(--color-bg);
+            border: 1px solid var(--color-bg);
+            color: var(--color-brand);
             padding: 0.25rem 0.75rem;
             border-radius: 4px;
             cursor: pointer;
             font-size: 0.875rem;
             font-weight: 500;
-            transition: all 0.2s;
+            transition: background-color 0.2s, color 0.2s;
         }
 
         .lang-switcher button:hover {
-            background: rgba(255, 255, 255, 0.3);
+            background: var(--color-bg-subtle);
+            color: var(--color-brand);
         }
 
-        .lang-switcher button.active {
-            background: white;
-            color: var(--color-brand);
-            border-color: white;
+        .lang-switcher button.active,
+        .lang-switcher button[aria-pressed="true"] {
+            background: var(--color-brand);
+            color: var(--color-text-inverse);
+            border-color: var(--color-bg);
+        }
+
+        .lang-switcher button:focus-visible {
+            outline: 2px solid var(--color-bg);
+            outline-offset: 2px;
         }
 
         .lang-active {
@@ -213,14 +221,14 @@
                     {% endif %}
                 </ul>
                 <div class="lang-switcher">
-                    <button onclick="switchLanguage('en')" id="lang-en" class="{{ 'active' if language == 'en' else '' }}" lang="en" aria-label="{{ ftl('reports-switch-to-english') }}">EN</button>
-                    <button onclick="switchLanguage('fr')" id="lang-fr" class="{{ 'active' if language == 'fr' else '' }}" lang="fr" aria-label="{{ ftl('reports-switch-to-french') }}">FR</button>
+                    <button onclick="switchLanguage('en')" id="lang-en" class="{{ 'active' if language == 'en' else '' }}" lang="en" aria-label="{{ ftl('reports-switch-to-english') }}" aria-pressed="{{ 'true' if language == 'en' else 'false' }}">EN</button>
+                    <button onclick="switchLanguage('fr')" id="lang-fr" class="{{ 'active' if language == 'fr' else '' }}" lang="fr" aria-label="{{ ftl('reports-switch-to-french') }}" aria-pressed="{{ 'true' if language == 'fr' else 'false' }}">FR</button>
                 </div>
             </div>
         </div>
     </nav>
 
-    <main id="main-content" class="container-fluid py-4">
+    <main id="main-content" tabindex="-1" class="container-fluid py-4">
         {% block content %}{% endblock %}
     </main>
 
@@ -279,10 +287,12 @@
             // Update active button
             document.querySelectorAll('.lang-switcher button').forEach(btn => {
                 btn.classList.remove('active');
+                btn.setAttribute('aria-pressed', 'false');
             });
             const langButton = document.getElementById(`lang-${lang}`);
             if (langButton) {
                 langButton.classList.add('active');
+                langButton.setAttribute('aria-pressed', 'true');
             }
 
             // Toggle visibility of language-specific content using classes

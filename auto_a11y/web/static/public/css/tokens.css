@@ -7,6 +7,8 @@
 
 /* ===== LIGHT MODE (default) ===== */
 :root {
+    color-scheme: light;
+
     /* Brand */
     --color-brand: #1a5276;
     --color-brand-hover: #0e2f44;
@@ -44,6 +46,8 @@
 
     /* Focus & Interaction */
     --color-focus-ring: #0a58ca;
+    --color-focus-ring-shadow: rgba(10, 88, 202, 0.25);
+    --color-focus-ring-inverse: #ffffff;
     --color-button-primary-bg: #1a5276;
     --color-button-primary-text: #ffffff;
     --color-button-primary-hover: #0e2f44;
@@ -143,6 +147,7 @@
 /* ===== DARK MODE (OS preference) ===== */
 @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
+        color-scheme: dark;
         --color-brand: #5da9e9;
         --color-brand-hover: #6db3f2;
         --color-brand-subtle: #252542;
@@ -174,12 +179,14 @@
         --color-border-table: #7a7a9c;
 
         --color-focus-ring: #6db3f2;
+        --color-focus-ring-shadow: rgba(109, 179, 242, 0.35);
+        --color-focus-ring-inverse: #ffffff;
         --color-button-primary-bg: #5da9e9;
         --color-button-primary-text: #0e1525;
         --color-button-primary-hover: #6db3f2;
         --color-scrollbar-thumb: #6a6a8a;
 
-        --color-severity-high: #f28b82;
+        --color-severity-high: #c22b22;
         --color-severity-high-bg: #3d1f1f;
         --color-severity-high-border: #f28b82;
         --color-severity-medium: #f9a825;
@@ -234,6 +241,7 @@
 
 /* ===== DARK MODE (manual override — always wins) ===== */
 [data-theme="dark"] {
+    color-scheme: dark;
     --color-brand: #5da9e9;
     --color-brand-hover: #6db3f2;
     --color-brand-subtle: #252542;
@@ -265,12 +273,14 @@
     --color-border-table: #7a7a9c;
 
     --color-focus-ring: #6db3f2;
+    --color-focus-ring-shadow: rgba(109, 179, 242, 0.35);
+    --color-focus-ring-inverse: #ffffff;
     --color-button-primary-bg: #5da9e9;
     --color-button-primary-text: #0e1525;
     --color-button-primary-hover: #6db3f2;
     --color-scrollbar-thumb: #6a6a8a;
 
-    --color-severity-high: #f28b82;
+    --color-severity-high: #c22b22;
     --color-severity-high-bg: #3d1f1f;
     --color-severity-high-border: #f28b82;
     --color-severity-medium: #f9a825;

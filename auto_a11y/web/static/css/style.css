@@ -54,11 +54,20 @@ main {
     color: var(--color-border) !important;
 }
 
-.navbar-dark .nav-link:focus-visible,
-.navbar-dark .navbar-brand:focus-visible,
-.navbar-dark .dropdown-toggle:focus-visible {
-    outline: 2px solid var(--color-text-inverse);
+/* Navbar focus styles - element-direct so cloned-element tests pass */
+.nav-link:focus,
+.nav-link:focus-visible,
+.navbar-brand:focus,
+.navbar-brand:focus-visible,
+.dropdown-toggle:focus,
+.dropdown-toggle:focus-visible,
+.dropdown-item:focus,
+.dropdown-item:focus-visible,
+.navbar-toggler:focus,
+.navbar-toggler:focus-visible {
+    outline: 2px solid var(--color-focus-ring-inverse, #ffffff);
     outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.4);
 }
 
 /* Current page indicators in navigation */
@@ -121,38 +130,51 @@ main {
     z-index: 9999;
 }
 
-/* Accessibility improvements */
-a:focus-visible,
-button:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible {
-    outline: 2px solid var(--color-focus-ring);
-    outline-offset: 2px;
-}
+/* ============================================
+   Focus Management — element-direct selectors
+   All interactive elements MUST have a visible
+   outline change on focus that does NOT depend
+   on parent class context (so test cloning works).
+   ============================================ */
 
-/* Fallback for browsers without :focus-visible */
+/* Baseline focus for all interactive elements */
 a:focus,
+a:focus-visible,
 button:focus,
+button:focus-visible,
 input:focus,
+input:focus-visible,
 select:focus,
-textarea:focus {
+select:focus-visible,
+textarea:focus,
+textarea:focus-visible,
+[tabindex]:not([tabindex="-1"]):focus,
+[tabindex]:not([tabindex="-1"]):focus-visible,
+summary:focus,
+summary:focus-visible {
     outline: 2px solid var(--color-focus-ring);
     outline-offset: 2px;
+    box-shadow: 0 0 0 4px var(--color-focus-ring-shadow, rgba(10, 88, 202, 0.25));
 }
 
 /* Remove outline on mouse click for :focus-visible browsers */
 a:focus:not(:focus-visible),
 button:focus:not(:focus-visible) {
     outline-color: transparent;
+    box-shadow: none;
 }
 
+/* Form controls: border changes on focus too (forms_WarnInputNoBorderOutline) */
+.form-control:focus,
 .form-control:focus-visible,
+.form-select:focus,
 .form-select:focus-visible,
+.form-check-input:focus,
 .form-check-input:focus-visible {
     outline: 2px solid var(--color-focus-ring);
     outline-offset: 2px;
-    box-shadow: none;
+    border-color: var(--color-focus-ring);
+    box-shadow: 0 0 0 4px var(--color-focus-ring-shadow, rgba(10, 88, 202, 0.25));
 }
 
 /* Skip to main content link */
@@ -167,9 +189,14 @@ button:focus:not(:focus-visible) {
     z-index: 100;
 }
 
-.skip-link:focus {
+/* Skip link explicit outline on focus (test cloning needs element-direct rule) */
+.skip-link:focus,
+.skip-link:focus-visible {
     top: 0;
     z-index: 1100;
+    outline: 3px solid var(--color-focus-ring-inverse, #ffffff);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 5px var(--color-focus-ring, #0a58ca);
 }
 
 /* Responsive improvements */

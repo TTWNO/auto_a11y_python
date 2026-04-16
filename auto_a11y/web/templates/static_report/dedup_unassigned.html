@@ -1342,5 +1342,27 @@ document.addEventListener('DOMContentLoaded', function() {
     updateFilters();
 });
 </script>
+
+<!-- Accessibility enhancements: Space key on link-styled-as-button, new-window warning -->
+<script>
+document.addEventListener('keydown', function(e) {
+    if (e.key === ' ' && e.target.matches('a.btn')) {
+        e.preventDefault();
+        e.target.click();
+    }
+});
+document.addEventListener('DOMContentLoaded', function() {
+    var newWindowLabel = {{ ftl('common-opens-in-new-tab') | tojson }};
+    document.querySelectorAll('a[target="_blank"]').forEach(function(link) {
+        var ariaLabel = link.getAttribute('aria-label') || '';
+        if (!link.querySelector('.visually-hidden') && !/new\s*(window|tab)/i.test(ariaLabel)) {
+            var span = document.createElement('span');
+            span.className = 'visually-hidden';
+            span.textContent = ' (' + newWindowLabel + ')';
+            link.appendChild(span);
+        }
+    });
+});
+</script>
 </body>
 </html>

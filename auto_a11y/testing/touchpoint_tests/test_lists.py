@@ -376,6 +376,27 @@ async def test_lists(page) -> Dict[str, Any]:
 
                     // Check for empty list items
                     items.forEach(item => {
+                        // Skip items whose role has been explicitly changed away
+                        // from the implicit 'listitem' (e.g. role="separator" on
+                        // a Bootstrap dropdown divider, role="presentation", etc.)
+                        // — such elements are no longer list items semantically
+                        // and should not be flagged as empty listitems.
+                        const explicitRole = (item.getAttribute('role') || '').trim().toLowerCase();
+                        if (explicitRole && explicitRole !== 'listitem') {
+                            return;
+                        }
+
+                        // Skip items that only contain an <hr> (visual separator)
+                        // — these are decorative dividers, not content-bearing
+                        // list items. Screen readers skip them and they serve a
+                        // clear visual grouping purpose.
+                        const onlyHr = item.children.length === 1
+                            && item.children[0].tagName === 'HR'
+                            && item.textContent.trim() === '';
+                        if (onlyHr) {
+                            return;
+                        }
+
                         const textContent = item.textContent.trim();
                         const ariaLabel = item.getAttribute('aria-label');
                         const ariaLabelledby = item.getAttribute('aria-labelledby');

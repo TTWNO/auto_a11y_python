@@ -81,6 +81,35 @@ main {
 /* Card hover effects */
 .card {
     transition: transform 0.2s, box-shadow 0.2s;
+    /* Allow focus outlines on inputs/buttons to extend outside the card.
+       Bootstrap defaults to overflow:hidden which clips focus indicators
+       (WCAG 2.4.7, 2.4.13) — use 'clip' which still clips painting of
+       overflowing *content* but doesn't establish a scroll container,
+       letting focus rings escape. Fall back to visible where needed. */
+    overflow: visible;
+}
+
+/* Cards that explicitly need their visual boundary to clip content
+   (e.g., rounded corners on images) can opt-in via .card-clip. */
+.card.card-clip {
+    overflow: hidden;
+}
+
+/* Ensure Bootstrap containers that commonly wrap form controls do not
+   clip focus outlines (WCAG 1.4.11, 2.4.7). */
+.card-body,
+.card-header,
+.card-footer,
+.accordion-body,
+.accordion-collapse,
+.modal-body,
+.modal-content,
+.tab-content,
+.tab-pane,
+.offcanvas-body,
+.form-floating,
+fieldset {
+    overflow: visible;
 }
 
 .card:hover {
@@ -896,6 +925,198 @@ table caption {
     }
     :root:not([data-theme="light"]) .bg-medium {
         color: var(--color-text) !important;
+    }
+}
+
+/* ============================================================
+   DARK-MODE SOLID BACKGROUND OVERRIDES
+   In dark mode the base severity/info/brand/discovery tokens
+   (#f28b82, #64b5f6, #81c784, #b39ddb, #5da9e9) are tuned for
+   USE AS TEXT on dark backgrounds (4.5:1+). They are too light
+   to serve as solid backgrounds behind white/inverse text.
+
+   For bg/btn/toast/progress/card-header contexts we therefore
+   swap to the darker -badge tokens (2563a0, 0e5a7a, 9e2c21,
+   1a5c32, 5a3580) which achieve 6:1+ on white text.
+   ============================================================ */
+
+/* --- Brand (replaces --color-link as BG behind white text) --- */
+[data-theme="dark"] .bg-brand,
+[data-theme="dark"] .btn-brand,
+[data-theme="dark"] .btn-brand:hover,
+[data-theme="dark"] .btn-brand:active,
+[data-theme="dark"] .btn-brand:focus {
+    background-color: var(--color-brand-badge) !important;
+    border-color: var(--color-brand-badge) !important;
+    color: var(--color-text-inverse) !important;
+}
+[data-theme="dark"] .btn-outline-brand:hover,
+[data-theme="dark"] .btn-outline-brand:active,
+[data-theme="dark"] .btn-outline-brand.active {
+    background-color: var(--color-brand-badge) !important;
+    border-color: var(--color-brand-badge) !important;
+    color: var(--color-text-inverse) !important;
+}
+
+/* --- Info --- */
+[data-theme="dark"] .bg-info,
+[data-theme="dark"] .btn-info,
+[data-theme="dark"] .btn-info:hover,
+[data-theme="dark"] .btn-info:active,
+[data-theme="dark"] .btn-info:focus,
+[data-theme="dark"] .toast-info,
+[data-theme="dark"] .severity-header-info,
+[data-theme="dark"] .card-header-info {
+    background-color: var(--color-info-badge) !important;
+    border-color: var(--color-info-badge) !important;
+    color: var(--color-text-inverse) !important;
+}
+[data-theme="dark"] .card-header-info {
+    border-bottom-color: var(--color-info-badge) !important;
+}
+[data-theme="dark"] .severity-header-info {
+    background: linear-gradient(135deg, var(--color-info-badge), var(--color-info-gradient-end)) !important;
+}
+
+/* --- Pass (green) --- */
+[data-theme="dark"] .bg-pass,
+[data-theme="dark"] .btn-pass,
+[data-theme="dark"] .btn-pass:hover,
+[data-theme="dark"] .btn-pass:active,
+[data-theme="dark"] .btn-pass:focus,
+[data-theme="dark"] .toast-pass,
+[data-theme="dark"] .progress-pass,
+[data-theme="dark"] .card-header-pass {
+    background-color: var(--color-severity-pass-badge) !important;
+    border-color: var(--color-severity-pass-badge) !important;
+    color: var(--color-text-inverse) !important;
+}
+[data-theme="dark"] .card-header-pass {
+    border-bottom-color: var(--color-severity-pass-badge) !important;
+}
+[data-theme="dark"] .btn-outline-pass:hover,
+[data-theme="dark"] .btn-outline-pass:active,
+[data-theme="dark"] .btn-outline-pass.active {
+    background-color: var(--color-severity-pass-badge) !important;
+    border-color: var(--color-severity-pass-badge) !important;
+    color: var(--color-text-inverse) !important;
+}
+
+/* --- High (red) --- */
+[data-theme="dark"] .bg-high,
+[data-theme="dark"] .btn-high,
+[data-theme="dark"] .btn-high:hover,
+[data-theme="dark"] .btn-high:active,
+[data-theme="dark"] .btn-high:focus,
+[data-theme="dark"] .toast-high,
+[data-theme="dark"] .progress-high {
+    background-color: var(--color-severity-high-badge) !important;
+    border-color: var(--color-severity-high-badge) !important;
+    color: var(--color-text-inverse) !important;
+}
+[data-theme="dark"] .btn-outline-high:hover,
+[data-theme="dark"] .btn-outline-high:active,
+[data-theme="dark"] .btn-outline-high.active {
+    background-color: var(--color-severity-high-badge) !important;
+    border-color: var(--color-severity-high-badge) !important;
+    color: var(--color-text-inverse) !important;
+}
+
+/* --- Discovery --- */
+[data-theme="dark"] .bg-discovery {
+    background-color: var(--color-discovery-badge) !important;
+    color: var(--color-text-inverse) !important;
+}
+
+/* --- Neutral low --- */
+[data-theme="dark"] .bg-neutral {
+    background-color: var(--color-severity-low-badge) !important;
+    color: var(--color-text-inverse) !important;
+}
+
+/* OS preference mirror (same rules for prefers-color-scheme: dark) */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .bg-brand,
+    :root:not([data-theme="light"]) .btn-brand,
+    :root:not([data-theme="light"]) .btn-brand:hover,
+    :root:not([data-theme="light"]) .btn-brand:active,
+    :root:not([data-theme="light"]) .btn-brand:focus {
+        background-color: var(--color-brand-badge) !important;
+        border-color: var(--color-brand-badge) !important;
+        color: var(--color-text-inverse) !important;
+    }
+    :root:not([data-theme="light"]) .btn-outline-brand:hover,
+    :root:not([data-theme="light"]) .btn-outline-brand:active,
+    :root:not([data-theme="light"]) .btn-outline-brand.active {
+        background-color: var(--color-brand-badge) !important;
+        border-color: var(--color-brand-badge) !important;
+        color: var(--color-text-inverse) !important;
+    }
+    :root:not([data-theme="light"]) .bg-info,
+    :root:not([data-theme="light"]) .btn-info,
+    :root:not([data-theme="light"]) .btn-info:hover,
+    :root:not([data-theme="light"]) .btn-info:active,
+    :root:not([data-theme="light"]) .btn-info:focus,
+    :root:not([data-theme="light"]) .toast-info,
+    :root:not([data-theme="light"]) .severity-header-info,
+    :root:not([data-theme="light"]) .card-header-info {
+        background-color: var(--color-info-badge) !important;
+        border-color: var(--color-info-badge) !important;
+        color: var(--color-text-inverse) !important;
+    }
+    :root:not([data-theme="light"]) .card-header-info {
+        border-bottom-color: var(--color-info-badge) !important;
+    }
+    :root:not([data-theme="light"]) .severity-header-info {
+        background: linear-gradient(135deg, var(--color-info-badge), var(--color-info-gradient-end)) !important;
+    }
+    :root:not([data-theme="light"]) .bg-pass,
+    :root:not([data-theme="light"]) .btn-pass,
+    :root:not([data-theme="light"]) .btn-pass:hover,
+    :root:not([data-theme="light"]) .btn-pass:active,
+    :root:not([data-theme="light"]) .btn-pass:focus,
+    :root:not([data-theme="light"]) .toast-pass,
+    :root:not([data-theme="light"]) .progress-pass,
+    :root:not([data-theme="light"]) .card-header-pass {
+        background-color: var(--color-severity-pass-badge) !important;
+        border-color: var(--color-severity-pass-badge) !important;
+        color: var(--color-text-inverse) !important;
+    }
+    :root:not([data-theme="light"]) .card-header-pass {
+        border-bottom-color: var(--color-severity-pass-badge) !important;
+    }
+    :root:not([data-theme="light"]) .btn-outline-pass:hover,
+    :root:not([data-theme="light"]) .btn-outline-pass:active,
+    :root:not([data-theme="light"]) .btn-outline-pass.active {
+        background-color: var(--color-severity-pass-badge) !important;
+        border-color: var(--color-severity-pass-badge) !important;
+        color: var(--color-text-inverse) !important;
+    }
+    :root:not([data-theme="light"]) .bg-high,
+    :root:not([data-theme="light"]) .btn-high,
+    :root:not([data-theme="light"]) .btn-high:hover,
+    :root:not([data-theme="light"]) .btn-high:active,
+    :root:not([data-theme="light"]) .btn-high:focus,
+    :root:not([data-theme="light"]) .toast-high,
+    :root:not([data-theme="light"]) .progress-high {
+        background-color: var(--color-severity-high-badge) !important;
+        border-color: var(--color-severity-high-badge) !important;
+        color: var(--color-text-inverse) !important;
+    }
+    :root:not([data-theme="light"]) .btn-outline-high:hover,
+    :root:not([data-theme="light"]) .btn-outline-high:active,
+    :root:not([data-theme="light"]) .btn-outline-high.active {
+        background-color: var(--color-severity-high-badge) !important;
+        border-color: var(--color-severity-high-badge) !important;
+        color: var(--color-text-inverse) !important;
+    }
+    :root:not([data-theme="light"]) .bg-discovery {
+        background-color: var(--color-discovery-badge) !important;
+        color: var(--color-text-inverse) !important;
+    }
+    :root:not([data-theme="light"]) .bg-neutral {
+        background-color: var(--color-severity-low-badge) !important;
+        color: var(--color-text-inverse) !important;
     }
 }
 
@@ -2076,6 +2297,49 @@ h1, h2, h3, h4, h5, h6,
     line-height: 1.4;
 }
 
+/* Line height requirement (WCAG 1.4.12 - Text Spacing)
+   Body copy and text-heavy elements must have line-height >= 1.5.
+   Bootstrap's default is 1.2, which fails this SC. */
+body,
+p,
+li,
+td,
+th,
+span,
+div,
+dd,
+dt,
+figcaption,
+blockquote,
+label,
+legend,
+article,
+section,
+aside,
+main,
+header,
+footer {
+    line-height: 1.5;
+}
+
+/* Exceptions for compact UI controls where 1.5 would break layout.
+   These are single-line interactive elements, not body copy. */
+.badge,
+.btn,
+.nav-link,
+.dropdown-item,
+.breadcrumb-item,
+.page-link,
+.navbar-brand,
+.form-control,
+.form-select,
+.input-group-text,
+.toast-header,
+.pagination .page-item,
+.page-item .page-link {
+    line-height: 1.2;
+}
+
 /* ============================================
    Click-target normalization
    Child elements inside semantic interactive
@@ -2234,11 +2498,15 @@ samp {
     background-color: var(--color-bg-code);
 }
 
-/* Bootstrap's primary blue #0d6efd is 4.20:1 on white (fails)
-   Override .text-primary and link defaults to use our darker --color-link */
+/* Bootstrap's primary blue #0d6efd is 4.20:1 on white (fails) and
+   3.28:1 on dark-mode #252542 (fails). Override Bootstrap's primary
+   link/text classes to use our --color-link (dark-mode #6db3f2 which
+   is 6.86:1 on #1a1a2e). */
 .text-primary,
+.link-primary,
+.alert-link,
 a:not(.btn):not(.nav-link):not(.dropdown-item):not(.page-link):not(.navbar-brand):not(.skip-link) {
-    color: var(--color-link);
+    color: var(--color-link) !important;
 }
 
 /* Force white text on severity-pass backgrounds (was 4.45:1 with dark text on green) */
@@ -2279,4 +2547,42 @@ button[id="testAllBtn"] {
     color: var(--color-text-inverse) !important;
     background-color: var(--color-link);
     border-color: var(--color-link);
+}
+
+/* ============================================================
+   DARK-MODE TEXT COLOUR ENFORCEMENT ON SUBTLE BACKGROUNDS
+   Bootstrap and various components may set color: #000 / black on
+   elements that end up on our dark subtle backgrounds (#252542,
+   #2d2d4a, #1a1a2e). Force those to use --color-text so dark-mode
+   contrast reaches 4.5:1+.
+   ============================================================ */
+[data-theme="dark"] .bg-subtle,
+[data-theme="dark"] .bg-elevated,
+[data-theme="dark"] .bg-token,
+[data-theme="dark"] .bg-token-subtle,
+[data-theme="dark"] .bg-neutral-subtle,
+[data-theme="dark"] .bg-brand-subtle {
+    color: var(--color-text);
+}
+[data-theme="dark"] .bg-subtle *:not(.badge):not(.btn):not(.alert):not(input):not(select):not(textarea):not(code):not(kbd):not(samp),
+[data-theme="dark"] .bg-elevated *:not(.badge):not(.btn):not(.alert):not(input):not(select):not(textarea):not(code):not(kbd):not(samp),
+[data-theme="dark"] .bg-token *:not(.badge):not(.btn):not(.alert):not(input):not(select):not(textarea):not(code):not(kbd):not(samp),
+[data-theme="dark"] .bg-token-subtle *:not(.badge):not(.btn):not(.alert):not(input):not(select):not(textarea):not(code):not(kbd):not(samp) {
+    color: inherit;
+}
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .bg-subtle,
+    :root:not([data-theme="light"]) .bg-elevated,
+    :root:not([data-theme="light"]) .bg-token,
+    :root:not([data-theme="light"]) .bg-token-subtle,
+    :root:not([data-theme="light"]) .bg-neutral-subtle,
+    :root:not([data-theme="light"]) .bg-brand-subtle {
+        color: var(--color-text);
+    }
+    :root:not([data-theme="light"]) .bg-subtle *:not(.badge):not(.btn):not(.alert):not(input):not(select):not(textarea):not(code):not(kbd):not(samp),
+    :root:not([data-theme="light"]) .bg-elevated *:not(.badge):not(.btn):not(.alert):not(input):not(select):not(textarea):not(code):not(kbd):not(samp),
+    :root:not([data-theme="light"]) .bg-token *:not(.badge):not(.btn):not(.alert):not(input):not(select):not(textarea):not(code):not(kbd):not(samp),
+    :root:not([data-theme="light"]) .bg-token-subtle *:not(.badge):not(.btn):not(.alert):not(input):not(select):not(textarea):not(code):not(kbd):not(samp) {
+        color: inherit;
+    }
 }

@@ -83,6 +83,9 @@
     --color-severity-medium-badge: #7d6608;
     --color-severity-low-badge: #2c3e50;
     --color-severity-pass-badge: #1e8449;
+    --color-info-badge: #0e7490;
+    --color-brand-badge: #1a5276;
+    --color-discovery-badge: #6f42c1;
 
     /* Severity gradient endpoints (for report section headers) */
     --color-severity-high-gradient-end: #c82333;
@@ -186,7 +189,11 @@
         --color-button-primary-hover: #6db3f2;
         --color-scrollbar-thumb: #6a6a8a;
 
-        --color-severity-high: #c22b22;
+        /* Severity TEXT colours: must meet 4.5:1 on dark backgrounds
+           (#1a1a2e / #252542 / #2d2d4a). Darker crimsons/blues fail as text,
+           so we lighten them here. The corresponding -badge tokens below
+           provide darker backgrounds for white-text contexts. */
+        --color-severity-high: #f28b82;
         --color-severity-high-bg: #3d1f1f;
         --color-severity-high-border: #f28b82;
         --color-severity-medium: #f9a825;
@@ -208,11 +215,15 @@
         --color-score-good: #3dd9a8;
         --color-score-poor: #ff9940;
 
-        /* Badge/gradient backgrounds — darker for white text AAA contrast (7:1+) */
+        /* Badge/gradient backgrounds — darker for white text AAA contrast (6:1+).
+           Used as background behind white/inverse text in dark mode. */
         --color-severity-high-badge: #9e2c21;
         --color-severity-medium-badge: #8b6d08;
         --color-severity-low-badge: #4d4d5c;
         --color-severity-pass-badge: #1a5c32;
+        --color-info-badge: #0e5a7a;
+        --color-brand-badge: #2563a0;
+        --color-discovery-badge: #5a3580;
 
         --color-severity-high-gradient-end: #a83232;
         --color-severity-medium-gradient-end: #d4a020;
@@ -280,7 +291,11 @@
     --color-button-primary-hover: #6db3f2;
     --color-scrollbar-thumb: #6a6a8a;
 
-    --color-severity-high: #c22b22;
+    /* Severity TEXT colours: must meet 4.5:1 on dark backgrounds
+       (#1a1a2e / #252542 / #2d2d4a). Darker crimsons fail as text,
+       so we lighten them here. The corresponding -badge tokens below
+       provide darker backgrounds for white-text contexts. */
+    --color-severity-high: #f28b82;
     --color-severity-high-bg: #3d1f1f;
     --color-severity-high-border: #f28b82;
     --color-severity-medium: #f9a825;
@@ -302,11 +317,15 @@
     --color-score-good: #3dd9a8;
     --color-score-poor: #ff9940;
 
-    /* Badge/gradient backgrounds — darker for white text AAA contrast (7:1+) */
+    /* Badge/gradient backgrounds — darker for white text AAA contrast (6:1+).
+       Used as background behind white/inverse text in dark mode. */
     --color-severity-high-badge: #9e2c21;
     --color-severity-medium-badge: #8b6d08;
     --color-severity-low-badge: #4d4d5c;
     --color-severity-pass-badge: #1a5c32;
+    --color-info-badge: #0e5a7a;
+    --color-brand-badge: #2563a0;
+    --color-discovery-badge: #5a3580;
 
     --color-severity-high-gradient-end: #a83232;
     --color-severity-medium-gradient-end: #d4a020;
@@ -393,6 +412,14 @@
 
         --color-score-good: #0e8c6a;
         --color-score-poor: #c75f00;
+
+        --color-severity-high-badge: #922b21;
+        --color-severity-medium-badge: #7d6608;
+        --color-severity-low-badge: #2c3e50;
+        --color-severity-pass-badge: #1e8449;
+        --color-info-badge: #0e7490;
+        --color-brand-badge: #1a5276;
+        --color-discovery-badge: #6f42c1;
 
         --color-severity-high-gradient-end: #c82333;
         --color-severity-medium-gradient-end: #e0a800;

@@ -69,9 +69,8 @@
                             </td>
                             <td>
                                 {% if doc.language %}
-                                    <span class="badge badge-neutral"
-                                          title="{{ ftl('common-confidence') }} {{ (doc.language_confidence * 100)|round(0)|int }}%">
-                                        {{ doc.language_display }}
+                                    <span class="badge badge-neutral">
+                                        {{ doc.language_display }}<span class="visually-hidden"> ({{ ftl('common-confidence') }} {{ (doc.language_confidence * 100)|round(0)|int }}%)</span>
                                     </span>
                                 {% else %}
                                     <span class="text-muted">-</span>
@@ -92,7 +91,7 @@
                                 <span class="badge badge-neutral">{{ doc.seen_count }}</span>
                             </td>
                             <td>
-                                <a href="{{ doc.document_url }}" download class="btn btn-sm btn-outline-brand">
+                                <a href="{{ doc.document_url }}" download class="btn btn-sm btn-outline-brand" aria-label="{{ ftl('reports-download') }}">
                                     <i class="bi bi-download"></i>
                                 </a>
                             </td>
@@ -147,9 +146,8 @@
                             </td>
                             <td>
                                 {% if doc.language %}
-                                    <span class="badge badge-neutral"
-                                          title="{{ ftl('common-confidence') }} {{ (doc.language_confidence * 100)|round(0)|int }}%">
-                                        {{ doc.language_display }}
+                                    <span class="badge badge-neutral">
+                                        {{ doc.language_display }}<span class="visually-hidden"> ({{ ftl('common-confidence') }} {{ (doc.language_confidence * 100)|round(0)|int }}%)</span>
                                     </span>
                                 {% else %}
                                     <span class="text-muted">-</span>
@@ -171,8 +169,8 @@
                             </td>
                             <td>
                                 {% if doc.via_redirect %}
-                                <span class="badge badge-medium" title="{{ ftl('websites-found-through-address-rewriting-redirect') }}">
-                                    <i class="bi bi-arrow-right-circle" aria-hidden="true"></i> {{ ftl('websites-yes') }}
+                                <span class="badge badge-medium">
+                                    <i class="bi bi-arrow-right-circle" aria-hidden="true"></i> {{ ftl('websites-yes') }}<span class="visually-hidden"> ({{ ftl('websites-found-through-address-rewriting-redirect') }})</span>
                                 </span>
                                 {% else %}
                                 <span class="text-muted">{{ ftl('websites-no') }}</span>

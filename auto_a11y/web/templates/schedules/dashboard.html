@@ -243,18 +243,18 @@
                                     <td>
                                         <div class="btn-group btn-group-sm">
                                             <a href="{{ url_for('schedules.view_schedule', website_id=schedule._website_id, schedule_id=schedule.id) }}"
-                                               class="btn btn-outline-brand" title="{{ ftl('common-view') }}">
+                                               class="btn btn-outline-brand" aria-label="{{ ftl('common-view') }}">
                                                 <i class="bi bi-eye" aria-hidden="true"></i>
                                             </a>
                                             <button type="button"
                                                     class="btn btn-outline-{% if schedule.enabled %}success{% else %}secondary{% endif %}"
                                                     onclick="toggleSchedule('{{ schedule._website_id }}', '{{ schedule.id }}')"
-                                                    title="{% if schedule.enabled %}{{ ftl('common-disable') }}{% else %}{{ ftl('common-enable') }}{% endif %}">
+                                                    aria-label="{% if schedule.enabled %}{{ ftl('common-disable') }}{% else %}{{ ftl('common-enable') }}{% endif %}">
                                                 <i class="bi bi-toggle-{% if schedule.enabled %}on{% else %}off{% endif %}" aria-hidden="true"></i>
                                             </button>
                                             <button type="button" class="btn btn-outline-brand"
                                                     onclick="runNow('{{ schedule._website_id }}', '{{ schedule.id }}')"
-                                                    title="{{ ftl('schedules-run-now') }}"
+                                                    aria-label="{{ ftl('schedules-run-now') }}"
                                                     {% if not schedule.enabled %}disabled{% endif %}>
                                                 <i class="bi bi-play-fill" aria-hidden="true"></i>
                                             </button>

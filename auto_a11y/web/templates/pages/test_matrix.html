@@ -290,8 +290,9 @@
             <div id="script-order-list">
                 {% for script_def in matrix.scripts %}
                 <div class="script-order-item" data-script-id="{{ script_def.script_id }}">
-                    <div class="drag-handle" title="{{ ftl('pages-drag-to-reorder') }}">
+                    <div class="drag-handle">
                         <i class="bi bi-grip-vertical" aria-hidden="true"></i>
+                        <span class="visually-hidden">{{ ftl('pages-drag-to-reorder') }}</span>
                     </div>
                     <div class="order-number">{{ loop.index }}</div>
                     <div class="script-name">
@@ -310,13 +311,13 @@
                         <button type="button" class="btn btn-sm btn-outline-neutral btn-move-up"
                                 onclick="moveScript('{{ script_def.script_id }}', -1)"
                                 {% if loop.first %}disabled{% endif %}
-                                title="{{ ftl('pages-move-up') }}">
+                                aria-label="{{ ftl('pages-move-up') }}">
                             <i class="bi bi-arrow-up" aria-hidden="true"></i>
                         </button>
                         <button type="button" class="btn btn-sm btn-outline-neutral btn-move-down"
                                 onclick="moveScript('{{ script_def.script_id }}', 1)"
                                 {% if loop.last %}disabled{% endif %}
-                                title="{{ ftl('pages-move-down') }}">
+                                aria-label="{{ ftl('pages-move-down') }}">
                             <i class="bi bi-arrow-down" aria-hidden="true"></i>
                         </button>
                     </div>

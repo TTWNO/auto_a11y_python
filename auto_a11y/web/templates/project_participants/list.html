@@ -103,11 +103,11 @@
                             <td>
                                 <div class="btn-group btn-group-sm" role="group">
                                     <a href="{{ url_for('project_participants.edit_tester', project_id=project.id, tester_id=tester.id) }}"
-                                       class="btn btn-outline-neutral" title="{{ ftl('common-edit') }}">
+                                       class="btn btn-outline-neutral" aria-label="{{ ftl('common-edit') }}">
                                         <i class="bi bi-pencil" aria-hidden="true"></i>
                                     </a>
                                     <button type="button" class="btn btn-outline-high"
-                                            onclick="deleteTester('{{ tester.id }}')" title="{{ ftl('common-delete') }}">
+                                            onclick="deleteTester('{{ tester.id }}')" aria-label="{{ ftl('common-delete') }}">
                                         <i class="bi bi-trash" aria-hidden="true"></i>
                                     </button>
                                 </div>
@@ -189,11 +189,11 @@
                             <td>
                                 <div class="btn-group btn-group-sm" role="group">
                                     <a href="{{ url_for('project_participants.edit_supervisor', project_id=project.id, supervisor_id=supervisor.id) }}"
-                                       class="btn btn-outline-neutral" title="{{ ftl('common-edit') }}">
+                                       class="btn btn-outline-neutral" aria-label="{{ ftl('common-edit') }}">
                                         <i class="bi bi-pencil" aria-hidden="true"></i>
                                     </a>
                                     <button type="button" class="btn btn-outline-high"
-                                            onclick="deleteSupervisor('{{ supervisor.id }}')" title="{{ ftl('common-delete') }}">
+                                            onclick="deleteSupervisor('{{ supervisor.id }}')" aria-label="{{ ftl('common-delete') }}">
                                         <i class="bi bi-trash" aria-hidden="true"></i>
                                     </button>
                                 </div>

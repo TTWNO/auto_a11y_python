@@ -489,7 +489,7 @@
     <code>{{ violation.xpath }}</code>
     <button class="btn btn-sm btn-link p-0 ms-2"
             onclick="copyXpathToClipboard('{{ violation.xpath|e }}', this)"
-            title="{{ ftl('common-copy-xpath-to-clipboard') }}">
+            aria-label="{{ ftl('common-copy-xpath-to-clipboard') }}">
         <i class="bi bi-clipboard" aria-hidden="true"></i>
     </button>
 </p>

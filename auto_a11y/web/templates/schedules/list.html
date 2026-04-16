@@ -164,23 +164,23 @@
                             <td>
                                 <div class="btn-group btn-group-sm" role="group">
                                     <a href="{{ url_for('schedules.view_schedule', website_id=website.id, schedule_id=schedule.id) }}"
-                                       class="btn btn-outline-brand" title="{{ ftl('common-view') }}">
+                                       class="btn btn-outline-brand" aria-label="{{ ftl('common-view') }}">
                                         <i class="bi bi-eye" aria-hidden="true"></i>
                                     </a>
                                     <a href="{{ url_for('schedules.edit_schedule', website_id=website.id, schedule_id=schedule.id) }}"
-                                       class="btn btn-outline-neutral" title="{{ ftl('common-edit') }}">
+                                       class="btn btn-outline-neutral" aria-label="{{ ftl('common-edit') }}">
                                         <i class="bi bi-pencil" aria-hidden="true"></i>
                                     </a>
                                     <button type="button" class="btn btn-outline-{% if schedule.enabled %}success{% else %}secondary{% endif %}"
-                                            onclick="toggleSchedule('{{ schedule.id }}')" title="{% if schedule.enabled %}{{ ftl('common-disable') }}{% else %}{{ ftl('common-enable') }}{% endif %}">
+                                            onclick="toggleSchedule('{{ schedule.id }}')" aria-label="{% if schedule.enabled %}{{ ftl('common-disable') }}{% else %}{{ ftl('common-enable') }}{% endif %}">
                                         <i class="bi bi-toggle-{% if schedule.enabled %}on{% else %}off{% endif %}" aria-hidden="true"></i>
                                     </button>
                                     <button type="button" class="btn btn-outline-brand"
-                                            onclick="runNow('{{ schedule.id }}')" title="{{ ftl('schedules-run-now') }}">
+                                            onclick="runNow('{{ schedule.id }}')" aria-label="{{ ftl('schedules-run-now') }}">
                                         <i class="bi bi-play-fill" aria-hidden="true"></i>
                                     </button>
                                     <button type="button" class="btn btn-outline-high"
-                                            onclick="deleteSchedule('{{ schedule.id }}')" title="{{ ftl('common-delete') }}">
+                                            onclick="deleteSchedule('{{ schedule.id }}')" aria-label="{{ ftl('common-delete') }}">
                                         <i class="bi bi-trash" aria-hidden="true"></i>
                                     </button>
                                 </div>

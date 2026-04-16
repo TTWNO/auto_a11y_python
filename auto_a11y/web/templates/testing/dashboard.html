@@ -355,7 +355,7 @@
                                 {% for item in recent_results %}
                                 <tr data-violations="{{ item.result.violation_count }}" data-date="{{ item.result.test_date.strftime('%Y-%m-%d') }}">
                                     <td>
-                                        <a href="{{ url_for('pages.view_page', page_id=item.result.page_id) }}" class="text-decoration-none" title="{{ item.page.url if item.page else '' }}">
+                                        <a href="{{ url_for('pages.view_page', page_id=item.result.page_id) }}" class="text-decoration-none">
                                             {% if item.page %}
                                                 <span class="truncate-url">{{ item.page.title or item.page.url }}</span>
                                             {% else %}

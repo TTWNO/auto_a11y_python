@@ -193,7 +193,7 @@
                                     {% if page.drupal_sync_status == 'synced' %}
                                     <span class="badge badge-pass">{{ ftl('common-synced') }}</span>
                                     {% elif page.drupal_sync_status == 'sync_failed' %}
-                                    <span class="badge badge-high" title="{{ page.drupal_error_message }}">{{ ftl('common-failed') }}</span>
+                                    <span class="badge badge-high">{{ ftl('common-failed') }}<span class="visually-hidden">: {{ page.drupal_error_message }}</span></span>
                                     {% elif page.drupal_sync_status == 'pending' %}
                                     <span class="badge badge-medium">{{ ftl('common-pending') }}</span>
                                     {% else %}

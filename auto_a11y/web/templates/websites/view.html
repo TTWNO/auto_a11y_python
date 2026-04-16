@@ -264,8 +264,8 @@
                                 </td>
                                 <td>
                                     {% if attempt.error %}
-                                        <span class="text-severity-high" title="{{ attempt.error }}" data-bs-toggle="tooltip">
-                                            <i class="bi bi-exclamation-circle" aria-hidden="true"></i> {{ ftl('common-error-2') }}
+                                        <span class="text-severity-high">
+                                            <i class="bi bi-exclamation-circle" aria-hidden="true"></i> {{ ftl('common-error-2') }}<span class="visually-hidden">: {{ attempt.error }}</span>
                                         </span>
                                     {% else %}
                                         <span class="text-muted">{{ ftl('websites-max') }}: {{ attempt.max_pages }} {{ ftl('common-pages-2') }}, {{ attempt.max_depth }} {{ ftl('websites-depth-2') }}</span>
@@ -370,14 +370,13 @@
                             'error': 'high',
                             'skipped': 'neutral',
                             'discovery_failed': 'neutral'
-                        }[page.status.value] }} page-status flex-shrink-0" data-page-id="{{ page.id }}"
-                        {% if page.error_reason %}title="{{ page.error_reason }}" data-bs-toggle="tooltip"{% endif %}>
+                        }[page.status.value] }} page-status flex-shrink-0" data-page-id="{{ page.id }}">
                             {% if page.status.value in ['queued', 'testing'] %}
                             <span class="spinner-border spinner-border-sm me-1" role="status" style="width: 10px; height: 10px;"><span class="visually-hidden">{{ ftl('common-loading') }}</span></span>
                             {% elif page.status.value == 'discovery_failed' %}
                             <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
                             {% endif %}
-                            {{ ftl_enum(page.status.value) }}
+                            {{ ftl_enum(page.status.value) }}{% if page.error_reason %}<span class="visually-hidden">: {{ page.error_reason }}</span>{% endif %}
                         </span>
                     </div>
                     <div class="d-flex flex-wrap gap-3 mb-3 small text-muted">

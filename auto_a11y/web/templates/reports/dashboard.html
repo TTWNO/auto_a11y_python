@@ -20,11 +20,11 @@
 {% macro report_actions(filename) %}
 <div class="btn-group" role="group">
     <a href="{{ url_for('reports.download_report', filename=filename) }}"
-       class="btn btn-sm btn-brand" title="{{ ftl('reports-download') }}">
+       class="btn btn-sm btn-brand" aria-label="{{ ftl('reports-download') }}">
         <i class="bi bi-download" aria-hidden="true"></i>
     </a>
     <button class="btn btn-sm btn-high"
-            onclick="deleteReport('{{ filename }}')" title="{{ ftl('common-delete') }}">
+            onclick="deleteReport('{{ filename }}')" aria-label="{{ ftl('common-delete') }}">
         <i class="bi bi-trash" aria-hidden="true"></i>
     </button>
 </div>

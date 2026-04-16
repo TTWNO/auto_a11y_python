@@ -52,7 +52,7 @@
                     </div>
                     <div class="card-body">
                         <div class="mb-3">
-                            <label for="name" class="form-label">{{ ftl('schedules-schedule-name') }} <span class="text-severity-high">*</span></label>
+                            <label for="name" class="form-label">{{ ftl('schedules-schedule-name') }} <span class="text-severity-high" aria-hidden="true">*</span><span class="visually-hidden">{{ ftl('common-required') }}</span></label>
                             <input type="text" class="form-control" id="name" name="name" required
                                    value="{{ schedule.name if schedule else '' }}"
                                    placeholder="{{ ftl('schedules-e-g-nightly-full-scan') }}">
@@ -81,8 +81,8 @@
                         <h2 class="mb-0"><i class="bi bi-clock" aria-hidden="true"></i> {{ ftl('schedules-schedule-timing') }}</h2>
                     </div>
                     <div class="card-body">
-                        <div class="mb-3">
-                            <label class="form-label">{{ ftl('schedules-schedule-type') }} <span class="text-severity-high">*</span></label>
+                        <fieldset class="mb-3">
+                            <legend class="form-label">{{ ftl('schedules-schedule-type') }} <span class="text-severity-high" aria-hidden="true">*</span><span class="visually-hidden">{{ ftl('common-required') }}</span></legend>
                             <div class="btn-group d-flex flex-wrap" role="group">
                                 <input type="radio" class="btn-check" name="schedule_type" id="type_one_time" value="one_time"
                                        {% if schedule and schedule.schedule_type.value == 'one_time' %}checked{% endif %}>
@@ -104,7 +104,7 @@
                                        {% if schedule and schedule.schedule_type.value == 'cron' %}checked{% endif %}>
                                 <label class="btn btn-outline-brand" for="type_cron">{{ ftl('schedules-custom-cron-2') }}</label>
                             </div>
-                        </div>
+                        </fieldset>
 
                         <!-- One-time Date/Time -->
                         <div id="oneTimeFields" class="schedule-fields" style="display: none;">
@@ -223,8 +223,9 @@
                         </div>
 
                         <div id="aiPagesConfig">
-                            <label class="form-label">{{ ftl('schedules-ai-testing-scope') }}</label>
-                            <div class="mb-3">
+                            <fieldset>
+                                <legend class="form-label">{{ ftl('schedules-ai-testing-scope') }}</legend>
+                                <div class="mb-3">
                                 <div class="form-check">
                                     <input type="radio" class="form-check-input" name="ai_pages_mode" id="ai_all" value="all"
                                            {% if not schedule or schedule.test_config.ai_pages_mode.value == 'all' %}checked{% endif %}>
@@ -249,11 +250,12 @@
                                         <small class="text-muted d-block">{{ ftl('schedules-run-only-automated-javascript-tests') }}</small>
                                     </label>
                                 </div>
-                            </div>
+                                </div>
+                            </fieldset>
 
                             <!-- Page Selector (shown when 'selected' is chosen) -->
-                            <div id="pageSelector" class="mb-3" style="display: none;">
-                                <label class="form-label">{{ ftl('schedules-select-pages-for-ai-testing') }}</label>
+                            <fieldset id="pageSelector" class="mb-3" style="display: none;">
+                                <legend class="form-label">{{ ftl('schedules-select-pages-for-ai-testing') }}</legend>
                                 <div class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">
                                     {% for page in pages %}
                                     <div class="form-check">
@@ -267,7 +269,7 @@
                                     {% endfor %}
                                 </div>
                                 <small id="page-selector-help" class="form-text text-muted">{{ pages|length }} {{ ftl('schedules-pages-available') }}</small>
-                            </div>
+                            </fieldset>
                         </div>
                     </div>
                 </div>

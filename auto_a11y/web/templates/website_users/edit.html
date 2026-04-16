@@ -57,7 +57,7 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="username" class="form-label">{{ ftl('common-username') }} <span class="text-severity-high">*</span></label>
+                                <label for="username" class="form-label">{{ ftl('common-username') }} <span class="text-severity-high" aria-hidden="true">*</span><span class="visually-hidden">{{ ftl('common-required') }}</span></label>
                                 <input type="text" class="form-control" id="username" name="username" required
                                        value="{{ user.username }}"
                                        placeholder="{{ ftl('common-e-g-student123') }}" autocomplete="username"

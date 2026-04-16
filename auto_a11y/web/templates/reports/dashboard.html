@@ -340,8 +340,8 @@
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label">{{ ftl('reports-date-range') }}</label>
+                    <fieldset class="mb-3">
+                        <legend class="form-label">{{ ftl('reports-date-range') }}</legend>
                         <div class="row">
                             <div class="col-md-6">
                                 <label for="startDate" class="form-label">{{ ftl('reports-start-date') }}</label>
@@ -352,10 +352,10 @@
                                 <input type="date" class="form-control" id="endDate">
                             </div>
                         </div>
-                    </div>
+                    </fieldset>
 
-                    <div class="mb-3">
-                        <label class="form-label">{{ ftl('common-include-in-report') }}</label>
+                    <fieldset class="mb-3">
+                        <legend class="form-label">{{ ftl('common-include-in-report') }}</legend>
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="includeViolations" checked>
                             <label class="form-check-label" for="includeViolations">
@@ -386,7 +386,7 @@
                                 {{ ftl('reports-executive-summary') }}
                             </label>
                         </div>
-                    </div>
+                    </fieldset>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-neutral" data-close-modal>{{ ftl('common-cancel') }}</button>
@@ -1097,8 +1097,8 @@ function generateDiscoveryReport() {
                             <li>{{ ftl('reports-elements-with-poor-or-missing-labels') }}</li>
                         </ul>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">{{ ftl('common-scope') }}</label>
+                    <fieldset class="mb-3">
+                        <legend class="form-label">{{ ftl('common-scope') }}</legend>
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="discoveryScope" id="discoveryScopeWebsite" value="website" checked>
                             <label class="form-check-label" for="discoveryScopeWebsite">
@@ -1111,7 +1111,7 @@ function generateDiscoveryReport() {
                                 {{ ftl('reports-entire-project') }}
                             </label>
                         </div>
-                    </div>
+                    </fieldset>
                     <div class="mb-3" id="discoveryProjectGroup">
                         <label for="discoveryProject" class="form-label">{{ ftl('reports-select-project') }}</label>
                         <select class="form-select" id="discoveryProject" required>
@@ -1194,8 +1194,8 @@ function generateDiscoveryReport() {
                             <option value="AAA">{{ ftl('common-level-aaa-2') }}</option>
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label d-block">{{ ftl('common-options') }}</label>
+                    <fieldset class="mb-3">
+                        <legend class="form-label d-block">{{ ftl('common-options') }}</legend>
                         <div class="form-check d-flex align-items-center mb-2">
                             <input class="form-check-input me-2" type="checkbox" id="staticHtmlIncludeScreenshots" checked style="margin-top: 0;">
                             <label class="form-check-label" for="staticHtmlIncludeScreenshots">{{ ftl('reports-include-screenshots') }}</label>
@@ -1204,7 +1204,7 @@ function generateDiscoveryReport() {
                             <input class="form-check-input me-2" type="checkbox" id="staticHtmlIncludeDiscovery" checked style="margin-top: 0;">
                             <label class="form-check-label" for="staticHtmlIncludeDiscovery">{{ ftl('reports-include-discovery-items') }}</label>
                         </div>
-                    </div>
+                    </fieldset>
                 </div>
                 <div class="modal-footer flex-column align-items-stretch">
                     <div class="alert alert-medium mb-3">
@@ -1473,8 +1473,8 @@ if (deduplicatedModal) {
                             <option value="xlsx">{{ ftl('reports-excel-spreadsheet') }}</option>
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">{{ ftl('common-include-in-report') }}</label>
+                    <fieldset class="mb-3">
+                        <legend class="form-label">{{ ftl('common-include-in-report') }}</legend>
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="recordingsIncludeSummary" checked>
                             <label class="form-check-label" for="recordingsIncludeSummary">
@@ -1499,7 +1499,7 @@ if (deduplicatedModal) {
                                 {{ ftl('reports-group-issues-by-touchpoint') }}
                             </label>
                         </div>
-                    </div>
+                    </fieldset>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-neutral" data-close-modal>{{ ftl('common-cancel') }}</button>

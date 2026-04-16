@@ -183,10 +183,11 @@
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
-                        <input type="text" class="form-control" id="search-tests" placeholder="{{ ftl('testing-search-error-codes') }}" aria-label="{{ ftl('testing-search-error-codes') }}">
+                        <label for="search-tests" class="visually-hidden">{{ ftl('testing-search-error-codes') }}</label>
+                        <input type="text" class="form-control" id="search-tests" placeholder="{{ ftl('testing-search-error-codes') }}">
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">{{ ftl('testing-filter-by-status') }}</label>
+                    <fieldset class="mb-3">
+                        <legend class="form-label fw-bold">{{ ftl('testing-filter-by-status') }}</legend>
                         <div class="btn-group" role="group" aria-label="{{ ftl('testing-status-filter') }}">
                             <input type="radio" class="btn-check" name="status-filter" id="filter-all" value="all" checked autocomplete="off">
                             <label class="btn btn-outline-brand" for="filter-all">{{ ftl('common-all') }}</label>
@@ -200,9 +201,9 @@
                             <input type="radio" class="btn-check" name="status-filter" id="filter-fail" value="all_fail" autocomplete="off">
                             <label class="btn btn-outline-high" for="filter-fail">{{ ftl('testing-all-fail') }}</label>
                         </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">{{ ftl('testing-filter-by-type') }}</label>
+                    </fieldset>
+                    <fieldset class="mb-3">
+                        <legend class="form-label fw-bold">{{ ftl('testing-filter-by-type') }}</legend>
                         <div class="btn-group" role="group" aria-label="{{ ftl('testing-type-filter') }}">
                             <input type="radio" class="btn-check" name="type-filter" id="type-all" value="all" checked autocomplete="off">
                             <label class="btn btn-outline-neutral" for="type-all">{{ ftl('common-all') }}</label>
@@ -219,7 +220,7 @@
                             <input type="radio" class="btn-check" name="type-filter" id="type-disco" value="Disco" autocomplete="off">
                             <label class="btn btn-outline-brand" for="type-disco">Disco</label>
                         </div>
-                    </div>
+                    </fieldset>
                     <div class="table-responsive">
                         <table class="table table-hover" id="test-status-table">
                             <caption class="visually-hidden">{{ ftl('testing-fixture-test-status-for-all-error-codes') }}</caption>

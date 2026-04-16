@@ -44,7 +44,7 @@
                         <fieldset>
                             <legend class="visually-hidden">{{ ftl('projects-supervisor-information') }}</legend>
                             <div class="mb-3">
-                                <label for="name" class="form-label">{{ ftl('common-name') }} <span class="text-severity-high">*</span></label>
+                                <label for="name" class="form-label">{{ ftl('common-name') }} <span class="text-severity-high" aria-hidden="true">*</span><span class="visually-hidden">{{ ftl('common-required') }}</span></label>
                                 <input type="text" class="form-control" id="name" name="name" required
                                        placeholder="{{ ftl('projects-e-g-dr-sarah-johnson') }}"
                                        aria-describedby="name-help">

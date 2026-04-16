@@ -64,7 +64,8 @@
     <!-- Project Filter -->
     <div class="card mb-4">
         <div class="card-body py-3">
-            <form method="get" class="row g-3 align-items-end" aria-label="{{ ftl('schedules-filter-schedules') }}">
+            <h2 id="schedules-filter-heading" class="visually-hidden">{{ ftl('schedules-filter-schedules') }}</h2>
+            <form method="get" class="row g-3 align-items-end" aria-labelledby="schedules-filter-heading">
                 <div class="col-md-4">
                     <label for="project_id" class="form-label">{{ ftl('schedules-filter-by-project') }}</label>
                     <select name="project_id" id="project_id" class="form-select" onchange="this.form.submit()">

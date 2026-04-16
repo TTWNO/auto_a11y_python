@@ -798,10 +798,10 @@
             <!-- Issue Type Filter -->
             <div class="col-md-3">
                 <div class="filter-group">
-                    <label class="form-label fw-bold">
+                    <p class="form-label fw-bold">
                         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('issue_type', 'Issue Type') }}</span>
                         <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('issue_type', 'Type de problème') }}</span>
-                    </label>
+                    </p>
                     <div class="filter-chips">
                         <div class="filter-chip" data-filter-type="type" data-filter-value="error">
                             <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['errors'] }}</span>
@@ -830,10 +830,10 @@
             <!-- Impact Level Filter -->
             <div class="col-md-3">
                 <div class="filter-group">
-                    <label class="form-label fw-bold">
+                    <p class="form-label fw-bold">
                         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('impact_level', 'Impact Level') }}</span>
                         <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('impact_level', 'Niveau d\'impact') }}</span>
-                    </label>
+                    </p>
                     <div class="filter-chips">
                         <div class="filter-chip" data-filter-type="impact" data-filter-value="high">
                             <span class="badge badge-high me-1">
@@ -863,7 +863,7 @@
             <!-- Touchpoint Filter -->
             <div class="col-md-6">
                 <div class="filter-group">
-                    <label class="form-label fw-bold">
+                    <label class="form-label fw-bold" for="touchpointFilter">
                         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('issue_touchpoint', 'Issue Touchpoint') }}</span>
                         <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('issue_touchpoint', 'Point de contact du problème') }}</span>
                     </label>

@@ -87,13 +87,14 @@
 
                     <!-- Edit Mode -->
                     <div id="editMode" style="display: none;">
+                        <p class="form-text mb-3"><span class="text-severity-high" aria-hidden="true">*</span> {{ ftl('common-required-field') }}</p>
                         <div class="row">
                             <div class="col-12 mb-3">
-                                <label for="editTitle" class="form-label">{{ ftl('common-title') }} *</label>
+                                <label for="editTitle" class="form-label">{{ ftl('common-title') }} <span class="text-severity-high" aria-hidden="true">*</span><span class="visually-hidden">{{ ftl('common-required') }}</span></label>
                                 <input type="text" class="form-control" id="editTitle" value="{{ page.title }}" required>
                             </div>
                             <div class="col-12 mb-3">
-                                <label for="editUrl" class="form-label">{{ ftl('common-url') }} *</label>
+                                <label for="editUrl" class="form-label">{{ ftl('common-url') }} <span class="text-severity-high" aria-hidden="true">*</span><span class="visually-hidden">{{ ftl('common-required') }}</span></label>
                                 <input type="url" class="form-control" id="editUrl" value="{{ page.url }}" required>
                             </div>
                             <div class="col-12 mb-3">
@@ -165,8 +166,9 @@
                     <div id="discoveryEditMode" style="display: none;">
                         <div class="row">
                             <div class="col-12 mb-3">
-                                <label class="form-label">{{ ftl('common-interested-because') }}</label>
                                 {% if interested_because_terms %}
+                                <fieldset>
+                                    <legend class="form-label">{{ ftl('common-interested-because') }}</legend>
                                     <div class="border-table" style="max-height: 300px; overflow-y: auto; border: 1px solid; border-radius: 0.25rem; padding: 0.5rem;">
                                         {% for term in interested_because_terms %}
                                         <div class="form-check">
@@ -183,7 +185,9 @@
                                         {% endfor %}
                                     </div>
                                     <small class="form-text text-muted">{{ ftl('pages-select-all-that-apply') }}</small>
+                                </fieldset>
                                 {% else %}
+                                    <label for="editInterestedBecause" class="form-label">{{ ftl('common-interested-because') }}</label>
                                     <input type="text" class="form-control" id="editInterestedBecause"
                                            value="{{ page.interested_because|join(', ') }}"
                                            placeholder="{{ ftl('pages-enter-comma-separated-values') }}">
@@ -191,8 +195,9 @@
                                 {% endif %}
                             </div>
                             <div class="col-12 mb-3">
-                                <label class="form-label">{{ ftl('common-page-elements') }}</label>
                                 {% if page_elements_terms %}
+                                <fieldset>
+                                    <legend class="form-label">{{ ftl('common-page-elements') }}</legend>
                                     <div class="border-table" style="border: 1px solid; border-radius: 0.25rem; padding: 0.5rem;">
                                         {% for term in page_elements_terms %}
                                         <div class="form-check">
@@ -209,7 +214,9 @@
                                         {% endfor %}
                                     </div>
                                     <small class="form-text text-muted">{{ ftl('pages-select-all-that-apply') }}</small>
+                                </fieldset>
                                 {% else %}
+                                    <label for="editPageElements" class="form-label">{{ ftl('common-page-elements') }}</label>
                                     <input type="text" class="form-control" id="editPageElements"
                                            value="{{ page.page_elements|join(', ') }}"
                                            placeholder="{{ ftl('pages-enter-comma-separated-values') }}">

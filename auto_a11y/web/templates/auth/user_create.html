@@ -12,10 +12,11 @@
             <div class="card-body">
                 <form method="POST" action="{{ url_for('auth.user_create') }}" aria-labelledby="create-user-heading">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <p class="form-text mb-3"><span class="text-severity-high" aria-hidden="true">*</span> {{ ftl('common-required-field') }}</p>
                     <fieldset>
                         <legend class="visually-hidden">{{ ftl('auth-new-user-account') }}</legend>
                         <div class="mb-3">
-                            <label for="email" class="form-label">{{ ftl('common-email') }} <span class="text-severity-high">*</span></label>
+                            <label for="email" class="form-label">{{ ftl('common-email') }} <span class="text-severity-high" aria-hidden="true">*</span><span class="visually-hidden">{{ ftl('common-required') }}</span></label>
                             <input type="email" class="form-control" id="email" name="email" required autocomplete="email">
                         </div>
                         <div class="mb-3">
@@ -23,7 +24,7 @@
                             <input type="text" class="form-control" id="display_name" name="display_name">
                         </div>
                         <div class="mb-3">
-                            <label for="password" class="form-label">{{ ftl('common-password') }} <span class="text-severity-high">*</span></label>
+                            <label for="password" class="form-label">{{ ftl('common-password') }} <span class="text-severity-high" aria-hidden="true">*</span><span class="visually-hidden">{{ ftl('common-required') }}</span></label>
                             <input type="password" class="form-control" id="password" name="password" required minlength="8" autocomplete="new-password" aria-describedby="password_help">
                             <div class="form-text" id="password_help">{{ ftl('auth-minimum-8-characters') }}</div>
                         </div>

@@ -509,8 +509,8 @@
                 <input type="hidden" id="discoveryWebsiteId" />
                 <input type="hidden" id="discoveryWebsiteName" />
                 <div class="modal-body">
-                    <div class="mb-4">
-                        <label class="form-label"><strong>{{ ftl('common-select-users-for-discovery') }}</strong></label>
+                    <fieldset class="mb-4">
+                        <legend class="form-label"><strong>{{ ftl('common-select-users-for-discovery') }}</strong></legend>
                         <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
                             <div class="form-check mb-2">
                                 <input class="form-check-input modal-discovery-user-checkbox" type="checkbox" value="" id="modal-discovery-user-guest" checked>
@@ -541,7 +541,7 @@
                             <a href="{{ url_for('project_users.list_users', project_id=project.id) }}">{{ ftl('common-add-test-users') }}</a> {{ ftl('projects-to-discover-pages-requiring-authentication') }}
                             {% endif %}
                         </small>
-                    </div>
+                    </fieldset>
                     <div class="mb-3">
                         <label for="maxPages" class="form-label">{{ ftl('common-maximum-pages-to-discover') }}</label>
                         <input type="number" class="form-control" id="maxPages" min="1" max="1000"
@@ -671,12 +671,14 @@ async function loadMembers() {
                 ).join(' ');
                 const groupCheckboxes = availableGroups.map(g => {
                     const checked = memberGroupIds.includes(g.id) ? 'checked' : '';
+                    const cbId = `member-group-${m.user_id}-${g.id}`;
                     return `<div class="form-check form-check-inline">
                         <input class="form-check-input member-group-cb" type="checkbox"
+                               id="${cbId}"
                                value="${g.id}" ${checked}
                                data-user-id="${m.user_id}"
                                onchange="updateMemberGroups('${m.user_id}')">
-                        <label class="form-check-label">${escapeHtml(g.name)}</label>
+                        <label class="form-check-label" for="${cbId}">${escapeHtml(g.name)}</label>
                     </div>`;
                 }).join('');
                 tr.innerHTML = `

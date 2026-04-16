@@ -30,15 +30,15 @@
                 {% endif %}
                 <form method="POST" action="{{ url_for('auth.login') }}" aria-labelledby="login-heading">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                    <p class="form-text mb-3"><span class="text-severity-high">*</span> {{ ftl('common-required-field') }}</p>
+                    <p class="form-text mb-3"><span class="text-severity-high" aria-hidden="true">*</span> {{ ftl('common-required-field') }}</p>
                     <fieldset>
                         <legend class="visually-hidden">{{ ftl('auth-login-credentials') }}</legend>
                         <div class="mb-3">
-                            <label for="email" class="form-label">{{ ftl('auth-email-label') }} <span class="text-severity-high">*</span></label>
+                            <label for="email" class="form-label">{{ ftl('auth-email-label') }} <span class="text-severity-high" aria-hidden="true">*</span><span class="visually-hidden">{{ ftl('common-required') }}</span></label>
                             <input type="email" class="form-control" id="email" name="email" required autofocus autocomplete="email">
                         </div>
                         <div class="mb-3">
-                            <label for="password" class="form-label">{{ ftl('auth-password-label') }} <span class="text-severity-high">*</span></label>
+                            <label for="password" class="form-label">{{ ftl('auth-password-label') }} <span class="text-severity-high" aria-hidden="true">*</span><span class="visually-hidden">{{ ftl('common-required') }}</span></label>
                             <input type="password" class="form-control" id="password" name="password" required autocomplete="current-password">
                             <div class="form-check mt-1">
                                 <input type="checkbox" class="form-check-input" id="show-password">

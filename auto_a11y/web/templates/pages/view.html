@@ -153,7 +153,8 @@
             </button>
             {% else %}
             {% if website_users %}
-            <select class="form-select form-select-sm d-inline-block me-2" id="test-user-select" style="width: auto;" aria-label="{{ ftl('pages-test-as-user') }}">
+            <label for="test-user-select" class="visually-hidden">{{ ftl('pages-test-as-user') }}</label>
+            <select class="form-select form-select-sm d-inline-block me-2" id="test-user-select" style="width: auto;">
                 <option value="">{{ ftl('pages-test-as-guest-no-login') }}</option>
                 {% for user in website_users %}
                 <option value="{{ user.id }}">{{ user.name_display }} {% if user.roles %}({{ user.roles|join(', ') }}){% endif %}</option>
@@ -179,7 +180,8 @@
             </button>
             {% else %}
             {% if website_users %}
-            <select class="form-select form-select-sm mb-2" id="test-user-select-mobile" aria-label="{{ ftl('pages-test-as-user') }}">
+            <label for="test-user-select-mobile" class="visually-hidden">{{ ftl('pages-test-as-user') }}</label>
+            <select class="form-select form-select-sm mb-2" id="test-user-select-mobile">
                 <option value="">{{ ftl('pages-test-as-guest-no-login') }}</option>
                 {% for user in website_users %}
                 <option value="{{ user.id }}">{{ user.name_display }} {% if user.roles %}({{ user.roles|join(', ') }}){% endif %}</option>

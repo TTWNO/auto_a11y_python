@@ -56,7 +56,7 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="username" class="form-label">{{ ftl('common-username') }} <span class="text-severity-high">*</span></label>
+                                <label for="username" class="form-label">{{ ftl('common-username') }} <span class="text-severity-high" aria-hidden="true">*</span><span class="visually-hidden">{{ ftl('common-required') }}</span></label>
                                 <input type="text" class="form-control" id="username" name="username" required
                                        placeholder="{{ ftl('common-e-g-student123') }}" autocomplete="username"
                                        aria-describedby="username-help">
@@ -64,7 +64,7 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="password" class="form-label">{{ ftl('common-password') }} <span class="text-severity-high">*</span></label>
+                                <label for="password" class="form-label">{{ ftl('common-password') }} <span class="text-severity-high" aria-hidden="true">*</span><span class="visually-hidden">{{ ftl('common-required') }}</span></label>
                                 <input type="password" class="form-control" id="password" name="password" required autocomplete="new-password"
                                        aria-describedby="password-help">
                                 <div class="form-text" id="password-help">{{ ftl('common-password-for-login-stored-securely') }}</div>

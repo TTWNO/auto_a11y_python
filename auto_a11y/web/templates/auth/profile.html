@@ -26,13 +26,13 @@
                         </div>
                         {% if is_superadmin %}
                         <div class="mb-3">
-                            <label class="form-label">{{ ftl('common-status') }}</label>
-                            <input type="text" class="form-control" value="{{ ftl('common-superadmin') }}" disabled>
+                            <label for="profile_status" class="form-label">{{ ftl('common-status') }}</label>
+                            <input type="text" class="form-control" id="profile_status" value="{{ ftl('common-superadmin') }}" disabled>
                         </div>
                         {% endif %}
                         <div class="mb-3">
-                            <label class="form-label">{{ ftl('auth-member-since') }}</label>
-                            <input type="text" class="form-control" value="{{ current_user.created_at.strftime('%Y-%m-%d') }}" disabled>
+                            <label for="profile_member_since" class="form-label">{{ ftl('auth-member-since') }}</label>
+                            <input type="text" class="form-control" id="profile_member_since" value="{{ current_user.created_at.strftime('%Y-%m-%d') }}" disabled>
                         </div>
                         <button type="submit" class="btn btn-brand">
                             <i class="bi bi-check-lg" aria-hidden="true"></i> {{ ftl('common-save-changes') }}
@@ -52,20 +52,20 @@
                 <form method="POST" action="{{ url_for('auth.profile') }}" aria-labelledby="change-password-heading">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <input type="hidden" name="action" value="change_password">
-                    <p class="form-text mb-3"><span class="text-severity-high">*</span> {{ ftl('common-required-field') }}</p>
+                    <p class="form-text mb-3"><span class="text-severity-high" aria-hidden="true">*</span> {{ ftl('common-required-field') }}</p>
                     <fieldset>
                         <legend class="visually-hidden">{{ ftl('auth-change-password') }}</legend>
                         <div class="mb-3">
-                            <label for="current_password" class="form-label">{{ ftl('auth-current-password') }} <span class="text-severity-high">*</span></label>
+                            <label for="current_password" class="form-label">{{ ftl('auth-current-password') }} <span class="text-severity-high" aria-hidden="true">*</span><span class="visually-hidden">{{ ftl('common-required') }}</span></label>
                             <input type="password" class="form-control" id="current_password" name="current_password" required autocomplete="current-password">
                         </div>
                         <div class="mb-3">
-                            <label for="new_password" class="form-label">{{ ftl('auth-new-password') }} <span class="text-severity-high">*</span></label>
+                            <label for="new_password" class="form-label">{{ ftl('auth-new-password') }} <span class="text-severity-high" aria-hidden="true">*</span><span class="visually-hidden">{{ ftl('common-required') }}</span></label>
                             <input type="password" class="form-control" id="new_password" name="new_password" required minlength="8" autocomplete="new-password" aria-describedby="new_password_help">
                             <div class="form-text" id="new_password_help">{{ ftl('auth-minimum-8-characters') }}</div>
                         </div>
                         <div class="mb-3">
-                            <label for="confirm_password" class="form-label">{{ ftl('auth-confirm-new-password') }} <span class="text-severity-high">*</span></label>
+                            <label for="confirm_password" class="form-label">{{ ftl('auth-confirm-new-password') }} <span class="text-severity-high" aria-hidden="true">*</span><span class="visually-hidden">{{ ftl('common-required') }}</span></label>
                             <input type="password" class="form-control" id="confirm_password" name="confirm_password" required autocomplete="new-password">
                         </div>
                         <div class="mb-3">

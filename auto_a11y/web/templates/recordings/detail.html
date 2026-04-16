@@ -639,8 +639,8 @@
                                     {% endif %}
 
                                     <div class="mt-3">
-                                        <strong>{{ ftl('common-status-2') }}</strong>
-                                        <select class="form-select form-select-sm d-inline-block w-auto"
+                                        <label for="issue-status-{{ issue.id }}"><strong>{{ ftl('common-status-2') }}</strong></label>
+                                        <select id="issue-status-{{ issue.id }}" class="form-select form-select-sm d-inline-block w-auto"
                                                 onchange="updateIssueStatus('{{ issue.id }}', this.value)">
                                             <option value="open" {{ 'selected' if issue.status == 'open' }}>{{ ftl('recordings-open') }}</option>
                                             <option value="in_progress" {{ 'selected' if issue.status == 'in_progress' }}>{{ ftl('recordings-in-progress') }}</option>

@@ -84,6 +84,7 @@
 
             <form method="POST" id="script-form" aria-labelledby="script-form-heading">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <p class="form-text mb-3"><span class="text-severity-high" aria-hidden="true">*</span> {{ ftl('common-required-field') }}</p>
 
                 <!-- Basic Information -->
                 <fieldset>
@@ -92,7 +93,7 @@
                     <h2><i class="bi bi-info-circle" aria-hidden="true"></i> {{ ftl('common-basic-information') }}</h2>
 
                     <div class="mb-3">
-                        <label for="name" class="form-label">{{ ftl('scripts-script-name') }} <span class="text-severity-high">*</span></label>
+                        <label for="name" class="form-label">{{ ftl('scripts-script-name') }} <span class="text-severity-high" aria-hidden="true">*</span><span class="visually-hidden">{{ ftl('common-required') }}</span></label>
                         <input type="text" class="form-control" id="name" name="name" required
                                placeholder="{{ ftl('scripts-e-g-dismiss-cookie-banner') }}"
                                aria-describedby="name-help">
@@ -403,7 +404,7 @@ function addStep(stepData = null) {
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-4 mb-3">
-                        <label class="form-label">{{ ftl('scripts-action-type') }} <span class="text-severity-high">*</span></label>
+                        <label class="form-label" for="step_${stepIndex}_action">{{ ftl('scripts-action-type') }} <span class="text-severity-high" aria-hidden="true">*</span><span class="visually-hidden">{{ ftl('common-required') }}</span></label>
                         <select class="form-select" name="step_${stepIndex}_action" id="step_${stepIndex}_action"
                                 onchange="updateStepFields(${stepIndex})" required>
                             <option value="">{{ ftl('scripts-select-action') }}</option>
@@ -416,7 +417,7 @@ function addStep(stepData = null) {
                     </div>
 
                     <div class="col-md-8 mb-3" id="step_${stepIndex}_selector_container">
-                        <label class="form-label">{{ ftl('scripts-selector-css-or-xpath') }}</label>
+                        <label class="form-label" for="step_${stepIndex}_selector">{{ ftl('scripts-selector-css-or-xpath') }}</label>
                         <input type="text" class="form-control font-monospace" name="step_${stepIndex}_selector"
                                id="step_${stepIndex}_selector"
                                placeholder="//*[@id='element-id'] or .cookie-banner or button[data-action='accept']">
@@ -428,7 +429,7 @@ function addStep(stepData = null) {
 
                 <div class="row" id="step_${stepIndex}_value_row" style="display: none;">
                     <div class="col-12 mb-3">
-                        <label class="form-label">{{ ftl('scripts-value') }}</label>
+                        <label class="form-label" for="step_${stepIndex}_value">{{ ftl('scripts-value') }}</label>
                         <input type="text" class="form-control" name="step_${stepIndex}_value"
                                id="step_${stepIndex}_value"
                                placeholder="{{ ftl('scripts-text-to-type-or-value-to-set') }}">
@@ -437,21 +438,23 @@ function addStep(stepData = null) {
 
                 <div class="row">
                     <div class="col-md-8 mb-3">
-                        <label class="form-label">{{ ftl('scripts-description-optional') }}</label>
+                        <label class="form-label" for="step_${stepIndex}_description">{{ ftl('scripts-description-optional') }}</label>
                         <input type="text" class="form-control" name="step_${stepIndex}_description"
                                id="step_${stepIndex}_description"
                                placeholder="{{ ftl('scripts-e-g-wait-for-cookie-banner-to-appear') }}">
                     </div>
 
                     <div class="col-md-2 mb-3">
-                        <label class="form-label">{{ ftl('scripts-timeout-ms') }}</label>
+                        <label class="form-label" for="step_${stepIndex}_timeout">{{ ftl('scripts-timeout-ms') }}</label>
                         <input type="number" class="form-control" name="step_${stepIndex}_timeout"
+                               id="step_${stepIndex}_timeout"
                                value="${stepData ? stepData.timeout || 5000 : 5000}" min="0" step="100">
                     </div>
 
                     <div class="col-md-2 mb-3">
-                        <label class="form-label">{{ ftl('scripts-wait-after-ms') }}</label>
+                        <label class="form-label" for="step_${stepIndex}_wait_after">{{ ftl('scripts-wait-after-ms') }}</label>
                         <input type="number" class="form-control" name="step_${stepIndex}_wait_after"
+                               id="step_${stepIndex}_wait_after"
                                value="${stepData ? stepData.wait_after || 0 : 0}" min="0" step="100">
                     </div>
                 </div>

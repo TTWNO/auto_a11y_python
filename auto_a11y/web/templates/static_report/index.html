@@ -330,16 +330,17 @@
         <div class="filter-section">
             <div class="filter-controls">
                 <div style="flex: 2; min-width: 300px;">
+                    <label for="page-search" class="visually-hidden">{{ ftl('reports-search-pages') }}</label>
                     <input
                         type="search"
                         id="page-search"
                         class="form-control"
                         data-i18n-placeholder="search_by_page_title_or_url"
-                        placeholder="{{ t['search_by_page_title_or_url'] }}"
-                        aria-label="{{ ftl('reports-search-pages') }}">
+                        placeholder="{{ t['search_by_page_title_or_url'] }}">
                 </div>
                 <div>
-                    <select id="filter-by-issues" class="form-select" aria-label="{{ ftl('reports-filter-by-issue-type') }}">
+                    <label for="filter-by-issues" class="visually-hidden">{{ ftl('reports-filter-by-issue-type') }}</label>
+                    <select id="filter-by-issues" class="form-select">
                         <option value="all" data-i18n="all_pages">{{ t['all_pages'] }}</option>
                         <option value="has-errors" data-i18n="has_errors">{{ t['has_errors'] }}</option>
                         <option value="has-warnings" data-i18n="has_warnings">{{ t['has_warnings'] }}</option>
@@ -347,7 +348,8 @@
                     </select>
                 </div>
                 <div>
-                    <select id="sort-by" class="form-select" aria-label="{{ ftl('reports-sort-pages') }}">
+                    <label for="sort-by" class="visually-hidden">{{ ftl('reports-sort-pages') }}</label>
+                    <select id="sort-by" class="form-select">
                         <option value="title" data-i18n="sort_by_title">{{ t['sort_by_title'] }}</option>
                         <option value="errors-desc" data-i18n="errors_high_to_low">{{ t['errors_high_to_low'] }}</option>
                         <option value="errors-asc" data-i18n="errors_low_to_high">{{ t['errors_low_to_high'] }}</option>

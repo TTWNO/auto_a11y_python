@@ -34,6 +34,7 @@
 
     <form method="POST" class="needs-validation" novalidate aria-labelledby="create-test-user-heading">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <p class="form-text mb-3"><span class="text-severity-high" aria-hidden="true">*</span> {{ ftl('common-required-field') }}</p>
         <div class="row">
             <div class="col-md-8">
                 <!-- Basic Information -->
@@ -53,7 +54,7 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="username" class="form-label">{{ ftl('common-username') }} <span class="text-severity-high">*</span></label>
+                                <label for="username" class="form-label">{{ ftl('common-username') }} <span class="text-severity-high" aria-hidden="true">*</span><span class="visually-hidden">{{ ftl('common-required') }}</span></label>
                                 <input type="text" class="form-control" id="username" name="username" required
                                        placeholder="{{ ftl('common-e-g-student123') }}" autocomplete="username"
                                        aria-describedby="username-help">
@@ -61,7 +62,7 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="password" class="form-label">{{ ftl('common-password') }} <span class="text-severity-high">*</span></label>
+                                <label for="password" class="form-label">{{ ftl('common-password') }} <span class="text-severity-high" aria-hidden="true">*</span><span class="visually-hidden">{{ ftl('common-required') }}</span></label>
                                 <input type="password" class="form-control" id="password" name="password" required autocomplete="new-password"
                                        aria-describedby="password-help">
                                 <div class="form-text" id="password-help">{{ ftl('common-password-for-login-stored-securely') }}</div>

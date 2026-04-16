@@ -31,7 +31,7 @@
                 <div class="row">
                     <!-- Page URL Filter -->
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">{{ ftl('testing-page-urls') }}</label>
+                        <label class="form-label" for="pageUrlsFilter">{{ ftl('testing-page-urls') }}</label>
                         <select id="pageUrlsFilter" class="form-select" multiple size="5">
                             <option value="">{{ ftl('common-all-pages') }}</option>
                             {% for result in test_results_data %}
@@ -43,7 +43,7 @@
 
                     <!-- Touchpoint Filter -->
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">{{ ftl('testing-touchpoints') }}</label>
+                        <label class="form-label" for="touchpointsFilter">{{ ftl('testing-touchpoints') }}</label>
                         <select id="touchpointsFilter" class="form-select" multiple size="5">
                             <option value="">{{ ftl('common-all-touchpoints') }}</option>
                             {% for touchpoint in touchpoints %}
@@ -55,7 +55,7 @@
 
                     <!-- WCAG Criteria Filter -->
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">{{ ftl('common-wcag-success-criteria') }}</label>
+                        <label class="form-label" for="wcagFilter">{{ ftl('common-wcag-success-criteria') }}</label>
                         <select id="wcagFilter" class="form-select" multiple size="5">
                             <option value="">{{ ftl('common-all-wcag-criteria') }}</option>
                             {% for criterion in wcag_criteria %}
@@ -67,7 +67,7 @@
 
                     <!-- Impact Level Filter -->
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">{{ ftl('common-impact-level') }}</label>
+                        <label class="form-label" for="impactFilter">{{ ftl('common-impact-level') }}</label>
                         <select id="impactFilter" class="form-select" multiple size="5">
                             <option value="">{{ ftl('testing-all-impact-levels') }}</option>
                             <option value="critical">{{ ftl('common-critical') }}</option>

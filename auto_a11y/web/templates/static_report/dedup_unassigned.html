@@ -637,7 +637,7 @@
             <!-- Issue Type Filter -->
             <div class="col-md-3">
                 <div class="filter-group">
-                    <label class="form-label fw-bold" data-i18n="issue_type">{{ t.get('issue_type', 'Issue Type') }}</label>
+                    <p class="form-label fw-bold" data-i18n="issue_type">{{ t.get('issue_type', 'Issue Type') }}</p>
                     <div class="filter-chips">
                         {% if violations %}
                         <button type="button" class="filter-chip" data-filter-type="type" data-filter-value="error">
@@ -666,7 +666,7 @@
             <!-- Impact Level Filter -->
             <div class="col-md-3">
                 <div class="filter-group">
-                    <label class="form-label fw-bold" data-i18n="impact_level">{{ t.get('impact_level', 'Impact Level') }}</label>
+                    <p class="form-label fw-bold" data-i18n="impact_level">{{ t.get('impact_level', 'Impact Level') }}</p>
                     <div class="filter-chips">
                         <button type="button" class="filter-chip" data-filter-type="impact" data-filter-value="high">
                             <span class="badge badge-high me-1" data-i18n="high">{{ t['high'] }}</span>
@@ -687,7 +687,7 @@
             <!-- Touchpoint Filter -->
             <div class="col-md-6">
                 <div class="filter-group">
-                    <label class="form-label fw-bold" data-i18n="issue_touchpoint">{{ t.get('issue_touchpoint', 'Issue Touchpoint') }}</label>
+                    <label class="form-label fw-bold" for="touchpointFilter" data-i18n="issue_touchpoint">{{ t.get('issue_touchpoint', 'Issue Touchpoint') }}</label>
                     <select class="form-select form-select-sm" id="touchpointFilter" multiple size="3">
                         <option value="" data-i18n="all_touchpoints">{{ t.get('all_touchpoints', 'All Touchpoints') }}</option>
                         {% set all_issues = violations + warnings + info + discovery %}

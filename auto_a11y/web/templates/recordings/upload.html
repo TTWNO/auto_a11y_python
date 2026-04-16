@@ -22,8 +22,8 @@
                         <legend class="visually-hidden">{{ ftl('recordings-upload-recording-details') }}</legend>
 
                         <!-- JSON File Upload - Multi-language -->
-                        <div class="mb-4">
-                            <label class="form-label">{{ ftl('recordings-dictaphone-json-files') }}</label>
+                        <fieldset class="mb-4">
+                            <legend class="form-label">{{ ftl('recordings-dictaphone-json-files') }}</legend>
 
                             <div class="border rounded p-3 mb-2 bg-subtle">
                                 <label for="json_file_en" class="form-label">{{ ftl('recordings-english-issues-en') }}</label>
@@ -42,7 +42,7 @@
                                     {{ ftl('recordings-optional-json-file-with-accessibility-issues-in') }}
                                 </div>
                             </div>
-                        </div>
+                        </fieldset>
 
                         <!-- Recording Content Files (HTML/JSON) - Multi-language Support -->
                         <fieldset class="card mb-4 bg-subtle">
@@ -220,15 +220,15 @@
                         </div>
 
                         <!-- Discovered Pages -->
-                        <div class="mb-4">
-                            <label class="form-label">{{ ftl('common-discovered-pages') }}</label>
+                        <fieldset class="mb-4">
+                            <legend class="form-label">{{ ftl('common-discovered-pages') }}</legend>
                             <div class="form-text mb-2" id="discovered-pages-help">
                                 {{ ftl('recordings-optional-select-discovered-pages-related-to-this') }}
                             </div>
                             <div id="discovered-pages-container" class="border-table" aria-describedby="discovered-pages-help" style="max-height: 200px; overflow-y: auto; border: 1px solid; border-radius: 0.25rem; padding: 0.5rem;">
                                 <p class="text-muted small mb-0">{{ ftl('recordings-select-a-project-to-see-discovered-pages') }}</p>
                             </div>
-                        </div>
+                        </fieldset>
 
                         <!-- Common Components -->
                         <div class="mb-4">

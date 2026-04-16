@@ -118,8 +118,8 @@
         </div>
         <div class="d-flex flex-wrap gap-2 align-items-center">
             <div class="input-group" style="width: auto;">
-                <span class="input-group-text"><i class="bi bi-folder" aria-hidden="true"></i></span>
-                <select id="projectSelect" class="form-select" style="min-width: 200px;" aria-label="{{ ftl('common-project') }}">
+                <label for="projectSelect" class="input-group-text"><i class="bi bi-folder" aria-hidden="true"></i><span class="visually-hidden">{{ ftl('common-project') }}</span></label>
+                <select id="projectSelect" class="form-select" style="min-width: 200px;">
                     <option value="">{{ ftl('common-all-projects') }}</option>
                     {% for p in projects %}
                     <option value="{{ p.id }}" {% if selected_project and p.id == selected_project.id %}selected{% endif %}>
@@ -129,8 +129,8 @@
                 </select>
             </div>
             <div class="input-group" style="width: auto;">
-                <span class="input-group-text"><i class="bi bi-globe" aria-hidden="true"></i></span>
-                <select id="websiteSelect" class="form-select" style="min-width: 200px;" aria-label="{{ ftl('common-website-2') }}" {% if not selected_project %}disabled{% endif %}>
+                <label for="websiteSelect" class="input-group-text"><i class="bi bi-globe" aria-hidden="true"></i><span class="visually-hidden">{{ ftl('common-website-2') }}</span></label>
+                <select id="websiteSelect" class="form-select" style="min-width: 200px;" {% if not selected_project %}disabled{% endif %}>
                     {% if selected_project %}
                         <option value="">{{ ftl('common-all-websites') }}</option>
                         {% for w in websites %}
@@ -253,9 +253,10 @@
 
                         <!-- Tester Selection -->
                         <div class="col-md-5">
-                            <label class="form-label fw-semibold">
+                            <fieldset>
+                            <legend class="form-label fw-semibold">
                                 <i class="bi bi-people" aria-hidden="true"></i> {{ ftl('testing-test-as') }}
-                            </label>
+                            </legend>
                             <div class="border rounded p-2" style="max-height: 120px; overflow-y: auto;">
                                 <div class="form-check">
                                     <input class="form-check-input tester-checkbox" type="checkbox" id="testerGuest" value="guest" checked>
@@ -282,13 +283,15 @@
                                     </small>
                                 {% endif %}
                             </div>
+                            </fieldset>
                         </div>
 
                         <!-- Options -->
                         <div class="col-md-3">
-                            <label class="form-label fw-semibold">
+                            <fieldset>
+                            <legend class="form-label fw-semibold">
                                 <i class="bi bi-gear" aria-hidden="true"></i> {{ ftl('common-options') }}
-                            </label>
+                            </legend>
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="includeScreenshots" checked>
                                 <label class="form-check-label" for="includeScreenshots">
@@ -301,6 +304,7 @@
                                     {{ ftl('testing-run-ai-analysis') }}
                                 </label>
                             </div>
+                            </fieldset>
                         </div>
                     </div>
                 </div>

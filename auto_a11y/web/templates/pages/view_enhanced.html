@@ -208,7 +208,7 @@
             <!-- Issue Type Filter -->
             <div class="col-md-3">
                 <div class="filter-group">
-                    <label class="form-label fw-bold">{{ ftl('common-issue-type') }}</label>
+                    <p class="form-label fw-bold">{{ ftl('common-issue-type') }}</p>
                     <div class="filter-chips">
                         <div class="filter-chip" data-filter-type="type" data-filter-value="error">
                             {{ ftl('common-errors') }} ({{ latest_result.violations|length if latest_result.violations else 0 }})
@@ -229,7 +229,7 @@
             <!-- Impact Level Filter -->
             <div class="col-md-3">
                 <div class="filter-group">
-                    <label class="form-label fw-bold">{{ ftl('common-impact-level') }}</label>
+                    <p class="form-label fw-bold">{{ ftl('common-impact-level') }}</p>
                     <div class="filter-chips">
                         <div class="filter-chip" data-filter-type="impact" data-filter-value="high">
                             <span class="badge badge-high me-1">{{ ftl('common-high') }}</span>
@@ -274,7 +274,7 @@
         <div class="row mt-3">
             <div class="col-12">
                 <div class="filter-group">
-                    <label class="form-label fw-bold">{{ ftl('common-affected-user-groups') }}</label>
+                    <p class="form-label fw-bold">{{ ftl('common-affected-user-groups') }}</p>
                     <div class="filter-chips">
                         <div class="filter-chip" data-filter-type="user" data-filter-value="vision">
                             <i class="bi bi-eye-slash" aria-hidden="true"></i> {{ ftl('pages-vision-impairments') }}

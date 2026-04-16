@@ -20,7 +20,8 @@
     <!-- Filters -->
     <div class="card mb-4">
         <div class="card-body py-2 py-md-3">
-            <form method="get" action="{{ url_for('recordings.list_recordings') }}" class="row g-2 g-md-3" aria-label="{{ ftl('recordings-filter-recordings') }}">
+            <h2 id="recordings-filter-heading" class="visually-hidden">{{ ftl('recordings-filter-recordings') }}</h2>
+            <form method="get" action="{{ url_for('recordings.list_recordings') }}" class="row g-2 g-md-3" aria-labelledby="recordings-filter-heading">
                 <div class="col-6 col-md-6">
                     <label for="project_id" class="form-label small">{{ ftl('common-project') }}</label>
                     <select name="project_id" id="project_id" class="form-select form-select-sm" onchange="this.form.submit()">

@@ -30,6 +30,7 @@ services:
       resources:
         limits:
           memory: 16g
+          cpus: 7
         reservations:
           memory: 2g
     restart: unless-stopped

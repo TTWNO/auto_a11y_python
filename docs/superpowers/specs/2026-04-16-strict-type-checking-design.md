@@ -54,6 +54,7 @@ Checked paths (enforced identically by all three tools):
 ```
 auto_a11y/**/*.py
 tests/**/*.py
+stubs/**/*.pyi
 config.py
 run.py
 wsgi.py
@@ -112,7 +113,7 @@ All three run regardless of individual failures so the developer sees the full p
 2. If genuinely impossible, treat the disagreement as a bug in the *less-authoritative* tool in the order `mypy` > `pyright` > `ty`. Work around it by refactoring code, adjusting stubs, or pinning tool versions. **Never** by suppression.
 3. If a three-way irreconcilable conflict somehow emerges, the implementer must surface the case to the repo owner — do not land the code.
 
-**`ty` recovery procedure.** `ty` is pre-alpha. A `ty` crash or false positive that no refactor can satisfy puts the zero-escape-hatch policy into direct conflict with the "ty must pass" rule. The escape path is a deliberate, logged, reversible config change: remove `ty` from the hook and CI via a top-level flag in `pyproject.toml` (`[tool.ty] enabled = false`, checked by the hook script), file a tracking issue linking to the upstream `ty` bug, and re-enable on the next `ty` release. This is not a suppression comment — it is a configuration downgrade applied repo-wide, visible to all reviewers in every diff until reverted. It MUST NOT be used for any other tool and MUST NOT be used to avoid fixing real type errors.
+**`ty` recovery procedure.** `ty` is pre-alpha. A `ty` crash or false positive that no refactor can satisfy puts the zero-escape-hatch policy into direct conflict with the "ty must pass" rule. The escape path is a deliberate, logged, reversible config change: a project-defined flag in `pyproject.toml` (e.g., `[tool.auto_a11y_typecheck] ty_enabled = false` — a project-namespaced key, not a `ty`-native option) is read by both the hook script and the CI workflow to skip the `ty` step. Flipping this flag requires filing a tracking issue linking to the upstream `ty` bug; the flag must be flipped back on the next `ty` release that fixes it. This is not a suppression comment — it is a configuration downgrade applied repo-wide, visible to all reviewers in every diff until reverted. It MUST NOT be used for `mypy` or `pyright` (no equivalent flag exists for them by design) and MUST NOT be used to avoid fixing real type errors.
 
 No `pre-commit` library dependency. Tools are invoked directly from the project `.venv`.
 

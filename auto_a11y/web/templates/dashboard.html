@@ -26,120 +26,99 @@
     {% else %}
     <h1 class="mb-4">{{ ftl('common-dashboard') }}</h1>
 
-    <!-- Statistics Cards -->
+    <!-- Statistics -->
     <section aria-labelledby="stats-heading">
     <h2 id="stats-heading" class="visually-hidden">{{ ftl('common-statistics') }}</h2>
-    <div class="row mb-4 g-3">
-        <!-- First Row - General Stats -->
+    <dl class="dashboard-stats row mb-4 g-3">
         <div class="col-6 col-sm-6 col-lg-3">
             <div class="card stat-card bg-brand text-inverse h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h2 class="card-subtitle mb-2 fs-7">{{ ftl('common-projects') }}</h2>
-                            <h3 class="card-title mb-0">{{ stats.projects }}</h3>
-                        </div>
-                        <i class="bi bi-folder display-6 opacity-50 d-none d-sm-block" aria-hidden="true"></i>
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <dt class="card-subtitle mb-2 fs-7">{{ ftl('common-projects') }}</dt>
+                        <dd class="card-title mb-0">{{ stats.projects }}</dd>
                     </div>
+                    <i class="bi bi-folder display-6 opacity-50 d-none d-sm-block" aria-hidden="true"></i>
                 </div>
             </div>
         </div>
         <div class="col-6 col-sm-6 col-lg-3">
             <div class="card stat-card bg-brand text-inverse h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h2 class="card-subtitle mb-2 fs-7">{{ ftl('common-total-pages') }}</h2>
-                            <h3 class="card-title mb-0">{{ stats.total_pages }}</h3>
-                        </div>
-                        <i class="bi bi-file-text display-6 opacity-50 d-none d-sm-block" aria-hidden="true"></i>
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <dt class="card-subtitle mb-2 fs-7">{{ ftl('common-total-pages') }}</dt>
+                        <dd class="card-title mb-0">{{ stats.total_pages }}</dd>
                     </div>
+                    <i class="bi bi-file-text display-6 opacity-50 d-none d-sm-block" aria-hidden="true"></i>
                 </div>
             </div>
         </div>
         <div class="col-6 col-sm-6 col-lg-3">
             <div class="card stat-card bg-pass text-inverse h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h2 class="card-subtitle mb-2 fs-7">{{ ftl('common-tested-pages') }}</h2>
-                            <h3 class="card-title mb-0">{{ stats.tested_pages }}</h3>
-                        </div>
-                        <i class="bi bi-check-circle display-6 opacity-50 d-none d-sm-block" aria-hidden="true"></i>
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <dt class="card-subtitle mb-2 fs-7">{{ ftl('common-tested-pages') }}</dt>
+                        <dd class="card-title mb-0">{{ stats.tested_pages }}</dd>
                     </div>
+                    <i class="bi bi-check-circle display-6 opacity-50 d-none d-sm-block" aria-hidden="true"></i>
                 </div>
             </div>
         </div>
         <div class="col-6 col-sm-6 col-lg-3">
             <div class="card stat-card bg-neutral text-inverse h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h2 class="card-subtitle mb-2 fs-7">{{ ftl('common-total-issues') }}</h2>
-                            <h3 class="card-title mb-0">{{ stats.total_violations + stats.total_warnings + stats.total_info + stats.total_discovery }}</h3>
-                        </div>
-                        <i class="bi bi-list-check display-6 opacity-50 d-none d-sm-block" aria-hidden="true"></i>
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <dt class="card-subtitle mb-2 fs-7">{{ ftl('common-total-issues') }}</dt>
+                        <dd class="card-title mb-0">{{ stats.total_violations + stats.total_warnings + stats.total_info + stats.total_discovery }}</dd>
                     </div>
+                    <i class="bi bi-list-check display-6 opacity-50 d-none d-sm-block" aria-hidden="true"></i>
                 </div>
             </div>
         </div>
-    </div>
-    
-    <!-- Second Row - Issue Breakdown -->
-    <div class="row mb-4 g-3">
         <div class="col-6 col-sm-6 col-lg-3">
             <div class="card stat-card bg-high text-inverse h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h2 class="card-subtitle mb-2 fs-7">{{ ftl('common-errors') }}</h2>
-                            <h3 class="card-title mb-0">{{ stats.total_violations }}</h3>
-                        </div>
-                        <i class="bi bi-x-circle display-6 opacity-50 d-none d-sm-block" aria-hidden="true"></i>
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <dt class="card-subtitle mb-2 fs-7">{{ ftl('common-errors') }}</dt>
+                        <dd class="card-title mb-0">{{ stats.total_violations }}</dd>
                     </div>
+                    <i class="bi bi-x-circle display-6 opacity-50 d-none d-sm-block" aria-hidden="true"></i>
                 </div>
             </div>
         </div>
         <div class="col-6 col-sm-6 col-lg-3">
             <div class="card stat-card bg-medium h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h2 class="card-subtitle mb-2 fs-7">{{ ftl('common-warnings') }}</h2>
-                            <h3 class="card-title mb-0">{{ stats.total_warnings }}</h3>
-                        </div>
-                        <i class="bi bi-exclamation-triangle display-6 opacity-50 d-none d-sm-block" aria-hidden="true"></i>
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <dt class="card-subtitle mb-2 fs-7">{{ ftl('common-warnings') }}</dt>
+                        <dd class="card-title mb-0">{{ stats.total_warnings }}</dd>
                     </div>
+                    <i class="bi bi-exclamation-triangle display-6 opacity-50 d-none d-sm-block" aria-hidden="true"></i>
                 </div>
             </div>
         </div>
         <div class="col-6 col-sm-6 col-lg-3">
             <div class="card stat-card bg-info text-inverse h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h2 class="card-subtitle mb-2 fs-7">{{ ftl('common-info-notes') }}</h2>
-                            <h3 class="card-title mb-0">{{ stats.total_info }}</h3>
-                        </div>
-                        <i class="bi bi-info-circle display-6 opacity-50 d-none d-sm-block" aria-hidden="true"></i>
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <dt class="card-subtitle mb-2 fs-7">{{ ftl('common-info-notes') }}</dt>
+                        <dd class="card-title mb-0">{{ stats.total_info }}</dd>
                     </div>
+                    <i class="bi bi-info-circle display-6 opacity-50 d-none d-sm-block" aria-hidden="true"></i>
                 </div>
             </div>
         </div>
         <div class="col-6 col-sm-6 col-lg-3">
             <div class="card stat-card bg-discovery text-inverse h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h2 class="card-subtitle mb-2 fs-7">{{ ftl('common-discovery-2') }}</h2>
-                            <h3 class="card-title mb-0">{{ stats.total_discovery }}</h3>
-                        </div>
-                        <i class="bi bi-search display-6 opacity-50 d-none d-sm-block" aria-hidden="true"></i>
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <dt class="card-subtitle mb-2 fs-7">{{ ftl('common-discovery-2') }}</dt>
+                        <dd class="card-title mb-0">{{ stats.total_discovery }}</dd>
                     </div>
+                    <i class="bi bi-search display-6 opacity-50 d-none d-sm-block" aria-hidden="true"></i>
                 </div>
             </div>
         </div>
-    </div>
+    </dl>
     </section>
 
     <!-- Quick Actions -->

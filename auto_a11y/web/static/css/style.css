@@ -2207,6 +2207,27 @@ table caption {
     background-color: var(--color-discovery);
 }
 
+/* Dashboard statistics — semantic <dl> structure with card visuals.
+   Neutralize default dl/dt/dd browser margins/weights so the cards
+   look the same as before the conversion from <h2>/<h3> markup. */
+.dashboard-stats {
+    margin-bottom: 1rem;  /* match original .row.mb-4 */
+}
+
+.dashboard-stats > div {  /* the <div class="col-..."> wrapper */
+    margin: 0;
+}
+
+.dashboard-stats dt {
+    font-weight: normal;
+    margin: 0;
+}
+
+.dashboard-stats dd {
+    margin: 0;
+    font-weight: bold;
+}
+
 /* Manual toggle — darker stat-card backgrounds for WCAG AA white-text contrast */
 [data-theme="dark"] .stat-card.bg-brand {
     background-color: #2563a0 !important;  /* white 6.3:1 */

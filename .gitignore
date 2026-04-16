@@ -45,6 +45,11 @@ htmlcov/
 *.cover
 .hypothesis/
 
+# Type checker caches
+.mypy_cache/
+.pyright/
+# ty currently has no on-disk cache at the pinned version
+
 # Database
 *.db
 *.sqlite

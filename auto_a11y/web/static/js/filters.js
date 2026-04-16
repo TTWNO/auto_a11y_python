@@ -67,9 +67,11 @@ class IssueFilterManager {
         if (this.activeFilters[filterType].has(filterValue)) {
             this.activeFilters[filterType].delete(filterValue);
             chip.classList.remove('active');
+            chip.setAttribute('aria-pressed', 'false');
         } else {
             this.activeFilters[filterType].add(filterValue);
             chip.classList.add('active');
+            chip.setAttribute('aria-pressed', 'true');
         }
 
         this.applyFilters();
@@ -211,7 +213,10 @@ class IssueFilterManager {
                         this.activeFilters[type].delete(value);
                         // Update UI
                         const chip = document.querySelector(`[data-filter-type="${type}"][data-filter-value="${value}"]`);
-                        if (chip) chip.classList.remove('active');
+                        if (chip) {
+                            chip.classList.remove('active');
+                            chip.setAttribute('aria-pressed', 'false');
+                        }
                     }
 
                     this.applyFilters();
@@ -303,6 +308,7 @@ class IssueFilterManager {
         // Reset UI
         document.querySelectorAll('.filter-chip.active').forEach(chip => {
             chip.classList.remove('active');
+            chip.setAttribute('aria-pressed', 'false');
         });
 
         const touchpointFilter = document.getElementById('touchpointFilter');

@@ -110,6 +110,19 @@
 
                         <hr class="my-4">
 
+                        <div class="mb-3">
+                            <p class="text-muted small mb-2">
+                                {{ ftl('websites-clear-test-results-help') }}
+                            </p>
+                            <div class="d-grid">
+                                <button type="button" class="btn btn-outline-medium" data-open-modal="#clearTestResultsModal">
+                                    <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> {{ ftl('websites-clear-test-results') }}
+                                </button>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
                         <div class="d-grid">
                             <button type="button" class="btn btn-outline-high" data-open-modal="#deleteWebsiteModal">
                                 <i class="bi bi-trash" aria-hidden="true"></i> {{ ftl('websites-delete-website') }}
@@ -121,6 +134,29 @@
         </div>
     </div>
 </div>
+
+<!-- Clear Test Results Modal -->
+<dialog class="modal" id="clearTestResultsModal" role="dialog" aria-labelledby="clearTestResultsModalLabel" aria-modal="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="clearTestResultsModalLabel">{{ ftl('websites-clear-test-results') }}</h2>
+                <button type="button" class="btn-close" data-close-modal aria-label="{{ ftl('common-close') }}"></button>
+            </div>
+            <div class="modal-body">
+                <p>{{ ftl('websites-clear-test-results-confirm', name=website.display_name) }}</p>
+                <p class="text-severity-medium">{{ ftl('websites-clear-test-results-warning') }}</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-neutral" data-close-modal>{{ ftl('common-cancel') }}</button>
+                <form method="POST" action="{{ url_for('websites.clear_test_results', website_id=website.id) }}" style="display: inline;" aria-labelledby="clearTestResultsModalLabel">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <button type="submit" class="btn btn-medium">{{ ftl('websites-clear-test-results') }}</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</dialog>
 
 <!-- Delete Website Modal -->
 <dialog class="modal" id="deleteWebsiteModal" role="dialog" aria-labelledby="deleteWebsiteModalLabel" aria-modal="true">

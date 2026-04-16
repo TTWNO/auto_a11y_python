@@ -2,9 +2,13 @@
 Page Setup Scripts Management Routes
 """
 
+import asyncio
+
 from flask import Blueprint, render_template, request, jsonify, current_app, redirect, url_for, flash
 from auto_a11y.web.fluent import ftl
 from auto_a11y.models import PageSetupScript, ScriptStep, ActionType, ScriptScope, ExecutionTrigger
+from auto_a11y.core.browser_manager import BrowserManager
+from auto_a11y.testing.script_executor import ScriptExecutor, ScriptExecutionError
 from datetime import datetime
 import logging
 
@@ -485,15 +489,80 @@ def toggle_script(script_id):
 
 @scripts_bp.route('/<script_id>/test', methods=['POST'])
 def test_script(script_id):
-    """Test a script (dry run)"""
+    """Test a script without recording any test results.
+
+    Launches a fresh browser, navigates to the target URL (page.url for page-scoped
+    scripts, website.url for website-scoped scripts), runs the script, and returns
+    success/failure with duration and step count.
+    """
     script = current_app.db.get_page_setup_script(script_id)
     if not script:
         return jsonify({'error': ftl('scripts-script-not-found')}), 404
 
-    # TODO: Implement script testing functionality
-    # This would run the script without affecting test results
+    # Resolve target URL based on script scope
+    website = current_app.db.get_website(script.website_id)
+    if not website:
+        return jsonify({
+            'success': False,
+            'error': ftl('common-website-not-found')
+        }), 404
 
-    return jsonify({
-        'success': True,
-        'message': ftl('scripts-script-test-feature-coming-soon')
-    })
+    if script.scope == ScriptScope.PAGE:
+        if not script.page_id:
+            return jsonify({
+                'success': False,
+                'error': ftl('common-page-not-found')
+            }), 404
+        page_obj = current_app.db.get_page(script.page_id)
+        if not page_obj:
+            return jsonify({
+                'success': False,
+                'error': ftl('common-page-not-found')
+            }), 404
+        target_url = page_obj.url
+    else:
+        target_url = website.url
+
+    # Build browser config honouring project settings (same pattern as test_login)
+    project = current_app.db.get_project(website.project_id) if website else None
+    browser_config = current_app.app_config.__dict__.copy()
+    if project and project.config:
+        browser_config['stealth_mode'] = project.config.get('stealth_mode', False)
+        headless_setting = project.config.get('headless_browser', 'true')
+        browser_config['BROWSER_HEADLESS'] = (headless_setting == 'true')
+    else:
+        browser_config['stealth_mode'] = False
+
+    async def _do_test_script():
+        bm = BrowserManager(browser_config)
+        try:
+            await bm.start()
+            context = await bm.create_context()
+            page = await context.new_page()
+            await page.goto(target_url, wait_until='networkidle', timeout=30000)
+            executor = ScriptExecutor()
+            return await executor.execute_script(page, script)
+        finally:
+            await bm.stop()
+
+    try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            result = loop.run_until_complete(_do_test_script())
+        finally:
+            loop.close()
+
+        return jsonify({
+            'success': result.get('success', False),
+            'error': result.get('error'),
+            'duration_ms': result.get('duration_ms', 0),
+            'steps_executed': result.get('steps_executed', 0)
+        })
+
+    except Exception as e:
+        logger.error(f"Test script error for script {script_id}: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500

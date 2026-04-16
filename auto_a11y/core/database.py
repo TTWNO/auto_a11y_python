@@ -385,7 +385,78 @@ class Database:
         result = self.websites.delete_one({"_id": ObjectId(website_id)})
         logger.info(f"Deleted website: {website_id}")
         return result.deleted_count > 0
-    
+
+    def clear_website_test_results(self, website_id: str) -> Dict[str, int]:
+        """
+        Clear all test data for every page in a website.
+
+        Deletes all test_results documents for pages belonging to this website
+        and resets each page's cached test state (violation/warning/info/
+        discovery/pass counts, last_tested, test_duration_ms) so the pages
+        show as untested. Pages whose status was TESTED, TESTING, or ERROR
+        are moved back to DISCOVERED so they can be re-tested.
+
+        Pages themselves, their screenshots, discovery runs, and document
+        references are preserved.
+
+        Args:
+            website_id: Website ID
+
+        Returns:
+            Dict with counts: {'test_results_deleted', 'pages_reset'}
+        """
+        # Collect page IDs for this website so we can delete their test results
+        page_id_strings = [
+            str(doc['_id'])
+            for doc in self.pages.find({"website_id": website_id}, {"_id": 1})
+        ]
+
+        test_results_deleted = 0
+        if page_id_strings:
+            del_result = self.test_results.delete_many(
+                {"page_id": {"$in": page_id_strings}}
+            )
+            test_results_deleted = del_result.deleted_count
+
+        # Reset per-page cached test state
+        reset_result = self.pages.update_many(
+            {"website_id": website_id},
+            {"$set": {
+                "violation_count": 0,
+                "warning_count": 0,
+                "info_count": 0,
+                "discovery_count": 0,
+                "pass_count": 0,
+                "last_tested": None,
+                "test_duration_ms": None,
+            }}
+        )
+
+        # Reset status for pages that were tested/testing/errored back to DISCOVERED.
+        # Leave DISCOVERED, QUEUED, SKIPPED, and DISCOVERY_FAILED alone.
+        self.pages.update_many(
+            {
+                "website_id": website_id,
+                "status": {"$in": [
+                    PageStatus.TESTED.value,
+                    PageStatus.TESTING.value,
+                    PageStatus.ERROR.value,
+                ]},
+            },
+            {"$set": {"status": PageStatus.DISCOVERED.value}}
+        )
+
+        pages_reset = reset_result.modified_count
+        logger.info(
+            f"Cleared test results for website {website_id}: "
+            f"{test_results_deleted} test_results deleted, "
+            f"{pages_reset} pages reset"
+        )
+        return {
+            'test_results_deleted': test_results_deleted,
+            'pages_reset': pages_reset,
+        }
+
     # Page operations
     
     def create_page(self, page: Page) -> str:

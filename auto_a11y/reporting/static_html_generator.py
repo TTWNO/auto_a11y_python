@@ -3814,22 +3814,71 @@ class StaticHTMLReportGenerator:
 
             # Enrich issues in both EN and FR for client-side switching
             def enrich_issue_bilingual(issue):
-                """Convert issue object to dict with bilingual enrichment"""
-                # Convert issue object to dict
+                """Convert issue (Violation object or dedup dict) into a dict
+                with bilingual enrichment.
+
+                Accepts either:
+                  - a Violation object (from test_result.violations / warnings / ...)
+                  - a deduplicated issue dict from _collect_dedup_data_streaming
+                    (keys: rule_id, description_en/fr, why_en/fr, who_en/fr,
+                    full_remediation_en/fr, wcag_full, ...)
+
+                Dedup dicts already have their bilingual fields populated, so we
+                copy them straight into the metadata instead of re-enriching.
+                Violation objects are enriched via IssueCatalog in both locales.
+                """
+                is_dict = isinstance(issue, dict)
+
+                # Uniform getter for either source type.
+                def _get(name, default=''):
+                    if is_dict:
+                        val = issue.get(name)
+                    else:
+                        val = getattr(issue, name, None)
+                    return default if val is None else val
+
+                # Dedup dicts use 'rule_id' instead of 'id'.
+                issue_id = _get('id') or _get('rule_id')
+
+                metadata_src = _get('metadata', None) or {}
+
                 issue_dict = {
-                    'id': issue.id if hasattr(issue, 'id') else '',
-                    'description': issue.description if hasattr(issue, 'description') else '',
-                    'impact': issue.impact if hasattr(issue, 'impact') else 'moderate',
-                    'xpath': issue.xpath if hasattr(issue, 'xpath') else '',
-                    'html_snippet': issue.html if hasattr(issue, 'html') else '',
-                    'touchpoint': issue.touchpoint if hasattr(issue, 'touchpoint') else '',
-                    'failure_summary': issue.failure_summary if hasattr(issue, 'failure_summary') else '',
-                    'metadata': {}
+                    'id': issue_id,
+                    'description': _get('description'),
+                    'impact': _get('impact', 'moderate'),
+                    'xpath': _get('xpath'),
+                    'html_snippet': _get('html_snippet') or _get('html'),
+                    'touchpoint': _get('touchpoint'),
+                    'failure_summary': _get('failure_summary'),
+                    'metadata': dict(metadata_src) if metadata_src else {}
                 }
 
-                # Copy metadata if present
-                if hasattr(issue, 'metadata') and issue.metadata:
-                    issue_dict['metadata'] = dict(issue.metadata)
+                # If this is a dedup dict that already has bilingual text
+                # (produced by _collect_dedup_data_streaming), trust it and
+                # skip the redundant IssueCatalog re-enrichment pass.
+                if is_dict and (issue.get('description_en') or issue.get('description_fr')):
+                    issue_dict['description_en'] = issue.get('description_en', '')
+                    issue_dict['description_fr'] = issue.get('description_fr', '')
+                    issue_dict['metadata']['what_en'] = issue.get('description_en', '')
+                    issue_dict['metadata']['what_fr'] = issue.get('description_fr', '')
+                    issue_dict['metadata']['what_generic_en'] = issue.get('description_en', '')
+                    issue_dict['metadata']['what_generic_fr'] = issue.get('description_fr', '')
+                    issue_dict['metadata']['why_en'] = issue.get('why_en', '')
+                    issue_dict['metadata']['why_fr'] = issue.get('why_fr', '')
+                    issue_dict['metadata']['who_en'] = issue.get('who_en', '')
+                    issue_dict['metadata']['who_fr'] = issue.get('who_fr', '')
+                    issue_dict['metadata']['full_remediation_en'] = issue.get('full_remediation_en', '')
+                    issue_dict['metadata']['full_remediation_fr'] = issue.get('full_remediation_fr', '')
+                    wcag_full_raw = issue.get('wcag_full', [])
+                    if isinstance(wcag_full_raw, str):
+                        issue_dict['metadata']['wcag_full'] = [
+                            c.strip() for c in wcag_full_raw.split(',') if c.strip()
+                        ]
+                    elif isinstance(wcag_full_raw, list):
+                        issue_dict['metadata']['wcag_full'] = wcag_full_raw
+                    else:
+                        issue_dict['metadata']['wcag_full'] = []
+                    return issue_dict
 
                 # Enrich with IssueCatalog in both languages
                 with force_locale('en'):

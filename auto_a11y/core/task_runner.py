@@ -127,6 +127,19 @@ class TaskRunner:
             'result': task.result if task.status == 'completed' else None
         }
     
+    def get_active_tasks(self) -> list:
+        """
+        Get IDs of tasks that are still pending or running.
+
+        Returns:
+            List of active task IDs
+        """
+        return [
+            task_id
+            for task_id, task in self.tasks.items()
+            if task.status in ('pending', 'running')
+        ]
+
     def cancel_task(self, task_id: str) -> bool:
         """
         Cancel a task

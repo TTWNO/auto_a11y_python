@@ -170,13 +170,38 @@ def delete_website(website_id):
         return redirect(url_for('projects.list_projects'))
 
     project_id = website.project_id
-    
+
     if current_app.db.delete_website(website_id):
         flash(ftl('websites-website-name-deleted-successfully', name=website.display_name), 'success')
     else:
         flash(ftl('websites-failed-to-delete-website'), 'error')
-    
+
     return redirect(url_for('projects.view_project', project_id=project_id))
+
+
+@websites_bp.route('/<website_id>/clear-test-results', methods=['POST'])
+def clear_test_results(website_id):
+    """Delete all test results and reset page counters for this website."""
+    website = current_app.db.get_website(website_id)
+    if not website:
+        flash(ftl('common-website-not-found'), 'error')
+        return redirect(url_for('projects.list_projects'))
+
+    try:
+        result = current_app.db.clear_website_test_results(website_id)
+        flash(
+            ftl(
+                'websites-test-results-cleared',
+                test_results=result['test_results_deleted'],
+                pages=result['pages_reset'],
+            ),
+            'success',
+        )
+    except Exception as e:
+        logger.error(f"Failed to clear test results for website {website_id}: {e}")
+        flash(ftl('websites-failed-to-clear-test-results'), 'error')
+
+    return redirect(url_for('websites.edit_website', website_id=website_id))
 
 
 @websites_bp.route('/<website_id>/discover', methods=['POST'])

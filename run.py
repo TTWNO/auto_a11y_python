@@ -167,6 +167,8 @@ def main():
     parser.add_argument('--desktop', action='store_true', help='Enable desktop mode (Electron distribution)')
     parser.add_argument('--install-hooks', action='store_true',
                         help='Configure git to use .githooks/ for this worktree')
+    parser.add_argument('--no-reloader', dest='no_reloader', action='store_true',
+                        help='Disable Werkzeug auto-reloader even when debug is on (useful for CI)')
 
     args = parser.parse_args()
 
@@ -268,7 +270,7 @@ def main():
             host=config.HOST,
             port=config.PORT,
             debug=config.DEBUG,
-            use_reloader=config.DEBUG
+            use_reloader=config.DEBUG and not args.no_reloader
         )
     except KeyboardInterrupt:
         logger.info("\nApplication stopped by user")

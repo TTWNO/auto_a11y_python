@@ -2,9 +2,11 @@
 Project model for organizing accessibility audits
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import List, Optional, Dict, Any
+from typing import Any
 from enum import Enum
 from bson import ObjectId
 from auto_a11y.models.project_member import ProjectMember
@@ -30,18 +32,24 @@ class ProjectType(Enum):
 class LivedExperienceTester:
     """Lived experience tester for accessibility testing"""
     name: str
-    email: Optional[str] = None
-    disability_type: Optional[str] = None  # e.g., "Blind", "Low Vision", "Deaf", "Motor Disability"
-    assistive_tech: List[str] = field(default_factory=list)  # e.g., ["JAWS", "Screen Magnifier"]
-    notes: Optional[str] = None
-    _id: Optional[str] = None  # Use string ID for simplicity
+    email: str | None = None
+    disability_type: str | None = None  # e.g., "Blind", "Low Vision", "Deaf", "Motor Disability"
+    assistive_tech: list[str] = field(default_factory=lambda: [])  # e.g., ["JAWS", "Screen Magnifier"]
+    notes: str | None = None
+    _id: str | None = None  # Use string ID for simplicity
 
     @property
-    def id(self) -> str:
+    def id(self) -> str | None:
         """Get tester ID"""
         return self._id
 
-    def to_dict(self) -> dict:
+    def ensure_id(self) -> None:
+        """Assign a UUID if no ID is set."""
+        if not self._id:
+            import uuid as _uuid
+            self._id = str(_uuid.uuid4())
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary"""
         return {
             '_id': self._id,
@@ -53,7 +61,7 @@ class LivedExperienceTester:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'LivedExperienceTester':
+    def from_dict(cls, data: dict[str, Any]) -> LivedExperienceTester:
         """Create from dictionary"""
         return cls(
             name=data['name'],
@@ -69,18 +77,24 @@ class LivedExperienceTester:
 class TestSupervisor:
     """Test supervisor who oversees lived experience testing"""
     name: str
-    email: Optional[str] = None
-    role: Optional[str] = None  # e.g., "Accessibility Specialist", "Research Lead"
-    organization: Optional[str] = None
-    notes: Optional[str] = None
-    _id: Optional[str] = None  # Use string ID for simplicity
+    email: str | None = None
+    role: str | None = None  # e.g., "Accessibility Specialist", "Research Lead"
+    organization: str | None = None
+    notes: str | None = None
+    _id: str | None = None  # Use string ID for simplicity
 
     @property
-    def id(self) -> str:
+    def id(self) -> str | None:
         """Get supervisor ID"""
         return self._id
 
-    def to_dict(self) -> dict:
+    def ensure_id(self) -> None:
+        """Assign a UUID if no ID is set."""
+        if not self._id:
+            import uuid as _uuid
+            self._id = str(_uuid.uuid4())
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary"""
         return {
             '_id': self._id,
@@ -92,7 +106,7 @@ class TestSupervisor:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'TestSupervisor':
+    def from_dict(cls, data: dict[str, Any]) -> TestSupervisor:
         """Create from dictionary"""
         return cls(
             name=data['name'],
@@ -121,38 +135,38 @@ class Project:
     """
 
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     status: ProjectStatus = ProjectStatus.ACTIVE
     project_type: ProjectType = ProjectType.WEBSITE  # Default for backward compatibility
 
     # Type-specific identifiers
-    website_ids: List[str] = field(default_factory=list)  # Only for WEBSITE type
-    app_identifier: Optional[str] = None  # For APP type (e.g., bundle ID, package name)
-    device_model: Optional[str] = None  # For TANGIBLE_DEVICE type
-    location: Optional[str] = None  # For NAV_AND_WAYFINDING type
+    website_ids: list[str] = field(default_factory=lambda: [])  # Only for WEBSITE type
+    app_identifier: str | None = None  # For APP type (e.g., bundle ID, package name)
+    device_model: str | None = None  # For TANGIBLE_DEVICE type
+    location: str | None = None  # For NAV_AND_WAYFINDING type
 
     # Common to all types
-    recording_ids: List[str] = field(default_factory=list)  # Manual audit recordings
+    recording_ids: list[str] = field(default_factory=lambda: [])  # Manual audit recordings
 
     # Lived experience testing participants
-    lived_experience_testers: List[LivedExperienceTester] = field(default_factory=list)
-    test_supervisors: List[TestSupervisor] = field(default_factory=list)
+    lived_experience_testers: list[LivedExperienceTester] = field(default_factory=lambda: [])
+    test_supervisors: list[TestSupervisor] = field(default_factory=lambda: [])
 
     # Drupal integration
-    drupal_audit_name: Optional[str] = None  # Name of corresponding audit in Drupal (for sync)
+    drupal_audit_name: str | None = None  # Name of corresponding audit in Drupal (for sync)
 
     # Metadata
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
-    config: Dict[str, Any] = field(default_factory=dict)
-    tags: List[str] = field(default_factory=list)
+    config: dict[str, Any] = field(default_factory=lambda: {})
+    tags: list[str] = field(default_factory=lambda: [])
 
-    members: list = field(default_factory=list)  # List[ProjectMember]
+    members: list[ProjectMember] = field(default_factory=lambda: [])
 
-    _id: Optional[ObjectId] = None
-    
+    _id: ObjectId | None = None
+
     @property
-    def id(self) -> str:
+    def id(self) -> str | None:
         """Get project ID as string"""
         return str(self._id) if self._id else None
 
@@ -164,17 +178,17 @@ class Project:
     @property
     def project_type_display(self) -> str:
         """Get human-readable project type"""
-        type_map = {
+        type_map: dict[ProjectType, str] = {
             ProjectType.WEBSITE: "Website",
             ProjectType.APP: "App",
             ProjectType.TANGIBLE_DEVICE: "Tangible Device",
             ProjectType.NAV_AND_WAYFINDING: "Nav and Wayfinding"
         }
         return type_map.get(self.project_type, self.project_type.value.replace('_', ' ').title())
-    
-    def to_dict(self) -> dict:
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for MongoDB"""
-        data = {
+        data: dict[str, Any] = {
             'name': self.name,
             'description': self.description,
             'status': self.status.value,
@@ -196,9 +210,9 @@ class Project:
         if self._id:
             data['_id'] = self._id
         return data
-    
+
     @classmethod
-    def from_dict(cls, data: dict) -> 'Project':
+    def from_dict(cls, data: dict[str, Any]) -> Project:
         """Create from MongoDB document with backward compatibility"""
         # Backward compatibility: if project_type not set, default to WEBSITE
         project_type_value = data.get('project_type', 'website')
@@ -237,17 +251,15 @@ class Project:
             tags=data.get('tags', []),
             _id=data.get('_id')
         )
-    
-    def update_timestamp(self):
+
+    def update_timestamp(self) -> None:
         """Update the updated_at timestamp"""
         self.updated_at = datetime.now()
 
     # Helper methods for managing testers and supervisors
     def add_tester(self, tester: LivedExperienceTester) -> None:
         """Add a lived experience tester to the project"""
-        import uuid
-        if not tester._id:
-            tester._id = str(uuid.uuid4())
+        tester.ensure_id()
         self.lived_experience_testers.append(tester)
         self.update_timestamp()
 
@@ -260,7 +272,7 @@ class Project:
             return True
         return False
 
-    def get_tester(self, tester_id: str) -> Optional[LivedExperienceTester]:
+    def get_tester(self, tester_id: str) -> LivedExperienceTester | None:
         """Get a lived experience tester by ID"""
         for tester in self.lived_experience_testers:
             if tester.id == tester_id:
@@ -278,9 +290,7 @@ class Project:
 
     def add_supervisor(self, supervisor: TestSupervisor) -> None:
         """Add a test supervisor to the project"""
-        import uuid
-        if not supervisor._id:
-            supervisor._id = str(uuid.uuid4())
+        supervisor.ensure_id()
         self.test_supervisors.append(supervisor)
         self.update_timestamp()
 
@@ -293,7 +303,7 @@ class Project:
             return True
         return False
 
-    def get_supervisor(self, supervisor_id: str) -> Optional[TestSupervisor]:
+    def get_supervisor(self, supervisor_id: str) -> TestSupervisor | None:
         """Get a test supervisor by ID"""
         for supervisor in self.test_supervisors:
             if supervisor.id == supervisor_id:

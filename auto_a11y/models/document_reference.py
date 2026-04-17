@@ -2,9 +2,11 @@
 Document Reference model for tracking electronic documents found during scraping
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
+from typing import Any
 from enum import Enum
 from bson import ObjectId
 
@@ -23,12 +25,12 @@ class DocumentType(Enum):
     CSV = "text/csv"
     ZIP = "application/zip"
     UNKNOWN = "application/octet-stream"
-    
+
     @classmethod
-    def from_extension(cls, ext: str) -> 'DocumentType':
+    def from_extension(cls, ext: str) -> DocumentType:
         """Get document type from file extension"""
         ext = ext.lower().lstrip('.')
-        extension_map = {
+        extension_map: dict[str, DocumentType] = {
             'pdf': cls.PDF,
             'doc': cls.WORD,
             'docx': cls.WORDX,
@@ -49,31 +51,31 @@ class DocumentType(Enum):
 @dataclass
 class DocumentReference:
     """Model for document references found on websites"""
-    
+
     website_id: str
     document_url: str
     referring_page_url: str
     mime_type: str
     is_internal: bool  # True if document is within the base URL domain
-    link_text: Optional[str] = None  # The text of the link pointing to the document
-    file_extension: Optional[str] = None
-    language: Optional[str] = None  # Detected language of the document (e.g., 'en', 'fr')
-    language_confidence: Optional[float] = None  # Confidence score for language detection
+    link_text: str | None = None  # The text of the link pointing to the document
+    file_extension: str | None = None
+    language: str | None = None  # Detected language of the document (e.g., 'en', 'fr')
+    language_confidence: float | None = None  # Confidence score for language detection
     discovered_at: datetime = field(default_factory=datetime.now)
     last_seen: datetime = field(default_factory=datetime.now)
     seen_count: int = 1  # Track how many times this document is referenced
     via_redirect: bool = False  # True if found through address rewriting/redirect
-    _id: Optional[ObjectId] = None
-    
+    _id: ObjectId | None = None
+
     @property
-    def id(self) -> str:
+    def id(self) -> str | None:
         """Get document reference ID as string"""
         return str(self._id) if self._id else None
-    
+
     @property
     def document_type_display(self) -> str:
         """Get human-friendly document type"""
-        type_map = {
+        type_map: dict[str, str] = {
             DocumentType.PDF.value: "PDF",
             DocumentType.WORD.value: "Word Document",
             DocumentType.WORDX.value: "Word Document",
@@ -87,14 +89,14 @@ class DocumentReference:
             DocumentType.ZIP.value: "Archive",
         }
         return type_map.get(self.mime_type, "Document")
-    
+
     @property
     def language_display(self) -> str:
         """Get human-friendly language name"""
         if not self.language:
             return "Unknown"
-        
-        language_map = {
+
+        language_map: dict[str, str] = {
             'en': 'English',
             'fr': 'French',
             'es': 'Spanish',
@@ -143,10 +145,10 @@ class DocumentReference:
             'gl': 'Galician'
         }
         return language_map.get(self.language, self.language.upper())
-    
-    def to_dict(self) -> dict:
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for MongoDB"""
-        data = {
+        data: dict[str, Any] = {
             'website_id': self.website_id,
             'document_url': self.document_url,
             'referring_page_url': self.referring_page_url,
@@ -164,9 +166,9 @@ class DocumentReference:
         if self._id:
             data['_id'] = self._id
         return data
-    
+
     @classmethod
-    def from_dict(cls, data: dict) -> 'DocumentReference':
+    def from_dict(cls, data: dict[str, Any]) -> DocumentReference:
         """Create from MongoDB document"""
         return cls(
             website_id=data['website_id'],

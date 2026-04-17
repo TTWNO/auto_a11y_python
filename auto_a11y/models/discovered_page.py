@@ -2,11 +2,13 @@
 Discovered Page model for key pages/screens flagged for manual inspection
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional, List
+from typing import Any
 from bson import ObjectId
-from .page import DrupalSyncStatus
+from .page import DrupalSyncStatus, Page
 
 
 @dataclass
@@ -28,18 +30,18 @@ class DiscoveredPage:
 
     # Source information
     source_type: str = "manual"  # "manual", "scraped_page", "automated_test", "common_component", "app_screen", "device_display"
-    source_page_id: Optional[str] = None  # If created from scraped Page, reference to Page._id
-    source_website_id: Optional[str] = None  # If from scraped page, reference to Website._id
-    source_component_signature: Optional[str] = None  # If common_component, the component signature
-    source_upload_id: Optional[str] = None  # If automated_test or common_component, reference to upload/dedup run
+    source_page_id: str | None = None  # If created from scraped Page, reference to Page._id
+    source_website_id: str | None = None  # If from scraped page, reference to Website._id
+    source_component_signature: str | None = None  # If common_component, the component signature
+    source_upload_id: str | None = None  # If automated_test or common_component, reference to upload/dedup run
 
     # Taxonomy tags (from Drupal taxonomies)
-    interested_because: List[str] = field(default_factory=list)  # Why is this page interesting? (taxonomy term names)
-    page_elements: List[str] = field(default_factory=list)  # Areas of display: header, footer, main, etc. (taxonomy term names)
+    interested_because: list[str] = field(default_factory=lambda: [])  # Why is this page interesting? (taxonomy term names)
+    page_elements: list[str] = field(default_factory=lambda: [])  # Areas of display: header, footer, main, etc. (taxonomy term names)
 
     # Notes
-    private_notes: Optional[str] = None  # Private notes for auditors (HTML)
-    public_notes: Optional[str] = None  # Public notes for audit reports (HTML)
+    private_notes: str | None = None  # Private notes for auditors (HTML)
+    public_notes: str | None = None  # Public notes for audit reports (HTML)
 
     # Audit flags
     include_in_report: bool = True  # Include this page in the audit report
@@ -47,24 +49,24 @@ class DiscoveredPage:
     manual_audit: bool = False  # Has this page had manual inspection?
 
     # Media
-    screenshot_paths: List[str] = field(default_factory=list)  # Paths to screenshots
-    document_links: List[dict] = field(default_factory=list)  # PDFs/documents found on page: [{"uri": "...", "title": "..."}]
+    screenshot_paths: list[str] = field(default_factory=lambda: [])  # Paths to screenshots
+    document_links: list[dict[str, Any]] = field(default_factory=lambda: [])  # PDFs/documents found on page: [{"uri": "...", "title": "..."}]
 
     # Drupal sync
-    drupal_uuid: Optional[str] = None  # UUID of discovered_page in Drupal
+    drupal_uuid: str | None = None  # UUID of discovered_page in Drupal
     drupal_sync_status: DrupalSyncStatus = DrupalSyncStatus.NOT_SYNCED
-    drupal_last_synced: Optional[datetime] = None
-    drupal_error_message: Optional[str] = None
+    drupal_last_synced: datetime | None = None
+    drupal_error_message: str | None = None
 
     # Metadata
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
-    created_by: Optional[str] = None  # User ID who created this
+    created_by: str | None = None  # User ID who created this
 
-    _id: Optional[ObjectId] = None
+    _id: ObjectId | None = None
 
     @property
-    def id(self) -> str:
+    def id(self) -> str | None:
         """Get discovered page ID as string"""
         return str(self._id) if self._id else None
 
@@ -78,9 +80,9 @@ class DiscoveredPage:
         """Check if page needs to be synced to Drupal"""
         return self.drupal_sync_status in [DrupalSyncStatus.NOT_SYNCED, DrupalSyncStatus.SYNC_FAILED]
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for MongoDB"""
-        data = {
+        data: dict[str, Any] = {
             'title': self.title,
             'url': self.url,
             'project_id': self.project_id,
@@ -111,7 +113,7 @@ class DiscoveredPage:
         return data
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'DiscoveredPage':
+    def from_dict(cls, data: dict[str, Any]) -> DiscoveredPage:
         """Create from MongoDB document"""
         return cls(
             title=data['title'],
@@ -142,7 +144,7 @@ class DiscoveredPage:
         )
 
     @classmethod
-    def from_page(cls, page_model, project_id: str) -> 'DiscoveredPage':
+    def from_page(cls, page_model: Page, project_id: str) -> DiscoveredPage:
         """
         Create a DiscoveredPage from a scraped Page model.
 

@@ -5,14 +5,18 @@ This model represents issues that can be synced with Drupal,
 supporting both automated test results and manual audit findings.
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import List, Optional, Dict, Any
-from enum import Enum
+from typing import Any, TYPE_CHECKING
 from bson import ObjectId
 
 from auto_a11y.models.test_result import ImpactLevel
 from auto_a11y.models.page import DrupalSyncStatus
+
+if TYPE_CHECKING:
+    from auto_a11y.models.recording_issue import RecordingIssue
 
 
 @dataclass
@@ -30,39 +34,39 @@ class Issue:
 
     # Classification
     impact: ImpactLevel = ImpactLevel.MEDIUM  # Maps to field_impact (high/med/low)
-    issue_type: Optional[str] = None  # Maps to field_issue_type taxonomy
-    location_on_page: Optional[str] = None  # Maps to field_location_on_page taxonomy
-    issue_code: Optional[str] = None  # Issue code for enhanced descriptions (e.g., "headings_ErrEmptyHeading")
+    issue_type: str | None = None  # Maps to field_issue_type taxonomy
+    location_on_page: str | None = None  # Maps to field_location_on_page taxonomy
+    issue_code: str | None = None  # Issue code for enhanced descriptions (e.g., "headings_ErrEmptyHeading")
 
     # WCAG references
-    wcag_criteria: List[str] = field(default_factory=list)  # Maps to field_wcag_chapter
+    wcag_criteria: list[str] = field(default_factory=lambda: [])  # Maps to field_wcag_chapter
 
     # Technical details
-    xpath: Optional[str] = None  # Maps to field_xpath
-    element: Optional[str] = None
-    html: Optional[str] = None
-    url: Optional[str] = None  # Maps to field_url
+    xpath: str | None = None  # Maps to field_xpath
+    element: str | None = None
+    html: str | None = None
+    url: str | None = None  # Maps to field_url
 
     # Recording context (for manual findings)
-    recording_id: Optional[str] = None  # Link to Recording document
-    video_timecode: Optional[str] = None  # Maps to field_video_timecode
+    recording_id: str | None = None  # Link to Recording document
+    video_timecode: str | None = None  # Maps to field_video_timecode
 
     # Detailed issue information (Dictaphone-style)
-    what: Optional[str] = None  # What the issue is
-    why: Optional[str] = None  # Why it matters
-    who: Optional[str] = None  # Who is affected
-    remediation: Optional[str] = None  # How to fix it
+    what: str | None = None  # What the issue is
+    why: str | None = None  # Why it matters
+    who: str | None = None  # Who is affected
+    remediation: str | None = None  # How to fix it
 
     # Relationships
-    project_id: Optional[str] = None
-    page_urls: List[str] = field(default_factory=list)
-    page_ids: List[str] = field(default_factory=list)
-    discovered_page_ids: List[str] = field(default_factory=list)
-    component_names: List[str] = field(default_factory=list)
+    project_id: str | None = None
+    page_urls: list[str] = field(default_factory=lambda: [])
+    page_ids: list[str] = field(default_factory=lambda: [])
+    discovered_page_ids: list[str] = field(default_factory=lambda: [])
+    component_names: list[str] = field(default_factory=lambda: [])
 
     # Source tracking
     source_type: str = "manual"  # "automated", "manual", "hybrid"
-    detection_method: Optional[str] = None  # "axe", "pa11y", "dictaphone", "expert"
+    detection_method: str | None = None  # "axe", "pa11y", "dictaphone", "expert"
 
     # Status
     status: str = "open"  # open, in_progress, resolved, verified
@@ -70,20 +74,20 @@ class Issue:
     # Metadata
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
-    tags: List[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=lambda: [])
 
     # Drupal sync
-    drupal_issue_id: Optional[int] = None  # Maps to field_id
-    drupal_uuid: Optional[str] = None  # Drupal node UUID
-    drupal_nid: Optional[int] = None  # Drupal node ID
+    drupal_issue_id: int | None = None  # Maps to field_id
+    drupal_uuid: str | None = None  # Drupal node UUID
+    drupal_nid: int | None = None  # Drupal node ID
     drupal_sync_status: DrupalSyncStatus = DrupalSyncStatus.NOT_SYNCED
-    drupal_last_synced: Optional[datetime] = None
-    drupal_error_message: Optional[str] = None
+    drupal_last_synced: datetime | None = None
+    drupal_error_message: str | None = None
 
-    _id: Optional[ObjectId] = None
+    _id: ObjectId | None = None
 
     @property
-    def id(self) -> str:
+    def id(self) -> str | None:
         """Get issue ID as string"""
         return str(self._id) if self._id else None
 
@@ -97,9 +101,9 @@ class Issue:
         """Check if issue needs to be synced to Drupal"""
         return self.drupal_sync_status in [DrupalSyncStatus.NOT_SYNCED, DrupalSyncStatus.SYNC_FAILED]
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for MongoDB"""
-        data = {
+        data: dict[str, Any] = {
             'title': self.title,
             'description': self.description,
             'impact': self.impact.value,
@@ -140,7 +144,7 @@ class Issue:
         return data
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'Issue':
+    def from_dict(cls, data: dict[str, Any]) -> Issue:
         """Create from dictionary"""
         # Handle ObjectId
         obj_id = data.get('_id')
@@ -148,7 +152,7 @@ class Issue:
         # Parse impact enum
         impact_value = data.get('impact', 'medium')
         # Map old impact levels for compatibility
-        impact_mapping = {
+        impact_mapping: dict[str, str] = {
             'critical': 'high',
             'serious': 'high',
             'moderate': 'medium',
@@ -197,7 +201,7 @@ class Issue:
         )
 
     @classmethod
-    def from_recording_issue(cls, recording_issue: 'RecordingIssue') -> 'Issue':
+    def from_recording_issue(cls, recording_issue: RecordingIssue) -> Issue:
         """
         Convert a RecordingIssue to an Issue for Drupal sync.
 
@@ -208,7 +212,7 @@ class Issue:
             Issue instance
         """
         # Combine the detailed fields into description
-        description_parts = []
+        description_parts: list[str] = []
         if recording_issue.what:
             description_parts.append(f"<h3>What</h3><p>{recording_issue.what}</p>")
         if recording_issue.why:
@@ -221,7 +225,7 @@ class Issue:
         description = "\n".join(description_parts) if description_parts else recording_issue.what or ""
 
         # Convert timecodes to video_timecode string
-        video_timecode = None
+        video_timecode: str | None = None
         if recording_issue.timecodes:
             timecode_strs = [f"{tc.start} - {tc.end}" for tc in recording_issue.timecodes]
             video_timecode = "; ".join(timecode_strs)

@@ -2,9 +2,11 @@
 ShareToken model for public share links
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
+from typing import Any
 from enum import Enum
 from bson import ObjectId
 
@@ -25,18 +27,18 @@ class ShareToken:
     label: str  # Human-readable label for the token
 
     token_hash: str = ""  # SHA-256 hash of the signed token string
-    expires_at: Optional[datetime] = None  # None = never expires
+    expires_at: datetime | None = None  # None = never expires
     revoked: bool = False
-    revoked_at: Optional[datetime] = None
+    revoked_at: datetime | None = None
 
     created_at: datetime = field(default_factory=datetime.now)
-    last_used: Optional[datetime] = None
+    last_used: datetime | None = None
     use_count: int = 0
 
-    _id: Optional[ObjectId] = None
+    _id: ObjectId | None = None
 
     @property
-    def id(self) -> str:
+    def id(self) -> str | None:
         """Get token ID as string"""
         return str(self._id) if self._id else None
 
@@ -52,9 +54,9 @@ class ShareToken:
         """Check if token is currently valid (not expired, not revoked)"""
         return not self.revoked and not self.is_expired
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for MongoDB"""
-        data = {
+        data: dict[str, Any] = {
             'scope': self.scope.value,
             'scope_id': self.scope_id,
             'created_by': self.created_by,
@@ -72,7 +74,7 @@ class ShareToken:
         return data
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'ShareToken':
+    def from_dict(cls, data: dict[str, Any]) -> ShareToken:
         """Create from MongoDB document"""
         scope = data.get('scope', 'project')
         if isinstance(scope, str):

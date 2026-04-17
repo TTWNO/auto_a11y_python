@@ -2,9 +2,11 @@
 Discovery Run model for versioning website discoveries
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional, Dict, Any, List
+from typing import Any
 from enum import Enum
 from bson import ObjectId
 
@@ -20,46 +22,46 @@ class DiscoveryStatus(Enum):
 @dataclass
 class DiscoveryRun:
     """Model for a single discovery/scraping session"""
-    
+
     website_id: str
     started_at: datetime = field(default_factory=datetime.now)
-    completed_at: Optional[datetime] = None
+    completed_at: datetime | None = None
     status: DiscoveryStatus = DiscoveryStatus.RUNNING
-    
+
     # Discovery parameters used
     max_pages: int = 999999  # Effectively unlimited (1 million pages)
     max_depth: int = 10  # How many clicks away from the starting page
     follow_external: bool = False
     respect_robots: bool = True
-    
+
     # Results
     pages_discovered: int = 0
     pages_failed: int = 0
     documents_found: int = 0
     external_links_found: int = 0
-    failed_pages_details: List[Dict[str, str]] = field(default_factory=list)  # [{url, error_reason}]
-    
+    failed_pages_details: list[dict[str, str]] = field(default_factory=lambda: [])  # [{url, error_reason}]
+
     # Comparison with previous run
     pages_added: int = 0  # New pages not in previous discovery
     pages_removed: int = 0  # Pages in previous but not current
     pages_unchanged: int = 0  # Pages found in both
-    
+
     # Metadata
-    triggered_by: Optional[str] = None  # User ID or "scheduled"
-    job_id: Optional[str] = None  # Associated job ID
-    error_message: Optional[str] = None
-    duration_seconds: Optional[int] = None
-    
+    triggered_by: str | None = None  # User ID or "scheduled"
+    job_id: str | None = None  # Associated job ID
+    error_message: str | None = None
+    duration_seconds: int | None = None
+
     # Is this the latest discovery for the website?
     is_latest: bool = True
-    
-    _id: Optional[ObjectId] = None
-    
+
+    _id: ObjectId | None = None
+
     @property
-    def id(self) -> str:
+    def id(self) -> str | None:
         """Get discovery run ID as string"""
         return str(self._id) if self._id else None
-    
+
     @property
     def duration_display(self) -> str:
         """Get human-readable duration"""
@@ -68,7 +70,7 @@ class DiscoveryRun:
                 self.duration_seconds = int((self.completed_at - self.started_at).total_seconds())
             else:
                 return "Unknown"
-        
+
         if self.duration_seconds < 60:
             return f"{self.duration_seconds}s"
         elif self.duration_seconds < 3600:
@@ -77,10 +79,10 @@ class DiscoveryRun:
             hours = self.duration_seconds // 3600
             minutes = (self.duration_seconds % 3600) // 60
             return f"{hours}h {minutes}m"
-    
-    def to_dict(self) -> Dict[str, Any]:
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for MongoDB"""
-        data = {
+        data: dict[str, Any] = {
             'website_id': self.website_id,
             'started_at': self.started_at,
             'completed_at': self.completed_at,
@@ -106,9 +108,9 @@ class DiscoveryRun:
         if self._id:
             data['_id'] = self._id
         return data
-    
+
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'DiscoveryRun':
+    def from_dict(cls, data: dict[str, Any]) -> DiscoveryRun:
         """Create from MongoDB document"""
         return cls(
             website_id=data['website_id'],

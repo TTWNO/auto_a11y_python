@@ -1,11 +1,14 @@
 """Permission group model for group-based access control."""
+
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional, Dict
+from typing import Any
 from bson import ObjectId
 
 
-PERMISSION_LEVELS = {
+PERMISSION_LEVELS: dict[str, int] = {
     'none': 0,
     'read': 1,
     'update': 2,
@@ -13,9 +16,9 @@ PERMISSION_LEVELS = {
     'delete': 4,
 }
 
-LEVEL_NAMES = {v: k for k, v in PERMISSION_LEVELS.items()}
+LEVEL_NAMES: dict[int, str] = {v: k for k, v in PERMISSION_LEVELS.items()}
 
-RESOURCE_NOUNS = [
+RESOURCE_NOUNS: list[str] = [
     'projects',
     'websites',
     'pages',
@@ -34,20 +37,20 @@ RESOURCE_NOUNS = [
     'fixture_tests',
 ]
 
-GLOBAL_RESOURCES = {'users', 'groups', 'fixture_tests'}
+GLOBAL_RESOURCES: set[str] = {'users', 'groups', 'fixture_tests'}
 
-PROJECT_SCOPED_RESOURCES = set(RESOURCE_NOUNS) - GLOBAL_RESOURCES
+PROJECT_SCOPED_RESOURCES: set[str] = set(RESOURCE_NOUNS) - GLOBAL_RESOURCES
 
 
-def _all_delete():
+def _all_delete() -> dict[str, str]:
     return {r: 'delete' for r in RESOURCE_NOUNS}
 
 
-def _all_none():
+def _all_none() -> dict[str, str]:
     return {r: 'none' for r in RESOURCE_NOUNS}
 
 
-DEFAULT_GROUPS = {
+DEFAULT_GROUPS: dict[str, dict[str, Any]] = {
     'Admin': {
         'description': 'Full access to all resources',
         'permissions': _all_delete(),
@@ -93,14 +96,14 @@ class PermissionGroup:
     """A named group with per-resource permission levels."""
     name: str
     description: str = ''
-    permissions: Dict[str, str] = field(default_factory=_all_none)
+    permissions: dict[str, str] = field(default_factory=_all_none)
     is_system: bool = False
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
-    _id: Optional[ObjectId] = None
+    _id: ObjectId | None = None
 
     @property
-    def id(self) -> Optional[str]:
+    def id(self) -> str | None:
         return str(self._id) if self._id else None
 
     def get_level(self, resource: str) -> int:
@@ -111,8 +114,8 @@ class PermissionGroup:
         """Check if this group grants at least the required level on resource."""
         return self.get_level(resource) >= PERMISSION_LEVELS.get(required_level, 0)
 
-    def to_dict(self) -> dict:
-        data = {
+    def to_dict(self) -> dict[str, Any]:
+        data: dict[str, Any] = {
             'name': self.name,
             'description': self.description,
             'permissions': self.permissions,
@@ -125,7 +128,7 @@ class PermissionGroup:
         return data
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'PermissionGroup':
+    def from_dict(cls, data: dict[str, Any]) -> PermissionGroup:
         return cls(
             name=data['name'],
             description=data.get('description', ''),

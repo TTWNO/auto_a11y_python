@@ -2,9 +2,11 @@
 Test state matrix model for defining which script state combinations to test
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import List, Dict, Optional, Set
+from typing import Any
 from bson import ObjectId
 
 
@@ -18,25 +20,25 @@ class ScriptStateDefinition:
     test_after: bool = True    # Include "after execution" as a state
     execution_order: int = 0   # Order in which script should be executed (0-based)
 
-    def get_state_ids(self) -> List[str]:
+    def get_state_ids(self) -> list[str]:
         """Get list of state IDs for this script"""
-        states = []
+        states: list[str] = []
         if self.test_before:
             states.append(f"{self.script_id}_before")
         if self.test_after:
             states.append(f"{self.script_id}_after")
         return states
 
-    def get_state_labels(self) -> List[str]:
+    def get_state_labels(self) -> list[str]:
         """Get human-readable labels for states"""
-        labels = []
+        labels: list[str] = []
         if self.test_before:
             labels.append(f"{self.script_name} (Before)")
         if self.test_after:
             labels.append(f"{self.script_name} (After)")
         return labels
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary"""
         return {
             'script_id': self.script_id,
@@ -47,7 +49,7 @@ class ScriptStateDefinition:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'ScriptStateDefinition':
+    def from_dict(cls, data: dict[str, Any]) -> ScriptStateDefinition:
         """Create from dictionary"""
         return cls(
             script_id=data['script_id'],
@@ -63,10 +65,10 @@ class StateCombination:
     """Represents a specific combination of script states to test"""
 
     # Maps script_id to state ("before" or "after")
-    script_states: Dict[str, str] = field(default_factory=dict)
+    script_states: dict[str, str] = field(default_factory=lambda: {})
 
     # User-friendly description of this state combination
-    description: Optional[str] = None
+    description: str | None = None
 
     # Whether this combination should be tested
     enabled: bool = True
@@ -78,7 +80,7 @@ class StateCombination:
         parts = [f"{script_id}_{state}" for script_id, state in sorted_states]
         return "_".join(parts)
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary"""
         return {
             'script_states': self.script_states,
@@ -87,7 +89,7 @@ class StateCombination:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'StateCombination':
+    def from_dict(cls, data: dict[str, Any]) -> StateCombination:
         """Create from dictionary"""
         return cls(
             script_states=data['script_states'],
@@ -117,23 +119,23 @@ class TestStateMatrix:
     page_id: str
     website_id: str
 
-    scripts: List[ScriptStateDefinition] = field(default_factory=list)
+    scripts: list[ScriptStateDefinition] = field(default_factory=lambda: [])
 
-    combinations: List[Dict[str, str]] = field(default_factory=list)
+    combinations: list[dict[str, str]] = field(default_factory=lambda: [])
 
-    matrix: Dict[str, Dict[str, bool]] = field(default_factory=dict)
+    matrix: dict[str, dict[str, bool]] = field(default_factory=lambda: {})
 
     created_date: datetime = field(default_factory=datetime.now)
     last_modified: datetime = field(default_factory=datetime.now)
-    created_by: Optional[str] = None
+    created_by: str | None = None
 
-    _id: Optional[ObjectId] = None
+    _id: ObjectId | None = None
 
     @property
-    def id(self) -> str:
+    def id(self) -> str | None:
         return str(self._id) if self._id else None
 
-    def initialize_matrix(self):
+    def initialize_matrix(self) -> None:
         """Initialize with default sequential combinations"""
         self.combinations = []
 
@@ -142,7 +144,7 @@ class TestStateMatrix:
 
         scripts_sorted = sorted(self.scripts, key=lambda s: s.execution_order)
 
-        initial = {s.script_id: "before" for s in scripts_sorted}
+        initial: dict[str, str] = {s.script_id: "before" for s in scripts_sorted}
         self.combinations.append(initial.copy())
 
         current = initial.copy()
@@ -151,7 +153,7 @@ class TestStateMatrix:
                 current[script.script_id] = "after"
                 self.combinations.append(current.copy())
 
-    def get_enabled_combinations(self) -> List[StateCombination]:
+    def get_enabled_combinations(self) -> list[StateCombination]:
         """Get all combinations as StateCombination objects"""
         if self.combinations:
             return [
@@ -164,17 +166,17 @@ class TestStateMatrix:
 
         return []
 
-    def _extract_from_legacy_matrix(self) -> List[StateCombination]:
+    def _extract_from_legacy_matrix(self) -> list[StateCombination]:
         """Extract combinations from old matrix format for backwards compatibility"""
-        seen: Set[str] = set()
-        results: List[StateCombination] = []
+        seen: set[str] = set()
+        results: list[StateCombination] = []
 
         for row_id, row_data in self.matrix.items():
             for col_id, enabled in row_data.items():
                 if not enabled:
                     continue
 
-                script_states = {}
+                script_states: dict[str, str] = {}
                 for state_id in [row_id, col_id]:
                     parts = state_id.rsplit('_', 1)
                     if len(parts) == 2:
@@ -189,8 +191,8 @@ class TestStateMatrix:
 
         return results
 
-    def to_dict(self) -> dict:
-        data = {
+    def to_dict(self) -> dict[str, Any]:
+        data: dict[str, Any] = {
             'page_id': self.page_id,
             'website_id': self.website_id,
             'scripts': [script.to_dict() for script in self.scripts],
@@ -205,7 +207,7 @@ class TestStateMatrix:
         return data
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'TestStateMatrix':
+    def from_dict(cls, data: dict[str, Any]) -> TestStateMatrix:
         return cls(
             page_id=data['page_id'],
             website_id=data['website_id'],
@@ -218,5 +220,5 @@ class TestStateMatrix:
             _id=data.get('_id')
         )
 
-    def update_timestamp(self):
+    def update_timestamp(self) -> None:
         self.last_modified = datetime.now()

@@ -428,3 +428,47 @@ class TestStrictModeFormatErrors:
         with fluent_app.test_request_context():
             session["language"] = "en"
             assert str(ftl("greeting", name="World")) == "Hello, World!"
+
+
+# ---------------------------------------------------------------------------
+# Tests: strict mode — ftl_translate_issue
+# ---------------------------------------------------------------------------
+
+class TestStrictModeTranslateIssue:
+
+    def test_unmapped_text_raises_in_strict(self, fluent_app, monkeypatch):
+        """In strict mode, inline text not in the JSON map raises."""
+        import auto_a11y.web.fluent as fluent_mod
+        from auto_a11y.web.fluent import MissingTranslationError, ftl_translate_issue
+
+        monkeypatch.setattr(fluent_mod, "_strict_mode", True)
+        # Force the JSON map to an empty dict so "any text" is unmapped
+        monkeypatch.setattr(fluent_mod, "_inline_issue_ids", {})
+
+        with fluent_app.test_request_context():
+            session["language"] = "en"
+            with pytest.raises(MissingTranslationError, match="inline_issue_ids.json"):
+                ftl_translate_issue("Some untracked inline text")
+
+    def test_unmapped_text_non_strict_returns_original(self, fluent_app, monkeypatch):
+        """Non-strict: unmapped text silently falls back (unchanged behavior)."""
+        import auto_a11y.web.fluent as fluent_mod
+        from auto_a11y.web.fluent import ftl_translate_issue
+
+        monkeypatch.setattr(fluent_mod, "_strict_mode", False)
+        monkeypatch.setattr(fluent_mod, "_inline_issue_ids", {})
+
+        with fluent_app.test_request_context():
+            session["language"] = "en"
+            assert ftl_translate_issue("Some untracked inline text") == (
+                "Some untracked inline text"
+            )
+
+    def test_empty_text_does_not_raise(self, fluent_app, monkeypatch):
+        """Empty text returns empty string without raising, even in strict."""
+        import auto_a11y.web.fluent as fluent_mod
+        from auto_a11y.web.fluent import ftl_translate_issue
+
+        monkeypatch.setattr(fluent_mod, "_strict_mode", True)
+
+        assert ftl_translate_issue("") == ""

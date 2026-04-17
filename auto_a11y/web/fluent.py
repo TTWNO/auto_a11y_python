@@ -243,17 +243,26 @@ def ftl_translate_issue(text: str) -> str:
     Falls back to the original text if no mapping exists.
 
     This replaces the old ``translate_issue`` Jinja2 filter.
+
+    In strict mode, an unmapped English string raises
+    ``MissingTranslationError`` so CI catches untranslated issue
+    descriptions.
     """
     if not text:
         return text or ''
     id_map = _load_inline_issue_ids()
     ftl_id = id_map.get(text)
     if ftl_id is None:
-        # No mapping -- return original text
+        if _is_strict():
+            raise MissingTranslationError(
+                f"Inline issue text has no entry in inline_issue_ids.json:\n  {text!r}\n  Strict mode is active. Add this English string to:\n    auto_a11y/web/translations/inline_issue_ids.json"
+            )
+        # No mapping — return original text
         return text
     result = ftl(ftl_id)
-    # If ftl() returned the message ID (miss), fall back to original text
-    if str(result) == ftl_id:
+    # If ftl() returned the message ID (miss), fall back to original text.
+    # In strict mode this branch is unreachable because ftl() raises first.
+    if isinstance(result, str) and result == ftl_id:
         return text
     return str(result)
 

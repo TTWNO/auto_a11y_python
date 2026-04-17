@@ -6,9 +6,12 @@ management, keyboard interaction, and background inertness.
 
 Requires Playwright: python -m playwright install chromium
 """
+from __future__ import annotations
+
 import os
 os.environ.setdefault('RUN_AI_ANALYSIS', 'false')
 
+from collections.abc import AsyncIterator
 from pathlib import Path
 
 import pytest
@@ -20,7 +23,7 @@ FIXTURE_URL = FIXTURE_PATH.as_uri()
 
 
 @pytest_asyncio.fixture
-async def page():
+async def page() -> AsyncIterator[Page]:
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(headless=True)
         ctx = await browser.new_context()
@@ -40,7 +43,7 @@ class TestDialogRole:
     and aria-modal=true to the accessibility tree."""
 
     @pytest.mark.asyncio
-    async def test_open_dialog_has_role_dialog(self, page: Page):
+    async def test_open_dialog_has_role_dialog(self, page: Page) -> None:
         await page.click("#openStandard")
         # Playwright's get_by_role queries the accessibility tree —
         # native <dialog> has implicit role="dialog"
@@ -51,7 +54,7 @@ class TestDialogRole:
         )
 
     @pytest.mark.asyncio
-    async def test_open_dialog_is_modal(self, page: Page):
+    async def test_open_dialog_is_modal(self, page: Page) -> None:
         """A dialog opened with .showModal() makes background content inert,
         which is the behavioral equivalent of aria-modal=true."""
         await page.click("#openStandard")
@@ -69,7 +72,7 @@ class TestDialogRole:
         )
 
     @pytest.mark.asyncio
-    async def test_closed_dialog_not_visible_to_screen_readers(self, page: Page):
+    async def test_closed_dialog_not_visible_to_screen_readers(self, page: Page) -> None:
         """A closed <dialog> should not be exposed to screen readers."""
         # Before opening, the dialog should not be findable by role
         count = await page.get_by_role("dialog", name="Standard Modal").count()
@@ -78,7 +81,7 @@ class TestDialogRole:
         )
 
     @pytest.mark.asyncio
-    async def test_dialog_has_implicit_role_not_explicit(self, page: Page):
+    async def test_dialog_has_implicit_role_not_explicit(self, page: Page) -> None:
         """Native <dialog> should not need an explicit role attribute."""
         await page.click("#openStandard")
         explicit_role = await page.locator("#standardModal").get_attribute("role")
@@ -95,7 +98,7 @@ class TestAccessibleName:
     """Dialogs must have an accessible name for screen reader announcements."""
 
     @pytest.mark.asyncio
-    async def test_dialog_named_by_aria_labelledby(self, page: Page):
+    async def test_dialog_named_by_aria_labelledby(self, page: Page) -> None:
         await page.click("#openStandard")
         # Verify aria-labelledby links to the title element
         labelledby = await page.locator("#standardModal").get_attribute(
@@ -112,7 +115,7 @@ class TestAccessibleName:
         assert count == 1
 
     @pytest.mark.asyncio
-    async def test_dialog_without_labelledby_has_no_accessible_name(self, page: Page):
+    async def test_dialog_without_labelledby_has_no_accessible_name(self, page: Page) -> None:
         await page.click("#openNoLabel")
         labelledby = await page.locator("#noLabelModal").get_attribute(
             "aria-labelledby"
@@ -122,7 +125,7 @@ class TestAccessibleName:
         )
 
     @pytest.mark.asyncio
-    async def test_close_button_has_accessible_label(self, page: Page):
+    async def test_close_button_has_accessible_label(self, page: Page) -> None:
         await page.click("#openStandard")
         close_btn = page.locator("#standardModal .btn-close")
         label = await close_btn.get_attribute("aria-label")
@@ -139,7 +142,7 @@ class TestFocusManagement:
     """Screen readers rely on focus position to orient users."""
 
     @pytest.mark.asyncio
-    async def test_focus_moves_into_dialog_on_open(self, page: Page):
+    async def test_focus_moves_into_dialog_on_open(self, page: Page) -> None:
         await page.click("#openStandard")
         focus_in_dialog = await page.evaluate("""() => {
             const dialog = document.getElementById('standardModal');
@@ -148,7 +151,7 @@ class TestFocusManagement:
         assert focus_in_dialog, "Focus should move inside the dialog when opened"
 
     @pytest.mark.asyncio
-    async def test_focus_never_reaches_background_elements(self, page: Page):
+    async def test_focus_never_reaches_background_elements(self, page: Page) -> None:
         """Tab should cycle within the dialog, never reaching background
         interactive elements. Note: focus may briefly pass through <body>
         between cycles — this is native <dialog> behavior and is fine."""
@@ -167,7 +170,7 @@ class TestFocusManagement:
             )
 
     @pytest.mark.asyncio
-    async def test_shift_tab_never_reaches_background_elements(self, page: Page):
+    async def test_shift_tab_never_reaches_background_elements(self, page: Page) -> None:
         await page.click("#openStandard")
 
         background_ids = {"openStandard", "openPersistent", "openProgrammatic",
@@ -183,7 +186,7 @@ class TestFocusManagement:
             )
 
     @pytest.mark.asyncio
-    async def test_focus_restores_to_trigger_on_close(self, page: Page):
+    async def test_focus_restores_to_trigger_on_close(self, page: Page) -> None:
         await page.click("#openStandard")
         await page.locator("#standardModal .btn-close").click()
         focused_id = await page.evaluate("() => document.activeElement?.id")
@@ -192,7 +195,7 @@ class TestFocusManagement:
         )
 
     @pytest.mark.asyncio
-    async def test_focus_restores_after_escape(self, page: Page):
+    async def test_focus_restores_after_escape(self, page: Page) -> None:
         await page.click("#openStandard")
         await page.keyboard.press("Escape")
         focused_id = await page.evaluate("() => document.activeElement?.id")
@@ -201,7 +204,7 @@ class TestFocusManagement:
         )
 
     @pytest.mark.asyncio
-    async def test_programmatic_open_moves_focus(self, page: Page):
+    async def test_programmatic_open_moves_focus(self, page: Page) -> None:
         await page.click("#openProgrammatic")
         focus_in_dialog = await page.evaluate("""() => {
             const dialog = document.getElementById('programmaticModal');
@@ -220,7 +223,7 @@ class TestKeyboardInteraction:
     """Keyboard access is critical for screen reader users."""
 
     @pytest.mark.asyncio
-    async def test_escape_closes_standard_dialog(self, page: Page):
+    async def test_escape_closes_standard_dialog(self, page: Page) -> None:
         await page.click("#openStandard")
         is_open = await page.locator("#standardModal").evaluate("el => el.open")
         assert is_open
@@ -230,7 +233,7 @@ class TestKeyboardInteraction:
         assert not is_open, "Escape should close a standard dialog"
 
     @pytest.mark.asyncio
-    async def test_escape_does_not_close_persistent_dialog(self, page: Page):
+    async def test_escape_does_not_close_persistent_dialog(self, page: Page) -> None:
         await page.click("#openPersistent")
         is_open = await page.locator("#persistentModal").evaluate("el => el.open")
         assert is_open
@@ -240,7 +243,7 @@ class TestKeyboardInteraction:
         assert is_open, "Escape should NOT close a persistent dialog"
 
     @pytest.mark.asyncio
-    async def test_close_button_keyboard_accessible(self, page: Page):
+    async def test_close_button_keyboard_accessible(self, page: Page) -> None:
         await page.click("#openStandard")
         close_btn = page.locator("#standardModal .btn-close")
         await close_btn.focus()
@@ -249,7 +252,7 @@ class TestKeyboardInteraction:
         assert not is_open, "Close button should work via Enter key"
 
     @pytest.mark.asyncio
-    async def test_data_close_modal_button_keyboard_accessible(self, page: Page):
+    async def test_data_close_modal_button_keyboard_accessible(self, page: Page) -> None:
         await page.click("#openStandard")
         cancel_btn = page.locator("#standardModal .modal-footer [data-close-modal]")
         await cancel_btn.focus()
@@ -265,21 +268,21 @@ class TestKeyboardInteraction:
 class TestBackdropDismissal:
 
     @pytest.mark.asyncio
-    async def test_backdrop_click_closes_standard_dialog(self, page: Page):
+    async def test_backdrop_click_closes_standard_dialog(self, page: Page) -> None:
         await page.click("#openStandard")
         await page.locator("#standardModal").click(position={"x": 5, "y": 5})
         is_open = await page.locator("#standardModal").evaluate("el => el.open")
         assert not is_open, "Clicking backdrop should close a standard dialog"
 
     @pytest.mark.asyncio
-    async def test_backdrop_click_does_not_close_persistent_dialog(self, page: Page):
+    async def test_backdrop_click_does_not_close_persistent_dialog(self, page: Page) -> None:
         await page.click("#openPersistent")
         await page.locator("#persistentModal").click(position={"x": 5, "y": 5})
         is_open = await page.locator("#persistentModal").evaluate("el => el.open")
         assert is_open, "Clicking backdrop should NOT close a persistent dialog"
 
     @pytest.mark.asyncio
-    async def test_clicking_content_does_not_close_dialog(self, page: Page):
+    async def test_clicking_content_does_not_close_dialog(self, page: Page) -> None:
         await page.click("#openStandard")
         await page.locator("#standardModal .modal-body").click()
         is_open = await page.locator("#standardModal").evaluate("el => el.open")
@@ -295,7 +298,7 @@ class TestBackgroundInertness:
     (unreachable by screen readers and keyboard)."""
 
     @pytest.mark.asyncio
-    async def test_background_button_not_focusable(self, page: Page):
+    async def test_background_button_not_focusable(self, page: Page) -> None:
         await page.click("#openStandard")
         bg_got_focus = await page.evaluate("""() => {
             const bg = document.getElementById('bgButton');
@@ -307,7 +310,7 @@ class TestBackgroundInertness:
         )
 
     @pytest.mark.asyncio
-    async def test_background_input_not_focusable(self, page: Page):
+    async def test_background_input_not_focusable(self, page: Page) -> None:
         await page.click("#openStandard")
         bg_got_focus = await page.evaluate("""() => {
             const bg = document.getElementById('bgInput');
@@ -319,7 +322,7 @@ class TestBackgroundInertness:
         )
 
     @pytest.mark.asyncio
-    async def test_background_link_not_focusable(self, page: Page):
+    async def test_background_link_not_focusable(self, page: Page) -> None:
         await page.click("#openStandard")
         bg_got_focus = await page.evaluate("""() => {
             const bg = document.getElementById('bgLink');
@@ -331,7 +334,7 @@ class TestBackgroundInertness:
         )
 
     @pytest.mark.asyncio
-    async def test_background_becomes_reachable_after_close(self, page: Page):
+    async def test_background_becomes_reachable_after_close(self, page: Page) -> None:
         await page.click("#openStandard")
         await page.keyboard.press("Escape")
         bg_got_focus = await page.evaluate("""() => {
@@ -351,20 +354,20 @@ class TestBackgroundInertness:
 class TestProgrammaticHelpers:
 
     @pytest.mark.asyncio
-    async def test_open_modal_helper(self, page: Page):
+    async def test_open_modal_helper(self, page: Page) -> None:
         await page.evaluate("openModal('standardModal')")
         is_open = await page.locator("#standardModal").evaluate("el => el.open")
         assert is_open
 
     @pytest.mark.asyncio
-    async def test_close_modal_helper(self, page: Page):
+    async def test_close_modal_helper(self, page: Page) -> None:
         await page.evaluate("openModal('standardModal')")
         await page.evaluate("closeModal('standardModal')")
         is_open = await page.locator("#standardModal").evaluate("el => el.open")
         assert not is_open
 
     @pytest.mark.asyncio
-    async def test_open_modal_nonexistent_id_does_not_throw(self, page: Page):
+    async def test_open_modal_nonexistent_id_does_not_throw(self, page: Page) -> None:
         error = await page.evaluate("""() => {
             try { openModal('nonexistent'); return null; }
             catch (e) { return e.message; }
@@ -372,7 +375,7 @@ class TestProgrammaticHelpers:
         assert error is None
 
     @pytest.mark.asyncio
-    async def test_close_modal_nonexistent_id_does_not_throw(self, page: Page):
+    async def test_close_modal_nonexistent_id_does_not_throw(self, page: Page) -> None:
         error = await page.evaluate("""() => {
             try { closeModal('nonexistent'); return null; }
             catch (e) { return e.message; }

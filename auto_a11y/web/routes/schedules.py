@@ -1,8 +1,10 @@
 """
 Routes for managing test schedules (scheduled accessibility testing)
 """
+from __future__ import annotations
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify
+from werkzeug.wrappers import Response
 from auto_a11y.web.fluent import ftl
 from flask_login import current_user
 from datetime import datetime
@@ -22,7 +24,7 @@ schedules_bp = Blueprint('schedules', __name__)
 
 
 @schedules_bp.route('/schedules')
-def schedules_dashboard():
+def schedules_dashboard() -> str:
     """Global schedules dashboard - shows all schedules across all projects"""
     # Get filter parameters
     project_id = request.args.get('project_id')
@@ -63,7 +65,7 @@ def schedules_dashboard():
     disabled_schedules = total_schedules - enabled_schedules
 
     # Count by schedule type
-    type_counts = {}
+    type_counts: dict[str, int] = {}
     for s in schedules:
         type_name = s.schedule_type.value if hasattr(s.schedule_type, 'value') else str(s.schedule_type)
         type_counts[type_name] = type_counts.get(type_name, 0) + 1
@@ -95,7 +97,7 @@ def schedules_dashboard():
 
 @schedules_bp.route('/websites/<website_id>/schedules')
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
-def list_schedules(website_id):
+def list_schedules(website_id: str) -> str | Response:
     """List all schedules for a website"""
     website = current_app.db.get_website(website_id)
     if not website:
@@ -115,7 +117,7 @@ def list_schedules(website_id):
 
 @schedules_bp.route('/websites/<website_id>/schedules/create', methods=['GET', 'POST'])
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
-def create_schedule(website_id):
+def create_schedule(website_id: str) -> str | Response:
     """Create a new schedule"""
     website = current_app.db.get_website(website_id)
     if not website:
@@ -233,7 +235,7 @@ def create_schedule(website_id):
 
 @schedules_bp.route('/websites/<website_id>/schedules/<schedule_id>')
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
-def view_schedule(website_id, schedule_id):
+def view_schedule(website_id: str, schedule_id: str) -> str | Response:
     """View schedule details"""
     website = current_app.db.get_website(website_id)
     if not website:
@@ -264,7 +266,7 @@ def view_schedule(website_id, schedule_id):
 
 @schedules_bp.route('/websites/<website_id>/schedules/<schedule_id>/edit', methods=['GET', 'POST'])
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
-def edit_schedule(website_id, schedule_id):
+def edit_schedule(website_id: str, schedule_id: str) -> str | Response:
     """Edit an existing schedule"""
     website = current_app.db.get_website(website_id)
     if not website:
@@ -383,7 +385,7 @@ def edit_schedule(website_id, schedule_id):
 
 @schedules_bp.route('/websites/<website_id>/schedules/<schedule_id>/delete', methods=['POST'])
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
-def delete_schedule(website_id, schedule_id):
+def delete_schedule(website_id: str, schedule_id: str) -> Response:
     """Delete a schedule"""
     schedule = current_app.db.get_test_schedule(schedule_id)
     if not schedule:
@@ -404,7 +406,7 @@ def delete_schedule(website_id, schedule_id):
 
 @schedules_bp.route('/websites/<website_id>/schedules/<schedule_id>/toggle', methods=['POST'])
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
-def toggle_schedule(website_id, schedule_id):
+def toggle_schedule(website_id: str, schedule_id: str) -> Response | tuple[Response, int]:
     """Enable or disable a schedule"""
     schedule = current_app.db.get_test_schedule(schedule_id)
     if not schedule:
@@ -441,7 +443,7 @@ def toggle_schedule(website_id, schedule_id):
 
 @schedules_bp.route('/websites/<website_id>/schedules/<schedule_id>/run-now', methods=['POST'])
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
-def run_now(website_id, schedule_id):
+def run_now(website_id: str, schedule_id: str) -> Response | tuple[Response, int]:
     """Trigger immediate execution of a schedule"""
     schedule = current_app.db.get_test_schedule(schedule_id)
     if not schedule:
@@ -476,7 +478,7 @@ def run_now(website_id, schedule_id):
 
 @schedules_bp.route('/websites/<website_id>/schedules/<schedule_id>/preview')
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
-def preview_runs(website_id, schedule_id):
+def preview_runs(website_id: str, schedule_id: str) -> Response | tuple[Response, int]:
     """Preview next run times for a schedule"""
     schedule = current_app.db.get_test_schedule(schedule_id)
     if not schedule:

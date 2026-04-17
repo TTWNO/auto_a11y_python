@@ -1,8 +1,10 @@
 """
 Routes for managing project participants (lived experience testers and test supervisors)
 """
+from __future__ import annotations
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify
+from flask import Blueprint, Response, render_template, request, redirect, url_for, flash, current_app, jsonify
+from werkzeug.wrappers import Response as WerkzeugResponse
 from auto_a11y.web.fluent import ftl
 from auto_a11y.models import LivedExperienceTester, TestSupervisor
 import logging
@@ -13,7 +15,7 @@ project_participants_bp = Blueprint('project_participants', __name__)
 
 
 @project_participants_bp.route('/projects/<project_id>/participants')
-def list_participants(project_id):
+def list_participants(project_id: str) -> str | Response | WerkzeugResponse:
     """List all lived experience testers and supervisors for a project"""
     project = current_app.db.get_project(project_id)
     if not project:
@@ -29,7 +31,7 @@ def list_participants(project_id):
 # ===== TESTER ROUTES =====
 
 @project_participants_bp.route('/projects/<project_id>/participants/testers/create', methods=['GET', 'POST'])
-def create_tester(project_id):
+def create_tester(project_id: str) -> str | Response | WerkzeugResponse:
     """Create a new lived experience tester"""
     project = current_app.db.get_project(project_id)
     if not project:
@@ -68,7 +70,7 @@ def create_tester(project_id):
 
 
 @project_participants_bp.route('/projects/<project_id>/participants/testers/<tester_id>/edit', methods=['GET', 'POST'])
-def edit_tester(project_id, tester_id):
+def edit_tester(project_id: str, tester_id: str) -> str | Response | WerkzeugResponse:
     """Edit a lived experience tester"""
     project = current_app.db.get_project(project_id)
     if not project:
@@ -112,7 +114,7 @@ def edit_tester(project_id, tester_id):
 
 
 @project_participants_bp.route('/projects/<project_id>/participants/testers/<tester_id>/delete', methods=['POST'])
-def delete_tester(project_id, tester_id):
+def delete_tester(project_id: str, tester_id: str) -> Response | tuple[Response, int]:
     """Delete a lived experience tester"""
     project = current_app.db.get_project(project_id)
     if not project:
@@ -138,7 +140,7 @@ def delete_tester(project_id, tester_id):
 # ===== SUPERVISOR ROUTES =====
 
 @project_participants_bp.route('/projects/<project_id>/participants/supervisors/create', methods=['GET', 'POST'])
-def create_supervisor(project_id):
+def create_supervisor(project_id: str) -> str | Response | WerkzeugResponse:
     """Create a new test supervisor"""
     project = current_app.db.get_project(project_id)
     if not project:
@@ -173,7 +175,7 @@ def create_supervisor(project_id):
 
 
 @project_participants_bp.route('/projects/<project_id>/participants/supervisors/<supervisor_id>/edit', methods=['GET', 'POST'])
-def edit_supervisor(project_id, supervisor_id):
+def edit_supervisor(project_id: str, supervisor_id: str) -> str | Response | WerkzeugResponse:
     """Edit a test supervisor"""
     project = current_app.db.get_project(project_id)
     if not project:
@@ -213,7 +215,7 @@ def edit_supervisor(project_id, supervisor_id):
 
 
 @project_participants_bp.route('/projects/<project_id>/participants/supervisors/<supervisor_id>/delete', methods=['POST'])
-def delete_supervisor(project_id, supervisor_id):
+def delete_supervisor(project_id: str, supervisor_id: str) -> Response | tuple[Response, int]:
     """Delete a test supervisor"""
     project = current_app.db.get_project(project_id)
     if not project:

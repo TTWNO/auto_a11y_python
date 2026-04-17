@@ -1,3 +1,8 @@
+from __future__ import annotations
+
+from typing import Any
+from collections.abc import Callable
+
 """Tests that all standalone Jinja2 environments used for report generation
 register the Fluent translation globals (ftl, ftl_enum, etc.) required by
 their templates.
@@ -149,7 +154,7 @@ GENERATOR_ENVS = {
 # Tests
 # ---------------------------------------------------------------------------
 
-def _env_template_cases():
+def _env_template_cases() -> Any:
     """Yield (generator_name, template_rel_path, build_env_fn) for parametrize."""
     for name, info in GENERATOR_ENVS.items():
         for tpl in info['templates']:
@@ -157,7 +162,7 @@ def _env_template_cases():
 
 
 @pytest.mark.parametrize("generator_name, template_rel, build_env", list(_env_template_cases()))
-def test_fluent_globals_registered_for_template(generator_name, template_rel, build_env):
+def test_fluent_globals_registered_for_template(generator_name: str, template_rel: str, build_env: Callable[[], Any]) -> None:
     """Every Fluent global used in a template must be present in the
     generator's Jinja2 environment globals.
 
@@ -184,7 +189,7 @@ def test_fluent_globals_registered_for_template(generator_name, template_rel, bu
     )
 
 
-def test_all_static_report_templates_are_covered():
+def test_all_static_report_templates_are_covered() -> None:
     """Every .html file in static_report/ that uses Fluent globals must be
     listed in at least one generator's template list (or rendered by Flask).
 
@@ -201,7 +206,7 @@ def test_all_static_report_templates_are_covered():
         'static_report/project_deduplicated.html',    # legacy, unused by generators
     }
 
-    covered_templates = set()
+    covered_templates: set[str] = set()
     for info in GENERATOR_ENVS.values():
         covered_templates.update(info['templates'])
     covered_templates.update(excluded)
@@ -223,7 +228,7 @@ def test_all_static_report_templates_are_covered():
     )
 
 
-def test_no_new_fluent_globals_untracked():
+def test_no_new_fluent_globals_untracked() -> None:
     """If someone adds a new ftl_* function to init_fluent() but forgets to
     add it to FLUENT_GLOBALS in this test file, we'd miss detecting its
     absence in standalone envs.  This test keeps FLUENT_GLOBALS in sync.

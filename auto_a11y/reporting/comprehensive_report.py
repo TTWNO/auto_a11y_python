@@ -411,87 +411,71 @@ class ComprehensiveReportGenerator:
 
     def _perform_analytics(self, data: dict[str, Any]) -> dict[str, Any]:
         """Perform comprehensive analytics on test data"""
-        analytics = {
-            'total_issues': 0,  # All items (violations + info + discovery)
-            'total_violations': 0,  # Only errors + warnings
-            'total_info': 0,  # Info items (non-violations)
-            'total_discovery': 0,  # Discovery items (exploration)
-            'by_impact': defaultdict(int),
-            'by_wcag': defaultdict(int),
-            'by_touchpoint': defaultdict(int),
-            'by_type': defaultdict(int),
-            'top_issues': [],
-            'pages_with_most_issues': [],
-            'wcag_compliance': {},
-            'historical_data': []
-        }
-        
+        by_impact: defaultdict[str, int] = defaultdict(int)
+        by_wcag: defaultdict[str, int] = defaultdict(int)
+        by_touchpoint: defaultdict[str, int] = defaultdict(int)
+        by_type: defaultdict[str, int] = defaultdict(int)
+        wcag_compliance: dict[str, dict[str, Any]] = {}
+
         # Process all test results
         all_issues: list[tuple[str, Any, str]] = []
         page_issue_counts: defaultdict[str, defaultdict[str, int]] = defaultdict(lambda: defaultdict(int))
-        
+
         for website_data in data.get('websites', []):
             for page_data in website_data.get('pages', []):
                 test_result = page_data.get('test_result')
                 page_url = page_data.get('page', {}).get('url', 'Unknown')
-                
+
                 if test_result:
                     # Count by type
                     if hasattr(test_result, 'violations'):
                         for v in test_result.violations:
                             all_issues.append(('error', v, page_url))
-                            analytics['by_type']['error'] += 1
+                            by_type['error'] += 1
                             page_issue_counts[page_url]['error'] += 1
-                    
+
                     if hasattr(test_result, 'warnings'):
                         for w in test_result.warnings:
                             all_issues.append(('warning', w, page_url))
-                            analytics['by_type']['warning'] += 1
+                            by_type['warning'] += 1
                             page_issue_counts[page_url]['warning'] += 1
-                    
+
                     if hasattr(test_result, 'info'):
                         for i in test_result.info:
                             all_issues.append(('info', i, page_url))
-                            analytics['by_type']['info'] += 1
+                            by_type['info'] += 1
                             page_issue_counts[page_url]['info'] += 1
-                    
+
                     if hasattr(test_result, 'discovery'):
                         for d in test_result.discovery:
                             all_issues.append(('discovery', d, page_url))
-                            analytics['by_type']['discovery'] += 1
+                            by_type['discovery'] += 1
                             page_issue_counts[page_url]['discovery'] += 1
-        
-        # Analyze all issues
-        analytics['total_issues'] = len(all_issues)
-        
+
         # Calculate violations vs info/discovery
-        violations_count = analytics['by_type'].get('error', 0) + analytics['by_type'].get('warning', 0)
-        info_count = analytics['by_type'].get('info', 0)
-        discovery_count = analytics['by_type'].get('discovery', 0)
-        
-        analytics['total_violations'] = violations_count
-        analytics['total_info'] = info_count
-        analytics['total_discovery'] = discovery_count
-        
+        violations_count = by_type.get('error', 0) + by_type.get('warning', 0)
+        info_count = by_type.get('info', 0)
+        discovery_count = by_type.get('discovery', 0)
+
         # Count by impact and WCAG
         issue_frequency: Counter[str] = Counter()
         issue_pages: defaultdict[str, set[str]] = defaultdict(set)  # Track unique pages per issue
         issue_details: dict[str, dict[str, Any]] = {}  # Store issue details for later use
-        
+
         for issue_type, issue, page in all_issues:
             # Impact analysis (only for violations, not info/discovery)
             if hasattr(issue, 'impact') and issue_type in ['error', 'warning']:
                 impact_str = issue.impact.value if hasattr(issue.impact, 'value') else str(issue.impact)
-                analytics['by_impact'][impact_str.lower()] += 1
-            
+                by_impact[impact_str.lower()] += 1
+
             # WCAG analysis (only for violations, not info/discovery)
             if hasattr(issue, 'wcag_criteria') and issue_type in ['error', 'warning']:
                 for criterion in issue.wcag_criteria:
-                    analytics['by_wcag'][criterion] += 1
-            
+                    by_wcag[criterion] += 1
+
             # Touchpoint analysis
             if hasattr(issue, 'touchpoint') and issue.touchpoint:
-                analytics['by_touchpoint'][issue.touchpoint] += 1
+                by_touchpoint[issue.touchpoint] += 1
             
             # Track issue frequency and unique pages
             if hasattr(issue, 'id'):
@@ -531,18 +515,18 @@ class ComprehensiveReportGenerator:
                     }
         
         # Get top issues with unique page counts
-        analytics['top_issues'] = [
+        top_issues = [
             {
-                'id': issue_id, 
+                'id': issue_id,
                 'count': count,
                 'unique_pages': len(issue_pages.get(issue_id, set())),
                 'details': issue_details.get(issue_id, {})
             }
             for issue_id, count in issue_frequency.most_common(10)
         ]
-        
+
         # Get pages with most issues
-        page_totals = [
+        page_totals: list[dict[str, Any]] = [
             {
                 'url': page,
                 'total': sum(counts.values()),
@@ -551,18 +535,32 @@ class ComprehensiveReportGenerator:
             for page, counts in page_issue_counts.items()
         ]
         page_totals.sort(key=lambda x: x['total'], reverse=True)
-        analytics['pages_with_most_issues'] = page_totals[:10]
-        
+
         # Calculate WCAG compliance percentage
-        total_wcag_issues = sum(analytics['by_wcag'].values())
+        total_wcag_issues = sum(by_wcag.values())
         if total_wcag_issues > 0:
-            for criterion, count in analytics['by_wcag'].items():
-                analytics['wcag_compliance'][criterion] = {
+            for criterion, count in by_wcag.items():
+                wcag_compliance[criterion] = {
                     'count': count,
                     'percentage': (count / total_wcag_issues) * 100,
                     'level': self.WCAG_LEVELS.get(criterion, '')
                 }
-        
+
+        analytics: dict[str, Any] = {
+            'total_issues': len(all_issues),
+            'total_violations': violations_count,
+            'total_info': info_count,
+            'total_discovery': discovery_count,
+            'by_impact': dict(by_impact),
+            'by_wcag': dict(by_wcag),
+            'by_touchpoint': dict(by_touchpoint),
+            'by_type': dict(by_type),
+            'top_issues': top_issues,
+            'pages_with_most_issues': page_totals[:10],
+            'wcag_compliance': wcag_compliance,
+            'historical_data': [],
+        }
+
         return analytics
     
     def _generate_header(self, data: dict[str, Any]) -> str:
@@ -1653,6 +1651,10 @@ class ComprehensiveReportGenerator:
             html_output += self._format_basic_summary(data, analytics)
 
         return html_output
+
+    def _format_basic_summary(self, data: dict[str, Any], analytics: dict[str, Any]) -> str:
+        """Format a basic executive summary when no AI summary is available"""
+        return self._format_summary_for_language(data, analytics, ai_summary=None)
 
     def _format_summary_for_language(self, data: dict[str, Any], analytics: dict[str, Any], ai_summary: dict[str, Any] | None = None) -> str:
         """Format executive summary content for a specific language"""

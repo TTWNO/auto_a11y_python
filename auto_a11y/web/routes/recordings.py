@@ -1,13 +1,15 @@
 """
 Recording management routes for manual audits
 """
+from __future__ import annotations
 
 from flask import (
-    Blueprint, render_template, request, redirect,
+    Blueprint, Response, render_template, request, redirect,
     url_for, flash, jsonify, current_app, g, session
 )
 from auto_a11y.web.fluent import ftl
 from werkzeug.utils import secure_filename
+from werkzeug.wrappers import Response as WerkzeugResponse
 import logging
 import json
 from pathlib import Path
@@ -21,7 +23,7 @@ recordings_bp = Blueprint('recordings', __name__)
 
 
 @recordings_bp.route('/')
-def list_recordings():
+def list_recordings() -> str | Response:
     """List all recordings"""
     try:
         project_id = request.args.get('project_id')
@@ -57,7 +59,7 @@ def list_recordings():
 
 
 @recordings_bp.route('/<recording_id>')
-def view_recording(recording_id):
+def view_recording(recording_id: str) -> str | Response | WerkzeugResponse:
     """View recording details"""
     try:
         recording = current_app.db.get_recording(recording_id)
@@ -113,7 +115,7 @@ def view_recording(recording_id):
         removed_criteria = [c for c in all_criteria if c.id in removed_criteria_ids]
 
         # Group issues by touchpoint
-        issues_by_touchpoint = {}
+        issues_by_touchpoint: dict[str, list[RecordingIssue]] = {}
         for issue in issues:
             touchpoint = issue.touchpoint or "General"
             if touchpoint not in issues_by_touchpoint:
@@ -159,7 +161,7 @@ def view_recording(recording_id):
 
 
 @recordings_bp.route('/combined/<project_id>')
-def view_combined_recordings(project_id):
+def view_combined_recordings(project_id: str) -> str | Response | WerkzeugResponse:
     """View all recordings for a project combined into a single issue list"""
     try:
         # Get project
@@ -185,7 +187,7 @@ def view_combined_recordings(project_id):
             all_issues.extend(issues)
 
         # Group all issues by touchpoint
-        issues_by_touchpoint = {}
+        issues_by_touchpoint: dict[str, list[RecordingIssue]] = {}
         for issue in all_issues:
             touchpoint = issue.touchpoint or "General"
             if touchpoint not in issues_by_touchpoint:
@@ -216,7 +218,7 @@ def view_combined_recordings(project_id):
 
 
 @recordings_bp.route('/upload', methods=['GET', 'POST'])
-def upload_recording():
+def upload_recording() -> str | Response | WerkzeugResponse:
     """Upload Dictaphone JSON file"""
     if request.method == 'GET':
         projects = current_app.db.get_all_projects()
@@ -233,7 +235,7 @@ def upload_recording():
             flash(ftl('recordings-english-json-file-is-required'), "danger")
             return redirect(url_for('recordings.upload_recording'))
 
-        if not file_en.filename.endswith('.json'):
+        if not file_en.filename or not file_en.filename.endswith('.json'):
             flash(ftl('recordings-file-must-be-a-json-file'), "danger")
             return redirect(url_for('recordings.upload_recording'))
 
@@ -367,7 +369,7 @@ def upload_recording():
         # Read French file content if provided
         content_fr = None
         data_fr = None
-        if has_french:
+        if has_french and file_fr is not None:
             content_fr = file_fr.read().decode('utf-8')
             data_fr = json.loads(content_fr)
             # Verify both files have the same recording_id
@@ -436,6 +438,7 @@ def upload_recording():
 
             # Process French issues if provided
             if has_french:
+                assert content_fr is not None
                 tmp_file_fr = None
                 try:
                     with tempfile.NamedTemporaryFile(mode='w', suffix='_fr.json', delete=False) as tmp_file:
@@ -492,7 +495,7 @@ def upload_recording():
 
 
 @recordings_bp.route('/<recording_id>/edit', methods=['POST'])
-def edit_recording(recording_id):
+def edit_recording(recording_id: str) -> Response | WerkzeugResponse | tuple[Response, int]:
     """Edit a recording's page URLs and discovered pages"""
     try:
         recording = current_app.db.get_recording(recording_id)
@@ -510,7 +513,7 @@ def edit_recording(recording_id):
             recording.page_urls = page_urls_str
 
         # Update discovered_page_ids
-        discovered_page_ids = data.get('discovered_page_ids', [])
+        discovered_page_ids: str | list[str] = data.get('discovered_page_ids', [])
         if isinstance(discovered_page_ids, str):
             # Handle comma-separated string
             recording.discovered_page_ids = [id.strip() for id in discovered_page_ids.split(',') if id.strip()]
@@ -542,7 +545,7 @@ def edit_recording(recording_id):
 
 
 @recordings_bp.route('/<recording_id>/delete', methods=['POST'])
-def delete_recording(recording_id):
+def delete_recording(recording_id: str) -> WerkzeugResponse:
     """Delete a recording"""
     try:
         recording = current_app.db.get_recording(recording_id)
@@ -571,7 +574,7 @@ def delete_recording(recording_id):
 # API endpoints
 
 @recordings_bp.route('/api/list')
-def api_list_recordings():
+def api_list_recordings() -> Response | tuple[Response, int]:
     """API endpoint to list recordings"""
     try:
         project_id = request.args.get('project_id')
@@ -602,7 +605,7 @@ def api_list_recordings():
 
 
 @recordings_bp.route('/api/<recording_id>/issues')
-def api_recording_issues(recording_id):
+def api_recording_issues(recording_id: str) -> Response | tuple[Response, int]:
     """API endpoint to get issues for a recording"""
     try:
         recording = current_app.db.get_recording(recording_id)
@@ -636,7 +639,7 @@ def api_recording_issues(recording_id):
 
 
 @recordings_bp.route('/api/issue/<issue_id>/status', methods=['POST'])
-def api_update_issue_status(issue_id):
+def api_update_issue_status(issue_id: str) -> Response | tuple[Response, int]:
     """API endpoint to update issue status"""
     try:
         status = request.json.get('status')

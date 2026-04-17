@@ -103,8 +103,8 @@ class PageStructureReport:
         self.pages = pages
         self.project = project
         self.language = language
-        self.root = None
-        self.tree_data = None
+        self.root: PageNode | None = None
+        self.tree_data: dict[str, Any] | None = None
 
     def _get_translations(self) -> dict[str, str]:
         """Get translations for the current language"""
@@ -344,6 +344,8 @@ class PageStructureReport:
         """
         if not self.tree_data:
             self.generate()
+        assert self.tree_data is not None
+        assert self.root is not None
 
         # Get all translations as JSON for JavaScript
         # Temporarily change language to get translations for both languages
@@ -844,7 +846,8 @@ class PageStructureReport:
         """
         if not self.tree_data:
             self.generate()
-        
+        assert self.tree_data is not None
+
         return json.dumps(self.tree_data, indent=2, default=str)
     
     def to_csv(self) -> str:
@@ -856,12 +859,13 @@ class PageStructureReport:
         """
         if not self.tree_data:
             self.generate()
-        
+        assert self.root is not None
+
         t = self._get_translations()
-        
+
         output = StringIO()
         writer = csv.writer(output)
-        
+
         # Header - translated
         writer.writerow([
             t['csv_path'],
@@ -874,7 +878,7 @@ class PageStructureReport:
             t['total_violations'],
             t['total_warnings']
         ])
-        
+
         # Flatten tree and write rows
         self._write_csv_node(writer, self.root, '', 0, t)
         

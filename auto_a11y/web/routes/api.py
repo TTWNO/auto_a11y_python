@@ -1,8 +1,11 @@
 """
 RESTful API routes
 """
+from __future__ import annotations
 
-from flask import Blueprint, jsonify, request, current_app
+from typing import Any
+
+from flask import Blueprint, Response, jsonify, request, current_app
 from flask_login import current_user
 from auto_a11y.models import Project, Website, Page, ProjectStatus, PageStatus
 from auto_a11y.models.app_user import UserRole
@@ -18,7 +21,7 @@ api_bp = Blueprint('api', __name__)
 # Fixture Test Status API
 
 @api_bp.route('/fixture-tests/status', methods=['GET'])
-def get_fixture_test_status():
+def get_fixture_test_status() -> tuple[Response, int] | Response:
     """Get fixture test status for all tests"""
     try:
         # Get test configuration
@@ -72,7 +75,7 @@ def get_fixture_test_status():
 
 
 @api_bp.route('/fixture-tests/check/<error_code>', methods=['GET'])
-def check_test_availability(error_code):
+def check_test_availability(error_code: str) -> tuple[Response, int] | Response:
     """Check if a specific test is available based on fixture status"""
     try:
         test_config = current_app.test_config
@@ -100,7 +103,7 @@ def check_test_availability(error_code):
 # Projects API
 
 @api_bp.route('/projects', methods=['GET'])
-def get_projects():
+def get_projects() -> tuple[Response, int] | Response:
     """Get all projects"""
     page = int(request.args.get('page', 1))
     limit = int(request.args.get('limit', 20))
@@ -136,7 +139,7 @@ def get_projects():
 
 
 @api_bp.route('/projects', methods=['POST'])
-def create_project():
+def create_project() -> tuple[Response, int]:
     """Create new project"""
     data = request.get_json()
     
@@ -170,7 +173,7 @@ def create_project():
 
 @api_bp.route('/projects/<project_id>', methods=['GET'])
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
-def get_project(project_id):
+def get_project(project_id: str) -> tuple[Response, int] | Response:
     """Get project by ID"""
     project = current_app.db.get_project(project_id)
     if not project:
@@ -186,7 +189,7 @@ def get_project(project_id):
 
 @api_bp.route('/projects/<project_id>', methods=['PUT'])
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
-def update_project(project_id):
+def update_project(project_id: str) -> tuple[Response, int] | Response:
     """Update project"""
     project = current_app.db.get_project(project_id)
     if not project:
@@ -214,7 +217,7 @@ def update_project(project_id):
 
 @api_bp.route('/projects/<project_id>', methods=['DELETE'])
 @project_role_required(UserRole.ADMIN)
-def delete_project(project_id):
+def delete_project(project_id: str) -> tuple[Response, int]:
     """Delete project"""
     project = current_app.db.get_project(project_id)
     if not project:
@@ -230,7 +233,7 @@ def delete_project(project_id):
 
 @api_bp.route('/projects/<project_id>/websites', methods=['GET'])
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
-def get_websites(project_id):
+def get_websites(project_id: str) -> tuple[Response, int] | Response:
     """Get websites for project"""
     project = current_app.db.get_project(project_id)
     if not project:
@@ -245,7 +248,7 @@ def get_websites(project_id):
 
 @api_bp.route('/projects/<project_id>/websites', methods=['POST'])
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
-def add_website(project_id):
+def add_website(project_id: str) -> tuple[Response, int]:
     """Add website to project"""
     project = current_app.db.get_project(project_id)
     if not project:
@@ -275,7 +278,7 @@ def add_website(project_id):
 
 @api_bp.route('/websites/<website_id>', methods=['GET'])
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
-def get_website(website_id):
+def get_website(website_id: str) -> tuple[Response, int] | Response:
     """Get website by ID"""
     website = current_app.db.get_website(website_id)
     if not website:
@@ -286,7 +289,7 @@ def get_website(website_id):
 
 @api_bp.route('/websites/<website_id>', methods=['DELETE'])
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
-def delete_website(website_id):
+def delete_website(website_id: str) -> tuple[Response, int]:
     """Delete website"""
     website = current_app.db.get_website(website_id)
     if not website:
@@ -301,7 +304,7 @@ def delete_website(website_id):
 # Pages API
 
 @api_bp.route('/websites/<website_id>/pages', methods=['GET'])
-def get_pages(website_id):
+def get_pages(website_id: str) -> tuple[Response, int] | Response:
     """Get pages for website"""
     website = current_app.db.get_website(website_id)
     if not website:
@@ -329,7 +332,7 @@ def get_pages(website_id):
 
 
 @api_bp.route('/websites/<website_id>/pages', methods=['POST'])
-def add_page(website_id):
+def add_page(website_id: str) -> tuple[Response, int]:
     """Add page to website"""
     website = current_app.db.get_website(website_id)
     if not website:
@@ -356,7 +359,7 @@ def add_page(website_id):
 
 @api_bp.route('/pages/<page_id>', methods=['GET'])
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
-def get_page(page_id):
+def get_page(page_id: str) -> tuple[Response, int] | Response:
     """Get page by ID"""
     page = current_app.db.get_page(page_id)
     if not page:
@@ -367,7 +370,7 @@ def get_page(page_id):
 
 @api_bp.route('/pages/<page_id>/test', methods=['POST'])
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
-def test_page(page_id):
+def test_page(page_id: str) -> tuple[Response, int]:
     """Run test on page"""
     page = current_app.db.get_page(page_id)
     if not page:
@@ -393,7 +396,7 @@ def test_page(page_id):
 # Test Results API
 
 @api_bp.route('/test-results/<result_id>', methods=['GET'])
-def get_test_result(result_id):
+def get_test_result(result_id: str) -> tuple[Response, int] | Response:
     """Get test result by ID"""
     result = current_app.db.get_test_result(result_id)
     if not result:
@@ -404,7 +407,7 @@ def get_test_result(result_id):
 
 @api_bp.route('/pages/<page_id>/test-results', methods=['GET'])
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
-def get_page_test_results(page_id):
+def get_page_test_results(page_id: str) -> tuple[Response, int] | Response:
     """Get test results for page"""
     page = current_app.db.get_page(page_id)
     if not page:
@@ -421,7 +424,7 @@ def get_page_test_results(page_id):
 
 @api_bp.route('/websites/<website_id>/discover', methods=['POST'])
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
-def discover_pages(website_id):
+def discover_pages(website_id: str) -> tuple[Response, int]:
     """Start page discovery for website"""
     website = current_app.db.get_website(website_id)
     if not website:
@@ -443,7 +446,7 @@ def discover_pages(website_id):
 
 @api_bp.route('/websites/<website_id>/test', methods=['POST'])
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
-def test_website(website_id):
+def test_website(website_id: str) -> tuple[Response, int]:
     """Run tests on all pages in website"""
     website = current_app.db.get_website(website_id)
     if not website:
@@ -477,7 +480,7 @@ def test_website(website_id):
 
 @api_bp.route('/projects/<project_id>/reports', methods=['POST'])
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
-def generate_report(project_id):
+def generate_report(project_id: str) -> tuple[Response, int]:
     """Generate report for project"""
     project = current_app.db.get_project(project_id)
     if not project:
@@ -501,7 +504,7 @@ def generate_report(project_id):
 # Health Check
 
 @api_bp.route('/health', methods=['GET'])
-def health_check():
+def health_check() -> Response:
     """API health check"""
     try:
         # Check database connection
@@ -520,7 +523,7 @@ def health_check():
 # Jobs API
 
 @api_bp.route('/jobs/stats', methods=['GET'])
-def get_job_stats():
+def get_job_stats() -> tuple[Response, int] | Response:
     """Get job statistics"""
     try:
         job_manager = JobManager(current_app.db)
@@ -535,7 +538,7 @@ def get_job_stats():
 
 
 @api_bp.route('/jobs/clear-all', methods=['POST'])
-def clear_all_jobs():
+def clear_all_jobs() -> tuple[Response, int] | Response:
     """Clear all running and pending jobs - emergency reset"""
     try:
         job_manager = JobManager(current_app.db)
@@ -595,7 +598,7 @@ def clear_all_jobs():
 
 
 @api_bp.route('/jobs/clear-stale', methods=['POST'])
-def clear_stale_jobs():
+def clear_stale_jobs() -> tuple[Response, int] | Response:
     """Clear stale jobs that have been running for too long"""
     try:
         job_manager = JobManager(current_app.db)
@@ -638,7 +641,7 @@ def clear_stale_jobs():
 
 
 @api_bp.route('/jobs/active', methods=['GET'])
-def get_active_jobs():
+def get_active_jobs() -> tuple[Response, int] | Response:
     """Get list of active jobs"""
     try:
         job_manager = JobManager(current_app.db)
@@ -660,7 +663,7 @@ def get_active_jobs():
 
 
 @api_bp.route('/jobs/cleanup-page-counts', methods=['POST'])
-def cleanup_page_counts():
+def cleanup_page_counts() -> tuple[Response, int] | Response:
     """Clean up violation counts for pages that haven't been tested"""
     try:
         # Reset violation/warning/info counts for all pages that aren't in TESTED status
@@ -694,7 +697,7 @@ def cleanup_page_counts():
 # Multi-State Testing API Endpoints
 
 @api_bp.route('/test-results/<result_id>/states', methods=['GET'])
-def get_test_result_states(result_id):
+def get_test_result_states(result_id: str) -> tuple[Response, int] | Response:
     """
     Get all related state test results for a given result
 
@@ -746,7 +749,7 @@ def get_test_result_states(result_id):
 
 
 @api_bp.route('/pages/<page_id>/test-states', methods=['GET'])
-def get_page_test_states(page_id):
+def get_page_test_states(page_id: str) -> tuple[Response, int] | Response:
     """
     Get latest test results per state for a page
 
@@ -791,7 +794,7 @@ def get_page_test_states(page_id):
 
 
 @api_bp.route('/pages/<page_id>/test-sessions', methods=['GET'])
-def get_page_test_sessions(page_id):
+def get_page_test_sessions(page_id: str) -> tuple[Response, int] | Response:
     """
     Get all test sessions for a page with their state counts
 
@@ -855,7 +858,7 @@ def get_page_test_sessions(page_id):
 
 
 @api_bp.route('/test-results/compare', methods=['POST'])
-def compare_test_results():
+def compare_test_results() -> tuple[Response, int] | Response:
     """
     Compare two test results (typically from different states)
 
@@ -895,7 +898,7 @@ def compare_test_results():
         persistent_violations = [v for v in result2.violations if v.id in violations1_ids]
 
         # Serialize violations
-        def serialize_violation(v):
+        def serialize_violation(v: Any) -> dict[str, Any]:
             return {
                 'id': v.id,
                 'impact': v.impact.value if hasattr(v.impact, 'value') else v.impact,

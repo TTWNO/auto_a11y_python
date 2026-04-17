@@ -2,8 +2,10 @@
 Demo site route for Quebec insurance company presentation
 Serves the static demo site with intentional accessibility issues
 """
+from __future__ import annotations
 
-from flask import Blueprint, send_from_directory, current_app, request, redirect, url_for, session, render_template_string
+from flask import Blueprint, Response, send_from_directory, current_app, request, redirect, url_for, session, render_template_string
+from werkzeug.wrappers import Response as WerkzeugResponse
 from pathlib import Path
 import logging
 
@@ -20,7 +22,7 @@ DEMO_USER = {
 
 @demo_bp.route('/')
 @demo_bp.route('/<path:filename>')
-def serve_demo(filename='index.html'):
+def serve_demo(filename: str = 'index.html') -> str | Response | tuple[str, int]:
     """Serve demo site files"""
     try:
         # Get demo site directory
@@ -56,7 +58,7 @@ def serve_demo(filename='index.html'):
 
 
 @demo_bp.route('/info')
-def demo_info():
+def demo_info() -> str:
     """Information about the demo site and its intentional issues"""
     return """
     <html>
@@ -97,7 +99,7 @@ def demo_info():
     """
 
 @demo_bp.route('/login', methods=['POST'])
-def login():
+def login() -> WerkzeugResponse:
     """Handle login form submission"""
     email = request.form.get('email', '')
     password = request.form.get('password', '')
@@ -125,7 +127,7 @@ def login():
 
 
 @demo_bp.route('/logout')
-def logout():
+def logout() -> WerkzeugResponse:
     """Handle logout"""
     session.pop('demo_user', None)
     session.pop('demo_email', None)
@@ -134,7 +136,7 @@ def logout():
 
 
 @demo_bp.route('/check-auth')
-def check_auth():
+def check_auth() -> dict[str, object]:
     """Check if user is authenticated (for testing purposes)"""
     if 'demo_user' in session:
         return {

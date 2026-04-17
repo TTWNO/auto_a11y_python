@@ -1,11 +1,15 @@
 """
 Routes for Automated Tests management
 """
+from __future__ import annotations
 
-from flask import Blueprint, render_template, request, jsonify, current_app
+from flask import Blueprint, Response, render_template, request, jsonify, current_app
 from bson import ObjectId
 from datetime import datetime
 import logging
+
+from collections.abc import Iterator
+from typing import Any
 
 from auto_a11y.core.database import Database
 from auto_a11y.models import Project
@@ -27,7 +31,7 @@ bp = Blueprint('automated_tests', __name__, url_prefix='/automated_tests')
 
 
 @bp.route('/projects/<project_id>/filter-options')
-def get_filter_options(project_id):
+def get_filter_options(project_id: str) -> Response | tuple[Response, int]:
     """Get available filter options for automated tests."""
     db = current_app.db
 
@@ -83,7 +87,7 @@ def get_filter_options(project_id):
 
 
 @bp.route('/projects/<project_id>')
-def project_automated_tests(project_id):
+def project_automated_tests(project_id: str) -> str | Response | tuple[str, int]:
     """View automated test results for a project with filtering options."""
     db = current_app.db
 
@@ -137,7 +141,7 @@ def project_automated_tests(project_id):
         total = r['violation_count'] + r['warning_count'] + r['info_count']
         # Build a lightweight object with .id for the template url_for
         class _ResultRef:
-            def __init__(self, rid):
+            def __init__(self, rid: object) -> None:
                 self.id = str(rid)
         test_results_data.append({
             'page': page,
@@ -152,8 +156,8 @@ def project_automated_tests(project_id):
     # Get unique touchpoints / WCAG criteria from the aggregated violation items
     # Use a lightweight aggregation on test_result_items or just provide empty
     # lists (filters load dynamically via the filter-options API endpoint).
-    touchpoints = []
-    wcag_criteria = []
+    touchpoints: list[str] = []
+    wcag_criteria: list[str] = []
 
     return render_template(
         'automated_tests/list.html',
@@ -165,7 +169,7 @@ def project_automated_tests(project_id):
 
 
 @bp.route('/projects/<project_id>/filter', methods=['POST'])
-def filter_test_results(project_id):
+def filter_test_results(project_id: str) -> Response:
     """Filter test results based on user criteria."""
     db = current_app.db
 
@@ -237,7 +241,7 @@ def filter_test_results(project_id):
 
 
 @bp.route('/projects/<project_id>/upload', methods=['POST'])
-def upload_to_drupal(project_id):
+def upload_to_drupal(project_id: str) -> Response:
     """
     Upload filtered automated test results to Drupal with streaming progress.
 
@@ -258,12 +262,12 @@ def upload_to_drupal(project_id):
     impact_levels = filters.get('impact_levels', [])
     min_component_pages = filters.get('min_component_pages', 2)
 
-    def generate():
+    def generate() -> Iterator[str]:
         import json
 
-        def emit(event_type, message, percent=None, results=None):
+        def emit(event_type: str, message: str, percent: int | None = None, results: dict[str, Any] | None = None) -> str:
             """Helper to emit SSE events"""
-            data = {'type': event_type, 'message': message}
+            data: dict[str, Any] = {'type': event_type, 'message': message}
             if percent is not None:
                 data['percent'] = percent
             if results is not None:
@@ -271,7 +275,7 @@ def upload_to_drupal(project_id):
             return f"data: {json.dumps(data)}\n\n"
 
         try:
-            db = current_app.db
+            db: Any = current_app.db
 
             # Get project
             yield emit('info', 'Loading project...')
@@ -313,9 +317,9 @@ def upload_to_drupal(project_id):
                         # Apply violation-level filters
                         if touchpoints or wcag_criteria or impact_levels:
                             # Filter violations
-                            filtered_violations = []
-                            filtered_warnings = []
-                            filtered_info = []
+                            filtered_violations: list[Any] = []
+                            filtered_warnings: list[Any] = []
+                            filtered_info: list[Any] = []
 
                             for v_list, target_list in [
                                 (test_result.violations, filtered_violations),

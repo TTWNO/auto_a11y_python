@@ -1,5 +1,7 @@
 """Membership management routes for project access control."""
-from flask import Blueprint, request, jsonify, current_app
+from __future__ import annotations
+
+from flask import Blueprint, Response, request, jsonify, current_app
 from auto_a11y.web.fluent import ftl
 from flask_login import current_user
 
@@ -10,7 +12,7 @@ members_bp = Blueprint('members', __name__)
 
 @members_bp.route('/projects/<project_id>/members', methods=['GET'])
 @permission_required('project_members', 'read')
-def list_project_members(project_id):
+def list_project_members(project_id: str) -> Response | tuple[Response, int]:
     """List members of a project with their groups."""
     project = current_app.db.get_project(project_id)
     if not project:
@@ -42,7 +44,7 @@ def list_project_members(project_id):
 
 @members_bp.route('/projects/<project_id>/members', methods=['POST'])
 @permission_required('project_members', 'create')
-def add_project_member(project_id):
+def add_project_member(project_id: str) -> Response | tuple[Response, int]:
     """Add a member to a project with group assignments."""
     project = current_app.db.get_project(project_id)
     if not project:
@@ -68,7 +70,7 @@ def add_project_member(project_id):
 
 @members_bp.route('/projects/<project_id>/members/<user_id>', methods=['PUT'])
 @permission_required('project_members', 'update')
-def update_project_member(project_id, user_id):
+def update_project_member(project_id: str, user_id: str) -> Response | tuple[Response, int]:
     """Update a member's group assignments."""
     project = current_app.db.get_project(project_id)
     if not project:
@@ -86,7 +88,7 @@ def update_project_member(project_id, user_id):
 
 @members_bp.route('/projects/<project_id>/members/<user_id>', methods=['DELETE'])
 @permission_required('project_members', 'delete')
-def remove_project_member(project_id, user_id):
+def remove_project_member(project_id: str, user_id: str) -> Response | tuple[Response, int]:
     """Remove a member from a project."""
     if user_id == str(current_user.get_id()):
         return jsonify({'error': ftl('common-cannot-remove-yourself')}), 400
@@ -100,7 +102,7 @@ def remove_project_member(project_id, user_id):
 
 
 @members_bp.route('/members/api/search-users', methods=['GET'])
-def search_users():
+def search_users() -> Response:
     """Search app users by email or display name for member autocomplete."""
     q = request.args.get('q', '').strip()
     if len(q) < 2:

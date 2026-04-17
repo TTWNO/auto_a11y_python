@@ -3800,109 +3800,111 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         
         # Replace metadata placeholders in the description
         for key in ['title', 'what', 'what_generic', 'why', 'who', 'remediation']:
-            if key in desc and isinstance(desc[key], str):
-                # Replace {found} with actual font name for font issues (legacy support)
-                if '{found}' in desc[key] and 'found' in metadata:
-                    desc[key] = desc[key].replace('{found}', str(metadata.get('found', 'unknown')))
+            val = desc.get(key)
+            if val is None or not isinstance(val, str):
+                continue
+            # Replace {found} with actual font name for font issues (legacy support)
+            if '{found}' in val and 'found' in metadata:
+                val = val.replace('{found}', str(metadata.get('found', 'unknown')))
 
-                # Special handling for font size list
-                if '{fontSizes_list}' in desc[key] and 'fontSizes' in metadata:
-                    sizes = metadata.get('fontSizes', [])
-                    desc[key] = desc[key].replace('{fontSizes_list}', ', '.join(sizes) if isinstance(sizes, list) else str(sizes))
+            # Special handling for font size list
+            if '{fontSizes_list}' in val and 'fontSizes' in metadata:
+                sizes = metadata.get('fontSizes', [])
+                val = val.replace('{fontSizes_list}', ', '.join(sizes) if isinstance(sizes, list) else str(sizes))
 
-                # Special handling for field types summary
-                if '{fieldTypes_summary}' in desc[key] and 'fieldTypes' in metadata:
-                    field_types = metadata.get('fieldTypes', {})
-                    if isinstance(field_types, dict):
-                        summary = ', '.join([f"{count} {ftype}" for ftype, count in field_types.items()])
-                        desc[key] = desc[key].replace('{fieldTypes_summary}', summary or 'unknown fields')
+            # Special handling for field types summary
+            if '{fieldTypes_summary}' in val and 'fieldTypes' in metadata:
+                field_types = metadata.get('fieldTypes', {})
+                if isinstance(field_types, dict):
+                    summary = ', '.join([f"{count} {ftype}" for ftype, count in field_types.items()])
+                    val = val.replace('{fieldTypes_summary}', summary or 'unknown fields')
+                else:
+                    val = val.replace('{fieldTypes_summary}', str(field_types))
+
+            # Special handling for search context in forms
+            if '{searchContext_title}' in val:
+                is_search = metadata.get('isSearchForm', False)
+                if is_search:
+                    val = val.replace('{searchContext_title}', ' [SEARCH FORM]')
+                else:
+                    val = val.replace('{searchContext_title}', '')
+
+            if '{searchContext_description}' in val:
+                search_ctx = metadata.get('searchContext', '')
+                if 'search' in search_ctx.lower():
+                    val = val.replace('{searchContext_description}',
+                        f'This form is identified as a search form ({search_ctx}).')
+                else:
+                    val = val.replace('{searchContext_description}', '')
+
+            if '{searchContext_remediation}' in val:
+                is_search = metadata.get('isSearchForm', False)
+                if is_search:
+                    val = val.replace('{searchContext_remediation}',
+                        'For search forms specifically: verify the form or its container has role="search" so screen reader users can navigate directly to it using landmark navigation, ensure the search input has an appropriate label (visible or aria-label="Search"), and test that search results are announced to screen readers.')
+                else:
+                    val = val.replace('{searchContext_remediation}', '')
+
+            # Special handling for plurals
+            if '{sizeCount_plural}' in val and 'sizeCount' in metadata:
+                count = metadata.get('sizeCount', 0)
+                val = val.replace('{sizeCount_plural}', 's' if count != 1 else '')
+
+            if '{sizeCount_singular_size}' in val and 'sizeCount' in metadata:
+                count = metadata.get('sizeCount', 0)
+                val = val.replace('{sizeCount_singular_size}', 'size' if count == 1 else 'different sizes')
+
+            if '{fieldCount_plural}' in val and 'fieldCount' in metadata:
+                count = metadata.get('fieldCount', 0)
+                val = val.replace('{fieldCount_plural}', 's' if count != 1 else '')
+
+            # Special handling for calculated line height minimum
+            if '{minLineHeight}' in val and 'fontSize' in metadata:
+                font_size = float(metadata.get('fontSize', 16))
+                min_line_height = font_size * 1.5
+                val = val.replace('{minLineHeight}', f"{min_line_height:.2f}")
+
+            # Special handling for contrast ratio placeholders
+            # The test sends: textColor, backgroundColor, contrastRatio
+            # But descriptions use: {fg}, {bg}, {ratio}
+            if '{ratio}' in val and 'contrastRatio' in metadata:
+                contrast_ratio = metadata.get('contrastRatio', '')
+                # Remove ":1" suffix if present
+                if isinstance(contrast_ratio, str) and contrast_ratio.endswith(':1'):
+                    contrast_ratio = contrast_ratio[:-2]
+                val = val.replace('{ratio}', str(contrast_ratio))
+
+            if '{fg}' in val and 'textColor' in metadata:
+                val = val.replace('{fg}', str(metadata.get('textColor', '')))
+
+            if '{bg}' in val and 'backgroundColor' in metadata:
+                val = val.replace('{bg}', str(metadata.get('backgroundColor', '')))
+
+            # Replace nested metadata placeholders (e.g., {currentElement.tag})
+            import re
+            nested_pattern = r'\{([^}]+)\}'
+
+            def replace_nested(match: re.Match[str]) -> str:
+                path = match.group(1)
+
+                # Skip special placeholders already handled
+                if path in ['fontSizes_list', 'sizeCount_plural', 'sizeCount_singular_size', 'fieldCount_plural', 'fieldTypes_summary',
+                            'searchContext_title', 'searchContext_description', 'searchContext_remediation', 'minLineHeight']:
+                    return match.group(0)
+
+                parts = path.split('.')
+
+                # Navigate through nested dict/objects
+                value: Any = metadata
+                for part in parts:
+                    if isinstance(value, dict) and part in value:
+                        value = value[part]
                     else:
-                        desc[key] = desc[key].replace('{fieldTypes_summary}', str(field_types))
+                        return match.group(0)  # Return original if path not found
 
-                # Special handling for search context in forms
-                if '{searchContext_title}' in desc[key]:
-                    is_search = metadata.get('isSearchForm', False)
-                    if is_search:
-                        desc[key] = desc[key].replace('{searchContext_title}', ' [SEARCH FORM]')
-                    else:
-                        desc[key] = desc[key].replace('{searchContext_title}', '')
+                return str(value) if value is not None else match.group(0)
 
-                if '{searchContext_description}' in desc[key]:
-                    search_ctx = metadata.get('searchContext', '')
-                    if 'search' in search_ctx.lower():
-                        desc[key] = desc[key].replace('{searchContext_description}',
-                            f'This form is identified as a search form ({search_ctx}).')
-                    else:
-                        desc[key] = desc[key].replace('{searchContext_description}', '')
-
-                if '{searchContext_remediation}' in desc[key]:
-                    is_search = metadata.get('isSearchForm', False)
-                    if is_search:
-                        desc[key] = desc[key].replace('{searchContext_remediation}',
-                            'For search forms specifically: verify the form or its container has role="search" so screen reader users can navigate directly to it using landmark navigation, ensure the search input has an appropriate label (visible or aria-label="Search"), and test that search results are announced to screen readers.')
-                    else:
-                        desc[key] = desc[key].replace('{searchContext_remediation}', '')
-
-                # Special handling for plurals
-                if '{sizeCount_plural}' in desc[key] and 'sizeCount' in metadata:
-                    count = metadata.get('sizeCount', 0)
-                    desc[key] = desc[key].replace('{sizeCount_plural}', 's' if count != 1 else '')
-
-                if '{sizeCount_singular_size}' in desc[key] and 'sizeCount' in metadata:
-                    count = metadata.get('sizeCount', 0)
-                    desc[key] = desc[key].replace('{sizeCount_singular_size}', 'size' if count == 1 else 'different sizes')
-
-                if '{fieldCount_plural}' in desc[key] and 'fieldCount' in metadata:
-                    count = metadata.get('fieldCount', 0)
-                    desc[key] = desc[key].replace('{fieldCount_plural}', 's' if count != 1 else '')
-
-                # Special handling for calculated line height minimum
-                if '{minLineHeight}' in desc[key] and 'fontSize' in metadata:
-                    font_size = float(metadata.get('fontSize', 16))
-                    min_line_height = font_size * 1.5
-                    desc[key] = desc[key].replace('{minLineHeight}', f"{min_line_height:.2f}")
-
-                # Special handling for contrast ratio placeholders
-                # The test sends: textColor, backgroundColor, contrastRatio
-                # But descriptions use: {fg}, {bg}, {ratio}
-                if '{ratio}' in desc[key] and 'contrastRatio' in metadata:
-                    contrast_ratio = metadata.get('contrastRatio', '')
-                    # Remove ":1" suffix if present
-                    if isinstance(contrast_ratio, str) and contrast_ratio.endswith(':1'):
-                        contrast_ratio = contrast_ratio[:-2]
-                    desc[key] = desc[key].replace('{ratio}', str(contrast_ratio))
-
-                if '{fg}' in desc[key] and 'textColor' in metadata:
-                    desc[key] = desc[key].replace('{fg}', str(metadata.get('textColor', '')))
-
-                if '{bg}' in desc[key] and 'backgroundColor' in metadata:
-                    desc[key] = desc[key].replace('{bg}', str(metadata.get('backgroundColor', '')))
-
-                # Replace nested metadata placeholders (e.g., {currentElement.tag})
-                import re
-                nested_pattern = r'\{([^}]+)\}'
-
-                def replace_nested(match: re.Match[str]) -> str:
-                    path = match.group(1)
-
-                    # Skip special placeholders already handled
-                    if path in ['fontSizes_list', 'sizeCount_plural', 'sizeCount_singular_size', 'fieldCount_plural', 'fieldTypes_summary',
-                                'searchContext_title', 'searchContext_description', 'searchContext_remediation', 'minLineHeight']:
-                        return match.group(0)
-
-                    parts = path.split('.')
-
-                    # Navigate through nested dict/objects
-                    value = metadata
-                    for part in parts:
-                        if isinstance(value, dict) and part in value:
-                            value = value[part]
-                        else:
-                            return match.group(0)  # Return original if path not found
-
-                    return str(value) if value is not None else match.group(0)
-
-                desc[key] = re.sub(nested_pattern, replace_nested, desc[key])
+            desc[key] = re.sub(nested_pattern, replace_nested, val)
         
         return desc
     

@@ -1,12 +1,14 @@
 """
 Authentication routes for user login, logout, and registration
 """
+from __future__ import annotations
 
 import hashlib
 import logging
-from urllib.parse import urlparse
+from collections.abc import Callable
+from typing import Any
 
-from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, session, g, abort, jsonify
+from flask import Blueprint, Response, render_template, redirect, url_for, flash, request, current_app, session, g, abort, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from auto_a11y.web.fluent import ftl
 from functools import wraps
@@ -21,11 +23,11 @@ logger = logging.getLogger(__name__)
 auth_bp = Blueprint('auth', __name__)
 
 
-def role_required(*roles):
+def role_required(*roles: UserRole) -> Callable[..., Any]:
     """Legacy decorator -- now checks is_superadmin for admin, otherwise passes."""
-    def decorator(f):
+    def decorator(f: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(f)
-        def decorated_function(*args, **kwargs):
+        def decorated_function(*args: Any, **kwargs: Any) -> str | Response:
             if not current_user.is_authenticated:
                 flash(ftl('common-please-log-in-to-access-this-page'), 'warning')
                 return redirect(url_for('auth.login', next=request.url))
@@ -37,10 +39,10 @@ def role_required(*roles):
     return decorator
 
 
-def admin_required(f):
+def admin_required(f: Callable[..., Any]) -> Callable[..., Any]:
     """Legacy decorator -- requires superadmin."""
     @wraps(f)
-    def decorated_function(*args, **kwargs):
+    def decorated_function(*args: Any, **kwargs: Any) -> str | Response:
         if not current_user.is_authenticated:
             flash(ftl('common-please-log-in-to-access-this-page'), 'warning')
             return redirect(url_for('auth.login', next=request.url))
@@ -51,10 +53,10 @@ def admin_required(f):
     return decorated_function
 
 
-def auditor_required(f):
+def auditor_required(f: Callable[..., Any]) -> Callable[..., Any]:
     """Legacy decorator -- requires superadmin or projects:create permission."""
     @wraps(f)
-    def decorated_function(*args, **kwargs):
+    def decorated_function(*args: Any, **kwargs: Any) -> str | Response:
         if not current_user.is_authenticated:
             flash(ftl('common-please-log-in-to-access-this-page'), 'warning')
             return redirect(url_for('auth.login', next=request.url))
@@ -73,12 +75,12 @@ def auditor_required(f):
 # Per-project/website permission helpers
 # ------------------------------------------------------------------
 
-def _get_db():
+def _get_db() -> Any:
     """Get database instance from current app."""
     return current_app.db
 
 
-def get_effective_role(user, request_obj=None, project_id=None, website_id=None, page_id=None):
+def get_effective_role(user: Any, request_obj: Any = None, project_id: str | None = None, website_id: str | None = None, page_id: str | None = None) -> UserRole | None:
     """Legacy function -- returns UserRole for backward compat.
     Used by templates to determine is_project_admin etc.
     """
@@ -114,11 +116,11 @@ def get_effective_role(user, request_obj=None, project_id=None, website_id=None,
     return None
 
 
-def project_role_required(*roles):
+def project_role_required(*roles: UserRole) -> Callable[..., Any]:
     """Legacy decorator -- checks group permissions instead of roles."""
-    def decorator(f):
+    def decorator(f: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(f)
-        def decorated_function(*args, **kwargs):
+        def decorated_function(*args: Any, **kwargs: Any) -> str | Response | tuple[Response, int]:
             if not current_user.is_authenticated:
                 if request.is_json:
                     return jsonify({'error': ftl('common-authentication-required')}), 401
@@ -149,10 +151,10 @@ def project_role_required(*roles):
     return decorator
 
 
-def project_admin_required(f):
+def project_admin_required(f: Callable[..., Any]) -> Callable[..., Any]:
     """Legacy decorator -- checks project_members:delete permission."""
     @wraps(f)
-    def decorated_function(*args, **kwargs):
+    def decorated_function(*args: Any, **kwargs: Any) -> str | Response | tuple[Response, int]:
         if not current_user.is_authenticated:
             if request.is_json:
                 return jsonify({'error': ftl('common-authentication-required')}), 401
@@ -179,7 +181,7 @@ def project_admin_required(f):
 # Token validation helpers
 # ------------------------------------------------------------------
 
-def validate_token(token_string):
+def validate_token(token_string: str) -> dict[str, str] | None:
     """
     Validate a share-link token.
     Uses URLSafeSerializer (not TimedSerializer -- expiry is checked via
@@ -204,7 +206,7 @@ def validate_token(token_string):
     return {'scope': token.scope, 'scope_id': token.scope_id}
 
 
-def require_access(f):
+def require_access(f: Callable[..., Any]) -> Callable[..., Any]:
     """
     Decorator that gates access to public routes.
     Checks for a ``token`` URL parameter first, then falls back to
@@ -212,7 +214,7 @@ def require_access(f):
     Sets ``g.access_scope`` and ``g.access_scope_id`` for downstream scope enforcement.
     """
     @wraps(f)
-    def decorated(*args, **kwargs):
+    def decorated(*args: Any, **kwargs: Any) -> str | Response:
         token_string = kwargs.get('token')
 
         if token_string:
@@ -233,7 +235,7 @@ def require_access(f):
     return decorated
 
 
-def check_scope(scope_type, scope_id):
+def check_scope(scope_type: str, scope_id: str) -> None:
     """
     Verify the current token/login grants access to the requested resource.
     Aborts with 403 if access is denied.
@@ -278,13 +280,13 @@ PASSWORD_RESET_SALT = 'password-reset'
 PASSWORD_RESET_MAX_AGE = 900  # 15 minutes
 
 
-def generate_reset_token(email):
+def generate_reset_token(email: str) -> str:
     """Generate a signed, time-limited password reset token."""
     serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
     return serializer.dumps(email, salt=PASSWORD_RESET_SALT)
 
 
-def verify_reset_token(token):
+def verify_reset_token(token: str) -> str | None:
     """
     Verify a password reset token.
     Returns the email on success, None on failure.
@@ -297,7 +299,7 @@ def verify_reset_token(token):
     return email
 
 
-def send_password_reset_email(user):
+def send_password_reset_email(user: AppUser) -> bool:
     """Send a password reset email to the given user."""
     config = current_app.app_config
     token = generate_reset_token(user.email)
@@ -329,7 +331,7 @@ def send_password_reset_email(user):
 # Microsoft SSO helpers
 # ------------------------------------------------------------------
 
-def get_msal_app():
+def get_msal_app() -> Any:
     """Create a ConfidentialClientApplication for Microsoft SSO."""
     import msal
     config = current_app.app_config
@@ -340,7 +342,7 @@ def get_msal_app():
     )
 
 
-def get_microsoft_auth_url(redirect_uri):
+def get_microsoft_auth_url(redirect_uri: str) -> str:
     """Build the Microsoft authorization URL and store state in session."""
     msal_app = get_msal_app()
     flow = msal_app.initiate_auth_code_flow(
@@ -351,7 +353,7 @@ def get_microsoft_auth_url(redirect_uri):
     return flow['auth_uri']
 
 
-def complete_microsoft_auth(auth_request, redirect_uri):
+def complete_microsoft_auth(auth_request: Any, redirect_uri: str) -> dict[str, str] | None:
     """
     Exchange the Microsoft authorization code for tokens.
     Returns a dict of user claims on success, or None on failure.
@@ -389,7 +391,7 @@ def complete_microsoft_auth(auth_request, redirect_uri):
 # Google SSO helpers
 # ------------------------------------------------------------------
 
-def _google_flow(redirect_uri):
+def _google_flow(redirect_uri: str) -> Any:
     """Create a Google OAuth2 flow."""
     import os
     from google_auth_oauthlib.flow import Flow
@@ -414,7 +416,7 @@ def _google_flow(redirect_uri):
     )
 
 
-def get_google_auth_url(redirect_uri):
+def get_google_auth_url(redirect_uri: str) -> str:
     """Build the Google authorization URL and store state in session."""
     flow = _google_flow(redirect_uri)
     auth_url, state = flow.authorization_url(prompt='select_account')
@@ -425,7 +427,7 @@ def get_google_auth_url(redirect_uri):
     return auth_url
 
 
-def complete_google_auth(auth_request, redirect_uri):
+def complete_google_auth(auth_request: Any, redirect_uri: str) -> dict[str, str] | None:
     """
     Exchange the Google authorization code for tokens.
     Returns a dict of user claims on success, or None on failure.
@@ -474,7 +476,7 @@ def complete_google_auth(auth_request, redirect_uri):
 # Shared SSO user management
 # ------------------------------------------------------------------
 
-def find_sso_user(claims):
+def find_sso_user(claims: dict[str, str]) -> AppUser | None:
     """
     Look up AppUser by email.  Returns None if the email is not in
     the database — callers should redirect to the contact-us page.
@@ -500,13 +502,13 @@ def find_sso_user(claims):
 
 
 @auth_bp.route('/contact')
-def contact():
+def contact() -> str:
     """Contact us page — shown when an SSO user has no account."""
     return render_template('auth/contact.html')
 
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
-def login():
+def login() -> str | Response:
     """User login page"""
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
@@ -558,7 +560,7 @@ def login():
 
 @auth_bp.route('/logout')
 @login_required
-def logout():
+def logout() -> Response:
     """User logout"""
     logout_user()
     flash(ftl('auth-you-have-been-logged-out'), 'info')
@@ -566,7 +568,7 @@ def logout():
 
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
-def register():
+def register() -> str | Response:
     """User registration page"""
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
@@ -634,7 +636,7 @@ def register():
 
 
 @auth_bp.route('/forgot-password', methods=['GET', 'POST'])
-def forgot_password():
+def forgot_password() -> str | Response:
     """Self-service password reset -- sends a reset link via email."""
     if not current_app.app_config.SMTP_ENABLED:
         abort(404)
@@ -660,7 +662,7 @@ def forgot_password():
 
 
 @auth_bp.route('/reset-password/<token>', methods=['GET', 'POST'])
-def reset_password(token):
+def reset_password(token: str) -> str | Response:
     """Set a new password using a valid reset token."""
     if not current_app.app_config.SMTP_ENABLED:
         abort(404)
@@ -719,7 +721,7 @@ def reset_password(token):
 
 @auth_bp.route('/profile', methods=['GET', 'POST'])
 @login_required
-def profile():
+def profile() -> str | Response:
     """User profile page"""
     if request.method == 'POST':
         action = request.form.get('action')
@@ -757,7 +759,7 @@ def profile():
 
 @auth_bp.route('/users')
 @permission_required('users', 'read')
-def user_list():
+def user_list() -> str:
     """List all users"""
     users = current_app.db.get_app_users()
     return render_template('auth/user_list.html', users=users)
@@ -765,7 +767,7 @@ def user_list():
 
 @auth_bp.route('/users/create', methods=['GET', 'POST'])
 @permission_required('users', 'create')
-def user_create():
+def user_create() -> str | Response:
     """Create a new user"""
     if request.method == 'POST':
         email = request.form.get('email', '').strip().lower()
@@ -810,7 +812,7 @@ def user_create():
 
 @auth_bp.route('/users/<user_id>/edit', methods=['GET', 'POST'])
 @permission_required('users', 'update')
-def user_edit(user_id):
+def user_edit(user_id: str) -> str | Response:
     """Edit a user"""
     user = current_app.db.get_app_user(user_id)
     if not user:
@@ -881,7 +883,7 @@ def user_edit(user_id):
 
 @auth_bp.route('/users/<user_id>/delete', methods=['POST'])
 @permission_required('users', 'delete')
-def user_delete(user_id):
+def user_delete(user_id: str) -> Response:
     """Delete a user"""
     if current_user.id == user_id:
         flash(ftl('auth-you-cannot-delete-your-own-account'), 'danger')
@@ -907,7 +909,7 @@ def user_delete(user_id):
 # ------------------------------------------------------------------
 
 @auth_bp.route('/login/microsoft')
-def microsoft_login():
+def microsoft_login() -> Response:
     """Redirect user to Microsoft login page."""
     if not current_app.app_config.MICROSOFT_SSO_ENABLED:
         abort(404)
@@ -917,7 +919,7 @@ def microsoft_login():
 
 
 @auth_bp.route('/microsoft/callback')
-def microsoft_callback():
+def microsoft_callback() -> Response:
     """Handle the OAuth callback from Microsoft."""
     if not current_app.app_config.MICROSOFT_SSO_ENABLED:
         abort(404)
@@ -950,7 +952,7 @@ def microsoft_callback():
 # ------------------------------------------------------------------
 
 @auth_bp.route('/login/google')
-def google_login():
+def google_login() -> Response:
     """Redirect user to Google login page."""
     if not current_app.app_config.GOOGLE_SSO_ENABLED:
         abort(404)
@@ -960,7 +962,7 @@ def google_login():
 
 
 @auth_bp.route('/google/callback')
-def google_callback():
+def google_callback() -> Response:
     """Handle the OAuth callback from Google."""
     if not current_app.app_config.GOOGLE_SSO_ENABLED:
         abort(404)

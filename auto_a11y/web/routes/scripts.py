@@ -1,10 +1,12 @@
 """
 Page Setup Scripts Management Routes
 """
+from __future__ import annotations
 
 import asyncio
 
 from flask import Blueprint, render_template, request, jsonify, current_app, redirect, url_for, flash
+from werkzeug.wrappers import Response
 from auto_a11y.web.fluent import ftl
 from auto_a11y.models import PageSetupScript, ScriptStep, ActionType, ScriptScope, ExecutionTrigger
 from auto_a11y.core.browser_manager import BrowserManager
@@ -17,7 +19,7 @@ scripts_bp = Blueprint('scripts', __name__)
 
 
 @scripts_bp.route('/page/<page_id>/scripts')
-def list_page_scripts(page_id):
+def list_page_scripts(page_id: str) -> str | Response:
     """List all scripts for a page"""
     page = current_app.db.get_page(page_id)
     if not page:
@@ -47,7 +49,7 @@ def list_page_scripts(page_id):
 
 
 @scripts_bp.route('/page/<page_id>/scripts/create', methods=['GET', 'POST'])
-def create_page_script(page_id):
+def create_page_script(page_id: str) -> str | Response:
     """Create a new page setup script"""
     page = current_app.db.get_page(page_id)
     if not page:
@@ -149,7 +151,7 @@ def create_page_script(page_id):
 
 
 @scripts_bp.route('/website/<website_id>/scripts/create', methods=['GET', 'POST'])
-def create_website_script(website_id):
+def create_website_script(website_id: str) -> str | Response:
     """Create a new website-level setup script"""
     website = current_app.db.get_website(website_id)
     if not website:
@@ -256,7 +258,7 @@ def create_website_script(website_id):
 
 
 @scripts_bp.route('/website/<website_id>/scripts')
-def list_website_scripts(website_id):
+def list_website_scripts(website_id: str) -> str | Response:
     """List all scripts for a website"""
     website = current_app.db.get_website(website_id)
     if not website:
@@ -282,7 +284,7 @@ def list_website_scripts(website_id):
 
 
 @scripts_bp.route('/<script_id>')
-def view_script(script_id):
+def view_script(script_id: str) -> str | Response:
     """View script details"""
     script = current_app.db.get_page_setup_script(script_id)
     if not script:
@@ -302,7 +304,7 @@ def view_script(script_id):
 
 
 @scripts_bp.route('/<script_id>/edit', methods=['GET', 'POST'])
-def edit_script(script_id):
+def edit_script(script_id: str) -> str | Response:
     """Edit an existing script"""
     script = current_app.db.get_page_setup_script(script_id)
     if not script:
@@ -420,7 +422,7 @@ def edit_script(script_id):
 
 
 @scripts_bp.route('/<script_id>/delete', methods=['POST'])
-def delete_script(script_id):
+def delete_script(script_id: str) -> Response | tuple[Response, int]:
     """Delete a script"""
     script = current_app.db.get_page_setup_script(script_id)
     if not script:
@@ -447,7 +449,7 @@ def delete_script(script_id):
 
 
 @scripts_bp.route('/<script_id>/toggle', methods=['POST'])
-def toggle_script(script_id):
+def toggle_script(script_id: str) -> Response | tuple[Response, int]:
     """Enable/disable a script"""
     logger.warning(f"{'='*60}")
     logger.warning(f"TOGGLE ROUTE HIT! script_id: {script_id}")
@@ -488,7 +490,7 @@ def toggle_script(script_id):
 
 
 @scripts_bp.route('/<script_id>/test', methods=['POST'])
-def test_script(script_id):
+def test_script(script_id: str) -> Response | tuple[Response, int]:
     """Test a script without recording any test results.
 
     Launches a fresh browser, navigates to the target URL (page.url for page-scoped
@@ -533,7 +535,7 @@ def test_script(script_id):
     else:
         browser_config['stealth_mode'] = False
 
-    async def _do_test_script():
+    async def _do_test_script() -> dict[str, object]:
         bm = BrowserManager(browser_config)
         try:
             await bm.start()

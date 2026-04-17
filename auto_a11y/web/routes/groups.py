@@ -1,5 +1,8 @@
 """Group management routes."""
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
+from __future__ import annotations
+
+from flask import Blueprint, Response, render_template, request, redirect, url_for, flash, current_app
+from werkzeug.wrappers import Response as WerkzeugResponse
 from auto_a11y.web.fluent import ftl
 from flask_login import login_required
 
@@ -13,7 +16,7 @@ groups_bp = Blueprint('groups', __name__)
 
 @groups_bp.route('/')
 @permission_required('groups', 'read')
-def list_groups():
+def list_groups() -> str:
     """List all permission groups."""
     groups = current_app.db.get_all_groups()
     group_data = []
@@ -27,7 +30,7 @@ def list_groups():
 
 @groups_bp.route('/create', methods=['GET', 'POST'])
 @permission_required('groups', 'create')
-def create_group():
+def create_group() -> str | Response | WerkzeugResponse:
     """Create a new permission group."""
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
@@ -66,7 +69,7 @@ def create_group():
 
 @groups_bp.route('/<group_id>/edit', methods=['GET', 'POST'])
 @permission_required('groups', 'update')
-def edit_group(group_id):
+def edit_group(group_id: str) -> str | Response | WerkzeugResponse:
     """Edit an existing permission group."""
     group = current_app.db.get_group(group_id)
     if not group:
@@ -109,7 +112,7 @@ def edit_group(group_id):
 
 @groups_bp.route('/<group_id>/delete', methods=['POST'])
 @permission_required('groups', 'delete')
-def delete_group(group_id):
+def delete_group(group_id: str) -> WerkzeugResponse:
     """Delete a non-system group."""
     group = current_app.db.get_group(group_id)
     if not group:

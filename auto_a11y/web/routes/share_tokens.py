@@ -2,10 +2,11 @@
 Share token management routes for the admin app.
 Allows auditors/admins to create, list, and revoke public share links.
 """
+from __future__ import annotations
 
 import hashlib
 
-from flask import Blueprint, request, current_app, jsonify, url_for
+from flask import Blueprint, Response, request, current_app, jsonify, url_for
 from flask_login import current_user
 from auto_a11y.web.fluent import ftl
 from itsdangerous import URLSafeSerializer
@@ -19,7 +20,7 @@ share_tokens_bp = Blueprint('share_tokens', __name__)
 TOKEN_SALT = 'public-share-token'
 
 
-def _get_serializer():
+def _get_serializer() -> URLSafeSerializer:
     """Get the URL-safe serializer using the app's secret key"""
     return URLSafeSerializer(current_app.config['SECRET_KEY'], salt=TOKEN_SALT)
 
@@ -31,7 +32,7 @@ def _make_token_hash(token_string: str) -> str:
 
 @share_tokens_bp.route('/projects/<project_id>/share-tokens', methods=['POST'])
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
-def create_project_token(project_id):
+def create_project_token(project_id: str) -> Response | tuple[Response, int]:
     """Create a share token scoped to a project"""
     project = current_app.db.get_project(project_id)
     if not project:
@@ -42,7 +43,7 @@ def create_project_token(project_id):
 
 @share_tokens_bp.route('/websites/<website_id>/share-tokens', methods=['POST'])
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
-def create_website_token(website_id):
+def create_website_token(website_id: str) -> Response | tuple[Response, int]:
     """Create a share token scoped to a website"""
     website = current_app.db.get_website(website_id)
     if not website:
@@ -51,7 +52,7 @@ def create_website_token(website_id):
     return _create_token(TokenScope.WEBSITE, website_id)
 
 
-def _create_token(scope: TokenScope, scope_id: str):
+def _create_token(scope: TokenScope, scope_id: str) -> Response:
     """Shared logic for creating a token"""
     from datetime import datetime, timedelta
 
@@ -98,7 +99,7 @@ def _create_token(scope: TokenScope, scope_id: str):
 
 @share_tokens_bp.route('/projects/<project_id>/share-tokens', methods=['GET'])
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
-def list_project_tokens(project_id):
+def list_project_tokens(project_id: str) -> Response:
     """List share tokens for a project"""
     tokens = current_app.db.get_share_tokens_for_scope(TokenScope.PROJECT, project_id)
     return jsonify({
@@ -108,7 +109,7 @@ def list_project_tokens(project_id):
 
 @share_tokens_bp.route('/websites/<website_id>/share-tokens', methods=['GET'])
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
-def list_website_tokens(website_id):
+def list_website_tokens(website_id: str) -> Response:
     """List share tokens for a website"""
     tokens = current_app.db.get_share_tokens_for_scope(TokenScope.WEBSITE, website_id)
     return jsonify({
@@ -117,7 +118,7 @@ def list_website_tokens(website_id):
 
 
 @share_tokens_bp.route('/share-tokens/<token_id>/revoke', methods=['POST'])
-def revoke_token(token_id):
+def revoke_token(token_id: str) -> Response | tuple[Response, int]:
     """Revoke a share token"""
     # Look up token to find its scope, then check project membership
     token = current_app.db.get_share_token(token_id)
@@ -142,7 +143,7 @@ def revoke_token(token_id):
     return jsonify({'error': ftl('settings-token-not-found')}), 404
 
 
-def _token_to_json(token: ShareToken) -> dict:
+def _token_to_json(token: ShareToken) -> dict[str, object]:
     """Convert a token to a JSON-safe dict"""
     return {
         'id': token.id,

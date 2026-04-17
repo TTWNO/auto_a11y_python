@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """
+from __future__ import annotations
+
 Translation Validator for Auto A11y Python (Fluent FTL format)
 
 Validates that ALL Fluent translation files are complete and correct.
@@ -38,14 +40,14 @@ FR_DIR = REPO_ROOT / "auto_a11y" / "web" / "translations" / "fr"
 # ---------------------------------------------------------------------------
 
 class ValidationResult:
-    def __init__(self):
+    def __init__(self) -> None:
         self.errors: list[str] = []
         self.warnings: list[str] = []
 
-    def error(self, msg: str):
+    def error(self, msg: str) -> None:
         self.errors.append(msg)
 
-    def warning(self, msg: str):
+    def warning(self, msg: str) -> None:
         self.warnings.append(msg)
 
     @property
@@ -55,14 +57,14 @@ class ValidationResult:
 
 def _collect_message_ids(ftl_dir: Path) -> dict[str, set[str]]:
     """Parse all .ftl files in a directory and return {filename: set_of_message_ids}."""
-    result = {}
+    result: dict[str, set[str]] = {}
     if not ftl_dir.is_dir():
         return result
 
     for ftl_file in sorted(ftl_dir.glob("*.ftl")):
         source = ftl_file.read_text(encoding="utf-8")
         resource = parse(source)
-        ids = set()
+        ids: set[str] = set()
         for entry in resource.body:
             if isinstance(entry, fluent_ast.Message):
                 ids.add(entry.id.name)
@@ -71,7 +73,7 @@ def _collect_message_ids(ftl_dir: Path) -> dict[str, set[str]]:
     return result
 
 
-def _pattern_has_content(pattern) -> bool:
+def _pattern_has_content(pattern: fluent_ast.Pattern | None) -> bool:
     """Return True if a Fluent Pattern has any real content (text or placeables)."""
     if pattern is None:
         return False
@@ -91,14 +93,14 @@ def _collect_message_values(ftl_dir: Path) -> dict[str, dict[str, str | None]]:
     handles attribute-only messages (e.g. issue descriptions) and values
     that consist solely of placeables (e.g. plural selectors).
     """
-    result = {}
+    result: dict[str, dict[str, str | None]] = {}
     if not ftl_dir.is_dir():
         return result
 
     for ftl_file in sorted(ftl_dir.glob("*.ftl")):
         source = ftl_file.read_text(encoding="utf-8")
         resource = parse(source)
-        entries = {}
+        entries: dict[str, str | None] = {}
         for entry in resource.body:
             if isinstance(entry, fluent_ast.Message):
                 # Check main value
@@ -130,7 +132,7 @@ def _collect_message_values(ftl_dir: Path) -> dict[str, dict[str, str | None]]:
 
 def _check_for_junk(ftl_dir: Path) -> list[tuple[str, int]]:
     """Return list of (filename, junk_count) for files with parse errors."""
-    junk_files = []
+    junk_files: list[tuple[str, int]] = []
     if not ftl_dir.is_dir():
         return junk_files
 
@@ -151,7 +153,7 @@ def _check_for_junk(ftl_dir: Path) -> list[tuple[str, int]]:
 # Validation checks
 # ---------------------------------------------------------------------------
 
-def validate_coverage(result: ValidationResult):
+def validate_coverage(result: ValidationResult) -> None:
     """Check that every EN message ID has a corresponding FR message ID."""
     en_ids_by_file = _collect_message_ids(EN_DIR)
     fr_ids_by_file = _collect_message_ids(FR_DIR)
@@ -186,7 +188,7 @@ def validate_coverage(result: ValidationResult):
         print(f"  [PASS] Coverage — {len(all_en)} EN messages, {len(all_fr)} FR messages, {coverage:.1f}% coverage")
 
 
-def validate_no_empty_values(result: ValidationResult):
+def validate_no_empty_values(result: ValidationResult) -> None:
     """Check that no FR messages have empty/None values."""
     fr_values = _collect_message_values(FR_DIR)
 
@@ -207,7 +209,7 @@ def validate_no_empty_values(result: ValidationResult):
         print(f"  [PASS] No empty values — {total} FR messages all have content")
 
 
-def validate_no_parse_errors(result: ValidationResult):
+def validate_no_parse_errors(result: ValidationResult) -> None:
     """Check that no FTL files contain Junk (parse errors)."""
     for label, ftl_dir in [("EN", EN_DIR), ("FR", FR_DIR)]:
         junk_files = _check_for_junk(ftl_dir)
@@ -223,7 +225,7 @@ def validate_no_parse_errors(result: ValidationResult):
 # Main
 # ---------------------------------------------------------------------------
 
-def main():
+def main() -> int:
     result = ValidationResult()
 
     print()

@@ -485,7 +485,7 @@ class RecordingsReportGenerator:
         # TODO: Convert HTML to PDF using WeasyPrint or similar
         logger.warning("PDF generation not fully implemented - HTML report generated instead")
         import shutil
-        shutil.copy(html_path, output_path.replace('.pdf', '_temp.html'))
+        shutil.copy(html_path, str(output_path).replace('.pdf', '_temp.html'))
 
     def _generate_xlsx_report(
         self,
@@ -511,6 +511,7 @@ class RecordingsReportGenerator:
 
             # Summary sheet
             ws_summary = wb.active
+            assert ws_summary is not None
             ws_summary.title = t['summary']
             ws_summary['A1'] = t['recordings_report']
             ws_summary['A1'].font = Font(size=16, bold=True)

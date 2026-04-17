@@ -392,10 +392,10 @@ class DiscoveryReportGenerator:
         common_disco, common_info, common_an = self._compute_common_issues(aggregate)
 
         # Get documents data (small -- only metadata)
-        documents_data = {}
+        documents_data: dict[str, Any] = {}
         if website:
             documents = self.db.get_document_references(website.id)
-            docs_by_type = {}
+            docs_by_type: dict[str, list[Any]] = {}
             for doc in documents:
                 doc_type = doc.document_type_display
                 if doc_type not in docs_by_type:
@@ -479,9 +479,9 @@ class DiscoveryReportGenerator:
         total_pages_needing_inspection = 0
 
         # Frequency maps (issue_id -> count)
-        disco_by_type = defaultdict(int)
-        info_by_type = defaultdict(int)
-        accessible_name_by_type = defaultdict(int)
+        disco_by_type: defaultdict[str, int] = defaultdict(int)
+        info_by_type: defaultdict[str, int] = defaultdict(int)
+        accessible_name_by_type: defaultdict[str, int] = defaultdict(int)
 
         # Page frequency (issue_id -> set of page_ids) -- for common issue detection
         pages_with_disco_issue = defaultdict(set)
@@ -489,14 +489,14 @@ class DiscoveryReportGenerator:
         pages_with_accessible_name_issue = defaultdict(set)
 
         # Component signatures (small aggregate data)
-        fonts_data = {}
-        forms_data = {}
-        navs_data = {}
-        asides_data = {}
-        sections_data = {}
-        headers_data = {}
-        footers_data = {}
-        searches_data = {}
+        fonts_data: dict[str, Any] = {}
+        forms_data: dict[str, Any] = {}
+        navs_data: dict[str, Any] = {}
+        asides_data: dict[str, Any] = {}
+        sections_data: dict[str, Any] = {}
+        headers_data: dict[str, Any] = {}
+        footers_data: dict[str, Any] = {}
+        searches_data: dict[str, Any] = {}
 
         # Track which pages have issues: (page_id, disco_count, info_count, an_count)
         page_ids_with_issues = []
@@ -1270,9 +1270,9 @@ class DiscoveryReportGenerator:
         total_accessible_name_issues = 0
 
         # Issue category tracking
-        disco_by_type = defaultdict(int)
-        info_by_type = defaultdict(int)
-        accessible_name_by_type = defaultdict(int)
+        disco_by_type: defaultdict[str, int] = defaultdict(int)
+        info_by_type: defaultdict[str, int] = defaultdict(int)
+        accessible_name_by_type: defaultdict[str, int] = defaultdict(int)
 
         # Track which pages have which issues (for frequency analysis)
         pages_with_disco_issue = defaultdict(set)
@@ -1281,7 +1281,7 @@ class DiscoveryReportGenerator:
         total_pages_with_issues = 0
 
         # Font tracking - aggregate fonts across all pages
-        fonts_data = {}  # font_name -> {'sizes': set(), 'pages': set()}
+        fonts_data: dict[str, Any] = {}  # font_name -> {'sizes': set(), 'pages': set()}
 
         # Forms tracking - aggregate forms across all pages using formSignature
         forms_data = {}  # form_signature -> {'xpath': str, 'fieldCount': int, 'fieldTypes': dict,
@@ -1821,11 +1821,11 @@ class DiscoveryReportGenerator:
             Report data dictionary
         """
         # Get documents for the website
-        documents_data = []
+        documents_data: list[Any] | dict[str, list[Any]] = []
         if website:
             documents = self.db.get_document_references(website.id)
             # Group by document type
-            docs_by_type = {}
+            docs_by_type: dict[str, list[Any]] = {}
             for doc in documents:
                 doc_type = doc.document_type_display
                 if doc_type not in docs_by_type:
@@ -2219,7 +2219,7 @@ class DiscoveryReportGenerator:
         </div>
         """
 
-    def _generate_fonts_html(self, fonts_data: dict[str, dict], t: dict[str, str] | None = None) -> str:
+    def _generate_fonts_html(self, fonts_data: dict[str, dict[str, Any]], t: dict[str, str] | None = None) -> str:
         """Generate HTML section for fonts found across the site"""
         logger.warning(f"_generate_fonts_html called with {len(fonts_data) if fonts_data else 0} fonts")
         if not fonts_data:
@@ -2263,7 +2263,7 @@ class DiscoveryReportGenerator:
         </section>
         """
 
-    def _generate_forms_html(self, forms_data: dict[str, dict], total_pages: int, t: dict[str, str] | None = None) -> str:
+    def _generate_forms_html(self, forms_data: dict[str, dict[str, Any]], total_pages: int, t: dict[str, str] | None = None) -> str:
         """Generate HTML section for forms found across the site"""
 
         # Get translations if not provided
@@ -2372,7 +2372,7 @@ class DiscoveryReportGenerator:
         </section>
         """
 
-    def _generate_navs_html(self, navs_data: dict[str, dict], total_pages: int, t: dict[str, str] | None = None) -> str:
+    def _generate_navs_html(self, navs_data: dict[str, dict[str, Any]], total_pages: int, t: dict[str, str] | None = None) -> str:
         """Generate HTML section for navigations found across the site"""
 
         # Get translations if not provided
@@ -2459,7 +2459,7 @@ class DiscoveryReportGenerator:
         </section>
         """
 
-    def _generate_asides_html(self, asides_data: dict[str, dict], total_pages: int, t: dict[str, str] | None = None) -> str:
+    def _generate_asides_html(self, asides_data: dict[str, dict[str, Any]], total_pages: int, t: dict[str, str] | None = None) -> str:
         """Generate HTML section for aside/complementary regions found across the site"""
 
         # Get translations if not provided
@@ -2540,7 +2540,7 @@ class DiscoveryReportGenerator:
         </section>
         """
 
-    def _generate_sections_html(self, sections_data: dict[str, dict], total_pages: int, t: dict[str, str] | None = None) -> str:
+    def _generate_sections_html(self, sections_data: dict[str, dict[str, Any]], total_pages: int, t: dict[str, str] | None = None) -> str:
         """Generate HTML section for section/region landmarks found across the site"""
 
         # Get translations if not provided
@@ -2621,7 +2621,7 @@ class DiscoveryReportGenerator:
         </section>
         """
 
-    def _generate_headers_html(self, headers_data: dict[str, dict], total_pages: int, t: dict[str, str] | None = None) -> str:
+    def _generate_headers_html(self, headers_data: dict[str, dict[str, Any]], total_pages: int, t: dict[str, str] | None = None) -> str:
         """Generate HTML section for header/banner landmarks found across the site"""
 
         # Get translations if not provided
@@ -2702,7 +2702,7 @@ class DiscoveryReportGenerator:
         </section>
         """
 
-    def _generate_footers_html(self, footers_data: dict[str, dict], total_pages: int, t: dict[str, str] | None = None) -> str:
+    def _generate_footers_html(self, footers_data: dict[str, dict[str, Any]], total_pages: int, t: dict[str, str] | None = None) -> str:
         """Generate HTML section for footer/contentinfo landmarks found across the site"""
 
         # Get translations if not provided
@@ -2783,7 +2783,7 @@ class DiscoveryReportGenerator:
         </section>
         """
 
-    def _generate_searches_html(self, searches_data: dict[str, dict], total_pages: int, t: dict[str, str] | None = None) -> str:
+    def _generate_searches_html(self, searches_data: dict[str, dict[str, Any]], total_pages: int, t: dict[str, str] | None = None) -> str:
         """Generate HTML section for search landmarks found across the site"""
 
         # Get translations if not provided
@@ -2962,7 +2962,7 @@ class DiscoveryReportGenerator:
         </section>
         """
 
-    def _generate_common_issues_html(self, common_issues: dict[str, dict], total_pages: int, t: dict[str, str] | None = None) -> str:
+    def _generate_common_issues_html(self, common_issues: dict[str, dict[str, Any]], total_pages: int, t: dict[str, str] | None = None) -> str:
         """Generate HTML section for common issues appearing on >70% of pages"""
 
         # Get translations if not provided
@@ -3070,7 +3070,7 @@ class DiscoveryReportGenerator:
         </section>
         """
 
-    def _generate_issue_breakdown_html(self, breakdown: dict[str, dict], t: dict[str, str] | None = None) -> str:
+    def _generate_issue_breakdown_html(self, breakdown: dict[str, dict[str, Any]], t: dict[str, str] | None = None) -> str:
         """Generate HTML for issue breakdown by type"""
 
         # Get translations if not provided
@@ -3181,7 +3181,7 @@ class DiscoveryReportGenerator:
             # Convert to PDF
             pdf_bytes = HTML(string=html_content).write_pdf()
 
-            return pdf_bytes
+            return pdf_bytes or b''
 
         except ImportError:
             logger.error("WeasyPrint not installed. Cannot generate PDF.")

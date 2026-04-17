@@ -296,11 +296,14 @@ class StaticHTMLReportGenerator:
 
         # Configure Jinja2 for Flask-Babel translations
         # These callables will be replaced by force_locale context manager
-        self.template_env.install_gettext_callables(
-            gettext=lambda x: x,
-            ngettext=lambda s, p, n: s if n == 1 else p,
-            newstyle=True
-        )
+        # install_gettext_callables is provided by jinja2.ext.i18n at runtime
+        install_fn = getattr(self.template_env, 'install_gettext_callables', None)
+        if install_fn is not None:
+            install_fn(
+                gettext=lambda x: x,
+                ngettext=lambda s, p, n: s if n == 1 else p,
+                newstyle=True
+            )
 
         # Add custom filters
         self._setup_template_filters()
@@ -886,7 +889,7 @@ class StaticHTMLReportGenerator:
         Returns:
             List of page data dictionaries
         """
-        pages_data = []
+        pages_data: list[dict[str, Any]] = []
 
         for i, page_id in enumerate(page_ids):
             if progress_callback:
@@ -1633,7 +1636,7 @@ class StaticHTMLReportGenerator:
             by_touchpoint[tp] = {'errors': count, 'warnings': 0, 'info': 0}
 
         # by_wcag placeholder (same as _group_by_wcag)
-        by_wcag = {}
+        by_wcag: dict[str, Any] = {}
 
         return {
             'total_errors': total_errors,
@@ -2550,7 +2553,7 @@ class StaticHTMLReportGenerator:
 
             if single_page_components:
                 # Group single-page components by (type, label, user_context)
-                merge_groups = {}
+                merge_groups: dict[tuple[str, str], dict[str, Any]] = {}
                 for sig, comp_data in single_page_components.items():
                     merge_key = (comp_data['type'], comp_data.get('user_context', 'Guest'))
                     if merge_key not in merge_groups:
@@ -2985,7 +2988,7 @@ class StaticHTMLReportGenerator:
                 if len(comp_data['pages']) == 1
             }
             if single_page_components:
-                merge_groups = {}
+                merge_groups: dict[tuple[str, str], list[tuple[str, dict[str, Any]]]] = {}
                 for sig, comp_data in single_page_components.items():
                     merge_key = (comp_data['type'], comp_data.get('user_context', 'Guest'))
                     if merge_key not in merge_groups:
@@ -3018,7 +3021,7 @@ class StaticHTMLReportGenerator:
 
         # Reclassify issues whose component_signature was filtered out.
         # Issues matched to single-page components should become unassigned.
-        reclassified = {}
+        reclassified: dict[str, dict[str, Any]] = {}
         for dedup_key, issue_data in unique_issues.items():
             comp_sig = issue_data.get('component_signature')
             if comp_sig and comp_sig not in common_components:
@@ -3084,7 +3087,7 @@ class StaticHTMLReportGenerator:
 
         # Group dedup issues by page URL
         # Each dedup issue may appear on multiple pages
-        page_issues = {}  # page_url → {'violations': [...], 'warnings': [...], ...}
+        page_issues: dict[str, dict[str, list[dict[str, Any]]]] = {}  # page_url -> {'violations': [...], 'warnings': [...], ...}
         for issue in unassigned_issues:
             for page_url in issue['pages']:
                 if page_url not in page_issues:
@@ -3181,7 +3184,7 @@ class StaticHTMLReportGenerator:
         Returns:
             Dictionary mapping component signature -> list of issues
         """
-        grouped = {}
+        grouped: dict[str, list[dict[str, Any]]] = {}
 
         for issue in deduplicated_issues:
             component_sig = issue.get('component_signature')
@@ -3568,7 +3571,7 @@ class StaticHTMLReportGenerator:
         import hashlib
 
         # Group issues by page URL
-        issues_by_page = {}
+        issues_by_page: dict[str, list[dict[str, Any]]] = {}
         for issue in unassigned_issues:
             for page_url in issue['pages']:
                 if page_url not in issues_by_page:
@@ -3587,7 +3590,7 @@ class StaticHTMLReportGenerator:
             warnings_count = 0
             info_count = 0
             discovery_count = 0
-            original_metadata = {}
+            original_metadata: dict[str, Any] = {}
             total_page_violations = 0
             total_page_warnings = 0
             # Get actual non-deduplicated violations/warnings/info/discovery for this page only

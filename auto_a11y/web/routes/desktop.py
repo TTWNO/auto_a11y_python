@@ -2,15 +2,16 @@
 Desktop-mode routes for Electron integration.
 This blueprint is only registered when DESKTOP_MODE=True.
 """
+from __future__ import annotations
 
 import os
-from flask import Blueprint, jsonify, request, current_app
+from flask import Blueprint, Response, jsonify, request, current_app
 
 desktop_bp = Blueprint('desktop', __name__)
 
 
 @desktop_bp.route('/shutdown', methods=['POST'])
-def shutdown():
+def shutdown() -> Response | tuple[Response, int]:
     """
     Graceful Flask shutdown for Electron.
     Only available from localhost.

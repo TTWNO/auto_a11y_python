@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """
+from __future__ import annotations
+
 Test script to verify the translation wrapper works correctly.
 
 This script tests:
@@ -23,7 +25,7 @@ for pkg in ['auto_a11y', 'auto_a11y.reporting']:
         sys.modules[pkg] = mod
 
 
-def test_wrapper_import():
+def test_wrapper_import() -> bool:
     """Test that the wrapper module can be imported"""
     print("Testing wrapper import...")
     try:
@@ -38,7 +40,7 @@ def test_wrapper_import():
         return False
 
 
-def test_basic_functionality():
+def test_basic_functionality() -> bool:
     """Test basic functionality of the wrapper"""
     print("\nTesting basic functionality...")
     try:
@@ -63,7 +65,7 @@ def test_basic_functionality():
         return False
 
 
-def test_with_metadata():
+def test_with_metadata() -> bool:
     """Test with metadata (placeholders should be handled by original function)"""
     print("\nTesting with metadata...")
     try:
@@ -92,7 +94,7 @@ def test_with_metadata():
         return False
 
 
-def test_multiple_issues():
+def test_multiple_issues() -> bool:
     """Test multiple different issue types"""
     print("\nTesting multiple issue types...")
     try:
@@ -121,7 +123,7 @@ def test_multiple_issues():
         return False
 
 
-def main():
+def main() -> int:
     print("="*60)
     print("Translation Wrapper Test Suite")
     print("="*60)

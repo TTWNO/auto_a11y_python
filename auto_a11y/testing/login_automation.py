@@ -32,7 +32,7 @@ class LoginAutomation:
     async def perform_login(
         self,
         browser_page: Page,
-        user: WebsiteUser,
+        user: WebsiteUser | ProjectUser,
         timeout: int = 30000
     ) -> dict[str, Any]:
         """
@@ -88,7 +88,7 @@ class LoginAutomation:
     async def _perform_form_login(
         self,
         browser_page: Page,
-        user: WebsiteUser,
+        user: WebsiteUser | ProjectUser,
         timeout: int
     ) -> dict[str, Any]:
         """
@@ -177,7 +177,7 @@ class LoginAutomation:
     async def _perform_basic_auth(
         self,
         browser_page: Page,
-        user: WebsiteUser
+        user: WebsiteUser | ProjectUser
     ) -> dict[str, Any]:
         """
         Perform HTTP Basic Authentication
@@ -206,7 +206,7 @@ class LoginAutomation:
     async def perform_logout(
         self,
         browser_page: Page,
-        user: WebsiteUser,
+        user: WebsiteUser | ProjectUser,
         timeout: int = 30000
     ) -> dict[str, Any]:
         """

@@ -55,6 +55,7 @@ class AIExecutiveSummaryGenerator:
     
     def _get_claude_response(self, prompt: str) -> str:
         """Get response from Claude using sync client"""
+        assert self.claude_client is not None
         try:
             # Use the sync client directly
             message = self.claude_client.sync_client.messages.create(
@@ -67,10 +68,11 @@ class AIExecutiveSummaryGenerator:
                     "content": prompt
                 }]
             )
-            
+
             # Extract text from response
             if hasattr(message, 'content') and len(message.content) > 0:
-                response_text = message.content[0].text
+                block = message.content[0]
+                response_text: str = block.text if hasattr(block, 'text') else str(block)
                 logger.info(f"Claude response length: {len(response_text)} chars")
                 logger.debug(f"Claude response preview: {response_text[:200]}...")
                 return response_text

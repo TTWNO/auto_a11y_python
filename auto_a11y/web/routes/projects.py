@@ -1,8 +1,12 @@
 """
 Project management routes
 """
+from __future__ import annotations
+
+from collections.abc import Callable
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
+from werkzeug.wrappers import Response
 from auto_a11y.web.fluent import ftl, lazy_ftl, _get_current_locale as get_locale
 from flask_login import login_required
 from flask import g
@@ -23,7 +27,7 @@ projects_bp = Blueprint('projects', __name__)
 
 @projects_bp.route('/api/list')
 @login_required
-def api_list_projects():
+def api_list_projects() -> Response | tuple[Response, int]:
     """API endpoint to list projects the current user can access"""
     try:
         if getattr(current_user, 'is_superadmin', False):
@@ -48,7 +52,7 @@ def api_list_projects():
 @projects_bp.route('/api/<project_id>/websites')
 @login_required
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
-def api_project_websites(project_id):
+def api_project_websites(project_id: str) -> Response | tuple[Response, int]:
     """API endpoint to list websites in a project"""
     try:
         websites = current_app.db.get_websites(project_id)
@@ -68,7 +72,7 @@ def api_project_websites(project_id):
 
 
 @projects_bp.route('/api/test-details/<test_id>')
-def api_test_details(test_id):
+def api_test_details(test_id: str) -> Response | tuple[Response, int]:
     """API endpoint to get detailed information about a test"""
     try:
         from auto_a11y.reporting.issue_catalog import IssueCatalog
@@ -127,7 +131,7 @@ def api_test_details(test_id):
 
 
 @projects_bp.route('/api/test-details/<test_id>/production-ready', methods=['POST'])
-def api_set_test_production_ready(test_id):
+def api_set_test_production_ready(test_id: str) -> Response | tuple[Response, int]:
     """API endpoint to toggle production_ready flag for a test"""
     try:
         from auto_a11y.reporting.issue_catalog import IssueCatalog
@@ -172,7 +176,7 @@ def api_set_test_production_ready(test_id):
 
 
 @projects_bp.route('/api/issue-documentation-stats')
-def api_issue_documentation_stats():
+def api_issue_documentation_stats() -> Response | tuple[Response, int]:
     """API endpoint to get statistics about issue documentation status"""
     try:
         from auto_a11y.reporting.issue_catalog import IssueCatalog
@@ -214,7 +218,7 @@ def api_issue_documentation_stats():
 
 @projects_bp.route('/')
 @login_required
-def list_projects():
+def list_projects() -> str:
     """List all projects"""
     status_filter = request.args.get('status')
     
@@ -235,7 +239,7 @@ def list_projects():
 
 @projects_bp.route('/create', methods=['GET', 'POST'])
 @auditor_required
-def create_project():
+def create_project() -> str | Response:
     """Create new project"""
     if request.method == 'POST':
         name = request.form.get('name')
@@ -487,7 +491,7 @@ def create_project():
 
 @projects_bp.route('/<project_id>')
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
-def view_project(project_id):
+def view_project(project_id: str) -> str | Response:
     """View project details"""
     project = current_app.db.get_project(project_id)
     if not project:
@@ -556,7 +560,7 @@ def view_project(project_id):
 
 
 @projects_bp.route('/<project_id>/edit', methods=['GET', 'POST'])
-def edit_project(project_id):
+def edit_project(project_id: str) -> str | Response:
     """Edit project"""
     project = current_app.db.get_project(project_id)
     if not project:
@@ -720,7 +724,7 @@ def edit_project(project_id):
 
 
 @projects_bp.route('/<project_id>/delete', methods=['POST'])
-def delete_project(project_id):
+def delete_project(project_id: str) -> Response:
     """Delete project"""
     project = current_app.db.get_project(project_id)
     if not project:
@@ -737,7 +741,7 @@ def delete_project(project_id):
 
 @projects_bp.route('/<project_id>/add-website', methods=['POST'])
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
-def add_website(project_id):
+def add_website(project_id: str) -> Response | tuple[Response, int]:
     """Add website to project"""
     from auto_a11y.models import Website, ScrapingConfig
     
@@ -775,7 +779,7 @@ def add_website(project_id):
 
 
 @projects_bp.route('/<project_id>/test-all', methods=['POST'])
-def test_project(project_id):
+def test_project(project_id: str) -> Response:
     """Test all websites in a project"""
     import asyncio
     from auto_a11y.core.website_manager import WebsiteManager
@@ -847,7 +851,7 @@ def test_project(project_id):
 
 @projects_bp.route('/<project_id>/report', methods=['GET', 'POST'])
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
-def generate_project_report(project_id):
+def generate_project_report(project_id: str) -> Response:
     """Generate accessibility report for entire project (background job)"""
     from auto_a11y.reporting.project_report import ProjectReport
 
@@ -877,10 +881,10 @@ def generate_project_report(project_id):
         metadata={'report_type': format, 'scope': 'project', 'display_name': f'Project Report - {project.name}'}
     )
 
-    def wrapper():
+    def wrapper() -> None:
         try:
             with app.app_context():
-                def generate_and_save(progress_callback=None):
+                def generate_and_save(progress_callback: Callable[[int, int, str], None] | None = None) -> object:
                     report = ProjectReport(db, project, websites, pages_by_website, language=language)
                     report.generate(progress_callback=progress_callback)
                     return report.save(format, reports_dir=reports_dir)
@@ -898,7 +902,7 @@ def generate_project_report(project_id):
 
 
 @projects_bp.route('/api/<project_id>/users')
-def api_get_project_users(project_id):
+def api_get_project_users(project_id: str) -> Response | tuple[Response, int]:
     """API endpoint to get project users"""
     try:
         project_users = current_app.db.get_project_users(project_id, enabled_only=True)
@@ -920,7 +924,7 @@ def api_get_project_users(project_id):
 
 
 @projects_bp.route('/api/<project_id>/details')
-def api_get_project(project_id):
+def api_get_project(project_id: str) -> Response | tuple[Response, int]:
     """API endpoint to get project details including testers and supervisors"""
     try:
         project = current_app.db.get_project(project_id)
@@ -944,7 +948,7 @@ def api_get_project(project_id):
 
 
 @projects_bp.route('/api/<project_id>/discovered-pages')
-def api_get_discovered_pages(project_id):
+def api_get_discovered_pages(project_id: str) -> Response | tuple[Response, int]:
     """API endpoint to get discovered pages for a project"""
     try:
         db = current_app.db

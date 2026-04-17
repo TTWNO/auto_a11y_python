@@ -7,13 +7,15 @@ that the accessibility testing tool correctly identifies the issues
 that each fixture is designed to demonstrate.
 """
 
+from __future__ import annotations
+
 import os
 import sys
 import asyncio
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Any
 from datetime import datetime, timedelta
 import uuid
 import time
@@ -36,7 +38,7 @@ from auto_a11y.testing.test_runner import TestRunner
 class FixtureTestRunner:
     """Runner for testing accessibility fixtures"""
 
-    def __init__(self, fixtures_dir: str = "Fixtures", headless: bool = True):
+    def __init__(self, fixtures_dir: str = "Fixtures", headless: bool = True) -> None:
         self.fixtures_dir = Path(fixtures_dir)
         self.config = Config()
 
@@ -48,8 +50,8 @@ class FixtureTestRunner:
         self.db = Database(self.config.MONGODB_URI, self.config.DATABASE_NAME)
         self.website_manager = WebsiteManager(self.db, browser_config)
         self.test_runner = TestRunner(self.db, browser_config)
-        self.results = []
-        self.result_futs = []
+        self.results: list[dict[str, Any]] = []
+        self.result_futs: list[Any] = []
         self.test_run_id = str(uuid.uuid4())  # Unique ID for this test run
 
         # Check if AI analysis is available
@@ -57,7 +59,7 @@ class FixtureTestRunner:
         if not self.ai_available:
             logger.warning("CLAUDE_API_KEY not set - AI_ prefixed tests will be skipped")
         
-    def get_all_fixtures(self, category_filter: str = None, type_filter: str = None, code_filter: str = None) -> List[Tuple[Path, str]]:
+    def get_all_fixtures(self, category_filter: str | None = None, type_filter: str | None = None, code_filter: str | None = None) -> list[tuple[Path, str]]:
         """
         Get all HTML fixtures with their expected error codes
 
@@ -115,7 +117,7 @@ class FixtureTestRunner:
 
         return sorted(fixtures)
     
-    def save_fixture_result_to_db(self, result: Dict) -> str:
+    def save_fixture_result_to_db(self, result: dict[str, Any]) -> str | None:
         """Save fixture test result to database"""
         try:
             # Create a document for the fixture test result
@@ -137,7 +139,7 @@ class FixtureTestRunner:
             logger.error(f"Failed to save fixture result to database: {e}")
             return None
     
-    def extract_fixture_metadata(self, fixture_path: Path) -> Dict:
+    def extract_fixture_metadata(self, fixture_path: Path) -> dict[str, Any]:
         """Extract test metadata from fixture HTML file"""
         try:
             with open(fixture_path, 'r', encoding='utf-8') as f:
@@ -157,7 +159,7 @@ class FixtureTestRunner:
 
         return {}
 
-    async def test_fixture(self, fixture_path: Path, expected_code: str, fixture_num: int, total_fixtures: int) -> Dict:
+    async def test_fixture(self, fixture_path: Path, expected_code: str, fixture_num: int, total_fixtures: int) -> dict[str, Any]:
         """Test a single fixture file"""
         print(f"\n[{fixture_num}/{total_fixtures}] 📄 Testing: {fixture_path.relative_to(self.fixtures_dir)}")
         print(f"   Expected: {expected_code}")
@@ -390,7 +392,7 @@ class FixtureTestRunner:
             
         return result
     
-    def get_recent_test_runs(self, limit: int = 5):
+    def get_recent_test_runs(self, limit: int = 5) -> list[dict[str, Any]]:
         """Get recent test runs from database"""
         try:
             runs = list(self.db.db.fixture_test_runs.find().sort("completed_at", -1).limit(limit))
@@ -399,7 +401,7 @@ class FixtureTestRunner:
             logger.error(f"Failed to get recent test runs: {e}")
             return []
     
-    def display_test_history(self):
+    def display_test_history(self) -> None:
         """Display test run history"""
         runs = self.get_recent_test_runs(10)
         if not runs:
@@ -427,7 +429,7 @@ class FixtureTestRunner:
         
         print("\n" + "=" * 80)
     
-    def save_test_run_summary(self, total: int, passed: int, failed: int, duration: float):
+    def save_test_run_summary(self, total: int, passed: int, failed: int, duration: float) -> bool:
         """Save test run summary to database"""
         try:
             summary = {
@@ -450,7 +452,7 @@ class FixtureTestRunner:
             logger.error(f"Failed to save test run summary: {e}")
             return False
     
-    async def run_all_tests(self, category_filter: str = None, type_filter: str = None, code_filter: str = None, limit: int = None) -> None:
+    async def run_all_tests(self, category_filter: str | None = None, type_filter: str | None = None, code_filter: str | None = None, limit: int | None = None) -> int:
         """
         Run tests on all fixtures
 
@@ -499,7 +501,7 @@ class FixtureTestRunner:
         print(f"\nFound {len(fixtures)} fixtures to test\n")
 
         # Group fixtures by error code to track pass/fail per code
-        fixtures_by_code = {}
+        fixtures_by_code: dict[str, list[Path]] = {}
         for fixture_path, expected_code in fixtures:
             if expected_code not in fixtures_by_code:
                 fixtures_by_code[expected_code] = []
@@ -649,7 +651,7 @@ class FixtureTestRunner:
         return 0 if failure_count == 0 else 1
 
 
-async def main():
+async def main() -> None:
     """Main entry point"""
     import argparse
     

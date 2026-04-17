@@ -1,8 +1,10 @@
 """
 Website management routes
 """
+from __future__ import annotations
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app, session
+from werkzeug.wrappers import Response
 from auto_a11y.web.fluent import ftl
 from auto_a11y.models import Website, ScrapingConfig, Page, PageStatus
 from datetime import datetime
@@ -14,7 +16,7 @@ websites_bp = Blueprint('websites', __name__)
 
 
 @websites_bp.route('/api/list')
-def api_list_websites():
+def api_list_websites() -> Response | tuple[Response, int]:
     """API endpoint to list all websites"""
     try:
         websites = current_app.db.get_all_websites()
@@ -35,7 +37,7 @@ def api_list_websites():
 
 
 @websites_bp.route('/<website_id>')
-def view_website(website_id):
+def view_website(website_id: str) -> str | Response:
     """View website details"""
     website = current_app.db.get_website(website_id)
     if not website:
@@ -132,7 +134,7 @@ def view_website(website_id):
 
 
 @websites_bp.route('/<website_id>/edit', methods=['GET', 'POST'])
-def edit_website(website_id):
+def edit_website(website_id: str) -> str | Response:
     """Edit website configuration"""
     website = current_app.db.get_website(website_id)
     if not website:
@@ -162,7 +164,7 @@ def edit_website(website_id):
 
 
 @websites_bp.route('/<website_id>/delete', methods=['POST'])
-def delete_website(website_id):
+def delete_website(website_id: str) -> Response:
     """Delete website"""
     website = current_app.db.get_website(website_id)
     if not website:
@@ -180,7 +182,7 @@ def delete_website(website_id):
 
 
 @websites_bp.route('/<website_id>/clear-test-results', methods=['POST'])
-def clear_test_results(website_id):
+def clear_test_results(website_id: str) -> Response:
     """Delete all test results and reset page counters for this website."""
     website = current_app.db.get_website(website_id)
     if not website:
@@ -205,7 +207,7 @@ def clear_test_results(website_id):
 
 
 @websites_bp.route('/<website_id>/discover', methods=['POST'])
-def discover_pages(website_id):
+def discover_pages(website_id: str) -> Response | tuple[Response, int]:
     """Start page discovery for website with optional max pages limit"""
     from auto_a11y.core.website_manager import WebsiteManager
     from auto_a11y.core.task_runner import task_runner
@@ -274,7 +276,7 @@ def discover_pages(website_id):
         logger.info(f"Submitting discovery task with ID: {task_id} for {len(website_user_ids)} users")
 
         # Create a wrapper that handles the async execution properly
-        def discovery_wrapper():
+        def discovery_wrapper() -> object:
             import asyncio
             import nest_asyncio
             nest_asyncio.apply()
@@ -356,7 +358,7 @@ def discover_pages(website_id):
 
 
 @websites_bp.route('/<website_id>/discovery-status')
-def discovery_status(website_id):
+def discovery_status(website_id: str) -> Response:
     """Check discovery job status with enhanced progress tracking"""
     from auto_a11y.core.website_manager import WebsiteManager
     
@@ -444,7 +446,7 @@ def discovery_status(website_id):
 
 
 @websites_bp.route('/<website_id>/cancel-discovery', methods=['POST'])
-def cancel_discovery(website_id):
+def cancel_discovery(website_id: str) -> Response | tuple[Response, int]:
     """Cancel an active discovery job"""
     from auto_a11y.core.website_manager import WebsiteManager
     
@@ -512,7 +514,7 @@ def cancel_discovery(website_id):
 
 
 @websites_bp.route('/<website_id>/add-page', methods=['POST'])
-def add_page(website_id):
+def add_page(website_id: str) -> Response | tuple[Response, int]:
     """Manually add a page to website"""
     website = current_app.db.get_website(website_id)
     if not website:
@@ -540,7 +542,7 @@ def add_page(website_id):
 
 
 @websites_bp.route('/<website_id>/test-all', methods=['POST'])
-def test_all_pages(website_id):
+def test_all_pages(website_id: str) -> Response | tuple[Response, int]:
     """Start testing all pages in website using database-backed job management"""
     from auto_a11y.core.website_manager import WebsiteManager
     from auto_a11y.core.task_runner import task_runner
@@ -624,7 +626,7 @@ def test_all_pages(website_id):
 
         # Create a wrapper that handles the async execution properly
         # Process all users sequentially within this single job
-        def testing_wrapper():
+        def testing_wrapper() -> object:
             import asyncio
             import nest_asyncio
             nest_asyncio.apply()
@@ -739,7 +741,7 @@ def test_all_pages(website_id):
 
 
 @websites_bp.route('/<website_id>/cancel-testing', methods=['POST'])
-def cancel_testing(website_id):
+def cancel_testing(website_id: str) -> Response | tuple[Response, int]:
     """Cancel an active testing job"""
     from auto_a11y.core.website_manager import WebsiteManager
     
@@ -795,7 +797,7 @@ def cancel_testing(website_id):
 
 
 @websites_bp.route('/<website_id>/documents')
-def view_documents(website_id):
+def view_documents(website_id: str) -> str | Response:
     """View document references for a website"""
     website = current_app.db.get_website(website_id)
     if not website:
@@ -820,7 +822,7 @@ def view_documents(website_id):
 
 
 @websites_bp.route('/<website_id>/test-status')
-def test_status(website_id):
+def test_status(website_id: str) -> Response | tuple[Response, int]:
     """Check testing status using database-backed job management"""
     from auto_a11y.core.website_manager import WebsiteManager
     from auto_a11y.core.job_manager import JobType
@@ -920,7 +922,7 @@ def test_status(website_id):
 
 
 @websites_bp.route('/<website_id>/discovery-history')
-def view_discovery_history(website_id):
+def view_discovery_history(website_id: str) -> str | Response:
     """View discovery history for a website"""
     website = current_app.db.get_website(website_id)
     if not website:
@@ -939,7 +941,7 @@ def view_discovery_history(website_id):
 
 
 @websites_bp.route('/<website_id>/discovery/<discovery_run_id>')
-def view_discovery_run(website_id, discovery_run_id):
+def view_discovery_run(website_id: str, discovery_run_id: str) -> str | Response:
     """View details of a specific discovery run"""
     website = current_app.db.get_website(website_id)
     if not website:

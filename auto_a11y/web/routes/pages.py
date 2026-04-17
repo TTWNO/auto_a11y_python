@@ -1,8 +1,12 @@
 """
 Page management routes
 """
+from __future__ import annotations
+
+from typing import Any
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
+from werkzeug.wrappers import Response
 from auto_a11y.web.fluent import ftl, lazy_ftl, force_locale
 from auto_a11y.models import PageStatus
 from auto_a11y.reporting.issue_catalog import IssueCatalog
@@ -15,24 +19,24 @@ logger = logging.getLogger(__name__)
 pages_bp = Blueprint('pages', __name__)
 
 
-def enrich_test_result_with_catalog(test_result):
+def enrich_test_result_with_catalog(test_result: Any) -> Any:
     """Enrich test result issues with catalog metadata"""
     if not test_result:
         return test_result
     
     # Helper to substitute {placeholder} style placeholders
-    def substitute_placeholders(template, values):
+    def substitute_placeholders(template: str | None, values: dict[str, Any] | None) -> str | None:
         """Replace {key} placeholders in template with values from dict."""
         if not template or not values:
             return template
         
-        def replace_match(match):
+        def replace_match(match: re.Match[str]) -> str:
             key = match.group(1)
             return str(values.get(key, match.group(0)))
         
         return re.sub(r'\{([^}]+)\}', replace_match, template)
 
-    def enrich_issue_bilingual(issue):
+    def enrich_issue_bilingual(issue: Any) -> Any:
         """
         Enrich an issue with bilingual metadata (EN and FR).
         Follows the same pattern as static_html_generator.py for consistency.
@@ -58,7 +62,7 @@ def enrich_test_result_with_catalog(test_result):
             issue.metadata = {}
 
         # Build issue dict for IssueCatalog.enrich_issue()
-        issue_dict = {
+        issue_dict: dict[str, Any] = {
             'id': issue_id,
             'description': issue.description if hasattr(issue, 'description') else '',
             'impact': issue.impact if hasattr(issue, 'impact') else 'moderate',
@@ -138,7 +142,7 @@ def enrich_test_result_with_catalog(test_result):
 
 
 @pages_bp.route('/<page_id>')
-def view_page(page_id):
+def view_page(page_id: str) -> str | Response:
     """View page details and test results"""
     page = current_app.db.get_page(page_id)
     if not page:
@@ -284,7 +288,7 @@ def view_page(page_id):
 
 
 @pages_bp.route('/<page_id>/edit', methods=['GET', 'POST'])
-def edit_page(page_id):
+def edit_page(page_id: str) -> str | Response:
     """Edit page details"""
     page = current_app.db.get_page(page_id)
     if not page:
@@ -313,7 +317,7 @@ def edit_page(page_id):
 
 
 @pages_bp.route('/<page_id>/test', methods=['POST'])
-def test_page(page_id):
+def test_page(page_id: str) -> Response | tuple[Response, int]:
     """Run accessibility test on page"""
     from auto_a11y.testing import TestRunner
     from auto_a11y.core.task_runner import task_runner
@@ -358,13 +362,13 @@ def test_page(page_id):
     db = current_app.db
 
     # Define sync wrapper that creates a clean event loop
-    def run_test_sync():
+    def run_test_sync() -> list[Any]:
         # Create a fresh event loop for this task
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
             # Define async function inside the new loop context
-            async def run_test_with_cleanup():
+            async def run_test_with_cleanup() -> list[Any]:
                 # Create test runner inside the async context with new event loop
                 test_runner_instance = TestRunner(db, browser_config)
                 try:
@@ -415,7 +419,7 @@ def test_page(page_id):
 
 
 @pages_bp.route('/<page_id>/test-status')
-def test_status(page_id):
+def test_status(page_id: str) -> Response | tuple[Response, int]:
     """Check test job status"""
     page = current_app.db.get_page(page_id)
     if not page:
@@ -428,7 +432,7 @@ def test_status(page_id):
 
 
 @pages_bp.route('/<page_id>/cancel-test', methods=['POST'])
-def cancel_test(page_id):
+def cancel_test(page_id: str) -> Response | tuple[Response, int]:
     """Cancel a queued or running page test"""
     from auto_a11y.core.task_runner import task_runner
     
@@ -489,7 +493,7 @@ def cancel_test(page_id):
 
 
 @pages_bp.route('/<page_id>/delete', methods=['POST'])
-def delete_page(page_id):
+def delete_page(page_id: str) -> Response:
     """Delete page"""
     page = current_app.db.get_page(page_id)
     if not page:
@@ -507,13 +511,13 @@ def delete_page(page_id):
 
 
 @pages_bp.route('/<page_id>/violations')
-def view_violations(page_id):
+def view_violations(page_id: str) -> Response:
     """View detailed violations for page — redirects to page view which shows violations inline."""
     return redirect(url_for('pages.view_page', page_id=page_id))
 
 
 @pages_bp.route('/<page_id>/matrix', methods=['GET', 'POST'])
-def configure_test_matrix(page_id):
+def configure_test_matrix(page_id: str) -> str | Response:
     """Configure test state matrix for page"""
     from auto_a11y.models import TestStateMatrix, ScriptStateDefinition
 

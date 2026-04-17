@@ -150,9 +150,13 @@ class ReportGenerator:
             raise ValueError(f"Page {page_id} not found")
         
         website = self.db.get_website(page.website_id)
-        project = self.db.get_project(website.project_id)
+        if not website:
+            raise ValueError(f"Website not found for page {page_id}")
+        project = self.db.get_project(website.project_id or '')
+        if not project:
+            raise ValueError(f"Project not found for page {page_id}")
         test_result = self.db.get_latest_test_result(page_id)
-        
+
         if not test_result:
             raise ValueError(f"No test results found for page {page_id}")
 
@@ -186,15 +190,15 @@ class ReportGenerator:
         # Save report
         if format == 'pdf':
             # PDF returns bytes, write in binary mode
-            with open(filepath, 'wb') as f:
-                f.write(content)
+            with open(filepath, 'wb') as bf:
+                bf.write(content if isinstance(content, bytes) else content.encode('utf-8'))
         elif format in ['xlsx', 'excel']:
             # Excel returns bytes, write in binary mode
-            with open(filepath, 'wb') as f:
-                f.write(content)
+            with open(filepath, 'wb') as bf:
+                bf.write(content if isinstance(content, bytes) else content.encode('utf-8'))
         else:
-            with open(filepath, 'w', encoding='utf-8') as f:
-                f.write(content)
+            with open(filepath, 'w', encoding='utf-8') as tf:
+                tf.write(content if isinstance(content, str) else content.decode('utf-8'))
 
         logger.info(f"Generated {format} report: {filepath}")
         return str(filepath)
@@ -298,7 +302,11 @@ class ReportGenerator:
         # Triply-nested page generator across all projects and websites
         def page_generator_fn() -> Iterator[Page]:
             for project in self.db.get_projects():
+                if project.id is None:
+                    continue
                 for website in self.db.yield_websites(project.id):
+                    if website.id is None:
+                        continue
                     yield from self.db.yield_pages(website.id)
 
         try:
@@ -324,25 +332,25 @@ class ReportGenerator:
         """Save report content to file"""
         if format == 'json':
             filepath = filepath.with_suffix('.json')
-            with open(filepath, 'w', encoding='utf-8') as f:
-                f.write(content)
+            with open(filepath, 'w', encoding='utf-8') as tf:
+                tf.write(content if isinstance(content, str) else content.decode('utf-8'))
         elif format == 'html':
             filepath = filepath.with_suffix('.html')
-            with open(filepath, 'w', encoding='utf-8') as f:
-                f.write(content)
+            with open(filepath, 'w', encoding='utf-8') as tf:
+                tf.write(content if isinstance(content, str) else content.decode('utf-8'))
         elif format in ['xlsx', 'excel']:
             filepath = filepath.with_suffix('.xlsx')
             # Excel content is bytes
-            with open(filepath, 'wb') as f:
-                f.write(content)
+            with open(filepath, 'wb') as bf:
+                bf.write(content if isinstance(content, bytes) else content.encode('utf-8'))
         elif format == 'pdf':
             filepath = filepath.with_suffix('.pdf')
             # PDF content is bytes
-            with open(filepath, 'wb') as f:
-                f.write(content)
+            with open(filepath, 'wb') as bf:
+                bf.write(content if isinstance(content, bytes) else content.encode('utf-8'))
         else:
-            with open(filepath, 'w', encoding='utf-8') as f:
-                f.write(content)
+            with open(filepath, 'w', encoding='utf-8') as tf:
+                tf.write(content if isinstance(content, str) else content.decode('utf-8'))
     
     def generate_project_report(
         self,
@@ -380,6 +388,8 @@ class ReportGenerator:
         # Flattened page generator across all websites
         def page_generator_fn() -> Iterator[Page]:
             for website in self.db.yield_websites(project_id):
+                if website.id is None:
+                    continue
                 yield from self.db.yield_pages(website.id)
 
         try:
@@ -401,7 +411,7 @@ class ReportGenerator:
         logger.info(f"Generated {format} report: {filepath}")
         return output_file
     
-    def _enrich_issues_with_catalog(self, issues: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def _enrich_issues_with_catalog(self, issues: list[Any]) -> list[dict[str, Any]]:
         """Enrich issues with detailed information from the catalog"""
         enriched_issues = []
         for issue in issues:
@@ -546,14 +556,16 @@ class ReportGenerator:
                     total_passes += test_result.pass_count
 
         # Get recordings for this project
-        recordings_data = []
+        recordings_data: list[dict[str, Any]] = []
         recordings = self.db.get_recordings(project_id=project.id)
+        recording_issue_count = 0
         for recording in recordings:
             # Get recording issues - use recording.recording_id (human-readable ID) not recording.id (ObjectId)
             recording_issues = self.db.get_recording_issues(recording_id=recording.recording_id)
 
             # Debug: log recordings and issue counts
             logger.info(f"Recording {recording.recording_id}: Found {len(recording_issues)} issues")
+            recording_issue_count += len(recording_issues)
 
             recordings_data.append({
                 'recording': recording,
@@ -565,7 +577,7 @@ class ReportGenerator:
 
         # Calculate recording statistics
         total_recordings = len(recordings_data)
-        total_recording_issues = sum(len(r['issues']) for r in recordings_data)
+        total_recording_issues = recording_issue_count
 
         # Debug: log final totals
         logger.info(f"Project {project.name}: {total_recordings} recordings with {total_recording_issues} total issues")
@@ -597,7 +609,7 @@ class ReportGenerator:
     ) -> dict[str, Any]:
         """Calculate statistics for a page"""
         
-        stats = {
+        stats: dict[str, Any] = {
             'total_issues': test_result.violation_count + test_result.warning_count,
             'violations': test_result.violation_count,
             'warnings': test_result.warning_count,
@@ -606,15 +618,15 @@ class ReportGenerator:
         }
         
         if include_ai and test_result.ai_findings:
-            ai_critical = sum(1 for f in test_result.ai_findings 
-                            if f.severity == ImpactLevel.CRITICAL)
-            ai_serious = sum(1 for f in test_result.ai_findings
-                           if f.severity == ImpactLevel.SERIOUS)
-            
+            ai_high = sum(1 for f in test_result.ai_findings
+                         if f.severity == ImpactLevel.HIGH)
+            ai_medium = sum(1 for f in test_result.ai_findings
+                           if f.severity == ImpactLevel.MEDIUM)
+
             stats['ai_findings'] = {
                 'total': len(test_result.ai_findings),
-                'critical': ai_critical,
-                'serious': ai_serious
+                'critical': ai_high,
+                'serious': ai_medium
             }
         
         return stats
@@ -652,59 +664,65 @@ class ReportGenerator:
             Path to generated report
         """
         # Get all projects or specific project
+        projects_list: list[Project] = []
         if project_id:
-            projects = [self.db.get_project(project_id)]
+            p = self.db.get_project(project_id)
+            if p:
+                projects_list = [p]
         else:
-            projects = self.db.get_all_projects()
-        
-        summary_data = {
-            'projects': [],
-            'total_violations': 0,
-            'total_pages_tested': 0,
-            'most_common_issues': {},
-            'generated_at': datetime.now().isoformat()
-        }
-        
-        for project in projects:
-            if not project:
-                continue
-                
-            websites = self.db.get_websites(project.id)
-            project_stats = {
+            projects_list = self.db.get_all_projects()
+
+        total_violations = 0
+        total_pages_tested = 0
+        project_summaries: list[dict[str, Any]] = []
+
+        for project in projects_list:
+            websites = self.db.get_websites(project.id or '')
+            project_stats: dict[str, Any] = {
                 'name': project.name,
                 'websites': len(websites),
                 'pages_tested': 0,
                 'violations': 0
             }
-            
+
             for website in websites:
-                pages = self.db.get_pages(website.id)
+                pages = self.db.get_pages(website.id or '')
                 for page in pages:
                     if page.last_tested:
                         project_stats['pages_tested'] += 1
                         project_stats['violations'] += page.violation_count
-                        summary_data['total_violations'] += page.violation_count
-                        summary_data['total_pages_tested'] += 1
-            
-            summary_data['projects'].append(project_stats)
-        
+                        total_violations += page.violation_count
+                        total_pages_tested += 1
+
+            project_summaries.append(project_stats)
+
+        summary_data: dict[str, Any] = {
+            'projects': project_summaries,
+            'total_violations': total_violations,
+            'total_pages_tested': total_pages_tested,
+            'most_common_issues': {},
+            'generated_at': datetime.now().isoformat()
+        }
+
         # Generate report
         formatter = self.formatters.get(format)
+        if not formatter:
+            raise ValueError(f"Unsupported format: {format}")
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         filename = f"summary_{timestamp}.{formatter.extension}"
         filepath = self.report_dir / filename
-        
+
         content = formatter.format_summary_report(summary_data)
-        
-        if format == 'pdf':
+
+        if format == 'pdf' and hasattr(formatter, 'save_pdf'):
             formatter.save_pdf(content, filepath)
         elif format in ['xlsx', 'excel']:
             # Excel returns bytes, write in binary mode
-            with open(filepath, 'wb') as f:
-                f.write(content)
+            with open(filepath, 'wb') as bf:
+                bf.write(content if isinstance(content, bytes) else content.encode('utf-8'))
         else:
-            with open(filepath, 'w', encoding='utf-8') as f:
-                f.write(content)
+            with open(filepath, 'w', encoding='utf-8') as tf:
+                tf.write(content if isinstance(content, str) else content.decode('utf-8'))
         
         logger.info(f"Generated summary report: {filepath}")
         return str(filepath)
@@ -718,50 +736,61 @@ class ReportGenerator:
         """
         from collections import defaultdict, Counter
 
-        summary = {
-            'total_pages': 0,
-            'total_violations': 0,
-            'total_warnings': 0,
-            'total_info': 0,
-            'total_discovery': 0,
-            'total_passes': 0,
-            'touchpoint_counts': defaultdict(int),
-            'wcag_counts': defaultdict(int),
-            'impact_counts': defaultdict(int),
-            'page_scores': [],
-            'top_issue_codes': Counter(),
-        }
+        total_pages = 0
+        total_violations = 0
+        total_warnings = 0
+        total_info = 0
+        total_discovery = 0
+        total_passes = 0
+        touchpoint_counts: defaultdict[str, int] = defaultdict(int)
+        wcag_counts: defaultdict[str, int] = defaultdict(int)
+        impact_counts: defaultdict[str, int] = defaultdict(int)
+        page_scores: list[tuple[str | None, Any]] = []
+        top_issue_codes: Counter[str] = Counter()
+
         page_count = 0
         for page in page_generator_fn():
             page_count += 1
-            result_summary = self.db.get_latest_test_result_summary(page.id)
+            result_summary = self.db.get_latest_test_result_summary(page.id or '')
             if not result_summary:
                 if progress_callback:
                     progress_callback(page_count, 0, ftl('reports-collecting-summary-count', count=page_count))
                 continue
 
-            summary['total_pages'] += 1
-            summary['total_violations'] += result_summary['violation_count']
-            summary['total_warnings'] += result_summary['warning_count']
-            summary['total_info'] += result_summary['info_count']
-            summary['total_discovery'] += result_summary['discovery_count']
-            summary['total_passes'] += result_summary['pass_count']
+            total_pages += 1
+            total_violations += result_summary['violation_count']
+            total_warnings += result_summary['warning_count']
+            total_info += result_summary['info_count']
+            total_discovery += result_summary['discovery_count']
+            total_passes += result_summary['pass_count']
 
             if result_summary.get('score') is not None:
-                summary['page_scores'].append((page.id, result_summary['score']))
+                page_scores.append((page.id, result_summary['score']))
 
             for item in self.db.yield_test_result_items(result_summary['id']):
                 tp = item.get('touchpoint', 'unknown')
                 code = item.get('issue_id', item.get('code', 'unknown'))
                 impact = item.get('impact', 'unknown')
-                summary['touchpoint_counts'][tp] += 1
-                summary['top_issue_codes'][code] += 1
-                summary['impact_counts'][impact] += 1
+                touchpoint_counts[tp] += 1
+                top_issue_codes[code] += 1
+                impact_counts[impact] += 1
 
             if progress_callback:
                 progress_callback(page_count, 0, ftl('reports-collecting-summary-count', count=page_count))
 
-        return summary
+        return {
+            'total_pages': total_pages,
+            'total_violations': total_violations,
+            'total_warnings': total_warnings,
+            'total_info': total_info,
+            'total_discovery': total_discovery,
+            'total_passes': total_passes,
+            'touchpoint_counts': touchpoint_counts,
+            'wcag_counts': wcag_counts,
+            'impact_counts': impact_counts,
+            'page_scores': page_scores,
+            'top_issue_codes': top_issue_codes,
+        }
 
     def _write_details(self, page_generator_fn: Callable[[], Iterator[Page]], summary: dict[str, Any], formatter: BaseFormatter, output_file: str, progress_callback: Callable[..., None] | None) -> None:
         """
@@ -773,7 +802,7 @@ class ReportGenerator:
         total = summary.get('total_pages', 0)
         for page in page_generator_fn():
             page_count += 1
-            test_result = self.db.get_latest_test_result(page.id)
+            test_result = self.db.get_latest_test_result(page.id or '')
             if not test_result:
                 if progress_callback:
                     progress_callback(page_count, total, ftl('reports-writing-details-current-total', current=page_count, total=total))

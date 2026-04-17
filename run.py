@@ -3,6 +3,7 @@
 Auto A11y Python - Main entry point
 Updated: 2025-10-06 to force reload
 """
+from __future__ import annotations
 
 import sys
 import os
@@ -20,7 +21,7 @@ from auto_a11y.core.database import Database
 from auto_a11y.core.logging_config import setup_logging as configure_logging
 
 
-def init_directories():
+def init_directories() -> None:
     """Initialize required directories"""
     if config.DESKTOP_MODE and config.USER_DATA_DIR:
         user_data = Path(config.USER_DATA_DIR)
@@ -48,7 +49,7 @@ def init_directories():
         logging.info(f"Ensured directory exists: {directory}")
 
 
-def setup_database():
+def setup_database() -> bool:
     """Initialize database and create indexes"""
     logger = logging.getLogger(__name__)
     logger.info("Setting up database...")
@@ -78,7 +79,7 @@ def setup_database():
     return True
 
 
-def download_browser():
+def download_browser() -> bool:
     """Download Chromium browser for Playwright"""
     logger = logging.getLogger(__name__)
     try:
@@ -154,7 +155,7 @@ def install_hooks(cwd: Path | None = None) -> bool:
     return True
 
 
-def main():
+def main() -> None:
     """Main application entry point"""
     parser = argparse.ArgumentParser(description='Auto A11y Python - Accessibility Testing Tool')
     parser.add_argument('--host', default=None, help='Host to bind to')

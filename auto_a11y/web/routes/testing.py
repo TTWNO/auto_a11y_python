@@ -1,8 +1,11 @@
 """
 Testing and analysis routes
 """
+from __future__ import annotations
 
-from flask import Blueprint, render_template, request, jsonify, current_app, url_for
+from typing import Any
+
+from flask import Blueprint, Response, render_template, request, jsonify, current_app, url_for
 from flask_login import login_required, current_user
 from auto_a11y.models import PageStatus
 from auto_a11y.models.app_user import UserRole
@@ -16,7 +19,7 @@ logger = logging.getLogger(__name__)
 testing_bp = Blueprint('testing', __name__)
 
 
-def calculate_aggregate_stats(db):
+def calculate_aggregate_stats(db: Any) -> dict[str, Any]:
     """Calculate aggregate statistics across all projects"""
     projects = db.get_all_projects()
 
@@ -45,7 +48,7 @@ def calculate_aggregate_stats(db):
     }
 
 
-def get_recent_results_with_context(db, project_id=None, website_id=None, limit=20):
+def get_recent_results_with_context(db: Any, project_id: str | None = None, website_id: str | None = None, limit: int = 20) -> list[dict[str, Any]]:
     """Get recent test results with full page/website/project context.
 
     Optimized to minimize database queries by:
@@ -123,7 +126,7 @@ def get_recent_results_with_context(db, project_id=None, website_id=None, limit=
     return filtered_results
 
 
-def get_trend_data(db, project_id=None, website_id=None, days=30):
+def get_trend_data(db: Any, project_id: str | None = None, website_id: str | None = None, days: int = 30) -> list[dict[str, Any]]:
     """Get trend data for violations/warnings over time"""
     end_date = datetime.now()
     start_date = end_date - timedelta(days=days)
@@ -179,7 +182,7 @@ def get_trend_data(db, project_id=None, website_id=None, days=30):
 # Enhanced Trend Analysis Functions
 # ============================================================================
 
-def get_page_ids_for_scope(db, project_id=None, website_id=None):
+def get_page_ids_for_scope(db: Any, project_id: str | None = None, website_id: str | None = None) -> set[str]:
     """Get all page IDs for a given project or website scope"""
     page_ids = set()
     if website_id:
@@ -193,7 +196,7 @@ def get_page_ids_for_scope(db, project_id=None, website_id=None):
     return page_ids
 
 
-def aggregate_by_granularity(data_points, granularity='daily'):
+def aggregate_by_granularity(data_points: list[dict[str, Any]], granularity: str = 'daily') -> list[dict[str, Any]]:
     """Aggregate daily data into weekly or monthly buckets"""
     if granularity == 'daily':
         return data_points
@@ -231,7 +234,7 @@ def aggregate_by_granularity(data_points, granularity='daily'):
     return result
 
 
-def calculate_moving_averages(time_series, windows=[7, 30]):
+def calculate_moving_averages(time_series: list[dict[str, Any]], windows: list[int] = [7, 30]) -> list[dict[str, Any]]:
     """Add moving averages to time series data
 
     Args:
@@ -260,7 +263,7 @@ def calculate_moving_averages(time_series, windows=[7, 30]):
     return time_series
 
 
-def calculate_trend_direction(time_series, threshold_percent=5):
+def calculate_trend_direction(time_series: list[dict[str, Any]], threshold_percent: int = 5) -> tuple[str, float]:
     """Determine overall trend direction based on time series data
 
     Compares the average of the most recent third of data to the first third.
@@ -305,7 +308,7 @@ def calculate_trend_direction(time_series, threshold_percent=5):
         return 'stable', round(change_percent, 1)
 
 
-def get_filtered_item_counts(db, result_ids, result_date_map, filters, issue_types):
+def get_filtered_item_counts(db: Any, result_ids: list[Any], result_date_map: dict[str, str], filters: dict[str, Any], issue_types: list[str]) -> dict[str, dict[str, int]]:
     """Get filtered violation/warning counts from test_result_items collection
 
     Args:
@@ -412,10 +415,10 @@ def get_filtered_item_counts(db, result_ids, result_date_map, filters, issue_typ
         return {}
 
 
-def get_detailed_trend_data(db, project_id=None, website_id=None,
-                            start_date=None, end_date=None,
-                            granularity='daily', include_breakdown=True,
-                            filters=None):
+def get_detailed_trend_data(db: Any, project_id: str | None = None, website_id: str | None = None,
+                            start_date: datetime | None = None, end_date: datetime | None = None,
+                            granularity: str = 'daily', include_breakdown: bool = True,
+                            filters: dict[str, Any] | None = None) -> dict[str, Any]:
     """Get comprehensive trend data with statistics and optional breakdowns
 
     Args:
@@ -564,7 +567,7 @@ def get_detailed_trend_data(db, project_id=None, website_id=None,
     return response
 
 
-def get_trends_by_touchpoint(db, result_ids, limit=10, filters=None):
+def get_trends_by_touchpoint(db: Any, result_ids: list[Any], limit: int = 10, filters: dict[str, Any] | None = None) -> dict[str, dict[str, Any]]:
     """Get violation counts grouped by touchpoint using MongoDB aggregation
 
     Args:
@@ -658,7 +661,7 @@ def get_trends_by_touchpoint(db, result_ids, limit=10, filters=None):
         return {}
 
 
-def get_trends_by_impact(db, result_ids, filters=None):
+def get_trends_by_impact(db: Any, result_ids: list[Any], filters: dict[str, Any] | None = None) -> dict[str, dict[str, int | float]]:
     """Get violation counts grouped by impact level
 
     Args:
@@ -758,7 +761,7 @@ def get_trends_by_impact(db, result_ids, filters=None):
                 'low': {'count': 0, 'percent': 0}}
 
 
-def get_top_issues(db, result_ids, limit=10, filters=None):
+def get_top_issues(db: Any, result_ids: list[Any], limit: int = 10, filters: dict[str, Any] | None = None) -> list[dict[str, Any]]:
     """Get the most common issues (by issue_id) from test results
 
     Args:
@@ -851,8 +854,8 @@ def get_top_issues(db, result_ids, limit=10, filters=None):
         return []
 
 
-def compare_periods(db, project_id, website_id, period_a_start, period_a_end,
-                   period_b_start, period_b_end):
+def compare_periods(db: Any, project_id: str | None, website_id: str | None, period_a_start: datetime, period_a_end: datetime,
+                   period_b_start: datetime, period_b_end: datetime) -> dict[str, Any]:
     """Compare two time periods for violations/warnings
 
     Args:
@@ -867,7 +870,7 @@ def compare_periods(db, project_id, website_id, period_a_start, period_a_end,
     """
     page_ids = get_page_ids_for_scope(db, project_id, website_id)
 
-    def get_period_stats(start, end):
+    def get_period_stats(start: datetime, end: datetime) -> dict[str, int]:
         # Filter at database level for efficiency
         limit = min(len(page_ids) * 10, 500) if page_ids else 2000
         # Use summary_only=True - we only need counts for comparison
@@ -894,7 +897,7 @@ def compare_periods(db, project_id, website_id, period_a_start, period_a_end,
     stats_a = get_period_stats(period_a_start, period_a_end)
     stats_b = get_period_stats(period_b_start, period_b_end)
 
-    def calc_change(old_val, new_val):
+    def calc_change(old_val: int, new_val: int) -> dict[str, int | float]:
         if old_val == 0:
             return {'absolute': new_val, 'percent': 100 if new_val > 0 else 0}
         return {
@@ -921,7 +924,7 @@ def compare_periods(db, project_id, website_id, period_a_start, period_a_end,
     }
 
 
-def calculate_progress_metrics(db, project_id=None, website_id=None, days=30):
+def calculate_progress_metrics(db: Any, project_id: str | None = None, website_id: str | None = None, days: int = 30) -> dict[str, Any]:
     """Calculate progress metrics showing improvement/regression
 
     Args:
@@ -1054,7 +1057,7 @@ def calculate_progress_metrics(db, project_id=None, website_id=None, days=30):
 
 
 @testing_bp.route('/result/<result_id>')
-def view_result(result_id):
+def view_result(result_id: str) -> str | tuple[Response, int]:
     """View individual test result details"""
     result = current_app.db.get_test_result(result_id)
     if not result:
@@ -1074,7 +1077,7 @@ def view_result(result_id):
 
 @testing_bp.route('/dashboard')
 @login_required
-def testing_dashboard():
+def testing_dashboard() -> str:
     """Testing dashboard - comprehensive testing control center"""
     db = current_app.db
 
@@ -1214,7 +1217,7 @@ def testing_dashboard():
 
 
 @testing_bp.route('/run-test', methods=['POST'])
-def run_test():
+def run_test() -> tuple[Response, int] | Response:
     """Run accessibility test on specified page(s)"""
     data = request.get_json()
     
@@ -1253,7 +1256,7 @@ def run_test():
 
 
 @testing_bp.route('/batch-test', methods=['POST'])
-def batch_test():
+def batch_test() -> tuple[Response, int] | Response:
     """Run batch testing on multiple pages"""
     data = request.get_json()
     
@@ -1290,7 +1293,7 @@ def batch_test():
 
 
 @testing_bp.route('/job/<job_id>/status')
-def job_status(job_id):
+def job_status(job_id: str) -> Response:
     """Get status of testing job"""
     # In production, check actual job queue
     return jsonify({
@@ -1305,7 +1308,7 @@ def job_status(job_id):
 
 
 @testing_bp.route('/job/<job_id>/cancel', methods=['POST'])
-def cancel_job(job_id):
+def cancel_job(job_id: str) -> Response:
     """Cancel testing job"""
     # In production, cancel actual job
     return jsonify({
@@ -1315,13 +1318,13 @@ def cancel_job(job_id):
 
 
 @testing_bp.route('/fixture-status')
-def fixture_status():
+def fixture_status() -> str:
     """Display fixture test status page"""
     return render_template('testing/fixture_status.html')
 
 
 @testing_bp.route('/configure', methods=['GET', 'POST'])
-def configure_testing():
+def configure_testing() -> str | tuple[Response, int] | Response:
     """Configure testing settings"""
     if request.method == 'POST':
         # Save testing configuration
@@ -1378,7 +1381,7 @@ def configure_testing():
 
 @testing_bp.route('/api/stats')
 @login_required
-def api_stats():
+def api_stats() -> tuple[Response, int] | Response:
     """API endpoint for real-time stats (for polling)"""
     db = current_app.db
 
@@ -1468,7 +1471,7 @@ def api_stats():
 
 @testing_bp.route('/api/active-tests')
 @login_required
-def api_active_tests():
+def api_active_tests() -> Response:
     """API endpoint for active test progress (for polling)"""
     active_jobs = []
 
@@ -1507,7 +1510,7 @@ def api_active_tests():
 
 @testing_bp.route('/api/run-tests', methods=['POST'])
 @login_required
-def api_run_tests():
+def api_run_tests() -> tuple[Response, int] | Response:
     """API endpoint to start testing (enhanced version)"""
     data = request.get_json() or {}
 
@@ -1619,7 +1622,7 @@ def api_run_tests():
 
 @testing_bp.route('/api/trends')
 @login_required
-def api_trends():
+def api_trends() -> tuple[Response, int] | Response:
     """API endpoint for trend data"""
     db = current_app.db
 
@@ -1648,7 +1651,7 @@ def api_trends():
 
 @testing_bp.route('/api/trends/detailed')
 @login_required
-def api_trends_detailed():
+def api_trends_detailed() -> tuple[Response, int] | Response:
     """API endpoint for detailed trend data with breakdowns and statistics"""
     db = current_app.db
 
@@ -1738,7 +1741,7 @@ def api_trends_detailed():
 
 @testing_bp.route('/api/trends/compare')
 @login_required
-def api_trends_compare():
+def api_trends_compare() -> tuple[Response, int] | Response:
     """API endpoint for comparing time periods"""
     db = current_app.db
 
@@ -1850,7 +1853,7 @@ def api_trends_compare():
 
 @testing_bp.route('/api/trends/progress')
 @login_required
-def api_trends_progress():
+def api_trends_progress() -> tuple[Response, int] | Response:
     """API endpoint for progress/compliance metrics"""
     db = current_app.db
 
@@ -1887,7 +1890,7 @@ def api_trends_progress():
 
 @testing_bp.route('/trends')
 @login_required
-def trends_page():
+def trends_page() -> str:
     """Dedicated trends analysis page"""
     db = current_app.db
 
@@ -1921,7 +1924,7 @@ def trends_page():
 
 @testing_bp.route('/api/websites/<project_id>')
 @login_required
-def api_project_websites(project_id):
+def api_project_websites(project_id: str) -> tuple[Response, int] | Response:
     """API endpoint to get websites for a project (for dynamic dropdown)"""
     db = current_app.db
 

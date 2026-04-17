@@ -342,25 +342,25 @@ class BaseFormatter:
         placeholders remain, and finally to the raw description field.
         """
         def _clean(text: str | None) -> bool:
-            return text and not _UNRESOLVED_PLACEHOLDER_RE.search(text)
+            return bool(text and not _UNRESOLVED_PLACEHOLDER_RE.search(text))
 
-        desc = issue_dict.get('description_full', '')
+        desc: str = issue_dict.get('description_full', '') or ''
         if _clean(desc):
             return desc
-        generic = issue_dict.get('what_generic', '')
+        generic: str = issue_dict.get('what_generic', '') or ''
         if _clean(generic):
             return generic
-        raw = issue_dict.get('description', '')
+        raw: str = issue_dict.get('description', '') or ''
         if _clean(raw):
             return raw
         # The metadata dict may hold a clean English what_generic (stored by
         # result_processor at test time) and/or the original JS description
         # with values already interpolated.
         meta = issue_dict.get('metadata', {}) or {}
-        meta_generic = meta.get('what_generic', '')
+        meta_generic: str = meta.get('what_generic', '') or ''
         if _clean(meta_generic):
             return meta_generic
-        meta_desc = meta.get('description', '')
+        meta_desc: str = meta.get('description', '') or ''
         if _clean(meta_desc):
             return meta_desc
         # Nothing clean available — return the best we have as-is
@@ -1634,6 +1634,7 @@ class ExcelFormatter(BaseFormatter):
         
         # Summary Sheet
         ws_summary = wb.active
+        assert ws_summary is not None
         ws_summary.title = self._t('summary')
         self._create_summary_sheet(ws_summary, data, styles)
 
@@ -1694,6 +1695,7 @@ class ExcelFormatter(BaseFormatter):
         
         # Summary Sheet
         ws_summary = wb.active
+        assert ws_summary is not None
         ws_summary.title = self._t('website_summary')
         self._create_website_summary_sheet(ws_summary, data, styles)
         
@@ -1724,6 +1726,7 @@ class ExcelFormatter(BaseFormatter):
         
         # Project Summary Sheet
         ws_summary = wb.active
+        assert ws_summary is not None
         ws_summary.title = self._t('project_summary')
         self._create_project_summary_sheet(ws_summary, data, styles)
         
@@ -1766,6 +1769,7 @@ class ExcelFormatter(BaseFormatter):
         
         # Overall Summary Sheet
         ws_summary = wb.active
+        assert ws_summary is not None
         ws_summary.title = self._t('overall_summary')
         self._create_all_projects_summary_sheet(ws_summary, data, styles)
         
@@ -1791,6 +1795,7 @@ class ExcelFormatter(BaseFormatter):
         
         # Executive Summary Sheet
         ws = wb.active
+        assert ws is not None
         ws.title = self._t('executive_summary')
         
         # Headers
@@ -2623,7 +2628,7 @@ class ExcelFormatter(BaseFormatter):
         common_components = self._extract_common_components(data)
 
         # Track unique issues: (rule_id, xpath_or_component) -> issue data
-        unique_issues = {}
+        unique_issues: dict[tuple[Any, ...], dict[str, Any]] = {}
 
         # Iterate through all websites and their pages
         for website_data in data.get('websites', []):
@@ -3240,6 +3245,7 @@ class ExcelFormatter(BaseFormatter):
 
         # --- Summary sheet ---
         ws_sum = self._wb.active
+        assert ws_sum is not None
         ws_sum.title = self._t('summary')
         ws_sum.merge_cells('A1:D1')
         hdr_cell = ws_sum.cell(row=1, column=1, value=self._t('accessibility_report_summary'))
@@ -3421,9 +3427,9 @@ class PDFFormatter(BaseFormatter):
                 ''')
                 
                 # Create PDF from HTML
-                pdf_document = self.HTML(string=html_content).render(stylesheets=[pdf_css])
-                pdf_bytes = pdf_document.write_pdf()
-                
+                pdf_document: Any = self.HTML(string=html_content).render(stylesheets=[pdf_css])
+                pdf_bytes: bytes = pdf_document.write_pdf()
+
                 return pdf_bytes
             except Exception as e:
                 logger.error(f"Failed to generate PDF with weasyprint: {e}")

@@ -2,13 +2,16 @@
 Public-facing routes for token-based and client-login-based access to test results.
 Integrated into the main app as a blueprint.
 """
+from __future__ import annotations
 
 from collections import defaultdict
+from typing import Any
 
 from flask import (
     Blueprint, render_template, current_app, request, redirect,
     url_for, abort, g,
 )
+from werkzeug.wrappers import Response
 from auto_a11y.web.fluent import ftl
 from flask_login import current_user
 
@@ -30,7 +33,7 @@ public_bp = Blueprint(
 # Helpers
 # ------------------------------------------------------------------
 
-def group_by_touchpoint(violations):
+def group_by_touchpoint(violations: list[Any]) -> dict[str, list[Any]]:
     """Group a list of Violation objects by their touchpoint field."""
     groups = defaultdict(list)
     for v in violations:
@@ -38,7 +41,7 @@ def group_by_touchpoint(violations):
     return dict(sorted(groups.items()))
 
 
-def sort_pages(pages, sort_by='url', sort_dir='asc'):
+def sort_pages(pages: list[Any], sort_by: str = 'url', sort_dir: str = 'asc') -> list[Any]:
     """Sort a list of Page objects by the given field."""
     key_map = {
         'url': lambda p: (p.url or '').lower(),
@@ -51,7 +54,7 @@ def sort_pages(pages, sort_by='url', sort_dir='asc'):
     return sorted(pages, key=key_fn, reverse=reverse)
 
 
-def _get_project_for_token():
+def _get_project_for_token() -> Any | None:
     """For token-based access, resolve the project from g.access_scope."""
     if g.access_scope == TokenScope.PROJECT:
         return current_app.db.get_project(g.access_scope_id)
@@ -68,7 +71,7 @@ def _get_project_for_token():
 
 @public_bp.route('/t/<token>/')
 @require_access
-def token_landing(token):
+def token_landing(token: str) -> str:
     """Landing page for a share-link token."""
     if g.access_scope == TokenScope.WEBSITE:
         website = current_app.db.get_website(g.access_scope_id)
@@ -99,7 +102,7 @@ def token_landing(token):
 
 @public_bp.route('/t/<token>/w/<website_id>/')
 @require_access
-def token_website(token, website_id):
+def token_website(token: str, website_id: str) -> str:
     """Website detail via token."""
     check_scope('website', website_id)
     website = current_app.db.get_website(website_id)
@@ -119,7 +122,7 @@ def token_website(token, website_id):
 
 @public_bp.route('/t/<token>/w/<website_id>/p/<page_id>/')
 @require_access
-def token_page(token, website_id, page_id):
+def token_page(token: str, website_id: str, page_id: str) -> str:
     """Page detail (issues) via token."""
     check_scope('page', page_id)
     page = current_app.db.get_page(page_id)
@@ -155,7 +158,7 @@ def token_page(token, website_id, page_id):
 
 @public_bp.route('/client/projects/')
 @require_access
-def client_projects():
+def client_projects() -> str:
     """List all projects (for logged-in clients)."""
     # For logged-in users (no token), filter by membership
     if g.access_scope is None and current_user.is_authenticated:
@@ -174,7 +177,7 @@ def client_projects():
 
 @public_bp.route('/client/project/<project_id>/')
 @require_access
-def client_project(project_id):
+def client_project(project_id: str) -> str:
     """Project overview (logged-in client)."""
     check_scope('project', project_id)
     if g.access_scope is None and current_user.is_authenticated and not getattr(current_user, 'is_superadmin', False):
@@ -194,7 +197,7 @@ def client_project(project_id):
 
 @public_bp.route('/client/project/<project_id>/w/<website_id>/')
 @require_access
-def client_website(project_id, website_id):
+def client_website(project_id: str, website_id: str) -> str:
     """Website detail (logged-in client)."""
     check_scope('website', website_id)
     if g.access_scope is None and current_user.is_authenticated and not getattr(current_user, 'is_superadmin', False):
@@ -218,7 +221,7 @@ def client_website(project_id, website_id):
 
 @public_bp.route('/client/project/<project_id>/w/<website_id>/p/<page_id>/')
 @require_access
-def client_page(project_id, website_id, page_id):
+def client_page(project_id: str, website_id: str, page_id: str) -> str:
     """Page detail (logged-in client)."""
     check_scope('page', page_id)
     page = current_app.db.get_page(page_id)

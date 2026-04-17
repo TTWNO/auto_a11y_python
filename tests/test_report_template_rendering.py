@@ -12,8 +12,10 @@ that only execute for one language).
 
 No database, browser, or Flask app is required — these are pure Jinja2 tests.
 """
+from __future__ import annotations
 
 import json
+from typing import Any
 from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
@@ -88,24 +90,25 @@ def _build_recordings_env() -> jinja2.Environment:
 # Shared helpers
 # ---------------------------------------------------------------------------
 
-def _minimal_translations():
+def _minimal_translations() -> dict[str, _FallbackDict]:
     """Return a defaultdict-like translations structure that won't KeyError."""
 
-    class _FallbackDict(dict):
-        """Dict that returns the key itself for missing lookups."""
-        def __missing__(self, key):
-            return key
-
     return {'en': _FallbackDict(), 'fr': _FallbackDict()}
+
+
+class _FallbackDict(dict[str, str]):
+    """Dict that returns the key itself for missing lookups."""
+    def __missing__(self, key: str) -> str:
+        return key
 
 
 # ---------------------------------------------------------------------------
 # Mock data factories
 # ---------------------------------------------------------------------------
 
-def _mock_issue(**overrides):
+def _mock_issue(**overrides: Any) -> dict[str, Any]:
     """A single issue/violation dict matching what templates access."""
-    base = {
+    base: dict[str, Any] = {
         'id': 'ErrTestIssue',
         'description': 'Test issue description',
         'description_en': 'Test issue description (EN)',
@@ -154,9 +157,9 @@ def _mock_issue(**overrides):
     return base
 
 
-def _mock_page_data(**overrides):
+def _mock_page_data(**overrides: Any) -> dict[str, Any]:
     """A page dict as returned by _collect_pages_data."""
-    base = {
+    base: dict[str, Any] = {
         'id': 'page1',
         'title': 'Test Page',
         'url': 'https://example.com/test',
@@ -178,7 +181,7 @@ def _mock_page_data(**overrides):
     return base
 
 
-def _mock_summary():
+def _mock_summary() -> dict[str, Any]:
     """Summary dict as built by _build_summary_from_stats."""
     return {
         'total_errors': 3,
@@ -222,12 +225,12 @@ class TestStaticHTMLTemplates:
     """Smoke-test every template rendered by StaticHTMLReportGenerator."""
 
     @pytest.fixture(autouse=True)
-    def setup_env(self):
+    def setup_env(self) -> None:
         self.env = _build_static_html_env()
         self.translations = _minimal_translations()
 
-    def _common_context(self, lang, **extra):
-        ctx = {
+    def _common_context(self, lang: str, **extra: Any) -> dict[str, Any]:
+        ctx: dict[str, Any] = {
             'language': lang,
             'translations_en': self.translations['en'],
             'translations_fr': self.translations['fr'],
@@ -250,7 +253,7 @@ class TestStaticHTMLTemplates:
         return ctx
 
     @LOCALES
-    def test_index(self, lang):
+    def test_index(self, lang: str) -> None:
         template = self.env.get_template('static_report/index.html')
         ctx = self._common_context(
             lang,
@@ -264,7 +267,7 @@ class TestStaticHTMLTemplates:
         assert len(html) > 0
 
     @LOCALES
-    def test_summary(self, lang):
+    def test_summary(self, lang: str) -> None:
         template = self.env.get_template('static_report/summary.html')
         ctx = self._common_context(
             lang,
@@ -280,7 +283,7 @@ class TestStaticHTMLTemplates:
         assert len(html) > 0
 
     @LOCALES
-    def test_page_detail(self, lang):
+    def test_page_detail(self, lang: str) -> None:
         template = self.env.get_template('static_report/page_detail.html')
         page = _mock_page_data()
         navigation = {
@@ -312,7 +315,7 @@ class TestStaticHTMLTemplates:
         assert len(html) > 0
 
     @LOCALES
-    def test_dedup_index(self, lang):
+    def test_dedup_index(self, lang: str) -> None:
         template = self.env.get_template('static_report/dedup_index.html')
         ctx = self._common_context(
             lang,
@@ -367,7 +370,7 @@ class TestStaticHTMLTemplates:
         assert len(html) > 0
 
     @LOCALES
-    def test_dedup_component(self, lang):
+    def test_dedup_component(self, lang: str) -> None:
         template = self.env.get_template('static_report/dedup_component.html')
         ctx = self._common_context(
             lang,
@@ -386,7 +389,7 @@ class TestStaticHTMLTemplates:
         assert len(html) > 0
 
     @LOCALES
-    def test_dedup_unassigned(self, lang):
+    def test_dedup_unassigned(self, lang: str) -> None:
         template = self.env.get_template('static_report/dedup_unassigned.html')
         page = SimpleNamespace(
             title='Test Page',
@@ -425,7 +428,7 @@ class TestComprehensiveReportTemplate:
     """Smoke-test the comprehensive_report_standalone.html template."""
 
     @LOCALES
-    def test_render(self, lang):
+    def test_render(self, lang: str) -> None:
         env = _build_comprehensive_env()
         template = env.get_template('static_report/comprehensive_report_standalone.html')
         translations = _minimal_translations()
@@ -503,14 +506,14 @@ class TestComprehensiveReportTemplate:
 class _MockRecording:
     """Mimics the Recording model for template attribute access."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.recording_id = 'rec-001'
         self.title = 'Test Recording'
         self.description = 'A test recording description'
         self.auditor_name = 'Test Auditor'
         self.auditor_role = 'QA Specialist'
 
-    def get_key_takeaways(self, lang):
+    def get_key_takeaways(self, lang: str) -> list[SimpleNamespace]:
         return [SimpleNamespace(
             number=1,
             topic='Navigation',
@@ -518,7 +521,7 @@ class _MockRecording:
             timecodes=[SimpleNamespace(start='00:01', end='00:05')],
         )]
 
-    def get_user_painpoints(self, lang):
+    def get_user_painpoints(self, lang: str) -> list[SimpleNamespace]:
         return [SimpleNamespace(
             impact='high',
             title='Cannot submit form',
@@ -526,7 +529,7 @@ class _MockRecording:
             timecodes=[SimpleNamespace(start='00:10', end='00:15', duration='5s')],
         )]
 
-    def get_user_assertions(self, lang):
+    def get_user_assertions(self, lang: str) -> list[SimpleNamespace]:
         return [SimpleNamespace(
             number=1,
             assertion='The form is accessible',
@@ -539,7 +542,7 @@ class _MockRecording:
 class _MockRecordingIssue:
     """Mimics the RecordingIssue model for template attribute access."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.recording_id = 'rec-001'
         self.title = 'Missing label on input'
         self.short_title = 'Missing label'
@@ -561,7 +564,7 @@ class TestRecordingsReportTemplate:
     """Smoke-test the recordings_report_standalone.html template."""
 
     @LOCALES
-    def test_render(self, lang):
+    def test_render(self, lang: str) -> None:
         env = _build_recordings_env()
         template = env.get_template('static_report/recordings_report_standalone.html')
 

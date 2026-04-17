@@ -250,7 +250,8 @@ class AutomatedTestDeduplicationService:
 
             if existing:
                 logger.info(f"Discovered Page already exists for component: {title}")
-                created_ids.append(existing.id)
+                if existing.id is not None:
+                    created_ids.append(existing.id)
                 continue
 
             # Create new Discovered Page
@@ -318,7 +319,8 @@ class AutomatedTestDeduplicationService:
             existing = self.db.get_discovered_page_by_url(project_id, url)
             if existing:
                 logger.info(f"Discovered Page already exists for URL: {url}")
-                created_ids.append(existing.id)
+                if existing.id is not None:
+                    created_ids.append(existing.id)
                 continue
 
             # Create new Discovered Page

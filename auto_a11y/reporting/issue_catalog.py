@@ -2714,7 +2714,7 @@ class IssueCatalog:
         ]
     
     @classmethod
-    def enrich_issue(cls, issue_dict: dict) -> dict:
+    def enrich_issue(cls, issue_dict: dict[str, Any]) -> dict[str, Any]:
         """
         Enrich a basic issue dictionary with full catalog information
         

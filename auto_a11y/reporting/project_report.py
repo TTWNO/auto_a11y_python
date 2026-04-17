@@ -35,7 +35,7 @@ class ProjectReport:
         self.websites = websites
         self.pages_by_website = pages_by_website
         self.language = language
-        self.report_data = None
+        self.report_data: dict[str, Any] | None = None
     
     def generate(self, progress_callback: Callable[[int, int, str], None] | None = None) -> dict[str, Any]:
         """
@@ -47,7 +47,7 @@ class ProjectReport:
         logger.info(f"Generating project-level report for {self.project.name}")
 
         # Pre-compute total pages for progress tracking
-        total_page_count = sum(len(self.pages_by_website.get(w.id, [])) for w in self.websites)
+        total_page_count = sum(len(self.pages_by_website.get(w.id or '', [])) for w in self.websites)
         page_count = 0
 
         # Calculate aggregate statistics
@@ -63,7 +63,7 @@ class ProjectReport:
             if progress_callback:
                 with force_locale(self.language):
                     progress_callback(page_count, max(total_page_count, 1), ftl('reports-processing-name', name=website.name))
-            pages = self.pages_by_website.get(website.id, [])
+            pages = self.pages_by_website.get(website.id or '', [])
             
             website_tested = sum(1 for p in pages if p.status == PageStatus.TESTED)
             website_issues = sum(1 for p in pages if p.has_issues)
@@ -125,7 +125,8 @@ class ProjectReport:
         """
         if not self.report_data:
             self.generate()
-        
+        assert self.report_data is not None
+
         html = f"""
 <!DOCTYPE html>
 <html lang="en">
@@ -332,7 +333,8 @@ class ProjectReport:
         """
         if not self.report_data:
             self.generate()
-        
+        assert self.report_data is not None
+
         return json.dumps(self.report_data, indent=2, default=str)
     
     def save(self, format: str = 'html', reports_dir: str | None = None) -> str:
@@ -346,29 +348,32 @@ class ProjectReport:
         Returns:
             Path to saved file
         """
+        resolved_dir: Path
         if reports_dir:
-            reports_dir = Path(reports_dir)
+            resolved_dir = Path(reports_dir)
         else:
             # Try getting from Flask current_app if available
+            resolved_dir_found = False
             try:
                 from flask import current_app
                 if current_app and hasattr(current_app, 'app_config'):
-                    reports_dir = Path(current_app.app_config.REPORTS_DIR)
-            except:
+                    resolved_dir = Path(current_app.app_config.REPORTS_DIR)
+                    resolved_dir_found = True
+            except Exception:
                 pass
 
             # Fall back to environment variable or default
-            if not reports_dir:
+            if not resolved_dir_found:
                 import os
                 reports_dir_str = os.environ.get('REPORTS_DIR', 'reports')
-                reports_dir = Path(reports_dir_str)
-        
+                resolved_dir = Path(reports_dir_str)
+
         # Ensure directory exists
-        reports_dir.mkdir(parents=True, exist_ok=True)
-        
+        resolved_dir.mkdir(parents=True, exist_ok=True)
+
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         filename = f"project_report_{self.project.id}_{timestamp}.{format}"
-        filepath = reports_dir / filename
+        filepath = resolved_dir / filename
         
         # Generate content based on format
         if format == 'html':

@@ -1,10 +1,12 @@
 """
 Routes for managing project users (test users for authenticated testing at project level)
 """
+from __future__ import annotations
 
 import asyncio
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify
+from flask import Blueprint, Response, render_template, request, redirect, url_for, flash, current_app, jsonify
+from werkzeug.wrappers import Response as WerkzeugResponse
 from auto_a11y.web.fluent import ftl
 from auto_a11y.models import ProjectUser, LoginConfig, AuthenticationMethod
 from auto_a11y.core.browser_manager import BrowserManager
@@ -17,7 +19,7 @@ project_users_bp = Blueprint('project_users', __name__)
 
 
 @project_users_bp.route('/projects/<project_id>/users')
-def list_users(project_id):
+def list_users(project_id: str) -> str | Response | WerkzeugResponse:
     """List all test users for a project"""
     project = current_app.db.get_project(project_id)
     if not project:
@@ -37,7 +39,7 @@ def list_users(project_id):
 
 
 @project_users_bp.route('/projects/<project_id>/users/create', methods=['GET', 'POST'])
-def create_user(project_id):
+def create_user(project_id: str) -> str | Response | WerkzeugResponse:
     """Create a new test user"""
     project = current_app.db.get_project(project_id)
     if not project:
@@ -97,7 +99,7 @@ def create_user(project_id):
 
 
 @project_users_bp.route('/projects/users/<user_id>')
-def view_user(user_id):
+def view_user(user_id: str) -> str | Response | WerkzeugResponse:
     """View user details"""
     user = current_app.db.get_project_user(user_id)
     if not user:
@@ -112,7 +114,7 @@ def view_user(user_id):
 
 
 @project_users_bp.route('/projects/users/<user_id>/edit', methods=['GET', 'POST'])
-def edit_user(user_id):
+def edit_user(user_id: str) -> str | Response | WerkzeugResponse:
     """Edit a test user"""
     user = current_app.db.get_project_user(user_id)
     if not user:
@@ -172,7 +174,7 @@ def edit_user(user_id):
 
 
 @project_users_bp.route('/projects/users/<user_id>/delete', methods=['POST'])
-def delete_user(user_id):
+def delete_user(user_id: str) -> Response | tuple[Response, int]:
     """Delete a test user"""
     user = current_app.db.get_project_user(user_id)
     if not user:
@@ -192,7 +194,7 @@ def delete_user(user_id):
 
 
 @project_users_bp.route('/projects/users/<user_id>/test-login', methods=['POST'])
-def test_login(user_id):
+def test_login(user_id: str) -> Response | tuple[Response, int]:
     """Test login for a project user without running a full test"""
     user = current_app.db.get_project_user(user_id)
     if not user:
@@ -215,7 +217,7 @@ def test_login(user_id):
     else:
         browser_config['stealth_mode'] = False
 
-    async def _do_test_login():
+    async def _do_test_login() -> dict[str, object]:
         bm = BrowserManager(browser_config)
         try:
             await bm.start()
@@ -250,7 +252,7 @@ def test_login(user_id):
 
 
 @project_users_bp.route('/projects/users/<user_id>/toggle', methods=['POST'])
-def toggle_user(user_id):
+def toggle_user(user_id: str) -> Response | tuple[Response, int]:
     """Enable/disable a test user"""
     user = current_app.db.get_project_user(user_id)
     if not user:

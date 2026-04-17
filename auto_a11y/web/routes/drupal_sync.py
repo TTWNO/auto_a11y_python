@@ -1,12 +1,16 @@
 """
 Flask routes for Drupal synchronization
 """
+from __future__ import annotations
 
 import logging
 from flask import Blueprint, render_template, request, jsonify, Response, stream_with_context, current_app
 from bson import ObjectId
 import json
 from datetime import datetime
+
+from collections.abc import Iterator
+from typing import Any
 
 from auto_a11y.models import Project, DiscoveredPage, Recording, Issue, DrupalSyncStatus
 from auto_a11y.drupal import (
@@ -29,7 +33,7 @@ drupal_sync_bp = Blueprint('drupal_sync', __name__)
 
 
 @drupal_sync_bp.route('/projects/<project_id>/sync')
-def project_sync_page(project_id):
+def project_sync_page(project_id: str) -> str | Response | tuple[str, int]:
     """Drupal synchronization page for a project"""
     try:
         db = current_app.db
@@ -48,7 +52,7 @@ def project_sync_page(project_id):
 
 
 @drupal_sync_bp.route('/audits/list')
-def list_audits():
+def list_audits() -> Response:
     """List all available audits from Drupal"""
     logger.warning("=== /drupal/audits/list endpoint called ===")
     try:
@@ -89,18 +93,19 @@ def list_audits():
         # Sort audits by title
         audits_sorted = sorted(audits, key=lambda x: x.get('title', '').lower())
 
+        audits_result: list[dict[str, Any]] = [
+            {
+                'title': audit.get('title', ''),
+                'uuid': audit.get('uuid') or audit.get('uuId'),
+                'nid': audit.get('nid')
+            }
+            for audit in audits_sorted
+        ]
         result = {
             'success': True,
-            'audits': [
-                {
-                    'title': audit.get('title', ''),
-                    'uuid': audit.get('uuid') or audit.get('uuId'),
-                    'nid': audit.get('nid')
-                }
-                for audit in audits_sorted
-            ]
+            'audits': audits_result
         }
-        logger.warning(f"Returning {len(result['audits'])} audits to client")
+        logger.warning(f"Returning {len(audits_result)} audits to client")
         return jsonify(result)
 
     except Exception as e:
@@ -112,7 +117,7 @@ def list_audits():
         })
 
 
-def _get_drupal_client():
+def _get_drupal_client() -> DrupalJSONAPIClient | None:
     """Get configured Drupal client"""
     try:
         config = get_drupal_config()
@@ -126,7 +131,7 @@ def _get_drupal_client():
         return None
 
 
-def _lookup_audit_uuid(client, project):
+def _lookup_audit_uuid(client: DrupalJSONAPIClient, project: Project) -> str | None:
     """Look up Drupal audit UUID by project's drupal_audit_name or name"""
     try:
         import requests
@@ -153,7 +158,8 @@ def _lookup_audit_uuid(client, project):
         # Find audit by name
         for audit in audits:
             if audit.get('title', '').lower() == audit_name.lower():
-                return audit.get('uuid') or audit.get('uuId')
+                uuid: str | None = audit.get('uuid') or audit.get('uuId')
+                return uuid
 
         return None
     except Exception as e:
@@ -162,7 +168,7 @@ def _lookup_audit_uuid(client, project):
 
 
 @drupal_sync_bp.route('/projects/<project_id>/sync/status')
-def sync_status(project_id):
+def sync_status(project_id: str) -> Response | tuple[Response, int]:
     """Get sync status for a project"""
     try:
         db = current_app.db
@@ -238,7 +244,7 @@ def sync_status(project_id):
 
 
 @drupal_sync_bp.route('/projects/<project_id>/sync/upload', methods=['POST'])
-def upload_to_drupal(project_id):
+def upload_to_drupal(project_id: str) -> Response:
     """Upload discovered pages and recordings to Drupal"""
 
     # IMPORTANT: Read request data BEFORE creating generator
@@ -250,9 +256,9 @@ def upload_to_drupal(project_id):
     automated_test_filters = data.get('automated_test_filters')  # Will be None if not included
     options = data.get('options', {})
 
-    def generate():
+    def generate() -> Iterator[str]:
         try:
-            db = current_app.db
+            db: Any = current_app.db
 
             # Get project
             project_doc = db.projects.find_one({'_id': ObjectId(project_id)})
@@ -688,9 +694,9 @@ def upload_to_drupal(project_id):
                             if test_result:
                                 # Apply violation-level filters
                                 if touchpoints or wcag_criteria or impact_levels:
-                                    filtered_violations = []
-                                    filtered_warnings = []
-                                    filtered_info = []
+                                    filtered_violations: list[Any] = []
+                                    filtered_warnings: list[Any] = []
+                                    filtered_info: list[Any] = []
 
                                     for v_list, target_list in [
                                         (test_result.violations, filtered_violations),
@@ -839,7 +845,7 @@ def upload_to_drupal(project_id):
                     issues_failed = 0
 
                     # Deduplicate violations before upload
-                    def deduplicate_violations_for_upload(report_data):
+                    def deduplicate_violations_for_upload(report_data: dict[str, Any]) -> dict[tuple[Any, ...], dict[str, Any]]:
                         """
                         Deduplicate violations by component and issue type.
                         Returns dict of unique violations with affected pages list.
@@ -865,6 +871,7 @@ def upload_to_drupal(project_id):
 
                                 for violation in all_violations:
                                     # Create deduplication key
+                                    dedup_key: tuple[Any, ...]
                                     if violation.discovered_page_id:
                                         # Group by component + violation type
                                         dedup_key = (violation.discovered_page_id, violation.id, violation.impact.value)
@@ -1061,7 +1068,7 @@ def upload_to_drupal(project_id):
 
 
 @drupal_sync_bp.route('/projects/<project_id>/discovered-pages')
-def list_discovered_pages(project_id):
+def list_discovered_pages(project_id: str) -> Response | tuple[Response, int]:
     """List discovered pages for a project"""
     try:
         db = current_app.db
@@ -1094,7 +1101,7 @@ def list_discovered_pages(project_id):
 
 
 @drupal_sync_bp.route('/projects/<project_id>/recordings')
-def list_recordings(project_id):
+def list_recordings(project_id: str) -> Response | tuple[Response, int]:
     """List recordings for a project"""
     try:
         db = current_app.db
@@ -1130,15 +1137,15 @@ def list_recordings(project_id):
 
 
 @drupal_sync_bp.route('/projects/<project_id>/sync/import-pages', methods=['POST'])
-def import_discovered_pages(project_id):
+def import_discovered_pages(project_id: str) -> Response:
     """
     Import discovered pages from Drupal for a project.
 
     Streams progress updates as JSON lines.
     """
-    def generate():
+    def generate() -> Iterator[str]:
         try:
-            db = current_app.db
+            db: Any = current_app.db
 
             # Get project
             project_doc = db.projects.find_one({'_id': ObjectId(project_id)})
@@ -1273,7 +1280,7 @@ def import_discovered_pages(project_id):
 
 
 @drupal_sync_bp.route('/projects/<project_id>/issues')
-def list_issues(project_id):
+def list_issues(project_id: str) -> Response | tuple[Response, int]:
     """List issues for a project"""
     try:
         db = current_app.db
@@ -1311,15 +1318,15 @@ def list_issues(project_id):
 
 
 @drupal_sync_bp.route('/projects/<project_id>/sync/import-issues', methods=['POST'])
-def import_issues(project_id):
+def import_issues(project_id: str) -> Response:
     """
     Import issues from Drupal for a project.
 
     Streams progress updates as JSON lines.
     """
-    def generate():
+    def generate() -> Iterator[str]:
         try:
-            db = current_app.db
+            db: Any = current_app.db
 
             # Get project
             project_doc = db.projects.find_one({'_id': ObjectId(project_id)})
@@ -1439,7 +1446,7 @@ def import_issues(project_id):
 
 
 @drupal_sync_bp.route('/projects/<project_id>/sync/upload_automated_results', methods=['POST'])
-def upload_automated_results_to_drupal(project_id):
+def upload_automated_results_to_drupal(project_id: str) -> Response:
     """
     Process and upload automated test results to Drupal.
 
@@ -1460,9 +1467,9 @@ def upload_automated_results_to_drupal(project_id):
     }
     """
 
-    def generate():
+    def generate() -> Iterator[str]:
         try:
-            db = current_app.db
+            db: Any = current_app.db
 
             # Get project
             project_doc = db.projects.find_one({'_id': ObjectId(project_id)})

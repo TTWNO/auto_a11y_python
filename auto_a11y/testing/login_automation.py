@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class LoginAutomation:
     """Handles automated login for authenticated testing"""
 
-    def __init__(self, database):
+    def __init__(self, database: object) -> None:
         """
         Initialize login automation
 

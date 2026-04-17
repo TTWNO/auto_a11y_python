@@ -1,10 +1,12 @@
 """
 Web scraping engine using Playwright browser automation
 """
+from __future__ import annotations
 
 import asyncio
 import logging
-from typing import List, Set, Dict, Optional, Any
+from typing import Any, TYPE_CHECKING
+from collections.abc import Callable, Coroutine
 from urllib.parse import urlparse, urljoin, urlunparse
 from urllib.robotparser import RobotFileParser
 from pathlib import Path
@@ -12,14 +14,19 @@ from datetime import datetime
 import re
 from io import BytesIO
 
-from bs4 import BeautifulSoup
 from playwright.async_api import TimeoutError as PlaywrightTimeout
+from playwright.async_api import Page as PlaywrightPage
 
 from auto_a11y.models.page import Page, PageStatus
 from auto_a11y.models.website import Website
 from auto_a11y.models.discovery_run import DiscoveryRun, DiscoveryStatus
 from auto_a11y.core.database import Database
 from auto_a11y.core.browser_manager import BrowserManager
+
+if TYPE_CHECKING:
+    from auto_a11y.core.scraping_job import ScrapingJob
+    from auto_a11y.testing.login_automation import LoginAutomation
+
 # Note: ScrapingJob class has been moved to scraping_job.py for database-backed implementation
 
 logger = logging.getLogger(__name__)
@@ -36,7 +43,7 @@ _EXPECTED_SKIP_REASON_PREFIXES = (
 )
 
 
-def _is_expected_skip(page) -> bool:
+def _is_expected_skip(page: Page | None) -> bool:
     """
     Return True if ``page`` represents an expected skip rather than a real
     scraper failure. Expected skips are tracked in ``failed_pages`` for
@@ -50,29 +57,29 @@ def _is_expected_skip(page) -> bool:
 
 class ScrapingEngine:
     """Web scraping engine for page discovery"""
-    
-    def __init__(self, database: Database, browser_config: Dict[str, Any]):
+
+    def __init__(self, database: Database, browser_config: dict[str, Any]) -> None:
         """
         Initialize scraping engine
-        
+
         Args:
             database: Database connection
             browser_config: Browser configuration
         """
         self.db = database
         self.browser_manager = BrowserManager(browser_config)
-        self.discovered_urls: Set[str] = set()
-        self.queued_urls: Set[str] = set()
-        self.robots_cache: Dict[str, RobotFileParser] = {}
-        
+        self.discovered_urls: set[str] = set()
+        self.queued_urls: set[str] = set()
+        self.robots_cache: dict[str, RobotFileParser] = {}
+
     async def discover_website(
         self,
         website: Website,
-        progress_callback: Optional[callable] = None,
-        job: Optional['ScrapingJob'] = None,
-        website_user_id: Optional[str] = None,
-        login_automation: Optional['LoginAutomation'] = None
-    ) -> List[Page]:
+        progress_callback: Callable[..., Coroutine[Any, Any, Any]] | None = None,
+        job: ScrapingJob | None = None,
+        website_user_id: str | None = None,
+        login_automation: LoginAutomation | None = None
+    ) -> list[Page]:
         """
         Discover all pages in a website
 
@@ -87,10 +94,12 @@ class ScrapingEngine:
             List of discovered pages
         """
         logger.info(f"Starting discovery for website: {website.url}")
-        
+        assert website.id is not None, "Website must have an ID"
+        website_id: str = website.id
+
         # Create a new discovery run
         discovery_run = DiscoveryRun(
-            website_id=website.id,
+            website_id=website_id,
             started_at=datetime.now(),
             status=DiscoveryStatus.RUNNING,
             max_pages=website.scraping_config.max_pages,
@@ -105,7 +114,7 @@ class ScrapingEngine:
         
         # Get the previous latest run for comparison
         previous_run = None
-        previous_runs = self.db.get_discovery_runs(website.id)
+        previous_runs = self.db.get_discovery_runs(website_id)
         if len(previous_runs) > 1:  # More than just the current run
             previous_run = previous_runs[1]  # Second item is the previous latest
         
@@ -115,11 +124,12 @@ class ScrapingEngine:
         
         # Parse base URL
         base_url = self._normalize_url(website.url)
+        assert base_url is not None, "Website URL must be normalizable"
         parsed_base = urlparse(base_url)
-        base_domain = parsed_base.netloc
+        base_domain: str = parsed_base.netloc
 
         # Extract base path - if URL points to a file, get its directory
-        base_path = parsed_base.path.rstrip('/')
+        base_path: str = parsed_base.path.rstrip('/')
         if base_path and '.' in base_path.split('/')[-1]:
             # Last component has an extension (like index.html), strip it to get directory
             base_path = '/'.join(base_path.split('/')[:-1])
@@ -130,8 +140,8 @@ class ScrapingEngine:
         self.queued_urls.add(base_url)
         
         # Track discovered pages (successful only) and failed pages (for error reporting)
-        discovered_pages = []
-        failed_pages = []  # Track failed discoveries separately - these won't be saved to DB
+        discovered_pages: list[Page] = []
+        failed_pages: list[Page] = []  # Track failed discoveries separately - these won't be saved to DB
         
         # Start browser once for entire discovery session
         try:
@@ -148,7 +158,7 @@ class ScrapingEngine:
             raise RuntimeError(error_msg)
 
         # Helper function to perform authentication
-        async def perform_authentication(context_msg=""):
+        async def perform_authentication(context_msg: str = "") -> Any:
             """Perform authentication and return authenticated user or None"""
             if not website_user_id or not login_automation:
                 return None
@@ -223,7 +233,7 @@ class ScrapingEngine:
 
         # Mark all existing pages as not in latest discovery up front
         # so each page can be individually saved as it's found
-        self.db.mark_pages_not_in_latest_discovery(website.id)
+        self.db.mark_pages_not_in_latest_discovery(website_id)
 
         try:
             depth = 0
@@ -331,7 +341,7 @@ class ScrapingEngine:
                         logger.info(f"Skipping URL with problematic parameters: {url}")
                         # Track as failed for error reporting but don't save to DB
                         failed_page = Page(
-                            website_id=website.id,
+                            website_id=website_id,
                             url=url,
                             title="Skipped: Problematic URL",
                             discovered_from=website.url if depth == 0 else None,
@@ -460,11 +470,12 @@ class ScrapingEngine:
             
             # Compare with previous discovery if it exists
             if previous_run:
-                comparison = self.db.compare_discoveries(
-                    website.id,
-                    previous_run.id,
-                    discovery_run_id
-                )
+                if previous_run.id:
+                    comparison = self.db.compare_discoveries(
+                        website_id,
+                        previous_run.id,
+                        discovery_run_id
+                    )
                 discovery_run.pages_added = comparison['added_count']
                 discovery_run.pages_removed = comparison['removed_count']
                 discovery_run.pages_unchanged = comparison['unchanged_count']
@@ -479,7 +490,7 @@ class ScrapingEngine:
                 {'url': p.url, 'error_reason': p.error_reason or 'Unknown error'}
                 for p in failed_pages
             ]
-            discovery_run.documents_found = self.db.document_references.count_documents({'website_id': website.id})
+            discovery_run.documents_found = self.db.document_references.count_documents({'website_id': website_id})
             discovery_run.duration_seconds = int((discovery_run.completed_at - discovery_run.started_at).total_seconds())
             self.db.update_discovery_run(discovery_run)
             
@@ -528,8 +539,8 @@ class ScrapingEngine:
         depth: int,
         base_domain: str,
         base_path: str = "",
-        browser_page=None
-    ) -> Optional[Page]:
+        browser_page: PlaywrightPage | None = None
+    ) -> Page | None:
         """
         Discover a single page and extract links
         
@@ -543,6 +554,8 @@ class ScrapingEngine:
         Returns:
             Page object or None if failed
         """
+        assert website.id is not None
+        _wid: str = website.id
         # Check if browser is still running, restart if needed
         if not await self.browser_manager.is_running():
             logger.warning(f"Browser not running before discovering {url}, attempting restart...")
@@ -553,7 +566,7 @@ class ScrapingEngine:
                 logger.error(f"Failed to restart browser: {e}")
                 # Return a failed page record
                 return Page(
-                    website_id=website.id,
+                    website_id=_wid,
                     url=url,
                     title="Failed: Browser crashed",
                     discovered_from=website.url if depth == 0 else None,
@@ -568,7 +581,7 @@ class ScrapingEngine:
             if not await self.browser_manager.is_running():
                 logger.error("Browser is not running")
                 return Page(
-                    website_id=website.id,
+                    website_id=_wid,
                     url=url,
                     title="Failed: Browser error",
                     discovered_from=website.url if depth == 0 else None,
@@ -739,7 +752,7 @@ class ScrapingEngine:
                 
                 # Create a failed page record
                 failed_page = Page(
-                    website_id=website.id,
+                    website_id=_wid,
                     url=url,
                     title="Failed: Navigation error",
                     discovered_from=website.url if depth == 0 else None,
@@ -768,7 +781,7 @@ class ScrapingEngine:
                 if page and await self.browser_manager.is_running():
                     # Small delay to let page stabilize before screenshot
                     await asyncio.sleep(0.5)
-                    screenshot_path = await self._take_discovery_screenshot(page, website.id, url)
+                    screenshot_path = await self._take_discovery_screenshot(page, _wid, url)
                     if screenshot_path:
                         logger.debug(f"Discovery screenshot saved: {screenshot_path}")
                 else:
@@ -790,7 +803,7 @@ class ScrapingEngine:
 
             # Create page object
             page_obj = Page(
-                website_id=website.id,
+                website_id=_wid,
                 url=url,
                 title=title or "Untitled",
                 discovered_from=website.url if depth == 0 else None,
@@ -809,7 +822,7 @@ class ScrapingEngine:
                 logger.warning("Browser died after timeout, will restart on next page")
             # Create a failed page record for timeout
             return Page(
-                website_id=website.id,
+                website_id=_wid,
                 url=url,
                 title="Failed: Timeout",
                 discovered_from=website.url if depth == 0 else None,
@@ -821,7 +834,7 @@ class ScrapingEngine:
             logger.error(f"Error discovering page {url}: {e}", exc_info=True)
             # Create a failed page record for other errors
             return Page(
-                website_id=website.id,
+                website_id=_wid,
                 url=url,
                 title="Failed: Error",
                 discovered_from=website.url if depth == 0 else None,
@@ -842,12 +855,12 @@ class ScrapingEngine:
     
     async def _extract_links(
         self,
-        page,
+        page: PlaywrightPage,
         current_url: str,
         website: Website,
         base_domain: str,
         base_path: str = ""
-    ) -> Set[str]:
+    ) -> set[str]:
         """
         Extract and filter links from a page
         
@@ -860,6 +873,8 @@ class ScrapingEngine:
         Returns:
             Set of valid URLs to crawl
         """
+        assert website.id is not None
+        _extract_wid: str = website.id
         try:
             # Extract all links with their text using JavaScript
             links_with_text = await page.evaluate('''
@@ -975,7 +990,7 @@ class ScrapingEngine:
             
             # Save document references to database
             if document_refs:
-                await self._save_document_references(document_refs, website.id, current_url)
+                await self._save_document_references(document_refs, _extract_wid, current_url)
             
             return valid_links
             
@@ -983,7 +998,7 @@ class ScrapingEngine:
             logger.error(f"Error extracting links from {current_url}: {e}")
             return set()
     
-    async def _save_document_references(self, document_refs: list, website_id: str, referring_page_url: str):
+    async def _save_document_references(self, document_refs: list[dict[str, Any]], website_id: str, referring_page_url: str) -> None:
         """
         Save document references to database with language detection
         
@@ -1022,7 +1037,7 @@ class ScrapingEngine:
             except Exception as e:
                 logger.error(f"Error saving document reference {doc_data['url']}: {e}")
     
-    async def _detect_document_language(self, doc_url: str, link_text: str = None, file_extension: str = None) -> Optional[Dict[str, Any]]:
+    async def _detect_document_language(self, doc_url: str, link_text: str | None = None, file_extension: str | None = None) -> dict[str, Any] | None:
         """
         Detect the language of a document using multiple methods
         
@@ -1076,7 +1091,7 @@ class ScrapingEngine:
         # 4. Fallback: Analyze URL and link text patterns
         return self._detect_language_from_patterns(doc_url, link_text)
     
-    async def _detect_pdf_language(self, content: bytes) -> Optional[Dict[str, Any]]:
+    async def _detect_pdf_language(self, content: bytes) -> dict[str, Any] | None:
         """
         Detect language from PDF metadata and content
         
@@ -1122,7 +1137,7 @@ class ScrapingEngine:
         
         return None
     
-    async def _detect_docx_language(self, content: bytes) -> Optional[Dict[str, Any]]:
+    async def _detect_docx_language(self, content: bytes) -> dict[str, Any] | None:
         """
         Detect language from Word document metadata and content
         
@@ -1173,7 +1188,7 @@ class ScrapingEngine:
         
         return None
     
-    async def _detect_language_from_content(self, content: bytes, file_extension: str = None) -> Optional[Dict[str, Any]]:
+    async def _detect_language_from_content(self, content: bytes, file_extension: str | None = None) -> dict[str, Any] | None:
         """
         Detect language from document content
         
@@ -1204,7 +1219,7 @@ class ScrapingEngine:
         
         return None
     
-    def _analyze_text_language(self, text: str) -> Optional[Dict[str, Any]]:
+    def _analyze_text_language(self, text: str) -> dict[str, Any] | None:
         """
         Analyze text to detect language using pattern matching
         
@@ -1221,7 +1236,7 @@ class ScrapingEngine:
         text = text.lower().strip()
         
         # Language-specific patterns and common words
-        language_patterns = {
+        language_patterns: dict[str, dict[str, Any]] = {
             'en': {
                 'words': ['the', 'and', 'of', 'to', 'in', 'is', 'for', 'with', 'that', 'this', 
                          'are', 'was', 'will', 'have', 'been', 'from', 'can', 'which', 'their', 'would'],
@@ -1251,7 +1266,7 @@ class ScrapingEngine:
             }
         }
         
-        scores = {}
+        scores: dict[str, float] = {}
         
         for lang, config in language_patterns.items():
             score = 0
@@ -1275,7 +1290,7 @@ class ScrapingEngine:
         
         # Get the language with highest score
         if scores:
-            best_lang = max(scores, key=scores.get)
+            best_lang = max(scores, key=lambda k: scores[k])
             best_score = scores[best_lang]
             
             # Calculate confidence based on score differential
@@ -1292,7 +1307,7 @@ class ScrapingEngine:
         
         return None
     
-    def _detect_language_from_patterns(self, url: str, link_text: str = None) -> Optional[Dict[str, Any]]:
+    def _detect_language_from_patterns(self, url: str, link_text: str | None = None) -> dict[str, Any] | None:
         """
         Detect language from URL patterns and link text as fallback
         
@@ -1339,7 +1354,7 @@ class ScrapingEngine:
         
         return None
     
-    def _normalize_url(self, url: str, base_url: Optional[str] = None) -> Optional[str]:
+    def _normalize_url(self, url: str, base_url: str | None = None) -> str | None:
         """
         Normalize and validate URL
         
@@ -1416,7 +1431,7 @@ class ScrapingEngine:
             # Default to allow on error
             return True
 
-    async def _take_discovery_screenshot(self, page, website_id: str, url: str) -> Optional[str]:
+    async def _take_discovery_screenshot(self, page: PlaywrightPage, website_id: str, url: str) -> str | None:
         """
         Take screenshot during page discovery for preview thumbnail
 
@@ -1457,7 +1472,7 @@ class ScrapingEngine:
             logger.warning(f"Failed to take discovery screenshot for {url}: {e}")
             return None
 
-    async def cleanup(self):
+    async def cleanup(self) -> None:
         """Clean up browser resources"""
         if self.browser_manager:
             await self.browser_manager.stop()

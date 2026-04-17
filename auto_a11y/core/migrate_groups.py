@@ -1,21 +1,28 @@
 """One-time idempotent migration: seed default groups, migrate roles to group_ids, set is_superadmin."""
+from __future__ import annotations
+
 import logging
 from datetime import datetime
+from typing import TYPE_CHECKING
+
 from bson import ObjectId
 
 from auto_a11y.models.permission_group import PermissionGroup, DEFAULT_GROUPS
 
+if TYPE_CHECKING:
+    from auto_a11y.core.database import Database
+
 logger = logging.getLogger(__name__)
 
 
-def run_migration(db):
+def run_migration(db: Database) -> None:
     """Run the group permissions migration. Idempotent -- safe to call multiple times."""
     _seed_default_groups(db)
     _migrate_superadmin(db)
     _migrate_project_members(db)
 
 
-def _seed_default_groups(db):
+def _seed_default_groups(db: Database) -> None:
     """Create default groups if they don't exist."""
     for name, config in DEFAULT_GROUPS.items():
         existing = db.get_group_by_name(name)
@@ -33,7 +40,7 @@ def _seed_default_groups(db):
         logger.info(f"Created default group '{name}' with id {group_id}")
 
 
-def _migrate_superadmin(db):
+def _migrate_superadmin(db: Database) -> None:
     """Set is_superadmin=True for users with role=admin, False for others.
 
     Only touches users that don't already have is_superadmin set,
@@ -54,7 +61,7 @@ def _migrate_superadmin(db):
         logger.info(f"Set is_superadmin=False on {result.modified_count} non-admin users")
 
 
-def _migrate_project_members(db):
+def _migrate_project_members(db: Database) -> None:
     """Convert members with 'role' field to 'group_ids' field.
 
     Looks up the corresponding default group for each role name

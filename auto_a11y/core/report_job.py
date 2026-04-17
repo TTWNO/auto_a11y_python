@@ -1,9 +1,13 @@
 """
 Report generation job - wraps any report generator with JobManager lifecycle
 """
+from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
+
 from auto_a11y.core.job_manager import JobManager, JobStatus
 
 logger = logging.getLogger(__name__)
@@ -26,14 +30,21 @@ class ReportJob:
     Flask-Babel translations which require an active app context.
     """
 
-    def __init__(self, job_id, job_manager, generator_func, generator_args=None, generator_kwargs=None):
+    def __init__(
+        self,
+        job_id: str,
+        job_manager: JobManager,
+        generator_func: Callable[..., Any],
+        generator_args: tuple[Any, ...] | None = None,
+        generator_kwargs: dict[str, Any] | None = None,
+    ) -> None:
         self.job_id = job_id
         self.job_manager = job_manager
         self.generator_func = generator_func
         self.generator_args = generator_args or ()
         self.generator_kwargs = generator_kwargs or {}
 
-    def run(self):
+    def run(self) -> None:
         """Execute the report generator with progress tracking."""
         try:
             # Update job status to RUNNING
@@ -74,7 +85,13 @@ class ReportJob:
             )
 
     @staticmethod
-    def run_in_wrapper(job_id, job_manager, func, *args, **kwargs):
+    def run_in_wrapper(
+        job_id: str,
+        job_manager: JobManager,
+        func: Callable[..., Any],
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
         """
         Safe entry point for wrapper closures. Catches ANY exception
         (including errors in generator construction, app context issues, etc.)
@@ -107,7 +124,7 @@ class ReportJob:
             except Exception:
                 logger.error(f"Could not mark job {job_id} as failed in DB")
 
-    def _progress_callback(self, current, total, message):
+    def _progress_callback(self, current: int, total: int, message: str) -> None:
         """Progress callback injected into generators. Also checks cancellation."""
         self.job_manager.update_job_progress(
             self.job_id,

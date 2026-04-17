@@ -1,10 +1,11 @@
 """
 Database-backed scraping job implementation
 """
+from __future__ import annotations
 
 import logging
 from datetime import datetime
-from typing import Optional, Dict, Any, List
+from typing import Any
 from auto_a11y.core.job_manager import JobManager, JobType, JobStatus
 from auto_a11y.core.database import Database
 
@@ -21,11 +22,11 @@ class ScrapingJob:
         job_manager: JobManager,
         website_id: str,
         job_id: str,
-        max_pages: Optional[int] = None,
-        user_id: Optional[str] = None,
-        session_id: Optional[str] = None,
-        website_user_ids: Optional[List[str]] = None
-    ):
+        max_pages: int | None = None,
+        user_id: str | None = None,
+        session_id: str | None = None,
+        website_user_ids: list[str] | None = None
+    ) -> None:
         """
         Initialize scraping job
 
@@ -80,12 +81,12 @@ class ScrapingJob:
         pages_found: int,
         pages_processed: int,
         current_depth: int,
-        message: str = None,
+        message: str | None = None,
         queue_size: int = 0,
         pages_failed: int = 0,
-        last_failed_url: str = None,
-        last_failed_reason: str = None
-    ):
+        last_failed_url: str | None = None,
+        last_failed_reason: str | None = None
+    ) -> None:
         """
         Update job progress in database
 
@@ -102,7 +103,7 @@ class ScrapingJob:
         if not message:
             message = f"Found {pages_found} pages, processed {pages_processed}"
 
-        details = {
+        details: dict[str, Any] = {
             'pages_found': pages_found,
             'pages_processed': pages_processed,
             'current_depth': current_depth,
@@ -123,7 +124,7 @@ class ScrapingJob:
             details=details
         )
     
-    def set_running(self):
+    def set_running(self) -> None:
         """Mark job as running"""
         self.job_manager.update_job_status(
             job_id=self.job_id,
@@ -137,7 +138,7 @@ class ScrapingJob:
         )
         logger.info(f"Scraping job {self.job_id} marked as running")
     
-    def set_completed(self, pages_found: int, pages_processed: int):
+    def set_completed(self, pages_found: int, pages_processed: int) -> None:
         """
         Mark job as completed
         
@@ -165,7 +166,7 @@ class ScrapingJob:
         )
         logger.info(f"Scraping job {self.job_id} completed: {pages_found} pages found")
     
-    def set_failed(self, error: str):
+    def set_failed(self, error: str) -> None:
         """
         Mark job as failed
         
@@ -179,7 +180,7 @@ class ScrapingJob:
         )
         logger.error(f"Scraping job {self.job_id} failed: {error}")
     
-    def set_cancelled(self):
+    def set_cancelled(self) -> None:
         """Mark job as cancelled"""
         job = self.job_manager.get_job(self.job_id)
         if job:
@@ -201,7 +202,7 @@ class ScrapingJob:
             )
             logger.info(f"Scraping job {self.job_id} cancelled")
     
-    async def run(self, database: Database, browser_config: Dict[str, Any]):
+    async def run(self, database: Database, browser_config: dict[str, Any]) -> None:
         """
         Run the scraping job with multi-user support
 
@@ -283,12 +284,12 @@ class ScrapingJob:
                 if user and user_index < len(self.website_user_ids) - 1:
                     try:
                         logger.info(f"Logging out user {user_label} before switching to next user")
-                        browser_page = await scraper.browser_manager.get_page()
-                        logout_result = await login_automation.perform_logout(browser_page, user, timeout=30000)
-                        if logout_result['success']:
-                            logger.info(f"Successfully logged out {user_label} in {logout_result['duration_ms']}ms")
-                        else:
-                            logger.warning(f"Logout failed for {user_label}: {logout_result.get('error', 'Unknown')}")
+                        async with scraper.browser_manager.get_page() as browser_page:
+                            logout_result = await login_automation.perform_logout(browser_page, user, timeout=30000)
+                            if logout_result['success']:
+                                logger.info(f"Successfully logged out {user_label} in {logout_result['duration_ms']}ms")
+                            else:
+                                logger.warning(f"Logout failed for {user_label}: {logout_result.get('error', 'Unknown')}")
                     except Exception as e:
                         logger.error(f"Error during logout for {user_label}: {e}")
                         # Continue anyway - browser will be cleaned up
@@ -321,7 +322,7 @@ class ScrapingJob:
             if scraper:
                 await scraper.cleanup()
     
-    async def _update_progress(self, progress: dict):
+    async def _update_progress(self, progress: dict[str, Any]) -> None:
         """Update job progress in database"""
         logger.debug(f"ScrapingJob._update_progress called with: {progress}")
 
@@ -345,7 +346,7 @@ class ScrapingJob:
         except Exception as e:
             logger.error(f"Failed to update progress: {e}", exc_info=True)
     
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """
         Get current job status from database
         

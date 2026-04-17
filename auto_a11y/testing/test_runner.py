@@ -1200,7 +1200,7 @@ class TestRunner:
             logger.error(f"Failed to take screenshot: {e}")
             return None, None
     
-    async def cleanup(self):
+    async def cleanup(self) -> None:
         """Clean up resources"""
         await self.browser_manager.stop()
 

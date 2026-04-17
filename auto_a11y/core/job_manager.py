@@ -2,15 +2,18 @@
 Database-backed job management system for concurrent operations
 Supports multi-user SaaS architecture with proper state management
 """
+from __future__ import annotations
 
 import logging
 from datetime import datetime, timedelta
-from typing import Dict, Any, Optional, List
+from typing import Any, TYPE_CHECKING
 from enum import Enum
 import asyncio
-from pymongo import MongoClient, UpdateOne
+from pymongo.collection import Collection
 from pymongo.errors import DuplicateKeyError
-import json
+
+if TYPE_CHECKING:
+    from auto_a11y.core.database import Database
 
 logger = logging.getLogger(__name__)
 
@@ -38,42 +41,43 @@ class JobManager:
     Database-backed job manager for handling concurrent operations
     across multiple users and sessions
     """
-    
-    _instance: 'JobManager | None' = None  # Single global instance
 
-    def __new__(cls, database: object) -> 'JobManager':
+    _instance: JobManager | None = None  # Single global instance
+    _initialized: bool
+
+    def __new__(cls, database: Database) -> JobManager:
         """Singleton pattern - single global instance"""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            cls._instance._initialized = False  # type: ignore[attr-defined]
+            cls._instance._initialized = False
             logger.info("Created global JobManager singleton instance")
         return cls._instance
 
-    def __init__(self, database: object) -> None:
+    def __init__(self, database: Database) -> None:
         """
         Initialize job manager with database connection
-        
+
         Args:
             database: Database instance
         """
         # Only initialize once per instance
         if hasattr(self, '_initialized') and self._initialized:
             return
-        
+
         self.db = database
-        self.collection = database.db['jobs']
+        self.collection: Collection[dict[str, Any]] = database.db['jobs']
         self._indexes_created = False
-        self._cleanup_task = None
-        
+        self._cleanup_task: asyncio.Task[None] | None = None
+
         # Try to create indexes but don't fail if it doesn't work
         try:
             self._ensure_indexes()
         except Exception as e:
             logger.warning(f"Could not create indexes during init: {e}")
-        
+
         self._initialized = True
-    
-    def _ensure_indexes(self):
+
+    def _ensure_indexes(self) -> None:
         """Create necessary indexes for job collection"""
         if self._indexes_created:
             return
@@ -119,17 +123,22 @@ class JobManager:
         except Exception as e:
             logger.error(f"Error creating job indexes: {e}")
             # Don't fail, indexes will be created lazily if needed
-    
+
+    @classmethod
+    def get_instance(cls, database: Database) -> JobManager:
+        """Get (or create) the singleton JobManager instance."""
+        return cls(database)
+
     def create_job(
         self,
         job_id: str,
         job_type: JobType,
-        website_id: Optional[str] = None,
-        project_id: Optional[str] = None,
-        user_id: Optional[str] = None,
-        session_id: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        website_id: str | None = None,
+        project_id: str | None = None,
+        user_id: str | None = None,
+        session_id: str | None = None,
+        metadata: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """
         Create a new job in the database
         
@@ -195,9 +204,9 @@ class JobManager:
         self,
         job_id: str,
         status: JobStatus,
-        progress: Optional[Dict[str, Any]] = None,
-        error: Optional[str] = None,
-        result: Optional[Any] = None
+        progress: dict[str, Any] | None = None,
+        error: str | None = None,
+        result: Any | None = None
     ) -> bool:
         """
         Update job status and related fields
@@ -212,7 +221,7 @@ class JobManager:
         Returns:
             True if updated successfully
         """
-        update_doc = {
+        update_doc: dict[str, Any] = {
             '$set': {
                 'status': status.value,
                 'updated_at': datetime.now()
@@ -236,19 +245,18 @@ class JobManager:
         if result is not None:
             # Convert result to JSON-serializable format
             try:
-                if hasattr(result, '__dict__'):
-                    result = result.__dict__
-                update_doc['$set']['result'] = result
+                serialized_result: Any = result.__dict__ if hasattr(result, '__dict__') else result
+                update_doc['$set']['result'] = serialized_result
             except Exception as e:
                 logger.error(f"Error serializing result: {e}")
                 update_doc['$set']['result'] = str(result)
-        
-        result = self.collection.update_one(
+
+        update_result = self.collection.update_one(
             {'job_id': job_id},
             update_doc
         )
-        
-        if result.modified_count > 0:
+
+        if update_result.modified_count > 0:
             logger.info(f"Updated job {job_id} status to {status.value}")
             return True
         return False
@@ -259,7 +267,7 @@ class JobManager:
         current: int,
         total: int,
         message: str,
-        details: Optional[Dict[str, Any]] = None
+        details: dict[str, Any] | None = None
     ) -> bool:
         """
         Update job progress
@@ -308,7 +316,7 @@ class JobManager:
     def request_cancellation(
         self,
         job_id: str,
-        requested_by: Optional[str] = None
+        requested_by: str | None = None
     ) -> bool:
         """
         Request job cancellation
@@ -374,7 +382,7 @@ class JobManager:
                    job.get('status') in [JobStatus.CANCELLING.value, JobStatus.CANCELLED.value])
         return False
     
-    def get_job(self, job_id: str) -> Optional[Dict[str, Any]]:
+    def get_job(self, job_id: str) -> dict[str, Any] | None:
         """
         Get job by ID
         
@@ -388,10 +396,10 @@ class JobManager:
     
     def get_active_jobs(
         self,
-        job_type: Optional[JobType] = None,
-        website_id: Optional[str] = None,
-        user_id: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        job_type: JobType | None = None,
+        website_id: str | None = None,
+        user_id: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get active jobs with optional filters
         
@@ -403,16 +411,16 @@ class JobManager:
         Returns:
             List of active jobs
         """
-        query = {
+        query: dict[str, Any] = {
             'status': {'$in': [JobStatus.PENDING.value, JobStatus.RUNNING.value]}
         }
-        
+
         if job_type:
             query['job_type'] = job_type.value
-        
+
         if website_id:
             query['website_id'] = website_id
-        
+
         if user_id:
             query['user_id'] = user_id
         
@@ -514,7 +522,7 @@ class JobManager:
         
         return result.modified_count
     
-    def start_cleanup_task(self):
+    def start_cleanup_task(self) -> None:
         """Start the cleanup task if not already running"""
         if self._cleanup_task is None or self._cleanup_task.done():
             try:
@@ -525,7 +533,7 @@ class JobManager:
                 # No running loop - cleanup will be handled manually
                 logger.debug("No event loop available for cleanup task")
     
-    async def _cleanup_old_jobs(self):
+    async def _cleanup_old_jobs(self) -> None:
         """Background task to periodically clean up old jobs"""
         while True:
             try:
@@ -552,10 +560,10 @@ class JobManager:
     
     def get_job_statistics(
         self,
-        user_id: Optional[str] = None,
-        website_id: Optional[str] = None,
+        user_id: str | None = None,
+        website_id: str | None = None,
         hours: int = 24
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get job statistics for monitoring
         
@@ -568,21 +576,15 @@ class JobManager:
             Statistics dictionary
         """
         since = datetime.now() - timedelta(hours=hours)
-        
-        pipeline = [
-            {
-                '$match': {
-                    'created_at': {'$gte': since}
-                }
-            }
-        ]
-        
+
+        match_filter: dict[str, Any] = {'created_at': {'$gte': since}}
         if user_id:
-            pipeline[0]['$match']['user_id'] = user_id
-        
+            match_filter['user_id'] = user_id
         if website_id:
-            pipeline[0]['$match']['website_id'] = website_id
-        
+            match_filter['website_id'] = website_id
+
+        pipeline: list[dict[str, Any]] = [{'$match': match_filter}]
+
         pipeline.extend([
             {
                 '$group': {
@@ -606,7 +608,7 @@ class JobManager:
         results = list(self.collection.aggregate(pipeline))
         
         # Format statistics
-        stats = {
+        stats: dict[str, Any] = {
             'total_jobs': sum(r['count'] for r in results),
             'by_type': {},
             'by_status': {}

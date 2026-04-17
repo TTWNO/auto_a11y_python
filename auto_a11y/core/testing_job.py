@@ -1,12 +1,13 @@
 """
 Database-backed testing job implementation
 """
+from __future__ import annotations
 
 import asyncio
 import logging
 import time
 from datetime import datetime
-from typing import Optional, Dict, Any, List
+from typing import Any
 from auto_a11y.core.job_manager import JobManager, JobType, JobStatus
 from auto_a11y.core.database import Database
 from auto_a11y.models import Page, PageStatus
@@ -26,14 +27,14 @@ class TestingJob:
         job_manager: JobManager,
         website_id: str,
         job_id: str,
-        page_ids: Optional[List[str]] = None,
-        user_id: Optional[str] = None,
-        session_id: Optional[str] = None,
+        page_ids: list[str] | None = None,
+        user_id: str | None = None,
+        session_id: str | None = None,
         test_all: bool = False,
-        website_user_id: Optional[str] = None,
+        website_user_id: str | None = None,
         trigger_source: str = "manual",
-        schedule_id: Optional[str] = None
-    ):
+        schedule_id: str | None = None
+    ) -> None:
         """
         Initialize testing job
 
@@ -56,6 +57,7 @@ class TestingJob:
         self.user_id = user_id
         self.session_id = session_id
         self.test_all = test_all
+        self._cached_user_label: str = ""
         self.website_user_id = website_user_id
         self.trigger_source = trigger_source
         self.schedule_id = schedule_id
@@ -102,12 +104,12 @@ class TestingJob:
         self,
         pages_tested: int,
         total_pages: int,
-        current_page: Optional[str] = None,
-        message: str = None,
+        current_page: str | None = None,
+        message: str | None = None,
         pages_passed: int = 0,
         pages_failed: int = 0,
         pages_skipped: int = 0
-    ):
+    ) -> None:
         """
         Update job progress in database
         
@@ -154,11 +156,11 @@ class TestingJob:
         # which we want to avoid in progress updates
         return self._cached_user_label if hasattr(self, '_cached_user_label') else self.website_user_id
     
-    def set_user_label(self, label: str):
+    def set_user_label(self, label: str) -> None:
         """Set cached user label for progress messages"""
         self._cached_user_label = label
     
-    def set_running(self, total_pages: int):
+    def set_running(self, total_pages: int) -> None:
         """
         Mark job as running
         
@@ -195,7 +197,7 @@ class TestingJob:
         pages_passed: int,
         pages_failed: int,
         pages_skipped: int
-    ):
+    ) -> None:
         """
         Mark job as completed
         
@@ -231,7 +233,7 @@ class TestingJob:
         )
         logger.info(f"Testing job {self.job_id} completed: {pages_tested} pages tested")
     
-    def set_failed(self, error: str):
+    def set_failed(self, error: str) -> None:
         """
         Mark job as failed
         
@@ -245,7 +247,7 @@ class TestingJob:
         )
         logger.error(f"Testing job {self.job_id} failed: {error}")
     
-    def set_cancelled(self):
+    def set_cancelled(self) -> None:
         """Mark job as cancelled"""
         job = self.job_manager.get_job(self.job_id)
         if job:
@@ -276,12 +278,12 @@ class TestingJob:
     async def run(
         self,
         database: Database,
-        browser_config: Dict[str, Any],
+        browser_config: dict[str, Any],
         take_screenshot: bool = True,
-        run_ai_analysis: Optional[bool] = None,
-        ai_api_key: Optional[str] = None,
+        run_ai_analysis: bool | None = None,
+        ai_api_key: str | None = None,
         skip_completion: bool = False
-    ):
+    ) -> None:
         """
         Run the testing job
         
@@ -345,7 +347,7 @@ class TestingJob:
             logger.info(f"Starting {num_workers} parallel test workers (max configured: {max_workers})")
 
             # Fill queue with pages to test
-            page_queue = asyncio.Queue()
+            page_queue: asyncio.Queue[Page] = asyncio.Queue()
             for page in testable_pages:
                 page_queue.put_nowait(page)
 
@@ -364,7 +366,7 @@ class TestingJob:
                 'skipped': 0,
             }
 
-            async def _test_worker(worker_id: int):
+            async def _test_worker(worker_id: int) -> None:
                 """Worker coroutine: owns a TestRunner, pulls pages from queue."""
                 runner = None
                 try:
@@ -409,7 +411,7 @@ class TestingJob:
                                 page=page,
                                 enable_multi_state=True,
                                 take_screenshot=take_screenshot,
-                                run_ai_analysis=run_ai_analysis,
+                                run_ai_analysis=run_ai_analysis if run_ai_analysis is not None else False,
                                 ai_api_key=ai_api_key,
                                 website_user_id=self.website_user_id
                             )
@@ -534,7 +536,7 @@ class TestingJob:
             self.set_failed(str(e))
             raise
     
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """
         Get current job status from database
         

@@ -36,8 +36,8 @@ class CSSFocusCache:
 
 class CSSFocusCapture:
     """Captures and parses CSS focus rules during page load"""
-    
-    def __init__(self):
+
+    def __init__(self) -> None:
         self.cache = CSSFocusCache()
         self._response_handler = None
         self._page = None

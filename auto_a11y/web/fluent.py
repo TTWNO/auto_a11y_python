@@ -16,7 +16,7 @@ import os
 import re
 from contextlib import contextmanager
 from contextvars import ContextVar
-from collections.abc import Generator
+from collections.abc import Generator, Sequence
 from typing import Any, cast
 from typing_extensions import override
 
@@ -26,6 +26,16 @@ from markupsafe import Markup, escape
 from fluent_compiler.bundle import FluentBundle
 
 logger = logging.getLogger(__name__)
+
+
+class MissingTranslationError(KeyError):
+    """Raised in debug (strict) mode when a Fluent message is missing
+    from one or more supported locales, or when format-time errors occur.
+
+    Subclasses ``KeyError`` so existing ``except KeyError`` blocks in
+    production code paths continue to work unchanged in non-strict mode.
+    """
+
 
 # ContextVar for locale override via force_locale().
 # NOTE: ContextVar does NOT propagate to child threads.  If you spawn
@@ -39,6 +49,20 @@ _bundles: dict[str, FluentBundle] = {}
 # Supported locales and default
 _SUPPORTED_LOCALES: tuple[str, ...] = ('en', 'fr')
 _DEFAULT_LOCALE: str = 'en'
+
+# Module-level strict-mode flag. Set by init_fluent() from app.debug.
+# When True, ftl() raises MissingTranslationError on any miss or format
+# error in any supported locale, instead of logging + falling back.
+_strict_mode: bool = False
+
+
+def _is_strict() -> bool:
+    """Return True if strict translation checking is enabled.
+
+    Tests can monkey-patch this function (or the _strict_mode module
+    variable) to control strict behavior per-test.
+    """
+    return _strict_mode
 
 
 # ---------------------------------------------------------------------------
@@ -54,19 +78,57 @@ def ftl(message_id: str, **kwargs: object) -> Markup | str:
     are safely escaped for HTML/JS contexts.  On complete miss the raw
     message ID string is returned (not Markup) so callers can distinguish
     missing translations.
+
+    In strict mode (Flask debug), raises ``MissingTranslationError`` if
+    the message ID is missing from any supported locale.
     """
+    # Strict-mode full-coverage check
+    if _is_strict():
+        missing: list[str] = []
+        format_errors: list[tuple[str, Sequence[object]]] = []
+        for loc in _SUPPORTED_LOCALES:
+            res = _resolve(loc, message_id, kwargs)
+            if res is None:
+                missing.append(loc)
+            else:
+                _, errs = res
+                if errs:
+                    format_errors.append((loc, errs))
+
+        if missing:
+            paths = "\n".join(
+                f"    auto_a11y/web/translations/{loc}/*.ftl"
+                for loc in missing
+            )
+            raise MissingTranslationError(
+                f"Fluent message {message_id!r} missing from locale(s): {', '.join(missing)}\n  Strict mode is active (Flask debug). Add this message ID to:\n{paths}"
+            )
+
+        if format_errors:
+            loc, errs = format_errors[0]
+            raise MissingTranslationError(
+                f"Fluent message {message_id!r} in locale {loc!r} has formatting errors: {errs}\n  Called with kwargs: {kwargs}\n  Strict mode is active (Flask debug)."
+            )
+
+    # Non-strict path (also the post-strict-check path)
     locale = _get_current_locale()
-    value = _resolve(locale, message_id, kwargs)
-    if value is not None:
+    result = _resolve(locale, message_id, kwargs)
+    if result is not None:
+        value, errors = result
+        if errors:
+            logger.warning("Fluent errors for '%s' [%s]: %s", message_id, locale, errors)
         return Markup(escape(value))
 
     # Fallback to English
     if locale != _DEFAULT_LOCALE:
-        value = _resolve(_DEFAULT_LOCALE, message_id, kwargs)
-        if value is not None:
+        result = _resolve(_DEFAULT_LOCALE, message_id, kwargs)
+        if result is not None:
+            value, errors = result
+            if errors:
+                logger.warning("Fluent errors for '%s' [%s]: %s", message_id, _DEFAULT_LOCALE, errors)
             return Markup(escape(value))
 
-    # Complete miss -- return the message ID as a plain string
+    # Complete miss — return the message ID as a plain string
     logger.warning("Missing Fluent message: %s", message_id)
     return message_id
 
@@ -181,17 +243,26 @@ def ftl_translate_issue(text: str) -> str:
     Falls back to the original text if no mapping exists.
 
     This replaces the old ``translate_issue`` Jinja2 filter.
+
+    In strict mode, an unmapped English string raises
+    ``MissingTranslationError`` so CI catches untranslated issue
+    descriptions.
     """
     if not text:
         return text or ''
     id_map = _load_inline_issue_ids()
     ftl_id = id_map.get(text)
     if ftl_id is None:
-        # No mapping -- return original text
+        if _is_strict():
+            raise MissingTranslationError(
+                f"Inline issue text has no entry in inline_issue_ids.json:\n  {text!r}\n  Strict mode is active. Add this English string to:\n    auto_a11y/web/translations/inline_issue_ids.json"
+            )
+        # No mapping — return original text
         return text
     result = ftl(ftl_id)
-    # If ftl() returned the message ID (miss), fall back to original text
-    if str(result) == ftl_id:
+    # If ftl() returned the message ID (miss), fall back to original text.
+    # In strict mode this branch is unreachable because ftl() raises first.
+    if not isinstance(result, Markup) and result == ftl_id:
         return text
     return str(result)
 
@@ -207,6 +278,9 @@ def init_fluent(app: Flask) -> None:
     * Registers ``ftl``, ``ftl_attr``, ``lazy_ftl`` as Jinja2 globals.
     * Registers the ``datetimeformat`` template filter.
     """
+    global _strict_mode
+    _strict_mode = bool(app.debug)
+
     translations_dir = os.path.join(os.path.dirname(__file__), 'translations')
     _load_bundles(translations_dir)
 
@@ -224,8 +298,9 @@ def init_fluent(app: Flask) -> None:
     app.jinja_env.filters['datetimeformat'] = _datetimeformat_filter
 
     logger.info(
-        "Fluent initialized -- locales loaded: %s",
+        "Fluent initialized — locales loaded: %s (strict_mode=%s)",
         ', '.join(sorted(_bundles.keys())) or '(none)',
+        _strict_mode,
     )
 
 
@@ -301,23 +376,22 @@ def _load_bundles(translations_dir: str) -> None:
         logger.debug("Loaded Fluent bundle for '%s' from %d file(s)", locale, len(ftl_files))
 
 
-def _resolve(locale: str, message_id: str, args: dict[str, object]) -> str | None:
+def _resolve(locale: str, message_id: str, args: dict[str, object]) -> tuple[str, Sequence[object]] | None:
     """Try to format *message_id* in the given locale's bundle.
 
-    Returns the formatted string or ``None`` if the message is not found.
+    Returns ``(value, errors)`` tuple where ``errors`` is the Fluent
+    error list (empty list if none). Returns ``None`` if the message
+    is not found at all in this bundle.
+
+    Note: this function no longer logs format errors — callers decide
+    whether to log or raise based on strict mode.
     """
     bundle = _bundles.get(locale)
     if bundle is None:
         return None
-    if not bundle.has_message(message_id):
-        # has_message returns False for attribute-style IDs like 'msg.attr',
-        # but format() still works for them.  Try format() and catch KeyError.
-        pass
     try:
         value, errors = bundle.format(message_id, args or None)
-        if errors:
-            logger.warning("Fluent errors for '%s' [%s]: %s", message_id, locale, errors)
-        return str(value)
+        return (value, errors or [])
     except (KeyError, Exception):
         return None
 

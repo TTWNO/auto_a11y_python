@@ -107,7 +107,7 @@ jobs:
         cat > .env << EOF
         # CI Configuration
         SECRET_KEY=ci-test-secret-key
-        DEBUG=False
+        DEBUG=True
         HOST=127.0.0.1
         PORT=5001
 
@@ -194,7 +194,7 @@ jobs:
     - name: Test Flask app and endpoints
       run: |
         # Start Flask app in background
-        python run.py &
+        python run.py --no-reloader &
         APP_PID=$!
 
         # Wait for app to start (max 30 seconds)

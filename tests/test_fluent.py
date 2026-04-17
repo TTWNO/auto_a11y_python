@@ -254,3 +254,295 @@ class TestLazyFtl:
         with fluent_app.app_context():
             with force_locale("fr"):
                 assert str(lazy) == "Bonjour"
+
+
+# ---------------------------------------------------------------------------
+# Tests: MissingTranslationError
+# ---------------------------------------------------------------------------
+
+class TestMissingTranslationError:
+
+    def test_import(self):
+        """MissingTranslationError is importable from auto_a11y.web.fluent."""
+        from auto_a11y.web.fluent import MissingTranslationError
+        assert MissingTranslationError is not None
+
+    def test_subclasses_keyerror(self):
+        """MissingTranslationError subclasses KeyError so existing
+        except-KeyError blocks keep working."""
+        from auto_a11y.web.fluent import MissingTranslationError
+        assert issubclass(MissingTranslationError, KeyError)
+
+    def test_can_raise_with_message(self):
+        from auto_a11y.web.fluent import MissingTranslationError
+        with pytest.raises(MissingTranslationError, match="test msg"):
+            raise MissingTranslationError("test msg")
+
+
+# ---------------------------------------------------------------------------
+# Tests: strict-mode flag
+# ---------------------------------------------------------------------------
+
+class TestStrictModeFlag:
+
+    def test_is_strict_defaults_false(self, monkeypatch):
+        """_is_strict() returns False when _strict_mode is False (default)."""
+        import auto_a11y.web.fluent as fluent_mod
+        monkeypatch.setattr(fluent_mod, "_strict_mode", False)
+        assert fluent_mod._is_strict() is False
+
+    def test_is_strict_reflects_flag(self, monkeypatch):
+        """_is_strict() returns True when _strict_mode is True."""
+        import auto_a11y.web.fluent as fluent_mod
+        monkeypatch.setattr(fluent_mod, "_strict_mode", True)
+        assert fluent_mod._is_strict() is True
+
+    def test_init_fluent_sets_flag_from_app_debug(self, monkeypatch):
+        """init_fluent(app) sets _strict_mode from app.debug."""
+        import auto_a11y.web.fluent as fluent_mod
+        from auto_a11y.web.fluent import init_fluent
+
+        monkeypatch.setattr(fluent_mod, "_strict_mode", False)
+        monkeypatch.setattr(fluent_mod, "_bundles", dict(fluent_mod._bundles))
+
+        # app.debug=True -> strict
+        app = Flask(__name__)
+        app.debug = True
+        init_fluent(app)
+        assert fluent_mod._strict_mode is True
+
+        # app.debug=False -> non-strict
+        app2 = Flask(__name__)
+        app2.debug = False
+        init_fluent(app2)
+        assert fluent_mod._strict_mode is False
+
+
+# ---------------------------------------------------------------------------
+# Tests: strict mode — missing-locale raises
+# ---------------------------------------------------------------------------
+
+class TestStrictModeMissingLocales:
+
+    def test_missing_in_fr_raises(self, fluent_app, monkeypatch):
+        """When FR is missing a message ID, strict mode raises even if EN has it."""
+        import auto_a11y.web.fluent as fluent_mod
+        from auto_a11y.web.fluent import MissingTranslationError
+
+        monkeypatch.setattr(fluent_mod, "_strict_mode", True)
+
+        with fluent_app.test_request_context():
+            session["language"] = "en"
+            with pytest.raises(MissingTranslationError, match="only-in-english"):
+                ftl("only-in-english")
+
+    def test_missing_in_both_raises(self, fluent_app, monkeypatch):
+        """Missing in both locales raises."""
+        import auto_a11y.web.fluent as fluent_mod
+        from auto_a11y.web.fluent import MissingTranslationError
+
+        monkeypatch.setattr(fluent_mod, "_strict_mode", True)
+
+        with fluent_app.test_request_context():
+            session["language"] = "en"
+            with pytest.raises(MissingTranslationError, match="does-not-exist"):
+                ftl("does-not-exist")
+
+    def test_error_message_names_missing_locales(self, fluent_app, monkeypatch):
+        """The error message lists which locales are missing the ID."""
+        import auto_a11y.web.fluent as fluent_mod
+        from auto_a11y.web.fluent import MissingTranslationError
+
+        monkeypatch.setattr(fluent_mod, "_strict_mode", True)
+
+        with fluent_app.test_request_context():
+            session["language"] = "en"
+            with pytest.raises(MissingTranslationError) as exc_info:
+                ftl("only-in-english")
+            # Only FR is missing this one
+            assert "fr" in str(exc_info.value)
+            assert "only-in-english" in str(exc_info.value)
+
+    def test_non_strict_unchanged(self, fluent_app, monkeypatch):
+        """Non-strict mode (default): same inputs still log + fall back."""
+        import auto_a11y.web.fluent as fluent_mod
+
+        monkeypatch.setattr(fluent_mod, "_strict_mode", False)
+
+        with fluent_app.test_request_context():
+            session["language"] = "fr"
+            # only-in-english: FR missing, EN has it -> falls back to EN
+            result = ftl("only-in-english")
+            assert str(result) == "English only"
+
+            # does-not-exist: both missing -> returns raw ID
+            result2 = ftl("does-not-exist")
+            assert result2 == "does-not-exist"
+
+    def test_present_in_both_does_not_raise(self, fluent_app, monkeypatch):
+        """When the message exists in both locales, strict mode is silent."""
+        import auto_a11y.web.fluent as fluent_mod
+        monkeypatch.setattr(fluent_mod, "_strict_mode", True)
+
+        with fluent_app.test_request_context():
+            session["language"] = "fr"
+            # Should not raise
+            assert str(ftl("hello")) == "Bonjour"
+
+
+# ---------------------------------------------------------------------------
+# Tests: strict mode — format errors raise
+# ---------------------------------------------------------------------------
+
+class TestStrictModeFormatErrors:
+
+    def test_missing_variable_raises_in_strict(self, fluent_app, monkeypatch):
+        """In strict mode, missing a required variable raises."""
+        import auto_a11y.web.fluent as fluent_mod
+        from auto_a11y.web.fluent import MissingTranslationError
+
+        monkeypatch.setattr(fluent_mod, "_strict_mode", True)
+
+        with fluent_app.test_request_context():
+            session["language"] = "en"
+            # 'greeting' requires { $name }; passing no kwargs -> format error
+            with pytest.raises(MissingTranslationError, match="formatting errors"):
+                ftl("greeting")
+
+    def test_missing_variable_non_strict_logs_warning(self, fluent_app, monkeypatch, caplog):
+        """Non-strict mode still logs a warning on format errors (unchanged behavior)."""
+        import auto_a11y.web.fluent as fluent_mod
+        import logging
+
+        monkeypatch.setattr(fluent_mod, "_strict_mode", False)
+
+        with fluent_app.test_request_context():
+            session["language"] = "en"
+            with caplog.at_level(logging.WARNING, logger="auto_a11y.web.fluent"):
+                # Should NOT raise, just log + return whatever fluent gives us
+                result = ftl("greeting")
+            # A warning was logged mentioning format errors
+            assert any("Fluent errors" in rec.message for rec in caplog.records)
+
+    def test_correct_kwargs_does_not_raise(self, fluent_app, monkeypatch):
+        """Correct kwargs produce no format errors, strict mode silent."""
+        import auto_a11y.web.fluent as fluent_mod
+        monkeypatch.setattr(fluent_mod, "_strict_mode", True)
+
+        with fluent_app.test_request_context():
+            session["language"] = "en"
+            assert str(ftl("greeting", name="World")) == "Hello, World!"
+
+
+# ---------------------------------------------------------------------------
+# Tests: strict mode — ftl_translate_issue
+# ---------------------------------------------------------------------------
+
+class TestStrictModeTranslateIssue:
+
+    def test_unmapped_text_raises_in_strict(self, fluent_app, monkeypatch):
+        """In strict mode, inline text not in the JSON map raises."""
+        import auto_a11y.web.fluent as fluent_mod
+        from auto_a11y.web.fluent import MissingTranslationError, ftl_translate_issue
+
+        monkeypatch.setattr(fluent_mod, "_strict_mode", True)
+        # Force the JSON map to an empty dict so "any text" is unmapped
+        monkeypatch.setattr(fluent_mod, "_inline_issue_ids", {})
+
+        with fluent_app.test_request_context():
+            session["language"] = "en"
+            with pytest.raises(MissingTranslationError, match="inline_issue_ids.json"):
+                ftl_translate_issue("Some untracked inline text")
+
+    def test_unmapped_text_non_strict_returns_original(self, fluent_app, monkeypatch):
+        """Non-strict: unmapped text silently falls back (unchanged behavior)."""
+        import auto_a11y.web.fluent as fluent_mod
+        from auto_a11y.web.fluent import ftl_translate_issue
+
+        monkeypatch.setattr(fluent_mod, "_strict_mode", False)
+        monkeypatch.setattr(fluent_mod, "_inline_issue_ids", {})
+
+        with fluent_app.test_request_context():
+            session["language"] = "en"
+            assert ftl_translate_issue("Some untracked inline text") == (
+                "Some untracked inline text"
+            )
+
+    def test_empty_text_does_not_raise(self, fluent_app, monkeypatch):
+        """Empty text returns empty string without raising, even in strict."""
+        import auto_a11y.web.fluent as fluent_mod
+        from auto_a11y.web.fluent import ftl_translate_issue
+
+        monkeypatch.setattr(fluent_mod, "_strict_mode", True)
+
+        assert ftl_translate_issue("") == ""
+
+
+# ---------------------------------------------------------------------------
+# Tests: strict mode inherited by wrappers
+# ---------------------------------------------------------------------------
+
+class TestStrictModeWrappers:
+
+    def test_ftl_attr_inherits_strict(self, fluent_app, monkeypatch):
+        """ftl_attr raises in strict mode when the composite id.attr is missing."""
+        import auto_a11y.web.fluent as fluent_mod
+        from auto_a11y.web.fluent import MissingTranslationError, ftl_attr
+
+        monkeypatch.setattr(fluent_mod, "_strict_mode", True)
+
+        with fluent_app.test_request_context():
+            session["language"] = "en"
+            # search-input.does-not-exist: attribute missing from both locales
+            with pytest.raises(MissingTranslationError):
+                ftl_attr("search-input", "does-not-exist")
+
+    def test_lazy_ftl_inherits_strict(self, fluent_app, monkeypatch):
+        """lazy_ftl raises at stringification time in strict mode."""
+        import auto_a11y.web.fluent as fluent_mod
+        from auto_a11y.web.fluent import MissingTranslationError, lazy_ftl
+
+        monkeypatch.setattr(fluent_mod, "_strict_mode", True)
+
+        lazy = lazy_ftl("does-not-exist")
+        with fluent_app.test_request_context():
+            session["language"] = "en"
+            with pytest.raises(MissingTranslationError):
+                str(lazy)
+
+    def test_ftl_enum_inherits_strict(self, fluent_app, monkeypatch):
+        """ftl_enum raises in strict mode when the enum-* id is missing."""
+        import auto_a11y.web.fluent as fluent_mod
+        from auto_a11y.web.fluent import MissingTranslationError, ftl_enum
+
+        monkeypatch.setattr(fluent_mod, "_strict_mode", True)
+
+        with fluent_app.test_request_context():
+            session["language"] = "en"
+            # 'enum-bogus-value' is not in the test bundles
+            with pytest.raises(MissingTranslationError):
+                ftl_enum("bogus_value")
+
+    def test_ftl_enum_non_strict_still_title_cases(self, fluent_app, monkeypatch):
+        """Non-strict mode: ftl_enum's title-case fallback still works."""
+        import auto_a11y.web.fluent as fluent_mod
+        from auto_a11y.web.fluent import ftl_enum
+
+        monkeypatch.setattr(fluent_mod, "_strict_mode", False)
+
+        with fluent_app.test_request_context():
+            session["language"] = "en"
+            # Falls back to title-cased 'Bogus Value'
+            assert ftl_enum("bogus_value") == "Bogus Value"
+
+    def test_ftl_wcag_inherits_strict(self, fluent_app, monkeypatch):
+        """ftl_wcag raises in strict mode when the wcag-* id is missing."""
+        import auto_a11y.web.fluent as fluent_mod
+        from auto_a11y.web.fluent import MissingTranslationError, ftl_wcag
+
+        monkeypatch.setattr(fluent_mod, "_strict_mode", True)
+
+        with fluent_app.test_request_context():
+            session["language"] = "en"
+            with pytest.raises(MissingTranslationError):
+                ftl_wcag("Some Criterion Not In Bundles")

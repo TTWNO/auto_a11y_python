@@ -262,7 +262,7 @@ def ftl_translate_issue(text: str) -> str:
     result = ftl(ftl_id)
     # If ftl() returned the message ID (miss), fall back to original text.
     # In strict mode this branch is unreachable because ftl() raises first.
-    if isinstance(result, str) and result == ftl_id:
+    if not isinstance(result, Markup) and result == ftl_id:
         return text
     return str(result)
 

@@ -16,7 +16,7 @@ import os
 import re
 from contextlib import contextmanager
 from contextvars import ContextVar
-from collections.abc import Generator
+from collections.abc import Generator, Sequence
 from typing import Any, cast
 from typing_extensions import override
 
@@ -307,7 +307,7 @@ def _load_bundles(translations_dir: str) -> None:
         logger.debug("Loaded Fluent bundle for '%s' from %d file(s)", locale, len(ftl_files))
 
 
-def _resolve(locale: str, message_id: str, args: dict[str, object]) -> tuple[str, list[object]] | None:
+def _resolve(locale: str, message_id: str, args: dict[str, object]) -> tuple[str, Sequence[object]] | None:
     """Try to format *message_id* in the given locale's bundle.
 
     Returns ``(value, errors)`` tuple where ``errors`` is the Fluent

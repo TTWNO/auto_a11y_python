@@ -5,7 +5,6 @@ Evaluates website navigation menus and landmarks for proper semantic structure a
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any
 import logging
 

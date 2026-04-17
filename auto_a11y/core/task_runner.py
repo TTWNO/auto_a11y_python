@@ -43,7 +43,7 @@ class TaskRunner:
     def stop(self, timeout: float = 30) -> None:
         """Stop task runner, waiting up to *timeout* seconds for running tasks."""
         # Mark all running tasks as cancelled so workers can check and exit early
-        for task_id, task in self.tasks.items():
+        for _task_id, task in self.tasks.items():
             if task.status == 'running':
                 task.cancel()
 

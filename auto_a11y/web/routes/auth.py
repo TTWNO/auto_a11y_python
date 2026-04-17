@@ -165,8 +165,8 @@ def project_admin_required(f: Callable[..., Any]) -> Callable[..., Any]:
         if getattr(current_user, 'is_superadmin', False):
             return f(*args, **kwargs)
 
-        from auto_a11y.core.permissions import user_has_permission, _resolve_project_id
-        project_id = _resolve_project_id(**kwargs)
+        from auto_a11y.core.permissions import user_has_permission, resolve_project_id
+        project_id = resolve_project_id(**kwargs)
 
         if project_id and user_has_permission(current_user, project_id, 'project_members', 'delete'):
             return f(*args, **kwargs)
@@ -189,12 +189,13 @@ def validate_token(token_string: str) -> dict[str, Any] | None:
     the DB ``expires_at`` field).
     Returns ``{scope, scope_id}`` on success or ``None``.
     """
+    secret_key = get_app_config().SECRET_KEY
     serializer = URLSafeSerializer(
-        current_app.config['SECRET_KEY'],
+        secret_key,
         salt=get_app_config().TOKEN_SALT,
     )
     try:
-        payload = serializer.loads(token_string)
+        serializer.loads(token_string)
     except BadSignature:
         return None
 
@@ -283,7 +284,8 @@ PASSWORD_RESET_MAX_AGE = 900  # 15 minutes
 
 def generate_reset_token(email: str) -> str:
     """Generate a signed, time-limited password reset token."""
-    serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+    secret = get_app_config().SECRET_KEY
+    serializer = URLSafeTimedSerializer(secret)
     return serializer.dumps(email, salt=PASSWORD_RESET_SALT)
 
 
@@ -292,7 +294,8 @@ def verify_reset_token(token: str) -> str | None:
     Verify a password reset token.
     Returns the email on success, None on failure.
     """
-    serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+    secret2 = get_app_config().SECRET_KEY
+    serializer = URLSafeTimedSerializer(secret2)
     try:
         email = serializer.loads(token, salt=PASSWORD_RESET_SALT, max_age=PASSWORD_RESET_MAX_AGE)
     except (BadSignature, SignatureExpired):
@@ -585,24 +588,24 @@ def register() -> str | Response:
         display_name = request.form.get('display_name', '').strip()
         password_hint = request.form.get('password_hint', '').strip()
 
-        errors = []
+        errors: list[str] = []
 
         if not email:
             errors.append(ftl('auth-email-is-required'))
         elif '@' not in email:
             errors.append(ftl('auth-please-enter-a-valid-email-address'))
-        
+
         if not password:
             errors.append(ftl('auth-password-is-required'))
         elif len(password) < 8:
             errors.append(ftl('auth-password-must-be-at-least-8-characters'))
-        
+
         if password != confirm_password:
             errors.append(ftl('auth-passwords-do-not-match'))
-        
+
         if get_db().app_user_exists(email):
             errors.append(ftl('auth-an-account-with-this-email-already-exists'))
-        
+
         if errors:
             for error in errors:
                 flash(error, 'danger')
@@ -683,14 +686,15 @@ def reset_password(token: str) -> str | Response:
 
     # Reject token if it was generated before the last reset
     if user.password_reset_at:
-        serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+        secret3 = get_app_config().SECRET_KEY
+        serializer = URLSafeTimedSerializer(secret3)
         try:
             _email, timestamp = serializer.loads_unsafe(token, salt=PASSWORD_RESET_SALT)
         except Exception:
             flash(ftl('auth-this-password-reset-link-is-invalid-or-has-expired'), 'danger')
             return redirect(url_for('auth.forgot_password'))
-        from datetime import datetime
-        token_created = datetime.utcfromtimestamp(timestamp)
+        from datetime import datetime, timezone
+        token_created = datetime.fromtimestamp(timestamp, tz=timezone.utc).replace(tzinfo=None)
         if token_created < user.password_reset_at:
             flash(ftl('auth-this-password-reset-link-has-already-been-used'), 'danger')
             return redirect(url_for('auth.forgot_password'))
@@ -777,7 +781,7 @@ def user_create() -> str | Response:
         display_name = request.form.get('display_name', '').strip()
         password_hint = request.form.get('password_hint', '').strip()
 
-        errors = []
+        errors: list[str] = []
 
         if not email or '@' not in email:
             errors.append(ftl('auth-please-enter-a-valid-email-address'))
@@ -867,7 +871,7 @@ def user_edit(user_id: str) -> str | Response:
         return redirect(url_for('auth.user_edit', user_id=user_id))
 
     # Build project membership data for display
-    user_projects = []
+    user_projects: list[dict[str, Any]] = []
     projects = get_db().get_projects_for_user(user_id)
     all_groups = get_db().get_all_groups()
     group_map = {g.id: g.name for g in all_groups}

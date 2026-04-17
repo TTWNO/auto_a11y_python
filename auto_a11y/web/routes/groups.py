@@ -5,7 +5,6 @@ from flask import Blueprint, Response, render_template, request, redirect, url_f
 from werkzeug.wrappers import Response as WerkzeugResponse
 from auto_a11y.web.fluent import ftl
 from auto_a11y.web.typed_app import get_db
-from flask_login import login_required
 
 from auto_a11y.core.permissions import permission_required
 from auto_a11y.models.permission_group import (
@@ -20,7 +19,7 @@ groups_bp = Blueprint('groups', __name__)
 def list_groups() -> str:
     """List all permission groups."""
     groups = get_db().get_all_groups()
-    group_data = []
+    group_data: list[dict[str, object]] = []
     for g in groups:
         group_data.append({
             'group': g,
@@ -45,7 +44,7 @@ def create_group() -> str | Response | WerkzeugResponse:
             flash(ftl('groups-group-name-already-exists', name=name), 'danger')
             return redirect(url_for('groups.create_group'))
 
-        permissions = {}
+        permissions: dict[str, str] = {}
         for resource in RESOURCE_NOUNS:
             level = request.form.get(f'perm_{resource}', 'none')
             if level in PERMISSION_LEVELS:
@@ -86,11 +85,11 @@ def edit_group(group_id: str) -> str | Response | WerkzeugResponse:
             return redirect(url_for('groups.edit_group', group_id=group_id))
 
         existing = get_db().get_group_by_name(name)
-        if existing and str(existing._id) != group_id:
+        if existing and str(existing.mongo_id) != group_id:
             flash(ftl('groups-group-name-already-exists', name=name), 'danger')
             return redirect(url_for('groups.edit_group', group_id=group_id))
 
-        permissions = {}
+        permissions: dict[str, str] = {}
         for resource in RESOURCE_NOUNS:
             level = request.form.get(f'perm_{resource}', 'none')
             if level in PERMISSION_LEVELS:

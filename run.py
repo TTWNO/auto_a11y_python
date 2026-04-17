@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import sys
 import os
-import asyncio
 import logging
 import argparse
 from pathlib import Path

@@ -5,7 +5,6 @@ Evaluates modal dialogs for proper accessibility implementation.
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any
 import logging
 
@@ -405,7 +404,7 @@ async def test_modals(page: Page) -> dict[str, Any]:
 
         # Validation of modal errors
         if 'errors' in results:
-            modal_errors = [e for e in results['errors'] if e.get('err') == 'ErrModalMissingHeading']
+            _modal_errors = [e for e in results['errors'] if e.get('err') == 'ErrModalMissingHeading']
 
         return results
         

@@ -4,7 +4,7 @@ Maps issue codes to specific WCAG success criteria
 """
 from __future__ import annotations
 
-from auto_a11y.web.fluent import ftl, lazy_ftl
+from auto_a11y.web.fluent import ftl
 
 # WCAG 2.2 URL Slug Mapping - maps criterion numbers to Understanding page slugs
 WCAG_CRITERION_SLUGS = {
@@ -432,7 +432,7 @@ def enrich_wcag_criteria(criteria_list: list[str]) -> list[str]:
         '5.2.4': ftl('reports-5-2-4-accessibility-supported'),
     }
 
-    enriched = []
+    enriched: list[str] = []
     for criterion in criteria_list:
         if ' ' in str(criterion):
             number = criterion.split()[0]

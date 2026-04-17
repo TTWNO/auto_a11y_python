@@ -23,6 +23,9 @@ from auto_a11y.reporting.formatters import (
 class TestBaseFormatterStreaming:
     """Verify the abstract streaming methods on BaseFormatter."""
 
+    def __init__(self) -> None:
+        self.formatter = BaseFormatter(config={})
+
     def setup_method(self) -> None:
         self.formatter = BaseFormatter(config={})
 
@@ -78,6 +81,11 @@ class _FakeTestResult:
 
 class TestCSVFormatterStreaming:
     """CSVFormatter.begin / append_page / finalize / cleanup."""
+
+    def __init__(self) -> None:
+        self.tmpdir = ''
+        self.outfile = ''
+        self.formatter = CSVFormatter(config={})
 
     def setup_method(self) -> None:
         self.tmpdir = tempfile.mkdtemp()
@@ -161,7 +169,8 @@ class TestCSVFormatterStreaming:
     def test_cleanup_closes_file(self) -> None:
         self.formatter.begin(self.outfile, {})
         self.formatter.cleanup()
-        assert self.formatter._file.closed
+        file_obj = getattr(self.formatter, '_file')
+        assert file_obj is not None and file_obj.closed
 
 
 # ---------------------------------------------------------------------------
@@ -170,6 +179,11 @@ class TestCSVFormatterStreaming:
 
 class TestJSONFormatterStreaming:
     """JSONFormatter.begin / append_page / finalize / cleanup."""
+
+    def __init__(self) -> None:
+        self.tmpdir = ''
+        self.outfile = ''
+        self.formatter = JSONFormatter(config={})
 
     def setup_method(self) -> None:
         self.tmpdir = tempfile.mkdtemp()
@@ -229,7 +243,8 @@ class TestJSONFormatterStreaming:
     def test_cleanup_closes_file(self) -> None:
         self.formatter.begin(self.outfile, {})
         self.formatter.cleanup()
-        assert self.formatter._file.closed
+        file_obj = getattr(self.formatter, '_file')
+        assert file_obj is not None and file_obj.closed
 
     def test_dict_page_data(self) -> None:
         """page_data with plain dicts instead of model objects."""
@@ -255,6 +270,11 @@ class TestJSONFormatterStreaming:
 
 class TestHTMLFormatterStreaming:
     """HTMLFormatter.begin / append_page / finalize / cleanup."""
+
+    def __init__(self) -> None:
+        self.tmpdir = ''
+        self.outfile = ''
+        self.formatter = HTMLFormatter(config={})
 
     def setup_method(self) -> None:
         self.tmpdir = tempfile.mkdtemp()
@@ -286,7 +306,9 @@ class TestHTMLFormatterStreaming:
     def test_cleanup_removes_temp_file(self) -> None:
         """After begin(), temp file exists; after cleanup(), it doesn't."""
         self.formatter.begin(self.outfile, {})
-        temp_path = self.formatter._body_tempfile.name
+        body_tempfile = getattr(self.formatter, '_body_tempfile')
+        assert body_tempfile is not None
+        temp_path = body_tempfile.name
         assert os.path.exists(temp_path)
 
         self.formatter.cleanup()
@@ -317,6 +339,11 @@ class TestHTMLFormatterStreaming:
 
 class TestExcelFormatterStreaming:
     """ExcelFormatter.begin / append_page / finalize / cleanup."""
+
+    def __init__(self) -> None:
+        self.tmpdir = ''
+        self.outfile = ''
+        self.formatter = ExcelFormatter(config={})
 
     def setup_method(self) -> None:
         self.tmpdir = tempfile.mkdtemp()
@@ -383,14 +410,19 @@ class TestExcelFormatterStreaming:
 
 def _has_weasyprint() -> bool:
     try:
-        import weasyprint  # noqa: F401
-        return True
+        import weasyprint as _weasyprint_check
+        return bool(_weasyprint_check)
     except ImportError:
         return False
 
 
 class TestPDFFormatterStreaming:
     """PDFFormatter.begin / append_page / finalize / cleanup."""
+
+    def __init__(self) -> None:
+        self.tmpdir = ''
+        self.outfile = ''
+        self.formatter = PDFFormatter(config={})
 
     def setup_method(self) -> None:
         self.tmpdir = tempfile.mkdtemp()

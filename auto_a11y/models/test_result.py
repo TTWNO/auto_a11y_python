@@ -229,6 +229,16 @@ class TestResult:
         return str(self._id) if self._id else None
 
     @property
+    def mongo_id(self) -> ObjectId | None:
+        """Get the raw MongoDB _id value."""
+        return self._id
+
+    @mongo_id.setter
+    def mongo_id(self, value: ObjectId | None) -> None:
+        """Set the raw MongoDB _id value."""
+        self._id = value
+
+    @property
     def violation_count(self) -> int:
         """Get total violation count"""
         return len(self.violations)

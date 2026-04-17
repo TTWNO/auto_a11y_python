@@ -15,7 +15,6 @@ from __future__ import annotations
 import logging
 import uuid
 from typing import Any
-from datetime import datetime
 
 from auto_a11y.models import DiscoveredPage
 from auto_a11y.core.database import Database
@@ -67,56 +66,59 @@ class AutomatedTestDeduplicationService:
                 }
             }
         """
-        common_components = {}
+        common_components: dict[str, dict[str, Any]] = {}
 
         # Iterate through all websites and pages
         for website_data in project_data.get('websites', []):
             for page_result in website_data.get('pages', []):
-                page = page_result.get('page', {})
-                page_url = page.get('url', '') if isinstance(page, dict) else getattr(page, 'url', '')
+                page_raw = page_result.get('page', {})
+                page_url: str = str(page_raw.get('url', '')) if hasattr(page_raw, 'get') else str(getattr(page_raw, 'url', ''))
 
                 test_result = page_result.get('test_result')
                 if not test_result:
                     continue
 
                 # Get discovery items (component discovery results)
-                discovery_items = getattr(test_result, 'discovery', []) if hasattr(test_result, 'discovery') else []
+                discovery_items: list[Any] = getattr(test_result, 'discovery', []) if hasattr(test_result, 'discovery') else []
 
                 for d in discovery_items:
+                    d_dict: dict[str, Any]
                     if hasattr(d, 'to_dict'):
                         d_dict = d.to_dict()
+                    elif hasattr(d, 'get'):
+                        d_dict = d
                     else:
-                        d_dict = d if isinstance(d, dict) else {}
+                        d_dict = {}
 
-                    issue_id = d_dict.get('id', '')
-                    metadata = d_dict.get('metadata', {})
+                    issue_id: str = str(d_dict.get('id', ''))
+                    metadata: dict[str, Any] = d_dict.get('metadata', {})
 
                     # Extract signature and type for each component type
-                    signature = None
-                    component_type = None
-                    label = None
+                    signature: str | None = None
+                    component_type: str | None = None
+                    label: str | None = None
 
                     if issue_id in ['DiscoFormOnPage', 'forms_DiscoFormOnPage']:
-                        signature = metadata.get('formSignature')
+                        signature = str(metadata.get('formSignature', ''))
                         component_type = 'Form'
-                        field_count = metadata.get('fieldCount', 0)
+                        field_count: int = int(metadata.get('fieldCount', 0))
                         label = f"Form ({field_count} fields)"
                     elif issue_id in ['DiscoNavFound', 'landmarks_DiscoNavFound']:
-                        signature = metadata.get('navSignature')
+                        signature = str(metadata.get('navSignature', ''))
                         component_type = 'Navigation'
-                        label = metadata.get('navLabel', 'Navigation')
+                        label = str(metadata.get('navLabel', 'Navigation'))
                     elif issue_id in ['DiscoAsideFound', 'landmarks_DiscoAsideFound']:
-                        signature = metadata.get('asideSignature')
+                        signature = str(metadata.get('asideSignature', ''))
                         component_type = 'Aside'
-                        label = metadata.get('asideLabel', 'Aside')
+                        label = str(metadata.get('asideLabel', 'Aside'))
                     elif issue_id in ['DiscoSectionFound', 'landmarks_DiscoSectionFound']:
-                        signature = metadata.get('sectionSignature')
+                        signature = str(metadata.get('sectionSignature', ''))
                         component_type = 'Section'
-                        label = metadata.get('sectionLabel', 'Section')
+                        label = str(metadata.get('sectionLabel', 'Section'))
                     elif issue_id in ['DiscoHeaderFound', 'landmarks_DiscoHeaderFound']:
-                        signature = metadata.get('headerSignature')
+                        signature = str(metadata.get('headerSignature', ''))
                         component_type = 'Header'
-                        label = metadata.get('headerLabel', 'Header')
+                        label = str(metadata.get('headerLabel', 'Header'))
 
                     if signature and signature != 'unknown':
                         if signature not in common_components:
@@ -128,12 +130,13 @@ class AutomatedTestDeduplicationService:
                                 'pages': set()
                             }
 
-                        xpath = d_dict.get('xpath', '') or metadata.get('xpath', '')
-                        common_components[signature]['xpaths_by_page'][page_url] = xpath
-                        common_components[signature]['pages'].add(page_url)
+                        xpath_val: str = str(d_dict.get('xpath', '') or metadata.get('xpath', ''))
+                        common_components[signature]['xpaths_by_page'][page_url] = xpath_val
+                        pages_set: set[str] = common_components[signature]['pages']
+                        pages_set.add(page_url)
 
         # Filter to only include components that appear on min_pages or more
-        filtered_components = {
+        filtered_components: dict[str, dict[str, Any]] = {
             sig: comp_data
             for sig, comp_data in common_components.items()
             if len(comp_data['pages']) >= min_pages
@@ -173,12 +176,12 @@ class AutomatedTestDeduplicationService:
         Returns:
             Set of page URLs that have violations, warnings, or info issues
         """
-        pages_with_issues = set()
+        pages_with_issues: set[str] = set()
 
         for website_data in project_data.get('websites', []):
             for page_result in website_data.get('pages', []):
-                page = page_result.get('page', {})
-                page_url = page.get('url', '') if isinstance(page, dict) else getattr(page, 'url', '')
+                page_raw = page_result.get('page', {})
+                page_url: str = str(page_raw.get('url', '')) if hasattr(page_raw, 'get') else str(getattr(page_raw, 'url', ''))
 
                 test_result = page_result.get('test_result')
                 if not test_result:
@@ -187,7 +190,7 @@ class AutomatedTestDeduplicationService:
                 # Check if page has any issues
                 has_issues = False
                 for issue_list_attr in ['violations', 'warnings', 'info']:
-                    issues = getattr(test_result, issue_list_attr, []) if hasattr(test_result, issue_list_attr) else []
+                    issues: list[Any] = getattr(test_result, issue_list_attr, []) if hasattr(test_result, issue_list_attr) else []
                     if issues:
                         has_issues = True
                         break
@@ -227,12 +230,12 @@ class AutomatedTestDeduplicationService:
         if not upload_id:
             upload_id = str(uuid.uuid4())
 
-        created_ids = []
+        created_ids: list[str] = []
 
         for signature, comp_data in common_components.items():
             comp_type = comp_data['type']
             label = comp_data['label']
-            page_count = len(comp_data['pages'])
+            page_count: int = len(comp_data['pages'])
 
             # Use a representative page URL instead of pseudo-URL (Drupal requires valid URLs)
             # Pick the first page where this component appears
@@ -312,7 +315,7 @@ class AutomatedTestDeduplicationService:
         if not upload_id:
             upload_id = str(uuid.uuid4())
 
-        created_ids = []
+        created_ids: list[str] = []
 
         for url in page_urls:
             # Check if Discovered Page already exists for this URL
@@ -443,7 +446,7 @@ class AutomatedTestDeduplicationService:
         linked_count = 0
 
         # Build a map of component signatures to discovered page IDs
-        component_signature_to_page_id = {}
+        component_signature_to_page_id: dict[str, str | None] = {}
         component_pages = self.db.get_discovered_pages_for_project(
             project_id=project_id,
             source_type="common_component"
@@ -453,7 +456,7 @@ class AutomatedTestDeduplicationService:
                 component_signature_to_page_id[comp_page.source_component_signature] = comp_page.id
 
         # Build a map of page URLs to discovered page IDs
-        url_to_page_id = {}
+        url_to_page_id: dict[str, str | None] = {}
         url_pages = self.db.get_discovered_pages_for_project(
             project_id=project_id,
             source_type="automated_test"
@@ -464,36 +467,36 @@ class AutomatedTestDeduplicationService:
         # Iterate through test results and link violations
         for website_data in project_data.get('websites', []):
             for page_result in website_data.get('pages', []):
-                page = page_result.get('page', {})
-                page_url = page.get('url', '') if isinstance(page, dict) else getattr(page, 'url', '')
+                page_raw = page_result.get('page', {})
+                page_url: str = str(page_raw.get('url', '')) if hasattr(page_raw, 'get') else str(getattr(page_raw, 'url', ''))
 
                 test_result = page_result.get('test_result')
                 if not test_result:
                     continue
 
                 # Get the discovered page ID for this page URL
-                page_discovered_id = url_to_page_id.get(page_url)
+                page_discovered_id: str | None = url_to_page_id.get(page_url)
 
                 # Track if we need to update this test result
                 needs_update = False
 
                 # Process all violation types
                 for violation_list_attr in ['violations', 'warnings', 'info']:
-                    violations = getattr(test_result, violation_list_attr, []) if hasattr(test_result, violation_list_attr) else []
+                    violations: list[Any] = getattr(test_result, violation_list_attr, []) if hasattr(test_result, violation_list_attr) else []
 
                     for violation in violations:
                         # Determine which discovered page this violation belongs to
-                        discovered_page_id = None
+                        discovered_page_id: str | None = None
 
                         # Check if violation is in a common component
-                        violation_xpath = getattr(violation, 'xpath', None) or getattr(violation, 'metadata', {}).get('xpath')
+                        violation_xpath: str | None = getattr(violation, 'xpath', None) or getattr(violation, 'metadata', {}).get('xpath')
 
                         if violation_xpath:
                             # Try to match to a component by checking if xpath is within component
                             for signature, comp_data in common_components.items():
                                 # Check if this page has this component
                                 if page_url in comp_data.get('pages', set()):
-                                    comp_xpath = comp_data['xpaths_by_page'].get(page_url, '')
+                                    comp_xpath: str = str(comp_data['xpaths_by_page'].get(page_url, ''))
                                     if comp_xpath and self._xpath_is_within(violation_xpath, comp_xpath):
                                         # This violation is in this component
                                         discovered_page_id = component_signature_to_page_id.get(signature)
@@ -512,7 +515,7 @@ class AutomatedTestDeduplicationService:
                 # Update test result in database if any violations were linked
                 if needs_update:
                     self.db.test_results.update_one(
-                        {'_id': test_result._id},
+                        {'_id': test_result.mongo_id},
                         {'$set': {'violations': [v.to_dict() for v in test_result.violations],
                                   'warnings': [v.to_dict() for v in test_result.warnings],
                                   'info': [v.to_dict() for v in test_result.info]}}

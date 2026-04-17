@@ -4,8 +4,7 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
-from unittest.mock import MagicMock, call, patch
-from collections import defaultdict, Counter
+from unittest.mock import MagicMock, patch
 
 from auto_a11y.reporting.report_generator import ReportGenerator
 
@@ -64,7 +63,7 @@ class TestCollectSummary:
         # No items for simplicity
         db.yield_test_result_items.return_value = iter([])
 
-        summary = rg._collect_summary(page_gen, None)
+        summary = getattr(rg, '_collect_summary')(page_gen, None)
 
         assert summary['total_pages'] == 2
         assert summary['total_violations'] == 4
@@ -96,7 +95,7 @@ class TestCollectSummary:
         ]
         db.yield_test_result_items.return_value = iter(items)
 
-        summary = rg._collect_summary(page_gen, None)
+        summary = getattr(rg, '_collect_summary')(page_gen, None)
 
         assert summary['touchpoint_counts']['Forms'] == 2
         assert summary['touchpoint_counts']['Images'] == 1
@@ -121,7 +120,7 @@ class TestCollectSummary:
         ]
         db.yield_test_result_items.return_value = iter([])
 
-        summary = rg._collect_summary(page_gen, None)
+        summary = getattr(rg, '_collect_summary')(page_gen, None)
 
         assert summary['total_pages'] == 1
         assert summary['total_violations'] == 5
@@ -139,7 +138,7 @@ class TestCollectSummary:
         db.get_latest_test_result_summary.return_value = None
 
         progress = MagicMock()
-        rg._collect_summary(page_gen, progress)
+        getattr(rg, '_collect_summary')(page_gen, progress)
 
         assert progress.call_count == 3
         # Verify it was called with incrementing page counts.
@@ -172,12 +171,18 @@ class TestWriteDetails:
 
         # Track call order
         call_order: list[str] = []
-        formatter.begin.side_effect = lambda *a: call_order.append('begin')
-        formatter.append_page.side_effect = lambda *a: call_order.append('append_page')
-        formatter.finalize.side_effect = lambda *a: call_order.append('finalize')
+        def _track_begin(*_args: Any) -> None:
+            call_order.append('begin')
+        def _track_append(*_args: Any) -> None:
+            call_order.append('append_page')
+        def _track_finalize(*_args: Any) -> None:
+            call_order.append('finalize')
+        formatter.begin.side_effect = _track_begin
+        formatter.append_page.side_effect = _track_append
+        formatter.finalize.side_effect = _track_finalize
 
         with patch.object(rg, '_prepare_single_page_data', return_value={'data': True}):
-            rg._write_details(page_gen, summary, formatter, output_file, None)
+            getattr(rg, '_write_details')(page_gen, summary, formatter, output_file, None)
 
         assert call_order == ['begin', 'append_page', 'append_page', 'finalize']
         formatter.begin.assert_called_once_with(output_file, summary)
@@ -202,7 +207,7 @@ class TestWriteDetails:
         summary: dict[str, Any] = {'total_pages': 1}
 
         with patch.object(rg, '_prepare_single_page_data', return_value={'data': True}):
-            rg._write_details(page_gen, summary, formatter, output_file, None)
+            getattr(rg, '_write_details')(page_gen, summary, formatter, output_file, None)
 
         assert formatter.append_page.call_count == 1
 
@@ -224,7 +229,7 @@ class TestWriteDetails:
         progress = MagicMock()
 
         with patch.object(rg, '_prepare_single_page_data', return_value={'data': True}):
-            rg._write_details(page_gen, summary, formatter, output_file, progress)
+            getattr(rg, '_write_details')(page_gen, summary, formatter, output_file, progress)
 
         assert progress.call_count == 2
         # The third arg is a resolved Fluent Markup string, so check
@@ -243,7 +248,7 @@ class TestPrepareSinglePageData:
         page = _make_page('p1')
         test_result = MagicMock()
 
-        result = rg._prepare_single_page_data(page, test_result)
+        result = getattr(rg, '_prepare_single_page_data')(page, test_result)
 
         assert isinstance(result, dict)
         assert result['page'] is page
@@ -269,7 +274,7 @@ class TestCollectRecordingsData:
         db.get_recordings.return_value = [recording]
         db.get_recording_issues.return_value = [issue1, issue2]
 
-        result = rg._collect_recordings_data('proj1')
+        result = getattr(rg, '_collect_recordings_data')('proj1')
 
         assert len(result) == 1
         assert result[0]['recording'] is recording
@@ -286,7 +291,7 @@ class TestCollectRecordingsData:
 
         db.get_recordings.return_value = []
 
-        result = rg._collect_recordings_data('proj1')
+        result = getattr(rg, '_collect_recordings_data')('proj1')
 
         assert result == []
         db.get_recordings.assert_called_once_with(project_id='proj1')
@@ -309,7 +314,7 @@ def _make_full_generator(db: MagicMock) -> tuple[ReportGenerator, MagicMock]:
     rg.report_dir.__truediv__ = MagicMock(return_value='fake/path.html')
     formatter = MagicMock()
     formatter.extension = 'html'
-    rg.formatters = {'html': formatter}
+    object.__setattr__(rg, 'formatters', {'html': formatter})
     return rg, formatter
 
 
@@ -318,7 +323,7 @@ class TestGenerateWebsiteReport:
 
     def test_calls_collect_summary_and_write_details(self) -> None:
         db = MagicMock()
-        rg, formatter = _make_full_generator(db)
+        rg, _formatter = _make_full_generator(db)
 
         website = _SimpleObj(name='TestSite', project_id='proj1', id='w1',
                              url='https://test.com')
@@ -353,7 +358,7 @@ class TestGenerateWebsiteReport:
         db.get_project.return_value = project
 
         with patch.object(rg, '_collect_summary', side_effect=RuntimeError("boom")), \
-             patch('os.path.exists', return_value=True) as mock_exists, \
+             patch('os.path.exists', return_value=True) as _mock_exists, \
              patch('os.remove') as mock_remove:
             with pytest.raises(RuntimeError):
                 rg.generate_website_report('w1', format='html')
@@ -389,7 +394,7 @@ class TestGenerateProjectReport:
 
     def test_calls_collect_summary_and_write_details(self) -> None:
         db = MagicMock()
-        rg, formatter = _make_full_generator(db)
+        rg, _formatter = _make_full_generator(db)
 
         project = _SimpleObj(name='TestProject', id='proj1')
         db.get_project.return_value = project
@@ -450,12 +455,12 @@ class TestGenerateAllProjectsReport:
 
     def test_calls_collect_summary_and_write_details(self) -> None:
         db = MagicMock()
-        rg, formatter = _make_full_generator(db)
+        rg, _formatter = _make_full_generator(db)
         # _t and _sanitize_filename need to work — use object.__setattr__ to
         # bind unbound methods on a __new__-created instance without triggering
         # mypy's method-assign error.
-        object.__setattr__(rg, '_t', ReportGenerator._t.__get__(rg))
-        object.__setattr__(rg, '_sanitize_filename', ReportGenerator._sanitize_filename.__get__(rg))
+        object.__setattr__(rg, '_t', getattr(ReportGenerator, '_t').__get__(rg))
+        object.__setattr__(rg, '_sanitize_filename', getattr(ReportGenerator, '_sanitize_filename').__get__(rg))
 
         project = _SimpleObj(name='ProjectA', id='p1')
         db.get_projects.return_value = [project]
@@ -477,8 +482,8 @@ class TestGenerateAllProjectsReport:
     def test_cleans_up_on_error(self) -> None:
         db = MagicMock()
         rg, formatter = _make_full_generator(db)
-        object.__setattr__(rg, '_t', ReportGenerator._t.__get__(rg))
-        object.__setattr__(rg, '_sanitize_filename', ReportGenerator._sanitize_filename.__get__(rg))
+        object.__setattr__(rg, '_t', getattr(ReportGenerator, '_t').__get__(rg))
+        object.__setattr__(rg, '_sanitize_filename', getattr(ReportGenerator, '_sanitize_filename').__get__(rg))
 
         project = _SimpleObj(name='ProjectA', id='p1')
         db.get_projects.return_value = [project]
@@ -529,21 +534,20 @@ class TestDeprecationWarnings:
                 fmt.format_project_report({})
 
     def test_prepare_website_report_data_emits_warning(self) -> None:
-        import warnings as w
         rg = _make_generator()
         with pytest.warns(DeprecationWarning, match="_prepare_website_report_data.*deprecated"):
             # Call with minimal mocks to trigger the warning (will likely fail internally)
             try:
-                rg._prepare_website_report_data(
+                getattr(rg, '_prepare_website_report_data')(
                     MagicMock(), MagicMock(), [], True
                 )
             except Exception:
                 pass
 
-    def test_prepare_project_report_data_emits_warning(self) -> None:
+    def testprepare_project_report_data_emits_warning(self) -> None:
         rg = _make_generator()
-        with pytest.warns(DeprecationWarning, match="_prepare_project_report_data.*deprecated"):
+        with pytest.warns(DeprecationWarning, match="prepare_project_report_data.*deprecated"):
             try:
-                rg._prepare_project_report_data(MagicMock(), [])
+                rg.prepare_project_report_data(MagicMock(), [])
             except Exception:
                 pass

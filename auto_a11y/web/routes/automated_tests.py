@@ -3,7 +3,7 @@ Routes for Automated Tests management
 """
 from __future__ import annotations
 
-from flask import Blueprint, Response, render_template, request, jsonify, current_app
+from flask import Blueprint, Response, render_template, request, jsonify
 from bson import ObjectId
 from auto_a11y.web.typed_app import get_db
 from datetime import datetime
@@ -12,8 +12,7 @@ import logging
 from collections.abc import Iterator, Mapping
 from typing import Any
 
-from auto_a11y.core.database import Database
-from auto_a11y.models import Project
+from auto_a11y.models import Project, Page, TestResult
 from auto_a11y.reporting.report_generator import ReportGenerator
 from auto_a11y.reporting.deduplication_service import AutomatedTestDeduplicationService
 from auto_a11y.drupal import (
@@ -44,9 +43,9 @@ def get_filter_options(project_id: str) -> Response | tuple[Response, int]:
     # Get all websites and pages for this project
     websites = db.get_websites(project_id)
 
-    pages_list = []
-    unique_touchpoints = set()
-    unique_wcag_criteria = set()
+    pages_list: list[dict[str, Any]] = []
+    unique_touchpoints: set[str] = set()
+    unique_wcag_criteria: set[str] = set()
     total_issues = 0
 
     for website in websites:
@@ -138,7 +137,7 @@ def project_automated_tests(project_id: str) -> str | Response | tuple[str, int]
     latest_results = list(db.test_results.aggregate(pipeline))
 
     # Build results data from aggregation output
-    test_results_data = []
+    test_results_data: list[dict[str, Any]] = []
     for r in latest_results:
         page_id = r['_id']
         result_page = page_lookup.get(page_id)
@@ -183,16 +182,16 @@ def filter_test_results(project_id: str) -> Response:
     db = get_db()
 
     # Get filter criteria from request
-    filters = request.json
-    page_urls = filters.get('page_urls', [])  # List of page URLs to include
-    touchpoints = filters.get('touchpoints', [])  # List of touchpoints to include
-    wcag_criteria = filters.get('wcag_criteria', [])  # List of WCAG criteria to include
-    impact_levels = filters.get('impact_levels', [])  # List of impact levels to include
+    filters: dict[str, Any] = request.json or {}
+    page_urls: list[str] = filters.get('page_urls', [])  # List of page URLs to include
+    touchpoints: list[str] = filters.get('touchpoints', [])  # List of touchpoints to include
+    wcag_criteria: list[str] = filters.get('wcag_criteria', [])  # List of WCAG criteria to include
+    impact_levels: list[str] = filters.get('impact_levels', [])  # List of impact levels to include
 
     # Get all websites and pages
     websites = db.get_websites(project_id)
 
-    filtered_results = []
+    filtered_results: list[dict[str, Any]] = []
 
     for website in websites:
         if not website.id:
@@ -217,7 +216,7 @@ def filter_test_results(project_id: str) -> Response:
                 test_result.info
             )
 
-            filtered_violations = []
+            filtered_violations: list[Any] = []
             for violation in all_violations:
                 # Filter by touchpoint
                 if touchpoints and violation.touchpoint not in touchpoints:
@@ -268,12 +267,12 @@ def upload_to_drupal(project_id: str) -> Response:
 
     # IMPORTANT: Read request data BEFORE creating generator
     # Cannot call request.get_json() inside generator function
-    filters = request.get_json() or {}
-    page_urls = filters.get('page_urls', [])
-    touchpoints = filters.get('touchpoints', [])
-    wcag_criteria = filters.get('wcag_criteria', [])
-    impact_levels = filters.get('impact_levels', [])
-    min_component_pages = filters.get('min_component_pages', 2)
+    filters: dict[str, Any] = request.get_json() or {}
+    page_urls: list[str] = filters.get('page_urls', [])
+    touchpoints: list[str] = filters.get('touchpoints', [])
+    wcag_criteria: list[str] = filters.get('wcag_criteria', [])
+    impact_levels: list[str] = filters.get('impact_levels', [])
+    min_component_pages: int = filters.get('min_component_pages', 2)
 
     def generate() -> Iterator[str]:
         import json
@@ -312,12 +311,12 @@ def upload_to_drupal(project_id: str) -> Response:
             websites = db.get_websites(project_id)
 
             # Prepare website data with test results
-            website_data = []
+            website_data: list[dict[str, Any]] = []
             for website in websites:
                 if not website.id:
                     continue
                 pages = db.get_pages(website.id)
-                page_results = []
+                page_results: list[dict[str, Any]] = []
 
                 for page in pages:
                     if not page.id:
@@ -380,7 +379,7 @@ def upload_to_drupal(project_id: str) -> Response:
                     })
 
             # Prepare full project report data
-            report_data = report_gen._prepare_project_report_data(project, website_data)
+            report_data = report_gen.prepare_project_report_data(project, website_data)
 
             # Step 2: Process automated test results with deduplication
             yield emit('progress', 'Deduplicating test results and creating Discovered Pages...', 20)
@@ -506,28 +505,31 @@ def upload_to_drupal(project_id: str) -> Response:
 
             # Count total violations first for progress tracking
             total_violations = 0
-            for website_data in report_data.get('websites', []):
-                for page_result in website_data.get('pages', []):
-                    test_result = page_result.get('test_result')
-                    if test_result:
-                        total_violations += len(test_result.violations + test_result.warnings + test_result.info)
+            report_websites: list[dict[str, Any]] = report_data.get('websites', [])
+            for ws_data in report_websites:
+                ws_pages: list[dict[str, Any]] = ws_data.get('pages', [])
+                for page_result in ws_pages:
+                    tr: TestResult | None = page_result.get('test_result')
+                    if tr:
+                        total_violations += len(tr.violations + tr.warnings + tr.info)
 
             violation_idx = 0
 
             # Process all test results and upload violations as issues
-            for website_data in report_data.get('websites', []):
-                for page_result in website_data.get('pages', []):
-                    page = page_result.get('page')
-                    test_result = page_result.get('test_result')
+            for ws_data in report_websites:
+                ws_pages = ws_data.get('pages', [])
+                for page_result in ws_pages:
+                    page_obj: Page | None = page_result.get('page')
+                    test_result_obj: TestResult | None = page_result.get('test_result')
 
-                    if not test_result:
+                    if not test_result_obj:
                         continue
 
                     # Process all violation types
                     all_violations = (
-                        test_result.violations +
-                        test_result.warnings +
-                        test_result.info
+                        test_result_obj.violations +
+                        test_result_obj.warnings +
+                        test_result_obj.info
                     )
 
                     for violation in all_violations:
@@ -565,8 +567,8 @@ def upload_to_drupal(project_id: str) -> Response:
                             # Build description HTML from metadata fields (enriched by catalog)
                             # Match the format used in deduplicated offline report
                             import html
-                            description_parts = []
-                            metadata = violation.metadata if hasattr(violation, 'metadata') and violation.metadata else {}
+                            description_parts: list[str] = []
+                            metadata: dict[str, Any] = violation.metadata if hasattr(violation, 'metadata') and violation.metadata else {}
 
                             # DEBUG: Log metadata keys
                             logger.info(f"Processing violation {violation.id}: metadata keys = {list(metadata.keys()) if metadata else 'NO METADATA'}")
@@ -574,24 +576,26 @@ def upload_to_drupal(project_id: str) -> Response:
                                 logger.info(f"  what={bool(metadata.get('what'))}, why={bool(metadata.get('why'))}, who={bool(metadata.get('who'))}, full_remediation={bool(metadata.get('full_remediation'))}")
 
                             # What the issue is
-                            what_text = metadata.get('what', violation.description)
+                            what_text: str = metadata.get('what', violation.description) or ''
                             if what_text:
                                 description_parts.append(f"<div><strong>What the issue is:</strong></div>\n<p>{html.escape(what_text)}</p>")
 
                             # Why this is important
-                            if metadata.get('why'):
-                                description_parts.append(f"<div><strong>Why this is important:</strong></div>\n<p>{html.escape(metadata['why'])}</p>")
+                            why_text: str = metadata.get('why', '') or ''
+                            if why_text:
+                                description_parts.append(f"<div><strong>Why this is important:</strong></div>\n<p>{html.escape(why_text)}</p>")
 
                             # Who it affects
-                            if metadata.get('who'):
-                                description_parts.append(f"<div><strong>Who it affects:</strong></div>\n<p>{html.escape(metadata['who'])}</p>")
+                            who_text: str = metadata.get('who', '') or ''
+                            if who_text:
+                                description_parts.append(f"<div><strong>Who it affects:</strong></div>\n<p>{html.escape(who_text)}</p>")
 
                             # How to remediate (use full_remediation which is always set)
-                            remediation = metadata.get('full_remediation', '') or metadata.get('how', '')
+                            remediation: str = metadata.get('full_remediation', '') or metadata.get('how', '') or ''
                             if remediation:
                                 description_parts.append(f"<div><strong>How to remediate:</strong></div>\n<div style=\"white-space: pre-wrap; word-wrap: break-word;\">{html.escape(remediation)}</div>")
 
-                            description = "\n".join(description_parts) if description_parts else violation.description
+                            description: str = "\n".join(description_parts) if description_parts else (violation.description or '')
                             logger.info(f"Built description with {len(description_parts)} parts, total length: {len(description)}")
 
                             # Upload issue to Drupal
@@ -604,7 +608,7 @@ def upload_to_drupal(project_id: str) -> Response:
                                 location_on_page=violation.metadata.get('location_on_page', ''),
                                 wcag_criteria=wcag_uuids,
                                 xpath=violation.xpath or violation.metadata.get('xpath'),
-                                url=page.url if hasattr(page, 'url') else page.get('url'),
+                                url=page_obj.url if page_obj else '',
                                 existing_uuid=existing_uuid,
                                 discovered_page_uuid=discovered_page_uuid
                             )
@@ -667,4 +671,4 @@ def upload_to_drupal(project_id: str) -> Response:
             logger.error(f"Error uploading automated test results: {e}", exc_info=True)
             yield emit('error', f'Upload failed: {str(e)}')
 
-    return current_app.response_class(generate(), mimetype='text/event-stream')
+    return Response(generate(), mimetype='text/event-stream')

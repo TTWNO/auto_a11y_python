@@ -22,7 +22,7 @@ def list_project_members(project_id: str) -> Response | tuple[Response, int]:
     all_groups = get_db().get_all_groups()
     group_map = {g.id: g for g in all_groups}
 
-    members = []
+    members: list[dict[str, object]] = []
     for m in project.members:
         user = get_db().get_app_user(m.user_id)
         member_groups = [
@@ -53,7 +53,9 @@ def add_project_member(project_id: str) -> Response | tuple[Response, int]:
 
     data = request.get_json() or request.form
     user_id = data.get('user_id')
-    raw_group_ids = data.getlist('group_ids') if hasattr(data, 'getlist') else data.get('group_ids', [])
+    raw_group_ids: list[str] | str = (
+        data.getlist('group_ids') if hasattr(data, 'getlist') else data.get('group_ids', [])
+    )
     group_ids: list[str] = list(raw_group_ids) if isinstance(raw_group_ids, list) else [str(raw_group_ids)]
 
     if not user_id:
@@ -79,7 +81,9 @@ def update_project_member(project_id: str, user_id: str) -> Response | tuple[Res
         return jsonify({'error': ftl('common-project-not-found')}), 404
 
     data = request.get_json() or request.form
-    raw_group_ids = data.getlist('group_ids') if hasattr(data, 'getlist') else data.get('group_ids', [])
+    raw_group_ids: list[str] | str = (
+        data.getlist('group_ids') if hasattr(data, 'getlist') else data.get('group_ids', [])
+    )
     group_ids: list[str] = list(raw_group_ids) if isinstance(raw_group_ids, list) else [str(raw_group_ids)]
 
     if not group_ids:

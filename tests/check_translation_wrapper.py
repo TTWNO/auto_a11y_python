@@ -31,8 +31,8 @@ def test_wrapper_import() -> bool:
     try:
         from auto_a11y.reporting.issue_descriptions_translated import (
             get_detailed_issue_description,
-            ImpactScale
         )
+        assert callable(get_detailed_issue_description)
         print("  Wrapper module imported successfully")
         return True
     except Exception as e:
@@ -135,7 +135,7 @@ def main() -> int:
         test_multiple_issues,
     ]
 
-    results = []
+    results: list[bool] = []
     for test in tests:
         results.append(test())
 

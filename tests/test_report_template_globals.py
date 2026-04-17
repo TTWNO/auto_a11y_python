@@ -80,16 +80,22 @@ def _build_env_like_static_html_generator() -> jinja2.Environment:
         autoescape=jinja2.select_autoescape(['html', 'xml']),
         extensions=['jinja2.ext.i18n'],
     )
+    def _gettext(x: str) -> str:
+        return x
+
+    def _ngettext(s: str, p: str, n: int) -> str:
+        return s if n == 1 else p
+
     # install_gettext_callables is added at runtime by jinja2.ext.i18n
     install = getattr(env, 'install_gettext_callables')
     install(
-        gettext=lambda x: x,
-        ngettext=lambda s, p, n: s if n == 1 else p,
+        gettext=_gettext,
+        ngettext=_ngettext,
         newstyle=True,
     )
     # These are the globals the generator registers (after our fix)
-    env.globals['ftl'] = ftl
-    env.globals['ftl_enum'] = ftl_enum
+    getattr(env, 'globals')['ftl'] = ftl
+    getattr(env, 'globals')['ftl_enum'] = ftl_enum
     return env
 
 
@@ -101,7 +107,7 @@ def _build_env_like_comprehensive_report() -> jinja2.Environment:
         loader=jinja2.FileSystemLoader(str(_TEMPLATES_DIR)),
         autoescape=jinja2.select_autoescape(['html', 'xml']),
     )
-    env.globals['ftl'] = ftl
+    getattr(env, 'globals')['ftl'] = ftl
     return env
 
 
@@ -113,7 +119,7 @@ def _build_env_like_recordings_report() -> jinja2.Environment:
         loader=jinja2.FileSystemLoader(str(_TEMPLATES_DIR)),
         autoescape=jinja2.select_autoescape(['html', 'xml']),
     )
-    env.globals['ftl'] = ftl
+    getattr(env, 'globals')['ftl'] = ftl
     return env
 
 
@@ -213,7 +219,7 @@ def test_all_static_report_templates_are_covered() -> None:
         covered_templates.update(info['templates'])
     covered_templates.update(excluded)
 
-    uncovered = []
+    uncovered: list[tuple[str, list[str]]] = []
     for html_file in sorted(_STATIC_REPORT_DIR.glob('*.html')):
         rel = f"static_report/{html_file.name}"
         if rel in covered_templates:
@@ -224,9 +230,9 @@ def test_all_static_report_templates_are_covered() -> None:
             uncovered.append((rel, sorted(used)))
 
     assert not uncovered, (
-        f"The following templates use Fluent globals but are not listed in "
-        f"GENERATOR_ENVS or excluded — add them so they get tested:\n"
-        + "\n".join(f"  {t}: uses {g}" for t, g in uncovered)
+        "The following templates use Fluent globals but are not listed in "
+        + "GENERATOR_ENVS or excluded — add them so they get tested:\n"
+        + "\n".join(f"  {tpl}: uses {globs}" for tpl, globs in uncovered)
     )
 
 

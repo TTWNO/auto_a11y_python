@@ -2,8 +2,6 @@
 """Quick test for AI heading detection."""
 from __future__ import annotations
 
-from typing import Any
-
 import asyncio
 import sys
 from pathlib import Path

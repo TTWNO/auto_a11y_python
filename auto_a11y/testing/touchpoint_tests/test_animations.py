@@ -5,7 +5,6 @@ Evaluates CSS animations on the page for accessibility considerations, focusing 
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any
 import logging
 

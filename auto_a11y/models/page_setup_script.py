@@ -188,6 +188,16 @@ class PageSetupScript:
         """Get script ID as string"""
         return str(self._id) if self._id else None
 
+    @property
+    def mongo_id(self) -> ObjectId | None:
+        """Get the raw MongoDB _id value."""
+        return self._id
+
+    @mongo_id.setter
+    def mongo_id(self, value: ObjectId | None) -> None:
+        """Set the raw MongoDB _id value."""
+        self._id = value
+
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for MongoDB"""
         data: dict[str, Any] = {
@@ -401,6 +411,16 @@ class ScriptExecutionSession:
     def id(self) -> str | None:
         """Get session ID as string"""
         return str(self._id) if self._id else None
+
+    @property
+    def mongo_id(self) -> ObjectId | None:
+        """Get the raw MongoDB _id value."""
+        return self._id
+
+    @mongo_id.setter
+    def mongo_id(self, value: ObjectId | None) -> None:
+        """Set the raw MongoDB _id value."""
+        self._id = value
 
     def has_executed(self, script_id: str) -> bool:
         """Check if script has been executed in this session"""

@@ -112,9 +112,11 @@ async def test_semantic_structure(page: Page) -> dict[str, Any]:
             }
         ''')
 
-        logger.debug(f"DOCTYPE check complete: {results['elements_tested']} tested, "
-                    f"{results['elements_passed']} passed, {results['elements_failed']} failed, "
-                    f"compat mode: {results.get('compatMode', 'unknown')}")
+        logger.debug(
+            f"DOCTYPE check complete: {results['elements_tested']} tested, "
+            + f"{results['elements_passed']} passed, {results['elements_failed']} failed, "
+            + f"compat mode: {results.get('compatMode', 'unknown')}"
+        )
 
         return results
 

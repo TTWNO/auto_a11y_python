@@ -5,7 +5,6 @@ Evaluates inline style attributes to ensure proper separation of presentation fr
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any
 import logging
 
@@ -49,7 +48,7 @@ async def test_styles(page: Page) -> dict[str, Any]:
     """
     try:
         # Execute JavaScript to analyze inline styles
-        results: dict[str, Any] = await page.evaluate('''
+        results: dict[str, Any] = await page.evaluate(r'''
             () => {
                 const results = {
                     applicable: true,

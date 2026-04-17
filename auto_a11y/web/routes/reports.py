@@ -6,9 +6,9 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from flask import Blueprint, Flask, Response, render_template, request, jsonify, send_file, current_app, url_for, flash, redirect, session, g
+from flask import Blueprint, Flask, Response, render_template, request, jsonify, send_file, current_app, url_for, redirect, session
 from werkzeug.wrappers import Response as WerkzeugResponse
-from auto_a11y.web.fluent import ftl, force_locale, _get_current_locale as get_locale
+from auto_a11y.web.fluent import ftl, force_locale, get_current_locale as get_locale
 from auto_a11y.models import PageStatus
 from auto_a11y.reporting import ReportGenerator, PageStructureReport
 from auto_a11y.reporting.discovery_report import DiscoveryReportGenerator
@@ -20,7 +20,6 @@ from auto_a11y.web.typed_app import get_db, get_app_config
 from datetime import datetime, timedelta
 from uuid import uuid4
 import logging
-import json
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -43,7 +42,7 @@ def reports_dashboard() -> str:
     reports_dir = get_app_config().REPORTS_DIR
     report_files = list(reports_dir.glob('*.xlsx')) + list(reports_dir.glob('*.html')) + list(reports_dir.glob('*.json')) + list(reports_dir.glob('*.pdf')) + list(reports_dir.glob('*.zip')) + list(reports_dir.glob('*.csv'))
     
-    reports = []
+    reports: list[dict[str, Any]] = []
     for file in sorted(report_files, key=lambda x: x.stat().st_mtime, reverse=True)[:20]:
         # Extract project name from filename if available
         filename_parts = file.stem.split('_')
@@ -77,7 +76,7 @@ def reports_dashboard() -> str:
     projects = get_db().get_projects()
     
     # Get all websites for the dropdown
-    websites = []
+    websites: list[dict[str, Any]] = []
     for project in projects:
         if not project.id:
             continue
@@ -453,8 +452,8 @@ def export_csv() -> Response:
     """Export data as CSV"""
     data = request.get_json()
     
-    export_type = data.get('type')  # violations, pages, summary
-    filters = data.get('filters', {})
+    _export_type = data.get('type')  # violations, pages, summary
+    _filters = data.get('filters', {})
     
     # Generate CSV based on type
     # This would be implemented with actual CSV generation
@@ -658,6 +657,8 @@ def generate_page_structure_report() -> tuple[Response, int] | Response:
         format = request.form.get('format', 'html')
 
     # Validate inputs in route handler
+    if not website_id:
+        return jsonify({'success': False, 'error': 'Website ID required'}), 400
     website = get_db().get_website(website_id)
     if not website:
         return jsonify({'success': False, 'error': 'Website not found'}), 404
@@ -798,10 +799,10 @@ def generate_static_html_report() -> tuple[Response, int] | Response:
     wcag_level = request.form.get('wcag_level', 'AA')
 
     # Collect all page IDs based on scope (data collection stays in route handler)
-    page_ids = []
+    page_ids: list[str] = []
     project_name = "Accessibility Report"
     website_url = None
-    touchpoints_tested = None
+    touchpoints_tested: list[str] | None = None
     display_name = 'Static HTML Report'
 
     if project_id:
@@ -861,11 +862,11 @@ def generate_static_html_report() -> tuple[Response, int] | Response:
     if page_ids:
         first_result = get_db().get_latest_test_result(page_ids[0])
         if first_result and first_result.violations:
-            touchpoints_set = set()
+            tp_set: set[str] = set()
             for violation in first_result.violations:
                 if violation.touchpoint:
-                    touchpoints_set.add(violation.touchpoint)
-            touchpoints_tested = sorted(list(touchpoints_set))
+                    tp_set.add(violation.touchpoint)
+            touchpoints_tested = sorted(list(tp_set))
 
     # Capture Flask context into local variables
     db = get_db()

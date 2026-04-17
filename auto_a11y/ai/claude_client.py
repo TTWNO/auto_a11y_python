@@ -143,10 +143,10 @@ class ClaudeClient:
             response_text = ""
             thinking_text = None
             for block in message.content:
-                if block.type == "text":
-                    response_text = block.text
-                elif block.type == "thinking":
-                    thinking_text = block.thinking
+                if hasattr(block, 'text') and block.type == "text":
+                    response_text = str(block.text)
+                elif hasattr(block, 'thinking') and block.type == "thinking":
+                    thinking_text = str(block.thinking)
 
         return response_text, thinking_text
 

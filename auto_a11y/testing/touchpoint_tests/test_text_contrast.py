@@ -794,7 +794,7 @@ async def test_text_contrast(page: Page) -> dict[str, Any]:
                 # Result: WarnTextContrastCannotCalculate (manual testing required)
                 # Only warn for truly problematic cases: gradients, images, animations, overflow
                 should_warn = False
-                warning_reasons = []
+                warning_reasons: list[str] = []
 
                 # Cannot calculate inside at all (gradient, image, or transparent background)
                 if not can_calculate_inside:
@@ -928,8 +928,8 @@ async def test_text_contrast(page: Page) -> dict[str, Any]:
                         # Note: We don't increment elements_failed again, as this is the same element
 
         # Deduplicate errors and warnings by xpath (same element may appear at multiple breakpoints)
-        seen_error_xpaths = set()
-        deduped_errors = []
+        seen_error_xpaths: set[tuple[object, ...]] = set()
+        deduped_errors: list[dict[str, object]] = []
         for err in results['errors']:
             key = (err.get('xpath', ''), err.get('err', ''), err.get('pseudoclass', ''))
             if key not in seen_error_xpaths:

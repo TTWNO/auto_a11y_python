@@ -32,9 +32,9 @@ class FocusRule:
 @dataclass
 class CSSFocusCache:
     """Cache for focus rules extracted from stylesheets"""
-    focus_rules: list[FocusRule] = field(default_factory=list)
-    selectors_with_focus: set[str] = field(default_factory=set)
-    captured_urls: set[str] = field(default_factory=set)
+    focus_rules: list[FocusRule] = field(default_factory=lambda: [])
+    selectors_with_focus: set[str] = field(default_factory=lambda: set())
+    captured_urls: set[str] = field(default_factory=lambda: set())
     is_complete: bool = False
 
 
@@ -102,8 +102,10 @@ class CSSFocusCapture:
         self._pending_responses = []
         self._response_handler = None
         self.cache.is_complete = True
-        logger.debug(f"CSS focus capture stopped. Captured {len(self.cache.captured_urls)} stylesheets, "
-                    f"found {len(self.cache.focus_rules)} focus rules")
+        logger.debug(
+            f"CSS focus capture stopped. Captured {len(self.cache.captured_urls)} stylesheets, "
+            + f"found {len(self.cache.focus_rules)} focus rules"
+        )
     
     async def capture_inline_styles(self, page: Page) -> None:
         """
@@ -193,8 +195,8 @@ class CSSFocusCapture:
         Returns:
             Dictionary of property name to value
         """
-        properties = {}
-        
+        properties: dict[str, str] = {}
+
         for prop in properties_text.split(';'):
             prop = prop.strip()
             if ':' in prop:
@@ -217,8 +219,8 @@ class CSSFocusCapture:
         Returns:
             Dictionary of focus properties or None if no rules match
         """
-        merged_properties = {}
-        
+        merged_properties: dict[str, str] = {}
+
         for rule in self.cache.focus_rules:
             rule_selector = rule.selector.replace(':focus', '').replace(':focus-visible', '').replace(':focus-within', '')
             rule_selector = rule_selector.strip()

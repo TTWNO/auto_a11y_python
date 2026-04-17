@@ -5,9 +5,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from flask import Blueprint, Response, jsonify, request, current_app
+from flask import Blueprint, Response, jsonify, request
 from flask_login import current_user
-from auto_a11y.models import Project, Website, Page, ProjectStatus, PageStatus
+from auto_a11y.models import Project, Page, ProjectStatus, PageStatus
 from auto_a11y.models.app_user import UserRole
 from auto_a11y.web.routes.auth import project_role_required
 from auto_a11y.core.job_manager import JobManager, JobStatus
@@ -37,7 +37,7 @@ def get_fixture_test_status() -> tuple[Response, int] | Response:
             summary = test_config.fixture_validator.get_fixture_run_summary()
         
         # Get passing tests
-        passing_tests = set()
+        passing_tests: set[str] = set()
         if test_config.fixture_validator:
             passing_tests = test_config.fixture_validator.get_passing_tests()
 
@@ -46,7 +46,7 @@ def get_fixture_test_status() -> tuple[Response, int] | Response:
         partial_pass_count = 0
         all_fail_count = 0
 
-        for error_code, status in statuses.items():
+        for _error_code, status in statuses.items():
             category = status.get('status_category', 'all_fail')
             if category == 'all_pass':
                 all_pass_count += 1
@@ -378,9 +378,9 @@ def test_page(page_id: str) -> tuple[Response, int]:
     if not page:
         return jsonify({'error': 'Page not found'}), 404
     
-    data = request.get_json() or {}
-    config = data.get('config', {})
-    
+    data: dict[str, Any] = request.get_json() or {}
+    _config: dict[str, Any] = data.get('config', {})
+
     # Queue test job
     job_id = f'test_{page_id}_{datetime.now().timestamp()}'
     
@@ -432,10 +432,10 @@ def discover_pages(website_id: str) -> tuple[Response, int]:
     if not website:
         return jsonify({'error': 'Website not found'}), 404
     
-    data = request.get_json() or {}
-    strategy = data.get('strategy', 'crawl')
-    config = data.get('config', {})
-    
+    data: dict[str, Any] = request.get_json() or {}
+    _strategy: str = data.get('strategy', 'crawl')
+    _config: dict[str, Any] = data.get('config', {})
+
     # Queue discovery job
     job_id = f'discovery_{website_id}_{datetime.now().timestamp()}'
     
@@ -454,9 +454,9 @@ def test_website(website_id: str) -> tuple[Response, int]:
     if not website:
         return jsonify({'error': 'Website not found'}), 404
     
-    data = request.get_json() or {}
-    page_ids = data.get('page_ids', 'all')
-    config = data.get('config', {})
+    data: dict[str, Any] = request.get_json() or {}
+    page_ids: list[str] | str = data.get('page_ids', 'all')
+    _config: dict[str, Any] = data.get('config', {})
     
     if page_ids == 'all':
         pages = get_db().get_pages(website_id)
@@ -488,10 +488,10 @@ def generate_report(project_id: str) -> tuple[Response, int]:
     if not project:
         return jsonify({'error': 'Project not found'}), 404
     
-    data = request.get_json() or {}
-    format_type = data.get('format', 'xlsx')
-    include = data.get('include', {})
-    filters = data.get('filters', {})
+    data: dict[str, Any] = request.get_json() or {}
+    _format_type: str = data.get('format', 'xlsx')
+    _include: dict[str, Any] = data.get('include', {})
+    _filters: dict[str, Any] = data.get('filters', {})
     
     # Queue report generation
     report_id = f'report_{project_id}_{datetime.now().strftime("%Y%m%d_%H%M%S")}'
@@ -722,10 +722,10 @@ def get_test_result_states(result_id: str) -> tuple[Response, int] | Response:
         all_results.sort(key=lambda r: r.state_sequence)
 
         # Serialize results
-        results_data = []
+        results_data: list[dict[str, Any]] = []
         for r in all_results:
             state_info = {
-                'result_id': str(r._id) if r._id else None,
+                'result_id': str(r.mongo_id) if r.mongo_id else None,
                 'state_sequence': r.state_sequence,
                 'page_state': r.page_state,
                 'session_id': r.session_id,
@@ -767,10 +767,10 @@ def get_page_test_states(page_id: str) -> tuple[Response, int] | Response:
         state_results = get_db().get_latest_test_results_per_state(page_id)
 
         # Serialize results
-        states_data = {}
+        states_data: dict[int, dict[str, Any]] = {}
         for state_seq, result in state_results.items():
             states_data[state_seq] = {
-                'result_id': str(result._id) if result._id else None,
+                'result_id': str(result.mongo_id) if result.mongo_id else None,
                 'state_sequence': state_seq,
                 'page_state': result.page_state,
                 'session_id': result.session_id,
@@ -826,7 +826,7 @@ def get_page_test_sessions(page_id: str) -> tuple[Response, int] | Response:
                 }
 
             sessions[session_id]['states'].append({
-                'result_id': str(result._id) if result._id else None,
+                'result_id': str(result.mongo_id) if result.mongo_id else None,
                 'state_sequence': result.state_sequence,
                 'state_description': result.page_state.get('description') if result.page_state else None,
                 'violation_count': result.violation_count,
@@ -842,7 +842,8 @@ def get_page_test_sessions(page_id: str) -> tuple[Response, int] | Response:
 
         # Sort states within each session
         for session in sessions_list:
-            session['states'].sort(key=lambda s: s['state_sequence'])
+            states_list: list[dict[str, Any]] = session['states']
+            states_list.sort(key=lambda s: s['state_sequence'])
             session['state_count'] = len(session['states'])
             session['test_date'] = session['test_date'].isoformat() if session['test_date'] else None
 

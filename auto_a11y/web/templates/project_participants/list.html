@@ -234,11 +234,11 @@ function deleteTester(testerId) {
         if (data.success) {
             window.location.href = data.redirect;
         } else {
-            alert("{{ ftl('projects-error') }}".replace('%s', data.error || "{{ ftl('common-unknown-error') }}"));
+            alert("{{ ftl('projects-error', arg='%s') }}".replace('%s', data.error || "{{ ftl('common-unknown-error') }}"));
         }
     })
     .catch(err => {
-        alert("{{ ftl('projects-error-deleting-tester') }}".replace('%s', err));
+        alert("{{ ftl('projects-error-deleting-tester', arg='%s') }}".replace('%s', err));
     });
 }
 
@@ -256,11 +256,11 @@ function deleteSupervisor(supervisorId) {
         if (data.success) {
             window.location.href = data.redirect;
         } else {
-            alert("{{ ftl('projects-error') }}".replace('%s', data.error || "{{ ftl('common-unknown-error') }}"));
+            alert("{{ ftl('projects-error', arg='%s') }}".replace('%s', data.error || "{{ ftl('common-unknown-error') }}"));
         }
     })
     .catch(err => {
-        alert("{{ ftl('projects-error-deleting-supervisor') }}".replace('%s', err));
+        alert("{{ ftl('projects-error-deleting-supervisor', arg='%s') }}".replace('%s', err));
     });
 }
 </script>

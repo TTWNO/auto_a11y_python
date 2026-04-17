@@ -5,19 +5,19 @@ Integrated into the main app as a blueprint.
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Callable
 from typing import Any
 
 from flask import (
-    Blueprint, render_template, request, redirect,
-    url_for, abort, g,
+    Blueprint, render_template, request,
+    abort, g,
 )
-from werkzeug.wrappers import Response
 from auto_a11y.web.fluent import ftl
 from auto_a11y.web.typed_app import get_db
 from flask_login import current_user
 
-from auto_a11y.models import TokenScope, PageStatus
-from auto_a11y.models.app_user import UserRole
+from auto_a11y.models import TokenScope, Page
+from auto_a11y.models.test_result import Violation
 from auto_a11y.reporting.issue_descriptions_translated import get_detailed_issue_description
 from auto_a11y.web.routes.auth import require_access, check_scope, get_effective_role
 
@@ -34,36 +34,25 @@ public_bp = Blueprint(
 # Helpers
 # ------------------------------------------------------------------
 
-def group_by_touchpoint(violations: list[Any]) -> dict[str, list[Any]]:
+def group_by_touchpoint(violations: list[Violation]) -> dict[str, list[Violation]]:
     """Group a list of Violation objects by their touchpoint field."""
-    groups = defaultdict(list)
+    groups: defaultdict[str, list[Violation]] = defaultdict(list)
     for v in violations:
         groups[v.touchpoint or ftl('common-other')].append(v)
     return dict(sorted(groups.items()))
 
 
-def sort_pages(pages: list[Any], sort_by: str = 'url', sort_dir: str = 'asc') -> list[Any]:
+def sort_pages(pages: list[Page], sort_by: str = 'url', sort_dir: str = 'asc') -> list[Page]:
     """Sort a list of Page objects by the given field."""
-    key_map = {
+    key_map: dict[str, Callable[[Page], Any]] = {
         'url': lambda p: (p.url or '').lower(),
         'violations': lambda p: p.violation_count,
         'warnings': lambda p: p.warning_count,
         'last_tested': lambda p: p.last_tested or p.discovered_at,
     }
-    key_fn = key_map.get(sort_by, key_map['url'])
+    key_fn: Callable[[Page], Any] = key_map.get(sort_by, key_map['url'])
     reverse = sort_dir == 'desc'
     return sorted(pages, key=key_fn, reverse=reverse)
-
-
-def _get_project_for_token() -> Any | None:
-    """For token-based access, resolve the project from g.access_scope."""
-    if g.access_scope == TokenScope.PROJECT:
-        return get_db().get_project(g.access_scope_id)
-    elif g.access_scope == TokenScope.WEBSITE:
-        website = get_db().get_website(g.access_scope_id)
-        if website:
-            return get_db().get_project(website.project_id)
-    return None
 
 
 # ------------------------------------------------------------------
@@ -169,7 +158,7 @@ def client_projects() -> str:
             projects = get_db().get_projects_for_user(str(current_user.get_id()))
     else:
         projects = get_db().get_all_projects()
-    project_data = []
+    project_data: list[dict[str, Any]] = []
     for project in projects:
         if not project.id:
             continue

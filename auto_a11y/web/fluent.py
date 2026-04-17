@@ -337,6 +337,10 @@ def _get_current_locale() -> str:
     return _DEFAULT_LOCALE
 
 
+# Public alias so callers outside this module don't need the underscore.
+get_current_locale = _get_current_locale
+
+
 def _load_bundles(translations_dir: str) -> None:
     """Load FluentBundles from ``.ftl`` files on disk.
 

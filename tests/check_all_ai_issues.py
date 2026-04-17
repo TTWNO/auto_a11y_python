@@ -5,13 +5,11 @@ from __future__ import annotations
 from typing import Any
 
 import asyncio
-import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from auto_a11y.core.database import Database
 from auto_a11y.core.browser_manager import BrowserManager
 from auto_a11y.ai import ClaudeAnalyzer
 from config import config

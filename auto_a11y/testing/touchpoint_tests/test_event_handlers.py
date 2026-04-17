@@ -5,7 +5,6 @@ Analyzes page for event handling accessibility issues and keyboard navigation pa
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any
 import logging
 
@@ -77,7 +76,7 @@ async def test_event_handlers(page: Page) -> dict[str, Any]:
     """
     try:
         # Execute JavaScript to analyze event handlers
-        results: dict[str, Any] = await page.evaluate('''
+        results: dict[str, Any] = await page.evaluate(r'''
             () => {
                 const results = {
                     applicable: true,
@@ -733,9 +732,7 @@ async def test_event_handlers(page: Page) -> dict[str, Any]:
                 if not value:
                     return 0
                 try:
-                    if isinstance(value, str):
-                        return float(value.replace('px', '').replace('em', '').replace('rem', '').strip())
-                    return float(value)
+                    return float(value.replace('px', '').replace('em', '').replace('rem', '').strip())
                 except:
                     return 0
 
@@ -814,7 +811,7 @@ async def test_event_handlers(page: Page) -> dict[str, Any]:
                 bg_color_changed = focus_bg_color and focus_bg_color not in ['', 'initial'] and focus_bg_color != normal_bg_color
 
                 # Run all checks independently
-                issues_found = []
+                issues_found: list[tuple[str, str]] = []
 
                 # Check 0: Focusable child inside interactive parent
                 if elem.get('parentIsInteractive', False):

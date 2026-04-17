@@ -5,7 +5,6 @@ Identifies links to electronic documents like PDFs, Word documents, spreadsheets
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any
 import logging
 

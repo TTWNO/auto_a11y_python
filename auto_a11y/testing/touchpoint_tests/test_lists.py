@@ -5,7 +5,6 @@ Evaluates the implementation and styling of HTML lists to ensure proper semantic
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any
 import logging
 

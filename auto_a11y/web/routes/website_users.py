@@ -88,7 +88,7 @@ def create_user(website_id: str) -> str | Response | WerkzeugResponse:
                 enabled=data.get('enabled') == 'on'
             )
 
-            user_id = get_db().create_website_user(user)
+            _user_id = get_db().create_website_user(user)
             flash(ftl('common-test-user-name-created-successfully', name=user.name_display), 'success')
             return redirect(url_for('website_users.list_users', website_id=website_id))
 

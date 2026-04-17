@@ -74,8 +74,8 @@ def load_inaccessible_fonts_config() -> dict[str, Any] | None:
             config = json.load(f)
 
         # Flatten all fonts from all categories into a single list
-        all_fonts = []
-        categories_data = {}
+        all_fonts: list[str] = []
+        categories_data: dict[str, dict[str, Any]] = {}
 
         for category_name, category_info in config.get('categories', {}).items():
             fonts_in_category = category_info.get('fonts', [])
@@ -119,11 +119,11 @@ async def test_fonts(page: Page, project_config: dict[str, Any] | None = None) -
         from auto_a11y.utils.font_config import font_config_manager
 
         font_config_data = load_inaccessible_fonts_config()
-        font_categories = font_config_data['categories'] if font_config_data else {}
+        font_categories: dict[str, Any] = font_config_data['categories'] if font_config_data else {}
 
         # Get the appropriate font list based on project config
         if project_config:
-            inaccessible_fonts_list = list(font_config_manager.get_project_inaccessible_fonts(project_config))
+            inaccessible_fonts_list: list[Any] = list(font_config_manager.get_project_inaccessible_fonts(project_config))
             logger.info(f"Using project-specific font configuration: {len(inaccessible_fonts_list)} fonts")
         else:
             inaccessible_fonts_list = font_config_data['fonts'] if font_config_data else []

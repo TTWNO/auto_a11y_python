@@ -11,7 +11,7 @@ from auto_a11y.web.fluent import ftl
 from auto_a11y.web.typed_app import get_db, get_app_config
 from auto_a11y.models import PageSetupScript, ScriptStep, ActionType, ScriptScope, ExecutionTrigger
 from auto_a11y.core.browser_manager import BrowserManager
-from auto_a11y.testing.script_executor import ScriptExecutor, ScriptExecutionError
+from auto_a11y.testing.script_executor import ScriptExecutor
 from datetime import datetime
 import logging
 
@@ -63,7 +63,7 @@ def create_page_script(page_id: str) -> str | Response:
             data = request.form
 
             # Create script steps from dynamic form
-            steps = []
+            steps: list[ScriptStep] = []
             step_count = 0
             while f'step_{step_count}_action' in data:
                 selector = data.get(f'step_{step_count}_selector', '')
@@ -165,7 +165,7 @@ def create_website_script(website_id: str) -> str | Response:
             data = request.form
 
             # Create script steps from dynamic form
-            steps = []
+            steps: list[ScriptStep] = []
             step_count = 0
             while f'step_{step_count}_action' in data:
                 selector = data.get(f'step_{step_count}_selector', '')
@@ -317,7 +317,7 @@ def edit_script(script_id: str) -> str | Response:
             data = request.form
 
             # Update script steps
-            steps = []
+            steps: list[ScriptStep] = []
             step_count = 0
             logger.warning(f"EDIT: Parsing form data. Keys: {list(data.keys())}")
             while f'step_{step_count}_action' in data:

@@ -5,7 +5,6 @@ Evaluates web forms for accessibility requirements including proper labeling, st
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any
 import logging
 
@@ -63,7 +62,7 @@ async def test_forms(page: Page) -> dict[str, Any]:
     """
     try:
         # Execute JavaScript to analyze forms
-        results: dict[str, Any] = await page.evaluate('''
+        results: dict[str, Any] = await page.evaluate(r'''
             () => {
                 const results = {
                     applicable: true,
@@ -789,7 +788,7 @@ async def test_forms(page: Page) -> dict[str, Any]:
 
         # TEST INPUT FIELD FOCUS INDICATORS
         # Extract focus styles from stylesheets for text input fields
-        input_styles: list[dict[str, Any]] = await page.evaluate('''
+        input_styles: list[dict[str, Any]] = await page.evaluate(r'''
             () => {
                 const inputs = [];
                 const fields = document.querySelectorAll('input[type="text"], input[type="email"], input[type="password"], input[type="search"], input[type="tel"], input[type="url"], input[type="number"], textarea, input:not([type])');
@@ -1256,7 +1255,7 @@ async def test_forms(page: Page) -> dict[str, Any]:
                 return issues
 
             for field in input_styles:
-                error_code = None
+                error_code: str | None = None
                 violation_reason = None
 
                 element_id = f"#{field['id']}" if field.get('id') else (
@@ -1292,9 +1291,6 @@ async def test_forms(page: Page) -> dict[str, Any]:
 
                 normal_border_color: str = field.get('normalBorderColor') or field.get('normalBorderTopColor') or ''
                 focus_border_color: str = field.get('focusBorderColor') or field.get('focusBorderTopColor') or ''
-                # If focus border color is None, it means no change (use normal color)
-                if focus_border_color is None:
-                    focus_border_color = normal_border_color
                 border_color_changed = normal_border_color != focus_border_color
 
                 normal_box_shadow = field['normalBoxShadow']
@@ -1391,11 +1387,9 @@ async def test_forms(page: Page) -> dict[str, Any]:
                 # Report all issues found for this field
                 for issue in issues_found:
                     # Handle both old tuple format and new format
-                    if len(issue) == 3:
-                        error_code, violation_reason, extra_metadata = issue[0], issue[1], issue[2]
-                    else:
-                        error_code, violation_reason = issue[0], issue[1]
-                        extra_metadata = {}
+                    error_code = str(issue[0])
+                    violation_reason = issue[1] if len(issue) > 1 else None
+                    extra_metadata: dict[str, Any] = dict(issue[2]) if len(issue) == 3 else {}
 
                     result_type = 'warn' if error_code.startswith('Warn') else 'err'
                     result_list = results['warnings'] if result_type == 'warn' else results['errors']

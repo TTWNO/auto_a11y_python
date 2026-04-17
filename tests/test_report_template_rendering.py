@@ -50,21 +50,33 @@ def _build_static_html_env() -> jinja2.Environment:
         extensions=['jinja2.ext.i18n'],
     )
     # install_gettext_callables is added at runtime by jinja2.ext.i18n
+    def _gettext(x: str) -> str:
+        return x
+    def _ngettext(s: str, p: str, n: int) -> str:
+        return s if n == 1 else p
     install = getattr(env, 'install_gettext_callables')
-    install(
-        gettext=lambda x: x,
-        ngettext=lambda s, p, n: s if n == 1 else p,
-        newstyle=True,
-    )
-    env.globals['ftl'] = ftl
-    env.globals['ftl_enum'] = ftl_enum
+    install(gettext=_gettext, ngettext=_ngettext, newstyle=True)
+    getattr(env, 'globals')['ftl'] = ftl
+    getattr(env, 'globals')['ftl_enum'] = ftl_enum
 
     # Filters — same as _setup_template_filters()
-    env.filters['error_code_only'] = lambda c: c.split(':')[1] if ':' in c else c
-    env.filters['wcag_name'] = lambda c: c.split()[0] if c.split() else c
-    env.filters['wcag_understanding_url'] = lambda c: f"https://www.w3.org/WAI/WCAG22/Understanding/{WCAG_URL_SLUGS.get(c, c)}"
-    env.filters['wcag_quickref_url'] = lambda c: f"https://www.w3.org/WAI/WCAG22/quickref/#{WCAG_URL_SLUGS.get(c, c)}"
-    env.filters['translate_wcag'] = lambda text, lang='en': translate_wcag_criterion(text, lang)
+    def _error_code_only(c: str) -> str:
+        return c.split(':')[1] if ':' in c else c
+    def _wcag_name(c: str) -> str:
+        parts = c.split()
+        return parts[0] if parts else c
+    def _wcag_understanding_url(c: str) -> str:
+        return f"https://www.w3.org/WAI/WCAG22/Understanding/{WCAG_URL_SLUGS.get(c, c)}"
+    def _wcag_quickref_url(c: str) -> str:
+        return f"https://www.w3.org/WAI/WCAG22/quickref/#{WCAG_URL_SLUGS.get(c, c)}"
+    def _translate_wcag(text: str, lang: str = 'en') -> str:
+        return translate_wcag_criterion(text, lang)
+    filters_dict: dict[str, Any] = env.filters
+    filters_dict['error_code_only'] = _error_code_only
+    filters_dict['wcag_name'] = _wcag_name
+    filters_dict['wcag_understanding_url'] = _wcag_understanding_url
+    filters_dict['wcag_quickref_url'] = _wcag_quickref_url
+    filters_dict['translate_wcag'] = _translate_wcag
     return env
 
 
@@ -74,7 +86,7 @@ def _build_comprehensive_env() -> jinja2.Environment:
         loader=jinja2.FileSystemLoader(str(_TEMPLATES_DIR)),
         autoescape=jinja2.select_autoescape(['html', 'xml']),
     )
-    env.globals['ftl'] = ftl
+    getattr(env, 'globals')['ftl'] = ftl
     return env
 
 
@@ -84,7 +96,7 @@ def _build_recordings_env() -> jinja2.Environment:
         loader=jinja2.FileSystemLoader(str(_TEMPLATES_DIR)),
         autoescape=jinja2.select_autoescape(['html', 'xml']),
     )
-    env.globals['ftl'] = ftl
+    getattr(env, 'globals')['ftl'] = ftl
     return env
 
 
@@ -225,6 +237,10 @@ LOCALES = pytest.mark.parametrize("lang", ["en", "fr"])
 
 class TestStaticHTMLTemplates:
     """Smoke-test every template rendered by StaticHTMLReportGenerator."""
+
+    def __init__(self) -> None:
+        self.env = _build_static_html_env()
+        self.translations = _minimal_translations()
 
     @pytest.fixture(autouse=True)
     def setup_env(self) -> None:

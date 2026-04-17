@@ -71,7 +71,7 @@ class StateValidator:
             }''', selector)
             return bool(result)
 
-    async def validate_state(
+    async def validate_state(  # noqa: C901
         self,
         page: Page,
         expected_state: PageTestState
@@ -86,7 +86,7 @@ class StateValidator:
         Returns:
             List of violations if expectations not met
         """
-        violations = []
+        violations: list[Violation] = []
 
         # Check elements that should be visible
         for selector in expected_state.elements_visible:
@@ -189,8 +189,6 @@ class StateValidator:
         Returns:
             PageTestState object representing current state
         """
-        from datetime import datetime
-
         state = PageTestState(
             state_id=state_id,
             description=description,

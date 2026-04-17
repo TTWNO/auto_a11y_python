@@ -23,7 +23,7 @@ from auto_a11y.testing.multi_state_test_runner import MultiStateTestRunner
 from auto_a11y.testing.login_automation import LoginAutomation
 
 if TYPE_CHECKING:
-    from auto_a11y.models import WebsiteUser
+    from auto_a11y.models import WebsiteUser, ProjectUser
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +50,7 @@ class TestRunner:
         self.screenshot_dir: Path = Path(browser_config.get('SCREENSHOTS_DIR', 'screenshots'))
         self.screenshot_dir.mkdir(exist_ok=True, parents=True)
         self._current_website_id: str | None = None  # Track current website for session management
-        self._logged_in_user: WebsiteUser | None = None  # Track currently logged in user
+        self._logged_in_user: WebsiteUser | ProjectUser | None = None  # Track currently logged in user
     
     async def test_page(
         self,
@@ -183,7 +183,8 @@ class TestRunner:
                 )
 
                 # Execute scripts with session awareness
-                script_violations = []
+                from auto_a11y.models import Violation
+                script_violations: list[Violation] = []
                 for script in scripts_to_execute:
                     logger.info(f"Processing script: {script.name} (scope={script.scope.value}, trigger={script.trigger.value})")
                     try:
@@ -196,7 +197,8 @@ class TestRunner:
 
                         # Check for violations reported by scripts
                         if 'violation' in result:
-                            script_violations.append(result['violation'])
+                            violation_item: Violation = result['violation']
+                            script_violations.append(violation_item)
                             logger.warning(f"Script reported violation: {result['violation'].message}")
 
                         # Log result
@@ -281,7 +283,7 @@ class TestRunner:
                     document_refs = self.db.get_document_references(page.website_id)
 
                     # Build a map of document URL to language metadata
-                    doc_metadata = {}
+                    doc_metadata: dict[str, dict[str, Any]] = {}
                     for doc_ref in document_refs:
                         if doc_ref.language:
                             # Store with both full URL and just the filename for flexible matching
@@ -335,9 +337,9 @@ class TestRunner:
                     screenshot_path, screenshot_bytes = await self._take_screenshot_with_bytes(browser_page, page.id or '')
                 
                 # Check if project has AI testing enabled
-                ai_findings = []
-                ai_analysis_results = {}
-                
+                ai_findings: list[Any] = []
+                ai_analysis_results: dict[str, Any] = {}
+
                 # Get AI testing configuration from project
                 run_ai = False
                 ai_tests_to_run = []
@@ -362,7 +364,7 @@ class TestRunner:
                     logger.warning(f"Could not get AI config from project: {e}")
                 
                 # Override with explicit parameter if provided (for backward compatibility)
-                if run_ai_analysis is not None:
+                if run_ai_analysis:
                     logger.info(f"Overriding AI setting with explicit parameter: run_ai_analysis={run_ai_analysis}")
                     run_ai = run_ai_analysis
                     if run_ai and not ai_tests_to_run:
@@ -403,9 +405,11 @@ class TestRunner:
                             test_config=test_config
                         )
                         
-                        ai_findings = ai_results.get('findings', [])
-                        ai_analysis_results = ai_results.get('raw_results', {})
-                        
+                        findings_list: list[Any] = ai_results.get('findings', [])
+                        ai_findings = findings_list
+                        raw_results_dict: dict[str, Any] = ai_results.get('raw_results', {})
+                        ai_analysis_results = raw_results_dict
+
                     except Exception as e:
                         logger.error(f"AI analysis failed: {e}")
                     finally:
@@ -446,7 +450,7 @@ class TestRunner:
 
                 # Add test user information to metadata (Guest or authenticated user)
                 if authenticated_user:
-                    user_info = {
+                    user_info: dict[str, Any] = {
                         'user_id': authenticated_user.id,
                         'username': authenticated_user.username,
                         'display_name': authenticated_user.display_name,
@@ -482,8 +486,7 @@ class TestRunner:
 
                 # Save test result to database
                 result_id = self.db.create_test_result(test_result)
-                from bson import ObjectId as BsonObjectId
-                test_result._id = BsonObjectId(result_id) if isinstance(result_id, str) else result_id
+                test_result.mongo_id = ObjectId(result_id)
 
                 # Free heavy data from memory now that it's persisted to DB
                 test_result.js_test_results = {}
@@ -503,7 +506,6 @@ class TestRunner:
                 
                 # Update website's last_tested timestamp atomically
                 # (avoids read-modify-write race with parallel workers)
-                from bson import ObjectId
                 self.db.websites.update_one(
                     {"_id": ObjectId(page.website_id)},
                     {"$set": {"last_tested": datetime.now()}}
@@ -533,7 +535,7 @@ class TestRunner:
             
             # Save error result
             result_id = self.db.create_test_result(test_result)
-            test_result._id = ObjectId(result_id) if isinstance(result_id, str) else result_id
+            test_result.mongo_id = ObjectId(result_id)
             
             return test_result
 
@@ -793,11 +795,11 @@ class TestRunner:
                     logger.debug(f"DEBUG run_single_test: screenshot done, path={screenshot_path}, bytes={len(screenshot_bytes) if screenshot_bytes else 0}")
 
                 # Check if project has AI testing enabled
-                ai_findings = []
-                ai_analysis_results = {}
-                
+                ai_findings2: list[Any] = []
+                ai_analysis_results2: dict[str, Any] = {}
+
                 run_ai = False
-                ai_tests_to_run = []
+                ai_tests_to_run: list[str] = []
                 
                 if project_config:
                     if project_config.get('enable_ai_testing', False):
@@ -831,9 +833,11 @@ class TestRunner:
                             test_config=test_config
                         )
                         
-                        ai_findings = ai_results.get('findings', [])
-                        ai_analysis_results = ai_results.get('raw_results', {})
-                        
+                        findings_val: list[Any] = ai_results.get('findings', [])
+                        ai_findings2 = findings_val
+                        raw_val: dict[str, Any] = ai_results.get('raw_results', {})
+                        ai_analysis_results2 = raw_val
+
                     except Exception as e:
                         logger.error(f"AI analysis failed: {e}")
                     finally:
@@ -854,14 +858,14 @@ class TestRunner:
                     raw_results=raw_results,
                     screenshot_path=screenshot_path,
                     duration_ms=duration_ms,
-                    ai_findings=ai_findings,
-                    ai_analysis_results=ai_analysis_results
+                    ai_findings=ai_findings2,
+                    ai_analysis_results=ai_analysis_results2
                 )
 
                 # Free raw results and AI data now that they've been processed
                 del raw_results
-                del ai_findings
-                del ai_analysis_results
+                del ai_findings2
+                del ai_analysis_results2
 
                 return test_result
 
@@ -880,7 +884,7 @@ class TestRunner:
 
             # Add test user information to all results (Guest or authenticated user)
             if authenticated_user:
-                user_info = {
+                user_info: dict[str, Any] = {
                     'user_id': authenticated_user.id,
                     'username': authenticated_user.username,
                     'display_name': authenticated_user.display_name,
@@ -918,7 +922,7 @@ class TestRunner:
             # Save all results to database and free heavy data from memory
             for result in results:
                 result_id = self.db.create_test_result(result)
-                result._id = ObjectId(result_id) if isinstance(result_id, str) else result_id
+                result.mongo_id = ObjectId(result_id)
                 result.js_test_results = {}
                 result.ai_analysis_results = {}
 
@@ -938,7 +942,6 @@ class TestRunner:
 
             # Update website's last_tested timestamp atomically
             # (avoids read-modify-write race with parallel workers)
-            from bson import ObjectId
             self.db.websites.update_one(
                 {"_id": ObjectId(page.website_id)},
                 {"$set": {"last_tested": datetime.now()}}
@@ -970,7 +973,7 @@ class TestRunner:
 
             # Save error result
             result_id = self.db.create_test_result(test_result)
-            test_result._id = ObjectId(result_id) if isinstance(result_id, str) else result_id
+            test_result.mongo_id = ObjectId(result_id)
 
             return [test_result]
         
@@ -1040,24 +1043,15 @@ class TestRunner:
 
             # Accumulate summary stats, then discard result objects
             for result_list in batch_results:
-                if isinstance(result_list, Exception):
+                if isinstance(result_list, BaseException):
                     logger.error(f"Test failed with exception: {result_list}")
-                elif isinstance(result_list, list):
+                else:
                     for result in result_list:
                         total_results += 1
                         total_violations += result.violation_count
                         total_warnings += result.warning_count
                         total_passes += result.pass_count
                         total_duration_ms += result.duration_ms
-                elif isinstance(result_list, BaseException):
-                    logger.error(f"Test failed with base exception: {result_list}")
-                elif result_list is not None:
-                    single_result: TestResult = result_list
-                    total_results += 1
-                    total_violations += single_result.violation_count
-                    total_warnings += single_result.warning_count
-                    total_passes += single_result.pass_count
-                    total_duration_ms += single_result.duration_ms
 
             # Explicitly free batch results
             del batch_results
@@ -1124,9 +1118,8 @@ class TestRunner:
         summary = await self.test_pages(pages, parallel=parallel)
 
         # Update website last_tested timestamp atomically
-        from bson import ObjectId
         self.db.websites.update_one(
-            {"_id": ObjectId(website._id)},
+            {"_id": ObjectId(website.mongo_id)},
             {"$set": {"last_tested": datetime.now()}}
         )
 

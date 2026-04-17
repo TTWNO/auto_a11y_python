@@ -16,7 +16,7 @@ FR_DIR = TRANSLATIONS_DIR / 'fr'
 
 def _collect_message_ids(ftl_dir: Path) -> set[str]:
     """Collect all message IDs from .ftl files in a directory."""
-    ids = set()
+    ids: set[str] = set()
     for ftl_file in sorted(ftl_dir.glob('*.ftl')):
         source = ftl_file.read_text(encoding='utf-8')
         resource = parse(source)
@@ -33,7 +33,7 @@ def _pattern_has_content(pattern: fluent_ast.Pattern | None) -> bool:
     for elem in pattern.elements:
         if isinstance(elem, fluent_ast.Placeable):
             return True
-        if isinstance(elem, fluent_ast.TextElement) and elem.value.strip():
+        if elem.value.strip():
             return True
     return False
 
@@ -53,11 +53,11 @@ def _collect_message_values(ftl_dir: Path) -> dict[str, str | None]:
             if isinstance(entry, fluent_ast.Message):
                 # Check main value
                 if entry.value is not None and _pattern_has_content(entry.value):
-                    parts = []
+                    parts: list[str] = []
                     for elem in entry.value.elements:
                         if isinstance(elem, fluent_ast.TextElement):
                             parts.append(elem.value)
-                        elif isinstance(elem, fluent_ast.Placeable):
+                        else:
                             parts.append('{…}')
                     entries[entry.id.name] = ''.join(parts)
                     continue
@@ -110,7 +110,7 @@ class TestTranslationQuality:
 
     def test_ftl_files_parse_without_errors(self) -> None:
         """All FTL files should parse without Junk entries."""
-        failures = []
+        failures: list[str] = []
 
         for label, ftl_dir in [("EN", EN_DIR), ("FR", FR_DIR)]:
             for ftl_file in sorted(ftl_dir.glob("*.ftl")):
@@ -124,6 +124,6 @@ class TestTranslationQuality:
                     failures.append(f"{label}/{ftl_file.name}: {junk_count} Junk entry(ies)")
 
         assert not failures, (
-            f"FTL parse errors found:\n"
-            + "\n".join(f"  - {f}" for f in failures)
+            "FTL parse errors found:\n"
+            + "\n".join(f"  - {fail}" for fail in failures)
         )

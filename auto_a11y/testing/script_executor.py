@@ -94,7 +94,7 @@ class ScriptExecutor:
                 logger.error(f"Re-authentication failed: {login_result.get('error')}")
 
         env_vars = environment_vars or {}
-        execution_log = []
+        execution_log: list[dict[str, object]] = []
 
         try:
             for step in script.steps:
@@ -450,8 +450,8 @@ class ScriptExecutor:
 
             logger.debug(
                 f"Condition check for script '{script.name}': "
-                f"selector '{script.condition_selector}' "
-                f"{'found' if condition_met else 'not found'}"
+                + f"selector '{script.condition_selector}' "
+                + f"{'found' if condition_met else 'not found'}"
             )
 
             # Check for violation (condition reappeared after previous execution)

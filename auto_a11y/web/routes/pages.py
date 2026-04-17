@@ -11,10 +11,9 @@ from auto_a11y.web.fluent import ftl, lazy_ftl, force_locale
 from auto_a11y.web.typed_app import get_db, get_app_config
 from auto_a11y.models import PageStatus
 from auto_a11y.reporting.issue_catalog import IssueCatalog
-from auto_a11y.reporting.wcag_mapper import enrich_wcag_criteria
+from auto_a11y.models.test_result import Violation
 from datetime import datetime
 import logging
-import re
 
 logger = logging.getLogger(__name__)
 pages_bp = Blueprint('pages', __name__)
@@ -25,19 +24,7 @@ def enrich_test_result_with_catalog(test_result: Any) -> Any:
     if not test_result:
         return test_result
     
-    # Helper to substitute {placeholder} style placeholders
-    def substitute_placeholders(template: str | None, values: dict[str, Any] | None) -> str | None:
-        """Replace {key} placeholders in template with values from dict."""
-        if not template or not values:
-            return template
-        
-        def replace_match(match: re.Match[str]) -> str:
-            key = match.group(1)
-            return str(values.get(key, match.group(0)))
-        
-        return re.sub(r'\{([^}]+)\}', replace_match, template)
-
-    def enrich_issue_bilingual(issue: Any) -> Any:
+    def enrich_issue_bilingual(issue: Violation) -> Violation:
         """
         Enrich an issue with bilingual metadata (EN and FR).
         Follows the same pattern as static_html_generator.py for consistency.
@@ -50,12 +37,12 @@ def enrich_test_result_with_catalog(test_result: Any) -> Any:
         """
         # Extract error code from issue ID
         issue_id = issue.id if hasattr(issue, 'id') else ''
-        error_code = issue_id
+        _error_code = issue_id
         if '_' in issue_id:
             parts = issue_id.split('_')
             for i, part in enumerate(parts):
                 if part.startswith(('Err', 'Warn', 'Info', 'Disco', 'AI')):
-                    error_code = '_'.join(parts[i:])
+                    _error_code = '_'.join(parts[i:])
                     break
 
         # Ensure issue has metadata dict
@@ -190,30 +177,31 @@ def view_page(page_id: str) -> str | Response:
 
         # Calculate compliance score (tests with zero violations)
         # Get unique test codes that have violations/warnings
-        failed_test_codes = set()
+        failed_test_codes: set[str] = set()
 
-        # Extract test codes from violations (structure: dict with 'id' key)
+        # Extract test codes from violations
         for v in test_result.violations:
-            test_code = v.get('id', '') if isinstance(v, dict) else (v.id if hasattr(v, 'id') else '')
-            if test_code:
+            v_code: str = v.id if v.id else ''
+            if v_code:
                 # Extract base code (before underscore if present)
-                base_code = test_code.split('_')[0] if '_' in test_code else test_code
-                failed_test_codes.add(base_code)
+                v_base: str = v_code.split('_')[0] if '_' in v_code else v_code
+                failed_test_codes.add(v_base)
 
         # Extract test codes from warnings
         for w in test_result.warnings:
-            test_code = w.get('id', '') if isinstance(w, dict) else (w.id if hasattr(w, 'id') else '')
-            if test_code:
-                base_code = test_code.split('_')[0] if '_' in test_code else test_code
-                failed_test_codes.add(base_code)
+            w_code: str = w.id if w.id else ''
+            if w_code:
+                w_base: str = w_code.split('_')[0] if '_' in w_code else w_code
+                failed_test_codes.add(w_base)
 
         # Count total tests run from metadata
         total_tests = test_result.metadata.get('test_count', 0) if hasattr(test_result, 'metadata') and test_result.metadata else 0
         failed_tests = len(failed_test_codes)
         passed_tests = max(0, total_tests - failed_tests)
 
+        score_val: float = (passed_tests / total_tests * 100) if total_tests != 0 else 0.0
         compliance_score = {
-            'score': (passed_tests / total_tests * 100) if total_tests > 0 else 0,
+            'score': score_val,
             'passed_tests': passed_tests,
             'failed_tests': failed_tests,
             'total_tests': total_tests
@@ -341,9 +329,9 @@ def test_page(page_id: str) -> Response | tuple[Response, int]:
         return jsonify({'error': ftl('common-page-not-found')}), 404
 
     # Check if multi-state testing requested
-    data = request.get_json() if request.is_json else {}
-    enable_multi_state = data.get('enable_multi_state', True)  # Default: enabled
-    website_user_id = data.get('website_user_id')  # Optional authenticated user
+    data: dict[str, Any] = request.get_json() if request.is_json else {}
+    enable_multi_state: bool = data.get('enable_multi_state', True)  # Default: enabled
+    website_user_id: str | None = data.get('website_user_id')  # Optional authenticated user
 
     # Update page status
     page.status = PageStatus.QUEUED
@@ -600,7 +588,7 @@ def configure_test_matrix(page_id: str) -> str | Response:
                 matrix.scripts.sort(key=lambda s: s.execution_order)
 
             # Save or update matrix
-            if matrix._id:
+            if matrix.mongo_id:
                 get_db().update_test_state_matrix(matrix)
                 flash(ftl('pages-test-matrix-updated-successfully'), 'success')
             else:

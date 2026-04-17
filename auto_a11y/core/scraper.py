@@ -9,7 +9,6 @@ from typing import Any, TYPE_CHECKING
 from collections.abc import Callable, Coroutine
 from urllib.parse import urlparse, urljoin, urlunparse
 from urllib.robotparser import RobotFileParser
-from pathlib import Path
 from datetime import datetime
 import re
 from io import BytesIO
@@ -469,16 +468,15 @@ class ScrapingEngine:
             logger.info(f"Discovery finished: {len(discovered_pages)} successful, {len(failed_pages)} failed")
             
             # Compare with previous discovery if it exists
-            if previous_run:
-                if previous_run.id:
-                    comparison = self.db.compare_discoveries(
-                        website_id,
-                        previous_run.id,
-                        discovery_run_id
-                    )
-                discovery_run.pages_added = comparison['added_count']
-                discovery_run.pages_removed = comparison['removed_count']
-                discovery_run.pages_unchanged = comparison['unchanged_count']
+            if previous_run and previous_run.id:
+                comparison = self.db.compare_discoveries(
+                    website_id,
+                    previous_run.id,
+                    discovery_run_id
+                )
+                discovery_run.pages_added = int(comparison['added_count'])
+                discovery_run.pages_removed = int(comparison['removed_count'])
+                discovery_run.pages_unchanged = int(comparison['unchanged_count'])
                 logger.info(f"Discovery comparison: +{discovery_run.pages_added} added, -{discovery_run.pages_removed} removed, {discovery_run.pages_unchanged} unchanged")
             
             # Update discovery run with final results
@@ -888,8 +886,8 @@ class ScrapingEngine:
             ''')
             
             # Filter and normalize links
-            valid_links = set()
-            document_refs = []  # Collect document references
+            valid_links: set[str] = set()
+            document_refs: list[dict[str, Any]] = []  # Collect document references
             
             for link_data in links_with_text:
                 link = link_data['href']
@@ -1111,10 +1109,10 @@ class ScrapingEngine:
             if pdf_reader.metadata:
                 # Check for language in metadata
                 if '/Lang' in pdf_reader.metadata:
-                    lang_code = pdf_reader.metadata['/Lang']
-                    if isinstance(lang_code, str):
+                    lang_code_raw = pdf_reader.metadata['/Lang']
+                    if lang_code_raw:
                         # Parse language code (e.g., "en-US" -> "en")
-                        lang_code = lang_code.split('-')[0].lower()
+                        lang_code = str(lang_code_raw).split('-')[0].lower()
                         logger.debug(f"Detected language from PDF metadata: {lang_code}")
                         return {'language': lang_code, 'confidence': 0.9}
             

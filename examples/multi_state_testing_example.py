@@ -171,7 +171,7 @@ async def run_multi_state_test(db: Database, page_id: str):
     finally:
         # Cleanup
         await test_runner.browser_manager.stop()
-        if test_runner.session_manager.session:
+        if getattr(test_runner.session_manager, 'session', None):
             test_runner.session_manager.end_session()
 
 
@@ -213,7 +213,7 @@ async def query_multi_state_results(db: Database, page_id: str):
     # Get related results for first state
     if state_results:
         first_result = state_results[min(state_results.keys())]
-        related = db.get_related_test_results(str(first_result._id))
+        related = db.get_related_test_results(str(first_result.mongo_id))
 
         if related:
             print(f"🔗 Related Test Results: {len(related)}")

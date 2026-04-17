@@ -43,6 +43,16 @@ class ShareToken:
         return str(self._id) if self._id else None
 
     @property
+    def mongo_id(self) -> ObjectId | None:
+        """Get the raw MongoDB _id value."""
+        return self._id
+
+    @mongo_id.setter
+    def mongo_id(self, value: ObjectId | None) -> None:
+        """Set the raw MongoDB _id value."""
+        self._id = value
+
+    @property
     def is_expired(self) -> bool:
         """Check if token has expired"""
         if self.expires_at is None:

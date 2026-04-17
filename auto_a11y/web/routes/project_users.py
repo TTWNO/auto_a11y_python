@@ -82,7 +82,7 @@ def create_user(project_id: str) -> str | Response | WerkzeugResponse:
                 enabled=data.get('enabled') == 'on'
             )
 
-            user_id = get_db().create_project_user(user)
+            __user_id = get_db().create_project_user(user)
             flash(ftl('common-test-user-name-created-successfully', name=user.name_display), 'success')
             return redirect(url_for('project_users.list_users', project_id=project_id))
 

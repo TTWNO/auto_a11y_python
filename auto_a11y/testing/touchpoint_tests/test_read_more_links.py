@@ -5,7 +5,6 @@ Evaluates links and buttons with generic text for proper accessibility.
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any
 import logging
 
@@ -56,7 +55,7 @@ async def test_read_more_links(page: Page) -> dict[str, Any]:
     """
     try:
         # Execute JavaScript to analyze generic links
-        results: dict[str, Any] = await page.evaluate('''
+        results: dict[str, Any] = await page.evaluate(r'''
             () => {
                 const results = {
                     applicable: true,

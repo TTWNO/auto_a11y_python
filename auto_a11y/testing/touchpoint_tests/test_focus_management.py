@@ -5,7 +5,6 @@ Evaluates if interactive elements have appropriate focus indicators that meet ac
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any
 import logging
 

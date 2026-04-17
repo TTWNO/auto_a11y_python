@@ -5,7 +5,6 @@ Evaluates the proper usage of tabindex attributes across different element types
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any
 import logging
 

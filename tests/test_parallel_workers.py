@@ -10,10 +10,8 @@ orchestration logic: queue draining, progress counting, cancellation,
 error isolation, and worker count capping.
 """
 
-import asyncio
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import datetime
 
 from auto_a11y.core.testing_job import TestingJob
 from auto_a11y.models import Page, PageStatus
@@ -23,7 +21,7 @@ def _make_page(page_id: str, url: str = "http://example.com") -> Page:
     """Create a mock Page with required fields."""
     page = MagicMock(spec=Page)
     page.id = page_id
-    page._id = page_id
+    page.mongo_id = page_id
     page.url = f"{url}/{page_id}"
     page.status = PageStatus.DISCOVERED
     page.website_id = "website_1"
@@ -70,11 +68,13 @@ async def test_all_pages_tested_with_multiple_workers() -> None:
     mock_website.scraping_config.request_delay = 0.0
     mock_db.get_website.return_value = mock_website
     mock_db.get_project_user.return_value = None
-    mock_db.get_page.side_effect = lambda pid: next(
-        (p for p in pages if p.id == pid), None
-    )
 
-    tested_urls = []
+    def _find_page(pid: str) -> Page | None:
+        return next((p for p in pages if p.id == pid), None)
+
+    mock_db.get_page.side_effect = _find_page
+
+    tested_urls: list[str] = []
 
     async def mock_test_page_multi_state(page: Any, **kwargs: Any) -> list[MagicMock]:
         tested_urls.append(page.url)
@@ -112,16 +112,18 @@ async def test_worker_count_capped_by_page_count() -> None:
     mock_website.scraping_config.request_delay = 0.0
     mock_db.get_website.return_value = mock_website
     mock_db.get_project_user.return_value = None
-    mock_db.get_page.side_effect = lambda pid: next(
-        (p for p in pages if p.id == pid), None
-    )
+
+    def _find_page2(pid: str) -> Page | None:
+        return next((p for p in pages if p.id == pid), None)
+
+    mock_db.get_page.side_effect = _find_page2
 
     async def mock_test_page_multi_state(page: Any, **kwargs: Any) -> list[MagicMock]:
         return [_make_test_result()]
 
     browser_config = {"MAX_TEST_WORKERS": 8, "WORKER_STAGGER_SECONDS": 0}
 
-    runners_created = []
+    runners_created: list[AsyncMock] = []
 
     with patch("auto_a11y.core.testing_job.TestRunner") as MockRunner:
         def make_runner(*args: Any, **kwargs: Any) -> AsyncMock:
@@ -165,9 +167,11 @@ async def test_cancellation_stops_workers() -> None:
     mock_website.scraping_config.request_delay = 0.0
     mock_db.get_website.return_value = mock_website
     mock_db.get_project_user.return_value = None
-    mock_db.get_page.side_effect = lambda pid: next(
-        (p for p in pages if p.id == pid), None
-    )
+
+    def _find_page3(pid: str) -> Page | None:
+        return next((p for p in pages if p.id == pid), None)
+
+    mock_db.get_page.side_effect = _find_page3
 
     tested_count = 0
 
@@ -206,11 +210,13 @@ async def test_single_page_error_does_not_crash_worker() -> None:
     mock_website.scraping_config.request_delay = 0.0
     mock_db.get_website.return_value = mock_website
     mock_db.get_project_user.return_value = None
-    mock_db.get_page.side_effect = lambda pid: next(
-        (p for p in pages if p.id == pid), None
-    )
 
-    tested_urls = []
+    def _find_page4(pid: str) -> Page | None:
+        return next((p for p in pages if p.id == pid), None)
+
+    mock_db.get_page.side_effect = _find_page4
+
+    tested_urls: list[str] = []
 
     async def mock_test_page_multi_state(page: Any, **kwargs: Any) -> list[MagicMock]:
         tested_urls.append(page.url)
@@ -248,9 +254,11 @@ async def test_progress_counts_are_accurate() -> None:
     mock_website.scraping_config.request_delay = 0.0
     mock_db.get_website.return_value = mock_website
     mock_db.get_project_user.return_value = None
-    mock_db.get_page.side_effect = lambda pid: next(
-        (p for p in pages if p.id == pid), None
-    )
+
+    def _find_page5(pid: str) -> Page | None:
+        return next((p for p in pages if p.id == pid), None)
+
+    mock_db.get_page.side_effect = _find_page5
 
     async def mock_test_page_multi_state(page: Any, **kwargs: Any) -> list[MagicMock]:
         if "page_1" in page.url:

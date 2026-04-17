@@ -19,7 +19,6 @@ Usage:
   python tests/validate_translations.py
 """
 
-import os
 import sys
 from pathlib import Path
 
@@ -78,9 +77,10 @@ def _pattern_has_content(pattern: fluent_ast.Pattern | None) -> bool:
     if pattern is None:
         return False
     for elem in pattern.elements:
-        if isinstance(elem, fluent_ast.Placeable):
+        if hasattr(elem, 'expression'):
+            # Placeable has an expression attribute
             return True
-        if isinstance(elem, fluent_ast.TextElement) and elem.value.strip():
+        if hasattr(elem, 'value') and str(getattr(elem, 'value', '')).strip():
             return True
     return False
 
@@ -105,11 +105,11 @@ def _collect_message_values(ftl_dir: Path) -> dict[str, dict[str, str | None]]:
             if isinstance(entry, fluent_ast.Message):
                 # Check main value
                 if entry.value is not None and _pattern_has_content(entry.value):
-                    parts = []
+                    parts: list[str] = []
                     for elem in entry.value.elements:
-                        if isinstance(elem, fluent_ast.TextElement):
-                            parts.append(elem.value)
-                        elif isinstance(elem, fluent_ast.Placeable):
+                        if hasattr(elem, 'value') and not hasattr(elem, 'expression'):
+                            parts.append(str(getattr(elem, 'value', '')))
+                        elif hasattr(elem, 'expression'):
                             parts.append("{…}")
                     entries[entry.id.name] = "".join(parts)
                     continue
@@ -167,15 +167,15 @@ def validate_coverage(result: ValidationResult) -> None:
         return
 
     # Flatten to global sets
-    all_en = set()
+    all_en: set[str] = set()
     for ids in en_ids_by_file.values():
         all_en.update(ids)
 
-    all_fr = set()
+    all_fr: set[str] = set()
     for ids in fr_ids_by_file.values():
         all_fr.update(ids)
 
-    missing = sorted(all_en - all_fr)
+    missing: list[str] = sorted(all_en - all_fr)
 
     if missing:
         result.error(
@@ -192,7 +192,7 @@ def validate_no_empty_values(result: ValidationResult) -> None:
     """Check that no FR messages have empty/None values."""
     fr_values = _collect_message_values(FR_DIR)
 
-    empty_entries = []
+    empty_entries: list[str] = []
     for filename, entries in fr_values.items():
         for msg_id, value in entries.items():
             if value is None or not value.strip():

@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Any
 from collections import defaultdict, Counter
-from datetime import datetime, timedelta
+from datetime import datetime
 import json
 import logging
 from auto_a11y.web.fluent import ftl, force_locale
@@ -167,7 +167,8 @@ class ComprehensiveReportGenerator:
         )
 
         # Register Fluent translation functions so templates can use {{ ftl(...) }}
-        env.globals['ftl'] = ftl
+        # Jinja2's globals dict type is too narrow for arbitrary callables; use dict API
+        getattr(env, 'globals')['ftl'] = ftl
 
         # Load the standalone template
         template = env.get_template('static_report/comprehensive_report_standalone.html')
@@ -207,7 +208,7 @@ class ComprehensiveReportGenerator:
         from pathlib import Path
 
         assets_dir = Path(__file__).parent.parent / 'web' / 'static'
-        assets = {}
+        assets: dict[str, str] = {}
 
         # Read Bootstrap CSS
         bootstrap_css_path = assets_dir / 'css' / 'bootstrap.min.css'
@@ -572,10 +573,7 @@ class ComprehensiveReportGenerator:
         multi_state_note = ""
         if test_result and test_result.get('session_id'):
             page_state = test_result.get('page_state', {})
-            if isinstance(page_state, dict):
-                state_desc = page_state.get('description', '')
-            else:
-                state_desc = ''
+            state_desc: str = str(getattr(page_state, 'description', '') if hasattr(page_state, 'description') else (page_state.get('description', '') if hasattr(page_state, 'get') else ''))
 
             if state_desc:
                 multi_state_note = f"""
@@ -615,8 +613,8 @@ class ComprehensiveReportGenerator:
     def _generate_executive_summary(self, data: dict[str, Any], analytics: dict[str, Any], ai_summary_en: dict[str, Any] | None = None, ai_summary_fr: dict[str, Any] | None = None) -> str:
         """Generate executive summary section with integrated bilingual analysis"""
         stats = data.get('statistics', {})
-        total_issues = analytics['total_issues']
-        critical_issues = analytics['by_impact'].get('high', 0)
+        _total_issues = analytics['total_issues']
+        _critical_issues = analytics['by_impact'].get('high', 0)
 
         # Calculate compliance score (based on violations + warnings, not info/discovery)
         # Get violations and warnings from stats (report_generator separates them)
@@ -802,7 +800,7 @@ class ComprehensiveReportGenerator:
         if analytics.get('by_touchpoint'):
             from auto_a11y.core.touchpoints import get_touchpoint, TouchpointID
             
-            touchpoint_rows = []
+            touchpoint_rows: list[str] = []
             for tp_id, count in sorted(analytics['by_touchpoint'].items(), key=lambda x: x[1], reverse=True):
                 try:
                     tp_enum = TouchpointID(tp_id)
@@ -2024,7 +2022,7 @@ class ComprehensiveReportGenerator:
     def _generate_color_contrast_breakdown(self, data: dict[str, Any]) -> str:
         """Generate color contrast breakdown by breakpoint and instance"""
         # Collect all color contrast issues grouped by breakpoint
-        contrast_by_breakpoint = defaultdict(list)
+        contrast_by_breakpoint: defaultdict[str, list[dict[str, Any]]] = defaultdict(list)
 
         for website_data in data.get('websites', []):
             for page_data in website_data.get('pages', []):

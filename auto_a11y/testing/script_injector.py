@@ -49,8 +49,8 @@ class ScriptInjector:
         Returns:
             Dictionary mapping script paths to content
         """
-        scripts = {}
-        
+        scripts: dict[str, str] = {}
+
         for script_path in self.SCRIPT_LOAD_ORDER:
             full_path = self.SCRIPT_DIR / script_path
             
@@ -183,10 +183,9 @@ class ScriptInjector:
             result: dict[str, Any] = await page.evaluate(f'{function_name}()')
             
             # Add metadata
-            if isinstance(result, dict):
-                result['test_name'] = test_name
-                result['function_name'] = function_name
-            
+            result['test_name'] = test_name
+            result['function_name'] = function_name
+
             return result
             
         except Exception as e:
@@ -251,7 +250,6 @@ class ScriptInjector:
         if self.test_config.config.get("global", {}).get("run_python_tests", True):
             try:
                 from auto_a11y.testing.touchpoint_tests import TOUCHPOINT_TESTS
-                from auto_a11y.config.touchpoint_tests import get_touchpoint_for_test
                 
                 logger.debug(f"DEBUG run_all_tests: Starting Python touchpoint tests, {len(TOUCHPOINT_TESTS)} tests available")
                 test_count = 0
@@ -275,7 +273,7 @@ class ScriptInjector:
                             result = tp_result
                             # Filter results based on individual test settings AND fixture validation
                             if 'errors' in result:
-                                filtered_errors = []
+                                filtered_errors: list[dict[str, Any]] = []
                                 for error in result['errors']:
                                     error_code = error.get('err', '')
                                     # Check both: is test enabled in config AND did it pass fixture validation?
@@ -287,7 +285,7 @@ class ScriptInjector:
                                 result['errors'] = filtered_errors
 
                             if 'warnings' in result:
-                                filtered_warnings = []
+                                filtered_warnings: list[dict[str, Any]] = []
                                 for warning in result['warnings']:
                                     error_code = warning.get('err', '')
                                     # Check both: is test enabled in config AND did it pass fixture validation?
@@ -299,7 +297,7 @@ class ScriptInjector:
                                 result['warnings'] = filtered_warnings
 
                             if 'info' in result:
-                                filtered_info = []
+                                filtered_info: list[dict[str, Any]] = []
                                 for info_item in result['info']:
                                     error_code = info_item.get('err', '')
                                     # Check both: is test enabled in config AND did it pass fixture validation?
@@ -311,7 +309,7 @@ class ScriptInjector:
                                 result['info'] = filtered_info
 
                             if 'discovery' in result:
-                                filtered_discovery = []
+                                filtered_discovery: list[dict[str, Any]] = []
                                 for discovery_item in result['discovery']:
                                     error_code = discovery_item.get('err', '')
                                     # Check both: is test enabled in config AND did it pass fixture validation?

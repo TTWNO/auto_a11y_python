@@ -113,18 +113,18 @@ class ResultProcessor:
         Returns:
             Processed TestResult
         """
-        violations = []  # _Err issues
-        warnings = []    # _Warn issues  
-        info = []        # _Info issues
-        discovery = []   # _Disco issues
-        passes = []
-        checks = []  # Track all accessibility checks performed
-        
+        violations: list[Violation] = []  # _Err issues
+        warnings: list[Violation] = []    # _Warn issues
+        info: list[Violation] = []        # _Info issues
+        discovery: list[Violation] = []   # _Disco issues
+        passes: list[dict[str, Any]] = []
+        checks: list[dict[str, Any]] = []  # Track all accessibility checks performed
+
         # Track applicability statistics
         total_applicable_checks = 0
         total_passed_checks = 0
         total_failed_checks = 0
-        not_applicable_tests = []
+        not_applicable_tests: list[dict[str, Any]] = []
         
         # Initialize AI data if not provided
         if ai_findings is None:
@@ -165,12 +165,14 @@ class ResultProcessor:
                             checks.append(check)
             
             # Process errors and warnings (works with both old and new structure)
-            all_issues = []
+            all_issues: list[dict[str, Any]] = []
             if 'errors' in test_result and test_result['errors']:
-                all_issues.extend(test_result['errors'])
+                errors_list: list[dict[str, Any]] = test_result['errors']
+                all_issues.extend(errors_list)
             if 'warnings' in test_result and test_result['warnings']:
-                all_issues.extend(test_result['warnings'])
-            
+                warnings_list: list[dict[str, Any]] = test_result['warnings']
+                all_issues.extend(warnings_list)
+
             # Categorize issues based on their ID pattern
             for issue in all_issues:
                 processed = self._process_violation(issue, test_name, 'unknown')
@@ -205,13 +207,14 @@ class ResultProcessor:
             
             # Process passes
             if 'passes' in test_result and test_result['passes']:
-                passes.extend(test_result['passes'])
+                pass_list: list[dict[str, Any]] = test_result['passes']
+                passes.extend(pass_list)
         
         # NOTE: We'll replace the checks list with a touchpoint summary later
         # Process AI findings
         if ai_findings:
             # Group AI findings by analysis type
-            ai_checks_by_type = {}
+            ai_checks_by_type: dict[str, dict[str, int]] = {}
             
             for finding in ai_findings:
                 # Enhance AI violation with catalog descriptions
@@ -228,7 +231,7 @@ class ResultProcessor:
                     warnings.append(enhanced_finding)
                 
                 # Track for check statistics
-                analysis_type = finding.metadata.get('ai_analysis_type', 'AI Analysis')
+                analysis_type: str = str(finding.metadata.get('ai_analysis_type', 'AI Analysis'))
                 if analysis_type not in ai_checks_by_type:
                     ai_checks_by_type[analysis_type] = {
                         'passed': 0,
@@ -338,13 +341,19 @@ class ResultProcessor:
         # Create touchpoint summary for Test Check Details
         # This aggregates all issues by touchpoint to create a summary that matches Latest Test Results
         touchpoint_summary: dict[str, dict[str, Any]] = {}
-        all_issues = violations + warnings + info + discovery
+        combined_issues: list[Violation] = violations + warnings + info + discovery
+
+        # Build sets for O(1) lookup
+        violation_set: set[int] = {id(v) for v in violations}
+        warning_set: set[int] = {id(w) for w in warnings}
+        info_set: set[int] = {id(i) for i in info}
+        discovery_set: set[int] = {id(d) for d in discovery}
 
         # Count issues by touchpoint
-        for issue in all_issues:
-            tp: str = issue.touchpoint
+        for issue_item in combined_issues:
+            tp: str = issue_item.touchpoint
             if tp not in touchpoint_summary:
-                touchpoint_name = tp.replace('_', ' ').lower()
+                touchpoint_name: str = tp.replace('_', ' ').lower()
                 touchpoint_summary[tp] = {
                     'test_name': tp.replace('_', ' ').title(),
                     'description': ftl('common-accessibility-checks-for-touchpoint', touchpoint=touchpoint_name),
@@ -357,26 +366,27 @@ class ResultProcessor:
                     'info': 0,
                     'discovery': 0
                 }
-            
+
             # Count issue types
-            if issue in violations:
+            item_id = id(issue_item)
+            if item_id in violation_set:
                 touchpoint_summary[tp]['violations'] += 1
                 touchpoint_summary[tp]['failed'] += 1
-            elif issue in warnings:
+            elif item_id in warning_set:
                 touchpoint_summary[tp]['warnings'] += 1
                 touchpoint_summary[tp]['failed'] += 1
-            elif issue in info:
+            elif item_id in info_set:
                 touchpoint_summary[tp]['info'] += 1
                 # Info items don't count as failures
-            elif issue in discovery:
+            elif item_id in discovery_set:
                 touchpoint_summary[tp]['discovery'] += 1
                 # Discovery items don't count as failures
-            
+
             touchpoint_summary[tp]['total'] += 1
-            
+
             # Collect WCAG criteria
-            if hasattr(issue, 'wcag_criteria') and issue.wcag_criteria:
-                for criterion in issue.wcag_criteria:
+            if issue_item.wcag_criteria:
+                for criterion in issue_item.wcag_criteria:
                     touchpoint_summary[tp]['wcag'].add(criterion)
         
         # Replace the checks list with our touchpoint summary
@@ -484,10 +494,10 @@ class ResultProcessor:
                 ])
 
                 # Flatten nested metadata from test results
-                nested_metadata = violation_data.get('metadata', {}) or {}
+                nested_metadata: dict[str, Any] = violation_data.get('metadata', {}) or {}
                 # Check if test provided a separate short title
-                test_title = violation_data.get('title', '')
-                metadata = {
+                test_title: str = str(violation_data.get('title', '') or '')
+                metadata: dict[str, Any] = {
                     'title': test_title if test_title else (original_desc if use_original_as_title else enhanced_desc.get('title', '')),
                     'what': original_desc if use_original_as_title else enhanced_desc.get('what', ''),
                     'what_generic': generic_what,  # Properly generic description (catalog's what_generic or what without placeholders)
@@ -539,11 +549,11 @@ class ResultProcessor:
                     failure_summary = self._get_failure_summary(error_code, violation_data)
                     # Include original violation data in metadata
                     # Flatten nested metadata from test results
-                    nested_metadata = violation_data.get('metadata', {}) or {}
+                    nested_md: dict[str, Any] = violation_data.get('metadata', {}) or {}
                     metadata = {
                         'wcag_full': wcag_full,
                         **violation_data,
-                        **nested_metadata
+                        **nested_md
                     }
             
             # Get touchpoint - cat field now contains touchpoint ID directly (after Phase 1 cleanup)

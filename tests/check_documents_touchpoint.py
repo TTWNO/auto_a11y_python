@@ -12,8 +12,8 @@ import os
 MONGO_URI = os.environ.get('MONGODB_URI', 'mongodb://localhost:27017/')
 DB_NAME = os.environ.get('MONGODB_DATABASE', 'auto_a11y')
 
+client: MongoClient[dict[str, Any]] = MongoClient(MONGO_URI, serverSelectionTimeoutMS=3000)
 try:
-    client: MongoClient[dict[str, Any]] = MongoClient(MONGO_URI, serverSelectionTimeoutMS=3000)
     client.admin.command('ping')
 except (ConnectionFailure, Exception) as e:
     print(f"SKIP: MongoDB not available ({e})")

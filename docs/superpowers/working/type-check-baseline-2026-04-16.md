@@ -100,9 +100,9 @@ Every third-party package that generates a missing-stubs / untyped-import error.
 
 | Package | mypy code(s) | pyright code(s) | ty code(s) | Has py.typed | types-* on PyPI | Recommended Action |
 |---------|-------------|----------------|-----------|-------------|----------------|-------------------|
-| `requests` | import-untyped | — | — | No | `types-requests` 2.33.0 ✓ | `pip install types-requests` |
-| `openpyxl` | import-untyped | — | — | No | `types-openpyxl` 3.1.5 ✓ | `pip install types-openpyxl` |
-| `flask-cors` | import-untyped | — | — | No | `types-flask-cors` 6.0.0 ✓ | `pip install types-flask-cors` |
+| ~~`requests`~~ | import-untyped | — | — | No | `types-requests` 2.33.0 ✓ | `pip install types-requests` |
+| ~~`openpyxl`~~ | import-untyped | — | — | No | `types-openpyxl` 3.1.5 ✓ | `pip install types-openpyxl` |
+| ~~`flask-cors`~~ | import-untyped | — | — | No | `types-flask-cors` 6.0.0 ✓ | `pip install types-flask-cors` |
 | `flask-login` | import-untyped | reportMissingTypeStubs | — | No | None on PyPI | Write local stub in `stubs/flask_login/` |
 | `flask-wtf` | import-untyped | reportMissingTypeStubs | — | No | None on PyPI | Write local stub in `stubs/flask_wtf/` |
 | `apscheduler` | import-untyped | reportMissingTypeStubs | — | No | None on PyPI | Write local stub in `stubs/apscheduler/` |
@@ -110,7 +110,7 @@ Every third-party package that generates a missing-stubs / untyped-import error.
 | `nest-asyncio` | import-untyped | reportMissingTypeStubs | — | No | None on PyPI | Write local stub in `stubs/nest_asyncio/` |
 | `weasyprint` | import-untyped | reportMissingTypeStubs | — | No | None on PyPI | Write local stub in `stubs/weasyprint/` |
 | `fluent-compiler` | import-untyped | reportMissingTypeStubs | — | No | None on PyPI | Write local stub in `stubs/fluent_compiler/` |
-| `google-auth-oauthlib` | import-untyped | reportMissingTypeStubs | — | No | `google-auth-oauthlib-stubs` 1.2.0 ✓ | `pip install google-auth-oauthlib-stubs` |
+| ~~`google-auth-oauthlib`~~ | import-untyped | reportMissingTypeStubs | — | No | `google-auth-oauthlib-stubs` 1.2.0 ✓ | `pip install google-auth-oauthlib-stubs` |
 | `PyPDF2` | import-not-found | reportMissingImports | unresolved-import | Not installed | None on PyPI | Add to requirements or guard import with `TYPE_CHECKING` |
 | `polib` | — | — | unresolved-import | Not installed | Not checked | Used only in one-off `translate_*.py` scripts; add `# type: ignore` or install |
 
@@ -377,10 +377,10 @@ ty is correct here — this is a real latent bug.
 
 | Package to stub | pip install candidate | Source |
 |----------------|----------------------|--------|
-| `requests` | `types-requests` | typeshed / PyPI ✓ |
-| `openpyxl` | `types-openpyxl` | typeshed / PyPI ✓ |
-| `flask-cors` | `types-flask-cors` | typeshed / PyPI ✓ |
-| `google-auth-oauthlib` | `google-auth-oauthlib-stubs` | PyPI ✓ |
+| ~~`requests`~~ | `types-requests` | typeshed / PyPI ✓ |
+| ~~`openpyxl`~~ | `types-openpyxl` | typeshed / PyPI ✓ |
+| ~~`flask-cors`~~ | `types-flask-cors` | typeshed / PyPI ✓ |
+| ~~`google-auth-oauthlib`~~ | `google-auth-oauthlib-stubs` | PyPI ✓ |
 | `flask-login` | hand-write `stubs/flask_login/` | no upstream |
 | `flask-wtf` | hand-write `stubs/flask_wtf/` | no upstream |
 | `apscheduler` | hand-write `stubs/apscheduler/` | no upstream |

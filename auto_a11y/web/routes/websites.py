@@ -3,6 +3,9 @@ Website management routes
 """
 from __future__ import annotations
 
+from collections.abc import Mapping
+from typing import Any
+
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session
 from werkzeug.wrappers import Response
 from auto_a11y.web.fluent import ftl
@@ -65,7 +68,7 @@ def view_website(website_id: str) -> str | Response:
 
     # Calculate statistics using database aggregation (efficient for large datasets)
     # This ensures we show stats for ALL discovered pages, not just the limited set
-    pipeline = [
+    pipeline: list[Mapping[str, Any]] = [
         {'$match': {'website_id': website_id}},
         {'$group': {
             '_id': None,
@@ -219,7 +222,7 @@ def discover_pages(website_id: str) -> Response | tuple[Response, int]:
 
     # Get parameters from request
     data = request.get_json() if request.is_json else {}
-    max_pages = data.get('max_pages') if request.is_json else request.form.get('max_pages')
+    max_pages_raw = data.get('max_pages') if request.is_json else request.form.get('max_pages')
 
     # Get project_user_ids (project-level test users)
     # Still accept 'website_user_ids' key name for backward compatibility with JavaScript
@@ -236,9 +239,10 @@ def discover_pages(website_id: str) -> Response | tuple[Response, int]:
     # Keep the old variable name for compatibility with existing code paths
     website_user_ids = user_ids
 
-    if max_pages:
+    max_pages: int | None = None
+    if max_pages_raw:
         try:
-            max_pages = int(max_pages)
+            max_pages = int(max_pages_raw)
             if max_pages <= 0:
                 max_pages = None
             else:
@@ -645,7 +649,7 @@ def test_all_pages(website_id: str) -> Response | tuple[Response, int]:
 
             try:
                 # Get page IDs for testing
-                page_ids = [p.id for p in testable_pages]
+                page_ids = [p.id for p in testable_pages if p.id is not None]
                 last_result = None
                 num_users = len(website_user_ids)
 
@@ -975,7 +979,7 @@ def view_discovery_run(website_id: str, discovery_run_id: str) -> str | Response
             previous_run = discovery_runs[i + 1]
             break
     
-    if previous_run:
+    if previous_run and previous_run.id:
         comparison = get_db().compare_discoveries(
             website_id,
             previous_run.id,

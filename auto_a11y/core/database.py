@@ -348,6 +348,11 @@ class Database:
         doc = self.websites.find_one({"_id": ObjectId(website_id)})
         return Website.from_dict(doc) if doc else None
     
+    def get_all_websites(self) -> list[Website]:
+        """Get all websites across all projects"""
+        docs = self.websites.find()
+        return [Website.from_dict(doc) for doc in docs]
+
     def get_websites(self, project_id: str) -> list[Website]:
         """Get all websites for a project"""
         docs = self.websites.find({"project_id": project_id})
@@ -3107,6 +3112,11 @@ class Database:
         token._id = result.inserted_id
         logger.info(f"Created share token: {token.label} ({token.scope.value}:{token.scope_id})")
         return str(result.inserted_id)
+
+    def get_share_token(self, token_id: str) -> ShareToken | None:
+        """Get share token by its ID"""
+        doc = self.share_tokens.find_one({"_id": ObjectId(token_id)})
+        return ShareToken.from_dict(doc) if doc else None
 
     def get_share_token_by_hash(self, token_hash: str) -> ShareToken | None:
         """Get share token by its hash"""

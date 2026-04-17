@@ -6,18 +6,18 @@ from __future__ import annotations
 import hashlib
 import logging
 from collections.abc import Callable
-from typing import Any
+from typing import Any, cast
 
-from flask import Blueprint, Response, render_template, redirect, url_for, flash, request, current_app, session, g, abort, jsonify
+from flask import Blueprint, Response, render_template, url_for, flash, request, current_app, session, g, abort, jsonify
+from urllib.parse import urlparse
 from flask_login import login_user, logout_user, login_required, current_user
 from auto_a11y.web.fluent import ftl
 from functools import wraps
 from itsdangerous import URLSafeSerializer, URLSafeTimedSerializer, BadSignature, SignatureExpired
-
 from auto_a11y.models import AppUser, UserRole
 from auto_a11y.core.permissions import permission_required
 from auto_a11y.core.email import send_email
-from auto_a11y.web.typed_app import get_db, get_app_config
+from auto_a11y.web.typed_app import get_db, get_app_config, redirect
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ def role_required(*roles: UserRole) -> Callable[..., Any]:
     """Legacy decorator -- now checks is_superadmin for admin, otherwise passes."""
     def decorator(f: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(f)
-        def decorated_function(*args: Any, **kwargs: Any) -> str | Response:
+        def decorated_function(*args: Any, **kwargs: Any) -> Any:
             if not current_user.is_authenticated:
                 flash(ftl('common-please-log-in-to-access-this-page'), 'warning')
                 return redirect(url_for('auth.login', next=request.url))
@@ -43,7 +43,7 @@ def role_required(*roles: UserRole) -> Callable[..., Any]:
 def admin_required(f: Callable[..., Any]) -> Callable[..., Any]:
     """Legacy decorator -- requires superadmin."""
     @wraps(f)
-    def decorated_function(*args: Any, **kwargs: Any) -> str | Response:
+    def decorated_function(*args: Any, **kwargs: Any) -> Any:
         if not current_user.is_authenticated:
             flash(ftl('common-please-log-in-to-access-this-page'), 'warning')
             return redirect(url_for('auth.login', next=request.url))
@@ -57,7 +57,7 @@ def admin_required(f: Callable[..., Any]) -> Callable[..., Any]:
 def auditor_required(f: Callable[..., Any]) -> Callable[..., Any]:
     """Legacy decorator -- requires superadmin or projects:create permission."""
     @wraps(f)
-    def decorated_function(*args: Any, **kwargs: Any) -> str | Response:
+    def decorated_function(*args: Any, **kwargs: Any) -> Any:
         if not current_user.is_authenticated:
             flash(ftl('common-please-log-in-to-access-this-page'), 'warning')
             return redirect(url_for('auth.login', next=request.url))
@@ -121,7 +121,7 @@ def project_role_required(*roles: UserRole) -> Callable[..., Any]:
     """Legacy decorator -- checks group permissions instead of roles."""
     def decorator(f: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(f)
-        def decorated_function(*args: Any, **kwargs: Any) -> str | Response | tuple[Response, int]:
+        def decorated_function(*args: Any, **kwargs: Any) -> Any:
             if not current_user.is_authenticated:
                 if request.is_json:
                     return jsonify({'error': ftl('common-authentication-required')}), 401
@@ -155,7 +155,7 @@ def project_role_required(*roles: UserRole) -> Callable[..., Any]:
 def project_admin_required(f: Callable[..., Any]) -> Callable[..., Any]:
     """Legacy decorator -- checks project_members:delete permission."""
     @wraps(f)
-    def decorated_function(*args: Any, **kwargs: Any) -> str | Response | tuple[Response, int]:
+    def decorated_function(*args: Any, **kwargs: Any) -> Any:
         if not current_user.is_authenticated:
             if request.is_json:
                 return jsonify({'error': ftl('common-authentication-required')}), 401
@@ -182,7 +182,7 @@ def project_admin_required(f: Callable[..., Any]) -> Callable[..., Any]:
 # Token validation helpers
 # ------------------------------------------------------------------
 
-def validate_token(token_string: str) -> dict[str, str] | None:
+def validate_token(token_string: str) -> dict[str, Any] | None:
     """
     Validate a share-link token.
     Uses URLSafeSerializer (not TimedSerializer -- expiry is checked via
@@ -215,7 +215,7 @@ def require_access(f: Callable[..., Any]) -> Callable[..., Any]:
     Sets ``g.access_scope`` and ``g.access_scope_id`` for downstream scope enforcement.
     """
     @wraps(f)
-    def decorated(*args: Any, **kwargs: Any) -> str | Response:
+    def decorated(*args: Any, **kwargs: Any) -> Any:
         token_string = kwargs.get('token')
 
         if token_string:
@@ -297,7 +297,7 @@ def verify_reset_token(token: str) -> str | None:
         email = serializer.loads(token, salt=PASSWORD_RESET_SALT, max_age=PASSWORD_RESET_MAX_AGE)
     except (BadSignature, SignatureExpired):
         return None
-    return email
+    return str(email)
 
 
 def send_password_reset_email(user: AppUser) -> bool:
@@ -351,7 +351,7 @@ def get_microsoft_auth_url(redirect_uri: str) -> str:
         redirect_uri=redirect_uri,
     )
     session['msal_flow'] = flow
-    return flow['auth_uri']
+    return str(flow['auth_uri'])
 
 
 def complete_microsoft_auth(auth_request: Any, redirect_uri: str) -> dict[str, str] | None:
@@ -425,7 +425,7 @@ def get_google_auth_url(redirect_uri: str) -> str:
     # PKCE: the library generates a code_verifier automatically;
     # persist it so the callback flow can send it with the token request.
     session['google_code_verifier'] = flow.code_verifier
-    return auth_url
+    return str(auth_url)
 
 
 def complete_google_auth(auth_request: Any, redirect_uri: str) -> dict[str, str] | None:
@@ -451,7 +451,8 @@ def complete_google_auth(auth_request: Any, redirect_uri: str) -> dict[str, str]
     from google.auth.transport import requests as google_requests
 
     try:
-        claims = google_id_token.verify_oauth2_token(
+        _verify = getattr(google_id_token, 'verify_oauth2_token')
+        claims: dict[str, Any] = _verify(
             flow.credentials.id_token,
             google_requests.Request(),
             get_app_config().GOOGLE_CLIENT_ID,
@@ -731,7 +732,7 @@ def profile() -> str | Response:
             display_name = request.form.get('display_name', '').strip()
             current_user.display_name = display_name or None
             current_user.update_timestamp()
-            get_db().update_app_user(current_user)
+            get_db().update_app_user(cast(AppUser, current_user))
             flash(ftl('auth-profile-updated-successfully'), 'success')
         
         elif action == 'change_password':
@@ -750,7 +751,7 @@ def profile() -> str | Response:
                 current_user.set_password(new_password)
                 current_user.password_hint = password_hint or None
                 current_user.update_timestamp()
-                get_db().update_app_user(current_user)
+                get_db().update_app_user(cast(AppUser, current_user))
                 flash(ftl('auth-password-changed-successfully'), 'success')
         
         return redirect(url_for('auth.profile'))
@@ -898,7 +899,8 @@ def user_delete(user_id: str) -> Response:
     # Remove user from all project memberships before deleting
     projects = get_db().get_projects_for_user(user_id)
     for project in projects:
-        get_db().remove_project_member(project.id, user_id)
+        if project.id:
+            get_db().remove_project_member(project.id, user_id)
 
     get_db().delete_app_user(user_id)
     flash(ftl('auth-user-deleted-successfully'), 'success')

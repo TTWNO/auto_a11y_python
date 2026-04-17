@@ -162,8 +162,9 @@ def create_project() -> tuple[Response, int]:
     project_id = get_db().create_project(project)
     # Auto-add creator as project admin
     if current_user.is_authenticated:
+        admin_group = get_db().get_group_by_name('Admin')
         get_db().add_project_member(
-            project_id, str(current_user.get_id()), UserRole.ADMIN
+            project_id, str(current_user.get_id()), [admin_group.id] if admin_group and admin_group.id else []
         )
 
     return jsonify({
@@ -324,8 +325,8 @@ def get_pages(website_id: str) -> tuple[Response, int] | Response:
         pages = get_db().get_pages(website_id)
     
     if has_violations is not None:
-        has_violations = has_violations.lower() == 'true'
-        pages = [p for p in pages if p.has_issues == has_violations]
+        has_violations_bool = has_violations.lower() == 'true'
+        pages = [p for p in pages if p.has_issues == has_violations_bool]
     
     return jsonify({
         'pages': [p.to_dict() for p in pages]
@@ -460,8 +461,8 @@ def test_website(website_id: str) -> tuple[Response, int]:
     if page_ids == 'all':
         pages = get_db().get_pages(website_id)
     else:
-        pages = [get_db().get_page(pid) for pid in page_ids]
-        pages = [p for p in pages if p]  # Filter None values
+        pages_raw = [get_db().get_page(pid) for pid in page_ids]
+        pages = [p for p in pages_raw if p is not None]
     
     if not pages:
         return jsonify({'error': 'No pages to test'}), 400
@@ -811,7 +812,7 @@ def get_page_test_sessions(page_id: str) -> tuple[Response, int] | Response:
         all_results = get_db().get_test_results(page_id=page_id)
 
         # Group by session
-        sessions = {}
+        sessions: dict[str, dict[str, Any]] = {}
         for result in all_results:
             session_id = result.session_id or 'single_state'
 

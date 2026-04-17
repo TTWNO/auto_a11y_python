@@ -24,7 +24,7 @@ def list_groups() -> str:
     for g in groups:
         group_data.append({
             'group': g,
-            'member_count': get_db().count_group_members(g.id),
+            'member_count': get_db().count_group_members(g.id) if g.id else 0,
         })
     return render_template('groups/list.html', groups=group_data)
 

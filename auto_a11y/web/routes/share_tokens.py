@@ -79,7 +79,7 @@ def _create_token(scope: TokenScope, scope_id: str) -> Response:
     token = ShareToken(
         scope=scope,
         scope_id=scope_id,
-        created_by=current_user.id,
+        created_by=str(current_user.get_id()) if current_user.is_authenticated else '',
         label=label,
         token_hash=token_hash,
         expires_at=expires_at,

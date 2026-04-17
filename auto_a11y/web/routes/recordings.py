@@ -184,7 +184,7 @@ def view_combined_recordings(project_id: str) -> str | Response | WerkzeugRespon
             issues = get_db().get_recording_issues_for_recording(recording.recording_id)
             # Add recording reference to each issue for display
             for issue in issues:
-                issue.recording_ref = recording
+                setattr(issue, 'recording_ref', recording)
             all_issues.extend(issues)
 
         # Group all issues by touchpoint
@@ -384,10 +384,10 @@ def upload_recording() -> str | Response | WerkzeugResponse:
             project = get_db().get_project(project_id)
             if project and project.lived_experience_testers:
                 for tester in project.lived_experience_testers:
-                    if tester.get('_id') == lived_experience_tester_id:
+                    if tester.id == lived_experience_tester_id:
                         # Format: "Name (Disability)"
-                        name = tester.get('name', 'Unknown')
-                        disability = tester.get('disability_type', '')
+                        name = tester.name or 'Unknown'
+                        disability = tester.disability_type or ''
                         auditor_name = f"{name} ({disability})" if disability else name
                         break
 

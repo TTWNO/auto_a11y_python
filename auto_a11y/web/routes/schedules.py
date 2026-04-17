@@ -3,6 +3,8 @@ Routes for managing test schedules (scheduled accessibility testing)
 """
 from __future__ import annotations
 
+from typing import Any
+
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from werkzeug.wrappers import Response
 from auto_a11y.web.fluent import ftl
@@ -45,20 +47,20 @@ def schedules_dashboard() -> str:
     for schedule in schedules:
         website = get_db().get_website(schedule.website_id)
         if website:
-            schedule._website_name = website.name
-            schedule._website_id = website.id
+            setattr(schedule, '_website_name', website.name)
+            setattr(schedule, '_website_id', website.id)
             project = get_db().get_project(website.project_id)
             if project:
-                schedule._project_name = project.name
-                schedule._project_id = project.id
+                setattr(schedule, '_project_name', project.name)
+                setattr(schedule, '_project_id', project.id)
             else:
-                schedule._project_name = 'Unknown'
-                schedule._project_id = None
+                setattr(schedule, '_project_name', 'Unknown')
+                setattr(schedule, '_project_id', None)
         else:
-            schedule._website_name = 'Unknown'
-            schedule._website_id = None
-            schedule._project_name = 'Unknown'
-            schedule._project_id = None
+            setattr(schedule, '_website_name', 'Unknown')
+            setattr(schedule, '_website_id', None)
+            setattr(schedule, '_project_name', 'Unknown')
+            setattr(schedule, '_project_id', None)
 
     # Calculate summary stats
     total_schedules = len(schedules)
@@ -73,7 +75,7 @@ def schedules_dashboard() -> str:
 
     # Get upcoming runs (next 24 hours)
     scheduler = get_scheduler_service()
-    upcoming_runs = []
+    upcoming_runs: list[dict[str, Any]] = []
     if scheduler:
         for schedule in schedules:
             if schedule.enabled and schedule.next_run_at:
@@ -81,7 +83,7 @@ def schedules_dashboard() -> str:
                     'schedule': schedule,
                     'next_run': schedule.next_run_at
                 })
-    upcoming_runs.sort(key=lambda x: x['next_run'] if x['next_run'] else datetime.max)
+    upcoming_runs.sort(key=lambda x: x.get('next_run') or datetime.max)
     upcoming_runs = upcoming_runs[:10]  # Limit to next 10
 
     return render_template('schedules/dashboard.html',
@@ -202,8 +204,9 @@ def create_schedule(website_id: str) -> str | Response:
             # Register with scheduler if enabled
             scheduler = get_scheduler_service()
             if scheduler and schedule.enabled:
-                schedule = get_db().get_test_schedule(schedule_id)
-                scheduler._register_schedule_with_apscheduler(schedule)
+                refreshed_schedule = get_db().get_test_schedule(schedule_id)
+                if refreshed_schedule:
+                    scheduler._register_schedule_with_apscheduler(refreshed_schedule)
 
             flash(ftl('schedules-schedule-name-created-successfully', name=schedule.name), 'success')
             return redirect(url_for('schedules.list_schedules', website_id=website_id))
@@ -216,7 +219,7 @@ def create_schedule(website_id: str) -> str | Response:
     pages = get_db().get_pages(website_id)
 
     # Get project users
-    project_users = get_db().get_project_users(project.id, enabled_only=True)
+    project_users = get_db().get_project_users(project.id, enabled_only=True) if project and project.id else []
 
     # Get touchpoints from touchpoint_tests mapping
     from auto_a11y.config.touchpoint_tests import TOUCHPOINT_TEST_MAPPING
@@ -366,7 +369,7 @@ def edit_schedule(website_id: str, schedule_id: str) -> str | Response:
     pages = get_db().get_pages(website_id)
 
     # Get project users
-    project_users = get_db().get_project_users(project.id, enabled_only=True)
+    project_users = get_db().get_project_users(project.id, enabled_only=True) if project and project.id else []
 
     # Get touchpoints from touchpoint_tests mapping
     from auto_a11y.config.touchpoint_tests import TOUCHPOINT_TEST_MAPPING
@@ -426,8 +429,9 @@ def toggle_schedule(website_id: str, schedule_id: str) -> Response | tuple[Respo
     scheduler = get_scheduler_service()
     if scheduler:
         if new_state:
-            schedule = get_db().get_test_schedule(schedule_id)
-            scheduler._register_schedule_with_apscheduler(schedule)
+            refreshed = get_db().get_test_schedule(schedule_id)
+            if refreshed:
+                scheduler._register_schedule_with_apscheduler(refreshed)
         else:
             scheduler.remove_from_apscheduler(schedule_id)
 

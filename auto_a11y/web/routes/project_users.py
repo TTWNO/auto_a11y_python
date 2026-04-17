@@ -9,7 +9,7 @@ from flask import Blueprint, Response, render_template, request, redirect, url_f
 from werkzeug.wrappers import Response as WerkzeugResponse
 from auto_a11y.web.fluent import ftl
 from auto_a11y.web.typed_app import get_db, get_app_config
-from auto_a11y.models import ProjectUser, LoginConfig, AuthenticationMethod
+from auto_a11y.models.project_user import ProjectUser, LoginConfig, AuthenticationMethod
 from auto_a11y.core.browser_manager import BrowserManager
 from auto_a11y.testing.login_automation import LoginAutomation
 import logging

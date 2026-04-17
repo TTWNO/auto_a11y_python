@@ -151,6 +151,9 @@ def view_page(page_id: str) -> str | Response:
         return redirect(url_for('projects.list_projects'))
 
     website = get_db().get_website(page.website_id)
+    if not website:
+        flash(ftl('common-website-not-found'), 'error')
+        return redirect(url_for('projects.list_projects'))
     project = get_db().get_project(website.project_id)
 
     # Get latest test result and enrich with catalog data
@@ -221,10 +224,10 @@ def view_page(page_id: str) -> str | Response:
 
     # Get available test users for this website/project
     # Fetch both website-specific users AND project-level users
-    website_users = get_db().get_website_users(page.website_id, enabled_only=True)
-    project_users = get_db().get_project_users(project.id, enabled_only=True)
+    website_users_list = get_db().get_website_users(page.website_id, enabled_only=True)
+    project_users_list = get_db().get_project_users(project.id, enabled_only=True) if project and project.id else []
     # Combine both lists (project users have priority as they can be used across websites)
-    all_users = list(project_users) + list(website_users)
+    all_users: list[Any] = list(project_users_list) + list(website_users_list)
     website_users = all_users  # Use combined list for template
 
     # Touchpoint display names (translated)
@@ -297,13 +300,16 @@ def edit_page(page_id: str) -> str | Response:
         return redirect(url_for('projects.list_projects'))
 
     website = get_db().get_website(page.website_id)
+    if not website:
+        flash(ftl('common-website-not-found'), 'error')
+        return redirect(url_for('projects.list_projects'))
     project = get_db().get_project(website.project_id)
 
     if request.method == 'POST':
         # Update page details
         page.title = request.form.get('title', page.title)
         page.priority = request.form.get('priority', page.priority)
-        page.notes = request.form.get('notes', page.notes)
+        setattr(page, 'notes', request.form.get('notes', getattr(page, 'notes', '')))
 
         if get_db().update_page(page):
             flash(ftl('pages-page-updated-successfully'), 'success')
@@ -379,7 +385,7 @@ def test_page(page_id: str) -> Response | tuple[Response, int]:
                             page,
                             enable_multi_state=True,
                             take_screenshot=True,
-                            run_ai_analysis=None,  # Let test_runner decide based on project config
+                            run_ai_analysis=False,  # Let test_runner decide based on project config
                             ai_api_key=ai_key,
                             website_user_id=website_user_id
                         )
@@ -390,7 +396,7 @@ def test_page(page_id: str) -> Response | tuple[Response, int]:
                         result = await test_runner_instance.test_page(
                             page,
                             take_screenshot=True,
-                            run_ai_analysis=None,
+                            run_ai_analysis=False,
                             ai_api_key=ai_key,
                             website_user_id=website_user_id
                         )
@@ -528,6 +534,9 @@ def configure_test_matrix(page_id: str) -> str | Response:
         return redirect(url_for('projects.list_projects'))
 
     website = get_db().get_website(page.website_id)
+    if not website:
+        flash(ftl('common-website-not-found'), 'error')
+        return redirect(url_for('projects.list_projects'))
     project = get_db().get_project(website.project_id)
 
     # Get all scripts for this page (page-level and website-level)
@@ -558,6 +567,8 @@ def configure_test_matrix(page_id: str) -> str | Response:
             # Update scripts in matrix
             matrix.scripts = []
             for script in testable_scripts:
+                if not script.id:
+                    continue
                 script_def = ScriptStateDefinition(
                     script_id=script.id,
                     script_name=script.name,
@@ -614,6 +625,8 @@ def configure_test_matrix(page_id: str) -> str | Response:
 
         # Add testable scripts to matrix
         for script in testable_scripts:
+            if not script.id:
+                continue
             script_def = ScriptStateDefinition(
                 script_id=script.id,
                 script_name=script.name,

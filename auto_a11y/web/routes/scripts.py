@@ -294,7 +294,7 @@ def view_script(script_id: str) -> str | Response:
 
     # Get related page/website/project
     page = get_db().get_page(script.page_id) if script.page_id else None
-    website = get_db().get_website(script.website_id)
+    website = get_db().get_website(script.website_id) if script.website_id else None
     project = get_db().get_project(website.project_id) if website else None
 
     return render_template('scripts/view.html',
@@ -369,7 +369,7 @@ def edit_script(script_id: str) -> str | Response:
 
     # GET request - show form
     page = get_db().get_page(script.page_id) if script.page_id else None
-    website = get_db().get_website(script.website_id)
+    website = get_db().get_website(script.website_id) if script.website_id else None
     project = get_db().get_project(website.project_id) if website else None
 
     # Debug: Log the script steps being loaded
@@ -474,7 +474,8 @@ def toggle_script(script_id: str) -> Response | tuple[Response, int]:
 
         # Verify the update by reading back from database
         verified_script = get_db().get_page_setup_script(script_id)
-        logger.warning(f"Verified from DB: enabled={verified_script.enabled}")
+        if verified_script:
+            logger.warning(f"Verified from DB: enabled={verified_script.enabled}")
 
         return jsonify({
             'success': success,
@@ -503,6 +504,11 @@ def test_script(script_id: str) -> Response | tuple[Response, int]:
         return jsonify({'error': ftl('scripts-script-not-found')}), 404
 
     # Resolve target URL based on script scope
+    if not script.website_id:
+        return jsonify({
+            'success': False,
+            'error': ftl('common-website-not-found')
+        }), 404
     website = get_db().get_website(script.website_id)
     if not website:
         return jsonify({

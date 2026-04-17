@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from flask import Flask, Response, render_template, jsonify, request, session, g, redirect, url_for
+from flask import Flask, Response, render_template, jsonify, request, session, g, url_for
 from flask_cors import CORS
 from flask_login import LoginManager, current_user, login_required
 from flask_wtf.csrf import CSRFProtect
@@ -38,6 +38,7 @@ from auto_a11y.web.routes import (
     desktop_bp
 )
 from auto_a11y.web.routes.demo import demo_bp
+from auto_a11y.web.typed_app import redirect
 
 logger = logging.getLogger(__name__)
 
@@ -90,11 +91,12 @@ def create_app(config: Any) -> Flask:
     init_fluent(app)
 
     # Initialize database connection (needed before Flask-Login)
-    app.db = Database(config.MONGODB_URI, config.DATABASE_NAME)
+    db = Database(config.MONGODB_URI, config.DATABASE_NAME)
+    setattr(app, 'db', db)
 
     # Warn about projects without members (pre-migration)
     try:
-        empty_count = app.db.projects.count_documents({"$or": [
+        empty_count = db.projects.count_documents({"$or": [
             {"members": {"$exists": False}},
             {"members": {"$size": 0}},
         ]})
@@ -109,7 +111,7 @@ def create_app(config: Any) -> Flask:
     # Run group permissions migration (idempotent)
     from auto_a11y.core.migrate_groups import run_migration
     try:
-        run_migration(app.db)
+        run_migration(db)
     except Exception as e:
         logger.error(f"Group migration failed: {e}")
 
@@ -124,7 +126,7 @@ def create_app(config: Any) -> Flask:
     @login_manager.user_loader
     def load_user(user_id: str) -> Any:
         """Load user by ID for Flask-Login"""
-        return app.db.get_app_user(user_id)
+        return db.get_app_user(user_id)
 
     # Make get_locale, config, and current_user available to all templates
     from auto_a11y.web.fluent import _get_current_locale as get_locale
@@ -141,14 +143,14 @@ def create_app(config: Any) -> Flask:
         )
     
     # Store config for access in routes
-    app.app_config = config
-    
+    setattr(app, 'app_config', config)
+
     # Initialize test configuration with database and debug mode
     from auto_a11y.config import get_test_config
-    app.test_config = get_test_config(
-        database=app.db,
+    setattr(app, 'test_config', get_test_config(
+        database=db,
         debug_mode=config.DEBUG
-    )
+    ))
     
     # Start task runner
     from auto_a11y.core.task_runner import task_runner
@@ -157,11 +159,12 @@ def create_app(config: Any) -> Flask:
     # Initialize scheduler for scheduled testing
     if config.SCHEDULER_ENABLED:
         from auto_a11y.core.scheduler import SchedulerService
-        app.scheduler = SchedulerService(app.db, config)
-        app.scheduler.start()
+        scheduler = SchedulerService(db, config)
+        setattr(app, 'scheduler', scheduler)
+        scheduler.start()
         logger.info("Scheduler service started")
     else:
-        app.scheduler = None
+        setattr(app, 'scheduler', None)
         logger.info("Scheduler is disabled")
 
     # Register shutdown handler — stop task runner first (waits for
@@ -176,9 +179,10 @@ def create_app(config: Any) -> Flask:
         except Exception as e:
             logger.warning(f"Task runner shutdown error: {e}")
 
-        if hasattr(app, 'scheduler') and app.scheduler:
+        _scheduler = getattr(app, 'scheduler', None)
+        if _scheduler:
             logger.info("Shutting down scheduler...")
-            app.scheduler.shutdown()
+            _scheduler.shutdown()
 
     atexit.register(_graceful_shutdown)
 
@@ -231,7 +235,7 @@ def create_app(config: Any) -> Flask:
             if not config.AUTH_ENABLED and not current_user.is_authenticated:
                 from auto_a11y.models.app_user import AppUser, UserRole
                 from flask_login import login_user
-                desktop_user = app.db.get_app_user_by_email('desktop@auto-a11y.local')
+                desktop_user = db.get_app_user_by_email('desktop@auto-a11y.local')
                 if not desktop_user:
                     new_user = AppUser(
                         email='desktop@auto-a11y.local',
@@ -242,8 +246,8 @@ def create_app(config: Any) -> Flask:
                         is_verified=True,
                         is_superadmin=True,
                     )
-                    app.db.create_app_user(new_user)
-                    desktop_user = app.db.get_app_user_by_email('desktop@auto-a11y.local')
+                    db.create_app_user(new_user)
+                    desktop_user = db.get_app_user_by_email('desktop@auto-a11y.local')
                 if desktop_user:
                     login_user(desktop_user)
 
@@ -270,14 +274,17 @@ def create_app(config: Any) -> Flask:
             return None
         if not current_user.is_authenticated:
             if request.is_json or request.path.startswith('/api/'):
-                return jsonify({'error': 'Authentication required'}), 401
+                resp = jsonify({'error': 'Authentication required'})
+                resp.status_code = 401
+                return resp
             return redirect(url_for('auth.login', next=request.url))
+        return None
 
     # Template context processor - make user_has_projects available in all templates
     @app.context_processor
     def inject_user_has_projects() -> dict[str, bool]:
         if current_user.is_authenticated and not getattr(current_user, 'is_superadmin', False):
-            projects = app.db.get_projects_for_user(str(current_user.get_id()))
+            projects = db.get_projects_for_user(str(current_user.get_id()))
             return {'user_has_projects': len(projects) > 0}
         return {'user_has_projects': True}
 
@@ -373,36 +380,36 @@ def create_app(config: Any) -> Flask:
         """Main dashboard"""
         # Non-admin users only see stats for projects they are members of
         if getattr(current_user, 'is_superadmin', False):
-            user_projects = app.db.get_projects()
+            user_projects = db.get_projects()
         else:
-            user_projects = app.db.get_projects_for_user(str(current_user.get_id()))
+            user_projects = db.get_projects_for_user(str(current_user.get_id()))
 
         # If user has no project access, show welcome page
         if not user_projects and not getattr(current_user, 'is_superadmin', False):
-            return render_template('dashboard.html', stats=None, config=app.app_config,
+            return render_template('dashboard.html', stats=None, config=config,
                                    has_projects=False)
 
         # Collect project IDs to scope the stats query
-        project_ids = [p.id for p in user_projects]
+        project_ids = [p.id for p in user_projects if p.id is not None]
 
         # Get pages belonging to user's projects
         if getattr(current_user, 'is_superadmin', False):
-            pages = list(app.db.pages.find({'status': 'tested'}))
-            total_pages = app.db.pages.count_documents({})
-            tested_pages = app.db.pages.count_documents({'status': 'tested'})
+            pages = list(db.pages.find({'status': 'tested'}))
+            total_pages = db.pages.count_documents({})
+            tested_pages = db.pages.count_documents({'status': 'tested'})
         else:
             # Get website IDs for user's projects
             website_ids = []
             for pid in project_ids:
-                for w in app.db.get_websites(pid):
+                for w in db.get_websites(pid):
                     website_ids.append(w.id)
             if website_ids:
-                pages = list(app.db.pages.find({
+                pages = list(db.pages.find({
                     'website_id': {'$in': website_ids},
                     'status': 'tested'
                 }))
-                total_pages = app.db.pages.count_documents({'website_id': {'$in': website_ids}})
-                tested_pages = app.db.pages.count_documents({
+                total_pages = db.pages.count_documents({'website_id': {'$in': website_ids}})
+                tested_pages = db.pages.count_documents({
                     'website_id': {'$in': website_ids},
                     'status': 'tested'
                 })
@@ -415,7 +422,7 @@ def create_app(config: Any) -> Flask:
         # Each tested page's latest result has violation_count, warning_count, etc.
         page_ids = [str(p['_id']) for p in pages]
         if page_ids:
-            pipeline = [
+            pipeline: list[dict[str, Any]] = [
                 {'$match': {'page_id': {'$in': page_ids}}},
                 {'$sort': {'test_date': -1}},
                 {'$group': {
@@ -426,7 +433,7 @@ def create_app(config: Any) -> Flask:
                     'discovery_count': {'$first': {'$ifNull': ['$discovery_count', 0]}},
                 }},
             ]
-            latest_results = list(app.db.test_results.aggregate(pipeline))
+            latest_results = list(db.test_results.aggregate(pipeline))
             total_violations = sum(r.get('violation_count', 0) for r in latest_results)
             total_warnings = sum(r.get('warning_count', 0) for r in latest_results)
             total_info = sum(r.get('info_count', 0) for r in latest_results)
@@ -446,7 +453,7 @@ def create_app(config: Any) -> Flask:
             'total_info': total_info,
             'total_discovery': total_discovery,
         }
-        return render_template('dashboard.html', stats=stats, config=app.app_config,
+        return render_template('dashboard.html', stats=stats, config=config,
                                has_projects=True)
     
     @app.route('/health')
@@ -454,7 +461,7 @@ def create_app(config: Any) -> Flask:
         """Health check endpoint"""
         return jsonify({
             'status': 'healthy',
-            'database': 'connected' if app.db.client else 'disconnected'
+            'database': 'connected' if db.client else 'disconnected'
         })
     
     @app.route('/help')

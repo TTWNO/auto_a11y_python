@@ -683,15 +683,19 @@ def upload_to_drupal(project_id: str) -> Response:
                     # Prepare website data with test results
                     website_data = []
                     for website in websites:
-                        pages = db.get_pages(website.id)
+                        if not website.id:
+                            continue
+                        website_pages = db.get_pages(website.id)
                         page_results = []
 
-                        for page in pages:
+                        for ws_page in website_pages:
+                            if not ws_page.id:
+                                continue
                             # Apply page URL filter
-                            if page_urls and page.url not in page_urls:
+                            if page_urls and ws_page.url not in page_urls:
                                 continue
 
-                            test_result = db.get_latest_test_result(page.id)
+                            test_result = db.get_latest_test_result(ws_page.id)
                             if test_result:
                                 # Apply violation-level filters
                                 if touchpoints or wcag_criteria or impact_levels:
@@ -730,7 +734,7 @@ def upload_to_drupal(project_id: str) -> Response:
                                 # Only include if there are violations after filtering
                                 if test_result.violations or test_result.warnings or test_result.info:
                                     page_results.append({
-                                        'page': page,
+                                        'page': ws_page,
                                         'test_result': test_result
                                     })
 
@@ -920,9 +924,9 @@ def upload_to_drupal(project_id: str) -> Response:
                         # Get discovered page UUID for this violation
                         discovered_page_uuid = None
                         if violation.discovered_page_id:
-                            disc_page = db.get_discovered_page_by_id(violation.discovered_page_id)
-                            if disc_page and disc_page.drupal_uuid:
-                                discovered_page_uuid = disc_page.drupal_uuid
+                            found_disc_page = db.get_discovered_page_by_id(violation.discovered_page_id)
+                            if found_disc_page and found_disc_page.drupal_uuid:
+                                discovered_page_uuid = found_disc_page.drupal_uuid
 
                         # Check if issue already exists using unique_id
                         existing_issue = db.drupal_issues.find_one({
@@ -1505,10 +1509,14 @@ def upload_automated_results_to_drupal(project_id: str) -> Response:
                 # Prepare website data with test results
                 website_data = []
                 for website in websites:
+                    if not website.id:
+                        continue
                     pages = db.get_pages(website.id)
                     page_results = []
 
                     for page in pages:
+                        if not page.id:
+                            continue
                         test_result = db.get_latest_test_result(page.id)
                         if test_result:
                             page_results.append({
@@ -1624,18 +1632,18 @@ def upload_automated_results_to_drupal(project_id: str) -> Response:
                         failure_count += 1
                         continue
 
-                    page = DiscoveredPage.from_dict(page_doc)
+                    disc_export_page = DiscoveredPage.from_dict(page_doc)
 
                     yield json.dumps({
                         'type': 'progress',
                         'current': current_item,
                         'total': total_discovered_pages,
-                        'item': page.title,
+                        'item': disc_export_page.title,
                         'status': 'exporting'
                     }) + '\n'
 
                     # Export page
-                    result = page_exporter.export_from_discovered_page_model(page, audit_uuid)
+                    result = page_exporter.export_from_discovered_page_model(disc_export_page, audit_uuid)
 
                     if result.get('success'):
                         # Update database with Drupal UUID
@@ -1655,7 +1663,7 @@ def upload_automated_results_to_drupal(project_id: str) -> Response:
                             'type': 'success',
                             'current': current_item,
                             'total': total_discovered_pages,
-                            'item': page.title,
+                            'item': disc_export_page.title,
                             'uuid': result['uuid'],
                             'nid': result.get('nid')
                         }) + '\n'

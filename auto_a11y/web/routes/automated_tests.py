@@ -9,7 +9,7 @@ from auto_a11y.web.typed_app import get_db
 from datetime import datetime
 import logging
 
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from typing import Any
 
 from auto_a11y.core.database import Database
@@ -50,9 +50,13 @@ def get_filter_options(project_id: str) -> Response | tuple[Response, int]:
     total_issues = 0
 
     for website in websites:
+        if not website.id:
+            continue
         pages = db.get_pages(website.id)
 
         for page in pages:
+            if not page.id:
+                continue
             test_result = db.get_latest_test_result(page.id)
             if test_result:
                 # Add page to list
@@ -104,19 +108,23 @@ def project_automated_tests(project_id: str) -> str | Response | tuple[str, int]
     website_lookup = {w.id: w for w in websites}
 
     # Collect all page IDs across all project websites
-    all_page_ids = []
-    page_to_website = {}
-    page_lookup = {}
+    all_page_ids: list[str] = []
+    page_to_website: dict[str, str | None] = {}
+    page_lookup: dict[str, Any] = {}
     for website in websites:
+        if not website.id:
+            continue
         pages = db.get_pages(website.id)
         for page in pages:
+            if not page.id:
+                continue
             all_page_ids.append(page.id)
             page_to_website[page.id] = website.id
             page_lookup[page.id] = page
 
     # Use a single aggregation to get latest result counts per page
     # instead of N+1 queries that crash on large projects
-    pipeline = [
+    pipeline: list[Mapping[str, Any]] = [
         {'$match': {'page_id': {'$in': all_page_ids}}},
         {'$sort': {'test_date': -1}},
         {'$group': {
@@ -133,10 +141,10 @@ def project_automated_tests(project_id: str) -> str | Response | tuple[str, int]
     test_results_data = []
     for r in latest_results:
         page_id = r['_id']
-        page = page_lookup.get(page_id)
-        website_id = page_to_website.get(page_id)
-        website = website_lookup.get(website_id) if website_id else None
-        if not page or not website:
+        result_page = page_lookup.get(page_id)
+        result_website_id = page_to_website.get(page_id)
+        result_website = website_lookup.get(result_website_id) if result_website_id else None
+        if not result_page or not result_website:
             continue
 
         total = r['violation_count'] + r['warning_count'] + r['info_count']
@@ -145,8 +153,8 @@ def project_automated_tests(project_id: str) -> str | Response | tuple[str, int]
             def __init__(self, rid: object) -> None:
                 self.id = str(rid)
         test_results_data.append({
-            'page': page,
-            'website': website,
+            'page': result_page,
+            'website': result_website,
             'test_result': _ResultRef(r['result_id']),
             'violation_count': r['violation_count'],
             'warning_count': r['warning_count'],
@@ -187,9 +195,13 @@ def filter_test_results(project_id: str) -> Response:
     filtered_results = []
 
     for website in websites:
+        if not website.id:
+            continue
         pages = db.get_pages(website.id)
 
         for page in pages:
+            if not page.id:
+                continue
             # Filter by page URL if specified
             if page_urls and page.url not in page_urls:
                 continue
@@ -302,10 +314,14 @@ def upload_to_drupal(project_id: str) -> Response:
             # Prepare website data with test results
             website_data = []
             for website in websites:
+                if not website.id:
+                    continue
                 pages = db.get_pages(website.id)
                 page_results = []
 
                 for page in pages:
+                    if not page.id:
+                        continue
                     # Apply page URL filter
                     if page_urls and page.url not in page_urls:
                         continue
@@ -421,7 +437,7 @@ def upload_to_drupal(project_id: str) -> Response:
             # Initialize exporters
             taxonomies = DiscoveredPageTaxonomies(client)
             page_exporter = DiscoveredPageExporter(client, taxonomies)
-            wcag_cache = WCAGChapterCache(client, taxonomies.cache)
+            wcag_cache = WCAGChapterCache(client)
             issue_exporter = IssueExporter(client, taxonomies.cache, wcag_cache)
 
             # Step 5: Upload Discovered Pages to Drupal
@@ -439,10 +455,10 @@ def upload_to_drupal(project_id: str) -> Response:
                         continue
 
                     from auto_a11y.models import DiscoveredPage, DrupalSyncStatus
-                    page = DiscoveredPage.from_dict(page_doc)
+                    disc_page = DiscoveredPage.from_dict(page_doc)
 
                     # Export page
-                    result = page_exporter.export_from_discovered_page_model(page, audit_uuid)
+                    result = page_exporter.export_from_discovered_page_model(disc_page, audit_uuid)
 
                     if result.get('success'):
                         # Update database with Drupal UUID

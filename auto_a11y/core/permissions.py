@@ -4,11 +4,14 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 from functools import wraps
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from flask import Flask, current_app, request, abort, jsonify, flash, redirect, url_for
 from auto_a11y.web.fluent import ftl
-from flask_login import current_user, CurrentUserProtocol
+from flask_login import current_user
+
+if TYPE_CHECKING:
+    from flask_login import CurrentUserProtocol
 
 from auto_a11y.models.permission_group import (
     PERMISSION_LEVELS, GLOBAL_RESOURCES, RESOURCE_NOUNS

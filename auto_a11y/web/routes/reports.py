@@ -6,7 +6,8 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from flask import Blueprint, Response, render_template, request, jsonify, send_file, current_app, url_for, flash, redirect, session, g
+from flask import Blueprint, Flask, Response, render_template, request, jsonify, send_file, current_app, url_for, flash, redirect, session, g
+from werkzeug.wrappers import Response as WerkzeugResponse
 from auto_a11y.web.fluent import ftl, force_locale, _get_current_locale as get_locale
 from auto_a11y.models import PageStatus
 from auto_a11y.reporting import ReportGenerator, PageStructureReport
@@ -23,6 +24,15 @@ import json
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
+
+def _get_real_app() -> Flask:
+    """Get the real Flask app from the current_app proxy (for background threads)."""
+    # LocalProxy._get_current_object() isn't in Flask's stubs; use getattr to avoid
+    # attr-defined errors while keeping the runtime behaviour intact.
+    getter = getattr(current_app, '_get_current_object')
+    app: Flask = getter()
+    return app
 reports_bp = Blueprint('reports', __name__)
 
 
@@ -69,6 +79,8 @@ def reports_dashboard() -> str:
     # Get all websites for the dropdown
     websites = []
     for project in projects:
+        if not project.id:
+            continue
         project_websites = get_db().get_websites(project.id)
         for website in project_websites:
             websites.append({
@@ -128,7 +140,7 @@ def generate_report() -> tuple[Response, int] | Response:
     db = get_db()
     config = get_app_config().__dict__.copy()
     language = str(get_locale()) if get_locale() else 'en'
-    app = current_app._get_current_object()
+    app = _get_real_app()
 
     job_id = f"report_{uuid4().hex[:8]}"
     job_manager = JobManager(db)
@@ -147,6 +159,7 @@ def generate_report() -> tuple[Response, int] | Response:
                 generator = ReportGenerator(db, config, language=language)
                 format_map = {'excel': 'xlsx'}
                 fmt = format_map.get(report_type, report_type)
+                func: Callable[..., Any]
                 if scope == 'all':
                     func = generator.generate_all_projects_report
                     kwargs = {'format': fmt}
@@ -228,7 +241,7 @@ def restart_job(job_id: str) -> tuple[Response, int] | Response:
     db = get_db()
     config = get_app_config().__dict__.copy()
     language = str(get_locale()) if get_locale() else 'en'
-    app = current_app._get_current_object()
+    app = _get_real_app()
     output_dir = get_app_config().REPORTS_DIR
 
     new_job_id = f"report_{uuid4().hex[:8]}"
@@ -293,15 +306,15 @@ def _build_restart_generator(scope: str | None, report_type: str, project_id: st
         return generate_and_save, {}
 
     elif scope == 'discovery_website':
-        generator = DiscoveryReportGenerator(db, config, language=language)
-        return generator.generate_website_discovery_report, {'website_id': website_id, 'format': report_type}
+        disco_gen = DiscoveryReportGenerator(db, config, language=language)
+        return disco_gen.generate_website_discovery_report, {'website_id': website_id, 'format': report_type}
 
     elif scope == 'discovery_project':
-        generator = DiscoveryReportGenerator(db, config, language=language)
-        return generator.generate_project_discovery_report, {'project_id': project_id, 'format': report_type}
+        disco_gen2 = DiscoveryReportGenerator(db, config, language=language)
+        return disco_gen2.generate_project_discovery_report, {'project_id': project_id, 'format': report_type}
 
     elif scope == 'static_html':
-        page_ids = []
+        page_ids: list[str] = []
         project_name = "Accessibility Report"
         website_url = None
 
@@ -345,10 +358,10 @@ def _build_restart_generator(scope: str | None, report_type: str, project_id: st
                 v.touchpoint for v in first_result.violations if v.touchpoint
             ))
 
-        generator = StaticHTMLReportGenerator(db, output_dir=output_dir, language=language)
+        static_gen = StaticHTMLReportGenerator(db, output_dir=output_dir, language=language)
 
         def generate_static(progress_callback: Callable[..., Any] | None = None) -> Any:
-            return generator.generate_report(
+            return static_gen.generate_report(
                 page_ids=page_ids,
                 project_name=project_name,
                 website_url=website_url,
@@ -362,10 +375,10 @@ def _build_restart_generator(scope: str | None, report_type: str, project_id: st
         return generate_static, {}
 
     elif scope == 'deduplicated':
-        generator = StaticHTMLReportGenerator(db, output_dir=output_dir, language=language)
+        dedup_gen = StaticHTMLReportGenerator(db, output_dir=output_dir, language=language)
 
         def generate_dedup(progress_callback: Callable[..., Any] | None = None) -> Any:
-            return generator.generate_project_deduplicated_report(
+            return dedup_gen.generate_project_deduplicated_report(
                 project_id=project_id,
                 website_id=website_id,
                 progress_callback=progress_callback
@@ -374,8 +387,8 @@ def _build_restart_generator(scope: str | None, report_type: str, project_id: st
 
     elif scope == 'recordings':
         from auto_a11y.reporting.recordings_report import RecordingsReportGenerator
-        generator = RecordingsReportGenerator(db, config, language=language)
-        return generator.generate_project_recordings_report, {
+        rec_gen = RecordingsReportGenerator(db, config, language=language)
+        return rec_gen.generate_project_recordings_report, {
             'project_id': project_id,
             'format': report_type,
             'language': language
@@ -389,7 +402,7 @@ def _build_restart_generator(scope: str | None, report_type: str, project_id: st
 
 
 @reports_bp.route('/download/<filename>')
-def download_report(filename: str) -> tuple[Response, int] | Response:
+def download_report(filename: str) -> tuple[Response, int] | Response | WerkzeugResponse:
     """Download generated report"""
     reports_dir = get_app_config().REPORTS_DIR
     file_path = reports_dir / filename
@@ -430,7 +443,7 @@ def delete_report(filename: str) -> tuple[Response, int] | Response:
 
 
 @reports_bp.route('/project/<project_id>/summary')
-def project_summary(project_id: str) -> Response:
+def project_summary(project_id: str) -> Response | WerkzeugResponse:
     """Project summary -- redirects to the project report page."""
     return redirect(url_for('projects.generate_project_report', project_id=project_id))
 
@@ -467,7 +480,7 @@ def generate_page_report(page_id: str) -> tuple[Response, int] | Response:
     db = get_db()
     config = get_app_config().__dict__.copy()
     language = str(get_locale()) if get_locale() else 'en'
-    app = current_app._get_current_object()
+    app = _get_real_app()
 
     job_id = f"report_{uuid4().hex[:8]}"
     job_manager = JobManager(db)
@@ -509,7 +522,7 @@ def generate_website_report(website_id: str) -> tuple[Response, int] | Response:
     db = get_db()
     config = get_app_config().__dict__.copy()
     language = str(get_locale()) if get_locale() else 'en'
-    app = current_app._get_current_object()
+    app = _get_real_app()
 
     job_id = f"report_{uuid4().hex[:8]}"
     job_manager = JobManager(db)
@@ -551,7 +564,7 @@ def generate_project_report(project_id: str) -> tuple[Response, int] | Response:
     db = get_db()
     config = get_app_config().__dict__.copy()
     language = str(get_locale()) if get_locale() else 'en'
-    app = current_app._get_current_object()
+    app = _get_real_app()
 
     job_id = f"report_{uuid4().hex[:8]}"
     job_manager = JobManager(db)
@@ -601,7 +614,7 @@ def generate_page_structure_report_download(website_id: str) -> tuple[Response, 
     # Capture Flask context into local variables
     db = get_db()
     language = session.get('language', 'en')
-    app = current_app._get_current_object()
+    app = _get_real_app()
 
     job_id = f"report_{uuid4().hex[:8]}"
     job_manager = JobManager(db)
@@ -660,7 +673,7 @@ def generate_page_structure_report() -> tuple[Response, int] | Response:
     # Capture Flask context into local variables
     db = get_db()
     language = session.get('language', 'en')
-    app = current_app._get_current_object()
+    app = _get_real_app()
 
     job_id = f"report_{uuid4().hex[:8]}"
     job_manager = JobManager(db)
@@ -704,7 +717,7 @@ def generate_discovery_website_report(website_id: str) -> tuple[Response, int] |
     db = get_db()
     config = get_app_config().__dict__.copy()
     language = session.get('language', 'en')
-    app = current_app._get_current_object()
+    app = _get_real_app()
 
     job_id = f"report_{uuid4().hex[:8]}"
     job_manager = JobManager(db)
@@ -746,7 +759,7 @@ def generate_discovery_project_report(project_id: str) -> tuple[Response, int] |
     db = get_db()
     config = get_app_config().__dict__.copy()
     language = session.get('language', 'en')
-    app = current_app._get_current_object()
+    app = _get_real_app()
 
     job_id = f"report_{uuid4().hex[:8]}"
     job_manager = JobManager(db)
@@ -801,27 +814,29 @@ def generate_static_html_report() -> tuple[Response, int] | Response:
         websites = get_db().get_websites(project_id)
 
         for website in websites:
+            if not website.id:
+                continue
             pages = get_db().get_pages(website.id)
             page_ids.extend([str(p.id) for p in pages if p.status == PageStatus.TESTED])
             if not website_url and website.url:
                 website_url = website.url
 
     elif website_id:
-        website = get_db().get_website(website_id)
-        if not website:
+        ws = get_db().get_website(website_id)
+        if not ws:
             return jsonify({'error': 'Website not found'}), 404
 
-        if website.project_id:
-            project = get_db().get_project(website.project_id)
+        if ws.project_id:
+            project = get_db().get_project(ws.project_id)
             if project:
-                project_name = f"{project.name} - {website.name}"
+                project_name = f"{project.name} - {ws.name}"
             else:
-                project_name = website.name
+                project_name = ws.name or 'Unknown'
         else:
-            project_name = website.name
+            project_name = ws.name or 'Unknown'
 
         display_name = f'Static HTML Report - {project_name}'
-        website_url = website.url
+        website_url = ws.url
         pages = get_db().get_pages(website_id)
         page_ids = [str(p.id) for p in pages if p.status == PageStatus.TESTED]
     else:
@@ -830,8 +845,12 @@ def generate_static_html_report() -> tuple[Response, int] | Response:
         display_name = 'Static HTML Report - All Projects'
 
         for project in projects:
+            if not project.id:
+                continue
             websites = get_db().get_websites(project.id)
             for website in websites:
+                if not website.id:
+                    continue
                 pages = get_db().get_pages(website.id)
                 page_ids.extend([str(p.id) for p in pages if p.status == PageStatus.TESTED])
 
@@ -852,7 +871,7 @@ def generate_static_html_report() -> tuple[Response, int] | Response:
     db = get_db()
     language = session.get('language', 'en')
     output_dir = get_app_config().REPORTS_DIR
-    app = current_app._get_current_object()
+    app = _get_real_app()
 
     job_id = f"report_{uuid4().hex[:8]}"
     job_manager = JobManager(db)
@@ -914,7 +933,7 @@ def generate_deduplicated_report() -> Response:
     db = get_db()
     language = session.get('language', 'en')
     output_dir = get_app_config().REPORTS_DIR
-    app = current_app._get_current_object()
+    app = _get_real_app()
 
     job_id = f"report_{uuid4().hex[:8]}"
     job_manager = JobManager(db)
@@ -976,7 +995,7 @@ def generate_recordings_report(project_id: str) -> tuple[Response, int] | Respon
     db = get_db()
     config = get_app_config().__dict__.copy()
     language = session.get('language', 'en')
-    app = current_app._get_current_object()
+    app = _get_real_app()
 
     job_id = f"report_{uuid4().hex[:8]}"
     job_manager = JobManager(db)

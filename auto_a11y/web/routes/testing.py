@@ -3,6 +3,7 @@ Testing and analysis routes
 """
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 from flask import Blueprint, Response, render_template, request, jsonify, current_app, url_for
@@ -133,7 +134,7 @@ def get_trend_data(db: Any, project_id: str | None = None, website_id: str | Non
     start_date = end_date - timedelta(days=days)
 
     # Initialize daily buckets
-    trend_data = []
+    trend_data: list[dict[str, Any]] = []
     current_date = start_date
     while current_date <= end_date:
         trend_data.append({
@@ -204,7 +205,7 @@ def aggregate_by_granularity(data_points: list[dict[str, Any]], granularity: str
 
     from collections import defaultdict
 
-    buckets = defaultdict(lambda: {'violations': 0, 'warnings': 0, 'tests': 0})
+    buckets: defaultdict[str, dict[str, int]] = defaultdict(lambda: {'violations': 0, 'warnings': 0, 'tests': 0})
 
     for point in data_points:
         date = datetime.strptime(point['date'], '%Y-%m-%d')
@@ -345,7 +346,7 @@ def get_filtered_item_counts(db: Any, result_ids: list[Any], result_date_map: di
         return {}
 
     # Build match criteria
-    match_criteria = {'test_result_id': {'$in': object_ids}}
+    match_criteria: dict[str, Any] = {'test_result_id': {'$in': object_ids}}
 
     # Filter by item type
     if issue_types:
@@ -450,7 +451,7 @@ def get_detailed_trend_data(db: Any, project_id: str | None = None, website_id: 
     page_ids = get_page_ids_for_scope(db, project_id, website_id)
 
     # Initialize daily buckets
-    daily_data = []
+    daily_data: list[dict[str, Any]] = []
     current_date = start_date
     while current_date <= end_date:
         daily_data.append({
@@ -1125,7 +1126,7 @@ def testing_dashboard() -> str:
         total_violations = 0
         total_warnings = 0
         if tested_page_ids:
-            pipeline = [
+            pipeline: list[Mapping[str, Any]] = [
                 {'$match': {'page_id': {'$in': tested_page_ids}}},
                 {'$sort': {'test_date': -1}},
                 {'$group': {
@@ -1187,9 +1188,11 @@ def testing_dashboard() -> str:
         schedules = db.get_test_schedules_for_website(website_id)[:5]
     elif project_id:
         for w in websites[:3]:  # Limit to first 3 websites for speed
+            if not w.id:
+                continue
             website_schedules = db.get_test_schedules_for_website(w.id)
             for s in website_schedules:
-                s._website_name = w.name  # Add website name for display
+                setattr(s, '_website_name', w.name)  # Add website name for display
             schedules.extend(website_schedules)
             if len(schedules) >= 5:
                 break
@@ -1412,7 +1415,7 @@ def api_stats() -> tuple[Response, int] | Response:
             total_violations = 0
             total_warnings = 0
             if tested_page_ids:
-                pipeline = [
+                pipeline2: list[Mapping[str, Any]] = [
                     {'$match': {'page_id': {'$in': tested_page_ids}}},
                     {'$sort': {'test_date': -1}},
                     {'$group': {
@@ -1421,7 +1424,7 @@ def api_stats() -> tuple[Response, int] | Response:
                         'warning_count': {'$first': {'$ifNull': ['$warning_count', 0]}},
                     }},
                 ]
-                for result in db.test_results.aggregate(pipeline):
+                for result in db.test_results.aggregate(pipeline2):
                     total_violations += result.get('violation_count', 0)
                     total_warnings += result.get('warning_count', 0)
 
@@ -1486,7 +1489,7 @@ def api_active_tests() -> Response:
                     if job.get('website_id'):
                         website = get_db().get_website(job['website_id'])
                         if website:
-                            website_name = website.name
+                            website_name = website.name or 'Unknown'
 
                     active_jobs.append({
                         'job_id': job.get('job_id'),
@@ -1587,6 +1590,8 @@ def api_run_tests() -> tuple[Response, int] | Response:
             total_pages = 0
 
             for website in websites:
+                if not website.id:
+                    continue
                 pages = db.get_pages(website.id)
                 if test_untested_only:
                     pages = [p for p in pages if p.status != PageStatus.TESTED]
@@ -1615,6 +1620,9 @@ def api_run_tests() -> tuple[Response, int] | Response:
                 'project_name': project.name,
                 'tester_ids': tester_ids
             })
+
+        else:
+            return jsonify({'error': 'Either website_id or project_id is required'}), 400
 
     except Exception as e:
         logger.error(f"Error starting tests: {e}")
@@ -1677,15 +1685,17 @@ def api_trends_detailed() -> tuple[Response, int] | Response:
     start_date = None
     end_date = None
 
-    if request.args.get('start_date'):
+    start_date_str = request.args.get('start_date')
+    if start_date_str:
         try:
-            start_date = datetime.strptime(request.args.get('start_date'), '%Y-%m-%d')
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
         except ValueError:
             return jsonify({'error': 'Invalid start_date format. Use YYYY-MM-DD'}), 400
 
-    if request.args.get('end_date'):
+    end_date_str = request.args.get('end_date')
+    if end_date_str:
         try:
-            end_date = datetime.strptime(request.args.get('end_date'), '%Y-%m-%d')
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
             # Include the full end day
             end_date = end_date.replace(hour=23, minute=59, second=59)
         except ValueError:
@@ -1820,7 +1830,7 @@ def api_trends_compare() -> tuple[Response, int] | Response:
             total_violations = 0
             total_warnings = 0
             if tested_page_ids:
-                pipeline = [
+                pipeline3: list[Mapping[str, Any]] = [
                     {'$match': {'page_id': {'$in': tested_page_ids}}},
                     {'$sort': {'test_date': -1}},
                     {'$group': {
@@ -1829,7 +1839,7 @@ def api_trends_compare() -> tuple[Response, int] | Response:
                         'warning_count': {'$first': {'$ifNull': ['$warning_count', 0]}},
                     }},
                 ]
-                for result in db.test_results.aggregate(pipeline):
+                for result in db.test_results.aggregate(pipeline3):
                     total_violations += result.get('violation_count', 0)
                     total_warnings += result.get('warning_count', 0)
 

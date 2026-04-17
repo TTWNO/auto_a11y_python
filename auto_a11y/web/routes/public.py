@@ -79,7 +79,7 @@ def token_landing(token: str) -> str:
         if not website:
             abort(404)
         project = get_db().get_project(website.project_id)
-        pages = get_db().get_pages(website.id)
+        pages = get_db().get_pages(website.id) if website.id else []
         sort_by = request.args.get('sort', 'url')
         sort_dir = request.args.get('dir', 'asc')
         sorted_pages = sort_pages(pages, sort_by, sort_dir)
@@ -171,6 +171,8 @@ def client_projects() -> str:
         projects = get_db().get_all_projects()
     project_data = []
     for project in projects:
+        if not project.id:
+            continue
         stats = get_db().get_project_stats(project.id)
         project_data.append({'project': project, 'stats': stats})
     return render_template('public/project_list.html', project_data=project_data)

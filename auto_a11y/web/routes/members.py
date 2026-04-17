@@ -53,7 +53,8 @@ def add_project_member(project_id: str) -> Response | tuple[Response, int]:
 
     data = request.get_json() or request.form
     user_id = data.get('user_id')
-    group_ids = data.getlist('group_ids') if hasattr(data, 'getlist') else data.get('group_ids', [])
+    raw_group_ids = data.getlist('group_ids') if hasattr(data, 'getlist') else data.get('group_ids', [])
+    group_ids: list[str] = list(raw_group_ids) if isinstance(raw_group_ids, list) else [str(raw_group_ids)]
 
     if not user_id:
         return jsonify({'error': ftl('common-user_id-is-required')}), 400
@@ -78,7 +79,8 @@ def update_project_member(project_id: str, user_id: str) -> Response | tuple[Res
         return jsonify({'error': ftl('common-project-not-found')}), 404
 
     data = request.get_json() or request.form
-    group_ids = data.getlist('group_ids') if hasattr(data, 'getlist') else data.get('group_ids', [])
+    raw_group_ids = data.getlist('group_ids') if hasattr(data, 'getlist') else data.get('group_ids', [])
+    group_ids: list[str] = list(raw_group_ids) if isinstance(raw_group_ids, list) else [str(raw_group_ids)]
 
     if not group_ids:
         return jsonify({'error': ftl('common-at-least-one-group-is-required')}), 400

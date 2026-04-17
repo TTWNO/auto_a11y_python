@@ -3,9 +3,10 @@ Project management routes
 """
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
+from typing import Any
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
+from flask import Blueprint, Flask, render_template, request, redirect, url_for, flash, jsonify, current_app
 from werkzeug.wrappers import Response
 from auto_a11y.web.fluent import ftl, lazy_ftl, _get_current_locale as get_locale
 from auto_a11y.web.typed_app import get_db, get_app_config, get_test_config
@@ -344,7 +345,7 @@ def create_project() -> str | Response:
         project_id = get_db().create_project(project)
         # Auto-add creator as member with Admin group
         admin_group = get_db().get_group_by_name('Admin')
-        if admin_group:
+        if admin_group and admin_group.id:
             get_db().add_project_member(project_id, str(current_user.get_id()), [admin_group.id])
         flash(ftl('projects-project-name-created-successfully', name=name), 'success')
         
@@ -503,8 +504,10 @@ def view_project(project_id: str) -> str | Response:
     stats = get_db().get_project_stats(project_id)
 
     # Calculate stats for each website (violations, warnings, and actual page count)
-    website_stats = {}
+    website_stats: dict[str | None, dict[str, int]] = {}
     for website in websites:
+        if not website.id:
+            continue
         pages = get_db().get_pages(website.id)
         tested_page_ids = [p.id for p in pages if p.status == PageStatus.TESTED]
 
@@ -512,7 +515,7 @@ def view_project(project_id: str) -> str | Response:
         violations = 0
         warnings = 0
         if tested_page_ids:
-            pipeline = [
+            agg_pipeline: list[Mapping[str, Any]] = [
                 {'$match': {'page_id': {'$in': tested_page_ids}}},
                 {'$sort': {'test_date': -1}},
                 {'$group': {
@@ -521,7 +524,7 @@ def view_project(project_id: str) -> str | Response:
                     'warning_count': {'$first': {'$ifNull': ['$warning_count', 0]}},
                 }},
             ]
-            for result in get_db().test_results.aggregate(pipeline):
+            for result in get_db().test_results.aggregate(agg_pipeline):
                 violations += result.get('violation_count', 0)
                 warnings += result.get('warning_count', 0)
 
@@ -865,11 +868,13 @@ def generate_project_report(project_id: str) -> Response:
 
     # Capture all data in route handler
     db = get_db()
-    app = current_app._get_current_object()
+    app = getattr(current_app, '_get_current_object')()
     reports_dir = str(get_app_config().REPORTS_DIR)
     websites = db.get_websites(project_id)
-    pages_by_website = {}
+    pages_by_website: dict[str, list[Any]] = {}
     for website in websites:
+        if not website.id:
+            continue
         pages_by_website[website.id] = db.get_pages(website.id)
 
     language = str(get_locale()) if get_locale() else 'en'

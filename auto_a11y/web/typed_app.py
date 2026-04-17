@@ -16,7 +16,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, cast
 
-from flask import Flask, current_app
+from flask import Flask, Response, current_app
+from flask import redirect as _flask_redirect
 
 if TYPE_CHECKING:
     from auto_a11y.core.database import Database
@@ -49,3 +50,16 @@ def get_flask_app() -> Flask:
     app: Any = current_app
     result: Flask = app._get_current_object()
     return result
+
+
+def redirect(location: str, code: int = 302) -> Response:
+    """Typed wrapper around :func:`flask.redirect`.
+
+    Flask's ``redirect()`` is annotated as returning
+    ``werkzeug.wrappers.Response`` (the base class), but at runtime --
+    inside an application context -- it returns ``flask.Response`` via
+    ``current_app.redirect()``.  This wrapper simply casts the return
+    value so callers can use ``flask.Response`` in their annotations
+    without mypy complaining.
+    """
+    return cast(Response, _flask_redirect(location, code))

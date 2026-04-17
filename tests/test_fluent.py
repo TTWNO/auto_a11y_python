@@ -472,3 +472,73 @@ class TestStrictModeTranslateIssue:
         monkeypatch.setattr(fluent_mod, "_strict_mode", True)
 
         assert ftl_translate_issue("") == ""
+
+
+# ---------------------------------------------------------------------------
+# Tests: strict mode inherited by wrappers
+# ---------------------------------------------------------------------------
+
+class TestStrictModeWrappers:
+
+    def test_ftl_attr_inherits_strict(self, fluent_app, monkeypatch):
+        """ftl_attr raises in strict mode when the composite id.attr is missing."""
+        import auto_a11y.web.fluent as fluent_mod
+        from auto_a11y.web.fluent import MissingTranslationError, ftl_attr
+
+        monkeypatch.setattr(fluent_mod, "_strict_mode", True)
+
+        with fluent_app.test_request_context():
+            session["language"] = "en"
+            # search-input.does-not-exist: attribute missing from both locales
+            with pytest.raises(MissingTranslationError):
+                ftl_attr("search-input", "does-not-exist")
+
+    def test_lazy_ftl_inherits_strict(self, fluent_app, monkeypatch):
+        """lazy_ftl raises at stringification time in strict mode."""
+        import auto_a11y.web.fluent as fluent_mod
+        from auto_a11y.web.fluent import MissingTranslationError, lazy_ftl
+
+        monkeypatch.setattr(fluent_mod, "_strict_mode", True)
+
+        lazy = lazy_ftl("does-not-exist")
+        with fluent_app.test_request_context():
+            session["language"] = "en"
+            with pytest.raises(MissingTranslationError):
+                str(lazy)
+
+    def test_ftl_enum_inherits_strict(self, fluent_app, monkeypatch):
+        """ftl_enum raises in strict mode when the enum-* id is missing."""
+        import auto_a11y.web.fluent as fluent_mod
+        from auto_a11y.web.fluent import MissingTranslationError, ftl_enum
+
+        monkeypatch.setattr(fluent_mod, "_strict_mode", True)
+
+        with fluent_app.test_request_context():
+            session["language"] = "en"
+            # 'enum-bogus-value' is not in the test bundles
+            with pytest.raises(MissingTranslationError):
+                ftl_enum("bogus_value")
+
+    def test_ftl_enum_non_strict_still_title_cases(self, fluent_app, monkeypatch):
+        """Non-strict mode: ftl_enum's title-case fallback still works."""
+        import auto_a11y.web.fluent as fluent_mod
+        from auto_a11y.web.fluent import ftl_enum
+
+        monkeypatch.setattr(fluent_mod, "_strict_mode", False)
+
+        with fluent_app.test_request_context():
+            session["language"] = "en"
+            # Falls back to title-cased 'Bogus Value'
+            assert ftl_enum("bogus_value") == "Bogus Value"
+
+    def test_ftl_wcag_inherits_strict(self, fluent_app, monkeypatch):
+        """ftl_wcag raises in strict mode when the wcag-* id is missing."""
+        import auto_a11y.web.fluent as fluent_mod
+        from auto_a11y.web.fluent import MissingTranslationError, ftl_wcag
+
+        monkeypatch.setattr(fluent_mod, "_strict_mode", True)
+
+        with fluent_app.test_request_context():
+            session["language"] = "en"
+            with pytest.raises(MissingTranslationError):
+                ftl_wcag("Some Criterion Not In Bundles")

@@ -1,5 +1,3 @@
-from collections.abc import Mapping
-
 class ClientApplication:
     client_id: str
     client_credential: str | dict[str, str] | None

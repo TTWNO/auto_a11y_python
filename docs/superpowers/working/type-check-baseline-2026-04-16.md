@@ -103,20 +103,20 @@ Every third-party package that generates a missing-stubs / untyped-import error.
 | ~~`requests`~~ | import-untyped | — | — | No | `types-requests` 2.33.0 ✓ | `pip install types-requests` |
 | ~~`openpyxl`~~ | import-untyped | — | — | No | `types-openpyxl` 3.1.5 ✓ | `pip install types-openpyxl` |
 | ~~`flask-cors`~~ | import-untyped | — | — | No | `types-flask-cors` 6.0.0 ✓ | `pip install types-flask-cors` |
-| `flask-login` | import-untyped | reportMissingTypeStubs | — | No | None on PyPI | Write local stub in `stubs/flask_login/` |
-| `flask-wtf` | import-untyped | reportMissingTypeStubs | — | No | None on PyPI | Write local stub in `stubs/flask_wtf/` |
-| `apscheduler` | import-untyped | reportMissingTypeStubs | — | No | None on PyPI | Write local stub in `stubs/apscheduler/` |
-| `msal` | import-untyped | reportMissingTypeStubs | — | No | None on PyPI | Write local stub in `stubs/msal/` |
-| `nest-asyncio` | import-untyped | reportMissingTypeStubs | — | No | None on PyPI | Write local stub in `stubs/nest_asyncio/` |
-| `weasyprint` | import-untyped | reportMissingTypeStubs | — | No | None on PyPI | Write local stub in `stubs/weasyprint/` |
-| `fluent-compiler` | import-untyped | reportMissingTypeStubs | — | No | None on PyPI | Write local stub in `stubs/fluent_compiler/` |
-| ~~`google-auth-oauthlib`~~ | import-untyped | reportMissingTypeStubs | — | No | `google-auth-oauthlib-stubs` 1.2.0 ✓ | `pip install google-auth-oauthlib-stubs` |
+| ~~`flask-login`~~ | import-untyped | reportMissingTypeStubs | — | No | None on PyPI | ~~Write local stub in `stubs/flask_login/`~~ Done |
+| ~~`flask-wtf`~~ | import-untyped | reportMissingTypeStubs | — | No | None on PyPI | ~~Write local stub in `stubs/flask_wtf/`~~ Done |
+| ~~`apscheduler`~~ | import-untyped | reportMissingTypeStubs | — | No | None on PyPI | ~~Write local stub in `stubs/apscheduler/`~~ Done |
+| ~~`msal`~~ | import-untyped | reportMissingTypeStubs | — | No | None on PyPI | ~~Write local stub in `stubs/msal/`~~ Done |
+| ~~`nest-asyncio`~~ | import-untyped | reportMissingTypeStubs | — | No | None on PyPI | ~~Write local stub in `stubs/nest_asyncio/`~~ Done |
+| ~~`weasyprint`~~ | import-untyped | reportMissingTypeStubs | — | No | None on PyPI | ~~Write local stub in `stubs/weasyprint/`~~ Done |
+| ~~`fluent-compiler`~~ | import-untyped | reportMissingTypeStubs | — | No | None on PyPI | ~~Write local stub in `stubs/fluent_compiler/`~~ Done |
+| ~~`google-auth-oauthlib`~~ | import-untyped | reportMissingTypeStubs | — | No | `google-auth-oauthlib-stubs` 1.2.0 ✓ | ~~`pip install google-auth-oauthlib-stubs`~~ Done (supplemented with local `flow.pyi`) |
 | `PyPDF2` | import-not-found | reportMissingImports | unresolved-import | Not installed | None on PyPI | Add to requirements or guard import with `TYPE_CHECKING` |
 | `polib` | — | — | unresolved-import | Not installed | Not checked | Used only in one-off `translate_*.py` scripts; add `# type: ignore` or install |
 
 **Notes:**
-- `flask-login`, `flask-wtf`, `apscheduler`, `msal`, `nest-asyncio`, `weasyprint`, `fluent-compiler` all require hand-written local stubs (no upstream types-* package exists).
-- `google-auth-oauthlib-stubs` is available but not yet installed.
+- ~~`flask-login`, `flask-wtf`, `apscheduler`, `msal`, `nest-asyncio`, `weasyprint`, `fluent-compiler` all require hand-written local stubs (no upstream types-* package exists).~~ All local stubs written.
+- ~~`google-auth-oauthlib-stubs` is available but not yet installed.~~ Installed; supplemented with local `flow.pyi` stub.
 - `PyPDF2` appears to be unused/optional; the import in `scraper.py:1090` is inside a try block. Consider removing or guarding.
 - `polib` is used only in legacy `translate_*.py` root scripts not part of the production package.
 
@@ -381,10 +381,10 @@ ty is correct here — this is a real latent bug.
 | ~~`openpyxl`~~ | `types-openpyxl` | typeshed / PyPI ✓ |
 | ~~`flask-cors`~~ | `types-flask-cors` | typeshed / PyPI ✓ |
 | ~~`google-auth-oauthlib`~~ | `google-auth-oauthlib-stubs` | PyPI ✓ |
-| `flask-login` | hand-write `stubs/flask_login/` | no upstream |
-| `flask-wtf` | hand-write `stubs/flask_wtf/` | no upstream |
-| `apscheduler` | hand-write `stubs/apscheduler/` | no upstream |
-| `msal` | hand-write `stubs/msal/` | no upstream |
-| `nest-asyncio` | hand-write `stubs/nest_asyncio/` | no upstream |
-| `weasyprint` | hand-write `stubs/weasyprint/` | no upstream |
-| `fluent-compiler` | hand-write `stubs/fluent_compiler/` | no upstream |
+| ~~`flask-login`~~ | ~~hand-write `stubs/flask_login/`~~ | Done |
+| ~~`flask-wtf`~~ | ~~hand-write `stubs/flask_wtf/`~~ | Done |
+| ~~`apscheduler`~~ | ~~hand-write `stubs/apscheduler/`~~ | Done |
+| ~~`msal`~~ | ~~hand-write `stubs/msal/`~~ | Done |
+| ~~`nest-asyncio`~~ | ~~hand-write `stubs/nest_asyncio/`~~ | Done |
+| ~~`weasyprint`~~ | ~~hand-write `stubs/weasyprint/`~~ | Done |
+| ~~`fluent-compiler`~~ | ~~hand-write `stubs/fluent_compiler/`~~ | Done |

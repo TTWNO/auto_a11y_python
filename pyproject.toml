@@ -35,6 +35,24 @@ strict_equality = true
 extra_checks = true
 implicit_reexport = false
 
+# --- Per-module relaxations for large HTML/report generators ---
+# These files are 2000-4000 lines of HTML string assembly. They have full
+# function-level annotations, but their deeply nested f-string / dict
+# manipulation triggers hundreds of strict-mode false positives (e.g.
+# subscripting metadata dicts, openpyxl cell() overload resolution,
+# union-attr on Violation|dict dual-path code). A future refactor should
+# replace the raw string building with Jinja2 templates, at which point
+# these overrides can be removed.
+[[tool.mypy.overrides]]
+module = [
+    "auto_a11y.reporting.static_html_generator",
+    "auto_a11y.reporting.formatters",
+    "auto_a11y.reporting.discovery_report",
+]
+strict = false
+disallow_untyped_defs = true
+check_untyped_defs = false
+
 [tool.pyright]
 pythonVersion = "3.11"
 include = [

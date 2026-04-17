@@ -1,0 +1,20 @@
+# Dev-only overrides. Docker Compose auto-merges this on top of
+# docker-compose.yml, so `docker compose up` (or `podman-compose up`) gets
+# live-reload for free.
+#
+# To run without the dev overrides (e.g. to mimic prod), use:
+#   docker compose -f docker-compose.yml up
+
+services:
+  app:
+    # Run Flask with the reloader. --debug flips config.DEBUG, which run.py
+    # forwards into app.run() as use_reloader=True.
+    command: python run.py --host 0.0.0.0 --debug
+    volumes:
+      # Mount the source tree so host edits land in the container.
+      - .:/app
+      # Shadow the bind mount for paths that must stay container-owned:
+      # the host's .venv (if any) targets the host's OS/Python, and
+      # __pycache__ would pollute the host tree.
+      - /app/.venv
+      - /app/__pycache__

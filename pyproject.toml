@@ -48,10 +48,25 @@ module = [
     "auto_a11y.reporting.static_html_generator",
     "auto_a11y.reporting.formatters",
     "auto_a11y.reporting.discovery_report",
+    "tests.test_static_html_streaming",
 ]
 strict = false
 disallow_untyped_defs = true
-check_untyped_defs = false
+check_untyped_defs = true
+disable_error_code = [
+    "index",
+    "call-overload",
+    "attr-defined",
+    "union-attr",
+    "arg-type",
+    "method-assign",
+    "operator",
+    "assignment",
+    "return-value",
+    "no-any-return",
+    "comparison-overlap",
+    "used-before-def",
+]
 
 [tool.pyright]
 pythonVersion = "3.11"

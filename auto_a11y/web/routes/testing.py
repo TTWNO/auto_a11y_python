@@ -11,6 +11,7 @@ from auto_a11y.models import PageStatus
 from auto_a11y.models.app_user import UserRole
 from auto_a11y.web.routes.auth import project_role_required, get_effective_role
 from auto_a11y.core.job_manager import JobType, JobStatus
+from auto_a11y.web.typed_app import get_db, get_app_config
 import asyncio
 import logging
 from datetime import datetime, timedelta
@@ -1059,14 +1060,14 @@ def calculate_progress_metrics(db: Any, project_id: str | None = None, website_i
 @testing_bp.route('/result/<result_id>')
 def view_result(result_id: str) -> str | tuple[Response, int]:
     """View individual test result details"""
-    result = current_app.db.get_test_result(result_id)
+    result = get_db().get_test_result(result_id)
     if not result:
         return jsonify({'error': 'Test result not found'}), 404
     
     # Get related page and website info
-    page = current_app.db.get_page(result.page_id)
-    website = current_app.db.get_website(page.website_id) if page else None
-    project = current_app.db.get_project(website.project_id) if website else None
+    page = get_db().get_page(result.page_id)
+    website = get_db().get_website(page.website_id) if page else None
+    project = get_db().get_project(website.project_id) if website else None
     
     return render_template('testing/result.html',
                          result=result,
@@ -1079,7 +1080,7 @@ def view_result(result_id: str) -> str | tuple[Response, int]:
 @login_required
 def testing_dashboard() -> str:
     """Testing dashboard - comprehensive testing control center"""
-    db = current_app.db
+    db = get_db()
 
     if not getattr(current_user, 'is_superadmin', False):
         # Non-admin users see a simple greeting on the dashboard
@@ -1230,7 +1231,7 @@ def run_test() -> tuple[Response, int] | Response:
     # Validate pages exist
     valid_pages = []
     for page_id in page_ids:
-        page = current_app.db.get_page(page_id)
+        page = get_db().get_page(page_id)
         if page:
             valid_pages.append(page)
     
@@ -1245,7 +1246,7 @@ def run_test() -> tuple[Response, int] | Response:
         
         # Update page status
         page.status = PageStatus.QUEUED
-        current_app.db.update_page(page)
+        get_db().update_page(page)
     
     return jsonify({
         'success': True,
@@ -1268,7 +1269,7 @@ def batch_test() -> tuple[Response, int] | Response:
         return jsonify({'error': 'Website ID required'}), 400
     
     # Get pages based on filter
-    pages = current_app.db.get_pages(website_id)
+    pages = get_db().get_pages(website_id)
     
     # Apply filters
     if filter_criteria.get('untested_only'):
@@ -1336,23 +1337,23 @@ def configure_testing() -> str | tuple[Response, int] | Response:
 
         # Update runtime configuration
         if 'parallel_tests' in config:
-            current_app.app_config.PARALLEL_TESTS = config['parallel_tests']
+            get_app_config().PARALLEL_TESTS = config['parallel_tests']
         if 'test_timeout' in config:
-            current_app.app_config.TEST_TIMEOUT = config['test_timeout']
+            get_app_config().TEST_TIMEOUT = config['test_timeout']
         if 'run_ai_analysis' in config:
-            current_app.app_config.RUN_AI_ANALYSIS = config['run_ai_analysis']
+            get_app_config().RUN_AI_ANALYSIS = config['run_ai_analysis']
         if 'browser_headless' in config:
-            current_app.app_config.BROWSER_HEADLESS = config['browser_headless']
+            get_app_config().BROWSER_HEADLESS = config['browser_headless']
         if 'viewport_width' in config:
-            current_app.app_config.BROWSER_VIEWPORT_WIDTH = config['viewport_width']
+            get_app_config().BROWSER_VIEWPORT_WIDTH = config['viewport_width']
         if 'viewport_height' in config:
-            current_app.app_config.BROWSER_VIEWPORT_HEIGHT = config['viewport_height']
+            get_app_config().BROWSER_VIEWPORT_HEIGHT = config['viewport_height']
         if 'pages_per_page' in config:
-            current_app.app_config.PAGES_PER_PAGE = config['pages_per_page']
+            get_app_config().PAGES_PER_PAGE = config['pages_per_page']
         if 'max_pages_per_page' in config:
-            current_app.app_config.MAX_PAGES_PER_PAGE = config['max_pages_per_page']
+            get_app_config().MAX_PAGES_PER_PAGE = config['max_pages_per_page']
         if 'show_error_codes' in config:
-            current_app.app_config.SHOW_ERROR_CODES = config['show_error_codes']
+            get_app_config().SHOW_ERROR_CODES = config['show_error_codes']
 
         return jsonify({
             'success': True,
@@ -1361,15 +1362,15 @@ def configure_testing() -> str | tuple[Response, int] | Response:
 
     # Get current configuration with backward compatibility
     current_config = {
-        'parallel_tests': current_app.app_config.PARALLEL_TESTS,
-        'test_timeout': current_app.app_config.TEST_TIMEOUT,
-        'run_ai_analysis': current_app.app_config.RUN_AI_ANALYSIS,
-        'browser_headless': current_app.app_config.BROWSER_HEADLESS,
-        'viewport_width': current_app.app_config.BROWSER_VIEWPORT_WIDTH,
-        'viewport_height': current_app.app_config.BROWSER_VIEWPORT_HEIGHT,
-        'pages_per_page': getattr(current_app.app_config, 'PAGES_PER_PAGE', 100),
-        'max_pages_per_page': getattr(current_app.app_config, 'MAX_PAGES_PER_PAGE', 500),
-        'show_error_codes': getattr(current_app.app_config, 'SHOW_ERROR_CODES', False)
+        'parallel_tests': get_app_config().PARALLEL_TESTS,
+        'test_timeout': get_app_config().TEST_TIMEOUT,
+        'run_ai_analysis': get_app_config().RUN_AI_ANALYSIS,
+        'browser_headless': get_app_config().BROWSER_HEADLESS,
+        'viewport_width': get_app_config().BROWSER_VIEWPORT_WIDTH,
+        'viewport_height': get_app_config().BROWSER_VIEWPORT_HEIGHT,
+        'pages_per_page': getattr(get_app_config(),'PAGES_PER_PAGE', 100),
+        'max_pages_per_page': getattr(get_app_config(),'MAX_PAGES_PER_PAGE', 500),
+        'show_error_codes': getattr(get_app_config(),'SHOW_ERROR_CODES', False)
     }
 
     return render_template('testing/configure.html', config=current_config)
@@ -1383,7 +1384,7 @@ def configure_testing() -> str | tuple[Response, int] | Response:
 @login_required
 def api_stats() -> tuple[Response, int] | Response:
     """API endpoint for real-time stats (for polling)"""
-    db = current_app.db
+    db = get_db()
 
     project_id = request.args.get('project_id')
     website_id = request.args.get('website_id')
@@ -1483,7 +1484,7 @@ def api_active_tests() -> Response:
                     # Get website info for display
                     website_name = 'Unknown'
                     if job.get('website_id'):
-                        website = current_app.db.get_website(job['website_id'])
+                        website = get_db().get_website(job['website_id'])
                         if website:
                             website_name = website.name
 
@@ -1539,7 +1540,7 @@ def api_run_tests() -> tuple[Response, int] | Response:
     if not tester_ids:
         return jsonify({'error': 'At least one tester must be selected'}), 400
 
-    db = current_app.db
+    db = get_db()
 
     try:
         if website_id:
@@ -1624,7 +1625,7 @@ def api_run_tests() -> tuple[Response, int] | Response:
 @login_required
 def api_trends() -> tuple[Response, int] | Response:
     """API endpoint for trend data"""
-    db = current_app.db
+    db = get_db()
 
     project_id = request.args.get('project_id')
     website_id = request.args.get('website_id')
@@ -1653,7 +1654,7 @@ def api_trends() -> tuple[Response, int] | Response:
 @login_required
 def api_trends_detailed() -> tuple[Response, int] | Response:
     """API endpoint for detailed trend data with breakdowns and statistics"""
-    db = current_app.db
+    db = get_db()
 
     project_id = request.args.get('project_id')
     website_id = request.args.get('website_id')
@@ -1743,7 +1744,7 @@ def api_trends_detailed() -> tuple[Response, int] | Response:
 @login_required
 def api_trends_compare() -> tuple[Response, int] | Response:
     """API endpoint for comparing time periods"""
-    db = current_app.db
+    db = get_db()
 
     project_id = request.args.get('project_id')
     website_id = request.args.get('website_id')
@@ -1855,7 +1856,7 @@ def api_trends_compare() -> tuple[Response, int] | Response:
 @login_required
 def api_trends_progress() -> tuple[Response, int] | Response:
     """API endpoint for progress/compliance metrics"""
-    db = current_app.db
+    db = get_db()
 
     project_id = request.args.get('project_id')
     website_id = request.args.get('website_id')
@@ -1892,7 +1893,7 @@ def api_trends_progress() -> tuple[Response, int] | Response:
 @login_required
 def trends_page() -> str:
     """Dedicated trends analysis page"""
-    db = current_app.db
+    db = get_db()
 
     # Get filter parameters
     project_id = request.args.get('project_id')
@@ -1926,7 +1927,7 @@ def trends_page() -> str:
 @login_required
 def api_project_websites(project_id: str) -> tuple[Response, int] | Response:
     """API endpoint to get websites for a project (for dynamic dropdown)"""
-    db = current_app.db
+    db = get_db()
 
     project = db.get_project(project_id)
     if not project:

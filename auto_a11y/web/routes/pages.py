@@ -5,9 +5,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from werkzeug.wrappers import Response
 from auto_a11y.web.fluent import ftl, lazy_ftl, force_locale
+from auto_a11y.web.typed_app import get_db, get_app_config
 from auto_a11y.models import PageStatus
 from auto_a11y.reporting.issue_catalog import IssueCatalog
 from auto_a11y.reporting.wcag_mapper import enrich_wcag_criteria
@@ -144,16 +145,16 @@ def enrich_test_result_with_catalog(test_result: Any) -> Any:
 @pages_bp.route('/<page_id>')
 def view_page(page_id: str) -> str | Response:
     """View page details and test results"""
-    page = current_app.db.get_page(page_id)
+    page = get_db().get_page(page_id)
     if not page:
         flash(ftl('common-page-not-found'), 'error')
         return redirect(url_for('projects.list_projects'))
 
-    website = current_app.db.get_website(page.website_id)
-    project = current_app.db.get_project(website.project_id)
+    website = get_db().get_website(page.website_id)
+    project = get_db().get_project(website.project_id)
 
     # Get latest test result and enrich with catalog data
-    test_result = current_app.db.get_latest_test_result(page_id)
+    test_result = get_db().get_latest_test_result(page_id)
     test_result = enrich_test_result_with_catalog(test_result)
 
     # Check if this is multi-state testing (has session_id and related results)
@@ -161,7 +162,7 @@ def view_page(page_id: str) -> str | Response:
     selected_state_index = 0  # Default to first state
     if test_result and test_result.session_id:
         # Get all results for this session
-        all_session_results = current_app.db.get_test_results_by_session(test_result.session_id)
+        all_session_results = get_db().get_test_results_by_session(test_result.session_id)
         # Filter to only include results for THIS page (session may span multiple pages)
         page_session_results = [r for r in all_session_results if r.page_id == page_id]
         # Enrich each one with catalog data
@@ -216,12 +217,12 @@ def view_page(page_id: str) -> str | Response:
         }
 
     # Get test history
-    test_history = current_app.db.get_test_results(page_id=page_id, limit=10)
+    test_history = get_db().get_test_results(page_id=page_id, limit=10)
 
     # Get available test users for this website/project
     # Fetch both website-specific users AND project-level users
-    website_users = current_app.db.get_website_users(page.website_id, enabled_only=True)
-    project_users = current_app.db.get_project_users(project.id, enabled_only=True)
+    website_users = get_db().get_website_users(page.website_id, enabled_only=True)
+    project_users = get_db().get_project_users(project.id, enabled_only=True)
     # Combine both lists (project users have priority as they can be used across websites)
     all_users = list(project_users) + list(website_users)
     website_users = all_users  # Use combined list for template
@@ -290,13 +291,13 @@ def view_page(page_id: str) -> str | Response:
 @pages_bp.route('/<page_id>/edit', methods=['GET', 'POST'])
 def edit_page(page_id: str) -> str | Response:
     """Edit page details"""
-    page = current_app.db.get_page(page_id)
+    page = get_db().get_page(page_id)
     if not page:
         flash(ftl('common-page-not-found'), 'error')
         return redirect(url_for('projects.list_projects'))
 
-    website = current_app.db.get_website(page.website_id)
-    project = current_app.db.get_project(website.project_id)
+    website = get_db().get_website(page.website_id)
+    project = get_db().get_project(website.project_id)
 
     if request.method == 'POST':
         # Update page details
@@ -304,7 +305,7 @@ def edit_page(page_id: str) -> str | Response:
         page.priority = request.form.get('priority', page.priority)
         page.notes = request.form.get('notes', page.notes)
 
-        if current_app.db.update_page(page):
+        if get_db().update_page(page):
             flash(ftl('pages-page-updated-successfully'), 'success')
             return redirect(url_for('pages.view_page', page_id=page_id))
         else:
@@ -323,13 +324,13 @@ def test_page(page_id: str) -> Response | tuple[Response, int]:
     from auto_a11y.core.task_runner import task_runner
     import asyncio
 
-    browser_mode = getattr(current_app.app_config, 'BROWSER_MODE', 'local')
+    browser_mode = getattr(get_app_config(), 'BROWSER_MODE', 'local')
     if browser_mode == 'disabled':
         return jsonify({'error': ftl('pages-browser-testing-is-disabled-on-this-server')}), 503
     if browser_mode == 'remote':
         return jsonify({'error': ftl('pages-this-server-is-configured-for-remote-browser')}), 503
 
-    page = current_app.db.get_page(page_id)
+    page = get_db().get_page(page_id)
     if not page:
         return jsonify({'error': ftl('common-page-not-found')}), 404
 
@@ -340,14 +341,14 @@ def test_page(page_id: str) -> Response | tuple[Response, int]:
 
     # Update page status
     page.status = PageStatus.QUEUED
-    current_app.db.update_page(page)
+    get_db().update_page(page)
 
     # Get project config to apply project-specific browser settings
-    website = current_app.db.get_website(page.website_id)
-    project = current_app.db.get_project(website.project_id) if website else None
+    website = get_db().get_website(page.website_id)
+    project = get_db().get_project(website.project_id) if website else None
 
     # Create browser config with project-specific settings
-    browser_config = current_app.app_config.__dict__.copy()
+    browser_config = get_app_config().__dict__.copy()
     if project and project.config:
         browser_config['stealth_mode'] = project.config.get('stealth_mode', False)
 
@@ -356,10 +357,10 @@ def test_page(page_id: str) -> Response | tuple[Response, int]:
         browser_config['BROWSER_HEADLESS'] = (headless_setting == 'true')
 
     # Get AI API key from config (if available)
-    ai_key = getattr(current_app.app_config, 'CLAUDE_API_KEY', None)
+    ai_key = getattr(get_app_config(), 'CLAUDE_API_KEY', None)
 
     # Store references needed in async context
-    db = current_app.db
+    db = get_db()
 
     # Define sync wrapper that creates a clean event loop
     def run_test_sync() -> list[Any]:
@@ -421,7 +422,7 @@ def test_page(page_id: str) -> Response | tuple[Response, int]:
 @pages_bp.route('/<page_id>/test-status')
 def test_status(page_id: str) -> Response | tuple[Response, int]:
     """Check test job status"""
-    page = current_app.db.get_page(page_id)
+    page = get_db().get_page(page_id)
     if not page:
         return jsonify({'error': ftl('common-page-not-found')}), 404
 
@@ -436,7 +437,7 @@ def cancel_test(page_id: str) -> Response | tuple[Response, int]:
     """Cancel a queued or running page test"""
     from auto_a11y.core.task_runner import task_runner
     
-    page = current_app.db.get_page(page_id)
+    page = get_db().get_page(page_id)
     if not page:
         return jsonify({'error': ftl('common-page-not-found')}), 404
 
@@ -472,13 +473,13 @@ def cancel_test(page_id: str) -> Response | tuple[Response, int]:
     # Update page status back to discovered/tested based on history
     if cancelled or page.status == PageStatus.QUEUED:
         # Check if page has been tested before
-        test_history = current_app.db.get_test_results(page_id=page_id, limit=1)
+        test_history = get_db().get_test_results(page_id=page_id, limit=1)
         if test_history:
             page.status = PageStatus.TESTED
         else:
             page.status = PageStatus.DISCOVERED
         
-        current_app.db.update_page(page)
+        get_db().update_page(page)
         
         return jsonify({
             'success': True,
@@ -495,14 +496,14 @@ def cancel_test(page_id: str) -> Response | tuple[Response, int]:
 @pages_bp.route('/<page_id>/delete', methods=['POST'])
 def delete_page(page_id: str) -> Response:
     """Delete page"""
-    page = current_app.db.get_page(page_id)
+    page = get_db().get_page(page_id)
     if not page:
         flash(ftl('common-page-not-found'), 'error')
         return redirect(url_for('projects.list_projects'))
 
     website_id = page.website_id
 
-    if current_app.db.delete_page(page_id):
+    if get_db().delete_page(page_id):
         flash(ftl('pages-page-deleted-successfully'), 'success')
     else:
         flash(ftl('common-failed-to-delete-page'), 'error')
@@ -521,16 +522,16 @@ def configure_test_matrix(page_id: str) -> str | Response:
     """Configure test state matrix for page"""
     from auto_a11y.models import TestStateMatrix, ScriptStateDefinition
 
-    page = current_app.db.get_page(page_id)
+    page = get_db().get_page(page_id)
     if not page:
         flash(ftl('common-page-not-found'), 'error')
         return redirect(url_for('projects.list_projects'))
 
-    website = current_app.db.get_website(page.website_id)
-    project = current_app.db.get_project(website.project_id)
+    website = get_db().get_website(page.website_id)
+    project = get_db().get_project(website.project_id)
 
     # Get all scripts for this page (page-level and website-level)
-    all_scripts = current_app.db.get_scripts_for_page_v2(
+    all_scripts = get_db().get_scripts_for_page_v2(
         page_id=page_id,
         website_id=page.website_id,
         enabled_only=False
@@ -545,7 +546,7 @@ def configure_test_matrix(page_id: str) -> str | Response:
     if request.method == 'POST':
         try:
             # Get or create matrix
-            matrix = current_app.db.get_test_state_matrix_by_page(page_id)
+            matrix = get_db().get_test_state_matrix_by_page(page_id)
 
             if not matrix:
                 # Create new matrix
@@ -589,10 +590,10 @@ def configure_test_matrix(page_id: str) -> str | Response:
 
             # Save or update matrix
             if matrix._id:
-                current_app.db.update_test_state_matrix(matrix)
+                get_db().update_test_state_matrix(matrix)
                 flash(ftl('pages-test-matrix-updated-successfully'), 'success')
             else:
-                current_app.db.create_test_state_matrix(matrix)
+                get_db().create_test_state_matrix(matrix)
                 flash(ftl('pages-test-matrix-created-successfully'), 'success')
 
             return redirect(url_for('pages.configure_test_matrix', page_id=page_id))
@@ -602,7 +603,7 @@ def configure_test_matrix(page_id: str) -> str | Response:
             flash(ftl('pages-failed-to-save-test-matrix-error', error=str(e)), 'error')
 
     # GET request - load existing matrix or create default
-    matrix = current_app.db.get_test_state_matrix_by_page(page_id)
+    matrix = get_db().get_test_state_matrix_by_page(page_id)
 
     if not matrix:
         # Create default matrix for display

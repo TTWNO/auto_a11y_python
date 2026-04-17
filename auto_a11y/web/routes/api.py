@@ -11,6 +11,7 @@ from auto_a11y.models import Project, Website, Page, ProjectStatus, PageStatus
 from auto_a11y.models.app_user import UserRole
 from auto_a11y.web.routes.auth import project_role_required
 from auto_a11y.core.job_manager import JobManager, JobStatus
+from auto_a11y.web.typed_app import get_db, get_test_config
 from datetime import datetime
 import logging
 
@@ -25,8 +26,8 @@ def get_fixture_test_status() -> tuple[Response, int] | Response:
     """Get fixture test status for all tests"""
     try:
         # Get test configuration
-        test_config = current_app.test_config
-        
+        test_config = get_test_config()
+
         # Get all test statuses
         statuses = test_config.get_all_test_statuses()
         
@@ -78,8 +79,8 @@ def get_fixture_test_status() -> tuple[Response, int] | Response:
 def check_test_availability(error_code: str) -> tuple[Response, int] | Response:
     """Check if a specific test is available based on fixture status"""
     try:
-        test_config = current_app.test_config
-        
+        test_config = get_test_config()
+
         # Get fixture status for this test
         status = test_config.get_test_fixture_status(error_code)
         
@@ -112,7 +113,7 @@ def get_projects() -> tuple[Response, int] | Response:
     skip = (page - 1) * limit
 
     if current_user.is_authenticated and not getattr(current_user, 'is_superadmin', False):
-        projects = current_app.db.get_projects_for_user(str(current_user.get_id()))
+        projects = get_db().get_projects_for_user(str(current_user.get_id()))
         if status:
             try:
                 status_enum = ProjectStatus(status)
@@ -122,18 +123,18 @@ def get_projects() -> tuple[Response, int] | Response:
     elif status:
         try:
             status_enum = ProjectStatus(status)
-            projects = current_app.db.get_projects(status=status_enum, limit=limit, skip=skip)
+            projects = get_db().get_projects(status=status_enum, limit=limit, skip=skip)
         except ValueError:
             return jsonify({'error': 'Invalid status value'}), 400
     else:
-        projects = current_app.db.get_projects(limit=limit, skip=skip)
+        projects = get_db().get_projects(limit=limit, skip=skip)
     
     return jsonify({
         'projects': [p.to_dict() for p in projects],
         'pagination': {
             'page': page,
             'limit': limit,
-            'total': current_app.db.projects.count_documents({})
+            'total': get_db().projects.count_documents({})
         }
     })
 
@@ -147,7 +148,7 @@ def create_project() -> tuple[Response, int]:
         return jsonify({'error': 'Project name is required'}), 400
     
     # Check if project exists
-    existing = current_app.db.projects.find_one({'name': data['name']})
+    existing = get_db().projects.find_one({'name': data['name']})
     if existing:
         return jsonify({'error': f'Project {data["name"]} already exists'}), 409
     
@@ -158,10 +159,10 @@ def create_project() -> tuple[Response, int]:
         config=data.get('config', {})
     )
     
-    project_id = current_app.db.create_project(project)
+    project_id = get_db().create_project(project)
     # Auto-add creator as project admin
     if current_user.is_authenticated:
-        current_app.db.add_project_member(
+        get_db().add_project_member(
             project_id, str(current_user.get_id()), UserRole.ADMIN
         )
 
@@ -175,11 +176,11 @@ def create_project() -> tuple[Response, int]:
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def get_project(project_id: str) -> tuple[Response, int] | Response:
     """Get project by ID"""
-    project = current_app.db.get_project(project_id)
+    project = get_db().get_project(project_id)
     if not project:
         return jsonify({'error': 'Project not found'}), 404
     
-    stats = current_app.db.get_project_stats(project_id)
+    stats = get_db().get_project_stats(project_id)
     
     response = project.to_dict()
     response['statistics'] = stats
@@ -191,7 +192,7 @@ def get_project(project_id: str) -> tuple[Response, int] | Response:
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def update_project(project_id: str) -> tuple[Response, int] | Response:
     """Update project"""
-    project = current_app.db.get_project(project_id)
+    project = get_db().get_project(project_id)
     if not project:
         return jsonify({'error': 'Project not found'}), 404
     
@@ -209,7 +210,7 @@ def update_project(project_id: str) -> tuple[Response, int] | Response:
     if 'config' in data:
         project.config.update(data['config'])
     
-    if current_app.db.update_project(project):
+    if get_db().update_project(project):
         return jsonify({'message': 'Project updated successfully'})
     else:
         return jsonify({'error': 'Failed to update project'}), 500
@@ -219,11 +220,11 @@ def update_project(project_id: str) -> tuple[Response, int] | Response:
 @project_role_required(UserRole.ADMIN)
 def delete_project(project_id: str) -> tuple[Response, int]:
     """Delete project"""
-    project = current_app.db.get_project(project_id)
+    project = get_db().get_project(project_id)
     if not project:
         return jsonify({'error': 'Project not found'}), 404
     
-    if current_app.db.delete_project(project_id):
+    if get_db().delete_project(project_id):
         return jsonify({'message': 'Project deleted successfully'}), 204
     else:
         return jsonify({'error': 'Failed to delete project'}), 500
@@ -235,11 +236,11 @@ def delete_project(project_id: str) -> tuple[Response, int]:
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def get_websites(project_id: str) -> tuple[Response, int] | Response:
     """Get websites for project"""
-    project = current_app.db.get_project(project_id)
+    project = get_db().get_project(project_id)
     if not project:
         return jsonify({'error': 'Project not found'}), 404
     
-    websites = current_app.db.get_websites(project_id)
+    websites = get_db().get_websites(project_id)
     
     return jsonify({
         'websites': [w.to_dict() for w in websites]
@@ -250,7 +251,7 @@ def get_websites(project_id: str) -> tuple[Response, int] | Response:
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def add_website(project_id: str) -> tuple[Response, int]:
     """Add website to project"""
-    project = current_app.db.get_project(project_id)
+    project = get_db().get_project(project_id)
     if not project:
         return jsonify({'error': 'Project not found'}), 404
     
@@ -268,7 +269,7 @@ def add_website(project_id: str) -> tuple[Response, int]:
         scraping_config=ScrapingConfig(**data.get('scraping_config', {}))
     )
     
-    website_id = current_app.db.create_website(website)
+    website_id = get_db().create_website(website)
     
     return jsonify({
         'id': website_id,
@@ -280,7 +281,7 @@ def add_website(project_id: str) -> tuple[Response, int]:
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def get_website(website_id: str) -> tuple[Response, int] | Response:
     """Get website by ID"""
-    website = current_app.db.get_website(website_id)
+    website = get_db().get_website(website_id)
     if not website:
         return jsonify({'error': 'Website not found'}), 404
     
@@ -291,11 +292,11 @@ def get_website(website_id: str) -> tuple[Response, int] | Response:
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def delete_website(website_id: str) -> tuple[Response, int]:
     """Delete website"""
-    website = current_app.db.get_website(website_id)
+    website = get_db().get_website(website_id)
     if not website:
         return jsonify({'error': 'Website not found'}), 404
     
-    if current_app.db.delete_website(website_id):
+    if get_db().delete_website(website_id):
         return jsonify({'message': 'Website deleted successfully'}), 204
     else:
         return jsonify({'error': 'Failed to delete website'}), 500
@@ -306,7 +307,7 @@ def delete_website(website_id: str) -> tuple[Response, int]:
 @api_bp.route('/websites/<website_id>/pages', methods=['GET'])
 def get_pages(website_id: str) -> tuple[Response, int] | Response:
     """Get pages for website"""
-    website = current_app.db.get_website(website_id)
+    website = get_db().get_website(website_id)
     if not website:
         return jsonify({'error': 'Website not found'}), 404
     
@@ -316,11 +317,11 @@ def get_pages(website_id: str) -> tuple[Response, int] | Response:
     if status:
         try:
             status_enum = PageStatus(status)
-            pages = current_app.db.get_pages(website_id, status=status_enum)
+            pages = get_db().get_pages(website_id, status=status_enum)
         except ValueError:
             return jsonify({'error': 'Invalid status value'}), 400
     else:
-        pages = current_app.db.get_pages(website_id)
+        pages = get_db().get_pages(website_id)
     
     if has_violations is not None:
         has_violations = has_violations.lower() == 'true'
@@ -334,7 +335,7 @@ def get_pages(website_id: str) -> tuple[Response, int] | Response:
 @api_bp.route('/websites/<website_id>/pages', methods=['POST'])
 def add_page(website_id: str) -> tuple[Response, int]:
     """Add page to website"""
-    website = current_app.db.get_website(website_id)
+    website = get_db().get_website(website_id)
     if not website:
         return jsonify({'error': 'Website not found'}), 404
     
@@ -349,7 +350,7 @@ def add_page(website_id: str) -> tuple[Response, int]:
         priority=data.get('priority', 'normal')
     )
     
-    page_id = current_app.db.create_page(page)
+    page_id = get_db().create_page(page)
     
     return jsonify({
         'id': page_id,
@@ -361,7 +362,7 @@ def add_page(website_id: str) -> tuple[Response, int]:
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def get_page(page_id: str) -> tuple[Response, int] | Response:
     """Get page by ID"""
-    page = current_app.db.get_page(page_id)
+    page = get_db().get_page(page_id)
     if not page:
         return jsonify({'error': 'Page not found'}), 404
     
@@ -372,7 +373,7 @@ def get_page(page_id: str) -> tuple[Response, int] | Response:
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def test_page(page_id: str) -> tuple[Response, int]:
     """Run test on page"""
-    page = current_app.db.get_page(page_id)
+    page = get_db().get_page(page_id)
     if not page:
         return jsonify({'error': 'Page not found'}), 404
     
@@ -384,7 +385,7 @@ def test_page(page_id: str) -> tuple[Response, int]:
     
     # Update page status
     page.status = PageStatus.QUEUED
-    current_app.db.update_page(page)
+    get_db().update_page(page)
     
     return jsonify({
         'job_id': job_id,
@@ -398,7 +399,7 @@ def test_page(page_id: str) -> tuple[Response, int]:
 @api_bp.route('/test-results/<result_id>', methods=['GET'])
 def get_test_result(result_id: str) -> tuple[Response, int] | Response:
     """Get test result by ID"""
-    result = current_app.db.get_test_result(result_id)
+    result = get_db().get_test_result(result_id)
     if not result:
         return jsonify({'error': 'Test result not found'}), 404
     
@@ -409,11 +410,11 @@ def get_test_result(result_id: str) -> tuple[Response, int] | Response:
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def get_page_test_results(page_id: str) -> tuple[Response, int] | Response:
     """Get test results for page"""
-    page = current_app.db.get_page(page_id)
+    page = get_db().get_page(page_id)
     if not page:
         return jsonify({'error': 'Page not found'}), 404
     
-    results = current_app.db.get_test_results(page_id=page_id)
+    results = get_db().get_test_results(page_id=page_id)
     
     return jsonify({
         'results': [r.to_dict() for r in results]
@@ -426,7 +427,7 @@ def get_page_test_results(page_id: str) -> tuple[Response, int] | Response:
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def discover_pages(website_id: str) -> tuple[Response, int]:
     """Start page discovery for website"""
-    website = current_app.db.get_website(website_id)
+    website = get_db().get_website(website_id)
     if not website:
         return jsonify({'error': 'Website not found'}), 404
     
@@ -448,7 +449,7 @@ def discover_pages(website_id: str) -> tuple[Response, int]:
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def test_website(website_id: str) -> tuple[Response, int]:
     """Run tests on all pages in website"""
-    website = current_app.db.get_website(website_id)
+    website = get_db().get_website(website_id)
     if not website:
         return jsonify({'error': 'Website not found'}), 404
     
@@ -457,9 +458,9 @@ def test_website(website_id: str) -> tuple[Response, int]:
     config = data.get('config', {})
     
     if page_ids == 'all':
-        pages = current_app.db.get_pages(website_id)
+        pages = get_db().get_pages(website_id)
     else:
-        pages = [current_app.db.get_page(pid) for pid in page_ids]
+        pages = [get_db().get_page(pid) for pid in page_ids]
         pages = [p for p in pages if p]  # Filter None values
     
     if not pages:
@@ -482,7 +483,7 @@ def test_website(website_id: str) -> tuple[Response, int]:
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def generate_report(project_id: str) -> tuple[Response, int]:
     """Generate report for project"""
-    project = current_app.db.get_project(project_id)
+    project = get_db().get_project(project_id)
     if not project:
         return jsonify({'error': 'Project not found'}), 404
     
@@ -508,7 +509,7 @@ def health_check() -> Response:
     """API health check"""
     try:
         # Check database connection
-        current_app.db.client.server_info()
+        get_db().client.server_info()
         db_status = 'healthy'
     except:
         db_status = 'unhealthy'
@@ -526,7 +527,7 @@ def health_check() -> Response:
 def get_job_stats() -> tuple[Response, int] | Response:
     """Get job statistics"""
     try:
-        job_manager = JobManager(current_app.db)
+        job_manager = JobManager(get_db())
         
         # Get overall statistics
         stats = job_manager.get_job_statistics(hours=24)
@@ -541,7 +542,7 @@ def get_job_stats() -> tuple[Response, int] | Response:
 def clear_all_jobs() -> tuple[Response, int] | Response:
     """Clear all running and pending jobs - emergency reset"""
     try:
-        job_manager = JobManager(current_app.db)
+        job_manager = JobManager(get_db())
         
         # Clear all running jobs
         running_result = job_manager.collection.update_many(
@@ -568,7 +569,7 @@ def clear_all_jobs() -> tuple[Response, int] | Response:
         )
         
         # Also reset page statuses that are stuck in QUEUED or TESTING states
-        pages_result = current_app.db.pages.update_many(
+        pages_result = get_db().pages.update_many(
             {'status': {'$in': [PageStatus.QUEUED.value, PageStatus.TESTING.value]}},
             {
                 '$set': {
@@ -601,7 +602,7 @@ def clear_all_jobs() -> tuple[Response, int] | Response:
 def clear_stale_jobs() -> tuple[Response, int] | Response:
     """Clear stale jobs that have been running for too long"""
     try:
-        job_manager = JobManager(current_app.db)
+        job_manager = JobManager(get_db())
         
         # Clear jobs running for more than 24 hours
         cleared_count = job_manager.cleanup_stale_jobs(stale_after_hours=24)
@@ -609,7 +610,7 @@ def clear_stale_jobs() -> tuple[Response, int] | Response:
         # Also reset old pages stuck in QUEUED or TESTING states for more than 24 hours
         from datetime import timedelta
         stale_time = datetime.now() - timedelta(hours=24)
-        pages_result = current_app.db.pages.update_many(
+        pages_result = get_db().pages.update_many(
             {
                 'status': {'$in': [PageStatus.QUEUED.value, PageStatus.TESTING.value]},
                 '$or': [
@@ -644,7 +645,7 @@ def clear_stale_jobs() -> tuple[Response, int] | Response:
 def get_active_jobs() -> tuple[Response, int] | Response:
     """Get list of active jobs"""
     try:
-        job_manager = JobManager(current_app.db)
+        job_manager = JobManager(get_db())
         
         # Get active jobs
         active_jobs = list(job_manager.collection.find(
@@ -667,7 +668,7 @@ def cleanup_page_counts() -> tuple[Response, int] | Response:
     """Clean up violation counts for pages that haven't been tested"""
     try:
         # Reset violation/warning/info counts for all pages that aren't in TESTED status
-        result = current_app.db.pages.update_many(
+        result = get_db().pages.update_many(
             {'status': {'$ne': PageStatus.TESTED.value}},
             {
                 '$set': {
@@ -706,12 +707,12 @@ def get_test_result_states(result_id: str) -> tuple[Response, int] | Response:
     """
     try:
         # Get the result
-        result = current_app.db.get_test_result(result_id)
+        result = get_db().get_test_result(result_id)
         if not result:
             return jsonify({'error': 'Test result not found'}), 404
 
         # Get related results
-        related_results = current_app.db.get_related_test_results(result_id)
+        related_results = get_db().get_related_test_results(result_id)
 
         # Include the original result
         all_results = [result] + related_results
@@ -757,12 +758,12 @@ def get_page_test_states(page_id: str) -> tuple[Response, int] | Response:
     """
     try:
         # Check page exists
-        page = current_app.db.get_page(page_id)
+        page = get_db().get_page(page_id)
         if not page:
             return jsonify({'error': 'Page not found'}), 404
 
         # Get latest results per state
-        state_results = current_app.db.get_latest_test_results_per_state(page_id)
+        state_results = get_db().get_latest_test_results_per_state(page_id)
 
         # Serialize results
         states_data = {}
@@ -802,12 +803,12 @@ def get_page_test_sessions(page_id: str) -> tuple[Response, int] | Response:
     """
     try:
         # Check page exists
-        page = current_app.db.get_page(page_id)
+        page = get_db().get_page(page_id)
         if not page:
             return jsonify({'error': 'Page not found'}), 404
 
         # Get all test results for page
-        all_results = current_app.db.get_test_results(page_id=page_id)
+        all_results = get_db().get_test_results(page_id=page_id)
 
         # Group by session
         sessions = {}
@@ -882,8 +883,8 @@ def compare_test_results() -> tuple[Response, int] | Response:
             return jsonify({'error': 'Both result_id_1 and result_id_2 are required'}), 400
 
         # Get results
-        result1 = current_app.db.get_test_result(result_id_1)
-        result2 = current_app.db.get_test_result(result_id_2)
+        result1 = get_db().get_test_result(result_id_1)
+        result2 = get_db().get_test_result(result_id_2)
 
         if not result1 or not result2:
             return jsonify({'error': 'One or both test results not found'}), 404

@@ -17,6 +17,7 @@ from itsdangerous import URLSafeSerializer, URLSafeTimedSerializer, BadSignature
 from auto_a11y.models import AppUser, UserRole
 from auto_a11y.core.permissions import permission_required
 from auto_a11y.core.email import send_email
+from auto_a11y.web.typed_app import get_db, get_app_config
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +78,7 @@ def auditor_required(f: Callable[..., Any]) -> Callable[..., Any]:
 
 def _get_db() -> Any:
     """Get database instance from current app."""
-    return current_app.db
+    return get_db()
 
 
 def get_effective_role(user: Any, request_obj: Any = None, project_id: str | None = None, website_id: str | None = None, page_id: str | None = None) -> UserRole | None:
@@ -190,7 +191,7 @@ def validate_token(token_string: str) -> dict[str, str] | None:
     """
     serializer = URLSafeSerializer(
         current_app.config['SECRET_KEY'],
-        salt=current_app.app_config.TOKEN_SALT,
+        salt=get_app_config().TOKEN_SALT,
     )
     try:
         payload = serializer.loads(token_string)
@@ -198,11 +199,11 @@ def validate_token(token_string: str) -> dict[str, str] | None:
         return None
 
     token_hash = hashlib.sha256(token_string.encode('utf-8')).hexdigest()
-    token = current_app.db.get_share_token_by_hash(token_hash)
+    token = get_db().get_share_token_by_hash(token_hash)
     if token is None or not token.is_valid:
         return None
 
-    current_app.db.record_token_use(token_hash)
+    get_db().record_token_use(token_hash)
     return {'scope': token.scope, 'scope_id': token.scope_id}
 
 
@@ -251,13 +252,13 @@ def check_scope(scope_type: str, scope_id: str) -> None:
             return
         if scope_type in ('website', 'page'):
             if scope_type == 'website':
-                website = current_app.db.get_website(scope_id)
+                website = get_db().get_website(scope_id)
                 if website and website.project_id == g.access_scope_id:
                     return
             elif scope_type == 'page':
-                page = current_app.db.get_page(scope_id)
+                page = get_db().get_page(scope_id)
                 if page:
-                    website = current_app.db.get_website(page.website_id)
+                    website = get_db().get_website(page.website_id)
                     if website and website.project_id == g.access_scope_id:
                         return
 
@@ -265,7 +266,7 @@ def check_scope(scope_type: str, scope_id: str) -> None:
         if scope_type == 'website' and scope_id == g.access_scope_id:
             return
         if scope_type == 'page':
-            page = current_app.db.get_page(scope_id)
+            page = get_db().get_page(scope_id)
             if page and page.website_id == g.access_scope_id:
                 return
 
@@ -301,7 +302,7 @@ def verify_reset_token(token: str) -> str | None:
 
 def send_password_reset_email(user: AppUser) -> bool:
     """Send a password reset email to the given user."""
-    config = current_app.app_config
+    config = get_app_config()
     token = generate_reset_token(user.email)
     reset_url = url_for('auth.reset_password', token=token, _external=True)
 
@@ -334,7 +335,7 @@ def send_password_reset_email(user: AppUser) -> bool:
 def get_msal_app() -> Any:
     """Create a ConfidentialClientApplication for Microsoft SSO."""
     import msal
-    config = current_app.app_config
+    config = get_app_config()
     return msal.ConfidentialClientApplication(
         config.MICROSOFT_CLIENT_ID,
         authority=config.MICROSOFT_AUTHORITY,
@@ -346,7 +347,7 @@ def get_microsoft_auth_url(redirect_uri: str) -> str:
     """Build the Microsoft authorization URL and store state in session."""
     msal_app = get_msal_app()
     flow = msal_app.initiate_auth_code_flow(
-        scopes=current_app.app_config.MICROSOFT_SCOPE,
+        scopes=get_app_config().MICROSOFT_SCOPE,
         redirect_uri=redirect_uri,
     )
     session['msal_flow'] = flow
@@ -395,7 +396,7 @@ def _google_flow(redirect_uri: str) -> Any:
     """Create a Google OAuth2 flow."""
     import os
     from google_auth_oauthlib.flow import Flow
-    config = current_app.app_config
+    config = get_app_config()
     # Allow http:// redirect URIs in local development (debug mode only)
     if current_app.debug:
         os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
@@ -453,7 +454,7 @@ def complete_google_auth(auth_request: Any, redirect_uri: str) -> dict[str, str]
         claims = google_id_token.verify_oauth2_token(
             flow.credentials.id_token,
             google_requests.Request(),
-            current_app.app_config.GOOGLE_CLIENT_ID,
+            get_app_config().GOOGLE_CLIENT_ID,
         )
     except ValueError:
         logger.warning('Google SSO: invalid id_token', exc_info=True)
@@ -483,7 +484,7 @@ def find_sso_user(claims: dict[str, str]) -> AppUser | None:
     For existing users that haven't used SSO before, link their
     sso_provider/sso_id fields.
     """
-    db = current_app.db
+    db = get_db()
     user = db.get_app_user_by_email(claims['email'])
 
     if user is None:
@@ -522,7 +523,7 @@ def login() -> str | Response:
             flash(ftl('auth-please-enter-both-email-and-password'), 'danger')
             return render_template('auth/login.html')
         
-        user = current_app.db.get_app_user_by_email(email)
+        user = get_db().get_app_user_by_email(email)
         
         if user is None:
             flash(ftl('auth-invalid-email-or-password'), 'danger')
@@ -538,12 +539,12 @@ def login() -> str | Response:
         
         if not user.check_password(password):
             user.record_login(success=False)
-            current_app.db.update_app_user(user)
+            get_db().update_app_user(user)
             flash(ftl('auth-invalid-email-or-password'), 'danger')
             return render_template('auth/login.html')
         
         user.record_login(success=True)
-        current_app.db.update_app_user(user)
+        get_db().update_app_user(user)
         
         login_user(user, remember=remember)
         
@@ -573,7 +574,7 @@ def register() -> str | Response:
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
     
-    admin_count = current_app.db.count_app_users(role=UserRole.ADMIN)
+    admin_count = get_db().count_app_users(role=UserRole.ADMIN)
     is_first_user = admin_count == 0
     
     if request.method == 'POST':
@@ -598,7 +599,7 @@ def register() -> str | Response:
         if password != confirm_password:
             errors.append(ftl('auth-passwords-do-not-match'))
         
-        if current_app.db.app_user_exists(email):
+        if get_db().app_user_exists(email):
             errors.append(ftl('auth-an-account-with-this-email-already-exists'))
         
         if errors:
@@ -619,7 +620,7 @@ def register() -> str | Response:
             user.is_superadmin = True
 
         try:
-            current_app.db.create_app_user(user)
+            get_db().create_app_user(user)
             
             if is_first_user:
                 flash(ftl('auth-admin-account-created-successfully-please-log-in'), 'success')
@@ -638,7 +639,7 @@ def register() -> str | Response:
 @auth_bp.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password() -> str | Response:
     """Self-service password reset -- sends a reset link via email."""
-    if not current_app.app_config.SMTP_ENABLED:
+    if not get_app_config().SMTP_ENABLED:
         abort(404)
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
@@ -647,9 +648,9 @@ def forgot_password() -> str | Response:
         email = request.form.get('email', '').strip().lower()
 
         if email:
-            user = current_app.db.get_app_user_by_email(email)
+            user = get_db().get_app_user_by_email(email)
             if user and user.is_active:
-                if current_app.app_config.SMTP_ENABLED:
+                if get_app_config().SMTP_ENABLED:
                     send_password_reset_email(user)
                 else:
                     logger.warning('Password reset requested but SMTP is not configured')
@@ -664,7 +665,7 @@ def forgot_password() -> str | Response:
 @auth_bp.route('/reset-password/<token>', methods=['GET', 'POST'])
 def reset_password(token: str) -> str | Response:
     """Set a new password using a valid reset token."""
-    if not current_app.app_config.SMTP_ENABLED:
+    if not get_app_config().SMTP_ENABLED:
         abort(404)
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
@@ -674,7 +675,7 @@ def reset_password(token: str) -> str | Response:
         flash(ftl('auth-this-password-reset-link-is-invalid-or-has-expired'), 'danger')
         return redirect(url_for('auth.forgot_password'))
 
-    user = current_app.db.get_app_user_by_email(email)
+    user = get_db().get_app_user_by_email(email)
     if user is None or not user.is_active:
         flash(ftl('auth-this-password-reset-link-is-invalid-or-has-expired'), 'danger')
         return redirect(url_for('auth.forgot_password'))
@@ -711,7 +712,7 @@ def reset_password(token: str) -> str | Response:
         user.failed_login_count = 0
         user.locked_until = None
         user.update_timestamp()
-        current_app.db.update_app_user(user)
+        get_db().update_app_user(user)
 
         flash(ftl('auth-your-password-has-been-reset-please-log-in'), 'success')
         return redirect(url_for('auth.login'))
@@ -730,7 +731,7 @@ def profile() -> str | Response:
             display_name = request.form.get('display_name', '').strip()
             current_user.display_name = display_name or None
             current_user.update_timestamp()
-            current_app.db.update_app_user(current_user)
+            get_db().update_app_user(current_user)
             flash(ftl('auth-profile-updated-successfully'), 'success')
         
         elif action == 'change_password':
@@ -749,7 +750,7 @@ def profile() -> str | Response:
                 current_user.set_password(new_password)
                 current_user.password_hint = password_hint or None
                 current_user.update_timestamp()
-                current_app.db.update_app_user(current_user)
+                get_db().update_app_user(current_user)
                 flash(ftl('auth-password-changed-successfully'), 'success')
         
         return redirect(url_for('auth.profile'))
@@ -761,7 +762,7 @@ def profile() -> str | Response:
 @permission_required('users', 'read')
 def user_list() -> str:
     """List all users"""
-    users = current_app.db.get_app_users()
+    users = get_db().get_app_users()
     return render_template('auth/user_list.html', users=users)
 
 
@@ -783,7 +784,7 @@ def user_create() -> str | Response:
         if not password or len(password) < 8:
             errors.append(ftl('auth-password-must-be-at-least-8-characters'))
 
-        if current_app.db.app_user_exists(email):
+        if get_db().app_user_exists(email):
             errors.append(ftl('auth-an-account-with-this-email-already-exists'))
 
         if errors:
@@ -801,7 +802,7 @@ def user_create() -> str | Response:
         user.is_verified = True
 
         try:
-            current_app.db.create_app_user(user)
+            get_db().create_app_user(user)
             flash(ftl('auth-user-created-successfully'), 'success')
             return redirect(url_for('auth.user_list'))
         except ValueError as e:
@@ -814,7 +815,7 @@ def user_create() -> str | Response:
 @permission_required('users', 'update')
 def user_edit(user_id: str) -> str | Response:
     """Edit a user"""
-    user = current_app.db.get_app_user(user_id)
+    user = get_db().get_app_user(user_id)
     if not user:
         flash(ftl('auth-user-not-found'), 'danger')
         return redirect(url_for('auth.user_list'))
@@ -829,7 +830,7 @@ def user_edit(user_id: str) -> str | Response:
             if getattr(current_user, 'is_superadmin', False):
                 user.is_superadmin = request.form.get('is_superadmin') == 'on'
             user.update_timestamp()
-            current_app.db.update_app_user(user)
+            get_db().update_app_user(user)
             flash(ftl('auth-user-updated-successfully'), 'success')
 
         elif action == 'reset_password':
@@ -843,18 +844,18 @@ def user_edit(user_id: str) -> str | Response:
                 user.failed_login_count = 0
                 user.locked_until = None
                 user.update_timestamp()
-                current_app.db.update_app_user(user)
+                get_db().update_app_user(user)
                 flash(ftl('auth-password-reset-successfully'), 'success')
 
         elif action == 'unlock':
             user.failed_login_count = 0
             user.locked_until = None
             user.update_timestamp()
-            current_app.db.update_app_user(user)
+            get_db().update_app_user(user)
             flash(ftl('auth-account-unlocked'), 'success')
 
         elif action == 'send_reset_email':
-            if current_app.app_config.SMTP_ENABLED:
+            if get_app_config().SMTP_ENABLED:
                 if send_password_reset_email(user):
                     flash(ftl('auth-password-reset-email-sent-to-email', email=user.email), 'success')
                 else:
@@ -866,8 +867,8 @@ def user_edit(user_id: str) -> str | Response:
 
     # Build project membership data for display
     user_projects = []
-    projects = current_app.db.get_projects_for_user(user_id)
-    all_groups = current_app.db.get_all_groups()
+    projects = get_db().get_projects_for_user(user_id)
+    all_groups = get_db().get_all_groups()
     group_map = {g.id: g.name for g in all_groups}
     for p in projects:
         member = next((m for m in p.members if m.user_id == user_id), None)
@@ -878,7 +879,7 @@ def user_edit(user_id: str) -> str | Response:
             })
 
     return render_template('auth/user_edit.html', user=user, user_projects=user_projects,
-                           smtp_enabled=current_app.app_config.SMTP_ENABLED)
+                           smtp_enabled=get_app_config().SMTP_ENABLED)
 
 
 @auth_bp.route('/users/<user_id>/delete', methods=['POST'])
@@ -889,17 +890,17 @@ def user_delete(user_id: str) -> Response:
         flash(ftl('auth-you-cannot-delete-your-own-account'), 'danger')
         return redirect(url_for('auth.user_list'))
     
-    user = current_app.db.get_app_user(user_id)
+    user = get_db().get_app_user(user_id)
     if not user:
         flash(ftl('auth-user-not-found'), 'danger')
         return redirect(url_for('auth.user_list'))
 
     # Remove user from all project memberships before deleting
-    projects = current_app.db.get_projects_for_user(user_id)
+    projects = get_db().get_projects_for_user(user_id)
     for project in projects:
-        current_app.db.remove_project_member(project.id, user_id)
+        get_db().remove_project_member(project.id, user_id)
 
-    current_app.db.delete_app_user(user_id)
+    get_db().delete_app_user(user_id)
     flash(ftl('auth-user-deleted-successfully'), 'success')
     return redirect(url_for('auth.user_list'))
 
@@ -911,9 +912,9 @@ def user_delete(user_id: str) -> Response:
 @auth_bp.route('/login/microsoft')
 def microsoft_login() -> Response:
     """Redirect user to Microsoft login page."""
-    if not current_app.app_config.MICROSOFT_SSO_ENABLED:
+    if not get_app_config().MICROSOFT_SSO_ENABLED:
         abort(404)
-    redirect_uri = request.url_root.rstrip('/') + current_app.app_config.MICROSOFT_REDIRECT_PATH
+    redirect_uri = request.url_root.rstrip('/') + get_app_config().MICROSOFT_REDIRECT_PATH
     auth_url = get_microsoft_auth_url(redirect_uri)
     return redirect(auth_url)
 
@@ -921,10 +922,10 @@ def microsoft_login() -> Response:
 @auth_bp.route('/microsoft/callback')
 def microsoft_callback() -> Response:
     """Handle the OAuth callback from Microsoft."""
-    if not current_app.app_config.MICROSOFT_SSO_ENABLED:
+    if not get_app_config().MICROSOFT_SSO_ENABLED:
         abort(404)
 
-    redirect_uri = request.url_root.rstrip('/') + current_app.app_config.MICROSOFT_REDIRECT_PATH
+    redirect_uri = request.url_root.rstrip('/') + get_app_config().MICROSOFT_REDIRECT_PATH
     claims = complete_microsoft_auth(request, redirect_uri)
 
     if claims is None:
@@ -942,7 +943,7 @@ def microsoft_callback() -> Response:
         return redirect(url_for('auth.login'))
 
     user.record_login(success=True)
-    current_app.db.update_app_user(user)
+    get_db().update_app_user(user)
     login_user(user)
     return redirect(url_for('dashboard'))
 
@@ -954,9 +955,9 @@ def microsoft_callback() -> Response:
 @auth_bp.route('/login/google')
 def google_login() -> Response:
     """Redirect user to Google login page."""
-    if not current_app.app_config.GOOGLE_SSO_ENABLED:
+    if not get_app_config().GOOGLE_SSO_ENABLED:
         abort(404)
-    redirect_uri = request.url_root.rstrip('/') + current_app.app_config.GOOGLE_REDIRECT_PATH
+    redirect_uri = request.url_root.rstrip('/') + get_app_config().GOOGLE_REDIRECT_PATH
     auth_url = get_google_auth_url(redirect_uri)
     return redirect(auth_url)
 
@@ -964,10 +965,10 @@ def google_login() -> Response:
 @auth_bp.route('/google/callback')
 def google_callback() -> Response:
     """Handle the OAuth callback from Google."""
-    if not current_app.app_config.GOOGLE_SSO_ENABLED:
+    if not get_app_config().GOOGLE_SSO_ENABLED:
         abort(404)
 
-    redirect_uri = request.url_root.rstrip('/') + current_app.app_config.GOOGLE_REDIRECT_PATH
+    redirect_uri = request.url_root.rstrip('/') + get_app_config().GOOGLE_REDIRECT_PATH
     claims = complete_google_auth(request, redirect_uri)
 
     if claims is None:
@@ -985,6 +986,6 @@ def google_callback() -> Response:
         return redirect(url_for('auth.login'))
 
     user.record_login(success=True)
-    current_app.db.update_app_user(user)
+    get_db().update_app_user(user)
     login_user(user)
     return redirect(url_for('dashboard'))

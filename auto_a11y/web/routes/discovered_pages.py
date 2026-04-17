@@ -3,9 +3,10 @@ Discovered Page management routes
 """
 from __future__ import annotations
 
-from flask import Blueprint, Response, render_template, request, redirect, url_for, flash, jsonify, current_app
+from flask import Blueprint, Response, render_template, request, redirect, url_for, flash, jsonify
 from werkzeug.wrappers import Response as WerkzeugResponse
 from auto_a11y.web.fluent import ftl
+from auto_a11y.web.typed_app import get_db
 from bson import ObjectId
 from datetime import datetime
 import logging
@@ -22,7 +23,7 @@ discovered_pages_bp = Blueprint('discovered_pages', __name__)
 def view_discovered_page(page_id: str) -> str | Response | WerkzeugResponse:
     """View and edit a discovered page"""
     try:
-        db = current_app.db
+        db = get_db()
 
         # Get the discovered page
         page_doc = db.discovered_pages.find_one({'_id': ObjectId(page_id)})
@@ -78,7 +79,7 @@ def view_discovered_page(page_id: str) -> str | Response | WerkzeugResponse:
 def edit_discovered_page(page_id: str) -> Response | WerkzeugResponse | tuple[Response, int]:
     """Update a discovered page"""
     try:
-        db = current_app.db
+        db = get_db()
 
         # Get the discovered page
         page_doc = db.discovered_pages.find_one({'_id': ObjectId(page_id)})
@@ -151,7 +152,7 @@ def edit_discovered_page(page_id: str) -> Response | WerkzeugResponse | tuple[Re
 def delete_discovered_page(page_id: str) -> Response | WerkzeugResponse | tuple[Response, int]:
     """Delete a discovered page"""
     try:
-        db = current_app.db
+        db = get_db()
 
         # Get the page to find its project
         page_doc = db.discovered_pages.find_one({'_id': ObjectId(page_id)})

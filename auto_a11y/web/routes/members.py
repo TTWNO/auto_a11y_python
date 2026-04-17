@@ -1,8 +1,9 @@
 """Membership management routes for project access control."""
 from __future__ import annotations
 
-from flask import Blueprint, Response, request, jsonify, current_app
+from flask import Blueprint, Response, request, jsonify
 from auto_a11y.web.fluent import ftl
+from auto_a11y.web.typed_app import get_db
 from flask_login import current_user
 
 from auto_a11y.core.permissions import permission_required
@@ -14,16 +15,16 @@ members_bp = Blueprint('members', __name__)
 @permission_required('project_members', 'read')
 def list_project_members(project_id: str) -> Response | tuple[Response, int]:
     """List members of a project with their groups."""
-    project = current_app.db.get_project(project_id)
+    project = get_db().get_project(project_id)
     if not project:
         return jsonify({'error': ftl('common-project-not-found')}), 404
 
-    all_groups = current_app.db.get_all_groups()
+    all_groups = get_db().get_all_groups()
     group_map = {g.id: g for g in all_groups}
 
     members = []
     for m in project.members:
-        user = current_app.db.get_app_user(m.user_id)
+        user = get_db().get_app_user(m.user_id)
         member_groups = [
             {'id': gid, 'name': group_map[gid].name}
             for gid in m.group_ids
@@ -46,7 +47,7 @@ def list_project_members(project_id: str) -> Response | tuple[Response, int]:
 @permission_required('project_members', 'create')
 def add_project_member(project_id: str) -> Response | tuple[Response, int]:
     """Add a member to a project with group assignments."""
-    project = current_app.db.get_project(project_id)
+    project = get_db().get_project(project_id)
     if not project:
         return jsonify({'error': ftl('common-project-not-found')}), 404
 
@@ -57,14 +58,14 @@ def add_project_member(project_id: str) -> Response | tuple[Response, int]:
     if not user_id:
         return jsonify({'error': ftl('common-user_id-is-required')}), 400
 
-    user = current_app.db.get_app_user(user_id)
+    user = get_db().get_app_user(user_id)
     if not user:
         return jsonify({'error': ftl('common-user-not-found')}), 404
 
     if not group_ids:
         return jsonify({'error': ftl('common-at-least-one-group-is-required')}), 400
 
-    current_app.db.add_project_member(project_id, user_id, group_ids)
+    get_db().add_project_member(project_id, user_id, group_ids)
     return jsonify({'success': True, 'message': ftl('common-added-email', email=user.email)})
 
 
@@ -72,7 +73,7 @@ def add_project_member(project_id: str) -> Response | tuple[Response, int]:
 @permission_required('project_members', 'update')
 def update_project_member(project_id: str, user_id: str) -> Response | tuple[Response, int]:
     """Update a member's group assignments."""
-    project = current_app.db.get_project(project_id)
+    project = get_db().get_project(project_id)
     if not project:
         return jsonify({'error': ftl('common-project-not-found')}), 404
 
@@ -82,7 +83,7 @@ def update_project_member(project_id: str, user_id: str) -> Response | tuple[Res
     if not group_ids:
         return jsonify({'error': ftl('common-at-least-one-group-is-required')}), 400
 
-    current_app.db.update_project_member_groups(project_id, user_id, group_ids)
+    get_db().update_project_member_groups(project_id, user_id, group_ids)
     return jsonify({'success': True})
 
 
@@ -93,11 +94,11 @@ def remove_project_member(project_id: str, user_id: str) -> Response | tuple[Res
     if user_id == str(current_user.get_id()):
         return jsonify({'error': ftl('common-cannot-remove-yourself')}), 400
 
-    project = current_app.db.get_project(project_id)
+    project = get_db().get_project(project_id)
     if not project:
         return jsonify({'error': ftl('common-project-not-found')}), 404
 
-    current_app.db.remove_project_member(project_id, user_id)
+    get_db().remove_project_member(project_id, user_id)
     return jsonify({'success': True})
 
 
@@ -117,13 +118,13 @@ def search_users() -> Response:
     exclude_ids = []
     if exclude_project:
         try:
-            project = current_app.db.get_project(exclude_project)
+            project = get_db().get_project(exclude_project)
             if project:
                 exclude_ids = [m.user_id for m in project.members]
         except Exception:
             pass
 
-    users = current_app.db.search_app_users(
+    users = get_db().search_app_users(
         query=q,
         exclude_user_ids=exclude_ids if exclude_ids else None,
         limit=limit

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from flask import Blueprint, Response, render_template, request, jsonify, current_app
 from bson import ObjectId
+from auto_a11y.web.typed_app import get_db
 from datetime import datetime
 import logging
 
@@ -33,7 +34,7 @@ bp = Blueprint('automated_tests', __name__, url_prefix='/automated_tests')
 @bp.route('/projects/<project_id>/filter-options')
 def get_filter_options(project_id: str) -> Response | tuple[Response, int]:
     """Get available filter options for automated tests."""
-    db = current_app.db
+    db = get_db()
 
     # Get project
     project_doc = db.projects.find_one({'_id': ObjectId(project_id)})
@@ -89,7 +90,7 @@ def get_filter_options(project_id: str) -> Response | tuple[Response, int]:
 @bp.route('/projects/<project_id>')
 def project_automated_tests(project_id: str) -> str | Response | tuple[str, int]:
     """View automated test results for a project with filtering options."""
-    db = current_app.db
+    db = get_db()
 
     # Get project
     project_doc = db.projects.find_one({'_id': ObjectId(project_id)})
@@ -171,7 +172,7 @@ def project_automated_tests(project_id: str) -> str | Response | tuple[str, int]
 @bp.route('/projects/<project_id>/filter', methods=['POST'])
 def filter_test_results(project_id: str) -> Response:
     """Filter test results based on user criteria."""
-    db = current_app.db
+    db = get_db()
 
     # Get filter criteria from request
     filters = request.json
@@ -275,7 +276,7 @@ def upload_to_drupal(project_id: str) -> Response:
             return f"data: {json.dumps(data)}\n\n"
 
         try:
-            db: Any = current_app.db
+            db = get_db()
 
             # Get project
             yield emit('info', 'Loading project...')

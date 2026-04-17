@@ -14,19 +14,24 @@ and get properly-typed values without needing ``# type: ignore`` markers.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 
 from flask import Flask, current_app
 
+if TYPE_CHECKING:
+    from auto_a11y.core.database import Database
+    from auto_a11y.core.scheduler import SchedulerService
+    from config import Config
 
-def get_db() -> Any:
+
+def get_db() -> Database:
     """Return ``current_app.db`` (a :class:`Database` instance)."""
-    return getattr(current_app, "db")
+    return cast("Database", getattr(current_app, "db"))
 
 
-def get_app_config() -> Any:
+def get_app_config() -> Config:
     """Return ``current_app.app_config`` (the project configuration object)."""
-    return getattr(current_app, "app_config")
+    return cast("Config", getattr(current_app, "app_config"))
 
 
 def get_test_config() -> Any:
@@ -34,9 +39,9 @@ def get_test_config() -> Any:
     return getattr(current_app, "test_config")
 
 
-def get_scheduler() -> Any:
+def get_scheduler() -> SchedulerService | None:
     """Return ``current_app.scheduler`` (may be ``None``)."""
-    return getattr(current_app, "scheduler", None)
+    return cast("SchedulerService | None", getattr(current_app, "scheduler", None))
 
 
 def get_flask_app() -> Flask:

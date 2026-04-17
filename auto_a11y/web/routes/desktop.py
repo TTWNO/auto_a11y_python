@@ -5,7 +5,7 @@ This blueprint is only registered when DESKTOP_MODE=True.
 from __future__ import annotations
 
 import os
-from flask import Blueprint, Response, jsonify, request, current_app
+from flask import Blueprint, Response, jsonify, request
 
 desktop_bp = Blueprint('desktop', __name__)
 

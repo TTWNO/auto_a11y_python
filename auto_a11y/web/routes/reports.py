@@ -15,6 +15,7 @@ from auto_a11y.reporting.static_html_generator import StaticHTMLReportGenerator
 from auto_a11y.core.job_manager import JobManager, JobType, JobStatus
 from auto_a11y.core.task_runner import task_runner
 from auto_a11y.core.report_job import ReportJob
+from auto_a11y.web.typed_app import get_db, get_app_config
 from datetime import datetime, timedelta
 from uuid import uuid4
 import logging
@@ -29,7 +30,7 @@ reports_bp = Blueprint('reports', __name__)
 def reports_dashboard() -> str:
     """Reports dashboard"""
     # Get available reports
-    reports_dir = current_app.app_config.REPORTS_DIR
+    reports_dir = get_app_config().REPORTS_DIR
     report_files = list(reports_dir.glob('*.xlsx')) + list(reports_dir.glob('*.html')) + list(reports_dir.glob('*.json')) + list(reports_dir.glob('*.pdf')) + list(reports_dir.glob('*.zip')) + list(reports_dir.glob('*.csv'))
     
     reports = []
@@ -63,12 +64,12 @@ def reports_dashboard() -> str:
         })
     
     # Get all projects for the dropdown
-    projects = current_app.db.get_projects()
+    projects = get_db().get_projects()
     
     # Get all websites for the dropdown
     websites = []
     for project in projects:
-        project_websites = current_app.db.get_websites(project.id)
+        project_websites = get_db().get_websites(project.id)
         for website in project_websites:
             websites.append({
                 'id': str(website.id),
@@ -78,7 +79,7 @@ def reports_dashboard() -> str:
             })
     
     # Get active report generation jobs
-    job_manager = JobManager(current_app.db)
+    job_manager = JobManager(get_db())
     active_jobs = job_manager.get_active_jobs(job_type=JobType.REPORT_GENERATION)
 
     # Also get recently completed jobs (last 5 minutes)
@@ -109,14 +110,14 @@ def generate_report() -> tuple[Response, int] | Response:
     display_name = 'All Projects Report'
 
     if project_id:
-        project = current_app.db.get_project(project_id)
+        project = get_db().get_project(project_id)
         if not project:
             return jsonify({'error': 'Project not found'}), 404
         scope = 'project'
         scope_id = project_id
         display_name = f'Accessibility Report - {project.name}'
     elif website_id:
-        website = current_app.db.get_website(website_id)
+        website = get_db().get_website(website_id)
         if not website:
             return jsonify({'error': 'Website not found'}), 404
         scope = 'website'
@@ -124,8 +125,8 @@ def generate_report() -> tuple[Response, int] | Response:
         display_name = f'Accessibility Report - {website.name}'
 
     # Capture Flask context into local variables
-    db = current_app.db
-    config = current_app.app_config.__dict__.copy()
+    db = get_db()
+    config = get_app_config().__dict__.copy()
     language = str(get_locale()) if get_locale() else 'en'
     app = current_app._get_current_object()
 
@@ -171,7 +172,7 @@ def generate_report() -> tuple[Response, int] | Response:
 @reports_bp.route('/job/<job_id>/status')
 def job_status(job_id: str) -> tuple[Response, int] | Response:
     """Get report job status"""
-    job_manager = JobManager(current_app.db)
+    job_manager = JobManager(get_db())
     job = job_manager.get_job(job_id)
     if not job:
         return jsonify({'error': 'Job not found'}), 404
@@ -190,7 +191,7 @@ def job_status(job_id: str) -> tuple[Response, int] | Response:
 @reports_bp.route('/job/<job_id>/drop', methods=['POST'])
 def drop_job(job_id: str) -> tuple[Response, int] | Response:
     """Drop/delete a stalled or in-progress report job"""
-    job_manager = JobManager(current_app.db)
+    job_manager = JobManager(get_db())
     job = job_manager.get_job(job_id)
     if not job:
         return jsonify({'error': 'Job not found'}), 404
@@ -206,7 +207,7 @@ def drop_job(job_id: str) -> tuple[Response, int] | Response:
 @reports_bp.route('/job/<job_id>/restart', methods=['POST'])
 def restart_job(job_id: str) -> tuple[Response, int] | Response:
     """Restart a stalled report job from scratch"""
-    job_manager = JobManager(current_app.db)
+    job_manager = JobManager(get_db())
     old_job = job_manager.get_job(job_id)
     if not old_job:
         return jsonify({'error': 'Job not found'}), 404
@@ -224,11 +225,11 @@ def restart_job(job_id: str) -> tuple[Response, int] | Response:
     job_manager.collection.delete_one({'job_id': job_id})
 
     # Capture context for background thread
-    db = current_app.db
-    config = current_app.app_config.__dict__.copy()
+    db = get_db()
+    config = get_app_config().__dict__.copy()
     language = str(get_locale()) if get_locale() else 'en'
     app = current_app._get_current_object()
-    output_dir = current_app.app_config.REPORTS_DIR
+    output_dir = get_app_config().REPORTS_DIR
 
     new_job_id = f"report_{uuid4().hex[:8]}"
     job_manager.create_job(
@@ -390,7 +391,7 @@ def _build_restart_generator(scope: str | None, report_type: str, project_id: st
 @reports_bp.route('/download/<filename>')
 def download_report(filename: str) -> tuple[Response, int] | Response:
     """Download generated report"""
-    reports_dir = current_app.app_config.REPORTS_DIR
+    reports_dir = get_app_config().REPORTS_DIR
     file_path = reports_dir / filename
     
     if not file_path.exists():
@@ -410,7 +411,7 @@ def download_report(filename: str) -> tuple[Response, int] | Response:
 @reports_bp.route('/<filename>/delete', methods=['POST'])
 def delete_report(filename: str) -> tuple[Response, int] | Response:
     """Delete a generated report"""
-    reports_dir = current_app.app_config.REPORTS_DIR
+    reports_dir = get_app_config().REPORTS_DIR
     file_path = reports_dir / filename
 
     if not file_path.exists():
@@ -458,13 +459,13 @@ def generate_page_report(page_id: str) -> tuple[Response, int] | Response:
     format = request.form.get('format', request.json.get('format', 'html') if request.is_json else 'html')
     include_ai = request.form.get('include_ai', 'true') == 'true'
 
-    page = current_app.db.get_page(page_id)
+    page = get_db().get_page(page_id)
     if not page:
         return jsonify({'success': False, 'error': 'Page not found'}), 404
 
     # Capture Flask context into local variables
-    db = current_app.db
-    config = current_app.app_config.__dict__.copy()
+    db = get_db()
+    config = get_app_config().__dict__.copy()
     language = str(get_locale()) if get_locale() else 'en'
     app = current_app._get_current_object()
 
@@ -500,13 +501,13 @@ def generate_website_report(website_id: str) -> tuple[Response, int] | Response:
     format = request.form.get('format', request.json.get('format', 'html') if request.is_json else 'html')
     include_ai = request.form.get('include_ai', 'true') == 'true'
 
-    website = current_app.db.get_website(website_id)
+    website = get_db().get_website(website_id)
     if not website:
         return jsonify({'success': False, 'error': 'Website not found'}), 404
 
     # Capture Flask context into local variables
-    db = current_app.db
-    config = current_app.app_config.__dict__.copy()
+    db = get_db()
+    config = get_app_config().__dict__.copy()
     language = str(get_locale()) if get_locale() else 'en'
     app = current_app._get_current_object()
 
@@ -542,13 +543,13 @@ def generate_project_report(project_id: str) -> tuple[Response, int] | Response:
     """Generate report for entire project (background job)"""
     format = request.form.get('format', request.json.get('format', 'html') if request.is_json else 'html')
 
-    project = current_app.db.get_project(project_id)
+    project = get_db().get_project(project_id)
     if not project:
         return jsonify({'success': False, 'error': 'Project not found'}), 404
 
     # Capture Flask context into local variables
-    db = current_app.db
-    config = current_app.app_config.__dict__.copy()
+    db = get_db()
+    config = get_app_config().__dict__.copy()
     language = str(get_locale()) if get_locale() else 'en'
     app = current_app._get_current_object()
 
@@ -585,20 +586,20 @@ def generate_page_structure_report_download(website_id: str) -> tuple[Response, 
     format = request.form.get('format', request.json.get('format', 'html') if request.is_json else 'html')
 
     # Validate inputs in route handler
-    website = current_app.db.get_website(website_id)
+    website = get_db().get_website(website_id)
     if not website:
         return jsonify({'error': 'Website not found'}), 404
 
     project = None
     if website.project_id:
-        project = current_app.db.get_project(website.project_id)
+        project = get_db().get_project(website.project_id)
 
-    pages = current_app.db.get_pages(website_id)
+    pages = get_db().get_pages(website_id)
     if not pages:
         return jsonify({'error': 'No pages found for website'}), 404
 
     # Capture Flask context into local variables
-    db = current_app.db
+    db = get_db()
     language = session.get('language', 'en')
     app = current_app._get_current_object()
 
@@ -644,20 +645,20 @@ def generate_page_structure_report() -> tuple[Response, int] | Response:
         format = request.form.get('format', 'html')
 
     # Validate inputs in route handler
-    website = current_app.db.get_website(website_id)
+    website = get_db().get_website(website_id)
     if not website:
         return jsonify({'success': False, 'error': 'Website not found'}), 404
 
     project = None
     if website.project_id:
-        project = current_app.db.get_project(website.project_id)
+        project = get_db().get_project(website.project_id)
 
-    pages = current_app.db.get_pages(website_id)
+    pages = get_db().get_pages(website_id)
     if not pages:
         return jsonify({'success': False, 'error': 'No pages found for website'}), 404
 
     # Capture Flask context into local variables
-    db = current_app.db
+    db = get_db()
     language = session.get('language', 'en')
     app = current_app._get_current_object()
 
@@ -695,13 +696,13 @@ def generate_discovery_website_report(website_id: str) -> tuple[Response, int] |
     """Generate discovery report for a website (background job)"""
     format = request.form.get('format', request.json.get('format', 'html') if request.is_json else 'html')
 
-    website = current_app.db.get_website(website_id)
+    website = get_db().get_website(website_id)
     if not website:
         return jsonify({'success': False, 'error': 'Website not found'}), 404
 
     # Capture Flask context into local variables
-    db = current_app.db
-    config = current_app.app_config.__dict__.copy()
+    db = get_db()
+    config = get_app_config().__dict__.copy()
     language = session.get('language', 'en')
     app = current_app._get_current_object()
 
@@ -737,13 +738,13 @@ def generate_discovery_project_report(project_id: str) -> tuple[Response, int] |
     """Generate discovery report for an entire project (background job)"""
     format = request.form.get('format', request.json.get('format', 'html') if request.is_json else 'html')
 
-    project = current_app.db.get_project(project_id)
+    project = get_db().get_project(project_id)
     if not project:
         return jsonify({'success': False, 'error': 'Project not found'}), 404
 
     # Capture Flask context into local variables
-    db = current_app.db
-    config = current_app.app_config.__dict__.copy()
+    db = get_db()
+    config = get_app_config().__dict__.copy()
     language = session.get('language', 'en')
     app = current_app._get_current_object()
 
@@ -791,27 +792,27 @@ def generate_static_html_report() -> tuple[Response, int] | Response:
     display_name = 'Static HTML Report'
 
     if project_id:
-        project = current_app.db.get_project(project_id)
+        project = get_db().get_project(project_id)
         if not project:
             return jsonify({'error': 'Project not found'}), 404
 
         project_name = project.name
         display_name = f'Static HTML Report - {project.name}'
-        websites = current_app.db.get_websites(project_id)
+        websites = get_db().get_websites(project_id)
 
         for website in websites:
-            pages = current_app.db.get_pages(website.id)
+            pages = get_db().get_pages(website.id)
             page_ids.extend([str(p.id) for p in pages if p.status == PageStatus.TESTED])
             if not website_url and website.url:
                 website_url = website.url
 
     elif website_id:
-        website = current_app.db.get_website(website_id)
+        website = get_db().get_website(website_id)
         if not website:
             return jsonify({'error': 'Website not found'}), 404
 
         if website.project_id:
-            project = current_app.db.get_project(website.project_id)
+            project = get_db().get_project(website.project_id)
             if project:
                 project_name = f"{project.name} - {website.name}"
             else:
@@ -821,17 +822,17 @@ def generate_static_html_report() -> tuple[Response, int] | Response:
 
         display_name = f'Static HTML Report - {project_name}'
         website_url = website.url
-        pages = current_app.db.get_pages(website_id)
+        pages = get_db().get_pages(website_id)
         page_ids = [str(p.id) for p in pages if p.status == PageStatus.TESTED]
     else:
-        projects = current_app.db.get_projects()
+        projects = get_db().get_projects()
         project_name = "All Projects Accessibility Report"
         display_name = 'Static HTML Report - All Projects'
 
         for project in projects:
-            websites = current_app.db.get_websites(project.id)
+            websites = get_db().get_websites(project.id)
             for website in websites:
-                pages = current_app.db.get_pages(website.id)
+                pages = get_db().get_pages(website.id)
                 page_ids.extend([str(p.id) for p in pages if p.status == PageStatus.TESTED])
 
     if not page_ids:
@@ -839,7 +840,7 @@ def generate_static_html_report() -> tuple[Response, int] | Response:
 
     # Get touchpoints from first page's test result
     if page_ids:
-        first_result = current_app.db.get_latest_test_result(page_ids[0])
+        first_result = get_db().get_latest_test_result(page_ids[0])
         if first_result and first_result.violations:
             touchpoints_set = set()
             for violation in first_result.violations:
@@ -848,9 +849,9 @@ def generate_static_html_report() -> tuple[Response, int] | Response:
             touchpoints_tested = sorted(list(touchpoints_set))
 
     # Capture Flask context into local variables
-    db = current_app.db
+    db = get_db()
     language = session.get('language', 'en')
-    output_dir = current_app.app_config.REPORTS_DIR
+    output_dir = get_app_config().REPORTS_DIR
     app = current_app._get_current_object()
 
     job_id = f"report_{uuid4().hex[:8]}"
@@ -901,18 +902,18 @@ def generate_deduplicated_report() -> Response:
     # Build display name
     display_name = 'Deduplicated Report'
     if project_id:
-        project = current_app.db.get_project(project_id)
+        project = get_db().get_project(project_id)
         if project:
             display_name = f'Deduplicated Report - {project.name}'
     if website_id:
-        website = current_app.db.get_website(website_id)
+        website = get_db().get_website(website_id)
         if website:
             display_name = f'Deduplicated Report - {website.name}'
 
     # Capture Flask context into local variables
-    db = current_app.db
+    db = get_db()
     language = session.get('language', 'en')
-    output_dir = current_app.app_config.REPORTS_DIR
+    output_dir = get_app_config().REPORTS_DIR
     app = current_app._get_current_object()
 
     job_id = f"report_{uuid4().hex[:8]}"
@@ -958,11 +959,11 @@ def generate_recordings_report(project_id: str) -> tuple[Response, int] | Respon
     group_by_touchpoint = request.form.get('group_by_touchpoint', 'true') in ['true', 'True', '1', 'on']
 
     # Validate in route handler
-    project = current_app.db.get_project(project_id)
+    project = get_db().get_project(project_id)
     if not project:
         return jsonify({'success': False, 'error': 'Project not found'}), 404
 
-    recordings = current_app.db.get_recordings(project_id=project_id)
+    recordings = get_db().get_recordings(project_id=project_id)
     if not recordings:
         return jsonify({
             'success': False,
@@ -972,8 +973,8 @@ def generate_recordings_report(project_id: str) -> tuple[Response, int] | Respon
         }), 200
 
     # Capture Flask context into local variables
-    db = current_app.db
-    config = current_app.app_config.__dict__.copy()
+    db = get_db()
+    config = get_app_config().__dict__.copy()
     language = session.get('language', 'en')
     app = current_app._get_current_object()
 

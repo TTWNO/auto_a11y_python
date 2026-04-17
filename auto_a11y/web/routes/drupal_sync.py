@@ -4,7 +4,7 @@ Flask routes for Drupal synchronization
 from __future__ import annotations
 
 import logging
-from flask import Blueprint, render_template, request, jsonify, Response, stream_with_context, current_app
+from flask import Blueprint, render_template, request, jsonify, Response, stream_with_context
 from bson import ObjectId
 import json
 from datetime import datetime
@@ -13,6 +13,7 @@ from collections.abc import Iterator
 from typing import Any
 
 from auto_a11y.models import Project, DiscoveredPage, Recording, Issue, DrupalSyncStatus
+from auto_a11y.web.typed_app import get_db
 from auto_a11y.drupal import (
     DrupalJSONAPIClient,
     DiscoveredPageExporter,
@@ -36,7 +37,7 @@ drupal_sync_bp = Blueprint('drupal_sync', __name__)
 def project_sync_page(project_id: str) -> str | Response | tuple[str, int]:
     """Drupal synchronization page for a project"""
     try:
-        db = current_app.db
+        db = get_db()
 
         # Get project
         project_doc = db.projects.find_one({'_id': ObjectId(project_id)})
@@ -171,7 +172,7 @@ def _lookup_audit_uuid(client: DrupalJSONAPIClient, project: Project) -> str | N
 def sync_status(project_id: str) -> Response | tuple[Response, int]:
     """Get sync status for a project"""
     try:
-        db = current_app.db
+        db = get_db()
 
         # Get project
         project_doc = db.projects.find_one({'_id': ObjectId(project_id)})
@@ -258,7 +259,7 @@ def upload_to_drupal(project_id: str) -> Response:
 
     def generate() -> Iterator[str]:
         try:
-            db: Any = current_app.db
+            db = get_db()
 
             # Get project
             project_doc = db.projects.find_one({'_id': ObjectId(project_id)})
@@ -1071,7 +1072,7 @@ def upload_to_drupal(project_id: str) -> Response:
 def list_discovered_pages(project_id: str) -> Response | tuple[Response, int]:
     """List discovered pages for a project"""
     try:
-        db = current_app.db
+        db = get_db()
 
         # Get discovered pages
         pages = list(db.discovered_pages.find({'project_id': project_id}))
@@ -1104,7 +1105,7 @@ def list_discovered_pages(project_id: str) -> Response | tuple[Response, int]:
 def list_recordings(project_id: str) -> Response | tuple[Response, int]:
     """List recordings for a project"""
     try:
-        db = current_app.db
+        db = get_db()
 
         # Get recordings
         recordings = list(db.recordings.find({'project_id': project_id}))
@@ -1145,7 +1146,7 @@ def import_discovered_pages(project_id: str) -> Response:
     """
     def generate() -> Iterator[str]:
         try:
-            db: Any = current_app.db
+            db = get_db()
 
             # Get project
             project_doc = db.projects.find_one({'_id': ObjectId(project_id)})
@@ -1283,7 +1284,7 @@ def import_discovered_pages(project_id: str) -> Response:
 def list_issues(project_id: str) -> Response | tuple[Response, int]:
     """List issues for a project"""
     try:
-        db = current_app.db
+        db = get_db()
 
         # Get issues
         issues = list(db.issues.find({'project_id': project_id}))
@@ -1326,7 +1327,7 @@ def import_issues(project_id: str) -> Response:
     """
     def generate() -> Iterator[str]:
         try:
-            db: Any = current_app.db
+            db = get_db()
 
             # Get project
             project_doc = db.projects.find_one({'_id': ObjectId(project_id)})
@@ -1469,7 +1470,7 @@ def upload_automated_results_to_drupal(project_id: str) -> Response:
 
     def generate() -> Iterator[str]:
         try:
-            db: Any = current_app.db
+            db = get_db()
 
             # Get project
             project_doc = db.projects.find_one({'_id': ObjectId(project_id)})

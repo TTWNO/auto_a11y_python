@@ -5,9 +5,10 @@ from __future__ import annotations
 
 import asyncio
 
-from flask import Blueprint, render_template, request, jsonify, current_app, redirect, url_for, flash
+from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash
 from werkzeug.wrappers import Response
 from auto_a11y.web.fluent import ftl
+from auto_a11y.web.typed_app import get_db, get_app_config
 from auto_a11y.models import PageSetupScript, ScriptStep, ActionType, ScriptScope, ExecutionTrigger
 from auto_a11y.core.browser_manager import BrowserManager
 from auto_a11y.testing.script_executor import ScriptExecutor, ScriptExecutionError
@@ -21,20 +22,20 @@ scripts_bp = Blueprint('scripts', __name__)
 @scripts_bp.route('/page/<page_id>/scripts')
 def list_page_scripts(page_id: str) -> str | Response:
     """List all scripts for a page"""
-    page = current_app.db.get_page(page_id)
+    page = get_db().get_page(page_id)
     if not page:
         flash(ftl('common-page-not-found'), 'error')
         return redirect(url_for('index'))
 
     # Get website and project for context
-    website = current_app.db.get_website(page.website_id)
-    project = current_app.db.get_project(website.project_id) if website else None
+    website = get_db().get_website(page.website_id)
+    project = get_db().get_project(website.project_id) if website else None
 
     # Get page-level scripts
-    page_scripts = current_app.db.get_page_setup_scripts_for_page(page_id)
+    page_scripts = get_db().get_page_setup_scripts_for_page(page_id)
 
     # Get website-level scripts
-    website_scripts = current_app.db.get_scripts_for_website(
+    website_scripts = get_db().get_scripts_for_website(
         page.website_id,
         scope=ScriptScope.WEBSITE.value,  # Pass the string value, not the enum
         enabled_only=False
@@ -51,7 +52,7 @@ def list_page_scripts(page_id: str) -> str | Response:
 @scripts_bp.route('/page/<page_id>/scripts/create', methods=['GET', 'POST'])
 def create_page_script(page_id: str) -> str | Response:
     """Create a new page setup script"""
-    page = current_app.db.get_page(page_id)
+    page = get_db().get_page(page_id)
     if not page:
         flash(ftl('common-page-not-found'), 'error')
         return redirect(url_for('index'))
@@ -103,7 +104,7 @@ def create_page_script(page_id: str) -> str | Response:
             )
 
             # Save to database
-            script_id = current_app.db.create_page_setup_script(script)
+            script_id = get_db().create_page_setup_script(script)
 
             flash(ftl('scripts-script-name-created-successfully', name=script.name), 'success')
             return redirect(url_for('scripts.edit_script', script_id=script_id))
@@ -113,8 +114,8 @@ def create_page_script(page_id: str) -> str | Response:
             flash(ftl('scripts-error-creating-script-error', error=str(e)), 'error')
 
     # GET request - show form
-    website = current_app.db.get_website(page.website_id)
-    project = current_app.db.get_project(website.project_id) if website else None
+    website = get_db().get_website(page.website_id)
+    project = get_db().get_project(website.project_id) if website else None
 
     # Get all action types for dropdown
     action_types = [
@@ -153,7 +154,7 @@ def create_page_script(page_id: str) -> str | Response:
 @scripts_bp.route('/website/<website_id>/scripts/create', methods=['GET', 'POST'])
 def create_website_script(website_id: str) -> str | Response:
     """Create a new website-level setup script"""
-    website = current_app.db.get_website(website_id)
+    website = get_db().get_website(website_id)
     if not website:
         flash(ftl('common-website-not-found'), 'error')
         return redirect(url_for('index'))
@@ -206,7 +207,7 @@ def create_website_script(website_id: str) -> str | Response:
             )
 
             # Save to database
-            script_id = current_app.db.create_page_setup_script(script)
+            script_id = get_db().create_page_setup_script(script)
 
             flash(ftl('scripts-website-script-name-created-successfully', name=script.name), 'success')
             return redirect(url_for('scripts.edit_script', script_id=script_id))
@@ -216,7 +217,7 @@ def create_website_script(website_id: str) -> str | Response:
             flash(ftl('scripts-error-creating-script-error', error=str(e)), 'error')
 
     # GET request - show form
-    project = current_app.db.get_project(website.project_id)
+    project = get_db().get_project(website.project_id)
 
     # Get all action types for dropdown
     action_types = [
@@ -260,16 +261,16 @@ def create_website_script(website_id: str) -> str | Response:
 @scripts_bp.route('/website/<website_id>/scripts')
 def list_website_scripts(website_id: str) -> str | Response:
     """List all scripts for a website"""
-    website = current_app.db.get_website(website_id)
+    website = get_db().get_website(website_id)
     if not website:
         flash(ftl('common-website-not-found'), 'error')
         return redirect(url_for('index'))
 
     # Get project for context
-    project = current_app.db.get_project(website.project_id) if website else None
+    project = get_db().get_project(website.project_id) if website else None
 
     # Get website-level scripts
-    website_scripts = current_app.db.get_scripts_for_website(
+    website_scripts = get_db().get_scripts_for_website(
         website_id,
         scope=ScriptScope.WEBSITE.value,
         enabled_only=False
@@ -286,15 +287,15 @@ def list_website_scripts(website_id: str) -> str | Response:
 @scripts_bp.route('/<script_id>')
 def view_script(script_id: str) -> str | Response:
     """View script details"""
-    script = current_app.db.get_page_setup_script(script_id)
+    script = get_db().get_page_setup_script(script_id)
     if not script:
         flash(ftl('scripts-script-not-found'), 'error')
         return redirect(url_for('index'))
 
     # Get related page/website/project
-    page = current_app.db.get_page(script.page_id) if script.page_id else None
-    website = current_app.db.get_website(script.website_id)
-    project = current_app.db.get_project(website.project_id) if website else None
+    page = get_db().get_page(script.page_id) if script.page_id else None
+    website = get_db().get_website(script.website_id)
+    project = get_db().get_project(website.project_id) if website else None
 
     return render_template('scripts/view.html',
                          script=script,
@@ -306,7 +307,7 @@ def view_script(script_id: str) -> str | Response:
 @scripts_bp.route('/<script_id>/edit', methods=['GET', 'POST'])
 def edit_script(script_id: str) -> str | Response:
     """Edit an existing script"""
-    script = current_app.db.get_page_setup_script(script_id)
+    script = get_db().get_page_setup_script(script_id)
     if not script:
         flash(ftl('scripts-script-not-found'), 'error')
         return redirect(url_for('index'))
@@ -357,7 +358,7 @@ def edit_script(script_id: str) -> str | Response:
             script.last_modified = datetime.now()
 
             # Save changes
-            current_app.db.update_page_setup_script(script)
+            get_db().update_page_setup_script(script)
 
             flash(ftl('scripts-script-name-updated-successfully', name=script.name), 'success')
             return redirect(url_for('scripts.view_script', script_id=script_id))
@@ -367,9 +368,9 @@ def edit_script(script_id: str) -> str | Response:
             flash(ftl('scripts-error-updating-script-error', error=str(e)), 'error')
 
     # GET request - show form
-    page = current_app.db.get_page(script.page_id) if script.page_id else None
-    website = current_app.db.get_website(script.website_id)
-    project = current_app.db.get_project(website.project_id) if website else None
+    page = get_db().get_page(script.page_id) if script.page_id else None
+    website = get_db().get_website(script.website_id)
+    project = get_db().get_project(website.project_id) if website else None
 
     # Debug: Log the script steps being loaded
     logger.warning(f"EDIT GET: Loading script '{script.name}' with {len(script.steps)} steps")
@@ -424,12 +425,12 @@ def edit_script(script_id: str) -> str | Response:
 @scripts_bp.route('/<script_id>/delete', methods=['POST'])
 def delete_script(script_id: str) -> Response | tuple[Response, int]:
     """Delete a script"""
-    script = current_app.db.get_page_setup_script(script_id)
+    script = get_db().get_page_setup_script(script_id)
     if not script:
         return jsonify({'error': ftl('scripts-script-not-found')}), 404
 
     try:
-        current_app.db.delete_page_setup_script(script_id)
+        get_db().delete_page_setup_script(script_id)
         flash(ftl('scripts-script-name-deleted-successfully', name=script.name), 'success')
 
         # Return redirect URL
@@ -455,7 +456,7 @@ def toggle_script(script_id: str) -> Response | tuple[Response, int]:
     logger.warning(f"TOGGLE ROUTE HIT! script_id: {script_id}")
     logger.warning(f"{'='*60}")
 
-    script = current_app.db.get_page_setup_script(script_id)
+    script = get_db().get_page_setup_script(script_id)
     if not script:
         logger.warning(f"ERROR: Script not found: {script_id}")
         return jsonify({'error': ftl('scripts-script-not-found')}), 404
@@ -468,11 +469,11 @@ def toggle_script(script_id: str) -> Response | tuple[Response, int]:
         new_state = script.enabled
         logger.warning(f"New state: {new_state}")
 
-        success = current_app.db.update_page_setup_script(script)
+        success = get_db().update_page_setup_script(script)
         logger.warning(f"Database update success: {success}")
 
         # Verify the update by reading back from database
-        verified_script = current_app.db.get_page_setup_script(script_id)
+        verified_script = get_db().get_page_setup_script(script_id)
         logger.warning(f"Verified from DB: enabled={verified_script.enabled}")
 
         return jsonify({
@@ -497,12 +498,12 @@ def test_script(script_id: str) -> Response | tuple[Response, int]:
     scripts, website.url for website-scoped scripts), runs the script, and returns
     success/failure with duration and step count.
     """
-    script = current_app.db.get_page_setup_script(script_id)
+    script = get_db().get_page_setup_script(script_id)
     if not script:
         return jsonify({'error': ftl('scripts-script-not-found')}), 404
 
     # Resolve target URL based on script scope
-    website = current_app.db.get_website(script.website_id)
+    website = get_db().get_website(script.website_id)
     if not website:
         return jsonify({
             'success': False,
@@ -515,7 +516,7 @@ def test_script(script_id: str) -> Response | tuple[Response, int]:
                 'success': False,
                 'error': ftl('common-page-not-found')
             }), 404
-        page_obj = current_app.db.get_page(script.page_id)
+        page_obj = get_db().get_page(script.page_id)
         if not page_obj:
             return jsonify({
                 'success': False,
@@ -526,8 +527,8 @@ def test_script(script_id: str) -> Response | tuple[Response, int]:
         target_url = website.url
 
     # Build browser config honouring project settings (same pattern as test_login)
-    project = current_app.db.get_project(website.project_id) if website else None
-    browser_config = current_app.app_config.__dict__.copy()
+    project = get_db().get_project(website.project_id) if website else None
+    browser_config = get_app_config().__dict__.copy()
     if project and project.config:
         browser_config['stealth_mode'] = project.config.get('stealth_mode', False)
         headless_setting = project.config.get('headless_browser', 'true')

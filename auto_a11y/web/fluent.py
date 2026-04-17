@@ -84,10 +84,17 @@ def ftl(message_id: str, **kwargs: object) -> Markup | str:
     """
     # Strict-mode full-coverage check
     if _is_strict():
-        missing = [
-            loc for loc in _SUPPORTED_LOCALES
-            if _resolve(loc, message_id, kwargs) is None
-        ]
+        missing: list[str] = []
+        format_errors: list[tuple[str, Sequence[object]]] = []
+        for loc in _SUPPORTED_LOCALES:
+            res = _resolve(loc, message_id, kwargs)
+            if res is None:
+                missing.append(loc)
+            else:
+                _, errs = res
+                if errs:
+                    format_errors.append((loc, errs))
+
         if missing:
             paths = "\n".join(
                 f"    auto_a11y/web/translations/{loc}/*.ftl"
@@ -95,6 +102,12 @@ def ftl(message_id: str, **kwargs: object) -> Markup | str:
             )
             raise MissingTranslationError(
                 f"Fluent message {message_id!r} missing from locale(s): {', '.join(missing)}\n  Strict mode is active (Flask debug). Add this message ID to:\n{paths}"
+            )
+
+        if format_errors:
+            loc, errs = format_errors[0]
+            raise MissingTranslationError(
+                f"Fluent message {message_id!r} in locale {loc!r} has formatting errors: {errs}\n  Called with kwargs: {kwargs}\n  Strict mode is active (Flask debug)."
             )
 
     # Non-strict path (also the post-strict-check path)

@@ -384,3 +384,47 @@ class TestStrictModeMissingLocales:
             session["language"] = "fr"
             # Should not raise
             assert str(ftl("hello")) == "Bonjour"
+
+
+# ---------------------------------------------------------------------------
+# Tests: strict mode — format errors raise
+# ---------------------------------------------------------------------------
+
+class TestStrictModeFormatErrors:
+
+    def test_missing_variable_raises_in_strict(self, fluent_app, monkeypatch):
+        """In strict mode, missing a required variable raises."""
+        import auto_a11y.web.fluent as fluent_mod
+        from auto_a11y.web.fluent import MissingTranslationError
+
+        monkeypatch.setattr(fluent_mod, "_strict_mode", True)
+
+        with fluent_app.test_request_context():
+            session["language"] = "en"
+            # 'greeting' requires { $name }; passing no kwargs -> format error
+            with pytest.raises(MissingTranslationError, match="formatting errors"):
+                ftl("greeting")
+
+    def test_missing_variable_non_strict_logs_warning(self, fluent_app, monkeypatch, caplog):
+        """Non-strict mode still logs a warning on format errors (unchanged behavior)."""
+        import auto_a11y.web.fluent as fluent_mod
+        import logging
+
+        monkeypatch.setattr(fluent_mod, "_strict_mode", False)
+
+        with fluent_app.test_request_context():
+            session["language"] = "en"
+            with caplog.at_level(logging.WARNING, logger="auto_a11y.web.fluent"):
+                # Should NOT raise, just log + return whatever fluent gives us
+                result = ftl("greeting")
+            # A warning was logged mentioning format errors
+            assert any("Fluent errors" in rec.message for rec in caplog.records)
+
+    def test_correct_kwargs_does_not_raise(self, fluent_app, monkeypatch):
+        """Correct kwargs produce no format errors, strict mode silent."""
+        import auto_a11y.web.fluent as fluent_mod
+        monkeypatch.setattr(fluent_mod, "_strict_mode", True)
+
+        with fluent_app.test_request_context():
+            session["language"] = "en"
+            assert str(ftl("greeting", name="World")) == "Hello, World!"

@@ -45,14 +45,14 @@ def _collect_message_values(ftl_dir: Path) -> dict[str, str | None]:
     attributes contain real content (text or placeables).  This correctly
     handles attribute-only messages such as issue descriptions.
     """
-    entries = {}
+    entries: dict[str, str | None] = {}
     for ftl_file in sorted(ftl_dir.glob('*.ftl')):
         source = ftl_file.read_text(encoding='utf-8')
         resource = parse(source)
         for entry in resource.body:
             if isinstance(entry, fluent_ast.Message):
                 # Check main value
-                if _pattern_has_content(entry.value):
+                if entry.value is not None and _pattern_has_content(entry.value):
                     parts = []
                     for elem in entry.value.elements:
                         if isinstance(elem, fluent_ast.TextElement):

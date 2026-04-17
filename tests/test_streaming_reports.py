@@ -451,9 +451,11 @@ class TestGenerateAllProjectsReport:
     def test_calls_collect_summary_and_write_details(self) -> None:
         db = MagicMock()
         rg, formatter = _make_full_generator(db)
-        # _t and _sanitize_filename need to work
-        rg._t = ReportGenerator._t.__get__(rg)
-        rg._sanitize_filename = ReportGenerator._sanitize_filename.__get__(rg)
+        # _t and _sanitize_filename need to work — use object.__setattr__ to
+        # bind unbound methods on a __new__-created instance without triggering
+        # mypy's method-assign error.
+        object.__setattr__(rg, '_t', ReportGenerator._t.__get__(rg))
+        object.__setattr__(rg, '_sanitize_filename', ReportGenerator._sanitize_filename.__get__(rg))
 
         project = _SimpleObj(name='ProjectA', id='p1')
         db.get_projects.return_value = [project]
@@ -475,8 +477,8 @@ class TestGenerateAllProjectsReport:
     def test_cleans_up_on_error(self) -> None:
         db = MagicMock()
         rg, formatter = _make_full_generator(db)
-        rg._t = ReportGenerator._t.__get__(rg)
-        rg._sanitize_filename = ReportGenerator._sanitize_filename.__get__(rg)
+        object.__setattr__(rg, '_t', ReportGenerator._t.__get__(rg))
+        object.__setattr__(rg, '_sanitize_filename', ReportGenerator._sanitize_filename.__get__(rg))
 
         project = _SimpleObj(name='ProjectA', id='p1')
         db.get_projects.return_value = [project]

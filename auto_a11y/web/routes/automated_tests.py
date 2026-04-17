@@ -536,9 +536,9 @@ def upload_to_drupal(project_id: str) -> Response:
                         # Get discovered page UUID for this violation
                         discovered_page_uuid = None
                         if violation.discovered_page_id:
-                            disc_page = db.get_discovered_page_by_id(violation.discovered_page_id)
-                            if disc_page and disc_page.drupal_uuid:
-                                discovered_page_uuid = disc_page.drupal_uuid
+                            found_page = db.get_discovered_page_by_id(violation.discovered_page_id)
+                            if found_page and found_page.drupal_uuid:
+                                discovered_page_uuid = found_page.drupal_uuid
 
                         # Check if issue already exists using unique_id
                         # Each violation instance has a unique_id field that is a UUID

@@ -153,7 +153,8 @@ class FixtureTestRunner:
 
             if match:
                 metadata_str = match.group(1)
-                return json.loads(metadata_str)
+                parsed: dict[str, Any] = json.loads(metadata_str)
+                return parsed
         except Exception as e:
             logger.debug(f"Could not extract metadata from {fixture_path}: {e}")
 
@@ -267,6 +268,9 @@ class FixtureTestRunner:
 
             # Get the page object
             page_obj = self.db.get_page(page_id)
+            if page_obj is None:
+                result["notes"].append("Page object not found in database")
+                return result
 
             try:
                 # Determine if AI analysis should run
@@ -482,8 +486,8 @@ class FixtureTestRunner:
 
         if filters_active:
             print("\n🔍 ACTIVE FILTERS:")
-            for f in filters_active:
-                print(f"   • {f}")
+            for filt in filters_active:
+                print(f"   • {filt}")
 
         # Display AI analysis status
         if self.ai_available:
@@ -530,7 +534,7 @@ class FixtureTestRunner:
             self.results.append(result)
         # Calculate per-error-code success
         # An error code is only considered passing if ALL its fixtures pass
-        error_code_status = {}
+        error_code_status: dict[str, dict[str, Any]] = {}
         for expected_code, fixture_paths in fixtures_by_code.items():
             # Get results for all fixtures of this error code
             code_results = [r for r in self.results if r["expected_code"] == expected_code]

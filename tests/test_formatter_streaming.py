@@ -39,9 +39,8 @@ class TestBaseFormatterStreaming:
             self.formatter.finalize("out.txt", {})
 
     def test_cleanup_is_noop(self) -> None:
-        # Should not raise and return None
-        result = self.formatter.cleanup()
-        assert result is None
+        # Should not raise (implicitly returns None)
+        self.formatter.cleanup()
 
 
 # ---------------------------------------------------------------------------

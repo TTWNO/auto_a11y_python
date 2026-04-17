@@ -104,7 +104,7 @@ def _collect_message_values(ftl_dir: Path) -> dict[str, dict[str, str | None]]:
         for entry in resource.body:
             if isinstance(entry, fluent_ast.Message):
                 # Check main value
-                if _pattern_has_content(entry.value):
+                if entry.value is not None and _pattern_has_content(entry.value):
                     parts = []
                     for elem in entry.value.elements:
                         if isinstance(elem, fluent_ast.TextElement):

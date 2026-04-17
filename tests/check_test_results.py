@@ -2,6 +2,7 @@
 """Check what error codes are in the test_results collection"""
 from __future__ import annotations
 
+from typing import Any
 
 import sys
 from pymongo import MongoClient
@@ -15,7 +16,7 @@ MONGO_URI = os.getenv('MONGODB_URI', 'mongodb://localhost:27017/')
 DB_NAME = os.getenv('MONGODB_DATABASE', 'auto_a11y')
 
 try:
-    client: MongoClient = MongoClient(MONGO_URI, serverSelectionTimeoutMS=3000)
+    client: MongoClient[dict[str, Any]] = MongoClient(MONGO_URI, serverSelectionTimeoutMS=3000)
     client.admin.command('ping')
 except (ConnectionFailure, Exception) as e:
     print(f"SKIP: MongoDB not available ({e})")
@@ -37,15 +38,16 @@ for code in old_codes:
     if count > 0:
         # Show sample
         sample = db.test_results.find_one({'error_code': code})
-        print(f"  Sample: {sample.get('fixture_path', 'N/A')}")
-        print(f"  Created: {sample.get('created_at', 'N/A')}")
+        if sample is not None:
+            print(f"  Sample: {sample.get('fixture_path', 'N/A')}")
+            print(f"  Created: {sample.get('created_at', 'N/A')}")
 
 print("\n" + "=" * 70)
 print("CHECKING UNIQUE ERROR CODES IN test_results")
 print("=" * 70)
 
 # Get all unique error codes that contain "Lang"
-pipeline = [
+pipeline: list[dict[str, Any]] = [
     {"$match": {"error_code": {"$regex": "Lang", "$options": "i"}}},
     {"$group": {"_id": "$error_code", "count": {"$sum": 1}}},
     {"$sort": {"_id": 1}}

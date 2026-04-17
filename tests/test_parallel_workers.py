@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 """
 Tests for parallel worker pool in TestingJob.
@@ -158,7 +158,7 @@ async def test_cancellation_stops_workers() -> None:
         call_count += 1
         return call_count > 6  # Each page causes ~2 calls to is_cancelled
 
-    job.job_manager.is_cancellation_requested.side_effect = check_cancelled
+    cast(MagicMock, job.job_manager).is_cancellation_requested.side_effect = check_cancelled
 
     mock_db = MagicMock()
     mock_website = MagicMock(project_id="proj_1")
@@ -278,7 +278,7 @@ async def test_progress_counts_are_accurate() -> None:
 
     # Verify via the progress details
     progress_calls = [
-        call for call in job.job_manager.update_job_progress.call_args_list
+        call for call in cast(MagicMock, job.job_manager).update_job_progress.call_args_list
     ]
     # The last progress update should have tested=4
     last_progress = progress_calls[-1]

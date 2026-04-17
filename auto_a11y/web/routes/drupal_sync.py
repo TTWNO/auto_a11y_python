@@ -571,8 +571,8 @@ def upload_to_drupal(project_id: str) -> Response:
                 current_item += 1
 
                 try:
-                    issue_doc = db.issues.find_one({'_id': ObjectId(issue_id)})
-                    if not issue_doc:
+                    found_issue_doc = db.issues.find_one({'_id': ObjectId(issue_id)})
+                    if not found_issue_doc:
                         yield json.dumps({
                             'type': 'error',
                             'current': current_item,
@@ -583,7 +583,7 @@ def upload_to_drupal(project_id: str) -> Response:
                         failure_count += 1
                         continue
 
-                    issue = Issue.from_dict(issue_doc)
+                    issue = Issue.from_dict(found_issue_doc)
 
                     yield json.dumps({
                         'type': 'progress',

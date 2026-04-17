@@ -80,7 +80,9 @@ def _build_env_like_static_html_generator() -> jinja2.Environment:
         autoescape=jinja2.select_autoescape(['html', 'xml']),
         extensions=['jinja2.ext.i18n'],
     )
-    env.install_gettext_callables(
+    # install_gettext_callables is added at runtime by jinja2.ext.i18n
+    install = getattr(env, 'install_gettext_callables')
+    install(
         gettext=lambda x: x,
         ngettext=lambda s, p, n: s if n == 1 else p,
         newstyle=True,
@@ -120,7 +122,7 @@ def _build_env_like_recordings_report() -> jinja2.Environment:
 # This must stay in sync with get_template() calls in the generators.
 # ---------------------------------------------------------------------------
 
-GENERATOR_ENVS = {
+GENERATOR_ENVS: dict[str, dict[str, Any]] = {
     'StaticHTMLReportGenerator': {
         'build_env': _build_env_like_static_html_generator,
         'source': 'auto_a11y/reporting/static_html_generator.py',

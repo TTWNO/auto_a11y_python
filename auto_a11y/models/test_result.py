@@ -2,9 +2,11 @@
 Test result models for accessibility testing
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import List, Optional, Dict, Any
+from typing import Any
 from enum import Enum
 from bson import ObjectId
 
@@ -30,37 +32,37 @@ class Violation:
     description: str
 
     # Unique identifier for this specific violation instance
-    unique_id: Optional[str] = None  # UUID for this specific instance (generated if not provided)
+    unique_id: str | None = None  # UUID for this specific instance (generated if not provided)
 
     # Source tracking (NEW)
     source_type: str = "automated"  # "automated", "manual", "hybrid"
-    detection_method: Optional[str] = None  # "axe", "pa11y", "dictaphone", "expert"
+    detection_method: str | None = None  # "axe", "pa11y", "dictaphone", "expert"
 
     # Automated test fields (may be None for manual findings)
-    help_url: Optional[str] = None
-    xpath: Optional[str] = None
-    element: Optional[str] = None
-    html: Optional[str] = None
-    failure_summary: Optional[str] = None
-    wcag_criteria: List[str] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)  # Additional details
+    help_url: str | None = None
+    xpath: str | None = None
+    element: str | None = None
+    html: str | None = None
+    failure_summary: str | None = None
+    wcag_criteria: list[str] = field(default_factory=lambda: [])
+    metadata: dict[str, Any] = field(default_factory=lambda: {})  # Additional details
 
     # Manual audit fields (NEW - from Dictaphone/expert audits)
-    short_title: Optional[str] = None
-    what: Optional[str] = None  # Detailed issue description
-    why: Optional[str] = None  # Why it matters / impact explanation
-    who: Optional[str] = None  # Affected user groups
-    remediation: Optional[str] = None  # How to fix
+    short_title: str | None = None
+    what: str | None = None  # Detailed issue description
+    why: str | None = None  # Why it matters / impact explanation
+    who: str | None = None  # Affected user groups
+    remediation: str | None = None  # How to fix
 
     # Recording context (NEW - for manual findings)
-    recording_id: Optional[str] = None
-    timecodes: List[Dict[str, str]] = field(default_factory=list)
+    recording_id: str | None = None
+    timecodes: list[dict[str, str]] = field(default_factory=lambda: [])
     # timecode format: [{"start": "00:00:56.085", "end": "00:01:19.265", "duration": "00:00:23.180"}]
 
     # Discovered Page reference (for linking to Drupal discovered pages)
-    discovered_page_id: Optional[str] = None  # Local MongoDB discovered_page ID
+    discovered_page_id: str | None = None  # Local MongoDB discovered_page ID
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary"""
         import uuid
         # Generate unique_id if not set
@@ -91,12 +93,12 @@ class Violation:
             'timecodes': self.timecodes,
             'discovered_page_id': self.discovered_page_id
         }
-    
+
     @classmethod
-    def from_dict(cls, data: dict) -> 'Violation':
+    def from_dict(cls, data: dict[str, Any]) -> Violation:
         """Create from dictionary"""
         # Map old impact levels to new ones for backward compatibility
-        impact_mapping = {
+        impact_mapping: dict[str, str] = {
             'critical': 'high',
             'serious': 'high',
             'moderate': 'medium',
@@ -146,16 +148,16 @@ class Violation:
 @dataclass
 class AIFinding:
     """AI-detected accessibility finding"""
-    
+
     type: str  # heading_mismatch, reading_order, modal_issue, etc.
     severity: ImpactLevel
     description: str
-    suggested_fix: Optional[str] = None
+    suggested_fix: str | None = None
     confidence: float = 0.0
-    visual_location: Optional[Dict[str, int]] = None  # x, y, width, height
-    related_html: Optional[str] = None
-    
-    def to_dict(self) -> dict:
+    visual_location: dict[str, int] | None = None  # x, y, width, height
+    related_html: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary"""
         return {
             'type': self.type,
@@ -166,23 +168,23 @@ class AIFinding:
             'visual_location': self.visual_location,
             'related_html': self.related_html
         }
-    
+
     @classmethod
-    def from_dict(cls, data: dict) -> 'AIFinding':
+    def from_dict(cls, data: dict[str, Any]) -> AIFinding:
         """Create from dictionary"""
         # Map old impact levels to new ones for backward compatibility
-        impact_mapping = {
+        impact_mapping: dict[str, str] = {
             'critical': 'high',
             'serious': 'high',
             'moderate': 'medium',
             'minor': 'low'
         }
-        
+
         severity_value = data['severity']
         # If it's an old value, map it to the new one
         if severity_value in impact_mapping:
             severity_value = impact_mapping[severity_value]
-        
+
         return cls(
             type=data['type'],
             severity=ImpactLevel(severity_value),
@@ -201,58 +203,58 @@ class TestResult:
     page_id: str
     test_date: datetime = field(default_factory=datetime.now)
     duration_ms: int = 0
-    violations: List[Violation] = field(default_factory=list)  # Errors (_Err)
-    warnings: List[Violation] = field(default_factory=list)   # Warnings (_Warn)
-    info: List[Violation] = field(default_factory=list)       # Information notes (_Info)
-    discovery: List[Violation] = field(default_factory=list)  # Discovery items (_Disco)
-    passes: List[Dict[str, Any]] = field(default_factory=list)
-    ai_findings: List[AIFinding] = field(default_factory=list)
-    screenshot_path: Optional[str] = None
-    js_test_results: Dict[str, Any] = field(default_factory=dict)
-    ai_analysis_results: Dict[str, Any] = field(default_factory=dict)
-    error: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    violations: list[Violation] = field(default_factory=lambda: [])  # Errors (_Err)
+    warnings: list[Violation] = field(default_factory=lambda: [])   # Warnings (_Warn)
+    info: list[Violation] = field(default_factory=lambda: [])       # Information notes (_Info)
+    discovery: list[Violation] = field(default_factory=lambda: [])  # Discovery items (_Disco)
+    passes: list[dict[str, Any]] = field(default_factory=lambda: [])
+    ai_findings: list[AIFinding] = field(default_factory=lambda: [])
+    screenshot_path: str | None = None
+    js_test_results: dict[str, Any] = field(default_factory=lambda: {})
+    ai_analysis_results: dict[str, Any] = field(default_factory=lambda: {})
+    error: str | None = None
+    metadata: dict[str, Any] = field(default_factory=lambda: {})
 
     # NEW: Multi-state testing fields
-    page_state: Optional[Dict[str, Any]] = None  # PageTestState as dict
+    page_state: dict[str, Any] | None = None  # PageTestState as dict
     state_sequence: int = 0  # 0=initial, 1=after first script, 2=after button A, etc.
-    session_id: Optional[str] = None  # Reference to script_execution_sessions
-    related_result_ids: List[str] = field(default_factory=list)  # Other results for same page/session
+    session_id: str | None = None  # Reference to script_execution_sessions
+    related_result_ids: list[str] = field(default_factory=lambda: [])  # Other results for same page/session
 
-    _id: Optional[ObjectId] = None
-    
+    _id: ObjectId | None = None
+
     @property
-    def id(self) -> str:
+    def id(self) -> str | None:
         """Get result ID as string"""
         return str(self._id) if self._id else None
-    
+
     @property
     def violation_count(self) -> int:
         """Get total violation count"""
         return len(self.violations)
-    
+
     @property
     def warning_count(self) -> int:
         """Get total warning count"""
         return len(self.warnings)
-    
+
     @property
     def info_count(self) -> int:
         """Get total info count"""
         return len(self.info)
-    
+
     @property
     def discovery_count(self) -> int:
         """Get total discovery count"""
         return len(self.discovery)
-    
+
     @property
     def pass_count(self) -> int:
         """Get total pass count"""
         return len(self.passes)
-    
+
     @property
-    def score(self) -> Dict[str, int]:
+    def score(self) -> dict[str, int]:
         """Get accessibility score summary"""
         return {
             'violations': self.violation_count,
@@ -265,10 +267,10 @@ class TestResult:
             'medium': len([v for v in self.violations if v.impact == ImpactLevel.MEDIUM]),
             'low': len([v for v in self.violations if v.impact == ImpactLevel.LOW])
         }
-    
-    def to_dict(self) -> dict:
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for MongoDB"""
-        data = {
+        data: dict[str, Any] = {
             'page_id': self.page_id,
             'test_date': self.test_date,
             'duration_ms': self.duration_ms,
@@ -292,9 +294,9 @@ class TestResult:
         if self._id:
             data['_id'] = self._id
         return data
-    
+
     @classmethod
-    def from_dict(cls, data: dict) -> 'TestResult':
+    def from_dict(cls, data: dict[str, Any]) -> TestResult:
         """Create from MongoDB document"""
         return cls(
             page_id=data['page_id'],

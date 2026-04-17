@@ -12,12 +12,13 @@ Key improvements over Pyppeteer:
 - More stable connection handling
 - Active maintenance by Microsoft
 """
+from __future__ import annotations
 
 import asyncio
 import os
 import subprocess
 import sys
-from typing import Optional, Dict, Any, List, Union
+from typing import Any, Literal, AsyncIterator
 from pathlib import Path
 import logging
 from contextlib import asynccontextmanager
@@ -52,6 +53,10 @@ def _ensure_playwright_browsers_path() -> None:
         logger.info(f"Set PLAYWRIGHT_BROWSERS_PATH={local_browsers}")
 
 
+WaitUntilType = Literal['commit', 'domcontentloaded', 'load', 'networkidle']
+SelectorStateType = Literal['attached', 'detached', 'hidden', 'visible']
+
+
 class BrowserManager:
     """
     Manages Playwright browser instances with context isolation.
@@ -64,7 +69,7 @@ class BrowserManager:
     - Script injection scenarios
     """
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]) -> None:
         """
         Initialize browser manager
 
@@ -79,24 +84,24 @@ class BrowserManager:
                 - max_concurrent_pages: Max concurrent pages (default: 5)
         """
         self.config = config
-        self._playwright: Optional[Playwright] = None
-        self._browser: Optional[Browser] = None
-        self._default_context: Optional[BrowserContext] = None
-        self._contexts: List[BrowserContext] = []
-        self._pages: List[Page] = []
+        self._playwright: Playwright | None = None
+        self._browser: Browser | None = None
+        self._default_context: BrowserContext | None = None
+        self._contexts: list[BrowserContext] = []
+        self._pages: list[Page] = []
         self._semaphore = asyncio.Semaphore(config.get('max_concurrent_pages', 5))
         self._start_lock = asyncio.Lock()
         # Track pages created in default context to trigger periodic recycling
-        self._default_context_page_count = 0
-        self._default_context_max_pages = config.get('context_recycle_after', 50)
+        self._default_context_page_count: int = 0
+        self._default_context_max_pages: int = config.get('context_recycle_after', 50)
 
     @property
-    def pages(self) -> List[Page]:
+    def pages(self) -> list[Page]:
         """Get list of open pages (for compatibility)"""
         return self._pages
 
     @property
-    def browser(self) -> Optional[Browser]:
+    def browser(self) -> Browser | None:
         """Get browser instance (for compatibility)"""
         return self._browser
 
@@ -132,7 +137,7 @@ class BrowserManager:
                 '--disable-application-cache',      # Disable application cache
             ]
 
-            launch_options = {
+            launch_options: dict[str, Any] = {
                 'headless': is_headless,
                 'args': browser_args,
                 'timeout': self.config.get('timeout', 60000),
@@ -161,7 +166,8 @@ class BrowserManager:
                     )
                     logger.info(f"Playwright install output: {result.stdout}")
                     _ensure_playwright_browsers_path()
-                    self._browser = await self._playwright.chromium.launch(**launch_options)
+                    if self._playwright is not None:
+                        self._browser = await self._playwright.chromium.launch(**launch_options)
                     logger.info("Playwright browser started after runtime install")
                     return
                 except Exception as retry_err:
@@ -219,9 +225,9 @@ class BrowserManager:
 
     async def create_context(
         self,
-        storage_state: Optional[str] = None,
-        viewport: Optional[Dict[str, int]] = None,
-        user_agent: Optional[str] = None
+        storage_state: str | None = None,
+        viewport: dict[str, int] | None = None,
+        user_agent: str | None = None
     ) -> BrowserContext:
         """
         Create an isolated browser context.
@@ -245,23 +251,32 @@ class BrowserManager:
         if not self._browser:
             await self.start()
 
-        context_options = {
-            'viewport': viewport or {
-                'width': self.config.get('viewport_width', self.config.get('BROWSER_VIEWPORT_WIDTH', 1920)),
-                'height': self.config.get('viewport_height', self.config.get('BROWSER_VIEWPORT_HEIGHT', 1080))
-            },
-            'user_agent': user_agent or self.config.get('user_agent') or self.config.get('USER_AGENT') or
-                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            # Block service workers to prevent memory accumulation across tested pages
+        assert self._browser is not None  # ensured by start()
+
+        resolved_viewport = viewport or {
+            'width': self.config.get('viewport_width', self.config.get('BROWSER_VIEWPORT_WIDTH', 1920)),
+            'height': self.config.get('viewport_height', self.config.get('BROWSER_VIEWPORT_HEIGHT', 1080))
+        }
+        resolved_user_agent = (
+            user_agent
+            or self.config.get('user_agent')
+            or self.config.get('USER_AGENT')
+            or 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        )
+
+        # Build keyword arguments explicitly for type safety
+        ctx_kwargs: dict[str, Any] = {
+            'viewport': resolved_viewport,
+            'user_agent': resolved_user_agent,
             'service_workers': 'block',
         }
 
         # Load saved authentication state if provided
         if storage_state and Path(storage_state).exists():
-            context_options['storage_state'] = storage_state
+            ctx_kwargs['storage_state'] = storage_state
             logger.debug(f"Loading storage state from: {storage_state}")
 
-        context = await self._browser.new_context(**context_options)
+        context = await self._browser.new_context(**ctx_kwargs)
 
         # Set default timeouts
         default_timeout = self.config.get('timeout', 60000)
@@ -354,7 +369,7 @@ class BrowserManager:
         await context.add_init_script(stealth_script)
 
     @asynccontextmanager
-    async def get_page(self, context: Optional[BrowserContext] = None):
+    async def get_page(self, context: BrowserContext | None = None) -> AsyncIterator[Page]:
         """
         Get a new page with resource management.
 
@@ -385,7 +400,7 @@ class BrowserManager:
                     self._default_context_page_count = 0
                 context = self._default_context
 
-            page = None
+            page: Page | None = None
             try:
                 page = await context.new_page()
                 self._pages.append(page)
@@ -402,7 +417,7 @@ class BrowserManager:
                     except Exception as e:
                         logger.warning(f"Error closing page: {e}")
 
-    async def create_page(self, context: Optional[BrowserContext] = None) -> Page:
+    async def create_page(self, context: BrowserContext | None = None) -> Page:
         """
         Create a new page without context manager (caller must close it).
 
@@ -468,9 +483,9 @@ class BrowserManager:
         page: Page,
         url: str,
         wait_until: str = 'networkidle',
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
         capture_css: bool = False
-    ) -> Optional[Response]:
+    ) -> Response | None:
         """
         Navigate to URL with error handling.
 
@@ -485,15 +500,17 @@ class BrowserManager:
             Response object or None if failed
         """
         # Map Pyppeteer wait conditions to Playwright
-        wait_map = {
+        wait_map: dict[str, WaitUntilType] = {
             'networkidle0': 'networkidle',
             'networkidle2': 'networkidle',
+            'networkidle': 'networkidle',
             'load': 'load',
             'domcontentloaded': 'domcontentloaded',
+            'commit': 'commit',
         }
-        wait_until = wait_map.get(wait_until, wait_until)
+        resolved_wait: WaitUntilType = wait_map.get(wait_until, 'networkidle')
 
-        css_capture = None
+        css_capture: Any = None
         if capture_css:
             try:
                 from auto_a11y.testing.css_focus_capture import (
@@ -510,7 +527,7 @@ class BrowserManager:
         try:
             response = await page.goto(
                 url,
-                wait_until=wait_until,
+                wait_until=resolved_wait,
                 timeout=timeout or self.config.get('timeout', 60000)
             )
             logger.debug(f"Navigated to: {url}")
@@ -546,7 +563,7 @@ class BrowserManager:
     async def take_screenshot(
         self,
         page: Page,
-        path: Optional[Path] = None,
+        path: Path | str | None = None,
         full_page: bool = True
     ) -> bytes:
         """
@@ -560,17 +577,13 @@ class BrowserManager:
         Returns:
             Screenshot bytes
         """
-        screenshot_options = {
-            'full_page': full_page,
-            'type': 'jpeg',
-            'quality': 80
-        }
-
-        if path:
-            screenshot_options['path'] = str(path)
-
         try:
-            screenshot = await page.screenshot(**screenshot_options)
+            screenshot = await page.screenshot(
+                full_page=full_page,
+                type='jpeg',
+                quality=80,
+                path=str(path) if path else None,
+            )
             logger.debug(f"Screenshot taken{f' and saved to {path}' if path else ''}")
             return screenshot
         except Exception as e:
@@ -580,7 +593,7 @@ class BrowserManager:
     async def inject_scripts(
         self,
         page: Page,
-        script_paths: List[Path]
+        script_paths: list[Path]
     ) -> None:
         """
         Inject JavaScript files into page.
@@ -627,8 +640,8 @@ class BrowserManager:
         self,
         page: Page,
         selector: str,
-        timeout: Optional[int] = None,
-        state: str = 'visible'
+        timeout: int | None = None,
+        state: SelectorStateType = 'visible'
     ) -> bool:
         """
         Wait for element to appear.
@@ -690,7 +703,7 @@ class BrowserManager:
             logger.error(f"Error getting page title: {e}")
             return ""
 
-    async def extract_links(self, page: Page) -> List[str]:
+    async def extract_links(self, page: Page) -> list[str]:
         """
         Extract all links from page.
 
@@ -701,7 +714,7 @@ class BrowserManager:
             List of URLs
         """
         try:
-            links = await page.evaluate('''
+            links: list[str] = await page.evaluate('''
                 () => {
                     const links = document.querySelectorAll('a[href]');
                     return Array.from(links).map(link => link.href);
@@ -728,14 +741,3 @@ class BrowserManager:
             logger.info("Browser not running, restarting...")
             await self.stop()  # Clean up any dead resources
             await self.start()
-
-    # Compatibility properties for code that accesses browser directly
-    @property
-    def browser(self) -> Optional[Browser]:
-        """Get the underlying browser instance (for compatibility)."""
-        return self._browser
-
-    @property
-    def pages(self) -> List[Page]:
-        """Get list of open pages (for compatibility)."""
-        return self._pages

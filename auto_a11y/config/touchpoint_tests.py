@@ -2,9 +2,10 @@
 Mapping of individual tests to touchpoints
 Generated from ISSUE_CATALOG_BY_TOUCHPOINT.md
 """
+from __future__ import annotations
 
 # Complete mapping of all test IDs to their touchpoints
-TOUCHPOINT_TEST_MAPPING = {
+TOUCHPOINT_TEST_MAPPING: dict[str, list[str]] = {
     'headings': [
         'DiscoHeadingWithID',
         'ErrEmptyHeading', 
@@ -315,7 +316,7 @@ TOUCHPOINT_TEST_MAPPING = {
     ],
 }
 
-def get_tests_for_touchpoint(touchpoint_id: str) -> list:
+def get_tests_for_touchpoint(touchpoint_id: str) -> list[str]:
     """Get all test IDs for a given touchpoint"""
     return TOUCHPOINT_TEST_MAPPING.get(touchpoint_id, [])
 
@@ -326,9 +327,9 @@ def get_touchpoint_for_test(test_id: str) -> str:
             return touchpoint
     return 'general'
 
-def get_all_test_ids() -> set:
+def get_all_test_ids() -> set[str]:
     """Get all unique test IDs across all touchpoints"""
-    all_tests = set()
+    all_tests: set[str] = set()
     for tests in TOUCHPOINT_TEST_MAPPING.values():
         all_tests.update(tests)
     return all_tests

@@ -204,3 +204,5 @@ recordings-which-project-should-this-recording-be-associated = À quel projet ce
 recordings-who-is-affected = Qui cela affecte :
 recordings-why = Pourquoi :
 recordings-zoom-text-resize = Zoom / Redimensionnement du texte
+
+recordings-filter-recordings = Filtrer les enregistrements

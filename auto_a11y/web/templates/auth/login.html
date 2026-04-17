@@ -6,8 +6,8 @@
 <div class="row justify-content-center">
     <div class="col-md-6 col-lg-4">
         <div class="card shadow">
-            <div class="card-header bg-primary text-white">
-                <h1 class="mb-0"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> {{ ftl('auth-login-title') }}</h1>
+            <div class="card-header bg-brand text-inverse">
+                <h1 class="mb-0" id="login-heading"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> {{ ftl('auth-login-title') }}</h1>
             </div>
             <div class="card-body">
                 {% if microsoft_sso_enabled or google_sso_enabled %}
@@ -28,16 +28,17 @@
                     </div>
                 </div>
                 {% endif %}
-                <form method="POST" action="{{ url_for('auth.login') }}">
+                <form method="POST" action="{{ url_for('auth.login') }}" aria-labelledby="login-heading">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <p class="form-text mb-3"><span class="text-severity-high" aria-hidden="true">*</span> {{ ftl('common-required-field') }}</p>
                     <fieldset>
                         <legend class="visually-hidden">{{ ftl('auth-login-credentials') }}</legend>
                         <div class="mb-3">
-                            <label for="email" class="form-label">{{ ftl('auth-email-label') }}</label>
+                            <label for="email" class="form-label">{{ ftl('auth-email-label') }} <span class="text-severity-high" aria-hidden="true">*</span><span class="visually-hidden">{{ ftl('common-required') }}</span></label>
                             <input type="email" class="form-control" id="email" name="email" required autofocus autocomplete="email">
                         </div>
                         <div class="mb-3">
-                            <label for="password" class="form-label">{{ ftl('auth-password-label') }}</label>
+                            <label for="password" class="form-label">{{ ftl('auth-password-label') }} <span class="text-severity-high" aria-hidden="true">*</span><span class="visually-hidden">{{ ftl('common-required') }}</span></label>
                             <input type="password" class="form-control" id="password" name="password" required autocomplete="current-password">
                             <div class="form-check mt-1">
                                 <input type="checkbox" class="form-check-input" id="show-password">
@@ -53,7 +54,7 @@
                             <input type="checkbox" class="form-check-input" id="remember" name="remember">
                             <label class="form-check-label" for="remember">{{ ftl('auth-remember-me') }}</label>
                         </div>
-                        <button type="submit" class="btn btn-primary w-100">
+                        <button type="submit" class="btn btn-brand w-100">
                             <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> {{ ftl('auth-login-title') }}
                         </button>
                     </fieldset>

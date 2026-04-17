@@ -4,60 +4,6 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/help-system.css') }}">
-<style>
-    .help-section {
-        margin-bottom: 40px;
-    }
-    
-    .help-card {
-        border-left: 4px solid #3498db;
-        margin-bottom: 20px;
-        transition: transform 0.2s;
-    }
-    
-    .help-card:hover {
-        transform: translateX(5px);
-    }
-    
-    .help-nav {
-        position: sticky;
-        top: 20px;
-    }
-    
-    .help-nav .nav-link {
-        color: #6c757d;
-        padding: 8px 15px;
-        border-left: 2px solid transparent;
-    }
-    
-    .help-nav .nav-link:hover {
-        color: #3498db;
-        border-left-color: #3498db;
-    }
-    
-    .help-nav .nav-link.active {
-        color: #3498db;
-        font-weight: 600;
-        border-left-color: #3498db;
-        background-color: rgba(52, 152, 219, 0.1);
-    }
-    
-    .score-comparison {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 30px;
-        border-radius: 10px;
-        margin-bottom: 30px;
-    }
-    
-    .score-example {
-        background-color: white;
-        color: #333;
-        padding: 20px;
-        border-radius: 8px;
-        margin-top: 20px;
-    }
-</style>
 {% endblock %}
 
 {% block content %}
@@ -84,7 +30,7 @@
             <h1 class="mb-4">{{ ftl('common-help-documentation') }}</h1>
 
             <!-- Scoring Section -->
-            <section id="scoring" class="help-section">
+            <section id="scoring" class="help-section" tabindex="-1">
                 <h2 class="mb-4">{{ ftl('common-understanding-your-scores') }}</h2>
 
                 <div class="alert alert-info">
@@ -100,7 +46,7 @@
                 <div class="row mb-4">
                     <div class="col-md-6">
                         <div class="card">
-                            <div class="card-header bg-primary text-white">
+                            <div class="card-header bg-brand text-inverse">
                                 <h3 class="mb-0"><i class="bi bi-robot" aria-hidden="true"></i> {{ ftl('common-automated-testing-scores') }}</h3>
                             </div>
                             <div class="card-body">
@@ -116,7 +62,7 @@
                     </div>
                     <div class="col-md-6">
                         <div class="card">
-                            <div class="card-header bg-success text-white">
+                            <div class="card-header bg-pass text-inverse">
                                 <h3 class="mb-0"><i class="bi bi-person-check" aria-hidden="true"></i> {{ ftl('common-manual-testing-scores') }}</h3>
                             </div>
                             <div class="card-body">
@@ -168,12 +114,12 @@
                             <div class="col-md-4">
                                 <strong>{{ ftl('common-accessibility-score-2') }}</strong><br>
                                 {{ ftl('common-90-9-10-passed') }}<br>
-                                <span class="text-success">{{ ftl('common-good-progress') }}</span>
+                                <span class="text-severity-pass">{{ ftl('common-good-progress') }}</span>
                             </div>
                             <div class="col-md-4">
                                 <strong>{{ ftl('common-compliance-score') }}</strong><br>
                                 {{ ftl('common-0-test-has-violations') }}<br>
-                                <span class="text-danger">{{ ftl('common-not-compliant') }}</span>
+                                <span class="text-severity-high">{{ ftl('common-not-compliant') }}</span>
                             </div>
                         </div>
                     </div>
@@ -182,7 +128,7 @@
                 <div class="card help-card">
                     <div class="card-body">
                         <h3 class="card-title">{{ ftl('common-accessibility-score-formula') }}</h3>
-                        <code class="d-block p-3 bg-light mb-3">{{ ftl('common-passed-checks-applicable-checks-100') }}</code>
+                        <code class="d-block p-3 bg-subtle mb-3">{{ ftl('common-passed-checks-applicable-checks-100') }}</code>
                         <p>{{ ftl('common-this-score-helps-you-track-progress-each') }}</p>
                         <ul>
                             <li><strong>{{ ftl('common-90-100') }}</strong> {{ ftl('common-excellent-minor-issues-only') }}</li>
@@ -196,7 +142,7 @@
                 <div class="card help-card">
                     <div class="card-body">
                         <h3 class="card-title">{{ ftl('common-compliance-score-formula') }}</h3>
-                        <code class="d-block p-3 bg-light mb-3">{{ ftl('common-tests-with-zero-violations-total-tests-100') }}</code>
+                        <code class="d-block p-3 bg-subtle mb-3">{{ ftl('common-tests-with-zero-violations-total-tests-100') }}</code>
                         <p>{{ ftl('common-this-score-reflects-true-wcag-compliance-a-test') }}</p>
                         <ul>
                             <li><strong>{{ ftl('common-100') }}</strong> {{ ftl('common-fully-compliant') }}</li>
@@ -208,7 +154,7 @@
             </section>
             
             <!-- WCAG Section -->
-            <section id="wcag" class="help-section">
+            <section id="wcag" class="help-section" tabindex="-1">
                 <h2 class="mb-4">{{ ftl('common-wcag-standards') }}</h2>
 
                 <div class="card help-card">
@@ -217,7 +163,7 @@
                         <div class="row mt-3">
                             <div class="col-md-4">
                                 <h4>{{ ftl('common-level-a-2') }}</h4>
-                                <span class="badge bg-warning text-dark">{{ ftl('common-minimum') }}</span>
+                                <span class="badge badge-medium">{{ ftl('common-minimum') }}</span>
                                 <ul class="mt-2">
                                     <li>{{ ftl('common-basic-features') }}</li>
                                     <li>{{ ftl('common-essential-for-any-site') }}</li>
@@ -226,7 +172,7 @@
                             </div>
                             <div class="col-md-4">
                                 <h4>{{ ftl('common-level-aa-2') }}</h4>
-                                <span class="badge bg-success">{{ ftl('common-recommended') }}</span>
+                                <span class="badge badge-pass">{{ ftl('common-recommended') }}</span>
                                 <ul class="mt-2">
                                     <li>{{ ftl('common-legal-standard') }}</li>
                                     <li>{{ ftl('common-removes-major-barriers') }}</li>
@@ -235,7 +181,7 @@
                             </div>
                             <div class="col-md-4">
                                 <h4>{{ ftl('common-level-aaa-2') }}</h4>
-                                <span class="badge bg-info">{{ ftl('common-enhanced') }}</span>
+                                <span class="badge badge-info">{{ ftl('common-enhanced') }}</span>
                                 <ul class="mt-2">
                                     <li>{{ ftl('common-highest-level') }}</li>
                                     <li>{{ ftl('common-not-always-required') }}</li>
@@ -248,14 +194,14 @@
             </section>
             
             <!-- Impact Levels Section -->
-            <section id="impact" class="help-section">
+            <section id="impact" class="help-section" tabindex="-1">
                 <h2 class="mb-4">{{ ftl('common-issue-impact-levels') }}</h2>
 
                 <div class="row">
                     <div class="col-md-6">
-                        <div class="card help-card border-danger">
+                        <div class="card help-card border-high">
                             <div class="card-body">
-                                <h3 class="card-title text-danger">{{ ftl('common-high-impact') }}</h3>
+                                <h3 class="card-title text-severity-high">{{ ftl('common-high-impact') }}</h3>
                                 <p>{{ ftl('common-completely-blocks-access-for-some-users') }}</p>
                                 <ul>
                                     <li>{{ ftl('common-missing-alt-text-on-images') }}</li>
@@ -268,9 +214,9 @@
                     </div>
 
                     <div class="col-md-6">
-                        <div class="card help-card border-warning">
+                        <div class="card help-card border-medium">
                             <div class="card-body">
-                                <h3 class="card-title text-warning">{{ ftl('common-medium-impact') }}</h3>
+                                <h3 class="card-title text-severity-medium">{{ ftl('common-medium-impact') }}</h3>
                                 <p>{{ ftl('common-significantly-degrades-experience') }}</p>
                                 <ul>
                                     <li>{{ ftl('common-poor-color-contrast') }}</li>
@@ -283,9 +229,9 @@
                     </div>
 
                     <div class="col-md-6 mt-3">
-                        <div class="card help-card border-success">
+                        <div class="card help-card border-pass">
                             <div class="card-body">
-                                <h3 class="card-title text-success">{{ ftl('common-low-impact') }}</h3>
+                                <h3 class="card-title text-severity-pass">{{ ftl('common-low-impact') }}</h3>
                                 <p>{{ ftl('common-minor-inconvenience') }}</p>
                                 <ul>
                                     <li>{{ ftl('common-redundant-alt-text') }}</li>
@@ -300,7 +246,7 @@
                     <div class="col-md-6 mt-3">
                         <div class="card help-card border-info">
                             <div class="card-body">
-                                <h3 class="card-title text-info">{{ ftl('common-info-discovery') }}</h3>
+                                <h3 class="card-title text-info-custom">{{ ftl('common-info-discovery') }}</h3>
                                 <p>{{ ftl('common-best-practices-and-recommendations') }}</p>
                                 <ul>
                                     <li>{{ ftl('common-optimization-opportunities') }}</li>
@@ -315,7 +261,7 @@
             </section>
             
             <!-- Testing Section -->
-            <section id="testing" class="help-section">
+            <section id="testing" class="help-section" tabindex="-1">
                 <h2 class="mb-4">{{ ftl('common-testing-process') }}</h2>
 
                 <div class="card help-card">
@@ -373,17 +319,17 @@
             </section>
             
             <!-- FAQ Section -->
-            <section id="faq" class="help-section">
+            <section id="faq" class="help-section" tabindex="-1">
                 <h2 class="mb-4">{{ ftl('common-frequently-asked-questions') }}</h2>
 
                 <div class="accordion" id="faqAccordion">
                     <div class="accordion-item">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                        <h2 class="accordion-header" id="faq1Heading">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1" aria-expanded="true" aria-controls="faq1">
                                 {{ ftl('common-why-is-my-compliance-score-so-much-lower-than-my') }}
                             </button>
                         </h2>
-                        <div id="faq1" class="accordion-collapse collapse show">
+                        <div id="faq1" class="accordion-collapse collapse show" role="region" aria-labelledby="faq1Heading">
                             <div class="accordion-body">
                                 {{ ftl('common-the-compliance-score-requires-perfect-passes-zero') }}
                             </div>
@@ -391,12 +337,12 @@
                     </div>
 
                     <div class="accordion-item">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                        <h2 class="accordion-header" id="faq2Heading">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2" aria-expanded="false" aria-controls="faq2">
                                 {{ ftl('common-what-wcag-level-should-i-aim-for') }}
                             </button>
                         </h2>
-                        <div id="faq2" class="accordion-collapse collapse">
+                        <div id="faq2" class="accordion-collapse collapse" role="region" aria-labelledby="faq2Heading">
                             <div class="accordion-body">
                                 {{ ftl('common-level-aa-is-the-recommended-target-and-legal') }}
                             </div>
@@ -404,12 +350,12 @@
                     </div>
 
                     <div class="accordion-item">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                        <h2 class="accordion-header" id="faq3Heading">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3" aria-expanded="false" aria-controls="faq3">
                                 {{ ftl('common-how-often-should-i-run-accessibility-tests') }}
                             </button>
                         </h2>
-                        <div id="faq3" class="accordion-collapse collapse">
+                        <div id="faq3" class="accordion-collapse collapse" role="region" aria-labelledby="faq3Heading">
                             <div class="accordion-body">
                                 {{ ftl('common-test-after-every-significant-change-to-your-site') }}
                             </div>
@@ -417,12 +363,12 @@
                     </div>
 
                     <div class="accordion-item">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                        <h2 class="accordion-header" id="faq4Heading">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4" aria-expanded="false" aria-controls="faq4">
                                 {{ ftl('common-what-s-the-difference-between-automated-and') }}
                             </button>
                         </h2>
-                        <div id="faq4" class="accordion-collapse collapse">
+                        <div id="faq4" class="accordion-collapse collapse" role="region" aria-labelledby="faq4Heading">
                             <div class="accordion-body">
                                 {{ ftl('common-automated-testing-like-auto-a11y-can-catch-about') }}
                             </div>
@@ -432,7 +378,7 @@
             </section>
 
             <!-- About Section -->
-            <section id="about" class="help-section">
+            <section id="about" class="help-section" tabindex="-1">
                 <h2 class="mb-4">{{ ftl('common-about-auto-a11y-2') }}</h2>
 
                 <div class="card help-card">
@@ -451,7 +397,7 @@
                 </div>
 
                 <div class="card help-card border-info">
-                    <div class="card-header bg-info text-white">
+                    <div class="card-header card-header-info">
                         <h3 class="mb-0"><i class="bi bi-file-text" aria-hidden="true"></i> {{ ftl('common-wcag-data-attribution') }}</h3>
                     </div>
                     <div class="card-body">
@@ -464,23 +410,26 @@
                                 <strong>{{ ftl('common-web-content-accessibility-guidelines-wcag-2-2') }}</strong><br>
                                 <a href="https://www.w3.org/TR/WCAG22/" target="_blank" rel="noopener noreferrer">
                                     https://www.w3.org/TR/WCAG22/
+                                    <span class="visually-hidden"> ({{ ftl('common-opens-in-new-tab') }})</span>
                                 </a>
                             </li>
                             <li>
                                 <strong>{{ ftl('common-techniques-for-wcag-2-2') }}</strong><br>
                                 <a href="https://www.w3.org/WAI/WCAG22/Techniques/" target="_blank" rel="noopener noreferrer">
                                     https://www.w3.org/WAI/WCAG22/Techniques/
+                                    <span class="visually-hidden"> ({{ ftl('common-opens-in-new-tab') }})</span>
                                 </a>
                             </li>
                             <li>
                                 <strong>{{ ftl('common-wcag-2-2-json-data') }}</strong><br>
                                 <a href="https://www.w3.org/WAI/WCAG22/wcag.json" target="_blank" rel="noopener noreferrer">
                                     https://www.w3.org/WAI/WCAG22/wcag.json
+                                    <span class="visually-hidden"> ({{ ftl('common-opens-in-new-tab') }})</span>
                                 </a>
                             </li>
                         </ul>
 
-                        <div class="alert alert-warning mt-3" role="alert">
+                        <div class="alert alert-medium mt-3" role="alert">
                             <h4 class="alert-heading"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> {{ ftl('common-important-notice') }}</h4>
                             <p class="mb-0">{{ ftl('common-the-wcag-content-is-used-with-attribution-as') }}</p>
                         </div>
@@ -490,6 +439,7 @@
                             {{ ftl('common-copyright-c-2008-2023-world-wide-web-consortium') }}
                             <a href="https://www.w3.org/Consortium/Legal/2015/doc-license" target="_blank" rel="noopener noreferrer">
                                 {{ ftl('common-w3c-document-license') }}
+                                <span class="visually-hidden"> ({{ ftl('common-opens-in-new-tab') }})</span>
                             </a> {{ ftl('common-applies-to-the-wcag-content') }}
                         </p>
 
@@ -498,21 +448,25 @@
                             <li>
                                 <a href="https://www.w3.org/WAI/" target="_blank" rel="noopener noreferrer">
                                     {{ ftl('common-w3c-web-accessibility-initiative') }}
+                                    <span class="visually-hidden"> ({{ ftl('common-opens-in-new-tab') }})</span>
                                 </a>
                             </li>
                             <li>
                                 <a href="https://www.w3.org/WAI/WCAG22/quickref/" target="_blank" rel="noopener noreferrer">
                                     {{ ftl('common-how-to-meet-wcag-quick-reference') }}
+                                    <span class="visually-hidden"> ({{ ftl('common-opens-in-new-tab') }})</span>
                                 </a>
                             </li>
                             <li>
                                 <a href="https://www.w3.org/WAI/WCAG22/Understanding/" target="_blank" rel="noopener noreferrer">
                                     {{ ftl('common-understanding-wcag-2-2') }}
+                                    <span class="visually-hidden"> ({{ ftl('common-opens-in-new-tab') }})</span>
                                 </a>
                             </li>
                             <li>
                                 <a href="https://www.w3.org/WAI/test-evaluate/" target="_blank" rel="noopener noreferrer">
                                     {{ ftl('common-evaluating-web-accessibility-overview') }}
+                                    <span class="visually-hidden"> ({{ ftl('common-opens-in-new-tab') }})</span>
                                 </a>
                             </li>
                         </ul>

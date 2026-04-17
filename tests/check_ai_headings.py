@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 """
+from __future__ import annotations
+
+from typing import Any
+
 Quick test for AI heading detection
 """
 
@@ -31,7 +35,7 @@ test_html = """
 </html>
 """
 
-async def test():
+async def test() -> None:
     browser_config = {'headless': True, 'viewport_width': 1920, 'viewport_height': 1080}
     browser_manager = BrowserManager(browser_config)
     await browser_manager.start()

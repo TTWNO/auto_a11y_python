@@ -2,9 +2,11 @@
 TestSchedule model for scheduling automated accessibility tests
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Any
 from bson import ObjectId
 from enum import Enum
 
@@ -41,7 +43,7 @@ class PresetConfig:
     day_of_month: int = 1                  # For monthly: 1-31
     timezone: str = "America/Toronto"      # Timezone for scheduling
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary"""
         return {
             'time': self.time,
@@ -51,7 +53,7 @@ class PresetConfig:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'PresetConfig':
+    def from_dict(cls, data: dict[str, Any]) -> PresetConfig:
         """Create from dictionary"""
         if not data:
             return cls()
@@ -73,29 +75,29 @@ class ScheduleTestConfig:
     run_python_tests: bool = True
 
     # Touchpoint configuration
-    enabled_touchpoints: List[str] = field(default_factory=list)  # Empty = all touchpoints
+    enabled_touchpoints: list[str] = field(default_factory=lambda: [])  # Empty = all touchpoints
 
     # AI-specific page selection (for cost control)
     ai_pages_mode: AITestMode = AITestMode.ALL
-    ai_page_ids: List[str] = field(default_factory=list)  # Page IDs when mode=SELECTED
+    ai_page_ids: list[str] = field(default_factory=lambda: [])  # Page IDs when mode=SELECTED
 
     # Screenshot settings
     take_screenshots: bool = True
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary"""
         return {
             'run_ai_tests': self.run_ai_tests,
             'run_javascript_tests': self.run_javascript_tests,
             'run_python_tests': self.run_python_tests,
             'enabled_touchpoints': self.enabled_touchpoints,
-            'ai_pages_mode': self.ai_pages_mode.value if isinstance(self.ai_pages_mode, AITestMode) else self.ai_pages_mode,
+            'ai_pages_mode': self.ai_pages_mode.value,
             'ai_page_ids': self.ai_page_ids,
             'take_screenshots': self.take_screenshots
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'ScheduleTestConfig':
+    def from_dict(cls, data: dict[str, Any]) -> ScheduleTestConfig:
         """Create from dictionary"""
         if not data:
             return cls()
@@ -122,49 +124,49 @@ class TestSchedule:
     # Core identity
     website_id: str
     name: str
-    description: Optional[str] = None
+    description: str | None = None
 
     # Schedule timing
     schedule_type: ScheduleType = ScheduleType.DAILY
-    scheduled_datetime: Optional[datetime] = None  # For one_time schedules
-    cron_expression: Optional[str] = None          # For cron schedules (e.g., "0 2 * * *")
+    scheduled_datetime: datetime | None = None  # For one_time schedules
+    cron_expression: str | None = None          # For cron schedules (e.g., "0 2 * * *")
     preset_config: PresetConfig = field(default_factory=PresetConfig)
 
     # Test configuration
     test_config: ScheduleTestConfig = field(default_factory=ScheduleTestConfig)
 
     # Authentication - which project users to test with
-    project_user_ids: List[str] = field(default_factory=list)  # Empty = guest only
+    project_user_ids: list[str] = field(default_factory=lambda: [])  # Empty = guest only
 
     # Status
     enabled: bool = True
-    created_by: Optional[str] = None  # App user ID who created this
+    created_by: str | None = None  # App user ID who created this
 
     # Execution tracking
-    last_run_at: Optional[datetime] = None
-    last_run_job_id: Optional[str] = None
-    last_run_status: Optional[ScheduleRunStatus] = None
-    next_run_at: Optional[datetime] = None
+    last_run_at: datetime | None = None
+    last_run_job_id: str | None = None
+    last_run_status: ScheduleRunStatus | None = None
+    next_run_at: datetime | None = None
     run_count: int = 0
 
     # APScheduler integration
-    apscheduler_job_id: Optional[str] = None
+    apscheduler_job_id: str | None = None
 
     # Timestamps
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
 
-    _id: Optional[ObjectId] = None
+    _id: ObjectId | None = None
 
     @property
-    def id(self) -> str:
+    def id(self) -> str | None:
         """Get schedule ID as string"""
         return str(self._id) if self._id else None
 
     @property
     def type_display(self) -> str:
         """Get human-readable schedule type"""
-        type_names = {
+        type_names: dict[ScheduleType, str] = {
             ScheduleType.ONE_TIME: "One-time",
             ScheduleType.CRON: "Custom (Cron)",
             ScheduleType.DAILY: "Daily",
@@ -206,11 +208,11 @@ class TestSchedule:
             return "Running"
         return "Enabled"
 
-    def update_timestamp(self):
+    def update_timestamp(self) -> None:
         """Update the updated_at timestamp"""
         self.updated_at = datetime.now()
 
-    def mark_run_started(self, job_id: str):
+    def mark_run_started(self, job_id: str) -> None:
         """Mark that a scheduled run has started"""
         self.last_run_at = datetime.now()
         self.last_run_job_id = job_id
@@ -218,18 +220,18 @@ class TestSchedule:
         self.run_count += 1
         self.update_timestamp()
 
-    def mark_run_completed(self, success: bool):
+    def mark_run_completed(self, success: bool) -> None:
         """Mark that a scheduled run has completed"""
         self.last_run_status = ScheduleRunStatus.SUCCESS if success else ScheduleRunStatus.FAILED
         self.update_timestamp()
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for MongoDB"""
-        data = {
+        data: dict[str, Any] = {
             'website_id': self.website_id,
             'name': self.name,
             'description': self.description,
-            'schedule_type': self.schedule_type.value if isinstance(self.schedule_type, ScheduleType) else self.schedule_type,
+            'schedule_type': self.schedule_type.value,
             'scheduled_datetime': self.scheduled_datetime,
             'cron_expression': self.cron_expression,
             'preset_config': self.preset_config.to_dict(),
@@ -239,7 +241,7 @@ class TestSchedule:
             'created_by': self.created_by,
             'last_run_at': self.last_run_at,
             'last_run_job_id': self.last_run_job_id,
-            'last_run_status': self.last_run_status.value if isinstance(self.last_run_status, ScheduleRunStatus) else self.last_run_status,
+            'last_run_status': self.last_run_status.value if self.last_run_status is not None else None,
             'next_run_at': self.next_run_at,
             'run_count': self.run_count,
             'apscheduler_job_id': self.apscheduler_job_id,
@@ -251,7 +253,7 @@ class TestSchedule:
         return data
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'TestSchedule':
+    def from_dict(cls, data: dict[str, Any]) -> TestSchedule:
         """Create from MongoDB document"""
         schedule_type = data.get('schedule_type', 'daily')
         if isinstance(schedule_type, str):

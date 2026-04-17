@@ -2,14 +2,18 @@
 Public-facing routes for token-based and client-login-based access to test results.
 Integrated into the main app as a blueprint.
 """
+from __future__ import annotations
 
 from collections import defaultdict
+from typing import Any
 
 from flask import (
-    Blueprint, render_template, current_app, request, redirect,
+    Blueprint, render_template, request, redirect,
     url_for, abort, g,
 )
+from werkzeug.wrappers import Response
 from auto_a11y.web.fluent import ftl
+from auto_a11y.web.typed_app import get_db
 from flask_login import current_user
 
 from auto_a11y.models import TokenScope, PageStatus
@@ -30,7 +34,7 @@ public_bp = Blueprint(
 # Helpers
 # ------------------------------------------------------------------
 
-def group_by_touchpoint(violations):
+def group_by_touchpoint(violations: list[Any]) -> dict[str, list[Any]]:
     """Group a list of Violation objects by their touchpoint field."""
     groups = defaultdict(list)
     for v in violations:
@@ -38,7 +42,7 @@ def group_by_touchpoint(violations):
     return dict(sorted(groups.items()))
 
 
-def sort_pages(pages, sort_by='url', sort_dir='asc'):
+def sort_pages(pages: list[Any], sort_by: str = 'url', sort_dir: str = 'asc') -> list[Any]:
     """Sort a list of Page objects by the given field."""
     key_map = {
         'url': lambda p: (p.url or '').lower(),
@@ -51,14 +55,14 @@ def sort_pages(pages, sort_by='url', sort_dir='asc'):
     return sorted(pages, key=key_fn, reverse=reverse)
 
 
-def _get_project_for_token():
+def _get_project_for_token() -> Any | None:
     """For token-based access, resolve the project from g.access_scope."""
     if g.access_scope == TokenScope.PROJECT:
-        return current_app.db.get_project(g.access_scope_id)
+        return get_db().get_project(g.access_scope_id)
     elif g.access_scope == TokenScope.WEBSITE:
-        website = current_app.db.get_website(g.access_scope_id)
+        website = get_db().get_website(g.access_scope_id)
         if website:
-            return current_app.db.get_project(website.project_id)
+            return get_db().get_project(website.project_id)
     return None
 
 
@@ -68,14 +72,14 @@ def _get_project_for_token():
 
 @public_bp.route('/t/<token>/')
 @require_access
-def token_landing(token):
+def token_landing(token: str) -> str:
     """Landing page for a share-link token."""
     if g.access_scope == TokenScope.WEBSITE:
-        website = current_app.db.get_website(g.access_scope_id)
+        website = get_db().get_website(g.access_scope_id)
         if not website:
             abort(404)
-        project = current_app.db.get_project(website.project_id)
-        pages = current_app.db.get_pages(website.id)
+        project = get_db().get_project(website.project_id)
+        pages = get_db().get_pages(website.id) if website.id else []
         sort_by = request.args.get('sort', 'url')
         sort_dir = request.args.get('dir', 'asc')
         sorted_pages = sort_pages(pages, sort_by, sort_dir)
@@ -86,11 +90,11 @@ def token_landing(token):
         )
 
     # Project-scoped token
-    project = current_app.db.get_project(g.access_scope_id)
+    project = get_db().get_project(g.access_scope_id)
     if not project:
         abort(404)
-    stats = current_app.db.get_project_stats(g.access_scope_id)
-    websites = current_app.db.get_websites(g.access_scope_id)
+    stats = get_db().get_project_stats(g.access_scope_id)
+    websites = get_db().get_websites(g.access_scope_id)
     return render_template(
         'public/project.html',
         project=project, stats=stats, websites=websites, token=token,
@@ -99,14 +103,14 @@ def token_landing(token):
 
 @public_bp.route('/t/<token>/w/<website_id>/')
 @require_access
-def token_website(token, website_id):
+def token_website(token: str, website_id: str) -> str:
     """Website detail via token."""
     check_scope('website', website_id)
-    website = current_app.db.get_website(website_id)
+    website = get_db().get_website(website_id)
     if not website:
         abort(404)
-    project = current_app.db.get_project(website.project_id)
-    pages = current_app.db.get_pages(website_id)
+    project = get_db().get_project(website.project_id)
+    pages = get_db().get_pages(website_id)
     sort_by = request.args.get('sort', 'url')
     sort_dir = request.args.get('dir', 'asc')
     sorted_pages = sort_pages(pages, sort_by, sort_dir)
@@ -119,15 +123,15 @@ def token_website(token, website_id):
 
 @public_bp.route('/t/<token>/w/<website_id>/p/<page_id>/')
 @require_access
-def token_page(token, website_id, page_id):
+def token_page(token: str, website_id: str, page_id: str) -> str:
     """Page detail (issues) via token."""
     check_scope('page', page_id)
-    page = current_app.db.get_page(page_id)
+    page = get_db().get_page(page_id)
     if not page:
         abort(404)
-    website = current_app.db.get_website(page.website_id)
-    project = current_app.db.get_project(website.project_id) if website else None
-    test_result = current_app.db.get_latest_test_result(page_id)
+    website = get_db().get_website(page.website_id)
+    project = get_db().get_project(website.project_id) if website else None
+    test_result = get_db().get_latest_test_result(page_id)
 
     violation_groups = {}
     warning_groups = {}
@@ -155,37 +159,39 @@ def token_page(token, website_id, page_id):
 
 @public_bp.route('/client/projects/')
 @require_access
-def client_projects():
+def client_projects() -> str:
     """List all projects (for logged-in clients)."""
     # For logged-in users (no token), filter by membership
     if g.access_scope is None and current_user.is_authenticated:
         if getattr(current_user, 'is_superadmin', False):
-            projects = current_app.db.get_all_projects()
+            projects = get_db().get_all_projects()
         else:
-            projects = current_app.db.get_projects_for_user(str(current_user.get_id()))
+            projects = get_db().get_projects_for_user(str(current_user.get_id()))
     else:
-        projects = current_app.db.get_all_projects()
+        projects = get_db().get_all_projects()
     project_data = []
     for project in projects:
-        stats = current_app.db.get_project_stats(project.id)
+        if not project.id:
+            continue
+        stats = get_db().get_project_stats(project.id)
         project_data.append({'project': project, 'stats': stats})
     return render_template('public/project_list.html', project_data=project_data)
 
 
 @public_bp.route('/client/project/<project_id>/')
 @require_access
-def client_project(project_id):
+def client_project(project_id: str) -> str:
     """Project overview (logged-in client)."""
     check_scope('project', project_id)
     if g.access_scope is None and current_user.is_authenticated and not getattr(current_user, 'is_superadmin', False):
         role = get_effective_role(current_user, request, project_id=project_id)
         if role is None:
             abort(403)
-    project = current_app.db.get_project(project_id)
+    project = get_db().get_project(project_id)
     if not project:
         abort(404)
-    stats = current_app.db.get_project_stats(project_id)
-    websites = current_app.db.get_websites(project_id)
+    stats = get_db().get_project_stats(project_id)
+    websites = get_db().get_websites(project_id)
     return render_template(
         'public/project.html',
         project=project, stats=stats, websites=websites, token=None,
@@ -194,18 +200,18 @@ def client_project(project_id):
 
 @public_bp.route('/client/project/<project_id>/w/<website_id>/')
 @require_access
-def client_website(project_id, website_id):
+def client_website(project_id: str, website_id: str) -> str:
     """Website detail (logged-in client)."""
     check_scope('website', website_id)
     if g.access_scope is None and current_user.is_authenticated and not getattr(current_user, 'is_superadmin', False):
         role = get_effective_role(current_user, request, project_id=project_id)
         if role is None:
             abort(403)
-    website = current_app.db.get_website(website_id)
+    website = get_db().get_website(website_id)
     if not website:
         abort(404)
-    project = current_app.db.get_project(project_id)
-    pages = current_app.db.get_pages(website_id)
+    project = get_db().get_project(project_id)
+    pages = get_db().get_pages(website_id)
     sort_by = request.args.get('sort', 'url')
     sort_dir = request.args.get('dir', 'asc')
     sorted_pages = sort_pages(pages, sort_by, sort_dir)
@@ -218,15 +224,15 @@ def client_website(project_id, website_id):
 
 @public_bp.route('/client/project/<project_id>/w/<website_id>/p/<page_id>/')
 @require_access
-def client_page(project_id, website_id, page_id):
+def client_page(project_id: str, website_id: str, page_id: str) -> str:
     """Page detail (logged-in client)."""
     check_scope('page', page_id)
-    page = current_app.db.get_page(page_id)
+    page = get_db().get_page(page_id)
     if not page:
         abort(404)
-    website = current_app.db.get_website(page.website_id)
-    project = current_app.db.get_project(project_id)
-    test_result = current_app.db.get_latest_test_result(page_id)
+    website = get_db().get_website(page.website_id)
+    project = get_db().get_project(project_id)
+    test_result = get_db().get_latest_test_result(page_id)
 
     violation_groups = {}
     warning_groups = {}

@@ -2,179 +2,13 @@
 
 {% block title %}{{ ftl('common-trend-analysis') }} - {{ ftl('common-auto-a11y') }}{% endblock %}
 
-{% block extra_css %}
-<style>
-    .stat-card {
-        transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .stat-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-    .stat-icon {
-        font-size: 1.5rem;
-        opacity: 0.7;
-    }
-    .trend-indicator {
-        font-size: 0.85rem;
-        font-weight: 600;
-    }
-    .trend-improving {
-        color: var(--color-severity-pass);
-    }
-    .trend-worsening {
-        color: var(--color-severity-high);
-    }
-    .trend-stable {
-        color: #6c757d;
-    }
-    .chart-container {
-        position: relative;
-        height: 300px;
-    }
-    .chart-container-small {
-        position: relative;
-        height: 250px;
-    }
-    .time-range-btn.active {
-        background-color: var(--color-brand);
-        color: white;
-    }
-    .top-issues-table th {
-        font-weight: 600;
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    .issue-code {
-        font-family: monospace;
-        font-size: 0.9rem;
-        background: var(--color-bg-subtle);
-        padding: 2px 6px;
-        border-radius: 3px;
-    }
-    .empty-state {
-        padding: 2rem;
-        text-align: center;
-        color: #6c757d;
-    }
-    .empty-state i {
-        font-size: 3rem;
-        margin-bottom: 1rem;
-        opacity: 0.5;
-    }
-    .comparison-card {
-        border-left: 3px solid var(--color-discovery);
-    }
-    .progress-card {
-        border-left: 3px solid var(--color-severity-pass);
-    }
-    .page-loading-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: var(--color-bg);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 9999;
-        transition: opacity 0.3s ease;
-    }
-    .page-loading-overlay.hidden {
-        opacity: 0;
-        pointer-events: none;
-        visibility: hidden;
-    }
-    /* Card loading spinner */
-    .card-loading {
-        position: relative;
-        min-height: 150px;
-    }
-    .card-loading-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(255, 255, 255, 0.9);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 10;
-        border-radius: 0.375rem;
-    }
-    .card-loading-overlay.hidden {
-        display: none;
-    }
-    .loading-spinner {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 0.5rem;
-    }
-    .loading-spinner .spinner-border {
-        width: 2rem;
-        height: 2rem;
-    }
-    .loading-spinner .loading-text {
-        font-size: 0.85rem;
-        color: #6c757d;
-    }
-    /* Filter chip styles */
-    .filter-chip {
-        transition: all 0.2s ease;
-    }
-    .filter-chip.active {
-        background-color: var(--color-brand) !important;
-        border-color: var(--color-brand) !important;
-        color: white !important;
-    }
-    .filter-chip.active .badge {
-        background-color: rgba(255,255,255,0.9) !important;
-        color: var(--color-brand) !important;
-    }
-    .filter-chip:hover:not(.active) {
-        background-color: #f0f0f0;
-    }
-    #filterPanel .form-select {
-        font-size: 0.875rem;
-    }
-    #filterToggleIcon {
-        transition: transform 0.3s ease;
-    }
-    #filterPanel.show ~ .card-header #filterToggleIcon,
-    .card-header[aria-expanded="true"] #filterToggleIcon {
-        transform: rotate(180deg);
-    }
-    .filter-tag {
-        display: inline-flex;
-        align-items: center;
-        background: var(--color-brand);
-        color: white;
-        padding: 0.25rem 0.5rem;
-        border-radius: 0.25rem;
-        font-size: 0.75rem;
-        margin-right: 0.25rem;
-        margin-bottom: 0.25rem;
-    }
-    .filter-tag .remove-filter {
-        margin-left: 0.25rem;
-        cursor: pointer;
-        opacity: 0.8;
-    }
-    .filter-tag .remove-filter:hover {
-        opacity: 1;
-    }
-</style>
-{% endblock %}
+{# Styles for this page live in static/css/style.css under "Testing trends page" #}
 
 {% block content %}
 <!-- Loading Overlay -->
 <div id="pageLoadingOverlay" class="page-loading-overlay">
     <div class="text-center">
-        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+        <div class="spinner-border text-brand" role="status" style="width: 3rem; height: 3rem;">
             <span class="visually-hidden">{{ ftl('common-loading') }}</span>
         </div>
         <p class="mt-3 text-muted">{{ ftl('testing-loading-trend-data') }}</p>
@@ -186,7 +20,7 @@
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
         <div>
             <h1 class="mb-1">
-                <i class="bi bi-graph-up-arrow text-primary" aria-hidden="true"></i> {{ ftl('common-trend-analysis') }}
+                <i class="bi bi-graph-up-arrow text-brand" aria-hidden="true"></i> {{ ftl('common-trend-analysis') }}
             </h1>
             <p class="text-muted mb-0">
                 {% if selected_project %}
@@ -200,8 +34,8 @@
         <div class="d-flex flex-wrap gap-2 align-items-center">
             <!-- Project/Website Selectors -->
             <div class="input-group" style="width: auto;">
-                <span class="input-group-text"><i class="bi bi-folder" aria-hidden="true"></i></span>
-                <select id="projectSelect" class="form-select" style="min-width: 180px;">
+                <label for="projectSelect" class="input-group-text"><i class="bi bi-folder" aria-hidden="true"></i><span class="visually-hidden">{{ ftl('common-project') }}</span></label>
+                <select id="projectSelect" class="form-select" style="min-width: 180px;" aria-label="{{ ftl('common-project') }}">
                     <option value="">{{ ftl('common-all-projects') }}</option>
                     {% for p in projects %}
                     <option value="{{ p.id }}" {% if selected_project and p.id == selected_project.id %}selected{% endif %}>
@@ -211,8 +45,8 @@
                 </select>
             </div>
             <div class="input-group" style="width: auto;">
-                <span class="input-group-text"><i class="bi bi-globe" aria-hidden="true"></i></span>
-                <select id="websiteSelect" class="form-select" style="min-width: 180px;" {% if not selected_project %}disabled{% endif %}>
+                <label for="websiteSelect" class="input-group-text"><i class="bi bi-globe" aria-hidden="true"></i><span class="visually-hidden">{{ ftl('common-website-2') }}</span></label>
+                <select id="websiteSelect" class="form-select" style="min-width: 180px;" aria-label="{{ ftl('common-website-2') }}" {% if not selected_project %}disabled{% endif %}>
                     {% if selected_project %}
                         <option value="">{{ ftl('common-all-websites') }}</option>
                         {% for w in websites %}
@@ -225,7 +59,7 @@
                     {% endif %}
                 </select>
             </div>
-            <a href="{{ url_for('testing.testing_dashboard') }}{% if selected_project %}?project_id={{ selected_project.id }}{% endif %}{% if selected_website %}&website_id={{ selected_website.id }}{% endif %}" class="btn btn-outline-secondary" title="{{ ftl('testing-back-to-dashboard') }}">
+            <a href="{{ url_for('testing.testing_dashboard') }}{% if selected_project %}?project_id={{ selected_project.id }}{% endif %}{% if selected_website %}&website_id={{ selected_website.id }}{% endif %}" class="btn btn-outline-neutral" aria-label="{{ ftl('testing-back-to-dashboard') }}">
                 <i class="bi bi-speedometer2" aria-hidden="true"></i>
             </a>
         </div>
@@ -239,9 +73,9 @@
                 <div class="d-flex align-items-center gap-2">
                     <span class="text-muted small">{{ ftl('testing-view') }}</span>
                     <div class="btn-group btn-group-sm" role="group">
-                        <button type="button" class="btn btn-outline-primary time-range-btn active" data-granularity="daily">{{ ftl('common-daily') }}</button>
-                        <button type="button" class="btn btn-outline-primary time-range-btn" data-granularity="weekly">{{ ftl('common-weekly') }}</button>
-                        <button type="button" class="btn btn-outline-primary time-range-btn" data-granularity="monthly">{{ ftl('common-monthly') }}</button>
+                        <button type="button" class="btn btn-outline-brand time-range-btn active" data-granularity="daily">{{ ftl('common-daily') }}</button>
+                        <button type="button" class="btn btn-outline-brand time-range-btn" data-granularity="weekly">{{ ftl('common-weekly') }}</button>
+                        <button type="button" class="btn btn-outline-brand time-range-btn" data-granularity="monthly">{{ ftl('common-monthly') }}</button>
                     </div>
                 </div>
 
@@ -249,19 +83,21 @@
                 <div class="d-flex align-items-center gap-2">
                     <span class="text-muted small">{{ ftl('testing-period') }}</span>
                     <div class="btn-group btn-group-sm" role="group">
-                        <button type="button" class="btn btn-outline-secondary preset-btn" data-days="7">{{ ftl('testing-7-days') }}</button>
-                        <button type="button" class="btn btn-outline-secondary preset-btn active" data-days="30">{{ ftl('common-30-days') }}</button>
-                        <button type="button" class="btn btn-outline-secondary preset-btn" data-days="90">{{ ftl('common-90-days') }}</button>
-                        <button type="button" class="btn btn-outline-secondary preset-btn" data-days="365">{{ ftl('common-1-year') }}</button>
+                        <button type="button" class="btn btn-outline-neutral preset-btn" data-days="7">{{ ftl('testing-7-days') }}</button>
+                        <button type="button" class="btn btn-outline-neutral preset-btn active" data-days="30">{{ ftl('common-30-days') }}</button>
+                        <button type="button" class="btn btn-outline-neutral preset-btn" data-days="90">{{ ftl('common-90-days') }}</button>
+                        <button type="button" class="btn btn-outline-neutral preset-btn" data-days="365">{{ ftl('common-1-year') }}</button>
                     </div>
                 </div>
 
                 <!-- Custom Date Range -->
                 <div class="d-flex align-items-center gap-2">
-                    <input type="date" id="startDate" class="form-control form-control-sm" style="width: 140px;">
+                    <label for="startDate" class="visually-hidden">{{ ftl('testing-start-date') }}</label>
+                    <input type="date" id="startDate" class="form-control form-control-sm" style="width: 140px;" aria-label="{{ ftl('testing-start-date') }}">
                     <span class="text-muted">{{ ftl('testing-to') }}</span>
-                    <input type="date" id="endDate" class="form-control form-control-sm" style="width: 140px;">
-                    <button type="button" id="applyDateRange" class="btn btn-sm btn-primary">
+                    <label for="endDate" class="visually-hidden">{{ ftl('testing-end-date') }}</label>
+                    <input type="date" id="endDate" class="form-control form-control-sm" style="width: 140px;" aria-label="{{ ftl('testing-end-date') }}">
+                    <button type="button" id="applyDateRange" class="btn btn-sm btn-brand" aria-label="{{ ftl('testing-apply-date-range') }}">
                         <i class="bi bi-arrow-right" aria-hidden="true"></i>
                     </button>
                 </div>
@@ -271,21 +107,29 @@
 
     <!-- Filter Panel (Collapsible) -->
     <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-white py-2" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#filterPanel" aria-expanded="true">
+        <div class="card-header bg-elevated py-2">
             <div class="d-flex justify-content-between align-items-center">
-                <h2 class="mb-0">
-                    <i class="bi bi-funnel" aria-hidden="true"></i> {{ ftl('testing-filter-trends') }}
-                    <span id="activeFilterCount" class="badge bg-primary ms-2" style="display: none;">0</span>
-                </h6>
+                <h2 id="filter-panel-heading" class="mb-0 flex-grow-1">
+                    <button type="button"
+                            class="btn btn-link text-decoration-none p-0 text-start d-flex align-items-center gap-2 w-100"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#filterPanel"
+                            aria-expanded="true"
+                            aria-controls="filterPanel">
+                        <i class="bi bi-funnel" aria-hidden="true"></i>
+                        <span>{{ ftl('testing-filter-trends') }}</span>
+                        <span id="activeFilterCount" class="badge badge-brand" style="display: none;">0</span>
+                    </button>
+                </h2>
                 <div class="d-flex align-items-center gap-2">
-                    <button type="button" class="btn btn-sm btn-outline-secondary" id="clearAllFilters" onclick="event.stopPropagation();">
+                    <button type="button" class="btn btn-sm btn-outline-neutral" id="clearAllFilters">
                         <i class="bi bi-x-circle" aria-hidden="true"></i> {{ ftl('common-clear-all') }}
                     </button>
                     <i class="bi bi-chevron-up" aria-hidden="true" id="filterToggleIcon"></i>
                 </div>
             </div>
         </div>
-        <div class="collapse show" id="filterPanel">
+        <div class="collapse show" id="filterPanel" role="region" aria-labelledby="filter-panel-heading">
             <div class="card-body">
                 <!-- Active Filters Display -->
                 <div id="activeFiltersDisplay" class="mb-3" style="display: none;">
@@ -298,36 +142,36 @@
                 <div class="row g-3">
                     <!-- Issue Type Filter -->
                     <div class="col-md-6 col-lg-3">
-                        <label class="form-label fw-bold small">{{ ftl('common-issue-type') }}</label>
+                        <p class="form-label fw-bold small">{{ ftl('common-issue-type') }}</p>
                         <div class="filter-chips">
-                            <button class="btn btn-sm btn-outline-secondary filter-chip me-2 mb-2 active" data-filter-type="issue_type" data-filter-value="violation">
-                                {{ ftl('common-violations') }} <span class="badge bg-danger ms-1" id="violationCount">-</span>
+                            <button class="btn btn-sm btn-outline-neutral filter-chip me-2 mb-2 active" data-filter-type="issue_type" data-filter-value="violation">
+                                {{ ftl('common-violations') }} <span class="badge badge-high ms-1" id="violationCount">-</span>
                             </button>
-                            <button class="btn btn-sm btn-outline-secondary filter-chip me-2 mb-2 active" data-filter-type="issue_type" data-filter-value="warning">
-                                {{ ftl('common-warnings') }} <span class="badge bg-warning text-dark ms-1" id="warningCount">-</span>
+                            <button class="btn btn-sm btn-outline-neutral filter-chip me-2 mb-2 active" data-filter-type="issue_type" data-filter-value="warning">
+                                {{ ftl('common-warnings') }} <span class="badge badge-medium ms-1" id="warningCount">-</span>
                             </button>
                         </div>
                     </div>
 
                     <!-- Impact Level Filter -->
                     <div class="col-md-6 col-lg-3">
-                        <label class="form-label fw-bold small">{{ ftl('common-impact-level') }}</label>
+                        <p class="form-label fw-bold small">{{ ftl('common-impact-level') }}</p>
                         <div class="filter-chips">
-                            <button class="btn btn-sm btn-outline-secondary filter-chip me-2 mb-2" data-filter-type="impact" data-filter-value="high">
-                                {{ ftl('common-high') }} <span class="badge bg-danger ms-1" id="highImpactCount">-</span>
+                            <button class="btn btn-sm btn-outline-neutral filter-chip me-2 mb-2" data-filter-type="impact" data-filter-value="high">
+                                {{ ftl('common-high') }} <span class="badge badge-high ms-1" id="highImpactCount">-</span>
                             </button>
-                            <button class="btn btn-sm btn-outline-secondary filter-chip me-2 mb-2" data-filter-type="impact" data-filter-value="medium">
-                                {{ ftl('common-medium') }} <span class="badge bg-warning text-dark ms-1" id="mediumImpactCount">-</span>
+                            <button class="btn btn-sm btn-outline-neutral filter-chip me-2 mb-2" data-filter-type="impact" data-filter-value="medium">
+                                {{ ftl('common-medium') }} <span class="badge badge-medium ms-1" id="mediumImpactCount">-</span>
                             </button>
-                            <button class="btn btn-sm btn-outline-secondary filter-chip me-2 mb-2" data-filter-type="impact" data-filter-value="low">
-                                {{ ftl('common-low') }} <span class="badge bg-info ms-1" id="lowImpactCount">-</span>
+                            <button class="btn btn-sm btn-outline-neutral filter-chip me-2 mb-2" data-filter-type="impact" data-filter-value="low">
+                                {{ ftl('common-low') }} <span class="badge badge-info ms-1" id="lowImpactCount">-</span>
                             </button>
                         </div>
                     </div>
 
                     <!-- WCAG Criteria Filter -->
                     <div class="col-md-6 col-lg-3">
-                        <label class="form-label fw-bold small">{{ ftl('common-wcag-criteria') }}</label>
+                        <label class="form-label fw-bold small" for="wcagFilter">{{ ftl('common-wcag-criteria') }}</label>
                         <select class="form-select form-select-sm" id="wcagFilter" multiple style="height: 90px;">
                             <option value="" disabled>{{ ftl('common-loading') }}</option>
                         </select>
@@ -335,7 +179,7 @@
 
                     <!-- Touchpoint Filter -->
                     <div class="col-md-6 col-lg-3">
-                        <label class="form-label fw-bold small">{{ ftl('common-touchpoint') }}</label>
+                        <label class="form-label fw-bold small" for="touchpointFilter">{{ ftl('common-touchpoint') }}</label>
                         <select class="form-select form-select-sm" id="touchpointFilter" multiple style="height: 90px;">
                             <option value="" disabled>{{ ftl('common-loading') }}</option>
                         </select>
@@ -345,21 +189,21 @@
                 <!-- Affected User Groups Filter -->
                 <div class="row g-3 mt-2">
                     <div class="col-12">
-                        <label class="form-label fw-bold small">{{ ftl('common-affected-user-groups') }}</label>
+                        <p class="form-label fw-bold small">{{ ftl('common-affected-user-groups') }}</p>
                         <div class="filter-chips">
-                            <button class="btn btn-sm btn-outline-secondary filter-chip me-2 mb-2" data-filter-type="user_group" data-filter-value="vision">
+                            <button class="btn btn-sm btn-outline-neutral filter-chip me-2 mb-2" data-filter-type="user_group" data-filter-value="vision">
                                 <i class="bi bi-eye-slash me-1" aria-hidden="true"></i>{{ ftl('common-vision') }}
                             </button>
-                            <button class="btn btn-sm btn-outline-secondary filter-chip me-2 mb-2" data-filter-type="user_group" data-filter-value="hearing">
+                            <button class="btn btn-sm btn-outline-neutral filter-chip me-2 mb-2" data-filter-type="user_group" data-filter-value="hearing">
                                 <i class="bi bi-ear me-1" aria-hidden="true"></i>{{ ftl('common-hearing') }}
                             </button>
-                            <button class="btn btn-sm btn-outline-secondary filter-chip me-2 mb-2" data-filter-type="user_group" data-filter-value="motor">
+                            <button class="btn btn-sm btn-outline-neutral filter-chip me-2 mb-2" data-filter-type="user_group" data-filter-value="motor">
                                 <i class="bi bi-hand-index me-1" aria-hidden="true"></i>{{ ftl('common-motor') }}
                             </button>
-                            <button class="btn btn-sm btn-outline-secondary filter-chip me-2 mb-2" data-filter-type="user_group" data-filter-value="cognitive">
+                            <button class="btn btn-sm btn-outline-neutral filter-chip me-2 mb-2" data-filter-type="user_group" data-filter-value="cognitive">
                                 <i class="bi bi-brain me-1" aria-hidden="true"></i>{{ ftl('common-cognitive') }}
                             </button>
-                            <button class="btn btn-sm btn-outline-secondary filter-chip me-2 mb-2" data-filter-type="user_group" data-filter-value="seizure">
+                            <button class="btn btn-sm btn-outline-neutral filter-chip me-2 mb-2" data-filter-type="user_group" data-filter-value="seizure">
                                 <i class="bi bi-lightning me-1" aria-hidden="true"></i>{{ ftl('common-seizure') }}
                             </button>
                         </div>
@@ -385,7 +229,7 @@
                                 <span class="trend-percent"></span>
                             </div>
                         </div>
-                        <i class="bi bi-exclamation-triangle stat-icon text-danger" aria-hidden="true"></i>
+                        <i class="bi bi-exclamation-triangle stat-icon text-severity-high" aria-hidden="true"></i>
                     </div>
                 </div>
             </div>
@@ -398,7 +242,7 @@
                             <h3 class="card-title text-muted mb-1">{{ ftl('common-total-warnings') }}</h3>
                             <p class="display-6 mb-0" id="statTotalWarnings">-</p>
                         </div>
-                        <i class="bi bi-exclamation-circle stat-icon text-warning" aria-hidden="true"></i>
+                        <i class="bi bi-exclamation-circle stat-icon text-severity-medium" aria-hidden="true"></i>
                     </div>
                 </div>
             </div>
@@ -411,7 +255,7 @@
                             <h3 class="card-title text-muted mb-1">{{ ftl('testing-tests-run') }}</h3>
                             <p class="display-6 mb-0" id="statTotalTests">-</p>
                         </div>
-                        <i class="bi bi-check2-all stat-icon text-success" aria-hidden="true"></i>
+                        <i class="bi bi-check2-all stat-icon text-severity-pass" aria-hidden="true"></i>
                     </div>
                 </div>
             </div>
@@ -424,7 +268,7 @@
                             <h3 class="card-title text-muted mb-1">{{ ftl('testing-avg-per-test') }}</h3>
                             <p class="display-6 mb-0" id="statAvgViolations">-</p>
                         </div>
-                        <i class="bi bi-calculator stat-icon text-info" aria-hidden="true"></i>
+                        <i class="bi bi-calculator stat-icon text-info-custom" aria-hidden="true"></i>
                     </div>
                 </div>
             </div>
@@ -437,7 +281,7 @@
         <!-- Main Trend Chart -->
         <div class="col-lg-8">
             <div class="card shadow-sm h-100">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <div class="card-header bg-elevated d-flex justify-content-between align-items-center">
                     <h2 class="mb-0"><i class="bi bi-graph-up" aria-hidden="true"></i> {{ ftl('testing-violations-warnings-over-time') }}</h2>
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="showMovingAvg" checked>
@@ -448,7 +292,7 @@
                     <!-- Loading overlay -->
                     <div class="card-loading-overlay" id="mainChartLoading">
                         <div class="loading-spinner">
-                            <div class="spinner-border text-primary" role="status">
+                            <div class="spinner-border text-brand" role="status">
                                 <span class="visually-hidden">{{ ftl('common-loading') }}</span>
                             </div>
                             <span class="loading-text">{{ ftl('testing-calculating-trends') }}</span>
@@ -467,14 +311,14 @@
         <!-- Impact Breakdown -->
         <div class="col-lg-4">
             <div class="card shadow-sm h-100">
-                <div class="card-header bg-white">
+                <div class="card-header bg-elevated">
                     <h2 class="mb-0"><i class="bi bi-pie-chart" aria-hidden="true"></i> {{ ftl('testing-by-impact-level') }}</h2>
                 </div>
                 <div class="card-body card-loading" id="impactChartContainer">
                     <!-- Loading overlay -->
                     <div class="card-loading-overlay" id="impactChartLoading">
                         <div class="loading-spinner">
-                            <div class="spinner-border text-primary" role="status">
+                            <div class="spinner-border text-brand" role="status">
                                 <span class="visually-hidden">{{ ftl('common-loading') }}</span>
                             </div>
                             <span class="loading-text">{{ ftl('common-loading') }}</span>
@@ -496,14 +340,14 @@
         <!-- Touchpoint Breakdown -->
         <div class="col-lg-6">
             <div class="card shadow-sm">
-                <div class="card-header bg-white">
+                <div class="card-header bg-elevated">
                     <h2 class="mb-0"><i class="bi bi-bar-chart" aria-hidden="true"></i> {{ ftl('testing-by-touchpoint') }}</h2>
                 </div>
                 <div class="card-body card-loading" id="touchpointChartContainer">
                     <!-- Loading overlay -->
                     <div class="card-loading-overlay" id="touchpointChartLoading">
                         <div class="loading-spinner">
-                            <div class="spinner-border text-primary" role="status">
+                            <div class="spinner-border text-brand" role="status">
                                 <span class="visually-hidden">{{ ftl('common-loading') }}</span>
                             </div>
                             <span class="loading-text">{{ ftl('common-loading') }}</span>
@@ -522,14 +366,14 @@
         <!-- Top Issues Table -->
         <div class="col-lg-6">
             <div class="card shadow-sm">
-                <div class="card-header bg-white">
+                <div class="card-header bg-elevated">
                     <h2 class="mb-0"><i class="bi bi-list-ol" aria-hidden="true"></i> {{ ftl('common-top-issues') }}</h2>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover top-issues-table mb-0">
                             <caption class="visually-hidden">{{ ftl('testing-top-accessibility-issues-by-frequency') }}</caption>
-                            <thead class="table-light">
+                            <thead class="table-subtle">
                                 <tr>
                                     <th scope="col">{{ ftl('testing-issue') }}</th>
                                     <th scope="col" class="text-end">{{ ftl('testing-count') }}</th>
@@ -555,14 +399,14 @@
         <!-- Progress Metrics -->
         <div class="col-lg-6">
             <div class="card shadow-sm progress-card">
-                <div class="card-header bg-white">
-                    <h2 class="mb-0"><i class="bi bi-arrow-up-right text-success" aria-hidden="true"></i> {{ ftl('testing-progress-tracking') }}</h2>
+                <div class="card-header bg-elevated">
+                    <h2 class="mb-0"><i class="bi bi-arrow-up-right text-severity-pass" aria-hidden="true"></i> {{ ftl('testing-progress-tracking') }}</h2>
                 </div>
                 <div class="card-body card-loading" id="progressSection">
                     <!-- Loading overlay -->
                     <div class="card-loading-overlay" id="progressLoading">
                         <div class="loading-spinner">
-                            <div class="spinner-border text-success" role="status">
+                            <div class="spinner-border text-severity-pass" role="status">
                                 <span class="visually-hidden">{{ ftl('common-loading') }}</span>
                             </div>
                             <span class="loading-text">{{ ftl('testing-calculating-progress') }}</span>
@@ -572,13 +416,13 @@
                     <div class="row g-3">
                         <div class="col-6">
                             <div class="border rounded p-3 text-center">
-                                <div class="h3 mb-1 text-success" id="pagesImproving">-</div>
+                                <div class="h3 mb-1 text-severity-pass" id="pagesImproving">-</div>
                                 <small class="text-muted">{{ ftl('testing-pages-improving') }}</small>
                             </div>
                         </div>
                         <div class="col-6">
                             <div class="border rounded p-3 text-center">
-                                <div class="h3 mb-1 text-danger" id="pagesWorsening">-</div>
+                                <div class="h3 mb-1 text-severity-high" id="pagesWorsening">-</div>
                                 <small class="text-muted">{{ ftl('testing-pages-worsening') }}</small>
                             </div>
                         </div>
@@ -589,7 +433,7 @@
                                     <span class="h4 mb-0" id="complianceScore">-</span>
                                 </div>
                                 <div class="progress" style="height: 8px;">
-                                    <div class="progress-bar bg-success" id="complianceBar" style="width: 0%"></div>
+                                    <div class="progress-bar bg-pass" id="complianceBar" style="width: 0%"></div>
                                 </div>
                                 <small class="text-muted" id="complianceProjection"></small>
                             </div>
@@ -608,9 +452,9 @@
         <!-- Period Comparison -->
         <div class="col-lg-6">
             <div class="card shadow-sm comparison-card">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <div class="card-header bg-elevated d-flex justify-content-between align-items-center">
                     <h2 class="mb-0"><i class="bi bi-arrow-left-right text-discovery" aria-hidden="true"></i> {{ ftl('testing-period-comparison') }}</h2>
-                    <button class="btn btn-sm btn-outline-secondary" id="refreshComparison">
+                    <button class="btn btn-sm btn-outline-neutral" id="refreshComparison">
                         <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
                     </button>
                 </div>
@@ -1287,7 +1131,7 @@ function createFilterTag(label, value, type, filterValue) {
     }
     return `<span class="filter-tag">
         ${label}: ${displayValue}
-        <span class="remove-filter" onclick="removeFilter('${type}', '${filterValue}')">&times;</span>
+        <button type="button" class="remove-filter btn btn-link p-0 border-0" onclick="removeFilter('${type}', '${filterValue}')" aria-label="{{ ftl('common-remove-filter') }}: ${filterValue} (\u00d7)">&times;</button>
     </span>`;
 }
 
@@ -1603,9 +1447,9 @@ function updateTopIssues(topIssues) {
     topIssues.forEach(issue => {
         let trendIcon = '<i class="bi bi-dash text-muted" aria-hidden="true"></i>';
         if (issue.trend === 'improving') {
-            trendIcon = '<i class="bi bi-arrow-down text-success" aria-hidden="true"></i>';
+            trendIcon = '<i class="bi bi-arrow-down text-severity-pass" aria-hidden="true"></i>';
         } else if (issue.trend === 'worsening') {
-            trendIcon = '<i class="bi bi-arrow-up text-danger" aria-hidden="true"></i>';
+            trendIcon = '<i class="bi bi-arrow-up text-severity-high" aria-hidden="true"></i>';
         }
 
         html += `
@@ -1638,13 +1482,13 @@ function updateComparison(data) {
         const message = document.getElementById('comparisonMessage');
 
         if (change.violations.percent < 0) {
-            alert.className = 'alert alert-success mb-0';
+            alert.className = 'alert alert-pass mb-0';
             message.innerHTML = `<i class="bi bi-arrow-down-circle me-1" aria-hidden="true"></i> {{ ftl('testing-violations-decreased-by') }} ${Math.abs(change.violations.percent)}%`;
         } else if (change.violations.percent > 0) {
-            alert.className = 'alert alert-danger mb-0';
+            alert.className = 'alert alert-high mb-0';
             message.innerHTML = `<i class="bi bi-arrow-up-circle me-1" aria-hidden="true"></i> {{ ftl('testing-violations-increased-by') }} ${change.violations.percent}%`;
         } else {
-            alert.className = 'alert alert-secondary mb-0';
+            alert.className = 'alert alert-neutral mb-0';
             message.innerHTML = `<i class="bi bi-dash-circle me-1" aria-hidden="true"></i> {{ ftl('testing-no-change-in-violations') }}`;
         }
     }

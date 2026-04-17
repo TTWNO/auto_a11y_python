@@ -1,9 +1,15 @@
 """
 Project management routes
 """
+from __future__ import annotations
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
+from collections.abc import Callable, Mapping
+from typing import Any
+
+from flask import Blueprint, Flask, render_template, request, redirect, url_for, flash, jsonify, current_app
+from werkzeug.wrappers import Response
 from auto_a11y.web.fluent import ftl, lazy_ftl, _get_current_locale as get_locale
+from auto_a11y.web.typed_app import get_db, get_app_config, get_test_config
 from flask_login import login_required
 from flask import g
 from auto_a11y.models import Project, ProjectStatus, ProjectType
@@ -23,13 +29,13 @@ projects_bp = Blueprint('projects', __name__)
 
 @projects_bp.route('/api/list')
 @login_required
-def api_list_projects():
+def api_list_projects() -> Response | tuple[Response, int]:
     """API endpoint to list projects the current user can access"""
     try:
         if getattr(current_user, 'is_superadmin', False):
-            projects = current_app.db.get_all_projects()
+            projects = get_db().get_all_projects()
         else:
-            projects = current_app.db.get_projects_for_user(str(current_user.get_id()))
+            projects = get_db().get_projects_for_user(str(current_user.get_id()))
         return jsonify({
             'success': True,
             'projects': [
@@ -48,10 +54,10 @@ def api_list_projects():
 @projects_bp.route('/api/<project_id>/websites')
 @login_required
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
-def api_project_websites(project_id):
+def api_project_websites(project_id: str) -> Response | tuple[Response, int]:
     """API endpoint to list websites in a project"""
     try:
-        websites = current_app.db.get_websites(project_id)
+        websites = get_db().get_websites(project_id)
         return jsonify({
             'success': True,
             'websites': [
@@ -68,7 +74,7 @@ def api_project_websites(project_id):
 
 
 @projects_bp.route('/api/test-details/<test_id>')
-def api_test_details(test_id):
+def api_test_details(test_id: str) -> Response | tuple[Response, int]:
     """API endpoint to get detailed information about a test"""
     try:
         from auto_a11y.reporting.issue_catalog import IssueCatalog
@@ -84,7 +90,7 @@ def api_test_details(test_id):
             }), 404
 
         # Get production_ready status from database
-        doc_status = current_app.db.get_issue_documentation_status(test_id)
+        doc_status = get_db().get_issue_documentation_status(test_id)
         production_ready = doc_status.get('production_ready', False) if doc_status else False
 
         # Get enhanced description with message templates
@@ -127,7 +133,7 @@ def api_test_details(test_id):
 
 
 @projects_bp.route('/api/test-details/<test_id>/production-ready', methods=['POST'])
-def api_set_test_production_ready(test_id):
+def api_set_test_production_ready(test_id: str) -> Response | tuple[Response, int]:
     """API endpoint to toggle production_ready flag for a test"""
     try:
         from auto_a11y.reporting.issue_catalog import IssueCatalog
@@ -145,7 +151,7 @@ def api_set_test_production_ready(test_id):
         production_ready = data.get('production_ready', False)
 
         # Update in database
-        success = current_app.db.set_issue_production_ready(
+        success = get_db().set_issue_production_ready(
             test_id,
             production_ready,
             updated_by="web_user"
@@ -172,7 +178,7 @@ def api_set_test_production_ready(test_id):
 
 
 @projects_bp.route('/api/issue-documentation-stats')
-def api_issue_documentation_stats():
+def api_issue_documentation_stats() -> Response | tuple[Response, int]:
     """API endpoint to get statistics about issue documentation status"""
     try:
         from auto_a11y.reporting.issue_catalog import IssueCatalog
@@ -181,7 +187,7 @@ def api_issue_documentation_stats():
         all_codes = list(IssueCatalog.ISSUES.keys())
 
         # Get production ready statuses from database
-        statuses = current_app.db.get_all_issue_documentation_statuses()
+        statuses = get_db().get_all_issue_documentation_statuses()
 
         # Calculate stats
         production_ready_count = sum(1 for ready in statuses.values() if ready)
@@ -214,18 +220,18 @@ def api_issue_documentation_stats():
 
 @projects_bp.route('/')
 @login_required
-def list_projects():
+def list_projects() -> str:
     """List all projects"""
     status_filter = request.args.get('status')
     
     if getattr(current_user, 'is_superadmin', False):
         if status_filter:
             status = ProjectStatus(status_filter)
-            projects = current_app.db.get_projects(status=status)
+            projects = get_db().get_projects(status=status)
         else:
-            projects = current_app.db.get_projects()
+            projects = get_db().get_projects()
     else:
-        projects = current_app.db.get_projects_for_user(str(current_user.get_id()))
+        projects = get_db().get_projects_for_user(str(current_user.get_id()))
         if status_filter:
             status = ProjectStatus(status_filter)
             projects = [p for p in projects if p.status == status]
@@ -235,7 +241,7 @@ def list_projects():
 
 @projects_bp.route('/create', methods=['GET', 'POST'])
 @auditor_required
-def create_project():
+def create_project() -> str | Response:
     """Create new project"""
     if request.method == 'POST':
         name = request.form.get('name')
@@ -261,7 +267,7 @@ def create_project():
             return redirect(url_for('projects.create_project'))
 
         # Check if project name exists
-        existing = current_app.db.projects.find_one({'name': name})
+        existing = get_db().projects.find_one({'name': name})
         if existing:
             flash(ftl('projects-project-name-already-exists', name=name), 'error')
             # Redirect to GET handler which will populate everything
@@ -336,11 +342,11 @@ def create_project():
             }
         )
         
-        project_id = current_app.db.create_project(project)
+        project_id = get_db().create_project(project)
         # Auto-add creator as member with Admin group
-        admin_group = current_app.db.get_group_by_name('Admin')
-        if admin_group:
-            current_app.db.add_project_member(project_id, str(current_user.get_id()), [admin_group.id])
+        admin_group = get_db().get_group_by_name('Admin')
+        if admin_group and admin_group.id:
+            get_db().add_project_member(project_id, str(current_user.get_id()), [admin_group.id])
         flash(ftl('projects-project-name-created-successfully', name=name), 'success')
         
         return redirect(url_for('projects.view_project', project_id=project_id))
@@ -349,13 +355,13 @@ def create_project():
     test_statuses = {}
     passing_tests = set()
 
-    if hasattr(current_app, 'test_config') and current_app.test_config:
-        test_statuses = current_app.test_config.get_all_test_statuses()
-        if current_app.test_config.fixture_validator:
-            passing_tests = current_app.test_config.fixture_validator.get_passing_tests()
-        debug_mode = current_app.test_config.debug_mode
+    if hasattr(current_app, 'test_config') and get_test_config():
+        test_statuses = get_test_config().get_all_test_statuses()
+        if get_test_config().fixture_validator:
+            passing_tests = get_test_config().fixture_validator.get_passing_tests()
+        debug_mode = get_test_config().debug_mode
     else:
-        debug_mode = current_app.app_config.DEBUG
+        debug_mode = get_app_config().DEBUG
 
     # Group tests by touchpoint dynamically
     from collections import defaultdict
@@ -465,7 +471,7 @@ def create_project():
         tests_by_touchpoint[touchpoint].sort()
 
     # Get production ready statuses for all tests
-    production_ready_statuses = current_app.db.get_all_issue_documentation_statuses()
+    production_ready_statuses = get_db().get_all_issue_documentation_statuses()
 
     # DEBUG: Log what we're passing to template
     logger.warning(f"DEBUG: Create Project - tests_by_touchpoint keys: {sorted(tests_by_touchpoint.keys())}")
@@ -487,27 +493,29 @@ def create_project():
 
 @projects_bp.route('/<project_id>')
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
-def view_project(project_id):
+def view_project(project_id: str) -> str | Response:
     """View project details"""
-    project = current_app.db.get_project(project_id)
+    project = get_db().get_project(project_id)
     if not project:
         flash(ftl('common-project-not-found'), 'error')
         return redirect(url_for('projects.list_projects'))
 
-    websites = current_app.db.get_websites(project_id)
-    stats = current_app.db.get_project_stats(project_id)
+    websites = get_db().get_websites(project_id)
+    stats = get_db().get_project_stats(project_id)
 
     # Calculate stats for each website (violations, warnings, and actual page count)
-    website_stats = {}
+    website_stats: dict[str | None, dict[str, int]] = {}
     for website in websites:
-        pages = current_app.db.get_pages(website.id)
+        if not website.id:
+            continue
+        pages = get_db().get_pages(website.id)
         tested_page_ids = [p.id for p in pages if p.status == PageStatus.TESTED]
 
         # Aggregate counts from test_results (source of truth)
         violations = 0
         warnings = 0
         if tested_page_ids:
-            pipeline = [
+            agg_pipeline: list[Mapping[str, Any]] = [
                 {'$match': {'page_id': {'$in': tested_page_ids}}},
                 {'$sort': {'test_date': -1}},
                 {'$group': {
@@ -516,7 +524,7 @@ def view_project(project_id):
                     'warning_count': {'$first': {'$ifNull': ['$warning_count', 0]}},
                 }},
             ]
-            for result in current_app.db.test_results.aggregate(pipeline):
+            for result in get_db().test_results.aggregate(agg_pipeline):
                 violations += result.get('violation_count', 0)
                 warnings += result.get('warning_count', 0)
 
@@ -528,20 +536,20 @@ def view_project(project_id):
         website.page_count = len(pages)
 
     # Get available test users for this project (for discovery modal)
-    project_users = current_app.db.get_project_users(project_id, enabled_only=True)
+    project_users = get_db().get_project_users(project_id, enabled_only=True)
 
     # Get recordings for this project
-    recordings = current_app.db.get_recordings(project_id=project_id)
+    recordings = get_db().get_recordings(project_id=project_id)
 
     # Get discovered pages for this project
-    discovered_pages_cursor = current_app.db.discovered_pages.find({'project_id': project_id}).sort('created_at', -1)
+    discovered_pages_cursor = get_db().discovered_pages.find({'project_id': project_id}).sort('created_at', -1)
     discovered_pages = list(discovered_pages_cursor)
 
     is_project_admin = getattr(current_user, 'is_superadmin', False) or (
         hasattr(g, 'effective_role') and g.effective_role == UserRole.ADMIN
     )
 
-    all_groups = current_app.db.get_all_groups()
+    all_groups = get_db().get_all_groups()
 
     return render_template('projects/view.html',
                          project=project,
@@ -556,9 +564,9 @@ def view_project(project_id):
 
 
 @projects_bp.route('/<project_id>/edit', methods=['GET', 'POST'])
-def edit_project(project_id):
+def edit_project(project_id: str) -> str | Response:
     """Edit project"""
-    project = current_app.db.get_project(project_id)
+    project = get_db().get_project(project_id)
     if not project:
         flash(ftl('common-project-not-found'), 'error')
         return redirect(url_for('projects.list_projects'))
@@ -707,7 +715,7 @@ def edit_project(project_id):
             'excluded_fonts': excluded_fonts
         }
 
-        if current_app.db.update_project(project):
+        if get_db().update_project(project):
             flash(ftl('projects-project-updated-successfully'), 'success')
             return redirect(url_for('projects.view_project', project_id=project_id))
         else:
@@ -720,14 +728,14 @@ def edit_project(project_id):
 
 
 @projects_bp.route('/<project_id>/delete', methods=['POST'])
-def delete_project(project_id):
+def delete_project(project_id: str) -> Response:
     """Delete project"""
-    project = current_app.db.get_project(project_id)
+    project = get_db().get_project(project_id)
     if not project:
         flash(ftl('common-project-not-found'), 'error')
         return redirect(url_for('projects.list_projects'))
 
-    if current_app.db.delete_project(project_id):
+    if get_db().delete_project(project_id):
         flash(ftl('projects-project-name-deleted-successfully', name=project.name), 'success')
     else:
         flash(ftl('projects-failed-to-delete-project'), 'error')
@@ -737,11 +745,11 @@ def delete_project(project_id):
 
 @projects_bp.route('/<project_id>/add-website', methods=['POST'])
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
-def add_website(project_id):
+def add_website(project_id: str) -> Response | tuple[Response, int]:
     """Add website to project"""
     from auto_a11y.models import Website, ScrapingConfig
     
-    project = current_app.db.get_project(project_id)
+    project = get_db().get_project(project_id)
     if not project:
         return jsonify({'error': ftl('common-project-not-found')}), 404
 
@@ -759,7 +767,7 @@ def add_website(project_id):
         scraping_config=ScrapingConfig()
     )
     
-    website_id = current_app.db.create_website(website)
+    website_id = get_db().create_website(website)
     
     # Check if this is an AJAX request
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -775,12 +783,12 @@ def add_website(project_id):
 
 
 @projects_bp.route('/<project_id>/test-all', methods=['POST'])
-def test_project(project_id):
+def test_project(project_id: str) -> Response:
     """Test all websites in a project"""
     import asyncio
     from auto_a11y.core.website_manager import WebsiteManager
     
-    project = current_app.db.get_project(project_id)
+    project = get_db().get_project(project_id)
     if not project:
         flash(ftl('common-project-not-found'), 'error')
         return redirect(url_for('projects.list_projects'))
@@ -792,14 +800,14 @@ def test_project(project_id):
     
     try:
         # Create browser config with project-specific stealth_mode setting
-        browser_config = current_app.app_config.__dict__.copy()
+        browser_config = get_app_config().__dict__.copy()
         if project and project.config:
             browser_config['stealth_mode'] = project.config.get('stealth_mode', False)
         else:
             browser_config['stealth_mode'] = False
 
         # Initialize website manager
-        manager = WebsiteManager(current_app.db, browser_config)
+        manager = WebsiteManager(get_db(), browser_config)
         logger.info(f"Created website manager for project {project_id} testing (stealth_mode: {browser_config.get('stealth_mode', False)})")
         
         # Generate unique job ID
@@ -847,11 +855,11 @@ def test_project(project_id):
 
 @projects_bp.route('/<project_id>/report', methods=['GET', 'POST'])
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
-def generate_project_report(project_id):
+def generate_project_report(project_id: str) -> Response:
     """Generate accessibility report for entire project (background job)"""
     from auto_a11y.reporting.project_report import ProjectReport
 
-    project = current_app.db.get_project(project_id)
+    project = get_db().get_project(project_id)
     if not project:
         flash(ftl('common-project-not-found'), 'error')
         return redirect(url_for('projects.list_projects'))
@@ -859,12 +867,14 @@ def generate_project_report(project_id):
     format = request.args.get('format', 'html')
 
     # Capture all data in route handler
-    db = current_app.db
-    app = current_app._get_current_object()
-    reports_dir = str(current_app.app_config.REPORTS_DIR)
+    db = get_db()
+    app = getattr(current_app, '_get_current_object')()
+    reports_dir = str(get_app_config().REPORTS_DIR)
     websites = db.get_websites(project_id)
-    pages_by_website = {}
+    pages_by_website: dict[str, list[Any]] = {}
     for website in websites:
+        if not website.id:
+            continue
         pages_by_website[website.id] = db.get_pages(website.id)
 
     language = str(get_locale()) if get_locale() else 'en'
@@ -877,10 +887,10 @@ def generate_project_report(project_id):
         metadata={'report_type': format, 'scope': 'project', 'display_name': f'Project Report - {project.name}'}
     )
 
-    def wrapper():
+    def wrapper() -> None:
         try:
             with app.app_context():
-                def generate_and_save(progress_callback=None):
+                def generate_and_save(progress_callback: Callable[[int, int, str], None] | None = None) -> object:
                     report = ProjectReport(db, project, websites, pages_by_website, language=language)
                     report.generate(progress_callback=progress_callback)
                     return report.save(format, reports_dir=reports_dir)
@@ -898,10 +908,10 @@ def generate_project_report(project_id):
 
 
 @projects_bp.route('/api/<project_id>/users')
-def api_get_project_users(project_id):
+def api_get_project_users(project_id: str) -> Response | tuple[Response, int]:
     """API endpoint to get project users"""
     try:
-        project_users = current_app.db.get_project_users(project_id, enabled_only=True)
+        project_users = get_db().get_project_users(project_id, enabled_only=True)
 
         return jsonify({
             'success': True,
@@ -920,10 +930,10 @@ def api_get_project_users(project_id):
 
 
 @projects_bp.route('/api/<project_id>/details')
-def api_get_project(project_id):
+def api_get_project(project_id: str) -> Response | tuple[Response, int]:
     """API endpoint to get project details including testers and supervisors"""
     try:
-        project = current_app.db.get_project(project_id)
+        project = get_db().get_project(project_id)
         if not project:
             return jsonify({'success': False, 'error': ftl('common-project-not-found')}), 404
 
@@ -944,10 +954,10 @@ def api_get_project(project_id):
 
 
 @projects_bp.route('/api/<project_id>/discovered-pages')
-def api_get_discovered_pages(project_id):
+def api_get_discovered_pages(project_id: str) -> Response | tuple[Response, int]:
     """API endpoint to get discovered pages for a project"""
     try:
-        db = current_app.db
+        db = get_db()
 
         # Query discovered pages for this project
         discovered_pages_docs = db.discovered_pages.find({'project_id': project_id})

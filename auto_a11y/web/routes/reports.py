@@ -1,8 +1,13 @@
 """
 Report generation routes
 """
+from __future__ import annotations
 
-from flask import Blueprint, render_template, request, jsonify, send_file, current_app, url_for, flash, redirect, session, g
+from collections.abc import Callable
+from typing import Any
+
+from flask import Blueprint, Flask, Response, render_template, request, jsonify, send_file, current_app, url_for, flash, redirect, session, g
+from werkzeug.wrappers import Response as WerkzeugResponse
 from auto_a11y.web.fluent import ftl, force_locale, _get_current_locale as get_locale
 from auto_a11y.models import PageStatus
 from auto_a11y.reporting import ReportGenerator, PageStructureReport
@@ -11,6 +16,7 @@ from auto_a11y.reporting.static_html_generator import StaticHTMLReportGenerator
 from auto_a11y.core.job_manager import JobManager, JobType, JobStatus
 from auto_a11y.core.task_runner import task_runner
 from auto_a11y.core.report_job import ReportJob
+from auto_a11y.web.typed_app import get_db, get_app_config
 from datetime import datetime, timedelta
 from uuid import uuid4
 import logging
@@ -18,14 +24,23 @@ import json
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
+
+def _get_real_app() -> Flask:
+    """Get the real Flask app from the current_app proxy (for background threads)."""
+    # LocalProxy._get_current_object() isn't in Flask's stubs; use getattr to avoid
+    # attr-defined errors while keeping the runtime behaviour intact.
+    getter = getattr(current_app, '_get_current_object')
+    app: Flask = getter()
+    return app
 reports_bp = Blueprint('reports', __name__)
 
 
 @reports_bp.route('/dashboard')
-def reports_dashboard():
+def reports_dashboard() -> str:
     """Reports dashboard"""
     # Get available reports
-    reports_dir = current_app.app_config.REPORTS_DIR
+    reports_dir = get_app_config().REPORTS_DIR
     report_files = list(reports_dir.glob('*.xlsx')) + list(reports_dir.glob('*.html')) + list(reports_dir.glob('*.json')) + list(reports_dir.glob('*.pdf')) + list(reports_dir.glob('*.zip')) + list(reports_dir.glob('*.csv'))
     
     reports = []
@@ -59,12 +74,14 @@ def reports_dashboard():
         })
     
     # Get all projects for the dropdown
-    projects = current_app.db.get_projects()
+    projects = get_db().get_projects()
     
     # Get all websites for the dropdown
     websites = []
     for project in projects:
-        project_websites = current_app.db.get_websites(project.id)
+        if not project.id:
+            continue
+        project_websites = get_db().get_websites(project.id)
         for website in project_websites:
             websites.append({
                 'id': str(website.id),
@@ -74,7 +91,7 @@ def reports_dashboard():
             })
     
     # Get active report generation jobs
-    job_manager = JobManager(current_app.db)
+    job_manager = JobManager(get_db())
     active_jobs = job_manager.get_active_jobs(job_type=JobType.REPORT_GENERATION)
 
     # Also get recently completed jobs (last 5 minutes)
@@ -93,7 +110,7 @@ def reports_dashboard():
 
 
 @reports_bp.route('/generate', methods=['POST'])
-def generate_report():
+def generate_report() -> tuple[Response, int] | Response:
     """Generate accessibility report (background job)"""
     data = request.get_json()
     project_id = data.get('project_id')
@@ -105,14 +122,14 @@ def generate_report():
     display_name = 'All Projects Report'
 
     if project_id:
-        project = current_app.db.get_project(project_id)
+        project = get_db().get_project(project_id)
         if not project:
             return jsonify({'error': 'Project not found'}), 404
         scope = 'project'
         scope_id = project_id
         display_name = f'Accessibility Report - {project.name}'
     elif website_id:
-        website = current_app.db.get_website(website_id)
+        website = get_db().get_website(website_id)
         if not website:
             return jsonify({'error': 'Website not found'}), 404
         scope = 'website'
@@ -120,10 +137,10 @@ def generate_report():
         display_name = f'Accessibility Report - {website.name}'
 
     # Capture Flask context into local variables
-    db = current_app.db
-    config = current_app.app_config.__dict__.copy()
+    db = get_db()
+    config = get_app_config().__dict__.copy()
     language = str(get_locale()) if get_locale() else 'en'
-    app = current_app._get_current_object()
+    app = _get_real_app()
 
     job_id = f"report_{uuid4().hex[:8]}"
     job_manager = JobManager(db)
@@ -135,13 +152,14 @@ def generate_report():
         metadata={'report_type': report_type, 'scope': scope, 'display_name': display_name}
     )
 
-    def wrapper():
+    def wrapper() -> None:
         try:
             with app.app_context(), force_locale(language):
                 from auto_a11y.reporting import ReportGenerator
                 generator = ReportGenerator(db, config, language=language)
                 format_map = {'excel': 'xlsx'}
                 fmt = format_map.get(report_type, report_type)
+                func: Callable[..., Any]
                 if scope == 'all':
                     func = generator.generate_all_projects_report
                     kwargs = {'format': fmt}
@@ -165,9 +183,9 @@ def generate_report():
 
 
 @reports_bp.route('/job/<job_id>/status')
-def job_status(job_id):
+def job_status(job_id: str) -> tuple[Response, int] | Response:
     """Get report job status"""
-    job_manager = JobManager(current_app.db)
+    job_manager = JobManager(get_db())
     job = job_manager.get_job(job_id)
     if not job:
         return jsonify({'error': 'Job not found'}), 404
@@ -184,9 +202,9 @@ def job_status(job_id):
 
 
 @reports_bp.route('/job/<job_id>/drop', methods=['POST'])
-def drop_job(job_id):
+def drop_job(job_id: str) -> tuple[Response, int] | Response:
     """Drop/delete a stalled or in-progress report job"""
-    job_manager = JobManager(current_app.db)
+    job_manager = JobManager(get_db())
     job = job_manager.get_job(job_id)
     if not job:
         return jsonify({'error': 'Job not found'}), 404
@@ -200,9 +218,9 @@ def drop_job(job_id):
 
 
 @reports_bp.route('/job/<job_id>/restart', methods=['POST'])
-def restart_job(job_id):
+def restart_job(job_id: str) -> tuple[Response, int] | Response:
     """Restart a stalled report job from scratch"""
-    job_manager = JobManager(current_app.db)
+    job_manager = JobManager(get_db())
     old_job = job_manager.get_job(job_id)
     if not old_job:
         return jsonify({'error': 'Job not found'}), 404
@@ -220,11 +238,11 @@ def restart_job(job_id):
     job_manager.collection.delete_one({'job_id': job_id})
 
     # Capture context for background thread
-    db = current_app.db
-    config = current_app.app_config.__dict__.copy()
+    db = get_db()
+    config = get_app_config().__dict__.copy()
     language = str(get_locale()) if get_locale() else 'en'
-    app = current_app._get_current_object()
-    output_dir = current_app.app_config.REPORTS_DIR
+    app = _get_real_app()
+    output_dir = get_app_config().REPORTS_DIR
 
     new_job_id = f"report_{uuid4().hex[:8]}"
     job_manager.create_job(
@@ -235,7 +253,7 @@ def restart_job(job_id):
         metadata=metadata
     )
 
-    def wrapper():
+    def wrapper() -> None:
         try:
             with app.app_context(), force_locale(language):
                 func, kwargs = _build_restart_generator(
@@ -255,13 +273,13 @@ def restart_job(job_id):
     return jsonify({'success': True, 'job_id': new_job_id, 'display_name': display_name})
 
 
-def _build_restart_generator(scope, report_type, project_id, website_id, db, config, language, output_dir):
+def _build_restart_generator(scope: str | None, report_type: str, project_id: str | None, website_id: str | None, db: Any, config: dict[str, Any], language: str, output_dir: Path) -> tuple[Callable[..., Any], dict[str, Any]]:
     """
     Build generator function and kwargs for restarting a report job.
     Must be called inside a Flask app context.
 
     Returns:
-        (func, kwargs) — func is the generator callable, kwargs are passed
+        (func, kwargs) -- func is the generator callable, kwargs are passed
         to it by ReportJob (which also injects progress_callback).
     """
     if scope in ('all', 'project', 'website'):
@@ -281,22 +299,22 @@ def _build_restart_generator(scope, report_type, project_id, website_id, db, con
         pages = db.get_pages(website_id)
         project = db.get_project(website.project_id) if website and website.project_id else None
 
-        def generate_and_save(progress_callback=None):
+        def generate_and_save(progress_callback: Callable[..., Any] | None = None) -> Any:
             report = PageStructureReport(db, website, pages, project, language=language)
             report.generate(progress_callback=progress_callback)
             return report.save(report_type)
         return generate_and_save, {}
 
     elif scope == 'discovery_website':
-        generator = DiscoveryReportGenerator(db, config, language=language)
-        return generator.generate_website_discovery_report, {'website_id': website_id, 'format': report_type}
+        disco_gen = DiscoveryReportGenerator(db, config, language=language)
+        return disco_gen.generate_website_discovery_report, {'website_id': website_id, 'format': report_type}
 
     elif scope == 'discovery_project':
-        generator = DiscoveryReportGenerator(db, config, language=language)
-        return generator.generate_project_discovery_report, {'project_id': project_id, 'format': report_type}
+        disco_gen2 = DiscoveryReportGenerator(db, config, language=language)
+        return disco_gen2.generate_project_discovery_report, {'project_id': project_id, 'format': report_type}
 
     elif scope == 'static_html':
-        page_ids = []
+        page_ids: list[str] = []
         project_name = "Accessibility Report"
         website_url = None
 
@@ -340,10 +358,10 @@ def _build_restart_generator(scope, report_type, project_id, website_id, db, con
                 v.touchpoint for v in first_result.violations if v.touchpoint
             ))
 
-        generator = StaticHTMLReportGenerator(db, output_dir=output_dir, language=language)
+        static_gen = StaticHTMLReportGenerator(db, output_dir=output_dir, language=language)
 
-        def generate_static(progress_callback=None):
-            return generator.generate_report(
+        def generate_static(progress_callback: Callable[..., Any] | None = None) -> Any:
+            return static_gen.generate_report(
                 page_ids=page_ids,
                 project_name=project_name,
                 website_url=website_url,
@@ -357,10 +375,10 @@ def _build_restart_generator(scope, report_type, project_id, website_id, db, con
         return generate_static, {}
 
     elif scope == 'deduplicated':
-        generator = StaticHTMLReportGenerator(db, output_dir=output_dir, language=language)
+        dedup_gen = StaticHTMLReportGenerator(db, output_dir=output_dir, language=language)
 
-        def generate_dedup(progress_callback=None):
-            return generator.generate_project_deduplicated_report(
+        def generate_dedup(progress_callback: Callable[..., Any] | None = None) -> Any:
+            return dedup_gen.generate_project_deduplicated_report(
                 project_id=project_id,
                 website_id=website_id,
                 progress_callback=progress_callback
@@ -369,8 +387,8 @@ def _build_restart_generator(scope, report_type, project_id, website_id, db, con
 
     elif scope == 'recordings':
         from auto_a11y.reporting.recordings_report import RecordingsReportGenerator
-        generator = RecordingsReportGenerator(db, config, language=language)
-        return generator.generate_project_recordings_report, {
+        rec_gen = RecordingsReportGenerator(db, config, language=language)
+        return rec_gen.generate_project_recordings_report, {
             'project_id': project_id,
             'format': report_type,
             'language': language
@@ -384,9 +402,9 @@ def _build_restart_generator(scope, report_type, project_id, website_id, db, con
 
 
 @reports_bp.route('/download/<filename>')
-def download_report(filename):
+def download_report(filename: str) -> tuple[Response, int] | Response | WerkzeugResponse:
     """Download generated report"""
-    reports_dir = current_app.app_config.REPORTS_DIR
+    reports_dir = get_app_config().REPORTS_DIR
     file_path = reports_dir / filename
     
     if not file_path.exists():
@@ -404,9 +422,9 @@ def download_report(filename):
 
 
 @reports_bp.route('/<filename>/delete', methods=['POST'])
-def delete_report(filename):
+def delete_report(filename: str) -> tuple[Response, int] | Response:
     """Delete a generated report"""
-    reports_dir = current_app.app_config.REPORTS_DIR
+    reports_dir = get_app_config().REPORTS_DIR
     file_path = reports_dir / filename
 
     if not file_path.exists():
@@ -425,13 +443,13 @@ def delete_report(filename):
 
 
 @reports_bp.route('/project/<project_id>/summary')
-def project_summary(project_id):
-    """Project summary — redirects to the project report page."""
+def project_summary(project_id: str) -> Response | WerkzeugResponse:
+    """Project summary -- redirects to the project report page."""
     return redirect(url_for('projects.generate_project_report', project_id=project_id))
 
 
 @reports_bp.route('/export-csv', methods=['POST'])
-def export_csv():
+def export_csv() -> Response:
     """Export data as CSV"""
     data = request.get_json()
     
@@ -449,20 +467,20 @@ def export_csv():
 
 
 @reports_bp.route('/generate/page/<page_id>', methods=['POST'])
-def generate_page_report(page_id):
+def generate_page_report(page_id: str) -> tuple[Response, int] | Response:
     """Generate report for a single page (background job)"""
     format = request.form.get('format', request.json.get('format', 'html') if request.is_json else 'html')
     include_ai = request.form.get('include_ai', 'true') == 'true'
 
-    page = current_app.db.get_page(page_id)
+    page = get_db().get_page(page_id)
     if not page:
         return jsonify({'success': False, 'error': 'Page not found'}), 404
 
     # Capture Flask context into local variables
-    db = current_app.db
-    config = current_app.app_config.__dict__.copy()
+    db = get_db()
+    config = get_app_config().__dict__.copy()
     language = str(get_locale()) if get_locale() else 'en'
-    app = current_app._get_current_object()
+    app = _get_real_app()
 
     job_id = f"report_{uuid4().hex[:8]}"
     job_manager = JobManager(db)
@@ -472,7 +490,7 @@ def generate_page_report(page_id):
         metadata={'report_type': format, 'scope': 'page', 'display_name': f'Page Report - {page.title or page.url}'}
     )
 
-    def wrapper():
+    def wrapper() -> None:
         try:
             with app.app_context(), force_locale(language):
                 generator = ReportGenerator(db, config, language=language)
@@ -491,20 +509,20 @@ def generate_page_report(page_id):
 
 
 @reports_bp.route('/generate/website/<website_id>', methods=['POST'])
-def generate_website_report(website_id):
+def generate_website_report(website_id: str) -> tuple[Response, int] | Response:
     """Generate report for entire website (background job)"""
     format = request.form.get('format', request.json.get('format', 'html') if request.is_json else 'html')
     include_ai = request.form.get('include_ai', 'true') == 'true'
 
-    website = current_app.db.get_website(website_id)
+    website = get_db().get_website(website_id)
     if not website:
         return jsonify({'success': False, 'error': 'Website not found'}), 404
 
     # Capture Flask context into local variables
-    db = current_app.db
-    config = current_app.app_config.__dict__.copy()
+    db = get_db()
+    config = get_app_config().__dict__.copy()
     language = str(get_locale()) if get_locale() else 'en'
-    app = current_app._get_current_object()
+    app = _get_real_app()
 
     job_id = f"report_{uuid4().hex[:8]}"
     job_manager = JobManager(db)
@@ -515,7 +533,7 @@ def generate_website_report(website_id):
         metadata={'report_type': format, 'scope': 'website', 'display_name': f'Website Report - {website.name}'}
     )
 
-    def wrapper():
+    def wrapper() -> None:
         try:
             with app.app_context(), force_locale(language):
                 generator = ReportGenerator(db, config, language=language)
@@ -534,19 +552,19 @@ def generate_website_report(website_id):
 
 
 @reports_bp.route('/generate/project/<project_id>', methods=['POST'])
-def generate_project_report(project_id):
+def generate_project_report(project_id: str) -> tuple[Response, int] | Response:
     """Generate report for entire project (background job)"""
     format = request.form.get('format', request.json.get('format', 'html') if request.is_json else 'html')
 
-    project = current_app.db.get_project(project_id)
+    project = get_db().get_project(project_id)
     if not project:
         return jsonify({'success': False, 'error': 'Project not found'}), 404
 
     # Capture Flask context into local variables
-    db = current_app.db
-    config = current_app.app_config.__dict__.copy()
+    db = get_db()
+    config = get_app_config().__dict__.copy()
     language = str(get_locale()) if get_locale() else 'en'
-    app = current_app._get_current_object()
+    app = _get_real_app()
 
     job_id = f"report_{uuid4().hex[:8]}"
     job_manager = JobManager(db)
@@ -557,7 +575,7 @@ def generate_project_report(project_id):
         metadata={'report_type': format, 'scope': 'project', 'display_name': f'Project Report - {project.name}'}
     )
 
-    def wrapper():
+    def wrapper() -> None:
         try:
             with app.app_context(), force_locale(language):
                 generator = ReportGenerator(db, config, language=language)
@@ -576,27 +594,27 @@ def generate_project_report(project_id):
 
 
 @reports_bp.route('/generate/page-structure/<website_id>', methods=['POST'])
-def generate_page_structure_report_download(website_id):
+def generate_page_structure_report_download(website_id: str) -> tuple[Response, int] | Response:
     """Generate site structure tree report for website (background job)"""
     format = request.form.get('format', request.json.get('format', 'html') if request.is_json else 'html')
 
     # Validate inputs in route handler
-    website = current_app.db.get_website(website_id)
+    website = get_db().get_website(website_id)
     if not website:
         return jsonify({'error': 'Website not found'}), 404
 
     project = None
     if website.project_id:
-        project = current_app.db.get_project(website.project_id)
+        project = get_db().get_project(website.project_id)
 
-    pages = current_app.db.get_pages(website_id)
+    pages = get_db().get_pages(website_id)
     if not pages:
         return jsonify({'error': 'No pages found for website'}), 404
 
     # Capture Flask context into local variables
-    db = current_app.db
+    db = get_db()
     language = session.get('language', 'en')
-    app = current_app._get_current_object()
+    app = _get_real_app()
 
     job_id = f"report_{uuid4().hex[:8]}"
     job_manager = JobManager(db)
@@ -607,10 +625,10 @@ def generate_page_structure_report_download(website_id):
         metadata={'report_type': format, 'scope': 'page_structure', 'display_name': f'Page Structure - {website.name}'}
     )
 
-    def wrapper():
+    def wrapper() -> None:
         try:
             with app.app_context(), force_locale(language):
-                def generate_and_save(progress_callback=None):
+                def generate_and_save(progress_callback: Callable[..., Any] | None = None) -> Any:
                     report = PageStructureReport(db, website, pages, project, language=language)
                     report.generate(progress_callback=progress_callback)
                     return report.save(format)
@@ -628,7 +646,7 @@ def generate_page_structure_report_download(website_id):
 
 
 @reports_bp.route('/generate/page-structure', methods=['POST'])
-def generate_page_structure_report():
+def generate_page_structure_report() -> tuple[Response, int] | Response:
     """Generate site structure tree report (background job)"""
     # Accept both JSON and form data
     if request.is_json:
@@ -640,22 +658,22 @@ def generate_page_structure_report():
         format = request.form.get('format', 'html')
 
     # Validate inputs in route handler
-    website = current_app.db.get_website(website_id)
+    website = get_db().get_website(website_id)
     if not website:
         return jsonify({'success': False, 'error': 'Website not found'}), 404
 
     project = None
     if website.project_id:
-        project = current_app.db.get_project(website.project_id)
+        project = get_db().get_project(website.project_id)
 
-    pages = current_app.db.get_pages(website_id)
+    pages = get_db().get_pages(website_id)
     if not pages:
         return jsonify({'success': False, 'error': 'No pages found for website'}), 404
 
     # Capture Flask context into local variables
-    db = current_app.db
+    db = get_db()
     language = session.get('language', 'en')
-    app = current_app._get_current_object()
+    app = _get_real_app()
 
     job_id = f"report_{uuid4().hex[:8]}"
     job_manager = JobManager(db)
@@ -666,10 +684,10 @@ def generate_page_structure_report():
         metadata={'report_type': format, 'scope': 'page_structure', 'display_name': f'Page Structure - {website.name}'}
     )
 
-    def wrapper():
+    def wrapper() -> None:
         try:
             with app.app_context(), force_locale(language):
-                def generate_and_save(progress_callback=None):
+                def generate_and_save(progress_callback: Callable[..., Any] | None = None) -> Any:
                     report = PageStructureReport(db, website, pages, project, language=language)
                     report.generate(progress_callback=progress_callback)
                     return report.save(format)
@@ -687,19 +705,19 @@ def generate_page_structure_report():
 
 
 @reports_bp.route('/generate/discovery/website/<website_id>', methods=['POST'])
-def generate_discovery_website_report(website_id):
+def generate_discovery_website_report(website_id: str) -> tuple[Response, int] | Response:
     """Generate discovery report for a website (background job)"""
     format = request.form.get('format', request.json.get('format', 'html') if request.is_json else 'html')
 
-    website = current_app.db.get_website(website_id)
+    website = get_db().get_website(website_id)
     if not website:
         return jsonify({'success': False, 'error': 'Website not found'}), 404
 
     # Capture Flask context into local variables
-    db = current_app.db
-    config = current_app.app_config.__dict__.copy()
+    db = get_db()
+    config = get_app_config().__dict__.copy()
     language = session.get('language', 'en')
-    app = current_app._get_current_object()
+    app = _get_real_app()
 
     job_id = f"report_{uuid4().hex[:8]}"
     job_manager = JobManager(db)
@@ -710,7 +728,7 @@ def generate_discovery_website_report(website_id):
         metadata={'report_type': format, 'scope': 'discovery_website', 'display_name': f'Discovery Report - {website.name}'}
     )
 
-    def wrapper():
+    def wrapper() -> None:
         try:
             with app.app_context(), force_locale(language):
                 generator = DiscoveryReportGenerator(db, config, language=language)
@@ -729,19 +747,19 @@ def generate_discovery_website_report(website_id):
 
 
 @reports_bp.route('/generate/discovery/project/<project_id>', methods=['POST'])
-def generate_discovery_project_report(project_id):
+def generate_discovery_project_report(project_id: str) -> tuple[Response, int] | Response:
     """Generate discovery report for an entire project (background job)"""
     format = request.form.get('format', request.json.get('format', 'html') if request.is_json else 'html')
 
-    project = current_app.db.get_project(project_id)
+    project = get_db().get_project(project_id)
     if not project:
         return jsonify({'success': False, 'error': 'Project not found'}), 404
 
     # Capture Flask context into local variables
-    db = current_app.db
-    config = current_app.app_config.__dict__.copy()
+    db = get_db()
+    config = get_app_config().__dict__.copy()
     language = session.get('language', 'en')
-    app = current_app._get_current_object()
+    app = _get_real_app()
 
     job_id = f"report_{uuid4().hex[:8]}"
     job_manager = JobManager(db)
@@ -752,7 +770,7 @@ def generate_discovery_project_report(project_id):
         metadata={'report_type': format, 'scope': 'discovery_project', 'display_name': f'Discovery Report - {project.name}'}
     )
 
-    def wrapper():
+    def wrapper() -> None:
         try:
             with app.app_context(), force_locale(language):
                 generator = DiscoveryReportGenerator(db, config, language=language)
@@ -770,7 +788,7 @@ def generate_discovery_project_report(project_id):
     return jsonify({'success': True, 'job_id': job_id})
 
 @reports_bp.route('/generate/static-html', methods=['POST'])
-def generate_static_html_report():
+def generate_static_html_report() -> tuple[Response, int] | Response:
     """Generate static HTML report (background job)"""
     # Get data from form submission
     project_id = request.form.get('project_id')
@@ -787,47 +805,53 @@ def generate_static_html_report():
     display_name = 'Static HTML Report'
 
     if project_id:
-        project = current_app.db.get_project(project_id)
+        project = get_db().get_project(project_id)
         if not project:
             return jsonify({'error': 'Project not found'}), 404
 
         project_name = project.name
         display_name = f'Static HTML Report - {project.name}'
-        websites = current_app.db.get_websites(project_id)
+        websites = get_db().get_websites(project_id)
 
         for website in websites:
-            pages = current_app.db.get_pages(website.id)
+            if not website.id:
+                continue
+            pages = get_db().get_pages(website.id)
             page_ids.extend([str(p.id) for p in pages if p.status == PageStatus.TESTED])
             if not website_url and website.url:
                 website_url = website.url
 
     elif website_id:
-        website = current_app.db.get_website(website_id)
-        if not website:
+        ws = get_db().get_website(website_id)
+        if not ws:
             return jsonify({'error': 'Website not found'}), 404
 
-        if website.project_id:
-            project = current_app.db.get_project(website.project_id)
+        if ws.project_id:
+            project = get_db().get_project(ws.project_id)
             if project:
-                project_name = f"{project.name} - {website.name}"
+                project_name = f"{project.name} - {ws.name}"
             else:
-                project_name = website.name
+                project_name = ws.name or 'Unknown'
         else:
-            project_name = website.name
+            project_name = ws.name or 'Unknown'
 
         display_name = f'Static HTML Report - {project_name}'
-        website_url = website.url
-        pages = current_app.db.get_pages(website_id)
+        website_url = ws.url
+        pages = get_db().get_pages(website_id)
         page_ids = [str(p.id) for p in pages if p.status == PageStatus.TESTED]
     else:
-        projects = current_app.db.get_projects()
+        projects = get_db().get_projects()
         project_name = "All Projects Accessibility Report"
         display_name = 'Static HTML Report - All Projects'
 
         for project in projects:
-            websites = current_app.db.get_websites(project.id)
+            if not project.id:
+                continue
+            websites = get_db().get_websites(project.id)
             for website in websites:
-                pages = current_app.db.get_pages(website.id)
+                if not website.id:
+                    continue
+                pages = get_db().get_pages(website.id)
                 page_ids.extend([str(p.id) for p in pages if p.status == PageStatus.TESTED])
 
     if not page_ids:
@@ -835,7 +859,7 @@ def generate_static_html_report():
 
     # Get touchpoints from first page's test result
     if page_ids:
-        first_result = current_app.db.get_latest_test_result(page_ids[0])
+        first_result = get_db().get_latest_test_result(page_ids[0])
         if first_result and first_result.violations:
             touchpoints_set = set()
             for violation in first_result.violations:
@@ -844,10 +868,10 @@ def generate_static_html_report():
             touchpoints_tested = sorted(list(touchpoints_set))
 
     # Capture Flask context into local variables
-    db = current_app.db
+    db = get_db()
     language = session.get('language', 'en')
-    output_dir = current_app.app_config.REPORTS_DIR
-    app = current_app._get_current_object()
+    output_dir = get_app_config().REPORTS_DIR
+    app = _get_real_app()
 
     job_id = f"report_{uuid4().hex[:8]}"
     job_manager = JobManager(db)
@@ -859,11 +883,11 @@ def generate_static_html_report():
         metadata={'report_type': 'static_html', 'scope': 'static_html', 'display_name': display_name}
     )
 
-    def wrapper():
+    def wrapper() -> None:
         try:
             with app.app_context(), force_locale(language):
                 generator = StaticHTMLReportGenerator(db, output_dir=output_dir, language=language)
-                def generate_static(progress_callback=None):
+                def generate_static(progress_callback: Callable[..., Any] | None = None) -> Any:
                     return generator.generate_report(
                         page_ids=page_ids,
                         project_name=project_name,
@@ -889,7 +913,7 @@ def generate_static_html_report():
 
 
 @reports_bp.route('/generate/deduplicated', methods=['POST'])
-def generate_deduplicated_report():
+def generate_deduplicated_report() -> Response:
     """Generate deduplicated offline HTML report (background job)"""
     project_id = request.form.get('project_id')
     website_id = request.form.get('website_id')
@@ -897,19 +921,19 @@ def generate_deduplicated_report():
     # Build display name
     display_name = 'Deduplicated Report'
     if project_id:
-        project = current_app.db.get_project(project_id)
+        project = get_db().get_project(project_id)
         if project:
             display_name = f'Deduplicated Report - {project.name}'
     if website_id:
-        website = current_app.db.get_website(website_id)
+        website = get_db().get_website(website_id)
         if website:
             display_name = f'Deduplicated Report - {website.name}'
 
     # Capture Flask context into local variables
-    db = current_app.db
+    db = get_db()
     language = session.get('language', 'en')
-    output_dir = current_app.app_config.REPORTS_DIR
-    app = current_app._get_current_object()
+    output_dir = get_app_config().REPORTS_DIR
+    app = _get_real_app()
 
     job_id = f"report_{uuid4().hex[:8]}"
     job_manager = JobManager(db)
@@ -921,11 +945,11 @@ def generate_deduplicated_report():
         metadata={'report_type': 'deduplicated', 'scope': 'deduplicated', 'display_name': display_name}
     )
 
-    def wrapper():
+    def wrapper() -> None:
         try:
             with app.app_context(), force_locale(language):
                 generator = StaticHTMLReportGenerator(db, output_dir=output_dir, language=language)
-                def generate_dedup(progress_callback=None):
+                def generate_dedup(progress_callback: Callable[..., Any] | None = None) -> Any:
                     return generator.generate_project_deduplicated_report(
                         project_id=project_id,
                         website_id=website_id if website_id else None,
@@ -945,7 +969,7 @@ def generate_deduplicated_report():
 
 
 @reports_bp.route('/generate/recordings/<project_id>', methods=['POST'])
-def generate_recordings_report(project_id):
+def generate_recordings_report(project_id: str) -> tuple[Response, int] | Response:
     """Generate report for recordings in a project (background job)"""
     format = request.form.get('format', request.json.get('format', 'html') if request.is_json else 'html')
     include_summary = request.form.get('include_summary', 'true') in ['true', 'True', '1', 'on']
@@ -954,11 +978,11 @@ def generate_recordings_report(project_id):
     group_by_touchpoint = request.form.get('group_by_touchpoint', 'true') in ['true', 'True', '1', 'on']
 
     # Validate in route handler
-    project = current_app.db.get_project(project_id)
+    project = get_db().get_project(project_id)
     if not project:
         return jsonify({'success': False, 'error': 'Project not found'}), 404
 
-    recordings = current_app.db.get_recordings(project_id=project_id)
+    recordings = get_db().get_recordings(project_id=project_id)
     if not recordings:
         return jsonify({
             'success': False,
@@ -968,10 +992,10 @@ def generate_recordings_report(project_id):
         }), 200
 
     # Capture Flask context into local variables
-    db = current_app.db
-    config = current_app.app_config.__dict__.copy()
+    db = get_db()
+    config = get_app_config().__dict__.copy()
     language = session.get('language', 'en')
-    app = current_app._get_current_object()
+    app = _get_real_app()
 
     job_id = f"report_{uuid4().hex[:8]}"
     job_manager = JobManager(db)
@@ -982,7 +1006,7 @@ def generate_recordings_report(project_id):
         metadata={'report_type': format, 'scope': 'recordings', 'display_name': f'Recordings Report - {project.name}'}
     )
 
-    def wrapper():
+    def wrapper() -> None:
         try:
             with app.app_context(), force_locale(language):
                 from auto_a11y.reporting.recordings_report import RecordingsReportGenerator

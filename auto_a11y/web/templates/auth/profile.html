@@ -3,14 +3,15 @@
 {% block title %}{{ ftl('common-profile') }} - {{ ftl('common-auto-a11y') }}{% endblock %}
 
 {% block content %}
+<h1>{{ ftl('common-profile') }}</h1>
 <div class="row">
     <div class="col-md-6">
         <div class="card shadow mb-4">
-            <div class="card-header bg-primary text-white">
-                <h2 class="mb-0"><i class="bi bi-person-circle" aria-hidden="true"></i> {{ ftl('common-profile') }}</h2>
+            <div class="card-header bg-brand text-inverse">
+                <h2 class="mb-0" id="profile-heading"><i class="bi bi-person-circle" aria-hidden="true"></i> {{ ftl('common-profile') }}</h2>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('auth.profile') }}">
+                <form method="POST" action="{{ url_for('auth.profile') }}" aria-labelledby="profile-heading">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <input type="hidden" name="action" value="update_profile">
                     <fieldset>
@@ -25,15 +26,15 @@
                         </div>
                         {% if is_superadmin %}
                         <div class="mb-3">
-                            <label class="form-label">{{ ftl('common-status') }}</label>
-                            <input type="text" class="form-control" value="{{ ftl('common-superadmin') }}" disabled>
+                            <label for="profile_status" class="form-label">{{ ftl('common-status') }}</label>
+                            <input type="text" class="form-control" id="profile_status" value="{{ ftl('common-superadmin') }}" disabled>
                         </div>
                         {% endif %}
                         <div class="mb-3">
-                            <label class="form-label">{{ ftl('auth-member-since') }}</label>
-                            <input type="text" class="form-control" value="{{ current_user.created_at.strftime('%Y-%m-%d') }}" disabled>
+                            <label for="profile_member_since" class="form-label">{{ ftl('auth-member-since') }}</label>
+                            <input type="text" class="form-control" id="profile_member_since" value="{{ current_user.created_at.strftime('%Y-%m-%d') }}" disabled>
                         </div>
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn btn-brand">
                             <i class="bi bi-check-lg" aria-hidden="true"></i> {{ ftl('common-save-changes') }}
                         </button>
                     </fieldset>
@@ -44,26 +45,27 @@
     
     <div class="col-md-6">
         <div class="card shadow">
-            <div class="card-header bg-warning text-dark">
-                <h2 class="mb-0"><i class="bi bi-key" aria-hidden="true"></i> {{ ftl('auth-change-password') }}</h2>
+            <div class="card-header card-header-medium">
+                <h2 class="mb-0" id="change-password-heading"><i class="bi bi-key" aria-hidden="true"></i> {{ ftl('auth-change-password') }}</h2>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('auth.profile') }}">
+                <form method="POST" action="{{ url_for('auth.profile') }}" aria-labelledby="change-password-heading">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <input type="hidden" name="action" value="change_password">
+                    <p class="form-text mb-3"><span class="text-severity-high" aria-hidden="true">*</span> {{ ftl('common-required-field') }}</p>
                     <fieldset>
                         <legend class="visually-hidden">{{ ftl('auth-change-password') }}</legend>
                         <div class="mb-3">
-                            <label for="current_password" class="form-label">{{ ftl('auth-current-password') }}</label>
+                            <label for="current_password" class="form-label">{{ ftl('auth-current-password') }} <span class="text-severity-high" aria-hidden="true">*</span><span class="visually-hidden">{{ ftl('common-required') }}</span></label>
                             <input type="password" class="form-control" id="current_password" name="current_password" required autocomplete="current-password">
                         </div>
                         <div class="mb-3">
-                            <label for="new_password" class="form-label">{{ ftl('auth-new-password') }}</label>
+                            <label for="new_password" class="form-label">{{ ftl('auth-new-password') }} <span class="text-severity-high" aria-hidden="true">*</span><span class="visually-hidden">{{ ftl('common-required') }}</span></label>
                             <input type="password" class="form-control" id="new_password" name="new_password" required minlength="8" autocomplete="new-password" aria-describedby="new_password_help">
                             <div class="form-text" id="new_password_help">{{ ftl('auth-minimum-8-characters') }}</div>
                         </div>
                         <div class="mb-3">
-                            <label for="confirm_password" class="form-label">{{ ftl('auth-confirm-new-password') }}</label>
+                            <label for="confirm_password" class="form-label">{{ ftl('auth-confirm-new-password') }} <span class="text-severity-high" aria-hidden="true">*</span><span class="visually-hidden">{{ ftl('common-required') }}</span></label>
                             <input type="password" class="form-control" id="confirm_password" name="confirm_password" required autocomplete="new-password">
                         </div>
                         <div class="mb-3">
@@ -71,7 +73,7 @@
                             <input type="text" class="form-control" id="password_hint" name="password_hint" value="{{ current_user.password_hint or '' }}" aria-describedby="password_hint_help">
                             <div class="form-text" id="password_hint_help">{{ ftl('auth-optional-a-hint-to-help-you-remember-your') }}</div>
                         </div>
-                        <button type="submit" class="btn btn-warning">
+                        <button type="submit" class="btn btn-medium">
                             <i class="bi bi-key" aria-hidden="true"></i> {{ ftl('auth-change-password') }}
                         </button>
                     </fieldset>

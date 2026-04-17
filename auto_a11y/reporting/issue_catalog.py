@@ -3,8 +3,9 @@ Accessibility Issue Catalog
 Generated from ISSUE_CATALOG_TEMPLATE.md
 Contains enriched descriptions for all accessibility issues
 """
+from __future__ import annotations
 
-from typing import Dict, List, Any
+from typing import Any
 from .issue_descriptions_translated import get_detailed_issue_description
 
 
@@ -12,7 +13,7 @@ class IssueCatalog:
     """Catalog of all accessibility issues with enriched descriptions"""
     
     # Issue data dictionary
-    ISSUES: Dict[str, Dict[str, Any]] = {
+    ISSUES: dict[str, dict[str, Any]] = {
         "ErrImageWithEmptyAlt": {
             "id": "ErrImageWithEmptyAlt",
             "type": "Error",
@@ -2600,7 +2601,7 @@ class IssueCatalog:
     }
     
     @classmethod
-    def get_issue(cls, issue_id: str, metadata: Dict[str, Any] = None) -> Dict[str, Any]:
+    def get_issue(cls, issue_id: str, metadata: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Get issue details by ID
         
@@ -2611,10 +2612,21 @@ class IssueCatalog:
         Returns:
             Dictionary with issue details or default if not found
         """
-        # First try to get enhanced description
+        # First try to get enhanced description. Two title patterns indicate
+        # the enhanced lookup returned only its generic fallback (no real
+        # catalog entry): the "needs documentation" sentinel, and any title
+        # of the form "Accessibility issue: <code>" (produced by the default
+        # branch of get_detailed_issue_description, sometimes with the
+        # category prefix stripped off). In those cases fall through to
+        # cls.ISSUES so a proper entry there can still be used.
         try:
             enhanced = get_detailed_issue_description(issue_id, metadata)
-            if enhanced and enhanced.get('title') != f"Issue {issue_id} needs documentation":
+            enhanced_title = enhanced.get('title', '') if enhanced else ''
+            is_enhanced_fallback = (
+                enhanced_title == f"Issue {issue_id} needs documentation"
+                or enhanced_title.startswith("Accessibility issue: ")
+            )
+            if enhanced and not is_enhanced_fallback:
                 # Convert enhanced format to catalog format
                 # description is the templated what (for instances), what_generic is for summaries
                 return {
@@ -2640,11 +2652,24 @@ class IssueCatalog:
         except Exception:
             pass  # Fall through to original catalog
         
-        # Fall back to original ISSUES dictionary
-        return cls.ISSUES.get(issue_id, cls._get_default_issue(issue_id))
+        # Fall back to original ISSUES dictionary. Stored issue IDs are
+        # prefixed with a test/touchpoint name (e.g. 'forms_WarnFoo') while
+        # ISSUES keys are unprefixed ('WarnFoo'), so if the direct lookup
+        # misses try again with the prefix stripped.
+        if issue_id in cls.ISSUES:
+            return cls.ISSUES[issue_id]
+        if '_' in issue_id and not issue_id.startswith('AI_'):
+            parts = issue_id.split('_')
+            for i, part in enumerate(parts):
+                if part.startswith(('Err', 'Warn', 'Info', 'Disco')):
+                    stripped = '_'.join(parts[i:])
+                    if stripped in cls.ISSUES:
+                        return cls.ISSUES[stripped]
+                    break
+        return cls._get_default_issue(issue_id)
     
     @classmethod
-    def _get_default_issue(cls, issue_id: str) -> Dict[str, Any]:
+    def _get_default_issue(cls, issue_id: str) -> dict[str, Any]:
         """Return default issue data when specific issue not found"""
         return {
             "id": issue_id,
@@ -2660,12 +2685,12 @@ class IssueCatalog:
         }
     
     @classmethod
-    def get_all_issues(cls) -> Dict[str, Dict[str, Any]]:
+    def get_all_issues(cls) -> dict[str, dict[str, Any]]:
         """Get all issues in the catalog"""
         return cls.ISSUES
     
     @classmethod
-    def get_issues_by_category(cls, category: str) -> List[Dict[str, Any]]:
+    def get_issues_by_category(cls, category: str) -> list[dict[str, Any]]:
         """Get all issues in a specific category"""
         return [
             issue for issue in cls.ISSUES.values()
@@ -2673,7 +2698,7 @@ class IssueCatalog:
         ]
     
     @classmethod
-    def get_issues_by_impact(cls, impact: str) -> List[Dict[str, Any]]:
+    def get_issues_by_impact(cls, impact: str) -> list[dict[str, Any]]:
         """Get all issues with a specific impact level"""
         return [
             issue for issue in cls.ISSUES.values()
@@ -2681,7 +2706,7 @@ class IssueCatalog:
         ]
     
     @classmethod
-    def get_issues_by_wcag(cls, wcag_criterion: str) -> List[Dict[str, Any]]:
+    def get_issues_by_wcag(cls, wcag_criterion: str) -> list[dict[str, Any]]:
         """Get all issues related to a specific WCAG criterion"""
         return [
             issue for issue in cls.ISSUES.values()
@@ -2689,7 +2714,7 @@ class IssueCatalog:
         ]
     
     @classmethod
-    def enrich_issue(cls, issue_dict: dict) -> dict:
+    def enrich_issue(cls, issue_dict: dict[str, Any]) -> dict[str, Any]:
         """
         Enrich a basic issue dictionary with full catalog information
         

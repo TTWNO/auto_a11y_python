@@ -17,14 +17,14 @@
 
     .matrix-table th,
     .matrix-table td {
-        border: 1px solid #dee2e6;
+        border: 1px solid var(--color-border-table);
         padding: 12px;
         text-align: center;
         min-width: 120px;
     }
 
     .matrix-table th {
-        background-color: #f8f9fa;
+        background-color: var(--color-bg-subtle);
         font-weight: 600;
         position: sticky;
         z-index: 10;
@@ -33,7 +33,7 @@
     .matrix-table th.row-header {
         position: sticky;
         left: 0;
-        background-color: #f8f9fa;
+        background-color: var(--color-bg-subtle);
         text-align: left;
         min-width: 200px;
         z-index: 11;
@@ -43,7 +43,7 @@
         left: 0;
         top: 0;
         z-index: 12;
-        background-color: #e9ecef;
+        background-color: var(--color-progress-track);
     }
 
     .matrix-cell {
@@ -53,7 +53,7 @@
     }
 
     .matrix-cell:hover {
-        background-color: #e7f3ff;
+        background-color: var(--color-info-bg);
     }
 
     .matrix-cell.enabled {
@@ -67,8 +67,8 @@
     }
 
     .matrix-cell.disabled {
-        background-color: #f8f9fa;
-        color: #6c757d;
+        background-color: var(--color-bg-subtle);
+        color: var(--color-text-muted);
     }
 
     .matrix-cell .check-icon {
@@ -83,8 +83,8 @@
     }
 
     .info-box {
-        background: #e7f3ff;
-        border-left: 4px solid #0d6efd;
+        background: var(--color-info-bg);
+        border-left: 4px solid var(--color-brand);
         padding: 15px;
         margin: 20px 0;
     }
@@ -97,8 +97,8 @@
         display: flex;
         align-items: center;
         padding: 10px;
-        background: white;
-        border: 1px solid #dee2e6;
+        background: var(--color-bg);
+        border: 1px solid var(--color-border-table);
         border-radius: 4px;
         margin-bottom: 8px;
     }
@@ -108,7 +108,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #6c757d;
+        color: var(--color-text-muted);
         cursor: grab;
         font-size: 1.2em;
     }
@@ -121,7 +121,7 @@
         width: 40px;
         text-align: center;
         font-weight: bold;
-        color: #0d6efd;
+        color: var(--color-brand);
     }
 
     .script-order-item .script-name {
@@ -139,12 +139,12 @@
     }
 
     .script-order-item:hover {
-        background-color: #f8f9fa;
+        background-color: var(--color-bg-subtle);
     }
 
     .script-order-item.drag-over {
-        background-color: #e7f3ff;
-        border-color: #0d6efd;
+        background-color: var(--color-info-bg);
+        border-color: var(--color-brand);
         transform: scale(1.02);
     }
 
@@ -177,13 +177,13 @@
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h1>
+            <h1 id="matrix-form-heading">
                 <i class="bi bi-grid-3x3" aria-hidden="true"></i> {{ ftl('common-configure-test-matrix') }}
             </h1>
             <p class="text-muted">{{ page.url }}</p>
         </div>
         <div>
-            <a href="{{ url_for('scripts.list_page_scripts', page_id=page.id) }}" class="btn btn-outline-secondary">
+            <a href="{{ url_for('scripts.list_page_scripts', page_id=page.id) }}" class="btn btn-outline-neutral">
                 <i class="bi bi-arrow-left" aria-hidden="true"></i> {{ ftl('pages-back-to-scripts') }}
             </a>
         </div>
@@ -192,7 +192,7 @@
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
-            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+            <div class="alert alert-{{ {'error': 'high', 'success': 'pass', 'warning': 'medium', 'info': 'info'}.get(category, 'info') }} alert-dismissible fade show" role="alert">
                 {{ message }}
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ ftl('common-dismiss') }}"></button>
             </div>
@@ -201,12 +201,12 @@
     {% endwith %}
 
     {% if not testable_scripts %}
-    <div class="alert alert-warning">
+    <div class="alert alert-medium">
         <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
         <strong>{{ ftl('pages-no-testable-scripts') }}</strong><br>
         {{ ftl('pages-this-page-has-no-enabled-scripts-with-multi-state') }}
         <div class="mt-3">
-            <a href="{{ url_for('scripts.create_page_script', page_id=page.id) }}" class="btn btn-primary">
+            <a href="{{ url_for('scripts.create_page_script', page_id=page.id) }}" class="btn btn-brand">
                 <i class="bi bi-plus-circle" aria-hidden="true"></i> {{ ftl('common-create-new-script') }}
             </a>
         </div>
@@ -230,19 +230,19 @@
 
     <!-- Preset Buttons -->
     <div class="preset-buttons">
-        <button type="button" class="btn btn-outline-primary" onclick="applyPreset('sequential')">
+        <button type="button" class="btn btn-outline-brand" onclick="applyPreset('sequential')">
             <i class="bi bi-arrow-right-circle" aria-hidden="true"></i> {{ ftl('pages-sequential-only-default') }}
         </button>
-        <button type="button" class="btn btn-outline-secondary" onclick="applyPreset('initial_final')">
+        <button type="button" class="btn btn-outline-neutral" onclick="applyPreset('initial_final')">
             <i class="bi bi-arrow-left-right" aria-hidden="true"></i> {{ ftl('pages-initial-final') }}
         </button>
-        <button type="button" class="btn btn-outline-secondary" onclick="applyPreset('all')">
+        <button type="button" class="btn btn-outline-neutral" onclick="applyPreset('all')">
             <i class="bi bi-grid-fill" aria-hidden="true"></i> {{ ftl('pages-all-combinations') }}
         </button>
-        <button type="button" class="btn btn-outline-secondary" onclick="applyPreset('none')">
+        <button type="button" class="btn btn-outline-neutral" onclick="applyPreset('none')">
             <i class="bi bi-x-circle" aria-hidden="true"></i> {{ ftl('common-clear-all') }}
         </button>
-        <button type="button" class="btn btn-success" onclick="addCombination()">
+        <button type="button" class="btn btn-pass" onclick="addCombination()">
             <i class="bi bi-plus-circle" aria-hidden="true"></i> {{ ftl('pages-add-combination') }}
         </button>
     </div>
@@ -250,9 +250,9 @@
     <!-- Combinations Table -->
     <section aria-labelledby="combinations-heading">
         <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <div class="card-header bg-brand text-inverse d-flex justify-content-between align-items-center">
                 <h2 id="combinations-heading" class="mb-0">{{ ftl('pages-test-combinations') }}</h2>
-                <span class="badge bg-light text-dark"><span id="combinations-count-header">0</span> {{ ftl('pages-combinations') }}</span>
+                <span class="badge badge-subtle"><span id="combinations-count-header">0</span> {{ ftl('pages-combinations') }}</span>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -290,8 +290,9 @@
             <div id="script-order-list">
                 {% for script_def in matrix.scripts %}
                 <div class="script-order-item" data-script-id="{{ script_def.script_id }}">
-                    <div class="drag-handle" title="{{ ftl('pages-drag-to-reorder') }}">
+                    <div class="drag-handle">
                         <i class="bi bi-grip-vertical" aria-hidden="true"></i>
+                        <span class="visually-hidden">{{ ftl('pages-drag-to-reorder') }}</span>
                     </div>
                     <div class="order-number">{{ loop.index }}</div>
                     <div class="script-name">
@@ -307,16 +308,16 @@
                         </small>
                     </div>
                     <div class="move-buttons">
-                        <button type="button" class="btn btn-sm btn-outline-secondary btn-move-up"
+                        <button type="button" class="btn btn-sm btn-outline-neutral btn-move-up"
                                 onclick="moveScript('{{ script_def.script_id }}', -1)"
                                 {% if loop.first %}disabled{% endif %}
-                                title="{{ ftl('pages-move-up') }}">
+                                aria-label="{{ ftl('pages-move-up') }}">
                             <i class="bi bi-arrow-up" aria-hidden="true"></i>
                         </button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary btn-move-down"
+                        <button type="button" class="btn btn-sm btn-outline-neutral btn-move-down"
                                 onclick="moveScript('{{ script_def.script_id }}', 1)"
                                 {% if loop.last %}disabled{% endif %}
-                                title="{{ ftl('pages-move-down') }}">
+                                aria-label="{{ ftl('pages-move-down') }}">
                             <i class="bi bi-arrow-down" aria-hidden="true"></i>
                         </button>
                     </div>
@@ -328,15 +329,15 @@
     </section>
 
     <!-- Save Form -->
-    <form method="POST" id="matrix-form">
+    <form method="POST" id="matrix-form" aria-labelledby="matrix-form-heading">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <input type="hidden" name="matrix_data" id="matrix-data-input">
         <div class="d-flex justify-content-between align-items-center">
             <div>
-                <button type="submit" class="btn btn-primary btn-lg">
+                <button type="submit" class="btn btn-brand btn-lg">
                     <i class="bi bi-save" aria-hidden="true"></i> {{ ftl('pages-save-matrix-configuration') }}
                 </button>
-                <a href="{{ url_for('scripts.list_page_scripts', page_id=page.id) }}" class="btn btn-outline-secondary btn-lg">
+                <a href="{{ url_for('scripts.list_page_scripts', page_id=page.id) }}" class="btn btn-outline-neutral btn-lg">
                     {{ ftl('common-cancel') }}
                 </a>
             </div>

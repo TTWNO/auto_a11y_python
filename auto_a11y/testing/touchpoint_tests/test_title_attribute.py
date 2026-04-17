@@ -3,8 +3,12 @@ Title Attribute touchpoint test module
 Tests for proper usage of the title attribute on HTML elements.
 """
 
-from typing import Dict, Any
+from __future__ import annotations
+
+from typing import Any
 import logging
+
+from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +29,7 @@ TEST_DOCUMENTATION = {
     ]
 }
 
-async def test_title_attribute(page) -> Dict[str, Any]:
+async def test_title_attribute(page: Page) -> dict[str, Any]:
     """
     Test proper usage of title attribute - should only be used on iframes
 
@@ -129,7 +133,7 @@ async def test_title_attribute(page) -> Dict[str, Any]:
             }
         ''')
 
-        results = {
+        results: dict[str, Any] = {
             'applicable': True,
             'errors': [],
             'warnings': [],

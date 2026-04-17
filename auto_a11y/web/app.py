@@ -1,8 +1,11 @@
 """
 Flask application factory
 """
+from __future__ import annotations
 
-from flask import Flask, render_template, jsonify, request, session, g, redirect, url_for
+from typing import Any
+
+from flask import Flask, Response, render_template, jsonify, request, session, g, url_for
 from flask_cors import CORS
 from flask_login import LoginManager, current_user, login_required
 from flask_wtf.csrf import CSRFProtect
@@ -35,17 +38,18 @@ from auto_a11y.web.routes import (
     desktop_bp
 )
 from auto_a11y.web.routes.demo import demo_bp
+from auto_a11y.web.typed_app import redirect
 
 logger = logging.getLogger(__name__)
 
 
-def create_app(config):
+def create_app(config: Any) -> Flask:
     """
     Create Flask application
-    
+
     Args:
         config: Application configuration object
-        
+
     Returns:
         Flask app instance
     """
@@ -87,11 +91,12 @@ def create_app(config):
     init_fluent(app)
 
     # Initialize database connection (needed before Flask-Login)
-    app.db = Database(config.MONGODB_URI, config.DATABASE_NAME)
+    db = Database(config.MONGODB_URI, config.DATABASE_NAME)
+    setattr(app, 'db', db)
 
     # Warn about projects without members (pre-migration)
     try:
-        empty_count = app.db.projects.count_documents({"$or": [
+        empty_count = db.projects.count_documents({"$or": [
             {"members": {"$exists": False}},
             {"members": {"$size": 0}},
         ]})
@@ -106,7 +111,7 @@ def create_app(config):
     # Run group permissions migration (idempotent)
     from auto_a11y.core.migrate_groups import run_migration
     try:
-        run_migration(app.db)
+        run_migration(db)
     except Exception as e:
         logger.error(f"Group migration failed: {e}")
 
@@ -119,15 +124,15 @@ def create_app(config):
     login_manager.login_message_category = 'warning'
 
     @login_manager.user_loader
-    def load_user(user_id):
+    def load_user(user_id: str) -> Any:
         """Load user by ID for Flask-Login"""
-        return app.db.get_app_user(user_id)
+        return db.get_app_user(user_id)
 
     # Make get_locale, config, and current_user available to all templates
     from auto_a11y.web.fluent import _get_current_locale as get_locale
 
     @app.context_processor
-    def inject_globals():
+    def inject_globals() -> dict[str, Any]:
         return dict(
             get_locale=get_locale,
             show_error_codes=config.SHOW_ERROR_CODES,
@@ -138,14 +143,14 @@ def create_app(config):
         )
     
     # Store config for access in routes
-    app.app_config = config
-    
+    setattr(app, 'app_config', config)
+
     # Initialize test configuration with database and debug mode
     from auto_a11y.config import get_test_config
-    app.test_config = get_test_config(
-        database=app.db,
+    setattr(app, 'test_config', get_test_config(
+        database=db,
         debug_mode=config.DEBUG
-    )
+    ))
     
     # Start task runner
     from auto_a11y.core.task_runner import task_runner
@@ -154,11 +159,12 @@ def create_app(config):
     # Initialize scheduler for scheduled testing
     if config.SCHEDULER_ENABLED:
         from auto_a11y.core.scheduler import SchedulerService
-        app.scheduler = SchedulerService(app.db, config)
-        app.scheduler.start()
+        scheduler = SchedulerService(db, config)
+        setattr(app, 'scheduler', scheduler)
+        scheduler.start()
         logger.info("Scheduler service started")
     else:
-        app.scheduler = None
+        setattr(app, 'scheduler', None)
         logger.info("Scheduler is disabled")
 
     # Register shutdown handler — stop task runner first (waits for
@@ -166,22 +172,23 @@ def create_app(config):
     # the scheduler.  Without this ordering the Python process tears
     # down while Playwright's Node.js driver still has open pipes,
     # causing an unhandled EPIPE crash.
-    def _graceful_shutdown():
+    def _graceful_shutdown() -> None:
         logger.info("Shutting down task runner...")
         try:
             task_runner.stop()
         except Exception as e:
             logger.warning(f"Task runner shutdown error: {e}")
 
-        if hasattr(app, 'scheduler') and app.scheduler:
+        _scheduler = getattr(app, 'scheduler', None)
+        if _scheduler:
             logger.info("Shutting down scheduler...")
-            app.scheduler.shutdown()
+            _scheduler.shutdown()
 
     atexit.register(_graceful_shutdown)
 
     # Language switching route
     @app.route('/set-language/<language>')
-    def set_language(language):
+    def set_language(language: str) -> Response:
         """Set the user's preferred language"""
         if language in ['en', 'fr']:
             session['language'] = language
@@ -223,12 +230,12 @@ def create_app(config):
         app.register_blueprint(desktop_bp)
 
         @app.before_request
-        def desktop_auto_login():
+        def desktop_auto_login() -> None:
             """In desktop mode with auth disabled, auto-login as a superadmin user."""
             if not config.AUTH_ENABLED and not current_user.is_authenticated:
                 from auto_a11y.models.app_user import AppUser, UserRole
                 from flask_login import login_user
-                desktop_user = app.db.get_app_user_by_email('desktop@auto-a11y.local')
+                desktop_user = db.get_app_user_by_email('desktop@auto-a11y.local')
                 if not desktop_user:
                     new_user = AppUser(
                         email='desktop@auto-a11y.local',
@@ -239,14 +246,14 @@ def create_app(config):
                         is_verified=True,
                         is_superadmin=True,
                     )
-                    app.db.create_app_user(new_user)
-                    desktop_user = app.db.get_app_user_by_email('desktop@auto-a11y.local')
+                    db.create_app_user(new_user)
+                    desktop_user = db.get_app_user_by_email('desktop@auto-a11y.local')
                 if desktop_user:
                     login_user(desktop_user)
 
     # Global login requirement - protect all routes except auth, static, demo, and health
     @app.before_request
-    def require_login():
+    def require_login() -> Response | None:
         """Require login for all routes except auth, static, demo, and health endpoints"""
         allowed_endpoints = [
             'auth.login', 'auth.register', 'auth.logout',
@@ -267,14 +274,17 @@ def create_app(config):
             return None
         if not current_user.is_authenticated:
             if request.is_json or request.path.startswith('/api/'):
-                return jsonify({'error': 'Authentication required'}), 401
+                resp = jsonify({'error': 'Authentication required'})
+                resp.status_code = 401
+                return resp
             return redirect(url_for('auth.login', next=request.url))
+        return None
 
     # Template context processor - make user_has_projects available in all templates
     @app.context_processor
-    def inject_user_has_projects():
+    def inject_user_has_projects() -> dict[str, bool]:
         if current_user.is_authenticated and not getattr(current_user, 'is_superadmin', False):
-            projects = app.db.get_projects_for_user(str(current_user.get_id()))
+            projects = db.get_projects_for_user(str(current_user.get_id()))
             return {'user_has_projects': len(projects) > 0}
         return {'user_has_projects': True}
 
@@ -284,7 +294,7 @@ def create_app(config):
 
     # Custom Jinja filters
     @app.template_filter('error_code_only')
-    def error_code_only(violation_id):
+    def error_code_only(violation_id: str | None) -> str | None:
         """Extract just the error code from full violation ID (e.g., 'event_handlers_WarnTabindexDefaultFocus' -> 'WarnTabindexDefaultFocus')"""
         if not violation_id or '_' not in violation_id:
             return violation_id
@@ -300,19 +310,19 @@ def create_app(config):
         return violation_id
 
     @app.template_filter('wcag_understanding_url')
-    def wcag_understanding_url(criterion):
+    def wcag_understanding_url(criterion: str) -> str:
         """Generate WCAG 2.2 Understanding URL for a criterion"""
         from auto_a11y.reporting.wcag_mapper import format_wcag_link
         return format_wcag_link(criterion, 'understanding')
 
     @app.template_filter('wcag_quickref_url')
-    def wcag_quickref_url(criterion):
+    def wcag_quickref_url(criterion: str) -> str:
         """Generate WCAG 2.2 Quick Reference URL for a criterion"""
         from auto_a11y.reporting.wcag_mapper import format_wcag_link
         return format_wcag_link(criterion, 'quickref')
 
     @app.template_filter('wcag_name')
-    def wcag_name(criterion):
+    def wcag_name(criterion: str | None) -> str | None:
         """Extract just the name from a WCAG criterion string (e.g., '2.4.8 Location (Level AAA)' -> 'Location')
 
         Returns translated name via Fluent (supports EN/FR).
@@ -345,7 +355,7 @@ def create_app(config):
         return criterion
 
     @app.template_filter('translate_issue')
-    def translate_issue(text):
+    def translate_issue(text: str | None) -> str | None:
         """Translate issue description text via Fluent.
 
         Falls back to original text if no translation is found.
@@ -358,7 +368,7 @@ def create_app(config):
 
     # Main routes
     @app.route('/')
-    def index():
+    def index() -> Response:
         """Home page - redirect to dashboard if logged in"""
         if current_user.is_authenticated:
             return redirect(url_for('dashboard'))
@@ -366,40 +376,40 @@ def create_app(config):
     
     @app.route('/dashboard')
     @login_required
-    def dashboard():
+    def dashboard() -> str | Response:
         """Main dashboard"""
         # Non-admin users only see stats for projects they are members of
         if getattr(current_user, 'is_superadmin', False):
-            user_projects = app.db.get_projects()
+            user_projects = db.get_projects()
         else:
-            user_projects = app.db.get_projects_for_user(str(current_user.get_id()))
+            user_projects = db.get_projects_for_user(str(current_user.get_id()))
 
         # If user has no project access, show welcome page
         if not user_projects and not getattr(current_user, 'is_superadmin', False):
-            return render_template('dashboard.html', stats=None, config=app.app_config,
+            return render_template('dashboard.html', stats=None, config=config,
                                    has_projects=False)
 
         # Collect project IDs to scope the stats query
-        project_ids = [p.id for p in user_projects]
+        project_ids = [p.id for p in user_projects if p.id is not None]
 
         # Get pages belonging to user's projects
         if getattr(current_user, 'is_superadmin', False):
-            pages = list(app.db.pages.find({'status': 'tested'}))
-            total_pages = app.db.pages.count_documents({})
-            tested_pages = app.db.pages.count_documents({'status': 'tested'})
+            pages = list(db.pages.find({'status': 'tested'}))
+            total_pages = db.pages.count_documents({})
+            tested_pages = db.pages.count_documents({'status': 'tested'})
         else:
             # Get website IDs for user's projects
             website_ids = []
             for pid in project_ids:
-                for w in app.db.get_websites(pid):
+                for w in db.get_websites(pid):
                     website_ids.append(w.id)
             if website_ids:
-                pages = list(app.db.pages.find({
+                pages = list(db.pages.find({
                     'website_id': {'$in': website_ids},
                     'status': 'tested'
                 }))
-                total_pages = app.db.pages.count_documents({'website_id': {'$in': website_ids}})
-                tested_pages = app.db.pages.count_documents({
+                total_pages = db.pages.count_documents({'website_id': {'$in': website_ids}})
+                tested_pages = db.pages.count_documents({
                     'website_id': {'$in': website_ids},
                     'status': 'tested'
                 })
@@ -412,7 +422,7 @@ def create_app(config):
         # Each tested page's latest result has violation_count, warning_count, etc.
         page_ids = [str(p['_id']) for p in pages]
         if page_ids:
-            pipeline = [
+            pipeline: list[dict[str, Any]] = [
                 {'$match': {'page_id': {'$in': page_ids}}},
                 {'$sort': {'test_date': -1}},
                 {'$group': {
@@ -423,7 +433,7 @@ def create_app(config):
                     'discovery_count': {'$first': {'$ifNull': ['$discovery_count', 0]}},
                 }},
             ]
-            latest_results = list(app.db.test_results.aggregate(pipeline))
+            latest_results = list(db.test_results.aggregate(pipeline))
             total_violations = sum(r.get('violation_count', 0) for r in latest_results)
             total_warnings = sum(r.get('warning_count', 0) for r in latest_results)
             total_info = sum(r.get('info_count', 0) for r in latest_results)
@@ -443,25 +453,25 @@ def create_app(config):
             'total_info': total_info,
             'total_discovery': total_discovery,
         }
-        return render_template('dashboard.html', stats=stats, config=app.app_config,
+        return render_template('dashboard.html', stats=stats, config=config,
                                has_projects=True)
     
     @app.route('/health')
-    def health():
+    def health() -> Response:
         """Health check endpoint"""
         return jsonify({
             'status': 'healthy',
-            'database': 'connected' if app.db.client else 'disconnected'
+            'database': 'connected' if db.client else 'disconnected'
         })
     
     @app.route('/help')
-    def help():
+    def help() -> str:
         """Help and documentation page"""
         return render_template('help.html')
 
     @app.route('/screenshots/<path:filename>')
     @limiter.exempt
-    def serve_screenshot(filename):
+    def serve_screenshot(filename: str) -> Response | tuple[Response, int]:
         """Serve screenshot files"""
         from flask import send_from_directory
         from pathlib import Path
@@ -474,7 +484,7 @@ def create_app(config):
 
     # Security headers
     @app.after_request
-    def add_security_headers(response):
+    def add_security_headers(response: Response) -> Response:
         response.headers['X-Frame-Options'] = 'DENY'
         response.headers['X-Content-Type-Options'] = 'nosniff'
         response.headers['X-XSS-Protection'] = '0'
@@ -491,7 +501,7 @@ def create_app(config):
 
     # Error handlers
     @app.errorhandler(403)
-    def forbidden(error):
+    def forbidden(error: Exception) -> str | tuple[str, int] | tuple[Response, int]:
         """403 error handler"""
         if '/api/' in request.path:
             return jsonify({'error': 'Forbidden'}), 403
@@ -500,14 +510,14 @@ def create_app(config):
         return render_template('403.html'), 403
 
     @app.errorhandler(404)
-    def not_found(error):
+    def not_found(error: Exception) -> tuple[str, int] | tuple[Response, int]:
         """404 error handler"""
         if '/api/' in request.path:
             return jsonify({'error': 'Endpoint not found'}), 404
         return render_template('404.html'), 404
     
     @app.errorhandler(500)
-    def internal_error(error):
+    def internal_error(error: Exception) -> tuple[str, int] | tuple[Response, int]:
         """500 error handler"""
         logger.error(f"Internal error: {error}")
         if '/api/' in request.path:
@@ -516,7 +526,7 @@ def create_app(config):
     
     # Cleanup on shutdown
     @app.teardown_appcontext
-    def cleanup(exception=None):
+    def cleanup(exception: BaseException | None = None) -> None:
         """Cleanup resources"""
         if exception:
             logger.error(f"Request teardown with exception: {exception}")

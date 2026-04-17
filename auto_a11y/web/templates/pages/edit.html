@@ -20,13 +20,13 @@
         </ol>
     </nav>
 
-    <h1 class="mb-4">{{ ftl('pages-edit-page') }}</h1>
+    <h1 class="mb-4" id="edit-page-heading">{{ ftl('pages-edit-page') }}</h1>
 
     <div class="row">
         <div class="col-md-8">
             <div class="card">
                 <div class="card-body">
-                    <form method="POST" action="{{ url_for('pages.edit_page', page_id=page.id) }}">
+                    <form method="POST" action="{{ url_for('pages.edit_page', page_id=page.id) }}" aria-labelledby="edit-page-heading">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <fieldset>
                             <legend class="visually-hidden">{{ ftl('pages-page-details') }}</legend>
@@ -59,10 +59,10 @@
                                       placeholder="{{ ftl('pages-add-any-notes-about-this-page') }}">{{ page.notes or '' }}</textarea>
                         </div>
 
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn btn-brand">
                             <i class="bi bi-save" aria-hidden="true"></i> {{ ftl('common-save-changes') }}
                         </button>
-                        <a href="{{ url_for('pages.view_page', page_id=page.id) }}" class="btn btn-secondary">
+                        <a href="{{ url_for('pages.view_page', page_id=page.id) }}" class="btn btn-neutral">
                             {{ ftl('common-cancel') }}
                         </a>
                         </fieldset>
@@ -81,15 +81,15 @@
                         <dt class="col-sm-5">{{ ftl('common-status-2') }}</dt>
                         <dd class="col-sm-7">
                             {% if page.status.value == 'discovered' %}
-                                <span class="badge bg-secondary">{{ ftl('common-discovered') }}</span>
+                                <span class="badge badge-neutral">{{ ftl('common-discovered') }}</span>
                             {% elif page.status.value == 'testing' %}
-                                <span class="badge bg-info">{{ ftl('common-testing') }}</span>
+                                <span class="badge badge-info">{{ ftl('common-testing') }}</span>
                             {% elif page.status.value == 'tested' %}
-                                <span class="badge bg-success">{{ ftl('common-tested') }}</span>
+                                <span class="badge badge-pass">{{ ftl('common-tested') }}</span>
                             {% elif page.status.value == 'error' %}
-                                <span class="badge bg-danger">{{ ftl('common-error-2') }}</span>
+                                <span class="badge badge-high">{{ ftl('common-error-2') }}</span>
                             {% else %}
-                                <span class="badge bg-secondary">{{ ftl_enum(page.status.value) }}</span>
+                                <span class="badge badge-neutral">{{ ftl_enum(page.status.value) }}</span>
                             {% endif %}
                         </dd>
                         
@@ -101,12 +101,12 @@
 
                         <dt class="col-sm-5">{{ ftl('pages-violations') }}</dt>
                         <dd class="col-sm-7">
-                            <span class="badge bg-danger">{{ page.violation_count }}</span>
+                            <span class="badge badge-high">{{ page.violation_count }}</span>
                         </dd>
 
                         <dt class="col-sm-5">{{ ftl('pages-warnings') }}</dt>
                         <dd class="col-sm-7">
-                            <span class="badge bg-warning">{{ page.warning_count }}</span>
+                            <span class="badge badge-medium">{{ page.warning_count }}</span>
                         </dd>
                     </dl>
                 </div>

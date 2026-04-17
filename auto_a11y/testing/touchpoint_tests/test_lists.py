@@ -3,9 +3,13 @@ Lists touchpoint test module
 Evaluates the implementation and styling of HTML lists to ensure proper semantic structure.
 """
 
+from __future__ import annotations
+
 from datetime import datetime
-from typing import Dict, Any, List, Optional
+from typing import Any
 import logging
+
+from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +51,7 @@ TEST_DOCUMENTATION = {
     ]
 }
 
-async def test_lists(page) -> Dict[str, Any]:
+async def test_lists(page: Page) -> dict[str, Any]:
     """
     Test proper implementation of lists and their styling
     
@@ -59,7 +63,7 @@ async def test_lists(page) -> Dict[str, Any]:
     """
     try:
         # Execute JavaScript to analyze lists
-        results = await page.evaluate(r'''
+        results: dict[str, Any] = await page.evaluate(r'''
             () => {
                 const results = {
                     applicable: true,
@@ -124,6 +128,11 @@ async def test_lists(page) -> Dict[str, Any]:
                             return false;
                         }
 
+                        // Skip container elements with diverse block content (pages, sections, etc.)
+                        if (el.querySelector('nav, section, article, form, table, header, footer')) {
+                            return false;
+                        }
+
                         // Check for explicit list styling or bullet characters
                         if (style.display === 'list-item' ||
                             html.includes('•') || html.includes('·') || html.includes('‣') ||
@@ -138,9 +147,9 @@ async def test_lists(page) -> Dict[str, Any]:
                             let bulletCount = 0;
                             iconElements.forEach(icon => {
                                 const parent = icon.parentElement;
-                                // Skip if the icon is inside a proper list item - that's OK (just bad CSS practice)
-                                if (parent && parent.closest('li')) {
-                                    return; // Icon is in a list item, don't count it
+                                // Skip if the icon is inside a list item, nav, link, or button - not a bullet
+                                if (parent && parent.closest('li, nav, a, button')) {
+                                    return; // Icon is decorative, don't count it
                                 }
                                 // Check if icon is at start of parent and parent has text after it
                                 if (parent && parent.firstElementChild === icon && parent.textContent.trim().length > icon.textContent.trim().length) {
@@ -371,6 +380,27 @@ async def test_lists(page) -> Dict[str, Any]:
 
                     // Check for empty list items
                     items.forEach(item => {
+                        // Skip items whose role has been explicitly changed away
+                        // from the implicit 'listitem' (e.g. role="separator" on
+                        // a Bootstrap dropdown divider, role="presentation", etc.)
+                        // — such elements are no longer list items semantically
+                        // and should not be flagged as empty listitems.
+                        const explicitRole = (item.getAttribute('role') || '').trim().toLowerCase();
+                        if (explicitRole && explicitRole !== 'listitem') {
+                            return;
+                        }
+
+                        // Skip items that only contain an <hr> (visual separator)
+                        // — these are decorative dividers, not content-bearing
+                        // list items. Screen readers skip them and they serve a
+                        // clear visual grouping purpose.
+                        const onlyHr = item.children.length === 1
+                            && item.children[0].tagName === 'HR'
+                            && item.textContent.trim() === '';
+                        if (onlyHr) {
+                            return;
+                        }
+
                         const textContent = item.textContent.trim();
                         const ariaLabel = item.getAttribute('aria-label');
                         const ariaLabelledby = item.getAttribute('aria-labelledby');

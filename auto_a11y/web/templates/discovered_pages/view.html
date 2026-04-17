@@ -10,24 +10,24 @@
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="{{ url_for('projects.view_project', project_id=project.id) }}">{{ project.name }}</a></li>
-                    <li class="breadcrumb-item active">{{ ftl('pages-discovered-page') }}</li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ ftl('pages-discovered-page') }}</li>
                 </ol>
             </nav>
             <h1 class="mb-0" id="pageTitle">{{ page.title }}</h1>
         </div>
         <div>
-            <button type="button" class="btn btn-primary me-2" id="editBtn" onclick="toggleEditMode()">
+            <button type="button" class="btn btn-brand me-2" id="editBtn" onclick="toggleEditMode()">
                 <i class="bi bi-pencil" aria-hidden="true"></i> {{ ftl('common-edit') }}
             </button>
-            <button type="button" class="btn btn-success me-2" id="saveBtn" style="display: none;" onclick="savePage()">
+            <button type="button" class="btn btn-pass me-2" id="saveBtn" style="display: none;" onclick="savePage()">
                 <i class="bi bi-check-lg" aria-hidden="true"></i> {{ ftl('common-save') }}
             </button>
-            <button type="button" class="btn btn-secondary me-2" id="cancelBtn" style="display: none;" onclick="cancelEdit()">
+            <button type="button" class="btn btn-neutral me-2" id="cancelBtn" style="display: none;" onclick="cancelEdit()">
                 <i class="bi bi-x-lg" aria-hidden="true"></i> {{ ftl('common-cancel') }}
             </button>
             <form method="post" action="{{ url_for('discovered_pages.delete_discovered_page', page_id=page.id) }}"
-                  onsubmit="return confirm('{{ ftl('pages-are-you-sure-you-want-to-delete-this-discovered') }}')" class="d-inline">
-                <button type="submit" class="btn btn-outline-danger">
+                  onsubmit="return confirm('{{ ftl('pages-are-you-sure-you-want-to-delete-this-discovered') }}')" class="d-inline" aria-label="{{ ftl('common-delete') }}">
+                <button type="submit" class="btn btn-outline-high">
                     <i class="bi bi-trash" aria-hidden="true"></i> {{ ftl('common-delete') }}
                 </button>
             </form>
@@ -58,9 +58,9 @@
                                 <dt class="text-muted mb-1">{{ ftl('pages-source-type') }}</dt>
                                 <dd class="mb-0">
                                     {% if page.source_type == 'drupal_import' %}
-                                        <span class="badge bg-info">{{ ftl('pages-drupal-import') }}</span>
+                                        <span class="badge badge-info">{{ ftl('pages-drupal-import') }}</span>
                                     {% elif page.source_type == 'manual' %}
-                                        <span class="badge bg-secondary">{{ ftl('common-manual') }}</span>
+                                        <span class="badge badge-neutral">{{ ftl('common-manual') }}</span>
                                     {% else %}
                                         {{ page.source_type }}
                                     {% endif %}
@@ -70,15 +70,15 @@
                                 <dt class="text-muted mb-1">{{ ftl('common-status') }}</dt>
                                 <dd class="mb-0">
                                     {% if page.audited %}
-                                        <span class="badge bg-success">{{ ftl('common-audited') }}</span>
+                                        <span class="badge badge-pass">{{ ftl('common-audited') }}</span>
                                     {% else %}
-                                        <span class="badge bg-secondary">{{ ftl('common-not-audited') }}</span>
+                                        <span class="badge badge-neutral">{{ ftl('common-not-audited') }}</span>
                                     {% endif %}
                                     {% if page.manual_audit %}
-                                        <span class="badge bg-warning">{{ ftl('pages-manual-audit') }}</span>
+                                        <span class="badge badge-medium">{{ ftl('pages-manual-audit') }}</span>
                                     {% endif %}
                                     {% if page.include_in_report %}
-                                        <span class="badge bg-primary">{{ ftl('common-include-in-report') }}</span>
+                                        <span class="badge badge-brand">{{ ftl('common-include-in-report') }}</span>
                                     {% endif %}
                                 </dd>
                             </div>
@@ -87,13 +87,14 @@
 
                     <!-- Edit Mode -->
                     <div id="editMode" style="display: none;">
+                        <p class="form-text mb-3"><span class="text-severity-high" aria-hidden="true">*</span> {{ ftl('common-required-field') }}</p>
                         <div class="row">
                             <div class="col-12 mb-3">
-                                <label for="editTitle" class="form-label">{{ ftl('common-title') }} *</label>
+                                <label for="editTitle" class="form-label">{{ ftl('common-title') }} <span class="text-severity-high" aria-hidden="true">*</span><span class="visually-hidden">{{ ftl('common-required') }}</span></label>
                                 <input type="text" class="form-control" id="editTitle" value="{{ page.title }}" required>
                             </div>
                             <div class="col-12 mb-3">
-                                <label for="editUrl" class="form-label">{{ ftl('common-url') }} *</label>
+                                <label for="editUrl" class="form-label">{{ ftl('common-url') }} <span class="text-severity-high" aria-hidden="true">*</span><span class="visually-hidden">{{ ftl('common-required') }}</span></label>
                                 <input type="url" class="form-control" id="editUrl" value="{{ page.url }}" required>
                             </div>
                             <div class="col-12 mb-3">
@@ -136,7 +137,7 @@
                                 {% if page.interested_because %}
                                     <div class="d-flex flex-wrap gap-2">
                                         {% for reason in page.interested_because %}
-                                            <span class="badge bg-primary">{{ reason }}</span>
+                                            <span class="badge badge-brand">{{ reason }}</span>
                                         {% endfor %}
                                     </div>
                                 {% else %}
@@ -150,7 +151,7 @@
                                 {% if page.page_elements %}
                                     <div class="d-flex flex-wrap gap-2">
                                         {% for element in page.page_elements %}
-                                            <span class="badge bg-info">{{ element }}</span>
+                                            <span class="badge badge-info">{{ element }}</span>
                                         {% endfor %}
                                     </div>
                                 {% else %}
@@ -165,8 +166,9 @@
                     <div id="discoveryEditMode" style="display: none;">
                         <div class="row">
                             <div class="col-12 mb-3">
-                                <label class="form-label">{{ ftl('common-interested-because') }}</label>
                                 {% if interested_because_terms %}
+                                <fieldset>
+                                    <legend class="form-label">{{ ftl('common-interested-because') }}</legend>
                                     <div class="border-table" style="max-height: 300px; overflow-y: auto; border: 1px solid; border-radius: 0.25rem; padding: 0.5rem;">
                                         {% for term in interested_because_terms %}
                                         <div class="form-check">
@@ -183,7 +185,9 @@
                                         {% endfor %}
                                     </div>
                                     <small class="form-text text-muted">{{ ftl('pages-select-all-that-apply') }}</small>
+                                </fieldset>
                                 {% else %}
+                                    <label for="editInterestedBecause" class="form-label">{{ ftl('common-interested-because') }}</label>
                                     <input type="text" class="form-control" id="editInterestedBecause"
                                            value="{{ page.interested_because|join(', ') }}"
                                            placeholder="{{ ftl('pages-enter-comma-separated-values') }}">
@@ -191,8 +195,9 @@
                                 {% endif %}
                             </div>
                             <div class="col-12 mb-3">
-                                <label class="form-label">{{ ftl('common-page-elements') }}</label>
                                 {% if page_elements_terms %}
+                                <fieldset>
+                                    <legend class="form-label">{{ ftl('common-page-elements') }}</legend>
                                     <div class="border-table" style="border: 1px solid; border-radius: 0.25rem; padding: 0.5rem;">
                                         {% for term in page_elements_terms %}
                                         <div class="form-check">
@@ -209,7 +214,9 @@
                                         {% endfor %}
                                     </div>
                                     <small class="form-text text-muted">{{ ftl('pages-select-all-that-apply') }}</small>
+                                </fieldset>
                                 {% else %}
+                                    <label for="editPageElements" class="form-label">{{ ftl('common-page-elements') }}</label>
                                     <input type="text" class="form-control" id="editPageElements"
                                            value="{{ page.page_elements|join(', ') }}"
                                            placeholder="{{ ftl('pages-enter-comma-separated-values') }}">
@@ -303,13 +310,13 @@
                             <dt class="text-muted mb-1">{{ ftl('common-sync-status') }}</dt>
                             <dd class="mb-0">
                                 {% if page.drupal_sync_status.value == 'synced' %}
-                                    <span class="badge bg-success">{{ ftl('common-synced') }}</span>
+                                    <span class="badge badge-pass">{{ ftl('common-synced') }}</span>
                                 {% elif page.drupal_sync_status.value == 'sync_failed' %}
-                                    <span class="badge bg-danger">{{ ftl('common-failed') }}</span>
+                                    <span class="badge badge-high">{{ ftl('common-failed') }}</span>
                                 {% elif page.drupal_sync_status.value == 'pending' %}
-                                    <span class="badge bg-warning">{{ ftl('common-pending') }}</span>
+                                    <span class="badge badge-medium">{{ ftl('common-pending') }}</span>
                                 {% else %}
-                                    <span class="badge bg-secondary">{{ ftl('common-not-synced') }}</span>
+                                    <span class="badge badge-neutral">{{ ftl('common-not-synced') }}</span>
                                 {% endif %}
                             </dd>
                         </div>
@@ -327,7 +334,7 @@
                         {% endif %}
                     </dl>
                     {% if page.drupal_error_message %}
-                    <div class="alert alert-danger mb-0">
+                    <div class="alert alert-high mb-0">
                         <strong>{{ ftl('pages-sync-error') }}</strong>
                         <p class="mb-0 small">{{ page.drupal_error_message }}</p>
                     </div>

@@ -4,19 +4,20 @@ Manual Accessibility Scoring Module
 Calculates accessibility and compliance scores for manual testing recordings based on
 issues found and testing scope.
 """
+from __future__ import annotations
 
-from typing import Dict, List, Optional, Tuple
+import re
 from dataclasses import dataclass
 
-from auto_a11y.models import Recording, RecordingIssue
-from auto_a11y.wcag_parser import get_wcag_parser, get_scope_mapper
+from auto_a11y.models import Recording, RecordingIssue, ImpactLevel
+from auto_a11y.wcag_parser import get_wcag_parser, get_scope_mapper, SuccessCriterion
 
 
 @dataclass
 class ManualScores:
     """Container for manual testing scores"""
     accessibility_score: float  # 0-100, deductive based on issues
-    compliance_score: Optional[float]  # 0-100, based on applicable criteria
+    compliance_score: float | None  # 0-100, based on applicable criteria
     total_applicable_criteria: int  # Total WCAG criteria applicable based on testing scope
     failed_criteria: int  # Number of criteria with issues
     passed_criteria: int  # Assumed passed (applicable - failed)
@@ -36,7 +37,7 @@ class ManualAccessibilityScorer:
     """
 
     # Severity penalties (points deducted per issue)
-    SEVERITY_PENALTIES = {
+    SEVERITY_PENALTIES: dict[str, float] = {
         'critical': 10.0,
         'high': 5.0,
         'medium': 2.0,
@@ -44,13 +45,13 @@ class ManualAccessibilityScorer:
     }
 
     # Frequency multipliers
-    FREQUENCY_MULTIPLIERS = {
+    FREQUENCY_MULTIPLIERS: dict[str, float] = {
         'widespread': 3.0,
         'localized': 2.0,
         'isolated': 1.0
     }
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize scorer with WCAG parser and scope mapper"""
         self.wcag_parser = get_wcag_parser()
         self.scope_mapper = get_scope_mapper()
@@ -58,7 +59,7 @@ class ManualAccessibilityScorer:
     def calculate_scores(
         self,
         recording: Recording,
-        issues: List[RecordingIssue],
+        issues: list[RecordingIssue],
         target_level: str = 'AA'
     ) -> ManualScores:
         """
@@ -73,22 +74,22 @@ class ManualAccessibilityScorer:
             ManualScores object with calculated scores
         """
         # Calculate accessibility score (deductive model)
-        accessibility_score = self._calculate_accessibility_score(issues)
+        accessibility_score = self.calculate_accessibility_score(issues)
 
         # Calculate compliance score (only if testing scope is defined)
-        compliance_score = None
+        compliance_score: float | None = None
         total_applicable = 0
         failed_criteria = 0
         passed_criteria = 0
 
         if recording.testing_scope:
             compliance_score, total_applicable, failed_criteria, passed_criteria = \
-                self._calculate_compliance_score(recording.testing_scope, issues, target_level)
+                self.calculate_compliance_score(recording.testing_scope, issues, target_level)
 
         # Count issues by severity
-        high_count = sum(1 for issue in issues if self._normalize_impact(issue.impact) in ['critical', 'high'])
-        medium_count = sum(1 for issue in issues if self._normalize_impact(issue.impact) == 'medium')
-        low_count = sum(1 for issue in issues if self._normalize_impact(issue.impact) == 'low')
+        high_count = sum(1 for issue in issues if self.normalize_impact(issue.impact) in ['critical', 'high'])
+        medium_count = sum(1 for issue in issues if self.normalize_impact(issue.impact) == 'medium')
+        low_count = sum(1 for issue in issues if self.normalize_impact(issue.impact) == 'low')
 
         return ManualScores(
             accessibility_score=accessibility_score,
@@ -102,12 +103,12 @@ class ManualAccessibilityScorer:
             low_impact_issues=low_count
         )
 
-    def _calculate_accessibility_score(self, issues: List[RecordingIssue]) -> float:
+    def calculate_accessibility_score(self, issues: list[RecordingIssue]) -> float:
         """
         Calculate accessibility score using deductive model.
 
         Starts at 100 and subtracts penalties based on issue severity and frequency.
-        Formula: 100 - Σ(Severity Penalty × Frequency Multiplier)
+        Formula: 100 - SUM(Severity Penalty x Frequency Multiplier)
 
         Args:
             issues: List of issues found
@@ -119,7 +120,7 @@ class ManualAccessibilityScorer:
 
         for issue in issues:
             # Normalize impact level
-            severity = self._normalize_impact(issue.impact)
+            severity = self.normalize_impact(issue.impact)
             penalty = self.SEVERITY_PENALTIES.get(severity, self.SEVERITY_PENALTIES['medium'])
 
             # For now, assume isolated frequency
@@ -132,16 +133,16 @@ class ManualAccessibilityScorer:
         # Ensure score doesn't go below 0
         return max(0.0, score)
 
-    def _calculate_compliance_score(
+    def calculate_compliance_score(
         self,
-        testing_scope: Dict[str, bool],
-        issues: List[RecordingIssue],
+        testing_scope: dict[str, bool],
+        issues: list[RecordingIssue],
         target_level: str
-    ) -> Tuple[float, int, int, int]:
+    ) -> tuple[float | None, int, int, int]:
         """
         Calculate compliance score based on applicable WCAG criteria.
 
-        Formula: (Passed Criteria / Total Applicable Criteria) × 100
+        Formula: (Passed Criteria / Total Applicable Criteria) x 100
         Where Passed = Applicable - Failed
 
         Args:
@@ -153,7 +154,7 @@ class ManualAccessibilityScorer:
             Tuple of (compliance_score, total_applicable, failed_criteria, passed_criteria)
         """
         # Get applicable criteria based on testing scope
-        applicable_criteria = self.scope_mapper.get_applicable_criteria(
+        applicable_criteria: list[SuccessCriterion] = self.scope_mapper.get_applicable_criteria(
             testing_scope,
             target_level
         )
@@ -165,14 +166,14 @@ class ManualAccessibilityScorer:
             return None, 0, 0, 0
 
         # Determine which criteria failed based on issues
-        failed_criterion_ids = set()
+        failed_criterion_ids: set[str] = set()
 
         for issue in issues:
             # Extract WCAG criteria from issue
             if issue.wcag:
                 for wcag_ref in issue.wcag:
                     # wcag_ref.criteria is like "1.1.1" or "1.1.1 Non-text Content"
-                    criterion_num = self._extract_criterion_number(wcag_ref.criteria)
+                    criterion_num = self.extract_criterion_number(wcag_ref.criteria)
                     if criterion_num:
                         # Find the criterion in applicable criteria
                         criterion = self.wcag_parser.get_criterion_by_num(criterion_num)
@@ -187,7 +188,7 @@ class ManualAccessibilityScorer:
 
         return compliance_score, total_applicable, failed_criteria, passed_criteria
 
-    def _normalize_impact(self, impact) -> str:
+    def normalize_impact(self, impact: ImpactLevel | str | None) -> str:
         """
         Normalize impact level to standard categories.
 
@@ -201,7 +202,6 @@ class ManualAccessibilityScorer:
             return 'medium'
 
         # Handle ImpactLevel enum
-        from auto_a11y.models import ImpactLevel
         if isinstance(impact, ImpactLevel):
             impact_str = impact.value
         else:
@@ -222,7 +222,7 @@ class ManualAccessibilityScorer:
             # Default to medium if unknown
             return 'medium'
 
-    def _extract_criterion_number(self, criterion_str: str) -> Optional[str]:
+    def extract_criterion_number(self, criterion_str: str) -> str | None:
         """
         Extract criterion number from various formats.
 
@@ -240,7 +240,6 @@ class ManualAccessibilityScorer:
         if not criterion_str:
             return None
 
-        import re
         # Look for pattern like X.X.X where X is a digit
         match = re.search(r'\b(\d+\.\d+\.\d+)\b', criterion_str)
         if match:
@@ -250,8 +249,8 @@ class ManualAccessibilityScorer:
 
 
 def calculate_project_manual_scores(
-    recordings: List[Recording],
-    all_issues: Dict[str, List[RecordingIssue]],
+    recordings: list[Recording],
+    all_issues: dict[str, list[RecordingIssue]],
     target_level: str = 'AA'
 ) -> ManualScores:
     """
@@ -281,7 +280,7 @@ def calculate_project_manual_scores(
     scorer = ManualAccessibilityScorer()
 
     # Calculate scores for each recording
-    all_scores = []
+    all_scores: list[ManualScores] = []
     for recording in recordings:
         issues = all_issues.get(recording.recording_id, [])
         scores = scorer.calculate_scores(recording, issues, target_level)
@@ -292,20 +291,20 @@ def calculate_project_manual_scores(
     avg_accessibility = sum(s.accessibility_score for s in all_scores) / len(all_scores)
 
     # Compliance score: aggregate criteria
-    total_applicable_set = set()
-    failed_criteria_set = set()
+    total_applicable_set: set[str] = set()
+    failed_criteria_set: set[str] = set()
 
     for recording in recordings:
         if recording.testing_scope:
             issues = all_issues.get(recording.recording_id, [])
-            _, total_app, failed, _ = scorer._calculate_compliance_score(
+            scorer.calculate_compliance_score(
                 recording.testing_scope,
                 issues,
                 target_level
             )
 
             # Get applicable criteria for this recording
-            applicable = scorer.scope_mapper.get_applicable_criteria(
+            applicable: list[SuccessCriterion] = scorer.scope_mapper.get_applicable_criteria(
                 recording.testing_scope,
                 target_level
             )
@@ -315,7 +314,7 @@ def calculate_project_manual_scores(
             for issue in issues:
                 if issue.wcag:
                     for wcag_ref in issue.wcag:
-                        criterion_num = scorer._extract_criterion_number(wcag_ref.criteria)
+                        criterion_num = scorer.extract_criterion_number(wcag_ref.criteria)
                         if criterion_num:
                             criterion = scorer.wcag_parser.get_criterion_by_num(criterion_num)
                             if criterion:
@@ -325,7 +324,7 @@ def calculate_project_manual_scores(
     failed_criteria = len(failed_criteria_set)
     passed_criteria = total_applicable - failed_criteria
 
-    compliance_score = None
+    compliance_score: float | None = None
     if total_applicable > 0:
         compliance_score = (passed_criteria / total_applicable) * 100.0
 

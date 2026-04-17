@@ -7,6 +7,8 @@
 
 /* ===== LIGHT MODE (default) ===== */
 :root {
+    color-scheme: light;
+
     /* Brand */
     --color-brand: #1a5276;
     --color-brand-hover: #0e2f44;
@@ -44,6 +46,8 @@
 
     /* Focus & Interaction */
     --color-focus-ring: #0a58ca;
+    --color-focus-ring-shadow: rgba(10, 88, 202, 0.6);
+    --color-focus-ring-inverse: #ffffff;
     --color-button-primary-bg: #1a5276;
     --color-button-primary-text: #ffffff;
     --color-button-primary-hover: #0e2f44;
@@ -79,6 +83,9 @@
     --color-severity-medium-badge: #7d6608;
     --color-severity-low-badge: #2c3e50;
     --color-severity-pass-badge: #1e8449;
+    --color-info-badge: #0e7490;
+    --color-brand-badge: #1a5276;
+    --color-discovery-badge: #6f42c1;
 
     /* Severity gradient endpoints (for report section headers) */
     --color-severity-high-gradient-end: #c82333;
@@ -143,6 +150,7 @@
 /* ===== DARK MODE (OS preference) ===== */
 @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
+        color-scheme: dark;
         --color-brand: #5da9e9;
         --color-brand-hover: #6db3f2;
         --color-brand-subtle: #252542;
@@ -174,11 +182,17 @@
         --color-border-table: #7a7a9c;
 
         --color-focus-ring: #6db3f2;
+        --color-focus-ring-shadow: rgba(109, 179, 242, 0.6);
+        --color-focus-ring-inverse: #ffffff;
         --color-button-primary-bg: #5da9e9;
         --color-button-primary-text: #0e1525;
         --color-button-primary-hover: #6db3f2;
         --color-scrollbar-thumb: #6a6a8a;
 
+        /* Severity TEXT colours: must meet 4.5:1 on dark backgrounds
+           (#1a1a2e / #252542 / #2d2d4a). Darker crimsons/blues fail as text,
+           so we lighten them here. The corresponding -badge tokens below
+           provide darker backgrounds for white-text contexts. */
         --color-severity-high: #f28b82;
         --color-severity-high-bg: #3d1f1f;
         --color-severity-high-border: #f28b82;
@@ -201,11 +215,15 @@
         --color-score-good: #3dd9a8;
         --color-score-poor: #ff9940;
 
-        /* Badge/gradient backgrounds — darker for white text AAA contrast (7:1+) */
+        /* Badge/gradient backgrounds — darker for white text AAA contrast (6:1+).
+           Used as background behind white/inverse text in dark mode. */
         --color-severity-high-badge: #9e2c21;
         --color-severity-medium-badge: #8b6d08;
         --color-severity-low-badge: #4d4d5c;
         --color-severity-pass-badge: #1a5c32;
+        --color-info-badge: #0e5a7a;
+        --color-brand-badge: #2563a0;
+        --color-discovery-badge: #5a3580;
 
         --color-severity-high-gradient-end: #a83232;
         --color-severity-medium-gradient-end: #d4a020;
@@ -234,6 +252,7 @@
 
 /* ===== DARK MODE (manual override — always wins) ===== */
 [data-theme="dark"] {
+    color-scheme: dark;
     --color-brand: #5da9e9;
     --color-brand-hover: #6db3f2;
     --color-brand-subtle: #252542;
@@ -265,11 +284,17 @@
     --color-border-table: #7a7a9c;
 
     --color-focus-ring: #6db3f2;
+    --color-focus-ring-shadow: rgba(109, 179, 242, 0.6);
+    --color-focus-ring-inverse: #ffffff;
     --color-button-primary-bg: #5da9e9;
     --color-button-primary-text: #0e1525;
     --color-button-primary-hover: #6db3f2;
     --color-scrollbar-thumb: #6a6a8a;
 
+    /* Severity TEXT colours: must meet 4.5:1 on dark backgrounds
+       (#1a1a2e / #252542 / #2d2d4a). Darker crimsons fail as text,
+       so we lighten them here. The corresponding -badge tokens below
+       provide darker backgrounds for white-text contexts. */
     --color-severity-high: #f28b82;
     --color-severity-high-bg: #3d1f1f;
     --color-severity-high-border: #f28b82;
@@ -292,11 +317,15 @@
     --color-score-good: #3dd9a8;
     --color-score-poor: #ff9940;
 
-    /* Badge/gradient backgrounds — darker for white text AAA contrast (7:1+) */
+    /* Badge/gradient backgrounds — darker for white text AAA contrast (6:1+).
+       Used as background behind white/inverse text in dark mode. */
     --color-severity-high-badge: #9e2c21;
     --color-severity-medium-badge: #8b6d08;
     --color-severity-low-badge: #4d4d5c;
     --color-severity-pass-badge: #1a5c32;
+    --color-info-badge: #0e5a7a;
+    --color-brand-badge: #2563a0;
+    --color-discovery-badge: #5a3580;
 
     --color-severity-high-gradient-end: #a83232;
     --color-severity-medium-gradient-end: #d4a020;
@@ -383,6 +412,14 @@
 
         --color-score-good: #0e8c6a;
         --color-score-poor: #c75f00;
+
+        --color-severity-high-badge: #922b21;
+        --color-severity-medium-badge: #7d6608;
+        --color-severity-low-badge: #2c3e50;
+        --color-severity-pass-badge: #1e8449;
+        --color-info-badge: #0e7490;
+        --color-brand-badge: #1a5276;
+        --color-discovery-badge: #6f42c1;
 
         --color-severity-high-gradient-end: #c82333;
         --color-severity-medium-gradient-end: #e0a800;

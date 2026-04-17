@@ -2,9 +2,11 @@
 AppUser model for application authentication and authorization
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional, List
+from typing import Any
 from bson import ObjectId
 from enum import Enum
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -25,30 +27,30 @@ class AppUser:
     password_hash: str
     role: UserRole = UserRole.CLIENT
 
-    display_name: Optional[str] = None
+    display_name: str | None = None
     is_active: bool = True
     is_verified: bool = False
 
-    last_login: Optional[datetime] = None
+    last_login: datetime | None = None
     login_count: int = 0
     failed_login_count: int = 0
-    locked_until: Optional[datetime] = None
+    locked_until: datetime | None = None
 
-    sso_provider: Optional[str] = None   # e.g., 'microsoft'
-    sso_id: Optional[str] = None         # Microsoft object ID (oid)
+    sso_provider: str | None = None   # e.g., 'microsoft'
+    sso_id: str | None = None         # Microsoft object ID (oid)
 
     is_superadmin: bool = False
 
-    password_hint: Optional[str] = None
-    password_reset_at: Optional[datetime] = None
+    password_hint: str | None = None
+    password_reset_at: datetime | None = None
 
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
 
-    _id: Optional[ObjectId] = None
+    _id: ObjectId | None = None
 
     @property
-    def id(self) -> str:
+    def id(self) -> str | None:
         """Get user ID as string"""
         return str(self._id) if self._id else None
 
@@ -57,7 +59,7 @@ class AppUser:
         """Get display name or email"""
         return self.display_name or self.email.split('@')[0]
 
-    def get_id(self) -> str:
+    def get_id(self) -> str | None:
         """Required by Flask-Login"""
         return str(self._id) if self._id else None
 
@@ -103,7 +105,7 @@ class AppUser:
         """Check if user can manage other users"""
         return self.role == UserRole.ADMIN
 
-    def set_password(self, password: str):
+    def set_password(self, password: str) -> None:
         """Hash and set password"""
         self.password_hash = generate_password_hash(password)
 
@@ -111,7 +113,7 @@ class AppUser:
         """Verify password against hash"""
         return check_password_hash(self.password_hash, password)
 
-    def record_login(self, success: bool):
+    def record_login(self, success: bool) -> None:
         """Record a login attempt"""
         if success:
             self.last_login = datetime.now()
@@ -134,13 +136,13 @@ class AppUser:
             return True
         return False
 
-    def update_timestamp(self):
+    def update_timestamp(self) -> None:
         """Update the updated_at timestamp"""
         self.updated_at = datetime.now()
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for MongoDB"""
-        data = {
+        data: dict[str, Any] = {
             'email': self.email,
             'password_hash': self.password_hash,
             'role': self.role.value,
@@ -164,7 +166,7 @@ class AppUser:
         return data
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'AppUser':
+    def from_dict(cls, data: dict[str, Any]) -> AppUser:
         """Create from MongoDB document"""
         role = data.get('role', 'client')
         if isinstance(role, str):
@@ -192,7 +194,7 @@ class AppUser:
         )
 
     @classmethod
-    def create(cls, email: str, password: str, role: UserRole = UserRole.CLIENT, display_name: str = None) -> 'AppUser':
+    def create(cls, email: str, password: str, role: UserRole = UserRole.CLIENT, display_name: str | None = None) -> AppUser:
         """Create a new user with hashed password"""
         user = cls(
             email=email.lower(),

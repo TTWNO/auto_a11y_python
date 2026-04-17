@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 """
+from __future__ import annotations
+
+from typing import Any
+
 Test script to verify all AI tests are running and reporting correctly
 """
 
@@ -90,7 +94,7 @@ test_html = """
 </html>
 """
 
-async def test_ai_analysis():
+async def test_ai_analysis() -> None:
     print(f"\n1. API Key configured: {len(api_key)} chars")
     
     # Initialize browser for screenshot
@@ -131,7 +135,7 @@ async def test_ai_analysis():
             print(f"\n4. Total findings: {len(findings)}")
             
             # Group findings by ID
-            findings_by_id = {}
+            findings_by_id: dict[str, list[Any]] = {}
             for finding in findings:
                 issue_id = finding.id
                 if issue_id not in findings_by_id:

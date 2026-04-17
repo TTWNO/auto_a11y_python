@@ -2,9 +2,11 @@
 Recording issue model for accessibility findings from manual audits
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import List, Optional, Dict, Any
+from typing import Any
 from bson import ObjectId
 
 from auto_a11y.models.test_result import ImpactLevel
@@ -22,7 +24,7 @@ class RecordingIssue:
     # Core identification
     recording_id: str  # Link to Recording.recording_id
     title: str
-    short_title: Optional[str] = None
+    short_title: str | None = None
     language: str = "en"  # Language of this issue: "en" or "fr"
 
     # Issue details (Dictaphone format)
@@ -33,65 +35,65 @@ class RecordingIssue:
 
     # Classification
     impact: ImpactLevel = ImpactLevel.MEDIUM
-    touchpoint: Optional[str] = None  # Accessibility category
+    touchpoint: str | None = None  # Accessibility category
 
     # Timecode references
-    timecodes: List[Timecode] = field(default_factory=list)
+    timecodes: list[Timecode] = field(default_factory=lambda: [])
 
     # WCAG references
-    wcag: List[WCAGReference] = field(default_factory=list)
+    wcag: list[WCAGReference] = field(default_factory=lambda: [])
 
     # Optional technical details (if issue can be mapped to specific elements)
-    xpath: Optional[str] = None
-    element: Optional[str] = None
-    html: Optional[str] = None
+    xpath: str | None = None
+    element: str | None = None
+    html: str | None = None
 
     # Relationships
-    project_id: Optional[str] = None
+    project_id: str | None = None
 
     # Component/Section references (same as Recording model)
-    website_ids: List[str] = field(default_factory=list)  # Specific websites
-    page_urls: List[str] = field(default_factory=list)  # Specific page URLs where issue occurs
-    page_ids: List[str] = field(default_factory=list)  # Specific page IDs
-    component_names: List[str] = field(default_factory=list)  # Common components affected
-    app_screens: List[str] = field(default_factory=list)  # App screens where issue occurs
-    device_sections: List[str] = field(default_factory=list)  # Device sections affected
+    website_ids: list[str] = field(default_factory=lambda: [])  # Specific websites
+    page_urls: list[str] = field(default_factory=lambda: [])  # Specific page URLs where issue occurs
+    page_ids: list[str] = field(default_factory=lambda: [])  # Specific page IDs
+    component_names: list[str] = field(default_factory=lambda: [])  # Common components affected
+    app_screens: list[str] = field(default_factory=lambda: [])  # App screens where issue occurs
+    device_sections: list[str] = field(default_factory=lambda: [])  # Device sections affected
 
     # Task context
-    task_description: Optional[str] = None  # Task being performed when issue encountered
+    task_description: str | None = None  # Task being performed when issue encountered
 
     # Status tracking
     status: str = "open"  # open, in_progress, resolved, verified
-    assigned_to: Optional[str] = None
-    resolution_notes: Optional[str] = None
+    assigned_to: str | None = None
+    resolution_notes: str | None = None
 
     # Metadata
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
-    tags: List[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=lambda: [])
 
     # Drupal sync tracking
-    drupal_uuid: Optional[str] = None  # Drupal issue node UUID
-    drupal_nid: Optional[int] = None  # Drupal issue node ID
+    drupal_uuid: str | None = None  # Drupal issue node UUID
+    drupal_nid: int | None = None  # Drupal issue node ID
     drupal_sync_status: DrupalSyncStatus = DrupalSyncStatus.NOT_SYNCED
-    drupal_last_synced: Optional[datetime] = None
-    drupal_error_message: Optional[str] = None
+    drupal_last_synced: datetime | None = None
+    drupal_error_message: str | None = None
 
-    _id: Optional[ObjectId] = None
+    _id: ObjectId | None = None
 
     @property
-    def id(self) -> str:
+    def id(self) -> str | None:
         """Get issue ID as string"""
         return str(self._id) if self._id else None
 
     @property
-    def wcag_criteria(self) -> List[str]:
+    def wcag_criteria(self) -> list[str]:
         """Get list of WCAG criteria strings for compatibility"""
         return [w.criteria for w in self.wcag]
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for MongoDB"""
-        data = {
+        data: dict[str, Any] = {
             'recording_id': self.recording_id,
             'title': self.title,
             'short_title': self.short_title,
@@ -132,7 +134,7 @@ class RecordingIssue:
         return data
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'RecordingIssue':
+    def from_dict(cls, data: dict[str, Any]) -> RecordingIssue:
         """Create from dictionary"""
         # Handle ObjectId
         obj_id = data.get('_id')
@@ -140,7 +142,7 @@ class RecordingIssue:
         # Parse impact enum
         impact_value = data.get('impact', 'medium')
         # Map old impact levels for compatibility
-        impact_mapping = {
+        impact_mapping: dict[str, str] = {
             'critical': 'high',
             'serious': 'high',
             'moderate': 'medium',
@@ -201,11 +203,11 @@ class RecordingIssue:
     @classmethod
     def from_dictaphone_issue(
         cls,
-        issue_data: dict,
+        issue_data: dict[str, Any],
         recording_id: str,
-        project_id: Optional[str] = None,
+        project_id: str | None = None,
         language: str = 'en'
-    ) -> 'RecordingIssue':
+    ) -> RecordingIssue:
         """
         Create RecordingIssue from Dictaphone JSON issue format
 
@@ -239,7 +241,7 @@ class RecordingIssue:
 
         # Map impact
         impact_str = issue_data.get('impact', 'medium').lower()
-        impact_mapping = {
+        impact_mapping: dict[str, ImpactLevel] = {
             'low': ImpactLevel.LOW,
             'medium': ImpactLevel.MEDIUM,
             'moderate': ImpactLevel.MEDIUM,

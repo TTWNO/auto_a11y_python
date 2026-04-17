@@ -5,16 +5,18 @@ This module provides functions to format Auto A11y content as HTML
 for inclusion in Drupal body fields.
 """
 
-from typing import List, Dict, Any, Optional
+from __future__ import annotations
+
+from typing import Any
 import html
 
 
 def format_recording_body(
-    key_takeaways: List[Dict[str, Any]],
-    user_painpoints: List[Dict[str, Any]],
-    user_assertions: List[Dict[str, Any]],
-    description: Optional[str] = None,
-    auditor_info: Optional[str] = None
+    key_takeaways: list[dict[str, Any]],
+    user_painpoints: list[dict[str, Any]],
+    user_assertions: list[dict[str, Any]],
+    description: str | None = None,
+    auditor_info: str | None = None
 ) -> str:
     """
     Format recording content as HTML for Drupal audit_video body field.
@@ -29,7 +31,7 @@ def format_recording_body(
     Returns:
         HTML string formatted for Drupal body field
     """
-    parts = []
+    parts: list[str] = []
 
     # Add description if provided
     if description:
@@ -45,10 +47,10 @@ def format_recording_body(
         parts.append("<ol>\n")
         for takeaway in key_takeaways:
             topic = html.escape(takeaway.get('topic', ''))
-            description = html.escape(takeaway.get('description', ''))
+            desc = html.escape(takeaway.get('description', ''))
             parts.append(f"  <li><strong>{topic}</strong>")
-            if description:
-                parts.append(f" &ndash; {description}")
+            if desc:
+                parts.append(f" &ndash; {desc}")
             parts.append("</li>\n")
         parts.append("</ol>\n")
 
@@ -57,9 +59,9 @@ def format_recording_body(
         parts.append("<h3>User Painpoints</h3>\n")
         for painpoint in user_painpoints:
             title = html.escape(painpoint.get('title', ''))
-            user_quote = painpoint.get('user_quote', '')
-            impact = painpoint.get('impact', '')
-            timecodes = painpoint.get('timecodes', [])
+            user_quote: str = painpoint.get('user_quote', '')
+            impact: str = painpoint.get('impact', '')
+            timecodes: list[dict[str, str]] = painpoint.get('timecodes', [])
 
             # Painpoint title with impact badge
             if impact:
@@ -70,14 +72,14 @@ def format_recording_body(
 
             # User quote
             if user_quote:
-                parts.append(f"<blockquote>\n")
+                parts.append("<blockquote>\n")
                 parts.append(f"  <p><em>\"{html.escape(user_quote)}\"</em></p>\n")
-                parts.append(f"</blockquote>\n")
+                parts.append("</blockquote>\n")
 
             # Timecodes
             if timecodes:
                 parts.append("<p><strong>Timecodes:</strong> ")
-                timecode_strs = []
+                timecode_strs: list[str] = []
                 for tc in timecodes:
                     start = html.escape(tc.get('start', ''))
                     end = html.escape(tc.get('end', ''))
@@ -94,35 +96,35 @@ def format_recording_body(
         parts.append("<ol>\n")
         for assertion in user_assertions:
             assertion_text = html.escape(assertion.get('assertion', ''))
-            user_quote = assertion.get('user_quote', '')
-            context = assertion.get('context', '')
-            timecodes = assertion.get('timecodes', [])
+            a_user_quote: str = assertion.get('user_quote', '')
+            context: str = assertion.get('context', '')
+            a_timecodes: list[dict[str, str]] = assertion.get('timecodes', [])
 
-            parts.append(f"  <li>\n")
+            parts.append("  <li>\n")
             parts.append(f"    <p><strong>{assertion_text}</strong></p>\n")
 
             # User quote
-            if user_quote:
-                parts.append(f"    <blockquote>\n")
-                parts.append(f"      <p><em>\"{html.escape(user_quote)}\"</em></p>\n")
-                parts.append(f"    </blockquote>\n")
+            if a_user_quote:
+                parts.append("    <blockquote>\n")
+                parts.append(f"      <p><em>\"{html.escape(a_user_quote)}\"</em></p>\n")
+                parts.append("    </blockquote>\n")
 
             # Context
             if context:
                 parts.append(f"    <p><em>Context:</em> {html.escape(context)}</p>\n")
 
             # Timecodes
-            if timecodes:
+            if a_timecodes:
                 parts.append("    <p><strong>Timecodes:</strong> ")
-                timecode_strs = []
-                for tc in timecodes:
+                a_timecode_strs: list[str] = []
+                for tc in a_timecodes:
                     start = html.escape(tc.get('start', ''))
                     end = html.escape(tc.get('end', ''))
                     if start and end:
-                        timecode_strs.append(f"{start} &ndash; {end}")
+                        a_timecode_strs.append(f"{start} &ndash; {end}")
                     elif start:
-                        timecode_strs.append(start)
-                parts.append(", ".join(timecode_strs))
+                        a_timecode_strs.append(start)
+                parts.append(", ".join(a_timecode_strs))
                 parts.append("</p>\n")
 
             parts.append("  </li>\n")
@@ -136,7 +138,7 @@ def format_issue_body(
     why: str,
     who: str,
     how: str,
-    additional_context: Optional[str] = None
+    additional_context: str | None = None
 ) -> str:
     """
     Format issue content as HTML for Drupal issue body field.
@@ -153,7 +155,7 @@ def format_issue_body(
     Returns:
         HTML string formatted for Drupal body field
     """
-    parts = []
+    parts: list[str] = []
 
     if what:
         parts.append("<h4>What</h4>\n")
@@ -178,7 +180,7 @@ def format_issue_body(
     return "".join(parts)
 
 
-def format_timecode(timecode: Dict[str, str]) -> str:
+def format_timecode(timecode: dict[str, str]) -> str:
     """
     Format a timecode dict as a readable string.
 

@@ -55,7 +55,7 @@
     }
 
     .touchpoint-header {
-        background-color: #f8f9fa;
+        background-color: var(--color-bg-subtle);
         padding: 8px;
         margin-top: 1rem;
         margin-bottom: 0.5rem;
@@ -134,36 +134,45 @@
 
     .filter-chip {
         padding: 0.25rem 0.75rem;
-        background: white;
-        border: 1px solid #dee2e6;
+        background: var(--color-bg);
+        color: var(--color-text);
+        border: 1px solid var(--color-border-table);
         border-radius: 20px;
         cursor: pointer;
         transition: all 0.2s;
         font-size: 0.875rem;
+        font-family: inherit;
+        line-height: 1.5;
     }
 
     .filter-chip:hover {
-        background: #e9ecef;
+        background: var(--color-progress-track);
     }
 
-    .filter-chip.active {
-        background: #0d6efd;
-        color: white;
-        border-color: #0d6efd;
+    .filter-chip.active,
+    .filter-chip[aria-pressed="true"] {
+        background: var(--color-brand);
+        color: var(--color-text-inverse);
+        border-color: var(--color-brand);
+    }
+
+    .filter-chip:focus-visible {
+        outline: 2px solid var(--color-focus-ring, #0d6efd);
+        outline-offset: 2px;
     }
 
     .active-filters {
         padding: 1rem;
-        background: #e7f3ff;
+        background: var(--color-info-bg);
         border-radius: 8px;
         margin-bottom: 1rem;
     }
 
     .filter-stats {
         padding: 0.75rem;
-        background: white;
+        background: var(--color-bg);
         border-radius: 8px;
-        border: 1px solid #dee2e6;
+        border: 1px solid var(--color-border-table);
         margin-bottom: 1rem;
     }
 
@@ -200,13 +209,14 @@
     .no-issues {
         text-align: center;
         padding: 3rem;
-        color: #6c757d;
+        color: var(--color-text-muted);
     }
 
-    /* Language Switcher */
+    /* Language Switcher (sits on the gradient component-header) */
     .lang-switcher {
         display: inline-flex;
-        background: rgba(255, 255, 255, 0.2);
+        background: var(--color-bg);
+        border: 1px solid var(--color-bg);
         border-radius: 6px;
         padding: 4px;
         gap: 4px;
@@ -220,18 +230,29 @@
         border-radius: 4px;
         font-weight: 500;
         font-size: 0.875rem;
-        transition: all 0.2s;
-        color: rgba(255, 255, 255, 0.8);
+        transition: background-color 0.2s, color 0.2s;
+        color: var(--color-brand);
+        font-family: inherit;
     }
 
     .lang-switcher button:hover {
-        background: rgba(255, 255, 255, 0.3);
-        color: white;
+        background: var(--color-bg-subtle);
+        color: var(--color-brand);
     }
 
-    .lang-switcher button.active {
-        background: rgba(255, 255, 255, 0.9);
-        color: #0d6efd;
+    .lang-switcher button.active,
+    .lang-switcher button[aria-pressed="true"] {
+        background: var(--color-brand);
+        color: var(--color-text-inverse);
+    }
+
+    .lang-switcher button:focus-visible {
+        /* The container sits on the gradient component-header; an inverse (white)
+           ring surrounding the white container guarantees 3:1 contrast against
+           the gradient regardless of which colour variant is in use. */
+        outline: 2px solid var(--color-focus-ring-inverse, #ffffff);
+        outline-offset: 2px;
+        box-shadow: 0 0 0 4px var(--color-focus-ring, #0a58ca);
     }
 
     .lang-inactive {
@@ -248,20 +269,20 @@
 
     /* WCAG AA Contrast Overrides */
     .bg-info {
-        background-color: #0e7490 !important;
-        color: #ffffff !important; /* White text on dark cyan background */
+        background-color: var(--color-info) !important;
+        color: var(--color-text-inverse) !important; /* White text on dark cyan background */
     }
     .badge.bg-info {
-        background-color: #0e7490 !important;
-        color: #ffffff !important;
+        background-color: var(--color-info) !important;
+        color: var(--color-text-inverse) !important;
     }
-    .bg-warning {
-        background-color: #ffc107 !important;
-        color: #212529 !important; /* Dark text on yellow background */
+    .bg-medium {
+        background-color: var(--color-severity-medium) !important;
+        color: var(--color-text) !important; /* Dark text on yellow background */
     }
-    .badge.bg-warning {
-        background-color: #ffc107 !important;
-        color: #212529 !important;
+    .badge.bg-medium {
+        background-color: var(--color-severity-medium) !important;
+        color: var(--color-text) !important;
     }
 
     /* Severity color utility classes */
@@ -282,6 +303,16 @@
         --color-discovery-bg: #f3eefa;
         --color-text-inverse: #ffffff;
         --color-text: #212529;
+        --color-text-muted: #4a4a4a;
+        --color-bg: #ffffff;
+        --color-bg-subtle: #f4f6f7;
+        --color-brand: #1a5276;
+        --color-border-table: #dee2e6;
+        --color-progress-track: #e9ecef;
+        /* Link + focus tokens - mirror tokens.css so inline styles below resolve */
+        --color-link: #0a58ca;
+        --color-focus-ring: #0a58ca;
+        --color-focus-ring-inverse: #ffffff;
     }
     .severity-header-high {
         background: linear-gradient(135deg, var(--color-severity-high), var(--color-severity-high-gradient-end));
@@ -304,6 +335,18 @@
     .border-info-custom { border-color: var(--color-info) !important; }
     .border-discovery { border-color: var(--color-discovery) !important; }
     .text-discovery { color: var(--color-discovery) !important; }
+
+    @media (prefers-reduced-motion: reduce) {
+        * {
+            animation-duration: 0.01ms !important;
+            transition-duration: 0.01ms !important;
+        }
+    }
+
+    *:focus-visible {
+        outline: 2px solid var(--color-focus-ring, #0d6efd);
+        outline-offset: 2px;
+    }
     </style>
 </head>
 <body>
@@ -311,37 +354,38 @@
 
 {# Macro for rendering issue details #}
 {% macro render_issue_details(issue, alert_type) %}
+{% set text_class = {'high': 'text-severity-high', 'medium': 'text-severity-medium', 'info': 'text-info-custom', 'pass': 'text-severity-pass', 'brand': 'text-brand'}.get(alert_type, 'text-info-custom') %}
 <div class="alert alert-{{ alert_type }} mb-3">
-    <h4 class="alert-heading">
-        <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ issue.description_en }}</span>
-        <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ issue.description_fr }}</span>
-    </h4>
+    <h5 class="alert-heading">
+        <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ issue.description_en }}</span>
+        <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ issue.description_fr }}</span>
+    </h5>
 </div>
 
-<h4 class="text-{{ alert_type }} mb-2">
-    <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['about_this_issue'] }}</span>
-    <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['about_this_issue'] }}</span>
-</h4>
+<h5 class="{{ text_class }} mb-2">
+    <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['about_this_issue'] }}</span>
+    <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['about_this_issue'] }}</span>
+</h5>
 
 <!-- What -->
 <div class="mb-3">
     <strong>
-        <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['what_the_issue_is'] }}</span>
-        <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['what_the_issue_is'] }}</span>
+        <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['what_the_issue_is'] }}</span>
+        <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['what_the_issue_is'] }}</span>
     </strong>
-    <p data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ issue.description_en }}</p>
-    <p data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ issue.description_fr }}</p>
+    <p data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ issue.description_en }}</p>
+    <p data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ issue.description_fr }}</p>
 </div>
 
 <!-- Why -->
 {% if issue.why_en or issue.why_fr %}
 <div class="mb-3">
     <strong>
-        <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['why_this_is_important'] }}</span>
-        <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['why_this_is_important'] }}</span>
+        <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['why_this_is_important'] }}</span>
+        <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['why_this_is_important'] }}</span>
     </strong>
-    <p data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ issue.why_en }}</p>
-    <p data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ issue.why_fr }}</p>
+    <p data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ issue.why_en }}</p>
+    <p data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ issue.why_fr }}</p>
 </div>
 {% endif %}
 
@@ -349,11 +393,11 @@
 {% if issue.who_en or issue.who_fr %}
 <div class="mb-3">
     <strong>
-        <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['who_it_affects'] }}</span>
-        <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['who_it_affects'] }}</span>
+        <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['who_it_affects'] }}</span>
+        <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['who_it_affects'] }}</span>
     </strong>
-    <p data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ issue.who_en }}</p>
-    <p data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ issue.who_fr }}</p>
+    <p data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ issue.who_en }}</p>
+    <p data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ issue.who_fr }}</p>
 </div>
 {% endif %}
 
@@ -361,30 +405,30 @@
 {% if issue.full_remediation_en or issue.full_remediation_fr %}
 <div class="mb-3">
     <strong>
-        <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['how_to_remediate'] }}</span>
-        <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['how_to_remediate'] }}</span>
+        <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['how_to_remediate'] }}</span>
+        <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['how_to_remediate'] }}</span>
     </strong>
-    <div data-lang="en" class="bg-light p-3 rounded {{ 'lang-active' if language == 'en' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ issue.full_remediation_en }}</div>
-    <div data-lang="fr" class="bg-light p-3 rounded {{ 'lang-active' if language == 'fr' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ issue.full_remediation_fr }}</div>
+    <div data-lang="en" lang="en" class="bg-subtle p-3 rounded {{ 'lang-active' if language == 'en' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ issue.full_remediation_en }}</div>
+    <div data-lang="fr" lang="fr" class="bg-subtle p-3 rounded {{ 'lang-active' if language == 'fr' else 'lang-inactive' }}" style="white-space: pre-wrap; word-wrap: break-word; font-family: monospace;">{{ issue.full_remediation_fr }}</div>
 </div>
 {% endif %}
 
 <!-- WCAG Criteria -->
 {% if issue.wcag_full %}
-<h4 class="text-{{ alert_type }} mb-2 mt-4">
-    <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['relevant_test_criteria'] }}</span>
-    <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['relevant_test_criteria'] }}</span>
-</h4>
+<h5 class="{{ text_class }} mb-2 mt-4">
+    <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['relevant_test_criteria'] }}</span>
+    <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['relevant_test_criteria'] }}</span>
+</h5>
 <div class="mb-3">
     <strong>
-        <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['wcag_success_criteria'] }}</span>
-        <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['wcag_success_criteria'] }}</span>
+        <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['wcag_success_criteria'] }}</span>
+        <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['wcag_success_criteria'] }}</span>
     </strong>
     <ul>
     {% for criterion in issue.wcag_full %}
         <li>
-            <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ criterion|translate_wcag('en')|safe }}</span>
-            <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ criterion|translate_wcag('fr')|safe }}</span>
+            <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ criterion|translate_wcag('en')|safe }}</span>
+            <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ criterion|translate_wcag('fr')|safe }}</span>
         </li>
     {% endfor %}
     </ul>
@@ -399,22 +443,22 @@
         {% if issue.touchpoint %}
         <p>
             <strong>
-                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['touchpoint'] }}</span>
-                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['touchpoint'] }}</span>
+                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['touchpoint'] }}</span>
+                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['touchpoint'] }}</span>
             </strong>
-            <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get(issue.touchpoint|lower, issue.touchpoint|replace('_', ' ')|title) }}</span>
-            <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get(issue.touchpoint|lower, issue.touchpoint|replace('_', ' ')|title) }}</span>
+            <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get(issue.touchpoint|lower, issue.touchpoint|replace('_', ' ')|title) }}</span>
+            <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get(issue.touchpoint|lower, issue.touchpoint|replace('_', ' ')|title) }}</span>
         </p>
         {% endif %}
         <p>
             <strong>
-                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['impact'] }}</span>
-                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['impact'] }}</span>
+                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['impact'] }}</span>
+                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['impact'] }}</span>
             </strong>
             {% set impact_lower = issue.impact|lower %}
-            <span class="badge bg-{{ {'critical': 'danger', 'high': 'danger', 'serious': 'danger', 'moderate': 'warning', 'medium': 'warning', 'minor': 'info', 'low': 'info'}[impact_lower] or 'secondary' }} impact-badge">
-                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get(impact_lower, issue.impact|upper) }}</span>
-                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get(impact_lower, issue.impact|upper) }}</span>
+            <span class="badge badge-{{ {'critical': 'high', 'high': 'high', 'serious': 'high', 'moderate': 'medium', 'medium': 'medium', 'minor': 'info', 'low': 'info'}[impact_lower] or 'neutral' }} impact-badge">
+                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get(impact_lower, issue.impact|upper) }}</span>
+                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get(impact_lower, issue.impact|upper) }}</span>
             </span>
         </p>
     </div>
@@ -424,17 +468,17 @@
             {% for criterion in issue.wcag_full|sort %}
             <div style="margin-top: 15px; padding: 10px; background: var(--color-bg-subtle); border-left: 3px solid var(--color-link);">
                 <p style="margin: 0 0 8px 0; font-weight: bold;">
-                    <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">WCAG {{ criterion|translate_wcag('en')|safe }}</span>
-                    <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">WCAG {{ criterion|translate_wcag('fr')|safe }}</span>
+                    <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">WCAG {{ criterion|translate_wcag('en')|safe }}</span>
+                    <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">WCAG {{ criterion|translate_wcag('fr')|safe }}</span>
                 </p>
 
                 {% set criterion_code = criterion.split()[0] %}
                 <p style="margin: 0 0 5px 0;">
                     <a href="{{ criterion_code|wcag_understanding_url }}" target="_blank" rel="noopener noreferrer">
-                        <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">
+                        <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">
                             {{ translations_en['more_about'] }} {{ criterion_code }}
                         </span>
-                        <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">
+                        <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">
                             {{ translations_fr['more_about'] }} {{ criterion_code }} (en anglais)
                         </span>
                         <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
@@ -442,10 +486,10 @@
                 </p>
                 <p style="margin: 0;">
                     <a href="{{ criterion_code|wcag_quickref_url }}" target="_blank" rel="noopener noreferrer">
-                        <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">
+                        <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">
                             {{ translations_en['ways_to_meet'] }} {{ criterion_code }}
                         </span>
-                        <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">
+                        <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">
                             {{ translations_fr['ways_to_meet'] }} {{ criterion_code }} (en anglais)
                         </span>
                         <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
@@ -461,26 +505,26 @@
 <hr>
 <div class="mb-3">
     <strong>
-        <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['affected_pages'] }}</span>
-        <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['affected_pages'] }}</span>
+        <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['affected_pages'] }}</span>
+        <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['affected_pages'] }}</span>
     </strong>
     {{ issue.page_count }}
-    <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['page_s'] }}</span>
-    <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['page_s'] }}</span>
+    <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['page_s'] }}</span>
+    <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['page_s'] }}</span>
 </div>
 
 <!-- Test Users -->
 {% if issue.test_users %}
 <div class="mb-3">
     <strong>
-        <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('tested_by', 'Tested by') }}</span>
-        <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('tested_by', 'Testé par') }}</span>
+        <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('tested_by', 'Tested by') }}</span>
+        <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('tested_by', 'Testé par') }}</span>
     </strong>
     {% for user in issue.test_users %}
-    <span class="badge bg-secondary ms-1">
+    <span class="badge badge-neutral ms-1">
         <i class="bi bi-person-fill" aria-hidden="true"></i> {{ user }}
         {% if issue.user_roles %}
-        ({% for role in issue.user_roles %}<span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get(role|lower, role) }}</span><span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get(role|lower, role) }}</span>{% if not loop.last %}, {% endif %}{% endfor %})
+        ({% for role in issue.user_roles %}<span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get(role|lower, role) }}</span><span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get(role|lower, role) }}</span>{% if not loop.last %}, {% endif %}{% endfor %})
         {% endif %}
     </span>
     {% endfor %}
@@ -490,21 +534,21 @@
 <!-- Element Details -->
 {% if issue.element or issue.xpath %}
 <hr>
-<h4 class="text-{{ alert_type }} mb-2">
-    <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['element_details'] }}</span>
-    <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['element_details'] }}</span>
-</h4>
+<h5 class="{{ text_class }} mb-2">
+    <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['element_details'] }}</span>
+    <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['element_details'] }}</span>
+</h5>
 {% if issue.element %}
 <p>
     <strong>
-        <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['element'] }}</span>
-        <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['element'] }}</span>
+        <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['element'] }}</span>
+        <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['element'] }}</span>
     </strong> <code>{{ issue.element }}</code>
 </p>
 {% endif %}
 {% if issue.xpath %}
 <p><strong>{{ ftl('common-xpath') }}</strong></p>
-<div class="bg-light p-2 rounded" style="font-family: monospace; font-size: 0.875rem; overflow-x: auto;">
+<div class="bg-subtle p-2 rounded" style="font-family: monospace; font-size: 0.875rem; overflow-x: auto;">
     {{ issue.xpath }}
 </div>
 {% endif %}
@@ -521,18 +565,18 @@
      data-id="{{ issue.rule_id }}"
      data-description="{{ issue.description_en|lower if issue.description_en else issue.description|lower }}">
     <h4 class="accordion-header">
-        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#issue-{{ issue_id }}">
-            <span class="badge bg-{{ {'critical': 'danger', 'high': 'danger', 'serious': 'danger', 'moderate': 'warning', 'medium': 'warning', 'minor': 'info', 'low': 'info'}[impact_lower] or 'secondary' }} me-2 impact-badge">
-                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get(impact_lower, impact_lower|upper) }}</span>
-                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get(impact_lower, impact_lower|upper) }}</span>
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#issue-{{ issue_id }}" aria-expanded="false" aria-controls="issue-{{ issue_id }}">
+            <span class="badge badge-{{ {'critical': 'high', 'high': 'high', 'serious': 'high', 'moderate': 'medium', 'medium': 'medium', 'minor': 'info', 'low': 'info'}[impact_lower] or 'neutral' }} me-2 impact-badge">
+                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get(impact_lower, impact_lower|upper) }}</span>
+                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get(impact_lower, impact_lower|upper) }}</span>
             </span>
             {% if show_error_codes %}<code class="me-2">{{ issue.rule_id }}</code>{% endif %}
-            <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ issue.description_en }}</span>
-            <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ issue.description_fr }}</span>
-            <span class="badge bg-secondary ms-auto me-2">{{ issue.page_count }} <span data-i18n="page_s">{{ t['page_s'] }}</span></span>
+            <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ issue.description_en }}</span>
+            <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ issue.description_fr }}</span>
+            <span class="badge badge-neutral ms-auto me-2">{{ issue.page_count }} <span data-i18n="page_s">{{ t['page_s'] }}</span></span>
             {% if issue.test_users %}
             {% for user in issue.test_users %}
-            <span class="badge bg-secondary ms-1">
+            <span class="badge badge-neutral ms-1">
                 <i class="bi bi-person-fill" aria-hidden="true"></i> {{ user }}
             </span>
             {% endfor %}
@@ -553,70 +597,72 @@
 {% set info_items = issues|selectattr('type', 'equalto', 'info')|list %}
 {% set discovery_items = issues|selectattr('type', 'equalto', 'discovery')|list %}
 
-<main id="main-content" class="container py-4">
-    <!-- Component Header with Language Switcher -->
-    <div class="component-header {{ component_type|lower }}">
-        <div class="d-flex justify-content-between align-items-start mb-3">
-            <a href="../index.html" class="back-link">
-                <i class="bi bi-arrow-left" aria-hidden="true"></i> <span data-i18n="back_to_index">{{ t['back_to_index'] }}</span>
-            </a>
-            <div class="lang-switcher">
-                <button onclick="switchLanguage('en')" id="lang-en" class="{{ 'active' if language == 'en' else '' }}" lang="en" aria-label="{{ ftl('reports-switch-to-english') }}">EN</button>
-                <button onclick="switchLanguage('fr')" id="lang-fr" class="{{ 'active' if language == 'fr' else '' }}" lang="fr" aria-label="{{ ftl('reports-switch-to-french') }}">FR</button>
-            </div>
+<header role="banner" class="container py-3">
+    <div class="d-flex justify-content-between align-items-start">
+        <a href="../index.html" class="back-link">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i> <span data-i18n="back_to_index">{{ t['back_to_index'] }}</span>
+        </a>
+        <div class="lang-switcher">
+            <button onclick="switchLanguage('en')" id="lang-en" class="{{ 'active' if language == 'en' else '' }}" lang="en" aria-label="{{ ftl('reports-switch-to-english') }}" aria-pressed="{{ 'true' if language == 'en' else 'false' }}">EN</button>
+            <button onclick="switchLanguage('fr')" id="lang-fr" class="{{ 'active' if language == 'fr' else '' }}" lang="fr" aria-label="{{ ftl('reports-switch-to-french') }}" aria-pressed="{{ 'true' if language == 'fr' else 'false' }}">FR</button>
         </div>
+    </div>
+</header>
+<main id="main-content" tabindex="-1" class="container py-4">
+    <!-- Component Header -->
+    <div class="component-header {{ component_type|lower }}">
         <h1 class="mb-0"><span data-i18n="{{ component_type|lower }}">{{ t.get(component_type|lower, component_type) }}</span>: {% if component_type == 'Form' %}{{ component_label }} <span data-i18n="fields">{{ t.get('fields', 'fields') }}</span>{% else %}{{ component_label }}{% endif %} <code class="text-light opacity-75">{{ component_signature[:8] }}</code></h1>
-        <div class="component-meta">
-            <span><i class="bi bi-file-earmark" aria-hidden="true"></i> <span data-i18n="found_on">{{ t['found_on'] }}</span> {{ page_count }} <span data-i18n="page_s">{{ t['page_s'] }}</span></span>
-            <span><i class="bi bi-bug" aria-hidden="true"></i> {{ total_issues }} <span data-i18n="deduplicated_issue_s">{{ t['deduplicated_issue_s'] }}</span></span>
+        <ul class="component-meta list-unstyled mb-0" role="list">
+            <li><i class="bi bi-file-earmark" aria-hidden="true"></i> <span data-i18n="found_on">{{ t['found_on'] }}</span> {{ page_count }} <span data-i18n="page_s">{{ t['page_s'] }}</span></li>
+            <li><i class="bi bi-bug" aria-hidden="true"></i> {{ total_issues }} <span data-i18n="deduplicated_issue_s">{{ t['deduplicated_issue_s'] }}</span></li>
             {% if component_score is defined %}
-            <span><i class="bi bi-graph-up" aria-hidden="true"></i> <span data-i18n="accessibility_score">{{ t['accessibility_score'] }}</span>:
-                <strong class="{% if component_score >= 90 %}text-success{% elif component_score >= 70 %}text-warning{% else %}text-danger{% endif %}">
+            <li><i class="bi bi-graph-up" aria-hidden="true"></i> <span data-i18n="accessibility_score">{{ t['accessibility_score'] }}</span>:
+                <strong class="{% if component_score >= 90 %}text-severity-pass{% elif component_score >= 70 %}text-severity-medium{% else %}text-severity-high{% endif %}">
                     {{ "%.1f"|format(component_score) }}%
                 </strong>
-            </span>
+            </li>
             {% endif %}
-        </div>
+        </ul>
 
         <!-- Issue Breakdown in Header -->
-        <div class="issue-breakdown mt-3">
-            <div class="issue-breakdown-item">
+        <ul class="issue-breakdown mt-3 list-unstyled" role="list">
+            <li class="issue-breakdown-item">
                 <i class="bi bi-x-circle-fill" aria-hidden="true"></i>
                 <span class="count">{{ violations|length }}</span>
-                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['errors'] }}</span>
-                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['errors'] }}</span>
-            </div>
-            <div class="issue-breakdown-item">
+                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['errors'] }}</span>
+                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['errors'] }}</span>
+            </li>
+            <li class="issue-breakdown-item">
                 <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
                 <span class="count">{{ warnings|length }}</span>
-                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['warnings'] }}</span>
-                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['warnings'] }}</span>
-            </div>
-            <div class="issue-breakdown-item">
+                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['warnings'] }}</span>
+                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['warnings'] }}</span>
+            </li>
+            <li class="issue-breakdown-item">
                 <i class="bi bi-info-circle-fill" aria-hidden="true"></i>
                 <span class="count">{{ info_items|length }}</span>
-                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['info'] }}</span>
-                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['info'] }}</span>
-            </div>
+                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['info'] }}</span>
+                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['info'] }}</span>
+            </li>
             {% if discovery_items %}
-            <div class="issue-breakdown-item">
+            <li class="issue-breakdown-item">
                 <i class="bi bi-lightbulb-fill" aria-hidden="true"></i>
                 <span class="count">{{ discovery_items|length }}</span>
-                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('discovery', 'Discovery') }}</span>
-                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('discovery', 'Découverte') }}</span>
-            </div>
+                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('discovery', 'Discovery') }}</span>
+                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('discovery', 'Découverte') }}</span>
+            </li>
             {% endif %}
-        </div>
+        </ul>
 
         <!-- Component Pages List -->
         <div class="component-pages mt-3">
             <strong>
-                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('found_on', 'Found on') }}:</span>
-                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('found_on', 'Trouvé sur') }} :</span>
+                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('found_on', 'Found on') }}:</span>
+                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('found_on', 'Trouvé sur') }} :</span>
             </strong>
             {{ page_count }}
-            <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('page_s', 'page(s)') }}</span>
-            <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('page_s', 'page(s)') }}</span>
+            <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('page_s', 'page(s)') }}</span>
+            <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('page_s', 'page(s)') }}</span>
         </div>
     </div>
 
@@ -626,38 +672,38 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h2 class="mb-0">
                 <i class="bi bi-funnel" aria-hidden="true"></i>
-                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('filter_test_results', 'Filter Test Results') }}</span>
-                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('filter_test_results', 'Filtrer les résultats de test') }}</span>
+                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('filter_test_results', 'Filter Test Results') }}</span>
+                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('filter_test_results', 'Filtrer les résultats de test') }}</span>
             </h2>
-            <button class="btn btn-sm btn-outline-secondary" id="clearFilters">
+            <button class="btn btn-sm btn-outline-neutral" id="clearFilters">
                 <i class="bi bi-x-circle" aria-hidden="true"></i>
-                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('clear_all_filters', 'Clear All Filters') }}</span>
-                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('clear_all_filters', 'Effacer tous les filtres') }}</span>
+                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('clear_all_filters', 'Clear All Filters') }}</span>
+                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('clear_all_filters', 'Effacer tous les filtres') }}</span>
             </button>
         </div>
 
         <!-- Active Filters Display -->
         <div id="activeFilters" class="active-filters" style="display: none;">
             <strong>
-                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('active_filters', 'Active Filters:') }}</span>
-                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('active_filters', 'Filtres actifs :') }}</span>
+                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('active_filters', 'Active Filters:') }}</span>
+                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('active_filters', 'Filtres actifs :') }}</span>
             </strong>
             <div id="activeFilterTags"></div>
         </div>
 
         <!-- Filter Statistics -->
-        <div class="filter-stats">
+        <div class="filter-stats" role="status" aria-live="polite" aria-atomic="true">
             <strong>
-                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('showing', 'Showing:') }}</span>
-                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('showing', 'Affichage :') }}</span>
+                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('showing', 'Showing:') }}</span>
+                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('showing', 'Affichage :') }}</span>
             </strong>
             <span id="visibleCount">0</span>
-            <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('of', 'of') }}</span>
-            <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('of', 'sur') }}</span>
+            <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('of', 'of') }}</span>
+            <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('of', 'sur') }}</span>
             <span id="totalCount">0</span>
-            <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('items', 'items') }}</span>
-            <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('items', 'éléments') }}</span>
-            | <span id="filterSummary"><span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['no_filters_active'] }}</span><span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['no_filters_active'] }}</span></span>
+            <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('items', 'items') }}</span>
+            <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('items', 'éléments') }}</span>
+            | <span id="filterSummary"><span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['no_filters_active'] }}</span><span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['no_filters_active'] }}</span></span>
         </div>
 
         <!-- Filter Groups -->
@@ -665,36 +711,36 @@
             <!-- Issue Type Filter -->
             <div class="col-md-3">
                 <div class="filter-group">
-                    <label class="form-label fw-bold">
-                        <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('issue_type', 'Issue Type') }}</span>
-                        <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('issue_type', 'Type de problème') }}</span>
-                    </label>
-                    <div class="filter-chips">
+                    <span class="form-label fw-bold d-block">
+                        <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('issue_type', 'Issue Type') }}</span>
+                        <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('issue_type', 'Type de problème') }}</span>
+                    </span>
+                    <div class="filter-chips" role="group" aria-label="{{ ftl('reports-filter-by-issue-type') }}">
                         {% if violations %}
-                        <button type="button" class="filter-chip" data-filter-type="type" data-filter-value="violation">
-                            <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['errors'] }}</span>
-                            <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['errors'] }}</span>
+                        <button type="button" class="filter-chip" data-filter-type="type" data-filter-value="violation" aria-pressed="false">
+                            <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['errors'] }}</span>
+                            <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['errors'] }}</span>
                             ({{ violations|length }})
                         </button>
                         {% endif %}
                         {% if warnings %}
-                        <button type="button" class="filter-chip" data-filter-type="type" data-filter-value="warning">
-                            <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['warnings'] }}</span>
-                            <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['warnings'] }}</span>
+                        <button type="button" class="filter-chip" data-filter-type="type" data-filter-value="warning" aria-pressed="false">
+                            <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['warnings'] }}</span>
+                            <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['warnings'] }}</span>
                             ({{ warnings|length }})
                         </button>
                         {% endif %}
                         {% if info_items %}
-                        <button type="button" class="filter-chip" data-filter-type="type" data-filter-value="info">
-                            <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['info'] }}</span>
-                            <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['info'] }}</span>
+                        <button type="button" class="filter-chip" data-filter-type="type" data-filter-value="info" aria-pressed="false">
+                            <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['info'] }}</span>
+                            <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['info'] }}</span>
                             ({{ info_items|length }})
                         </button>
                         {% endif %}
                         {% if discovery_items %}
-                        <button type="button" class="filter-chip" data-filter-type="type" data-filter-value="discovery">
-                            <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('discovery', 'Discovery') }}</span>
-                            <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('discovery', 'Découverte') }}</span>
+                        <button type="button" class="filter-chip" data-filter-type="type" data-filter-value="discovery" aria-pressed="false">
+                            <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('discovery', 'Discovery') }}</span>
+                            <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('discovery', 'Découverte') }}</span>
                             ({{ discovery_items|length }})
                         </button>
                         {% endif %}
@@ -705,29 +751,29 @@
             <!-- Impact Level Filter -->
             <div class="col-md-3">
                 <div class="filter-group">
-                    <label class="form-label fw-bold">
-                        <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('impact_level', 'Impact Level') }}</span>
-                        <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('impact_level', 'Niveau d\'impact') }}</span>
-                    </label>
-                    <div class="filter-chips">
-                        <button type="button" class="filter-chip" data-filter-type="impact" data-filter-value="high">
-                            <span class="badge bg-danger me-1">
-                                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['high'] }}</span>
-                                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['high'] }}</span>
+                    <span class="form-label fw-bold d-block">
+                        <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('impact_level', 'Impact Level') }}</span>
+                        <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('impact_level', 'Niveau d\'impact') }}</span>
+                    </span>
+                    <div class="filter-chips" role="group" aria-label="{{ ftl('reports-filter-by-impact') }}">
+                        <button type="button" class="filter-chip" data-filter-type="impact" data-filter-value="high" aria-pressed="false">
+                            <span class="badge badge-high me-1">
+                                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['high'] }}</span>
+                                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['high'] }}</span>
                             </span>
                             <span id="highImpactCount">0</span>
                         </button>
-                        <button type="button" class="filter-chip" data-filter-type="impact" data-filter-value="medium">
-                            <span class="badge bg-warning text-dark me-1">
-                                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['medium'] }}</span>
-                                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['medium'] }}</span>
+                        <button type="button" class="filter-chip" data-filter-type="impact" data-filter-value="medium" aria-pressed="false">
+                            <span class="badge badge-medium me-1">
+                                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['medium'] }}</span>
+                                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['medium'] }}</span>
                             </span>
                             <span id="mediumImpactCount">0</span>
                         </button>
-                        <button type="button" class="filter-chip" data-filter-type="impact" data-filter-value="low">
-                            <span class="badge bg-info me-1">
-                                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['low'] }}</span>
-                                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['low'] }}</span>
+                        <button type="button" class="filter-chip" data-filter-type="impact" data-filter-value="low" aria-pressed="false">
+                            <span class="badge badge-info me-1">
+                                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['low'] }}</span>
+                                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['low'] }}</span>
                             </span>
                             <span id="lowImpactCount">0</span>
                         </button>
@@ -738,9 +784,9 @@
             <!-- Touchpoint Filter -->
             <div class="col-md-6">
                 <div class="filter-group">
-                    <label class="form-label fw-bold">
-                        <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('issue_touchpoint', 'Issue Touchpoint') }}</span>
-                        <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('issue_touchpoint', 'Point de contact du problème') }}</span>
+                    <label class="form-label fw-bold" for="touchpointFilter">
+                        <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('issue_touchpoint', 'Issue Touchpoint') }}</span>
+                        <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('issue_touchpoint', 'Point de contact du problème') }}</span>
                     </label>
                     <select class="form-select form-select-sm" id="touchpointFilter" multiple size="3">
                         <option value="" data-i18n-option="all_touchpoints">{{ t.get('all_touchpoints', 'All Touchpoints') }}</option>
@@ -758,6 +804,7 @@
         <!-- Quick Search -->
         <div class="row mt-3">
             <div class="col-12">
+                <label for="quickSearch" class="visually-hidden" data-i18n="search_placeholder">{{ t.get('search_placeholder', 'Search in issue descriptions, error codes...') }}</label>
                 <div class="input-group">
                     <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
                     <input type="text" class="form-control" id="quickSearch"
@@ -774,12 +821,12 @@
     <div class="card test-results-card">
         <div class="card-header">
             <h2 class="mb-0">
-                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('component_issues', 'Component Issues') }}</span>
-                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('component_issues', 'Problèmes du composant') }}</span>
+                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('component_issues', 'Component Issues') }}</span>
+                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('component_issues', 'Problèmes du composant') }}</span>
             </h2>
             <small class="text-muted">
-                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Deduplicated issues found on this component across {{ page_count }} pages</span>
-                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Problèmes dédupliqués trouvés sur ce composant sur {{ page_count }} pages</span>
+                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Deduplicated issues found on this component across {{ page_count }} pages</span>
+                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Problèmes dédupliqués trouvés sur ce composant sur {{ page_count }} pages</span>
             </small>
         </div>
         <div class="card-body">
@@ -790,13 +837,13 @@
                 <div class="section-header severity-header-high">
                     <h3 class="mb-0">
                         <i class="bi bi-x-circle-fill me-2" aria-hidden="true"></i>
-                        <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['errors'] }}</span>
-                        <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['errors'] }}</span>
-                        <span class="badge bg-light text-danger ms-2">{{ violations|length }}</span>
+                        <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['errors'] }}</span>
+                        <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['errors'] }}</span>
+                        <span class="badge badge-subtle text-severity-high ms-2">{{ violations|length }}</span>
                     </h3>
                     <small class="opacity-75">
-                        <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Issues that must be fixed for WCAG compliance</span>
-                        <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Problèmes à corriger pour la conformité WCAG</span>
+                        <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Issues that must be fixed for WCAG compliance</span>
+                        <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Problèmes à corriger pour la conformité WCAG</span>
                     </small>
                 </div>
                 <div class="section-body" style="background: var(--color-severity-high-bg);">
@@ -805,13 +852,13 @@
                     {% for touchpoint, touchpoint_violations in violations|groupby('touchpoint') %}
                         <div class="touchpoint-header mt-3 mb-2 ps-2 border-severity-high" style="border-left: 4px solid;">
                             <strong>
-                                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get(touchpoint|lower, touchpoint|replace('_', ' ')|title if touchpoint else 'General') }}</span>
-                                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get(touchpoint|lower, touchpoint|replace('_', ' ')|title if touchpoint else 'Général') }}</span>
+                                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get(touchpoint|lower, touchpoint|replace('_', ' ')|title if touchpoint else 'General') }}</span>
+                                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get(touchpoint|lower, touchpoint|replace('_', ' ')|title if touchpoint else 'Général') }}</span>
                             </strong>
                         </div>
                         {% for issue in touchpoint_violations %}
                         {% set viol_counter.value = viol_counter.value + 1 %}
-                        {{ render_issue_accordion(issue, 'viol-' ~ viol_counter.value, 'violationsAccordion', 'danger') }}
+                        {{ render_issue_accordion(issue, 'viol-' ~ viol_counter.value, 'violationsAccordion', 'high') }}
                         {% endfor %}
                     {% endfor %}
                     </div>
@@ -825,13 +872,13 @@
                 <div class="section-header severity-header-medium">
                     <h3 class="mb-0">
                         <i class="bi bi-exclamation-triangle-fill me-2" aria-hidden="true"></i>
-                        <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['warnings'] }}</span>
-                        <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['warnings'] }}</span>
-                        <span class="badge bg-dark ms-2">{{ warnings|length }}</span>
+                        <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['warnings'] }}</span>
+                        <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['warnings'] }}</span>
+                        <span class="badge bg-header ms-2">{{ warnings|length }}</span>
                     </h3>
                     <small>
-                        <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Potential issues that should be reviewed</span>
-                        <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Problèmes potentiels à examiner</span>
+                        <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Potential issues that should be reviewed</span>
+                        <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Problèmes potentiels à examiner</span>
                     </small>
                 </div>
                 <div class="section-body" style="background: var(--color-severity-medium-bg);">
@@ -840,13 +887,13 @@
                     {% for touchpoint, touchpoint_warnings in warnings|groupby('touchpoint') %}
                         <div class="touchpoint-header mt-3 mb-2 ps-2 border-severity-medium" style="border-left: 4px solid;">
                             <strong>
-                                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get(touchpoint|lower, touchpoint|replace('_', ' ')|title if touchpoint else 'General') }}</span>
-                                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get(touchpoint|lower, touchpoint|replace('_', ' ')|title if touchpoint else 'Général') }}</span>
+                                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get(touchpoint|lower, touchpoint|replace('_', ' ')|title if touchpoint else 'General') }}</span>
+                                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get(touchpoint|lower, touchpoint|replace('_', ' ')|title if touchpoint else 'Général') }}</span>
                             </strong>
                         </div>
                         {% for issue in touchpoint_warnings %}
                         {% set warn_counter.value = warn_counter.value + 1 %}
-                        {{ render_issue_accordion(issue, 'warn-' ~ warn_counter.value, 'warningsAccordion', 'warning') }}
+                        {{ render_issue_accordion(issue, 'warn-' ~ warn_counter.value, 'warningsAccordion', 'medium') }}
                         {% endfor %}
                     {% endfor %}
                     </div>
@@ -860,13 +907,13 @@
                 <div class="section-header severity-header-info">
                     <h3 class="mb-0">
                         <i class="bi bi-info-circle-fill me-2" aria-hidden="true"></i>
-                        <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['info'] }}</span>
-                        <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['info'] }}</span>
-                        <span class="badge bg-dark ms-2">{{ info_items|length }}</span>
+                        <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en['info'] }}</span>
+                        <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['info'] }}</span>
+                        <span class="badge bg-header ms-2">{{ info_items|length }}</span>
                     </h3>
                     <small>
-                        <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Informational items for awareness</span>
-                        <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Éléments informatifs</span>
+                        <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Informational items for awareness</span>
+                        <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Éléments informatifs</span>
                     </small>
                 </div>
                 <div class="section-body" style="background: var(--color-info-bg);">
@@ -875,8 +922,8 @@
                     {% for touchpoint, touchpoint_info in info_items|groupby('touchpoint') %}
                         <div class="touchpoint-header mt-3 mb-2 ps-2 border-info-custom" style="border-left: 4px solid;">
                             <strong>
-                                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get(touchpoint|lower, touchpoint|replace('_', ' ')|title if touchpoint else 'General') }}</span>
-                                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get(touchpoint|lower, touchpoint|replace('_', ' ')|title if touchpoint else 'Général') }}</span>
+                                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get(touchpoint|lower, touchpoint|replace('_', ' ')|title if touchpoint else 'General') }}</span>
+                                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get(touchpoint|lower, touchpoint|replace('_', ' ')|title if touchpoint else 'Général') }}</span>
                             </strong>
                         </div>
                         {% for issue in touchpoint_info %}
@@ -895,13 +942,13 @@
                 <div class="section-header severity-header-discovery">
                     <h3 class="mb-0">
                         <i class="bi bi-lightbulb-fill me-2" aria-hidden="true"></i>
-                        <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('discovery', 'Discovery') }}</span>
-                        <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('discovery', 'Découverte') }}</span>
-                        <span class="badge bg-light text-dark ms-2">{{ discovery_items|length }}</span>
+                        <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get('discovery', 'Discovery') }}</span>
+                        <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get('discovery', 'Découverte') }}</span>
+                        <span class="badge badge-subtle ms-2">{{ discovery_items|length }}</span>
                     </h3>
                     <small class="opacity-75">
-                        <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Items discovered during testing that may need review</span>
-                        <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Éléments découverts lors des tests pouvant nécessiter une révision</span>
+                        <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">Items discovered during testing that may need review</span>
+                        <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">Éléments découverts lors des tests pouvant nécessiter une révision</span>
                     </small>
                 </div>
                 <div class="section-body" style="background: var(--color-discovery-bg);">
@@ -910,13 +957,13 @@
                     {% for touchpoint, touchpoint_discovery in discovery_items|groupby('touchpoint') %}
                         <div class="touchpoint-header mt-3 mb-2 ps-2 border-discovery" style="border-left: 4px solid;">
                             <strong>
-                                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get(touchpoint|lower, touchpoint|replace('_', ' ')|title if touchpoint else 'General') }}</span>
-                                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get(touchpoint|lower, touchpoint|replace('_', ' ')|title if touchpoint else 'Général') }}</span>
+                                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ translations_en.get(touchpoint|lower, touchpoint|replace('_', ' ')|title if touchpoint else 'General') }}</span>
+                                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr.get(touchpoint|lower, touchpoint|replace('_', ' ')|title if touchpoint else 'Général') }}</span>
                             </strong>
                         </div>
                         {% for issue in touchpoint_discovery %}
                         {% set disco_counter.value = disco_counter.value + 1 %}
-                        {{ render_issue_accordion(issue, 'disco-' ~ disco_counter.value, 'discoveryAccordion', 'primary') }}
+                        {{ render_issue_accordion(issue, 'disco-' ~ disco_counter.value, 'discoveryAccordion', 'info') }}
                         {% endfor %}
                     {% endfor %}
                     </div>
@@ -934,6 +981,10 @@
     {% endif %}
 </main>
 
+<footer role="contentinfo" class="container py-3 mt-4 border-top text-muted small">
+    <p class="mb-0">{{ ftl('reports-generated-by-auto-a11y') }}</p>
+</footer>
+
 <script>
 /* Bootstrap JS */
 {{ bootstrap_js|safe }}
@@ -947,8 +998,11 @@ function switchLanguage(lang) {
     localStorage.setItem('reportLanguage', lang);
     document.querySelectorAll('.lang-switcher button').forEach(btn => {
         btn.classList.remove('active');
+            btn.setAttribute('aria-pressed', 'false');
     });
     document.getElementById(`lang-${lang}`).classList.add('active');
+            const _btn = document.getElementById(`lang-${lang}`);
+            if (_btn) _btn.setAttribute('aria-pressed', 'true');
     document.documentElement.lang = lang;
     document.documentElement.setAttribute('data-current-lang', lang);
 
@@ -1089,8 +1143,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const filterValue = chip.dataset.filterValue;
             if (activeFilters[filterType] && activeFilters[filterType].includes(filterValue)) {
                 chip.classList.add('active');
+                chip.setAttribute('aria-pressed', 'true');
             } else {
                 chip.classList.remove('active');
+                chip.setAttribute('aria-pressed', 'false');
             }
         });
 
@@ -1105,7 +1161,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 filterSummary.textContent = summaryParts.join(' | ');
             } else {
                 // Restore bilingual "no filters" spans
-                filterSummary.innerHTML = '<span data-lang="en" class="lang-active">{{ translations_en["no_filters_active"] }}</span><span data-lang="fr" class="lang-inactive">{{ translations_fr["no_filters_active"] }}</span>';
+                filterSummary.innerHTML = '<span data-lang="en" lang="en" class="lang-active">{{ translations_en["no_filters_active"] }}</span><span data-lang="fr" lang="fr" class="lang-inactive">{{ translations_fr["no_filters_active"] }}</span>';
                 // Apply current language visibility
                 filterSummary.querySelectorAll('[data-lang]').forEach(el => {
                     if (el.getAttribute('data-lang') === currentLang) {
@@ -1153,6 +1209,28 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     updateFilters();
+});
+</script>
+
+<!-- Accessibility enhancements: Space key on link-styled-as-button, new-window warning -->
+<script>
+document.addEventListener('keydown', function(e) {
+    if (e.key === ' ' && e.target.tagName === 'A') {
+        e.preventDefault();
+        e.target.click();
+    }
+});
+document.addEventListener('DOMContentLoaded', function() {
+    var newWindowLabel = {{ ftl('common-opens-in-new-tab') | tojson }};
+    document.querySelectorAll('a[target="_blank"]').forEach(function(link) {
+        var ariaLabel = link.getAttribute('aria-label') || '';
+        if (!link.querySelector('.visually-hidden') && !/new\s*(window|tab)/i.test(ariaLabel)) {
+            var span = document.createElement('span');
+            span.className = 'visually-hidden';
+            span.textContent = ' (' + newWindowLabel + ')';
+            link.appendChild(span);
+        }
+    });
 });
 </script>
 </body>

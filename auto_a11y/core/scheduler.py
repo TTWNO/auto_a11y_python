@@ -1,12 +1,13 @@
 """
 Scheduler service for scheduled accessibility testing using APScheduler
 """
+from __future__ import annotations
 
 import logging
 import asyncio
 import uuid
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Any, TYPE_CHECKING
 from zoneinfo import ZoneInfo
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -20,6 +21,9 @@ from auto_a11y.models import (
     TestSchedule, ScheduleType, ScheduleRunStatus, AITestMode
 )
 
+if TYPE_CHECKING:
+    from auto_a11y.core.database import Database
+
 logger = logging.getLogger(__name__)
 
 
@@ -28,16 +32,17 @@ class SchedulerService:
     Service for managing scheduled accessibility tests using APScheduler
     """
 
-    _instance = None
+    _instance: SchedulerService | None = None
+    _initialized: bool
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args: Any, **kwargs: Any) -> SchedulerService:
         """Singleton pattern - only one scheduler instance"""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance._initialized = False
         return cls._instance
 
-    def __init__(self, database=None, config=None):
+    def __init__(self, database: Database | None = None, config: Any = None) -> None:
         """
         Initialize scheduler service
 
@@ -50,11 +55,13 @@ class SchedulerService:
 
         self.database = database
         self.config = config
-        self.scheduler = None
+        self.scheduler: BackgroundScheduler | None = None
         self._initialized = True
 
-    def start(self):
+    def start(self) -> None:
         """Start the scheduler"""
+        assert self.config is not None
+        assert self.database is not None
         if not self.config.SCHEDULER_ENABLED:
             logger.info("Scheduler is disabled in configuration")
             return
@@ -104,7 +111,7 @@ class SchedulerService:
             logger.error(f"Failed to start scheduler: {e}")
             raise
 
-    def shutdown(self, wait: bool = True):
+    def shutdown(self, wait: bool = True) -> None:
         """
         Shutdown the scheduler gracefully
 
@@ -116,8 +123,9 @@ class SchedulerService:
             self.scheduler.shutdown(wait=wait)
             logger.info("Scheduler shut down successfully")
 
-    def _load_schedules_from_database(self):
+    def _load_schedules_from_database(self) -> None:
         """Load all enabled schedules from database and register with APScheduler"""
+        assert self.database is not None
         try:
             schedules = self.database.get_enabled_test_schedules()
             logger.info(f"Loading {len(schedules)} enabled schedules from database")
@@ -131,13 +139,15 @@ class SchedulerService:
         except Exception as e:
             logger.error(f"Failed to load schedules from database: {e}")
 
-    def _register_schedule_with_apscheduler(self, schedule: TestSchedule):
+    def _register_schedule_with_apscheduler(self, schedule: TestSchedule) -> None:
         """
         Register a schedule with APScheduler
 
         Args:
             schedule: TestSchedule to register
         """
+        assert self.database is not None
+        assert self.scheduler is not None
         if not schedule.enabled:
             logger.debug(f"Schedule {schedule.id} is disabled, skipping registration")
             return
@@ -170,7 +180,8 @@ class SchedulerService:
         )
 
         # Update schedule with APScheduler job ID and next run time
-        self.database.set_test_schedule_apscheduler_id(schedule.id, apscheduler_job_id)
+        if schedule.id:
+            self.database.set_test_schedule_apscheduler_id(schedule.id, apscheduler_job_id)
 
         if job.next_run_time:
             self.database.test_schedules.update_one(
@@ -180,7 +191,7 @@ class SchedulerService:
 
         logger.info(f"Registered schedule '{schedule.name}' with APScheduler, next run: {job.next_run_time}")
 
-    def _create_trigger(self, schedule: TestSchedule):
+    def _create_trigger(self, schedule: TestSchedule) -> DateTrigger | CronTrigger | None:
         """
         Create APScheduler trigger from schedule configuration
 
@@ -238,7 +249,7 @@ class SchedulerService:
 
         return None
 
-    def _parse_time(self, time_str: str) -> tuple:
+    def _parse_time(self, time_str: str) -> tuple[int, int]:
         """
         Parse time string (HH:MM) into hour and minute
 
@@ -265,12 +276,13 @@ class SchedulerService:
         Returns:
             True if successful
         """
+        assert self.database is not None
         try:
             # Save to database
             schedule_id = self.database.create_test_schedule(schedule)
-            schedule._id = self.database.test_schedules.find_one(
-                {"_id": schedule._id}
-            )["_id"]
+            doc = self.database.test_schedules.find_one({"_id": schedule._id})
+            if doc:
+                schedule._id = doc["_id"]
 
             # Register with APScheduler if enabled
             if schedule.enabled and self.scheduler and self.scheduler.running:
@@ -292,6 +304,7 @@ class SchedulerService:
         Returns:
             True if successful
         """
+        assert self.database is not None
         try:
             # Update in database
             self.database.update_test_schedule(schedule)
@@ -302,7 +315,8 @@ class SchedulerService:
                     self._register_schedule_with_apscheduler(schedule)
                 else:
                     # Remove from APScheduler if disabled
-                    self.remove_from_apscheduler(schedule.id)
+                    if schedule.id:
+                        self.remove_from_apscheduler(schedule.id)
 
             return True
 
@@ -320,6 +334,7 @@ class SchedulerService:
         Returns:
             True if successful
         """
+        assert self.database is not None
         try:
             # Remove from APScheduler
             self.remove_from_apscheduler(schedule_id)
@@ -333,7 +348,7 @@ class SchedulerService:
             logger.error(f"Failed to remove schedule: {e}")
             return False
 
-    def remove_from_apscheduler(self, schedule_id: str):
+    def remove_from_apscheduler(self, schedule_id: str) -> None:
         """
         Remove a schedule from APScheduler
 
@@ -363,6 +378,7 @@ class SchedulerService:
         Returns:
             True if successful
         """
+        assert self.database is not None
         try:
             # Update in database
             self.database.toggle_test_schedule(schedule_id, enabled)
@@ -382,7 +398,7 @@ class SchedulerService:
             logger.error(f"Failed to toggle schedule: {e}")
             return False
 
-    def run_now(self, schedule_id: str) -> Optional[str]:
+    def run_now(self, schedule_id: str) -> str | None:
         """
         Trigger a schedule to run immediately
 
@@ -392,6 +408,7 @@ class SchedulerService:
         Returns:
             Job ID if triggered successfully, None otherwise
         """
+        assert self.database is not None
         try:
             schedule = self.database.get_test_schedule(schedule_id)
             if not schedule:
@@ -406,7 +423,7 @@ class SchedulerService:
             logger.error(f"Failed to run schedule now: {e}")
             return None
 
-    def get_next_run_times(self, schedule_id: str, count: int = 5) -> List[datetime]:
+    def get_next_run_times(self, schedule_id: str, count: int = 5) -> list[datetime]:
         """
         Get the next N run times for a schedule
 
@@ -417,6 +434,7 @@ class SchedulerService:
         Returns:
             List of datetime objects
         """
+        assert self.database is not None
         schedule = self.database.get_test_schedule(schedule_id)
         if not schedule:
             return []
@@ -430,8 +448,8 @@ class SchedulerService:
         next_time = datetime.now(ZoneInfo(schedule.preset_config.timezone))
 
         for _ in range(count):
-            next_time = trigger.get_next_fire_time(None, next_time)
-            if next_time:
+            fire_time = trigger.get_next_fire_time(None, next_time)
+            if fire_time:
                 run_times.append(next_time)
                 # Move slightly forward to get the next one
                 next_time = next_time.replace(second=next_time.second + 1)
@@ -440,7 +458,7 @@ class SchedulerService:
 
         return run_times
 
-    def get_job_status(self, schedule_id: str) -> Dict[str, Any]:
+    def get_job_status(self, schedule_id: str) -> dict[str, Any]:
         """
         Get the APScheduler job status for a schedule
 
@@ -467,7 +485,7 @@ class SchedulerService:
         }
 
 
-def execute_scheduled_test(schedule_id: str) -> Optional[str]:
+def execute_scheduled_test(schedule_id: str) -> str | None:
     """
     Execute a scheduled test - this is the job function called by APScheduler
 
@@ -490,6 +508,10 @@ def execute_scheduled_test(schedule_id: str) -> Optional[str]:
 
     database = scheduler_service.database
     config = scheduler_service.config
+
+    if not database or not config:
+        logger.error("Scheduler service has no database or config")
+        return None
 
     try:
         # Get schedule
@@ -525,7 +547,7 @@ def execute_scheduled_test(schedule_id: str) -> Optional[str]:
 
         # Get pages to test
         pages = database.get_pages(schedule.website_id)
-        page_ids = [p.id for p in pages]
+        page_ids: list[str] = [p.id for p in pages if p.id]
 
         if not page_ids:
             logger.warning(f"No pages found for website {schedule.website_id}")
@@ -563,7 +585,7 @@ def execute_scheduled_test(schedule_id: str) -> Optional[str]:
         user_ids_to_test = schedule.project_user_ids or ['']  # Empty string = guest
 
         # Run tests for each user
-        async def run_tests():
+        async def run_tests() -> None:
             for i, user_id in enumerate(user_ids_to_test):
                 is_last_user = (i == len(user_ids_to_test) - 1)
 
@@ -625,7 +647,7 @@ def execute_scheduled_test(schedule_id: str) -> Optional[str]:
 
 
 # Singleton instance getter
-def get_scheduler_service() -> Optional[SchedulerService]:
+def get_scheduler_service() -> SchedulerService | None:
     """Get the scheduler service singleton instance"""
     if SchedulerService._instance and SchedulerService._instance._initialized:
         return SchedulerService._instance

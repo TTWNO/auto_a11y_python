@@ -3,9 +3,13 @@ Landmarks touchpoint test module
 Evaluates webpage landmark structure to ensure proper semantic organization and navigation for screen reader users.
 """
 
+from __future__ import annotations
+
 from datetime import datetime
-from typing import Dict, Any, List, Optional
+from typing import Any
 import logging
+
+from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +58,7 @@ TEST_DOCUMENTATION = {
     ]
 }
 
-async def test_landmarks(page) -> Dict[str, Any]:
+async def test_landmarks(page: Page) -> dict[str, Any]:
     """
     Test page landmark structure and requirements
     
@@ -66,7 +70,7 @@ async def test_landmarks(page) -> Dict[str, Any]:
     """
     try:
         # Execute JavaScript to analyze landmarks
-        results = await page.evaluate('''
+        results: dict[str, Any] = await page.evaluate('''
             () => {
                 const results = {
                     applicable: true,

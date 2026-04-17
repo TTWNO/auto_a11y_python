@@ -2,9 +2,11 @@
 Website model for managing sites within projects
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Any
 from bson import ObjectId
 from auto_a11y.models.project_member import ProjectMember
 
@@ -18,10 +20,10 @@ class ScrapingConfig:
     include_subdomains: bool = True
     respect_robots: bool = True
     request_delay: float = 1.0
-    allowed_paths: List[str] = field(default_factory=list)
-    excluded_paths: List[str] = field(default_factory=list)
-    
-    def to_dict(self) -> dict:
+    allowed_paths: list[str] = field(default_factory=lambda: [])
+    excluded_paths: list[str] = field(default_factory=lambda: [])
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary"""
         return {
             'max_pages': self.max_pages,
@@ -33,9 +35,9 @@ class ScrapingConfig:
             'allowed_paths': self.allowed_paths,
             'excluded_paths': self.excluded_paths
         }
-    
+
     @classmethod
-    def from_dict(cls, data: dict) -> 'ScrapingConfig':
+    def from_dict(cls, data: dict[str, Any]) -> ScrapingConfig:
         """Create from dictionary"""
         return cls(**data) if data else cls()
 
@@ -43,32 +45,32 @@ class ScrapingConfig:
 @dataclass
 class Website:
     """Website model"""
-    
+
     project_id: str
     url: str
-    name: Optional[str] = None
+    name: str | None = None
     created_at: datetime = field(default_factory=datetime.now)
-    last_scraped: Optional[datetime] = None
-    last_tested: Optional[datetime] = None
+    last_scraped: datetime | None = None
+    last_tested: datetime | None = None
     page_count: int = 0
     scraping_config: ScrapingConfig = field(default_factory=ScrapingConfig)
-    discovery_history: List[Dict[str, Any]] = field(default_factory=list)  # Track all discovery attempts
-    members: list = field(default_factory=list)  # List[ProjectMember]
-    _id: Optional[ObjectId] = None
-    
+    discovery_history: list[dict[str, Any]] = field(default_factory=lambda: [])  # Track all discovery attempts
+    members: list[ProjectMember] = field(default_factory=lambda: [])
+    _id: ObjectId | None = None
+
     @property
-    def id(self) -> str:
+    def id(self) -> str | None:
         """Get website ID as string"""
         return str(self._id) if self._id else None
-    
+
     @property
     def display_name(self) -> str:
         """Get display name (name or URL)"""
         return self.name or self.url
-    
-    def to_dict(self) -> dict:
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for MongoDB"""
-        data = {
+        data: dict[str, Any] = {
             'project_id': self.project_id,
             'url': self.url,
             'name': self.name,
@@ -82,9 +84,9 @@ class Website:
         if self._id:
             data['_id'] = self._id
         return data
-    
+
     @classmethod
-    def from_dict(cls, data: dict) -> 'Website':
+    def from_dict(cls, data: dict[str, Any]) -> Website:
         """Create from MongoDB document"""
         members_data = data.get('members', [])
         members = [ProjectMember.from_dict(m) for m in members_data]

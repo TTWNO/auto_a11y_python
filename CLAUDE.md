@@ -86,6 +86,7 @@ python test_fixtures.py --category <YourCategory>
 - **Reason:** This project may have multiple collaborators and shared branches. Rewriting history breaks collaboration and can cause data loss
 - If you need to undo changes, use `git revert` to create new commits that reverse previous changes
 - If commits need to be reorganized, consult with the repository owner first
+- **NEVER use `git commit --no-verify`** — bypassing the pre-commit hook circumvents required type-checking enforcement. CI re-runs the same checks, so bypassing locally only delays the failure. Fix the errors before committing.
 
 ## High-Level Architecture
 
@@ -380,6 +381,118 @@ search-input = Search pages
 
 The project maintains a French README (`README.fr.md`) alongside the English `README.md`. **Any change to `README.md` MUST be reflected in `README.fr.md`** — they must stay in sync. When editing the README, update both files in the same change.
 
+## Colour System (MANDATORY)
+
+**Bootstrap colour classes are PROHIBITED.** Do not use `btn-primary`, `bg-danger`, `text-warning`, `alert-success`, `badge bg-info`, `border-secondary`, or any other Bootstrap colour utility class. The application uses a custom colour system built on design tokens for full control over all colours in both light and dark mode.
+
+### Architecture
+
+```
+tokens.css (design tokens)  →  style.css (utility classes)  →  templates/JS/Python (usage)
+   Defines colours               Maps tokens to classes           Uses custom classes
+   Light + dark mode              No Bootstrap overrides           Never Bootstrap colours
+```
+
+### Token File
+
+- **Design tokens:** `auto_a11y/web/static/public/css/tokens.css` — all colour values live here
+- Defines light mode, dark mode (OS preference + manual toggle), and print overrides
+- All text colours meet WCAG 2.2 AA (4.5:1+), all non-text UI meets 3:1+ (SC 1.4.11)
+
+### Custom Class Reference
+
+| Purpose | Custom Class | Replaces (DO NOT USE) |
+|---------|-------------|----------------------|
+| **Buttons** | `btn-brand`, `btn-neutral`, `btn-pass`, `btn-high`, `btn-medium`, `btn-info`, `btn-dark` | ~~btn-primary, btn-secondary, btn-success, btn-danger, btn-warning~~ |
+| **Outline Buttons** | `btn-outline-brand`, `btn-outline-neutral`, `btn-outline-pass`, `btn-outline-high`, `btn-outline-medium` | ~~btn-outline-primary, btn-outline-secondary~~ |
+| **Alerts** | `alert-info`, `alert-pass`, `alert-high`, `alert-medium`, `alert-neutral` | ~~alert-success, alert-danger, alert-warning, alert-secondary~~ |
+| **Badges** | `badge-brand`, `badge-neutral`, `badge-pass`, `badge-high`, `badge-medium`, `badge-info`, `badge-subtle`, `badge-discovery` | ~~badge bg-primary, badge bg-danger~~ |
+| **Text** | `text-brand`, `text-severity-high`, `text-severity-medium`, `text-severity-pass`, `text-info-custom`, `text-muted`, `text-inverse`, `text-discovery` | ~~text-primary, text-danger, text-warning, text-success, text-white~~ |
+| **Backgrounds** | `bg-brand`, `bg-neutral`, `bg-pass`, `bg-high`, `bg-medium`, `bg-info`, `bg-subtle`, `bg-header`, `bg-elevated` | ~~bg-primary, bg-danger, bg-dark, bg-light~~ |
+| **Borders** | `border-brand`, `border-neutral`, `border-pass`, `border-high`, `border-medium`, `border-info` | ~~border-primary, border-danger, border-warning~~ |
+| **Tables** | `table-subtle`, `table-info`, `table-medium`, `table-high`, `table-pass`, `table-neutral` | ~~table-light, table-warning, table-danger~~ |
+| **Progress Bars** | `progress-pass`, `progress-medium`, `progress-high`, `progress-neutral` | ~~bg-success on .progress-bar~~ |
+| **Card Headers** | `card-header-medium`, `card-header-info`, `card-header-pass`, `card-header-neutral` | ~~card-header bg-warning text-dark~~ |
+| **Toasts** | `toast-pass`, `toast-high`, `toast-medium`, `toast-info` | ~~text-bg-success, text-bg-danger~~ |
+
+### Rules
+
+1. **NEVER use Bootstrap colour classes** — they bypass the design token system and break in dark mode
+2. **To change a colour**, edit the token in `tokens.css` — all classes update automatically
+3. **New severity/status colours** should be added as tokens first, then as utility classes in `style.css`
+4. **Bootstrap structural classes are fine** — `btn`, `badge`, `alert`, `card`, `table`, `form-control`, layout utilities (`d-flex`, `row`, `col-*`, `mb-3`), etc. Only the **colour** variants are prohibited
+5. **In Jinja2 dynamic patterns**, use dictionary lookups that map to custom class names (e.g., `badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'info'}[impact] }}`)
+6. **In standalone JS files**, use the custom class names in `classList.add()`, `querySelector()`, and template literals
+
+## Type Checking (MANDATORY)
+
+**All in-scope Python code MUST pass `mypy` strict mode, `pyright` strict mode, and `ty` in its strictest available mode.** This is a hard requirement, not optional. Type errors are fixed in code — never suppressed.
+
+### Scope
+
+Enforced on:
+- `auto_a11y/**/*.py`
+- `tests/**/*.py`
+- `stubs/**/*.pyi`
+- `config.py`, `run.py`, `wsgi.py`, `test_fixtures.py`
+
+Excluded: `archive/`, `demo_site/`, `fixture_generation/`, `electron/`, top-level one-off migration/debug/translation scripts, and `auto_a11y/scripts/` (JavaScript).
+
+### Setup (one time per clone)
+
+```bash
+python run.py --install-hooks
+# or equivalently:
+git config core.hooksPath .githooks
+```
+
+### Zero-escape-hatch policy
+
+- **No `# type: ignore`** (any tool). `warn_unused_ignores`/equivalent is on, so leftover ignores are themselves errors.
+- **No `# pyright: ignore`**.
+- **No `# ty: ignore`**.
+- **No `cast(Any, ...)`** as a workaround for a type error.
+- **No `-> Any` return types**. Use `object`, a `TypeVar`, or an explicit union.
+- **No `git commit --no-verify`**. CI re-runs the same checks; bypassing locally just delays the failure.
+- **No `# type: ignore[...]` even with a code**. If a checker has a bug, the workaround is a code refactor, a stub patch, or a tool version pin — never a suppression comment.
+
+### Adding a new dependency
+
+If a new library lacks type information, you MUST (in the same commit that introduces the dependency):
+1. Check for upstream `py.typed` in a newer version.
+2. Check for a `types-<package>` or `<package>-stubs` PyPI package.
+3. Check `typeshed`.
+4. If none of the above, write a minimal fully-typed `.pyi` stub under `stubs/<package>/`. Only the symbols you import. No `Any`.
+
+Commits that add an untyped import without stubs will fail the hook and CI.
+
+### Modifying the checked scope
+
+Adding a new module to the enforced set requires updating the `files`/`include` lists in `pyproject.toml` for **all three tools consistently**. Keep the lists in sync.
+
+### Tool disagreement
+
+If two checkers disagree:
+1. First try to satisfy all three by refactoring or adding narrowing annotations.
+2. If impossible, the authority order is `mypy` > `pyright` > `ty`. The less-authoritative tool's objection is treated as its bug; work around it in code.
+3. If a three-way irreconcilable conflict emerges, surface it to the repo owner — do not land the code.
+
+### `ty` recovery procedure
+
+`ty` is pre-alpha. In the narrow case of a `ty` bug that no refactor or version pin can resolve, set `[tool.auto_a11y_typecheck] ty_enabled = false` in `pyproject.toml`. This is a repo-wide, review-visible configuration downgrade — **not** a suppression comment, and **not** permitted for `mypy` or `pyright`. File an upstream issue; flip the flag back on the next `ty` release.
+
+### Running checks manually
+
+```bash
+.venv/bin/python -m mypy
+.venv/bin/python -m pyright
+.venv/bin/python -m ty check
+```
+
+### Branch protection
+
+The `typecheck` CI job (both `3.11` and `3.12` matrix variants) must be a required status check on `main`. This is configured in the GitHub repo settings by the repo owner.
+
 ## Common Gotchas
 
 1. **Port Conflict:** macOS AirPlay Receiver uses 5000 → We use 5001
@@ -389,6 +502,7 @@ The project maintains a French README (`README.fr.md`) alongside the English `RE
 5. **Browser Download:** First run requires: `python -m playwright install chromium`
 6. **AI Analysis:** Costs money per request → Test with `RUN_AI_ANALYSIS=False` first
 7. **Async Operations:** Most browser/AI operations use async/await
+8. **Bootstrap Colours:** NEVER use Bootstrap colour classes — see Colour System section above
 
 ## File Organization
 

@@ -5,8 +5,8 @@
 {% block extra_css %}
 <style>
     .info-box {
-        background: #e7f3ff;
-        border-left: 4px solid #0d6efd;
+        background: var(--color-info-bg);
+        border-left: 4px solid var(--color-brand);
         padding: 15px;
         margin: 20px 0;
     }
@@ -24,17 +24,17 @@
     }
 
     .combination-row:hover {
-        background-color: #f8f9fa;
+        background-color: var(--color-bg-subtle);
     }
 
     .combination-row.drag-over {
-        background-color: #e7f3ff;
-        border-top: 2px solid #0d6efd;
+        background-color: var(--color-info-bg);
+        border-top: 2px solid var(--color-brand);
     }
 
     .drag-handle {
         cursor: grab;
-        color: #6c757d;
+        color: var(--color-text-muted);
     }
 
     .drag-handle:active {
@@ -85,13 +85,13 @@
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h1>
+            <h1 id="matrix-form-heading">
                 <i class="bi bi-grid-3x3" aria-hidden="true"></i> {{ ftl('common-configure-test-matrix') }}
             </h1>
             <p class="text-muted">{{ page.url }}</p>
         </div>
         <div>
-            <a href="{{ url_for('scripts.list_page_scripts', page_id=page.id) }}" class="btn btn-outline-secondary">
+            <a href="{{ url_for('scripts.list_page_scripts', page_id=page.id) }}" class="btn btn-outline-neutral">
                 <i class="bi bi-arrow-left" aria-hidden="true"></i> {{ ftl('pages-back-to-scripts') }}
             </a>
         </div>
@@ -100,7 +100,7 @@
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
-            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+            <div class="alert alert-{{ {'error': 'high', 'success': 'pass', 'warning': 'medium', 'info': 'info'}.get(category, 'info') }} alert-dismissible fade show" role="alert">
                 {{ message }}
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ ftl('common-dismiss') }}"></button>
             </div>
@@ -109,12 +109,12 @@
     {% endwith %}
 
     {% if not testable_scripts %}
-    <div class="alert alert-warning">
+    <div class="alert alert-medium">
         <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
         <strong>{{ ftl('pages-no-testable-scripts') }}</strong><br>
         {{ ftl('pages-this-page-has-no-enabled-scripts-with-multi-state-2') }}
         <div class="mt-3">
-            <a href="{{ url_for('scripts.create_page_script', page_id=page.id) }}" class="btn btn-primary">
+            <a href="{{ url_for('scripts.create_page_script', page_id=page.id) }}" class="btn btn-brand">
                 <i class="bi bi-plus-circle" aria-hidden="true"></i> {{ ftl('common-create-new-script') }}
             </a>
         </div>
@@ -137,14 +137,14 @@
     <!-- Script Execution Order -->
     <section aria-labelledby="execution-order-heading">
         <div class="card mb-4">
-            <div class="card-header bg-secondary text-white">
+            <div class="card-header card-header-neutral">
                 <h2 id="execution-order-heading" class="mb-0"><i class="bi bi-sort-numeric-down" aria-hidden="true"></i> {{ ftl('pages-script-execution-order') }}</h2>
             </div>
         <div class="card-body">
             <p class="text-muted mb-3">{{ ftl('pages-drag-to-reorder-scripts-scripts-execute-from-left') }}</p>
             <div id="script-order-list" class="d-flex flex-wrap gap-2">
                 {% for script in matrix.scripts %}
-                <div class="script-order-item badge bg-primary p-2" draggable="true" data-script-id="{{ script.script_id }}">
+                <div class="script-order-item badge badge-brand p-2" draggable="true" data-script-id="{{ script.script_id }}">
                     <i class="bi bi-grip-vertical me-1" aria-hidden="true"></i>
                     <span class="script-order-num">{{ loop.index }}</span>. {{ script.script_name }}
                 </div>
@@ -156,19 +156,19 @@
 
     <!-- Preset Buttons -->
     <div class="preset-buttons">
-        <button type="button" class="btn btn-outline-primary" onclick="applyPreset('sequential')">
+        <button type="button" class="btn btn-outline-brand" onclick="applyPreset('sequential')">
             <i class="bi bi-arrow-right-circle" aria-hidden="true"></i> {{ ftl('pages-sequential-default') }}
         </button>
-        <button type="button" class="btn btn-outline-secondary" onclick="applyPreset('initial_final')">
+        <button type="button" class="btn btn-outline-neutral" onclick="applyPreset('initial_final')">
             <i class="bi bi-arrow-left-right" aria-hidden="true"></i> {{ ftl('pages-initial-final') }}
         </button>
-        <button type="button" class="btn btn-outline-secondary" onclick="applyPreset('all')">
+        <button type="button" class="btn btn-outline-neutral" onclick="applyPreset('all')">
             <i class="bi bi-grid-fill" aria-hidden="true"></i> {{ ftl('pages-all-combinations') }}
         </button>
-        <button type="button" class="btn btn-outline-secondary" onclick="applyPreset('clear')">
+        <button type="button" class="btn btn-outline-neutral" onclick="applyPreset('clear')">
             <i class="bi bi-x-circle" aria-hidden="true"></i> {{ ftl('common-clear-all') }}
         </button>
-        <button type="button" class="btn btn-success" onclick="addCombination()">
+        <button type="button" class="btn btn-pass" onclick="addCombination()">
             <i class="bi bi-plus-circle" aria-hidden="true"></i> {{ ftl('pages-add-combination') }}
         </button>
     </div>
@@ -176,9 +176,9 @@
     <!-- Combinations Table -->
     <section aria-labelledby="combinations-heading">
         <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <div class="card-header bg-brand text-inverse d-flex justify-content-between align-items-center">
                 <h2 id="combinations-heading" class="mb-0">{{ ftl('pages-test-combinations') }}</h2>
-                <span class="badge bg-light text-dark"><span id="combinations-count">0</span> {{ ftl('pages-combinations') }}</span>
+                <span class="badge badge-subtle"><span id="combinations-count">0</span> {{ ftl('pages-combinations') }}</span>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -204,16 +204,16 @@
     </section>
 
     <!-- Save Form -->
-    <form method="POST" id="matrix-form">
+    <form method="POST" id="matrix-form" aria-labelledby="matrix-form-heading">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <input type="hidden" name="combinations_data" id="combinations-data-input">
         <input type="hidden" name="script_order" id="script-order-input">
         <div class="d-flex justify-content-between align-items-center">
             <div>
-                <button type="submit" class="btn btn-primary btn-lg">
+                <button type="submit" class="btn btn-brand btn-lg">
                     <i class="bi bi-save" aria-hidden="true"></i> {{ ftl('common-save-configuration') }}
                 </button>
-                <a href="{{ url_for('scripts.list_page_scripts', page_id=page.id) }}" class="btn btn-outline-secondary btn-lg">
+                <a href="{{ url_for('scripts.list_page_scripts', page_id=page.id) }}" class="btn btn-outline-neutral btn-lg">
                     {{ ftl('common-cancel') }}
                 </a>
             </div>
@@ -322,7 +322,7 @@ function renderTable() {
         // Actions
         const actionsCell = document.createElement('td');
         const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'btn btn-sm btn-outline-danger';
+        deleteBtn.className = 'btn btn-sm btn-outline-high';
         deleteBtn.innerHTML = '<i class="bi bi-trash" aria-hidden="true"></i>';
         deleteBtn.title = {{ ftl('common-delete') | tojson }};
         deleteBtn.onclick = () => deleteCombination(index);

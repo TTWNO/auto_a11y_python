@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Report formatters for different output formats
 """
@@ -8,7 +10,7 @@ import re
 import tempfile
 import os
 import warnings
-from typing import Dict, Any, List
+from typing import Any, IO
 from datetime import datetime
 from pathlib import Path
 import logging
@@ -312,7 +314,7 @@ class BaseFormatter:
         },
     }
 
-    def __init__(self, config: Dict[str, Any], language: str = 'en'):
+    def __init__(self, config: dict[str, Any], language: str = 'en') -> None:
         """Initialize formatter with config"""
         self.config = config
         self.language = language if language in ['en', 'fr'] else 'en'
@@ -332,43 +334,43 @@ class BaseFormatter:
         return translated.upper() if translated != key else impact_raw.upper()
 
     @staticmethod
-    def _best_description(issue_dict: dict) -> str:
+    def _best_description(issue_dict: dict[str, Any]) -> str:
         """Pick the best available description from an enriched issue dict.
 
         Prefers description_full (instance-specific, with placeholders resolved),
         but falls back to what_generic (placeholder-free) when unresolved
         placeholders remain, and finally to the raw description field.
         """
-        def _clean(text):
-            return text and not _UNRESOLVED_PLACEHOLDER_RE.search(text)
+        def _clean(text: str | None) -> bool:
+            return bool(text and not _UNRESOLVED_PLACEHOLDER_RE.search(text))
 
-        desc = issue_dict.get('description_full', '')
+        desc: str = issue_dict.get('description_full', '') or ''
         if _clean(desc):
             return desc
-        generic = issue_dict.get('what_generic', '')
+        generic: str = issue_dict.get('what_generic', '') or ''
         if _clean(generic):
             return generic
-        raw = issue_dict.get('description', '')
+        raw: str = issue_dict.get('description', '') or ''
         if _clean(raw):
             return raw
         # The metadata dict may hold a clean English what_generic (stored by
         # result_processor at test time) and/or the original JS description
         # with values already interpolated.
         meta = issue_dict.get('metadata', {}) or {}
-        meta_generic = meta.get('what_generic', '')
+        meta_generic: str = meta.get('what_generic', '') or ''
         if _clean(meta_generic):
             return meta_generic
-        meta_desc = meta.get('description', '')
+        meta_desc: str = meta.get('description', '') or ''
         if _clean(meta_desc):
             return meta_desc
         # Nothing clean available — return the best we have as-is
         return desc or generic or raw or ''
 
-    def format_page_report(self, data: Dict[str, Any]) -> str:
+    def format_page_report(self, data: dict[str, Any]) -> str | bytes:
         """Format page report data"""
         raise NotImplementedError
     
-    def format_website_report(self, data: Dict[str, Any]) -> str:
+    def format_website_report(self, data: dict[str, Any]) -> str | bytes:
         """Format website report data"""
         warnings.warn(
             "format_website_report() is deprecated, use begin/append_page/finalize streaming interface",
@@ -377,7 +379,7 @@ class BaseFormatter:
         )
         raise NotImplementedError
 
-    def format_project_report(self, data: Dict[str, Any]) -> str:
+    def format_project_report(self, data: dict[str, Any]) -> str | bytes:
         """Format project report data"""
         warnings.warn(
             "format_project_report() is deprecated, use begin/append_page/finalize streaming interface",
@@ -386,25 +388,25 @@ class BaseFormatter:
         )
         raise NotImplementedError
     
-    def format_summary_report(self, data: Dict[str, Any]) -> str:
+    def format_summary_report(self, data: dict[str, Any]) -> str | bytes:
         """Format summary report data"""
         raise NotImplementedError
 
     # --- Streaming interface ---
 
-    def begin(self, output_file: str, summary: dict):
+    def begin(self, output_file: str, summary: dict[str, Any]) -> None:
         """Write report header/preamble using summary stats."""
         raise NotImplementedError
 
-    def append_page(self, output_file: str, page_data: dict):
+    def append_page(self, output_file: str, page_data: dict[str, Any]) -> None:
         """Write one page's detail section."""
         raise NotImplementedError
 
-    def finalize(self, output_file: str, summary: dict):
+    def finalize(self, output_file: str, summary: dict[str, Any]) -> None:
         """Write report footer/closing."""
         raise NotImplementedError
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """Delete any temp files created during streaming. Default no-op."""
         pass
 
@@ -412,14 +414,14 @@ class BaseFormatter:
 class HTMLFormatter(BaseFormatter):
     """HTML report formatter"""
     
-    def __init__(self, config: Dict[str, Any], language: str = 'en'):
+    def __init__(self, config: dict[str, Any], language: str = 'en') -> None:
         super().__init__(config, language)
         self.extension = 'html'
         # Pass Claude API key if available
         claude_api_key = config.get('CLAUDE_API_KEY')
         self.comprehensive_generator = ComprehensiveReportGenerator(claude_api_key=claude_api_key)
     
-    def format_all_projects_report(self, data: Dict[str, Any]) -> str:
+    def format_all_projects_report(self, data: dict[str, Any]) -> str:
         """Format report for all projects as HTML"""
         warnings.warn(
             "format_all_projects_report() is deprecated, use begin/append_page/finalize streaming interface",
@@ -488,7 +490,7 @@ class HTMLFormatter(BaseFormatter):
         
         return html
     
-    def _format_project_section(self, project_data: Dict[str, Any]) -> str:
+    def _format_project_section(self, project_data: dict[str, Any]) -> str:
         """Format a single project section for all projects report"""
         project = project_data['project']
         stats = project_data['stats']
@@ -520,7 +522,7 @@ class HTMLFormatter(BaseFormatter):
         </div>
         """
     
-    def format_page_report(self, data: Dict[str, Any]) -> str:
+    def format_page_report(self, data: dict[str, Any]) -> str:
         """Generate HTML report for a page"""
 
         # Check for page state information
@@ -583,13 +585,13 @@ class HTMLFormatter(BaseFormatter):
 
         return html
     
-    def format_website_report(self, data: Dict[str, Any]) -> str:
+    def format_website_report(self, data: dict[str, Any]) -> str:
         """Generate HTML report for a website"""
         
         # Use comprehensive report generator for website reports
         return self.comprehensive_generator.generate_comprehensive_html(data)
     
-    def format_project_report(self, data: Dict[str, Any]) -> str:
+    def format_project_report(self, data: dict[str, Any]) -> str:
         """Generate bilingual HTML report for a project"""
 
         # Generate temporary output path
@@ -604,7 +606,7 @@ class HTMLFormatter(BaseFormatter):
         with open(output_path, 'r', encoding='utf-8') as f:
             return f.read()
     
-    def format_summary_report(self, data: Dict[str, Any]) -> str:
+    def format_summary_report(self, data: dict[str, Any]) -> str:
         """Generate executive summary report"""
         
         projects_html = ""
@@ -813,7 +815,7 @@ class HTMLFormatter(BaseFormatter):
     </style>
         """
     
-    def _format_summary_section(self, stats: Dict) -> str:
+    def _format_summary_section(self, stats: dict[str, Any]) -> str:
         """Format summary statistics section"""
         return f"""
         <section class="summary">
@@ -838,7 +840,7 @@ class HTMLFormatter(BaseFormatter):
             </div>
         </section>"""
     
-    def _format_violations_section(self, violations: List[Dict]) -> str:
+    def _format_violations_section(self, violations: list[dict[str, Any]]) -> str:
         """Format violations section"""
         if not violations:
             return ""
@@ -869,7 +871,7 @@ class HTMLFormatter(BaseFormatter):
         html += "</section>"
         return html
     
-    def _format_warnings_section(self, warnings: List[Dict]) -> str:
+    def _format_warnings_section(self, warnings: list[dict[str, Any]]) -> str:
         """Format warnings section"""
         if not warnings:
             return ""
@@ -894,7 +896,7 @@ class HTMLFormatter(BaseFormatter):
         html += "</section>"
         return html
     
-    def _format_info_section(self, info_items: List[Dict]) -> str:
+    def _format_info_section(self, info_items: list[dict[str, Any]]) -> str:
         """Format info section"""
         if not info_items:
             return ""
@@ -921,7 +923,7 @@ class HTMLFormatter(BaseFormatter):
         html += "</section>"
         return html
 
-    def _format_discovery_section(self, discovery_items: List[Dict]) -> str:
+    def _format_discovery_section(self, discovery_items: list[dict[str, Any]]) -> str:
         """Format discovery section"""
         if not discovery_items:
             return ""
@@ -949,7 +951,7 @@ class HTMLFormatter(BaseFormatter):
         html += "</section>"
         return html
 
-    def _format_ai_findings_section(self, findings: List) -> str:
+    def _format_ai_findings_section(self, findings: list[Any]) -> str:
         """Format AI findings section"""
         if not findings:
             return ""
@@ -969,7 +971,7 @@ class HTMLFormatter(BaseFormatter):
         html += "</section>"
         return html
     
-    def _format_passes_section(self, passes: List[Dict]) -> str:
+    def _format_passes_section(self, passes: list[dict[str, Any]]) -> str:
         """Format passes section"""
         if not passes:
             return ""
@@ -983,13 +985,13 @@ class HTMLFormatter(BaseFormatter):
         html += "</ul></section>"
         return html
     
-    def _format_fix(self, fix: str) -> str:
+    def _format_fix(self, fix: str | None) -> str:
         """Format suggested fix"""
         if not fix:
             return ""
         return f'<p><strong>{self._t("suggested_fix")}:</strong> {fix}</p>'
     
-    def _format_violation_types_section(self, violation_types: Dict) -> str:
+    def _format_violation_types_section(self, violation_types: dict[str, Any]) -> str:
         """Format violation types section"""
         html = f"<section class='violation-types'><h2>{self._t('violation_types')}</h2><table>"
         html += f"<thead><tr><th>{self._t('rule')}</th><th>{self._t('count')}</th><th>{self._t('description')}</th><th>{self._t('pages_affected')}</th></tr></thead><tbody>"
@@ -1008,7 +1010,7 @@ class HTMLFormatter(BaseFormatter):
         html += "</tbody></table></section>"
         return html
     
-    def _format_pages_table(self, page_results: List[Dict]) -> str:
+    def _format_pages_table(self, page_results: list[dict[str, Any]]) -> str:
         """Format pages table"""
         html = f"<section class='pages'><h2>{self._t('pages')}</h2><table>"
         html += f"<thead><tr><th>{self._t('page')}</th><th>{self._t('violations')}</th><th>{self._t('warnings')}</th><th>{self._t('last_tested')}</th></tr></thead><tbody>"
@@ -1027,7 +1029,7 @@ class HTMLFormatter(BaseFormatter):
         html += "</tbody></table></section>"
         return html
     
-    def _format_websites_section(self, websites: List[Dict]) -> str:
+    def _format_websites_section(self, websites: list[dict[str, Any]]) -> str:
         """Format websites section with detailed test results"""
         html = f"<section class='websites'><h2>{self._t('websites')}</h2>"
         
@@ -1145,7 +1147,7 @@ class HTMLFormatter(BaseFormatter):
 
     # --- Streaming interface ---
 
-    def begin(self, output_file: str, summary: dict):
+    def begin(self, output_file: str, summary: dict[str, Any]) -> None:
         """Open a temp body file for page HTML sections.
 
         The final output is NOT written yet — only the temp body file is
@@ -1157,7 +1159,7 @@ class HTMLFormatter(BaseFormatter):
             mode='w', suffix='.html', delete=False, encoding='utf-8'
         )
 
-    def append_page(self, output_file: str, page_data: dict):
+    def append_page(self, output_file: str, page_data: dict[str, Any]) -> None:
         """Write one page's violations/warnings as an HTML section to the temp body file."""
         page = page_data.get('page', {})
         test_result = page_data.get('test_result')
@@ -1194,7 +1196,7 @@ class HTMLFormatter(BaseFormatter):
         section += '</div>\n'
         self._body_tempfile.write(section)
 
-    def finalize(self, output_file: str, summary: dict):
+    def finalize(self, output_file: str, summary: dict[str, Any]) -> None:
         """Assemble the final HTML document.
 
         Reads body content from the temp file in 64 KB chunks so the full
@@ -1243,7 +1245,7 @@ class HTMLFormatter(BaseFormatter):
             out.write(self._get_footer())
             out.write('\n</div>\n</body>\n</html>')
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """Delete the temp body file."""
         if hasattr(self, '_body_tempfile') and self._body_tempfile:
             path = self._body_tempfile.name
@@ -1254,7 +1256,7 @@ class HTMLFormatter(BaseFormatter):
 
     # --- streaming helpers ---
 
-    def _streaming_issue_row(self, issue) -> str:
+    def _streaming_issue_row(self, issue: Any) -> str:
         """Return an HTML <tr> for one issue."""
         # Enrich with catalog data so descriptions are translated
         if isinstance(issue, dict):
@@ -1264,7 +1266,8 @@ class HTMLFormatter(BaseFormatter):
         else:
             issue_dict = issue.__dict__.copy() if hasattr(issue, '__dict__') else {}
         issue_dict = IssueCatalog.enrich_issue(issue_dict)
-        _get = lambda k, d='': issue_dict.get(k, d)
+        def _get(k: str, d: Any = '') -> Any:
+            return issue_dict.get(k, d)
 
         impact = _get('impact', '')
         if hasattr(impact, 'value'):
@@ -1285,29 +1288,29 @@ class HTMLFormatter(BaseFormatter):
 class JSONFormatter(BaseFormatter):
     """JSON report formatter"""
     
-    def __init__(self, config: Dict[str, Any], language: str = 'en'):
+    def __init__(self, config: dict[str, Any], language: str = 'en') -> None:
         super().__init__(config, language)
         self.extension = 'json'
     
-    def format_page_report(self, data: Dict[str, Any]) -> str:
+    def format_page_report(self, data: dict[str, Any]) -> str:
         """Generate JSON report for a page"""
         return json.dumps(data, indent=2, default=str)
     
-    def format_website_report(self, data: Dict[str, Any]) -> str:
+    def format_website_report(self, data: dict[str, Any]) -> str:
         """Generate JSON report for a website"""
         return json.dumps(data, indent=2, default=str)
     
-    def format_project_report(self, data: Dict[str, Any]) -> str:
+    def format_project_report(self, data: dict[str, Any]) -> str:
         """Generate JSON report for a project"""
         return json.dumps(data, indent=2, default=str)
     
-    def format_summary_report(self, data: Dict[str, Any]) -> str:
+    def format_summary_report(self, data: dict[str, Any]) -> str:
         """Generate JSON summary report"""
         return json.dumps(data, indent=2, default=str)
 
     # --- Streaming interface ---
 
-    def begin(self, output_file: str, summary: dict):
+    def begin(self, output_file: str, summary: dict[str, Any]) -> None:
         """Write the opening envelope: {"summary": ..., "pages": ["""
         self._file = open(output_file, 'w', encoding='utf-8')
         self._is_first_page = True
@@ -1315,7 +1318,7 @@ class JSONFormatter(BaseFormatter):
         json.dump(summary, self._file, indent=2, default=str)
         self._file.write(', "pages": [\n')
 
-    def append_page(self, output_file: str, page_data: dict):
+    def append_page(self, output_file: str, page_data: dict[str, Any]) -> None:
         """Write one page JSON object into the pages array."""
         if not self._is_first_page:
             self._file.write(',\n')
@@ -1325,14 +1328,14 @@ class JSONFormatter(BaseFormatter):
         serialisable = self._make_serialisable(page_data)
         json.dump(serialisable, self._file, indent=2, default=str)
 
-    def finalize(self, output_file: str, summary: dict):
+    def finalize(self, output_file: str, summary: dict[str, Any]) -> None:
         """Close the pages array and the root object."""
         if hasattr(self, '_file') and self._file and not self._file.closed:
             self._file.write('\n]}')
             self._file.flush()
             self._file.close()
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """Close the file handle if still open."""
         if hasattr(self, '_file') and self._file and not self._file.closed:
             self._file.close()
@@ -1340,7 +1343,7 @@ class JSONFormatter(BaseFormatter):
     # --- helpers ---
 
     @staticmethod
-    def _make_serialisable(obj):
+    def _make_serialisable(obj: Any) -> Any:
         """Recursively convert model objects (with __dict__) to plain dicts."""
         if isinstance(obj, dict):
             return {k: JSONFormatter._make_serialisable(v) for k, v in obj.items()}
@@ -1357,11 +1360,11 @@ class JSONFormatter(BaseFormatter):
 class CSVFormatter(BaseFormatter):
     """CSV report formatter"""
     
-    def __init__(self, config: Dict[str, Any], language: str = 'en'):
+    def __init__(self, config: dict[str, Any], language: str = 'en') -> None:
         super().__init__(config, language)
         self.extension = 'csv'
     
-    def format_page_report(self, data: Dict[str, Any]) -> str:
+    def format_page_report(self, data: dict[str, Any]) -> str:
         """Generate CSV report for a page"""
         output = StringIO()
         writer = csv.writer(output)
@@ -1395,7 +1398,7 @@ class CSVFormatter(BaseFormatter):
 
         return output.getvalue()
 
-    def format_website_report(self, data: Dict[str, Any]) -> str:
+    def format_website_report(self, data: dict[str, Any]) -> str:
         """Generate CSV report for a website"""
         output = StringIO()
         writer = csv.writer(output)
@@ -1417,7 +1420,7 @@ class CSVFormatter(BaseFormatter):
         
         return output.getvalue()
     
-    def format_project_report(self, data: Dict[str, Any]) -> str:
+    def format_project_report(self, data: dict[str, Any]) -> str:
         """Generate CSV report for a project"""
         output = StringIO()
         writer = csv.writer(output)
@@ -1443,7 +1446,7 @@ class CSVFormatter(BaseFormatter):
         
         return output.getvalue()
     
-    def format_summary_report(self, data: Dict[str, Any]) -> str:
+    def format_summary_report(self, data: dict[str, Any]) -> str:
         """Generate CSV summary report"""
         output = StringIO()
         writer = csv.writer(output)
@@ -1464,18 +1467,18 @@ class CSVFormatter(BaseFormatter):
 
     # --- Streaming interface ---
 
-    def _csv_header(self):
+    def _csv_header(self) -> list[str]:
         """Get translated CSV header row"""
         return [self._t('url'), self._t('page_title'), self._t('type'), self._t('code'), self._t('description'),
                 self._t('touchpoint'), self._t('impact'), self._t('xpath'), self._t('html'), self._t('wcag_criteria')]
 
-    def begin(self, output_file: str, summary: dict):
+    def begin(self, output_file: str, summary: dict[str, Any]) -> None:
         """Open *output_file* and write the CSV header row."""
         self._file = open(output_file, 'w', newline='', encoding='utf-8')
         self._writer = csv.writer(self._file)
         self._writer.writerow(self._csv_header())
 
-    def append_page(self, output_file: str, page_data: dict):
+    def append_page(self, output_file: str, page_data: dict[str, Any]) -> None:
         """Write rows for every violation and warning on one page."""
         page = page_data.get('page', {})
         test_result = page_data.get('test_result')
@@ -1499,20 +1502,20 @@ class CSVFormatter(BaseFormatter):
         for w in warnings:
             self._write_issue_row('Warning', page_url, page_title, w)
 
-    def finalize(self, output_file: str, summary: dict):
+    def finalize(self, output_file: str, summary: dict[str, Any]) -> None:
         """Flush and close the CSV file."""
         if hasattr(self, '_file') and self._file and not self._file.closed:
             self._file.flush()
             self._file.close()
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """Close the file handle if still open."""
         if hasattr(self, '_file') and self._file and not self._file.closed:
             self._file.close()
 
     # --- helpers ---
 
-    def _write_issue_row(self, issue_type: str, page_url: str, page_title: str, issue):
+    def _write_issue_row(self, issue_type: str, page_url: str, page_title: str, issue: Any) -> None:
         """Write a single CSV row for an issue (violation or warning)."""
         # Enrich with catalog data so descriptions are translated
         if isinstance(issue, dict):
@@ -1522,7 +1525,8 @@ class CSVFormatter(BaseFormatter):
         else:
             issue_dict = issue.__dict__.copy() if hasattr(issue, '__dict__') else {}
         issue_dict = IssueCatalog.enrich_issue(issue_dict)
-        _get = lambda k, d='': issue_dict.get(k, d)
+        def _get(k: str, d: Any = '') -> Any:
+            return issue_dict.get(k, d)
 
         impact = _get('impact', '')
         if hasattr(impact, 'value'):
@@ -1549,7 +1553,7 @@ class CSVFormatter(BaseFormatter):
 class ExcelFormatter(BaseFormatter):
     """Excel report formatter - inherits TRANSLATIONS and _t() from BaseFormatter"""
 
-    def __init__(self, config: Dict[str, Any], language: str = 'en'):
+    def __init__(self, config: dict[str, Any], language: str = 'en') -> None:
         super().__init__(config, language)
         self.extension = 'xlsx'
         try:
@@ -1569,7 +1573,7 @@ class ExcelFormatter(BaseFormatter):
             logger.warning("openpyxl not installed - Excel export will return JSON")
             self.has_openpyxl = False
     
-    def _get_styles(self):
+    def _get_styles(self) -> dict[str, Any]:
         """Get common Excel styles"""
         if not self.has_openpyxl:
             return {}
@@ -1620,7 +1624,7 @@ class ExcelFormatter(BaseFormatter):
             }
         }
     
-    def format_page_report(self, data: Dict[str, Any]) -> bytes:
+    def format_page_report(self, data: dict[str, Any]) -> bytes:
         """Generate Excel report for a page"""
         if not self.has_openpyxl:
             return json.dumps(data, indent=2, default=str).encode('utf-8')
@@ -1630,6 +1634,7 @@ class ExcelFormatter(BaseFormatter):
         
         # Summary Sheet
         ws_summary = wb.active
+        assert ws_summary is not None
         ws_summary.title = self._t('summary')
         self._create_summary_sheet(ws_summary, data, styles)
 
@@ -1680,7 +1685,7 @@ class ExcelFormatter(BaseFormatter):
         output.seek(0)
         return output.getvalue()
     
-    def format_website_report(self, data: Dict[str, Any]) -> bytes:
+    def format_website_report(self, data: dict[str, Any]) -> bytes:
         """Generate Excel report for a website"""
         if not self.has_openpyxl:
             return json.dumps(data, indent=2, default=str).encode('utf-8')
@@ -1690,6 +1695,7 @@ class ExcelFormatter(BaseFormatter):
         
         # Summary Sheet
         ws_summary = wb.active
+        assert ws_summary is not None
         ws_summary.title = self._t('website_summary')
         self._create_website_summary_sheet(ws_summary, data, styles)
         
@@ -1710,7 +1716,7 @@ class ExcelFormatter(BaseFormatter):
         output.seek(0)
         return output.getvalue()
     
-    def format_project_report(self, data: Dict[str, Any]) -> bytes:
+    def format_project_report(self, data: dict[str, Any]) -> bytes:
         """Generate Excel report for a project"""
         if not self.has_openpyxl:
             return json.dumps(data, indent=2, default=str).encode('utf-8')
@@ -1720,6 +1726,7 @@ class ExcelFormatter(BaseFormatter):
         
         # Project Summary Sheet
         ws_summary = wb.active
+        assert ws_summary is not None
         ws_summary.title = self._t('project_summary')
         self._create_project_summary_sheet(ws_summary, data, styles)
         
@@ -1747,7 +1754,7 @@ class ExcelFormatter(BaseFormatter):
         output.seek(0)
         return output.getvalue()
     
-    def format_all_projects_report(self, data: Dict[str, Any]) -> bytes:
+    def format_all_projects_report(self, data: dict[str, Any]) -> bytes:
         """Generate Excel report for all projects"""
         warnings.warn(
             "format_all_projects_report() is deprecated, use begin/append_page/finalize streaming interface",
@@ -1762,6 +1769,7 @@ class ExcelFormatter(BaseFormatter):
         
         # Overall Summary Sheet
         ws_summary = wb.active
+        assert ws_summary is not None
         ws_summary.title = self._t('overall_summary')
         self._create_all_projects_summary_sheet(ws_summary, data, styles)
         
@@ -1777,7 +1785,7 @@ class ExcelFormatter(BaseFormatter):
         output.seek(0)
         return output.getvalue()
     
-    def format_summary_report(self, data: Dict[str, Any]) -> bytes:
+    def format_summary_report(self, data: dict[str, Any]) -> bytes:
         """Generate Excel summary report"""
         if not self.has_openpyxl:
             return json.dumps(data, indent=2, default=str).encode('utf-8')
@@ -1787,6 +1795,7 @@ class ExcelFormatter(BaseFormatter):
         
         # Executive Summary Sheet
         ws = wb.active
+        assert ws is not None
         ws.title = self._t('executive_summary')
         
         # Headers
@@ -1822,7 +1831,7 @@ class ExcelFormatter(BaseFormatter):
         output.seek(0)
         return output.getvalue()
     
-    def _create_summary_sheet(self, ws, data, styles):
+    def _create_summary_sheet(self, ws: Any, data: Any, styles: dict[str, Any]) -> None:
         """Create page summary sheet"""
         # Title
         ws.merge_cells('A1:E1')
@@ -1870,7 +1879,7 @@ class ExcelFormatter(BaseFormatter):
         
         self._auto_adjust_columns(ws)
     
-    def _create_violations_sheet(self, ws, violations, styles):
+    def _create_violations_sheet(self, ws: Any, violations: list[dict[str, Any]], styles: dict[str, Any]) -> None:
         """Create violations sheet"""
         headers = [self._t('rule_id'), self._t('description'), self._t('impact'), self._t('wcag_criteria'), self._t('elements_affected'), self._t('suggested_fix'), self._t('test_user'), self._t('user_roles')]
 
@@ -1910,7 +1919,7 @@ class ExcelFormatter(BaseFormatter):
 
         self._auto_adjust_columns(ws)
     
-    def _create_warnings_sheet(self, ws, warnings, styles):
+    def _create_warnings_sheet(self, ws: Any, warnings: list[dict[str, Any]], styles: dict[str, Any]) -> None:
         """Create warnings sheet"""
         headers = [self._t('rule_id'), self._t('description'), self._t('elements_affected'), self._t('test_user'), self._t('user_roles')]
 
@@ -1942,7 +1951,7 @@ class ExcelFormatter(BaseFormatter):
 
         self._auto_adjust_columns(ws)
     
-    def _create_info_sheet(self, ws, info_items, styles):
+    def _create_info_sheet(self, ws: Any, info_items: list[dict[str, Any]], styles: dict[str, Any]) -> None:
         """Create info sheet"""
         headers = [self._t('id'), self._t('description'), self._t('category'), self._t('wcag_criteria'), self._t('location'), self._t('test_user'), self._t('user_roles')]
 
@@ -1976,7 +1985,7 @@ class ExcelFormatter(BaseFormatter):
 
         self._auto_adjust_columns(ws)
     
-    def _create_discovery_sheet(self, ws, discovery_items, styles):
+    def _create_discovery_sheet(self, ws: Any, discovery_items: list[dict[str, Any]], styles: dict[str, Any]) -> None:
         """Create discovery sheet"""
         headers = [self._t('id'), self._t('description'), self._t('category'), self._t('location'), self._t('manual_check_required'), self._t('test_user'), self._t('user_roles')]
 
@@ -2016,7 +2025,7 @@ class ExcelFormatter(BaseFormatter):
 
         self._auto_adjust_columns(ws)
     
-    def _create_ai_findings_sheet(self, ws, findings, styles):
+    def _create_ai_findings_sheet(self, ws: Any, findings: list[Any], styles: dict[str, Any]) -> None:
         """Create AI findings sheet"""
         headers = [self._t('type'), self._t('description'), self._t('severity'), self._t('confidence'), self._t('suggested_fix')]
         
@@ -2044,7 +2053,7 @@ class ExcelFormatter(BaseFormatter):
         
         self._auto_adjust_columns(ws)
     
-    def _create_passes_sheet(self, ws, passes, styles):
+    def _create_passes_sheet(self, ws: Any, passes: list[dict[str, Any]], styles: dict[str, Any]) -> None:
         """Create passes sheet"""
         headers = [self._t('rule_id'), self._t('description')]
         
@@ -2065,7 +2074,7 @@ class ExcelFormatter(BaseFormatter):
         
         self._auto_adjust_columns(ws)
 
-    def _create_all_issues_sheet(self, ws, data, styles):
+    def _create_all_issues_sheet(self, ws: Any, data: Any, styles: dict[str, Any]) -> None:
         """Create a combined sheet with all issues (violations, warnings, info, discovery)"""
         headers = [self._t('type'), self._t('impact'), self._t('rule_id'), self._t('touchpoint'), self._t('what'), self._t('why_important'), self._t('who_affected'), self._t('how_to_remediate'), self._t('wcag_criteria'), self._t('location_xpath'), self._t('element'), self._t('page_url'), self._t('breakpoint_px'), self._t('pseudoclass'), self._t('page_state'), self._t('test_user'), self._t('user_roles')]
 
@@ -2258,7 +2267,7 @@ class ExcelFormatter(BaseFormatter):
 
         self._auto_adjust_columns(ws)
 
-    def _create_project_all_issues_sheet(self, ws, data, styles):
+    def _create_project_all_issues_sheet(self, ws: Any, data: Any, styles: dict[str, Any]) -> None:
         """Create a combined sheet with all issues from all pages across all websites"""
         headers = [self._t('type'), self._t('impact'), self._t('rule_id'), self._t('touchpoint'), self._t('what'), self._t('why_important'), self._t('who_affected'), self._t('how_to_remediate'), self._t('wcag_criteria'), self._t('location_xpath'), self._t('element'), self._t('page_url'), self._t('website'), self._t('breakpoint_px'), self._t('pseudoclass'), self._t('page_state'), self._t('test_user'), self._t('user_roles')]
 
@@ -2523,7 +2532,7 @@ class ExcelFormatter(BaseFormatter):
         # e.g., /html/body/nav/a is within /html/body/nav
         return issue_xpath == component_xpath or issue_xpath.startswith(component_xpath + '/')
 
-    def _extract_common_components(self, data: Dict[str, Any]) -> Dict[str, Dict]:
+    def _extract_common_components(self, data: dict[str, Any]) -> dict[str, dict[str, Any]]:
         """
         Extract common components (forms, navs, asides, sections, headers) from discovery issues.
 
@@ -2603,7 +2612,7 @@ class ExcelFormatter(BaseFormatter):
 
         return common_components
 
-    def _create_project_deduped_issues_sheet(self, ws, data, styles):
+    def _create_project_deduped_issues_sheet(self, ws: Any, data: Any, styles: dict[str, Any]) -> None:
         """Create a deduplicated issues sheet that groups issues by common components"""
         headers = [self._t('type'), self._t('impact'), self._t('rule_id'), self._t('touchpoint'), self._t('what'), self._t('why_important'), self._t('who_affected'),
                    self._t('how_to_remediate'), self._t('wcag_criteria'), self._t('location_xpath'), self._t('element'),
@@ -2619,7 +2628,7 @@ class ExcelFormatter(BaseFormatter):
         common_components = self._extract_common_components(data)
 
         # Track unique issues: (rule_id, xpath_or_component) -> issue data
-        unique_issues = {}
+        unique_issues: dict[tuple[Any, ...], dict[str, Any]] = {}
 
         # Iterate through all websites and their pages
         for website_data in data.get('websites', []):
@@ -2794,7 +2803,7 @@ class ExcelFormatter(BaseFormatter):
 
         self._auto_adjust_columns(ws)
 
-    def _create_common_components_sheet(self, ws, data, styles):
+    def _create_common_components_sheet(self, ws: Any, data: Any, styles: dict[str, Any]) -> None:
         """Create a sheet listing all common components identified during deduplication"""
         headers = [self._t('component_type'), self._t('signature'), self._t('label'), self._t('page_count'), self._t('pages_found'), self._t('example_xpath')]
 
@@ -2862,7 +2871,7 @@ class ExcelFormatter(BaseFormatter):
 
         self._auto_adjust_columns(ws)
 
-    def _create_website_summary_sheet(self, ws, data, styles):
+    def _create_website_summary_sheet(self, ws: Any, data: Any, styles: dict[str, Any]) -> None:
         """Create website summary sheet"""
         # Title
         ws.merge_cells('A1:D1')
@@ -2894,7 +2903,7 @@ class ExcelFormatter(BaseFormatter):
         
         self._auto_adjust_columns(ws)
     
-    def _create_pages_sheet(self, ws, pages, styles):
+    def _create_pages_sheet(self, ws: Any, pages: list[dict[str, Any]], styles: dict[str, Any]) -> None:
         """Create pages sheet"""
         headers = [self._t('page_url'), self._t('violations'), self._t('warnings'), self._t('passes'), self._t('last_tested'), self._t('page_state'), self._t('state_sequence'), self._t('session_id')]
 
@@ -2938,7 +2947,7 @@ class ExcelFormatter(BaseFormatter):
 
         self._auto_adjust_columns(ws)
     
-    def _create_violation_types_sheet(self, ws, violation_types, styles):
+    def _create_violation_types_sheet(self, ws: Any, violation_types: dict[str, Any], styles: dict[str, Any]) -> None:
         """Create violation types sheet"""
         headers = [self._t('rule_id'), self._t('count'), self._t('description'), self._t('pages_affected')]
         
@@ -2958,7 +2967,7 @@ class ExcelFormatter(BaseFormatter):
         
         self._auto_adjust_columns(ws)
     
-    def _create_project_summary_sheet(self, ws, data, styles):
+    def _create_project_summary_sheet(self, ws: Any, data: Any, styles: dict[str, Any]) -> None:
         """Create project summary sheet"""
         # Title
         ws.merge_cells('A1:D1')
@@ -2989,7 +2998,7 @@ class ExcelFormatter(BaseFormatter):
         
         self._auto_adjust_columns(ws)
     
-    def _create_websites_sheet(self, ws, websites, styles):
+    def _create_websites_sheet(self, ws: Any, websites: list[dict[str, Any]], styles: dict[str, Any]) -> None:
         """Create websites sheet"""
         headers = [self._t('website_name'), self._t('url'), self._t('pages'), self._t('total_violations'), self._t('total_warnings')]
         
@@ -3040,7 +3049,7 @@ class ExcelFormatter(BaseFormatter):
         
         self._auto_adjust_columns(ws)
     
-    def _create_all_projects_summary_sheet(self, ws, data, styles):
+    def _create_all_projects_summary_sheet(self, ws: Any, data: Any, styles: dict[str, Any]) -> None:
         """Create all projects summary sheet"""
         # Title
         ws.merge_cells('A1:F1')
@@ -3083,7 +3092,7 @@ class ExcelFormatter(BaseFormatter):
         
         self._auto_adjust_columns(ws)
     
-    def _create_projects_breakdown_sheet(self, ws, projects, styles):
+    def _create_projects_breakdown_sheet(self, ws: Any, projects: list[dict[str, Any]], styles: dict[str, Any]) -> None:
         """Create projects breakdown sheet"""
         headers = [self._t('project_name'), self._t('description'), self._t('websites'), self._t('total_pages'), self._t('tested_pages'), self._t('coverage_pct'), self._t('violations'), self._t('warnings')]
         
@@ -3117,12 +3126,12 @@ class ExcelFormatter(BaseFormatter):
         
         self._auto_adjust_columns(ws)
     
-    def _apply_style(self, cell, style):
+    def _apply_style(self, cell: Any, style: dict[str, Any]) -> None:
         """Apply style dictionary to a cell"""
         for attr, value in style.items():
             setattr(cell, attr, value)
     
-    def _create_page_states_sheet(self, ws, data, styles):
+    def _create_page_states_sheet(self, ws: Any, data: Any, styles: dict[str, Any]) -> None:
         """Create sheet showing multi-state test results summary"""
         # Title
         ws.merge_cells('A1:G1')
@@ -3202,7 +3211,7 @@ class ExcelFormatter(BaseFormatter):
 
         self._auto_adjust_columns(ws)
 
-    def _auto_adjust_columns(self, ws):
+    def _auto_adjust_columns(self, ws: Any) -> None:
         """Auto-adjust column widths"""
         for column in ws.columns:
             max_length = 0
@@ -3220,12 +3229,12 @@ class ExcelFormatter(BaseFormatter):
 
     # --- Streaming interface ---
 
-    def _detail_headers(self):
+    def _detail_headers(self) -> list[str]:
         """Get translated detail headers for streaming sheets"""
         return [self._t('page_url'), self._t('page_title'), self._t('code'), self._t('description'),
                 self._t('touchpoint'), self._t('impact'), self._t('xpath'), self._t('html'), self._t('wcag_criteria')]
 
-    def begin(self, output_file: str, summary: dict):
+    def begin(self, output_file: str, summary: dict[str, Any]) -> None:
         """Create a Workbook with Summary, Violations, and Warnings sheets."""
         if not self.has_openpyxl:
             return
@@ -3236,6 +3245,7 @@ class ExcelFormatter(BaseFormatter):
 
         # --- Summary sheet ---
         ws_sum = self._wb.active
+        assert ws_sum is not None
         ws_sum.title = self._t('summary')
         ws_sum.merge_cells('A1:D1')
         hdr_cell = ws_sum.cell(row=1, column=1, value=self._t('accessibility_report_summary'))
@@ -3262,7 +3272,7 @@ class ExcelFormatter(BaseFormatter):
             for attr in ('font', 'fill', 'alignment'):
                 setattr(cell, attr, styles['header'][attr])
 
-    def append_page(self, output_file: str, page_data: dict):
+    def append_page(self, output_file: str, page_data: dict[str, Any]) -> None:
         """Append rows for one page to the Violations and Warnings sheets."""
         if not self.has_openpyxl or not hasattr(self, '_wb'):
             return
@@ -3289,7 +3299,7 @@ class ExcelFormatter(BaseFormatter):
         for w in warnings:
             self._append_issue_row(self._ws_warnings, page_url, page_title, w)
 
-    def finalize(self, output_file: str, summary: dict):
+    def finalize(self, output_file: str, summary: dict[str, Any]) -> None:
         """Auto-size columns and save the workbook to *output_file*."""
         if not self.has_openpyxl or not hasattr(self, '_wb'):
             return
@@ -3299,7 +3309,7 @@ class ExcelFormatter(BaseFormatter):
 
         self._wb.save(output_file)
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """Close the workbook if still open."""
         if hasattr(self, '_wb') and self._wb:
             try:
@@ -3309,7 +3319,7 @@ class ExcelFormatter(BaseFormatter):
 
     # --- streaming helpers ---
 
-    def _append_issue_row(self, ws, page_url: str, page_title: str, issue):
+    def _append_issue_row(self, ws: Any, page_url: str, page_title: str, issue: Any) -> None:
         """Append a single data row to a worksheet."""
         # Enrich with catalog data so descriptions are translated
         if isinstance(issue, dict):
@@ -3319,7 +3329,8 @@ class ExcelFormatter(BaseFormatter):
         else:
             issue_dict = issue.__dict__.copy() if hasattr(issue, '__dict__') else {}
         issue_dict = IssueCatalog.enrich_issue(issue_dict)
-        _get = lambda k, d='': issue_dict.get(k, d)
+        def _get(k: str, d: Any = '') -> Any:
+            return issue_dict.get(k, d)
 
         impact = _get('impact', '')
         if hasattr(impact, 'value'):
@@ -3345,7 +3356,7 @@ class ExcelFormatter(BaseFormatter):
 class PDFFormatter(BaseFormatter):
     """PDF report formatter (uses HTML + conversion)"""
     
-    def __init__(self, config: Dict[str, Any], language: str = 'en'):
+    def __init__(self, config: dict[str, Any], language: str = 'en'):
         super().__init__(config, language)
         self.extension = 'pdf'
         self.html_formatter = HTMLFormatter(config, language)
@@ -3360,22 +3371,22 @@ class PDFFormatter(BaseFormatter):
             logger.warning("weasyprint not installed - PDF generation will fall back to HTML")
             self.has_weasyprint = False
     
-    def format_page_report(self, data: Dict[str, Any]) -> bytes:
+    def format_page_report(self, data: dict[str, Any]) -> bytes:
         """Generate PDF for page report"""
         html_content = self.html_formatter.format_page_report(data)
         return self._convert_to_pdf(html_content)
     
-    def format_website_report(self, data: Dict[str, Any]) -> bytes:
+    def format_website_report(self, data: dict[str, Any]) -> bytes:
         """Generate PDF for website report"""
         html_content = self.html_formatter.format_website_report(data)
         return self._convert_to_pdf(html_content)
     
-    def format_project_report(self, data: Dict[str, Any]) -> bytes:
+    def format_project_report(self, data: dict[str, Any]) -> bytes:
         """Generate PDF for project report"""
         html_content = self.html_formatter.format_project_report(data)
         return self._convert_to_pdf(html_content)
     
-    def format_all_projects_report(self, data: Dict[str, Any]) -> bytes:
+    def format_all_projects_report(self, data: dict[str, Any]) -> bytes:
         """Generate PDF for all projects report"""
         warnings.warn(
             "format_all_projects_report() is deprecated, use begin/append_page/finalize streaming interface",
@@ -3385,7 +3396,7 @@ class PDFFormatter(BaseFormatter):
         html_content = self.html_formatter.format_all_projects_report(data)
         return self._convert_to_pdf(html_content)
     
-    def format_summary_report(self, data: Dict[str, Any]) -> bytes:
+    def format_summary_report(self, data: dict[str, Any]) -> bytes:
         """Generate PDF for summary report"""
         html_content = self.html_formatter.format_summary_report(data)
         return self._convert_to_pdf(html_content)
@@ -3416,9 +3427,9 @@ class PDFFormatter(BaseFormatter):
                 ''')
                 
                 # Create PDF from HTML
-                pdf_document = self.HTML(string=html_content).render(stylesheets=[pdf_css])
-                pdf_bytes = pdf_document.write_pdf()
-                
+                pdf_document: Any = self.HTML(string=html_content).render(stylesheets=[pdf_css])
+                pdf_bytes: bytes = pdf_document.write_pdf()
+
                 return pdf_bytes
             except Exception as e:
                 logger.error(f"Failed to generate PDF with weasyprint: {e}")
@@ -3429,7 +3440,7 @@ class PDFFormatter(BaseFormatter):
             logger.warning("PDF generation not available - returning HTML content")
             return html_content.encode('utf-8')
     
-    def save_pdf(self, html_content: str, filepath: Path):
+    def save_pdf(self, html_content: str, filepath: Path) -> None:
         """
         Save HTML as PDF
 
@@ -3441,7 +3452,7 @@ class PDFFormatter(BaseFormatter):
 
     # --- Streaming interface ---
 
-    def begin(self, output_file: str, summary: dict):
+    def begin(self, output_file: str, summary: dict[str, Any]) -> None:
         """Create an internal HTMLFormatter and a temp HTML file, then delegate."""
         self._pdf_output_file = output_file
         self._internal_html = HTMLFormatter(self.config, self.language)
@@ -3450,12 +3461,12 @@ class PDFFormatter(BaseFormatter):
         os.close(fd)
         self._internal_html.begin(self._temp_html_path, summary)
 
-    def append_page(self, output_file: str, page_data: dict):
+    def append_page(self, output_file: str, page_data: dict[str, Any]) -> None:
         """Delegate to internal HTMLFormatter."""
         if hasattr(self, '_internal_html') and self._internal_html:
             self._internal_html.append_page(self._temp_html_path, page_data)
 
-    def finalize(self, output_file: str, summary: dict):
+    def finalize(self, output_file: str, summary: dict[str, Any]) -> None:
         """Finalize the internal HTML, then convert to PDF via weasyprint."""
         if not hasattr(self, '_internal_html') or not self._internal_html:
             return
@@ -3475,7 +3486,7 @@ class PDFFormatter(BaseFormatter):
             import shutil
             shutil.copy2(self._temp_html_path, output_file)
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """Clean up internal HTMLFormatter temps and own temp HTML file."""
         if hasattr(self, '_internal_html') and self._internal_html:
             self._internal_html.cleanup()

@@ -2,52 +2,7 @@
 
 {% block title %}{{ ftl('schedules-schedules-dashboard') }} - {{ ftl('common-auto-a11y') }}{% endblock %}
 
-{% block extra_css %}
-<style>
-    .stat-card {
-        transition: transform 0.2s, box-shadow 0.2s;
-        border: none;
-        border-radius: 12px;
-    }
-    .stat-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-    .stat-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.5rem;
-    }
-    .stat-value {
-        font-size: 2rem;
-        font-weight: 700;
-        line-height: 1;
-    }
-    .stat-label {
-        font-size: 0.875rem;
-        color: #6c757d;
-    }
-    .schedule-row:hover {
-        background-color: #f8f9fa;
-    }
-    .upcoming-item {
-        border-left: 3px solid #0d6efd;
-        padding-left: 12px;
-        margin-bottom: 12px;
-    }
-    .upcoming-item.soon {
-        border-left-color: #ffc107;
-    }
-    .type-badge {
-        font-size: 0.75rem;
-        padding: 0.25em 0.6em;
-    }
-</style>
-{% endblock %}
+{# Styles for this page live in static/css/style.css under "Schedules dashboard page" #}
 
 {% block content %}
 <div class="container-fluid">
@@ -64,7 +19,8 @@
     <!-- Project Filter -->
     <div class="card mb-4">
         <div class="card-body py-3">
-            <form method="get" class="row g-3 align-items-end">
+            <h2 id="schedules-filter-heading" class="visually-hidden">{{ ftl('schedules-filter-schedules') }}</h2>
+            <form method="get" class="row g-3 align-items-end" aria-labelledby="schedules-filter-heading">
                 <div class="col-md-4">
                     <label for="project_id" class="form-label">{{ ftl('schedules-filter-by-project') }}</label>
                     <select name="project_id" id="project_id" class="form-select" onchange="this.form.submit()">
@@ -78,7 +34,7 @@
                 </div>
                 <div class="col-md-4">
                     {% if selected_project %}
-                    <a href="{{ url_for('schedules.schedules_dashboard') }}" class="btn btn-outline-secondary">
+                    <a href="{{ url_for('schedules.schedules_dashboard') }}" class="btn btn-outline-neutral">
                         <i class="bi bi-x" aria-hidden="true"></i> {{ ftl('schedules-clear-filter') }}
                     </a>
                     {% endif %}
@@ -93,7 +49,7 @@
             <div class="card stat-card h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
-                        <div class="stat-icon bg-primary bg-opacity-10 text-primary me-3">
+                        <div class="stat-icon bg-brand-subtle text-brand me-3">
                             <i class="bi bi-calendar-event" aria-hidden="true"></i>
                         </div>
                         <div>
@@ -108,7 +64,7 @@
             <div class="card stat-card h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
-                        <div class="stat-icon bg-success bg-opacity-10 text-success me-3">
+                        <div class="stat-icon bg-pass-subtle text-severity-pass me-3">
                             <i class="bi bi-check-circle" aria-hidden="true"></i>
                         </div>
                         <div>
@@ -123,7 +79,7 @@
             <div class="card stat-card h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
-                        <div class="stat-icon bg-secondary bg-opacity-10 text-secondary me-3">
+                        <div class="stat-icon bg-neutral-subtle text-muted me-3">
                             <i class="bi bi-pause-circle" aria-hidden="true"></i>
                         </div>
                         <div>
@@ -138,7 +94,7 @@
             <div class="card stat-card h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
-                        <div class="stat-icon bg-info bg-opacity-10 text-info me-3">
+                        <div class="stat-icon bg-info-subtle-bg text-info-custom me-3">
                             <i class="bi bi-clock-history" aria-hidden="true"></i>
                         </div>
                         <div>
@@ -156,10 +112,10 @@
         <div class="col-lg-8">
             <section aria-labelledby="all-schedules-heading">
             <div class="card">
-                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <div class="card-header bg-brand text-inverse d-flex justify-content-between align-items-center">
                     <h2 id="all-schedules-heading" class="mb-0">
                         <i class="bi bi-calendar-event" aria-hidden="true"></i> {{ ftl('schedules-all-schedules') }}
-                        <span class="badge bg-light text-dark ms-2">{{ schedules|length }}</span>
+                        <span class="badge badge-subtle ms-2">{{ schedules|length }}</span>
                     </h2>
                 </div>
                 <div class="card-body p-0">
@@ -167,14 +123,14 @@
                     <div class="table-responsive">
                         <table class="table table-hover mb-0">
                             <caption class="visually-hidden">{{ ftl('schedules-all-schedules-list') }}</caption>
-                            <thead class="table-light">
+                            <thead class="table-subtle">
                                 <tr>
-                                    <th>{{ ftl('common-name') }}</th>
-                                    <th>{{ ftl('common-project-website') }}</th>
-                                    <th>{{ ftl('common-type') }}</th>
-                                    <th>{{ ftl('common-status') }}</th>
-                                    <th>{{ ftl('schedules-next-run') }}</th>
-                                    <th>{{ ftl('common-actions') }}</th>
+                                    <th scope="col">{{ ftl('common-name') }}</th>
+                                    <th scope="col">{{ ftl('common-project-website') }}</th>
+                                    <th scope="col">{{ ftl('common-type') }}</th>
+                                    <th scope="col">{{ ftl('common-status') }}</th>
+                                    <th scope="col">{{ ftl('schedules-next-run') }}</th>
+                                    <th scope="col">{{ ftl('common-actions') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -210,9 +166,9 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        {% set type_colors = {'daily': 'primary', 'weekly': 'info', 'monthly': 'secondary', 'one_time': 'warning', 'cron': 'dark'} %}
+                                        {% set type_colors = {'daily': 'brand', 'weekly': 'info', 'monthly': 'neutral', 'one_time': 'medium', 'cron': 'neutral'} %}
                                         {% set type_value = schedule.schedule_type.value if schedule.schedule_type.value is defined else schedule.schedule_type %}
-                                        <span class="badge type-badge bg-{{ type_colors.get(type_value, 'secondary') }}">
+                                        <span class="badge type-badge badge-{{ type_colors.get(type_value, 'neutral') }}">
                                             {% if type_value == 'one_time' %}{{ ftl('schedules-one-time') }}
                                             {% elif type_value == 'daily' %}{{ ftl('common-daily') }}
                                             {% elif type_value == 'weekly' %}{{ ftl('common-weekly') }}
@@ -224,11 +180,11 @@
                                     </td>
                                     <td>
                                         {% if schedule.enabled %}
-                                        <span class="badge bg-success">
+                                        <span class="badge badge-pass">
                                             <i class="bi bi-check-circle" aria-hidden="true"></i> {{ ftl('common-active') }}
                                         </span>
                                         {% else %}
-                                        <span class="badge bg-secondary">
+                                        <span class="badge badge-neutral">
                                             <i class="bi bi-pause-circle" aria-hidden="true"></i> {{ ftl('common-paused') }}
                                         </span>
                                         {% endif %}
@@ -243,18 +199,18 @@
                                     <td>
                                         <div class="btn-group btn-group-sm">
                                             <a href="{{ url_for('schedules.view_schedule', website_id=schedule._website_id, schedule_id=schedule.id) }}"
-                                               class="btn btn-outline-primary" title="{{ ftl('common-view') }}">
+                                               class="btn btn-outline-brand" aria-label="{{ ftl('common-view') }}">
                                                 <i class="bi bi-eye" aria-hidden="true"></i>
                                             </a>
                                             <button type="button"
                                                     class="btn btn-outline-{% if schedule.enabled %}success{% else %}secondary{% endif %}"
                                                     onclick="toggleSchedule('{{ schedule._website_id }}', '{{ schedule.id }}')"
-                                                    title="{% if schedule.enabled %}{{ ftl('common-disable') }}{% else %}{{ ftl('common-enable') }}{% endif %}">
+                                                    aria-label="{% if schedule.enabled %}{{ ftl('common-disable') }}{% else %}{{ ftl('common-enable') }}{% endif %}">
                                                 <i class="bi bi-toggle-{% if schedule.enabled %}on{% else %}off{% endif %}" aria-hidden="true"></i>
                                             </button>
-                                            <button type="button" class="btn btn-outline-info"
+                                            <button type="button" class="btn btn-outline-brand"
                                                     onclick="runNow('{{ schedule._website_id }}', '{{ schedule.id }}')"
-                                                    title="{{ ftl('schedules-run-now') }}"
+                                                    aria-label="{{ ftl('schedules-run-now') }}"
                                                     {% if not schedule.enabled %}disabled{% endif %}>
                                                 <i class="bi bi-play-fill" aria-hidden="true"></i>
                                             </button>
@@ -267,7 +223,7 @@
                     </div>
                     {% else %}
                     <div class="text-center py-5">
-                        <i class="bi bi-calendar-x text-placeholder" aria-hidden="true" style="font-size: 3rem;"></i>
+                        <i class="bi bi-calendar-x text-placeholder empty-state-icon" aria-hidden="true"></i>
                         <p class="text-muted mt-3">{{ ftl('schedules-no-schedules-found') }}</p>
                         <p class="text-muted small">{{ ftl('schedules-create-schedules-from-individual-website-pages') }}</p>
                     </div>
@@ -282,7 +238,7 @@
             <!-- Upcoming Runs -->
             <section aria-labelledby="upcoming-runs-heading">
             <div class="card mb-4">
-                <div class="card-header bg-info text-white">
+                <div class="card-header card-header-info">
                     <h2 id="upcoming-runs-heading" class="mb-0">
                         <i class="bi bi-clock" aria-hidden="true"></i> {{ ftl('schedules-upcoming-runs') }}
                     </h2>
@@ -315,7 +271,7 @@
             <!-- Schedule Types -->
             <section aria-labelledby="schedule-types-heading">
             <div class="card mb-4">
-                <div class="card-header bg-secondary text-white">
+                <div class="card-header card-header-neutral">
                     <h2 id="schedule-types-heading" class="mb-0">
                         <i class="bi bi-pie-chart" aria-hidden="true"></i> {{ ftl('schedules-by-schedule-type') }}
                     </h2>
@@ -332,7 +288,7 @@
                             {% elif type_name == 'cron' %}{{ ftl('schedules-custom-cron') }}
                             {% else %}{{ type_name }}
                             {% endif %}
-                            <span class="badge bg-primary rounded-pill">{{ count }}</span>
+                            <span class="badge badge-brand rounded-pill">{{ count }}</span>
                         </li>
                         {% endfor %}
                     </ul>
@@ -346,20 +302,20 @@
             <!-- Quick Links -->
             <section aria-labelledby="quick-links-heading">
             <div class="card">
-                <div class="card-header bg-light">
+                <div class="card-header bg-subtle">
                     <h2 id="quick-links-heading" class="mb-0">
                         <i class="bi bi-link-45deg" aria-hidden="true"></i> {{ ftl('schedules-quick-links') }}
                     </h2>
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <a href="{{ url_for('testing.testing_dashboard') }}" class="btn btn-outline-primary btn-sm">
+                        <a href="{{ url_for('testing.testing_dashboard') }}" class="btn btn-outline-brand btn-sm">
                             <i class="bi bi-speedometer2" aria-hidden="true"></i> {{ ftl('common-testing-dashboard') }}
                         </a>
-                        <a href="{{ url_for('testing.trends_page') }}" class="btn btn-outline-primary btn-sm">
+                        <a href="{{ url_for('testing.trends_page') }}" class="btn btn-outline-brand btn-sm">
                             <i class="bi bi-graph-up-arrow" aria-hidden="true"></i> {{ ftl('common-trend-analysis') }}
                         </a>
-                        <a href="{{ url_for('projects.list_projects') }}" class="btn btn-outline-secondary btn-sm">
+                        <a href="{{ url_for('projects.list_projects') }}" class="btn btn-outline-neutral btn-sm">
                             <i class="bi bi-folder" aria-hidden="true"></i> {{ ftl('common-all-projects') }}
                         </a>
                     </div>

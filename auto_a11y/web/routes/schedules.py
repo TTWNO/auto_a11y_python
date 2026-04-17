@@ -1,9 +1,14 @@
 """
 Routes for managing test schedules (scheduled accessibility testing)
 """
+from __future__ import annotations
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify
+from typing import Any
+
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from werkzeug.wrappers import Response
 from auto_a11y.web.fluent import ftl
+from auto_a11y.web.typed_app import get_db
 from flask_login import current_user
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -22,40 +27,40 @@ schedules_bp = Blueprint('schedules', __name__)
 
 
 @schedules_bp.route('/schedules')
-def schedules_dashboard():
+def schedules_dashboard() -> str:
     """Global schedules dashboard - shows all schedules across all projects"""
     # Get filter parameters
     project_id = request.args.get('project_id')
 
     # Get all projects for filter dropdown
-    projects = current_app.db.get_projects()
+    projects = get_db().get_projects()
 
     # Get selected project
     selected_project = None
     if project_id:
-        selected_project = current_app.db.get_project(project_id)
+        selected_project = get_db().get_project(project_id)
 
     # Get all schedules (optionally filtered by project)
-    schedules = current_app.db.get_all_test_schedules(project_id=project_id)
+    schedules = get_db().get_all_test_schedules(project_id=project_id)
 
     # Enrich schedules with website and project info
     for schedule in schedules:
-        website = current_app.db.get_website(schedule.website_id)
+        website = get_db().get_website(schedule.website_id)
         if website:
-            schedule._website_name = website.name
-            schedule._website_id = website.id
-            project = current_app.db.get_project(website.project_id)
+            setattr(schedule, '_website_name', website.name)
+            setattr(schedule, '_website_id', website.id)
+            project = get_db().get_project(website.project_id)
             if project:
-                schedule._project_name = project.name
-                schedule._project_id = project.id
+                setattr(schedule, '_project_name', project.name)
+                setattr(schedule, '_project_id', project.id)
             else:
-                schedule._project_name = 'Unknown'
-                schedule._project_id = None
+                setattr(schedule, '_project_name', 'Unknown')
+                setattr(schedule, '_project_id', None)
         else:
-            schedule._website_name = 'Unknown'
-            schedule._website_id = None
-            schedule._project_name = 'Unknown'
-            schedule._project_id = None
+            setattr(schedule, '_website_name', 'Unknown')
+            setattr(schedule, '_website_id', None)
+            setattr(schedule, '_project_name', 'Unknown')
+            setattr(schedule, '_project_id', None)
 
     # Calculate summary stats
     total_schedules = len(schedules)
@@ -63,14 +68,14 @@ def schedules_dashboard():
     disabled_schedules = total_schedules - enabled_schedules
 
     # Count by schedule type
-    type_counts = {}
+    type_counts: dict[str, int] = {}
     for s in schedules:
         type_name = s.schedule_type.value if hasattr(s.schedule_type, 'value') else str(s.schedule_type)
         type_counts[type_name] = type_counts.get(type_name, 0) + 1
 
     # Get upcoming runs (next 24 hours)
     scheduler = get_scheduler_service()
-    upcoming_runs = []
+    upcoming_runs: list[dict[str, Any]] = []
     if scheduler:
         for schedule in schedules:
             if schedule.enabled and schedule.next_run_at:
@@ -78,7 +83,7 @@ def schedules_dashboard():
                     'schedule': schedule,
                     'next_run': schedule.next_run_at
                 })
-    upcoming_runs.sort(key=lambda x: x['next_run'] if x['next_run'] else datetime.max)
+    upcoming_runs.sort(key=lambda x: x.get('next_run') or datetime.max)
     upcoming_runs = upcoming_runs[:10]  # Limit to next 10
 
     return render_template('schedules/dashboard.html',
@@ -95,17 +100,17 @@ def schedules_dashboard():
 
 @schedules_bp.route('/websites/<website_id>/schedules')
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
-def list_schedules(website_id):
+def list_schedules(website_id: str) -> str | Response:
     """List all schedules for a website"""
-    website = current_app.db.get_website(website_id)
+    website = get_db().get_website(website_id)
     if not website:
         flash(ftl('common-website-not-found'), 'error')
         return redirect(url_for('index'))
 
-    project = current_app.db.get_project(website.project_id)
+    project = get_db().get_project(website.project_id)
 
     # Get all schedules
-    schedules = current_app.db.get_test_schedules_for_website(website_id)
+    schedules = get_db().get_test_schedules_for_website(website_id)
 
     return render_template('schedules/list.html',
                          website=website,
@@ -115,14 +120,14 @@ def list_schedules(website_id):
 
 @schedules_bp.route('/websites/<website_id>/schedules/create', methods=['GET', 'POST'])
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
-def create_schedule(website_id):
+def create_schedule(website_id: str) -> str | Response:
     """Create a new schedule"""
-    website = current_app.db.get_website(website_id)
+    website = get_db().get_website(website_id)
     if not website:
         flash(ftl('common-website-not-found'), 'error')
         return redirect(url_for('index'))
 
-    project = current_app.db.get_project(website.project_id)
+    project = get_db().get_project(website.project_id)
 
     if request.method == 'POST':
         try:
@@ -194,13 +199,14 @@ def create_schedule(website_id):
             )
 
             # Save to database
-            schedule_id = current_app.db.create_test_schedule(schedule)
+            schedule_id = get_db().create_test_schedule(schedule)
 
             # Register with scheduler if enabled
             scheduler = get_scheduler_service()
             if scheduler and schedule.enabled:
-                schedule = current_app.db.get_test_schedule(schedule_id)
-                scheduler._register_schedule_with_apscheduler(schedule)
+                refreshed_schedule = get_db().get_test_schedule(schedule_id)
+                if refreshed_schedule:
+                    scheduler._register_schedule_with_apscheduler(refreshed_schedule)
 
             flash(ftl('schedules-schedule-name-created-successfully', name=schedule.name), 'success')
             return redirect(url_for('schedules.list_schedules', website_id=website_id))
@@ -210,10 +216,10 @@ def create_schedule(website_id):
             flash(ftl('schedules-error-creating-schedule-error', error=str(e)), 'error')
 
     # Get pages for AI selection
-    pages = current_app.db.get_pages(website_id)
+    pages = get_db().get_pages(website_id)
 
     # Get project users
-    project_users = current_app.db.get_project_users(project.id, enabled_only=True)
+    project_users = get_db().get_project_users(project.id, enabled_only=True) if project and project.id else []
 
     # Get touchpoints from touchpoint_tests mapping
     from auto_a11y.config.touchpoint_tests import TOUCHPOINT_TEST_MAPPING
@@ -233,19 +239,19 @@ def create_schedule(website_id):
 
 @schedules_bp.route('/websites/<website_id>/schedules/<schedule_id>')
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
-def view_schedule(website_id, schedule_id):
+def view_schedule(website_id: str, schedule_id: str) -> str | Response:
     """View schedule details"""
-    website = current_app.db.get_website(website_id)
+    website = get_db().get_website(website_id)
     if not website:
         flash(ftl('common-website-not-found'), 'error')
         return redirect(url_for('index'))
 
-    schedule = current_app.db.get_test_schedule(schedule_id)
+    schedule = get_db().get_test_schedule(schedule_id)
     if not schedule:
         flash(ftl('schedules-schedule-not-found'), 'error')
         return redirect(url_for('schedules.list_schedules', website_id=website_id))
 
-    project = current_app.db.get_project(website.project_id)
+    project = get_db().get_project(website.project_id)
 
     # Get scheduler status
     scheduler = get_scheduler_service()
@@ -264,19 +270,19 @@ def view_schedule(website_id, schedule_id):
 
 @schedules_bp.route('/websites/<website_id>/schedules/<schedule_id>/edit', methods=['GET', 'POST'])
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
-def edit_schedule(website_id, schedule_id):
+def edit_schedule(website_id: str, schedule_id: str) -> str | Response:
     """Edit an existing schedule"""
-    website = current_app.db.get_website(website_id)
+    website = get_db().get_website(website_id)
     if not website:
         flash(ftl('common-website-not-found'), 'error')
         return redirect(url_for('index'))
 
-    schedule = current_app.db.get_test_schedule(schedule_id)
+    schedule = get_db().get_test_schedule(schedule_id)
     if not schedule:
         flash(ftl('schedules-schedule-not-found'), 'error')
         return redirect(url_for('schedules.list_schedules', website_id=website_id))
 
-    project = current_app.db.get_project(website.project_id)
+    project = get_db().get_project(website.project_id)
 
     if request.method == 'POST':
         try:
@@ -342,7 +348,7 @@ def edit_schedule(website_id, schedule_id):
             schedule.enabled = data.get('enabled') == 'on'
 
             # Save to database
-            current_app.db.update_test_schedule(schedule)
+            get_db().update_test_schedule(schedule)
 
             # Update scheduler
             scheduler = get_scheduler_service()
@@ -360,10 +366,10 @@ def edit_schedule(website_id, schedule_id):
             flash(ftl('schedules-error-updating-schedule-error', error=str(e)), 'error')
 
     # Get pages for AI selection
-    pages = current_app.db.get_pages(website_id)
+    pages = get_db().get_pages(website_id)
 
     # Get project users
-    project_users = current_app.db.get_project_users(project.id, enabled_only=True)
+    project_users = get_db().get_project_users(project.id, enabled_only=True) if project and project.id else []
 
     # Get touchpoints from touchpoint_tests mapping
     from auto_a11y.config.touchpoint_tests import TOUCHPOINT_TEST_MAPPING
@@ -383,9 +389,9 @@ def edit_schedule(website_id, schedule_id):
 
 @schedules_bp.route('/websites/<website_id>/schedules/<schedule_id>/delete', methods=['POST'])
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
-def delete_schedule(website_id, schedule_id):
+def delete_schedule(website_id: str, schedule_id: str) -> Response:
     """Delete a schedule"""
-    schedule = current_app.db.get_test_schedule(schedule_id)
+    schedule = get_db().get_test_schedule(schedule_id)
     if not schedule:
         flash(ftl('schedules-schedule-not-found'), 'error')
         return redirect(url_for('schedules.list_schedules', website_id=website_id))
@@ -396,7 +402,7 @@ def delete_schedule(website_id, schedule_id):
         scheduler.remove_from_apscheduler(schedule_id)
 
     # Delete from database
-    current_app.db.delete_test_schedule(schedule_id)
+    get_db().delete_test_schedule(schedule_id)
 
     flash(ftl('schedules-schedule-name-deleted', name=schedule.name), 'success')
     return redirect(url_for('schedules.list_schedules', website_id=website_id))
@@ -404,9 +410,9 @@ def delete_schedule(website_id, schedule_id):
 
 @schedules_bp.route('/websites/<website_id>/schedules/<schedule_id>/toggle', methods=['POST'])
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
-def toggle_schedule(website_id, schedule_id):
+def toggle_schedule(website_id: str, schedule_id: str) -> Response | tuple[Response, int]:
     """Enable or disable a schedule"""
-    schedule = current_app.db.get_test_schedule(schedule_id)
+    schedule = get_db().get_test_schedule(schedule_id)
     if not schedule:
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return jsonify({'error': ftl('schedules-schedule-not-found')}), 404
@@ -417,14 +423,15 @@ def toggle_schedule(website_id, schedule_id):
     new_state = not schedule.enabled
 
     # Update database
-    current_app.db.toggle_test_schedule(schedule_id, new_state)
+    get_db().toggle_test_schedule(schedule_id, new_state)
 
     # Update scheduler
     scheduler = get_scheduler_service()
     if scheduler:
         if new_state:
-            schedule = current_app.db.get_test_schedule(schedule_id)
-            scheduler._register_schedule_with_apscheduler(schedule)
+            refreshed = get_db().get_test_schedule(schedule_id)
+            if refreshed:
+                scheduler._register_schedule_with_apscheduler(refreshed)
         else:
             scheduler.remove_from_apscheduler(schedule_id)
 
@@ -441,9 +448,9 @@ def toggle_schedule(website_id, schedule_id):
 
 @schedules_bp.route('/websites/<website_id>/schedules/<schedule_id>/run-now', methods=['POST'])
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
-def run_now(website_id, schedule_id):
+def run_now(website_id: str, schedule_id: str) -> Response | tuple[Response, int]:
     """Trigger immediate execution of a schedule"""
-    schedule = current_app.db.get_test_schedule(schedule_id)
+    schedule = get_db().get_test_schedule(schedule_id)
     if not schedule:
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return jsonify({'error': ftl('schedules-schedule-not-found')}), 404
@@ -476,9 +483,9 @@ def run_now(website_id, schedule_id):
 
 @schedules_bp.route('/websites/<website_id>/schedules/<schedule_id>/preview')
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
-def preview_runs(website_id, schedule_id):
+def preview_runs(website_id: str, schedule_id: str) -> Response | tuple[Response, int]:
     """Preview next run times for a schedule"""
-    schedule = current_app.db.get_test_schedule(schedule_id)
+    schedule = get_db().get_test_schedule(schedule_id)
     if not schedule:
         return jsonify({'error': ftl('schedules-schedule-not-found')}), 404
 

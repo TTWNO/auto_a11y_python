@@ -27,25 +27,33 @@
         }
 
         .lang-switcher button {
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: white;
+            /* Solid background ensures 3:1+ non-text contrast on the brand navbar */
+            background: var(--color-bg);
+            border: 1px solid var(--color-bg);
+            color: var(--color-brand);
             padding: 0.25rem 0.75rem;
             border-radius: 4px;
             cursor: pointer;
             font-size: 0.875rem;
             font-weight: 500;
-            transition: all 0.2s;
+            transition: background-color 0.2s, color 0.2s;
         }
 
         .lang-switcher button:hover {
-            background: rgba(255, 255, 255, 0.3);
+            background: var(--color-bg-subtle);
+            color: var(--color-brand);
         }
 
-        .lang-switcher button.active {
-            background: white;
-            color: var(--color-brand);
-            border-color: white;
+        .lang-switcher button.active,
+        .lang-switcher button[aria-pressed="true"] {
+            background: var(--color-brand);
+            color: var(--color-text-inverse);
+            border-color: var(--color-bg);
+        }
+
+        .lang-switcher button:focus-visible {
+            outline: 2px solid var(--color-bg);
+            outline-offset: 2px;
         }
 
         .lang-active {
@@ -174,12 +182,13 @@
 </head>
 <body>
     <a class="skip-link" href="#main-content" style="position:absolute;top:-40px;left:0;background:var(--color-brand);color:var(--color-text-inverse);padding:8px;text-decoration:none;z-index:1100;">{{ ftl('common-skip-to-main-content') }}</a>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary no-print" aria-label="{{ ftl('reports-report-navigation') }}">
+    <header role="banner">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-brand no-print" aria-label="{{ ftl('reports-report-navigation') }}">
         <div class="container-fluid">
             <a class="navbar-brand" href="{{ index_path }}index.html">
                 <i class="bi bi-universal-access-circle" aria-hidden="true"></i>
-                <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['auto_a11y_report'] }}</span>
-                <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['auto_a11y_report'] }}</span>
+                <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['auto_a11y_report'] }}</span>
+                <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['auto_a11y_report'] }}</span>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="{{ ftl('common-toggle-navigation') }}">
                 <span class="navbar-toggler-icon"></span>
@@ -189,16 +198,16 @@
                     <li class="nav-item">
                         <a class="nav-link {% if current_page == 'index' %}active{% endif %}" href="{{ index_path }}index.html">
                             <i class="bi bi-house" aria-hidden="true"></i>
-                            <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['index'] }}</span>
-                            <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['index'] }}</span>
+                            <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['index'] }}</span>
+                            <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['index'] }}</span>
                         </a>
                     </li>
                     {% if navigation %}
                     <li class="nav-item dropdown">
                         <button type="button" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
                             <i class="bi bi-list" aria-hidden="true"></i>
-                            <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['pages'] }}</span>
-                            <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['pages'] }}</span>
+                            <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['pages'] }}</span>
+                            <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['pages'] }}</span>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end" style="max-height: 400px; overflow-y: auto;">
                             {% for nav_page in navigation.pages %}
@@ -213,44 +222,45 @@
                     {% endif %}
                 </ul>
                 <div class="lang-switcher">
-                    <button onclick="switchLanguage('en')" id="lang-en" class="{{ 'active' if language == 'en' else '' }}" lang="en" aria-label="{{ ftl('reports-switch-to-english') }}">EN</button>
-                    <button onclick="switchLanguage('fr')" id="lang-fr" class="{{ 'active' if language == 'fr' else '' }}" lang="fr" aria-label="{{ ftl('reports-switch-to-french') }}">FR</button>
+                    <button onclick="switchLanguage('en')" id="lang-en" class="{{ 'active' if language == 'en' else '' }}" lang="en" aria-label="{{ ftl('reports-switch-to-english') }}" aria-pressed="{{ 'true' if language == 'en' else 'false' }}">EN</button>
+                    <button onclick="switchLanguage('fr')" id="lang-fr" class="{{ 'active' if language == 'fr' else '' }}" lang="fr" aria-label="{{ ftl('reports-switch-to-french') }}" aria-pressed="{{ 'true' if language == 'fr' else 'false' }}">FR</button>
                 </div>
             </div>
         </div>
     </nav>
+    </header>
 
-    <main id="main-content" class="container-fluid py-4">
+    <main id="main-content" tabindex="-1" class="container-fluid py-4">
         {% block content %}{% endblock %}
     </main>
 
-    <footer class="footer mt-auto">
+    <footer role="contentinfo" class="footer mt-auto">
         <div class="container">
             <div class="row">
                 <div class="col-md-6">
                     <p class="text-muted mb-0">
                         <strong>
-                            <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['generated'] }}</span>
-                            <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['generated'] }}</span>:
+                            <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['generated'] }}</span>
+                            <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['generated'] }}</span>:
                         </strong> {{ generation_date|default('N/A') }}
                     </p>
                     <p class="text-muted mb-0">
                         <strong>
-                            <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['project'] }}</span>
-                            <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['project'] }}</span>:
+                            <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['project'] }}</span>
+                            <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['project'] }}</span>:
                         </strong> {{ project_name|default('Unknown') }}
                     </p>
                 </div>
                 <div class="col-md-6 text-md-end">
                     <p class="text-muted mb-0">
                         <strong>
-                            <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['wcag_level'] }}</span>
-                            <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['wcag_level'] }}</span>:
+                            <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['wcag_level'] }}</span>
+                            <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['wcag_level'] }}</span>:
                         </strong> {{ wcag_level|default('AA') }}
                     </p>
                     <p class="text-muted mb-0">
-                        <span data-lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['generated_by'] }}</span>
-                        <span data-lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['generated_by'] }}</span>
+                        <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ t['generated_by'] }}</span>
+                        <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ translations_fr['generated_by'] }}</span>
                         <strong>Auto A11y</strong>
                     </p>
                 </div>
@@ -274,14 +284,17 @@
         function switchLanguage(lang) {
             currentLanguage = lang;
             localStorage.setItem('reportLanguage', lang);
+            document.documentElement.lang = lang;
 
             // Update active button
             document.querySelectorAll('.lang-switcher button').forEach(btn => {
                 btn.classList.remove('active');
+                btn.setAttribute('aria-pressed', 'false');
             });
             const langButton = document.getElementById(`lang-${lang}`);
             if (langButton) {
                 langButton.classList.add('active');
+                langButton.setAttribute('aria-pressed', 'true');
             }
 
             // Toggle visibility of language-specific content using classes
@@ -330,6 +343,28 @@
             });
         });
 
+        // Make link-styled-as-button elements respond to Space key (a11y)
+        document.addEventListener('keydown', function(e) {
+            if (e.key === ' ' && e.target.tagName === 'A') {
+                e.preventDefault();
+                e.target.click();
+            }
+        });
+
+        // Add new-window warning to all external links for screen readers
+        document.addEventListener('DOMContentLoaded', function() {
+            var newWindowLabel = {{ ftl('common-opens-in-new-tab') | tojson }};
+            document.querySelectorAll('a[target="_blank"]').forEach(function(link) {
+                var ariaLabel = link.getAttribute('aria-label') || '';
+                if (!link.querySelector('.visually-hidden') && !/new\s*(window|tab)/i.test(ariaLabel)) {
+                    var span = document.createElement('span');
+                    span.className = 'visually-hidden';
+                    span.textContent = ' (' + newWindowLabel + ')';
+                    link.appendChild(span);
+                }
+            });
+        });
+
         // Copy XPath to clipboard
         function copyXpathToClipboard(xpath, button) {
             if (navigator.clipboard) {
@@ -337,11 +372,11 @@
                     const icon = button.querySelector('i');
                     const originalClass = icon.className;
                     icon.className = 'bi bi-check';
-                    button.classList.add('text-success');
+                    button.classList.add('text-severity-pass');
 
                     setTimeout(function() {
                         icon.className = originalClass;
-                        button.classList.remove('text-success');
+                        button.classList.remove('text-severity-pass');
                     }, 2000);
                 }).catch(function(err) {
                     alert('{{ ftl('reports-could-not-copy-to-clipboard') }}');

@@ -22,7 +22,7 @@
             <i class="bi bi-person" aria-hidden="true"></i> {{ user.name_display }}
         </h1>
         <div>
-            <a href="{{ url_for('project_users.edit_user', user_id=user.id) }}" class="btn btn-primary">
+            <a href="{{ url_for('project_users.edit_user', user_id=user.id) }}" class="btn btn-brand">
                 <i class="bi bi-pencil" aria-hidden="true"></i> {{ ftl('common-edit') }}
             </a>
         </div>
@@ -31,7 +31,7 @@
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
-            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+            <div class="alert alert-{{ {'error': 'high', 'success': 'pass', 'warning': 'medium', 'info': 'info'}.get(category, 'info') }} alert-dismissible fade show" role="alert">
                 {{ message }}
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
@@ -58,7 +58,7 @@
                         <dd class="col-sm-9">
                             {% if user.roles %}
                                 {% for role in user.roles %}
-                                <span class="badge bg-secondary">{{ role }}</span>
+                                <span class="badge badge-neutral">{{ role }}</span>
                                 {% endfor %}
                             {% else %}
                                 <span class="text-muted">{{ ftl('projects-no-roles-assigned') }}</span>
@@ -73,9 +73,9 @@
                         <dt class="col-sm-3">{{ ftl('common-status-2') }}</dt>
                         <dd class="col-sm-9">
                             {% if user.enabled %}
-                            <span class="badge bg-success"><i class="bi bi-check-circle" aria-hidden="true"></i> {{ ftl('common-enabled') }}</span>
+                            <span class="badge badge-pass"><i class="bi bi-check-circle" aria-hidden="true"></i> {{ ftl('common-enabled') }}</span>
                             {% else %}
-                            <span class="badge bg-danger"><i class="bi bi-x-circle" aria-hidden="true"></i> {{ ftl('common-disabled') }}</span>
+                            <span class="badge badge-high"><i class="bi bi-x-circle" aria-hidden="true"></i> {{ ftl('common-disabled') }}</span>
                             {% endif %}
                         </dd>
                     </dl>
@@ -146,9 +146,9 @@
                         <dt class="col-sm-3">{{ ftl('common-last-login-status') }}</dt>
                         <dd class="col-sm-9">
                             {% if user.last_login_success == True %}
-                            <span class="badge bg-success"><i class="bi bi-check-circle" aria-hidden="true"></i> {{ ftl('common-success') }}</span>
+                            <span class="badge badge-pass"><i class="bi bi-check-circle" aria-hidden="true"></i> {{ ftl('common-success') }}</span>
                             {% elif user.last_login_success == False %}
-                            <span class="badge bg-danger"><i class="bi bi-x-circle" aria-hidden="true"></i> {{ ftl('common-failed') }}</span>
+                            <span class="badge badge-high"><i class="bi bi-x-circle" aria-hidden="true"></i> {{ ftl('common-failed') }}</span>
                             {% else %}
                             <span class="text-muted">{{ ftl('common-not-attempted-yet') }}</span>
                             {% endif %}
@@ -157,7 +157,7 @@
                         {% if user.last_login_error %}
                         <dt class="col-sm-3">{{ ftl('common-last-error') }}</dt>
                         <dd class="col-sm-9">
-                            <code class="text-danger">{{ user.last_login_error }}</code>
+                            <code class="text-severity-high">{{ user.last_login_error }}</code>
                         </dd>
                         {% endif %}
                     </dl>
@@ -174,13 +174,13 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <a href="{{ url_for('project_users.edit_user', user_id=user.id) }}" class="btn btn-primary">
+                        <a href="{{ url_for('project_users.edit_user', user_id=user.id) }}" class="btn btn-brand">
                             <i class="bi bi-pencil" aria-hidden="true"></i> {{ ftl('common-edit-user') }}
                         </a>
 
                         <form action="{{ url_for('project_users.toggle_user', user_id=user.id) }}" method="POST" style="display: inline;">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                            <button type="submit" class="btn btn-{{ 'warning' if user.enabled else 'success' }} w-100">
+                            <button type="submit" class="btn btn-{{ 'medium' if user.enabled else 'pass' }} w-100" aria-label="{{ ftl('common-disable') if user.enabled else ftl('common-enable') }} {{ user.name_display }}">
                                 <i class="bi bi-{{ 'pause-circle' if user.enabled else 'play-circle' }}" aria-hidden="true"></i>
                                 {{ ftl('common-disable') if user.enabled else ftl('common-enable') }}
                             </button>
@@ -189,9 +189,9 @@
                         <hr>
 
                         <form action="{{ url_for('project_users.delete_user', user_id=user.id) }}" method="POST"
-                              onsubmit="return confirm('{{ ftl('projects-are-you-sure-you-want-to-delete-this-user-this') }}');">
+                              onsubmit="return confirm('{{ ftl('projects-are-you-sure-you-want-to-delete-this-user-this') }}')">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                            <button type="submit" class="btn btn-danger w-100">
+                            <button type="submit" class="btn btn-high w-100" aria-label="{{ ftl('common-delete-user') }} {{ user.name_display }}">
                                 <i class="bi bi-trash" aria-hidden="true"></i> {{ ftl('common-delete-user') }}
                             </button>
                         </form>
@@ -216,7 +216,7 @@
 
     <div class="row mt-3">
         <div class="col-md-8">
-            <a href="{{ url_for('project_users.list_users', project_id=project.id) }}" class="btn btn-secondary">
+            <a href="{{ url_for('project_users.list_users', project_id=project.id) }}" class="btn btn-neutral">
                 <i class="bi bi-arrow-left" aria-hidden="true"></i> {{ ftl('projects-back-to-test-users') }}
             </a>
         </div>

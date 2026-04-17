@@ -1,6 +1,10 @@
 """Group management routes."""
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
+from __future__ import annotations
+
+from flask import Blueprint, Response, render_template, request, redirect, url_for, flash
+from werkzeug.wrappers import Response as WerkzeugResponse
 from auto_a11y.web.fluent import ftl
+from auto_a11y.web.typed_app import get_db
 from flask_login import login_required
 
 from auto_a11y.core.permissions import permission_required
@@ -13,21 +17,21 @@ groups_bp = Blueprint('groups', __name__)
 
 @groups_bp.route('/')
 @permission_required('groups', 'read')
-def list_groups():
+def list_groups() -> str:
     """List all permission groups."""
-    groups = current_app.db.get_all_groups()
+    groups = get_db().get_all_groups()
     group_data = []
     for g in groups:
         group_data.append({
             'group': g,
-            'member_count': current_app.db.count_group_members(g.id),
+            'member_count': get_db().count_group_members(g.id) if g.id else 0,
         })
     return render_template('groups/list.html', groups=group_data)
 
 
 @groups_bp.route('/create', methods=['GET', 'POST'])
 @permission_required('groups', 'create')
-def create_group():
+def create_group() -> str | Response | WerkzeugResponse:
     """Create a new permission group."""
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
@@ -37,7 +41,7 @@ def create_group():
             flash(ftl('groups-group-name-is-required'), 'danger')
             return redirect(url_for('groups.create_group'))
 
-        if current_app.db.get_group_by_name(name):
+        if get_db().get_group_by_name(name):
             flash(ftl('groups-group-name-already-exists', name=name), 'danger')
             return redirect(url_for('groups.create_group'))
 
@@ -54,7 +58,7 @@ def create_group():
             description=description,
             permissions=permissions,
         )
-        current_app.db.create_group(group)
+        get_db().create_group(group)
         flash(ftl('groups-group-name-created', name=name), 'success')
         return redirect(url_for('groups.list_groups'))
 
@@ -66,9 +70,9 @@ def create_group():
 
 @groups_bp.route('/<group_id>/edit', methods=['GET', 'POST'])
 @permission_required('groups', 'update')
-def edit_group(group_id):
+def edit_group(group_id: str) -> str | Response | WerkzeugResponse:
     """Edit an existing permission group."""
-    group = current_app.db.get_group(group_id)
+    group = get_db().get_group(group_id)
     if not group:
         flash(ftl('groups-group-not-found'), 'danger')
         return redirect(url_for('groups.list_groups'))
@@ -81,7 +85,7 @@ def edit_group(group_id):
             flash(ftl('groups-group-name-is-required'), 'danger')
             return redirect(url_for('groups.edit_group', group_id=group_id))
 
-        existing = current_app.db.get_group_by_name(name)
+        existing = get_db().get_group_by_name(name)
         if existing and str(existing._id) != group_id:
             flash(ftl('groups-group-name-already-exists', name=name), 'danger')
             return redirect(url_for('groups.edit_group', group_id=group_id))
@@ -97,7 +101,7 @@ def edit_group(group_id):
         group.name = name
         group.description = description
         group.permissions = permissions
-        current_app.db.update_group(group)
+        get_db().update_group(group)
         flash(ftl('groups-group-name-updated', name=name), 'success')
         return redirect(url_for('groups.list_groups'))
 
@@ -109,9 +113,9 @@ def edit_group(group_id):
 
 @groups_bp.route('/<group_id>/delete', methods=['POST'])
 @permission_required('groups', 'delete')
-def delete_group(group_id):
+def delete_group(group_id: str) -> WerkzeugResponse:
     """Delete a non-system group."""
-    group = current_app.db.get_group(group_id)
+    group = get_db().get_group(group_id)
     if not group:
         flash(ftl('groups-group-not-found'), 'danger')
         return redirect(url_for('groups.list_groups'))
@@ -120,6 +124,6 @@ def delete_group(group_id):
         flash(ftl('groups-system-groups-cannot-be-deleted'), 'danger')
         return redirect(url_for('groups.list_groups'))
 
-    current_app.db.delete_group(group_id)
+    get_db().delete_group(group_id)
     flash(ftl('groups-group-name-deleted', name=group.name), 'success')
     return redirect(url_for('groups.list_groups'))

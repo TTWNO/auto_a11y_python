@@ -1,4 +1,7 @@
 """Tests for StaticHTMLReportGenerator streaming (two-pass) approach."""
+from __future__ import annotations
+
+from typing import Any
 
 import pytest
 from types import SimpleNamespace
@@ -9,12 +12,12 @@ from auto_a11y.reporting.static_html_generator import StaticHTMLReportGenerator
 class TestStaticHTMLSummaryCollection:
     """Tests for _collect_summary_stats() — Pass 1 of the two-pass approach."""
 
-    def setup_method(self):
+    def setup_method(self) -> None:
         self.gen = StaticHTMLReportGenerator.__new__(StaticHTMLReportGenerator)
         self.gen.db = MagicMock()
         self.gen.language = 'en'
 
-    def test_collects_counts_without_loading_full_results(self):
+    def test_collects_counts_without_loading_full_results(self) -> None:
         """Summary collection should use get_latest_test_result_summary, NOT get_latest_test_result."""
         self.gen.db.get_latest_test_result_summary.return_value = {
             'id': 'tr1', 'page_id': 'p1',
@@ -41,7 +44,7 @@ class TestStaticHTMLSummaryCollection:
         # Must NOT call get_latest_test_result (the heavy method)
         self.gen.db.get_latest_test_result.assert_not_called()
 
-    def test_skips_pages_without_results(self):
+    def test_skips_pages_without_results(self) -> None:
         """Pages with no test results should be skipped gracefully."""
         self.gen.db.get_latest_test_result_summary.return_value = None
         self.gen.db.get_page.return_value = MagicMock(
@@ -54,7 +57,7 @@ class TestStaticHTMLSummaryCollection:
         assert stats['total_warnings'] == 0
         assert stats['total_pages'] == 2
 
-    def test_counts_pages_with_issues(self):
+    def test_counts_pages_with_issues(self) -> None:
         """Should correctly count how many pages have each type of issue."""
         self.gen.db.get_latest_test_result_summary.side_effect = [
             {'id': 'tr1', 'page_id': 'p1', 'violation_count': 5, 'warning_count': 0,
@@ -77,7 +80,7 @@ class TestStaticHTMLSummaryCollection:
         assert stats['pages_with_info'] == 0
         assert stats['pages_with_discovery'] == 0
 
-    def test_aggregates_touchpoint_counts(self):
+    def test_aggregates_touchpoint_counts(self) -> None:
         """Should aggregate issue counts per touchpoint."""
         self.gen.db.get_latest_test_result_summary.return_value = {
             'id': 'tr1', 'page_id': 'p1',
@@ -102,7 +105,7 @@ class TestStaticHTMLSummaryCollection:
         assert stats['touchpoint_counts']['Images'] == 2
         assert stats['touchpoint_counts']['Forms'] == 1
 
-    def test_aggregates_wcag_counts(self):
+    def test_aggregates_wcag_counts(self) -> None:
         """Should aggregate issue counts per WCAG criterion."""
         self.gen.db.get_latest_test_result_summary.return_value = {
             'id': 'tr1', 'page_id': 'p1',
@@ -126,7 +129,7 @@ class TestStaticHTMLSummaryCollection:
         assert stats['wcag_counts']['1.3.1'] == 1
         assert stats['wcag_counts']['4.1.2'] == 1
 
-    def test_collects_scores(self):
+    def test_collects_scores(self) -> None:
         """Should collect scores from summaries."""
         self.gen.db.get_latest_test_result_summary.side_effect = [
             {'id': 'tr1', 'page_id': 'p1', 'violation_count': 1, 'warning_count': 0,
@@ -146,7 +149,7 @@ class TestStaticHTMLSummaryCollection:
 
         assert stats['scores'] == [80.0, 95.0]
 
-    def test_collects_page_info_list(self):
+    def test_collects_page_info_list(self) -> None:
         """Should collect lightweight page info for index/manifest."""
         self.gen.db.get_latest_test_result_summary.return_value = {
             'id': 'tr1', 'page_id': 'p1',
@@ -171,7 +174,7 @@ class TestStaticHTMLSummaryCollection:
         assert page['issues']['warnings'] == 1
         assert page['screenshot_path'] == 'shot.png'
 
-    def test_progress_callback_invoked(self):
+    def test_progress_callback_invoked(self) -> None:
         """Progress callback should be called during collection."""
         self.gen.db.get_latest_test_result_summary.return_value = {
             'id': 'tr1', 'page_id': 'p1',
@@ -189,7 +192,7 @@ class TestStaticHTMLSummaryCollection:
 
         callback.assert_called()
 
-    def test_multiple_pages_same_issue(self):
+    def test_multiple_pages_same_issue(self) -> None:
         """Same issue across multiple pages should track page count correctly."""
         self.gen.db.get_latest_test_result_summary.side_effect = [
             {'id': 'tr1', 'page_id': 'p1', 'violation_count': 1, 'warning_count': 0,
@@ -218,9 +221,10 @@ class TestStaticHTMLSummaryCollection:
         assert 'p2' in stats['issue_counts']['ErrNoAlt']['pages']
 
 
-def _make_mock_issue(rule_id, xpath='//div', description='Test issue',
-                     impact='critical', wcag=None, touchpoint='General',
-                     element='<div>', metadata=None):
+def _make_mock_issue(rule_id: str, xpath: str = '//div', description: str = 'Test issue',
+                     impact: str = 'critical', wcag: list[str] | None = None,
+                     touchpoint: str = 'General',
+                     element: str = '<div>', metadata: dict[str, Any] | None = None) -> MagicMock:
     """Helper to create a mock issue with a to_dict() method."""
     issue = MagicMock()
     d = {
@@ -240,8 +244,12 @@ def _make_mock_issue(rule_id, xpath='//div', description='Test issue',
     return issue
 
 
-def _make_mock_test_result(violations=None, warnings=None, info=None, discovery=None,
-                           passes=None, metadata=None):
+def _make_mock_test_result(violations: list[Any] | None = None,
+                           warnings: list[Any] | None = None,
+                           info: list[Any] | None = None,
+                           discovery: list[Any] | None = None,
+                           passes: list[Any] | None = None,
+                           metadata: dict[str, Any] | None = None) -> MagicMock:
     """Helper to create a mock TestResult."""
     tr = MagicMock()
     tr.violations = violations or []
@@ -256,14 +264,14 @@ def _make_mock_test_result(violations=None, warnings=None, info=None, discovery=
 class TestDedupStreaming:
     """Tests for _collect_dedup_data_streaming() — streaming dedup report data collection."""
 
-    def setup_method(self):
+    def setup_method(self) -> None:
         self.gen = StaticHTMLReportGenerator.__new__(StaticHTMLReportGenerator)
         self.gen.db = MagicMock()
         self.gen.language = 'en'
 
     @patch('auto_a11y.reporting.static_html_generator.IssueCatalog')
     @patch('auto_a11y.reporting.static_html_generator.force_locale')
-    def test_collect_dedup_data_streaming_deduplicates_same_issue(self, mock_force_locale, mock_catalog):
+    def test_collect_dedup_data_streaming_deduplicates_same_issue(self, mock_force_locale: MagicMock, mock_catalog: MagicMock) -> None:
         """Same issue on multiple pages should be deduplicated to 1 entry."""
         mock_force_locale.return_value.__enter__ = MagicMock()
         mock_force_locale.return_value.__exit__ = MagicMock()
@@ -297,7 +305,7 @@ class TestDedupStreaming:
         assert issues[0]['page_count'] == 2
         assert total == 2
 
-    def test_collect_dedup_empty_website(self):
+    def test_collect_dedup_empty_website(self) -> None:
         """Empty website (no pages) should return empty results."""
         website = MagicMock(id='w1')
         self.gen.db.yield_pages.return_value = iter([])
@@ -312,7 +320,7 @@ class TestDedupStreaming:
         assert scores == []
         assert meta == {}
 
-    def test_collect_dedup_skips_pages_without_test_results(self):
+    def test_collect_dedup_skips_pages_without_test_results(self) -> None:
         """Pages with no test results should be skipped."""
         page1 = MagicMock(id='p1', url='http://a.com', title='Page A')
         website = MagicMock(id='w1')
@@ -328,7 +336,7 @@ class TestDedupStreaming:
 
     @patch('auto_a11y.reporting.static_html_generator.IssueCatalog')
     @patch('auto_a11y.reporting.static_html_generator.force_locale')
-    def test_collect_dedup_builds_page_metadata(self, mock_force_locale, mock_catalog):
+    def test_collect_dedup_builds_page_metadata(self, mock_force_locale: MagicMock, mock_catalog: MagicMock) -> None:
         """Streaming pass should collect lightweight page metadata for targeted re-reads."""
         mock_force_locale.return_value.__enter__ = MagicMock()
         mock_force_locale.return_value.__exit__ = MagicMock()
@@ -355,7 +363,7 @@ class TestDedupStreaming:
 
     @patch('auto_a11y.reporting.static_html_generator.IssueCatalog')
     @patch('auto_a11y.reporting.static_html_generator.force_locale')
-    def test_collect_dedup_extracts_common_components(self, mock_force_locale, mock_catalog):
+    def test_collect_dedup_extracts_common_components(self, mock_force_locale: MagicMock, mock_catalog: MagicMock) -> None:
         """Components appearing on 2+ pages should be detected."""
         mock_force_locale.return_value.__enter__ = MagicMock()
         mock_force_locale.return_value.__exit__ = MagicMock()
@@ -371,7 +379,7 @@ class TestDedupStreaming:
         self.gen.db.get_pages.return_value = [page1, page2]
 
         # Create discovery items for a nav that appears on both pages
-        def make_disco(sig, page_xpath):
+        def make_disco(sig: str, page_xpath: str) -> MagicMock:
             d = MagicMock()
             d.to_dict.return_value = {
                 'id': 'DiscoNavFound',
@@ -400,7 +408,7 @@ class TestDedupStreaming:
 
     @patch('auto_a11y.reporting.static_html_generator.IssueCatalog')
     @patch('auto_a11y.reporting.static_html_generator.force_locale')
-    def test_collect_dedup_filters_single_page_components(self, mock_force_locale, mock_catalog):
+    def test_collect_dedup_filters_single_page_components(self, mock_force_locale: MagicMock, mock_catalog: MagicMock) -> None:
         """Components on only 1 page should be filtered out (unless fallback merge applies)."""
         mock_force_locale.return_value.__enter__ = MagicMock()
         mock_force_locale.return_value.__exit__ = MagicMock()
@@ -417,7 +425,7 @@ class TestDedupStreaming:
 
         # Nav with sig_1 only on page1, nav with sig_2 only on page2
         # Different signatures, so no exact match across pages
-        def make_disco(sig, xpath):
+        def make_disco(sig: str, xpath: str) -> MagicMock:
             d = MagicMock()
             d.to_dict.return_value = {
                 'id': 'DiscoNavFound', 'xpath': xpath,
@@ -441,7 +449,7 @@ class TestDedupStreaming:
 
     @patch('auto_a11y.reporting.static_html_generator.IssueCatalog')
     @patch('auto_a11y.reporting.static_html_generator.force_locale')
-    def test_collect_dedup_reclassifies_issues_in_removed_components(self, mock_force_locale, mock_catalog):
+    def test_collect_dedup_reclassifies_issues_in_removed_components(self, mock_force_locale: MagicMock, mock_catalog: MagicMock) -> None:
         """Issues matched to components that get filtered out should become unassigned."""
         mock_force_locale.return_value.__enter__ = MagicMock()
         mock_force_locale.return_value.__exit__ = MagicMock()
@@ -478,7 +486,7 @@ class TestDedupStreaming:
 
     @patch('auto_a11y.reporting.static_html_generator.IssueCatalog')
     @patch('auto_a11y.reporting.static_html_generator.force_locale')
-    def test_collect_dedup_progress_callback(self, mock_force_locale, mock_catalog):
+    def test_collect_dedup_progress_callback(self, mock_force_locale: MagicMock, mock_catalog: MagicMock) -> None:
         """Progress callback should be invoked for each page."""
         mock_force_locale.return_value.__enter__ = MagicMock()
         mock_force_locale.return_value.__exit__ = MagicMock()
@@ -504,17 +512,17 @@ class TestDedupStreaming:
 class TestGroupUnassignedByPageStreaming:
     """Tests for _group_unassigned_by_page_streaming()."""
 
-    def setup_method(self):
+    def setup_method(self) -> None:
         self.gen = StaticHTMLReportGenerator.__new__(StaticHTMLReportGenerator)
         self.gen.db = MagicMock()
         self.gen.language = 'en'
 
-    def test_empty_unassigned_issues(self):
+    def test_empty_unassigned_issues(self) -> None:
         """No unassigned issues should return empty list."""
         result = self.gen._group_unassigned_by_page_streaming([], {}, {})
         assert result == []
 
-    def test_groups_issues_by_page_without_db_reload(self):
+    def test_groups_issues_by_page_without_db_reload(self) -> None:
         """Should group issues from dedup index without reloading TestResults from DB."""
         unassigned = [{
             'rule_id': 'ErrNoAlt', 'type': 'violation', 'pages': ['http://a.com'],
@@ -535,7 +543,7 @@ class TestGroupUnassignedByPageStreaming:
         assert result[0]['url'] == 'http://a.com'
         assert result[0]['errors_count'] == 1
 
-    def test_groups_multiple_issue_types_correctly(self):
+    def test_groups_multiple_issue_types_correctly(self) -> None:
         """Should separate violations, warnings, and info by type."""
         unassigned = [
             {'rule_id': 'ErrNoAlt', 'type': 'violation', 'pages': ['http://a.com']},

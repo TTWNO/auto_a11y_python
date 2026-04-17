@@ -7,6 +7,56 @@ on:
     branches: [ main ]
 
 jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+    # Phase 0: each step is marked continue-on-error so the three tools all
+    # run and their failures surface as annotations, while the job itself
+    # passes green (so PR authors do not see a spurious red X on a check
+    # that is not yet intended to be blocking). In Phase 4 the step-level
+    # continue-on-error lines are removed so failures fail the job, AND
+    # branch protection is configured to require the job.
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    env:
+      # Pin the pyright Node binary to the wrapper's version so CI and local
+      # resolve identical tools.
+      PYRIGHT_PYTHON_FORCE_VERSION: "1.1.408"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Cache pyright Node binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pyright-python
+          key: pyright-${{ runner.os }}-${{ env.PYRIGHT_PYTHON_FORCE_VERSION }}
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run mypy
+        run: python -m mypy --python-version ${{ matrix.python-version }}
+        continue-on-error: true
+
+      - name: Run pyright
+        run: python -m pyright --pythonversion ${{ matrix.python-version }}
+        continue-on-error: true
+
+      - name: Run ty
+        run: python -m ty check
+        continue-on-error: true
+
   test:
     runs-on: ubuntu-latest
 

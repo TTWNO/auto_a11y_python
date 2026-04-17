@@ -13,6 +13,12 @@ services:
       - MONGODB_URI=mongodb://mongo:27017/auto_a11y
       - BROWSER_MODE=local
       - BROWSER_HEADLESS=True
+    # Allow the container to reach HTTP servers running on the host
+    # (e.g. http://host.docker.internal:8080). Requires Docker Engine 20.10+
+    # or Podman 4.1+. No effect on Docker Desktop, which provides this alias
+    # natively.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - app-reports:/app/reports
       - app-screenshots:/app/screenshots
@@ -24,6 +30,7 @@ services:
       resources:
         limits:
           memory: 16g
+          cpus: 7
         reservations:
           memory: 2g
     restart: unless-stopped

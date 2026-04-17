@@ -3,9 +3,13 @@ Floating Dialogs touchpoint test module
 Evaluates floating dialogs and modal windows for accessibility compliance.
 """
 
+from __future__ import annotations
+
 from datetime import datetime
-from typing import Dict, Any, List, Optional
+from typing import Any
 import logging
+
+from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +51,7 @@ TEST_DOCUMENTATION = {
     ]
 }
 
-async def test_floating_dialogs(page) -> Dict[str, Any]:
+async def test_floating_dialogs(page: Page) -> dict[str, Any]:
     """
     Test floating dialogs for proper implementation and content obscuring
     
@@ -102,7 +106,7 @@ async def test_floating_dialogs(page) -> Dict[str, Any]:
         original_viewport = page.viewport_size
 
         # Collect all errors/warnings/passes across all breakpoints
-        all_errors = []
+        all_errors: list[dict[str, Any]] = []
         all_warnings = []
         all_passes = []
         total_elements_tested = 0
@@ -638,7 +642,7 @@ async def test_floating_dialogs(page) -> Dict[str, Any]:
                 }
             '''
 
-            results = await page.evaluate(js_code)
+            results: dict[str, Any] = await page.evaluate(js_code)
 
             # Aggregate results from this breakpoint
             if results['applicable']:
@@ -670,7 +674,7 @@ async def test_floating_dialogs(page) -> Dict[str, Any]:
             await page.set_viewport_size(original_viewport)
 
         # Return aggregated results
-        final_results = {
+        final_results: dict[str, Any] = {
             'applicable': test_applicable,
             'not_applicable_reason': not_applicable_reason if not test_applicable else '',
             'errors': all_errors,
@@ -684,6 +688,8 @@ async def test_floating_dialogs(page) -> Dict[str, Any]:
         }
 
         if test_applicable and total_elements_tested > 0:
+            if 'checks' not in final_results:
+                final_results['checks'] = []
             final_results['checks'].append({
                 'description': 'Dialog accessibility',
                 'wcag': ['4.1.2', '2.4.6', '2.1.1', '2.1.2'],

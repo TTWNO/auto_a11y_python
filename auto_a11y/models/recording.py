@@ -2,9 +2,11 @@
 Recording model for Dictaphone audio/video audit sessions
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import List, Optional, Dict, Any
+from typing import Any
 from enum import Enum
 from bson import ObjectId
 from .page import DrupalSyncStatus
@@ -26,40 +28,40 @@ class Recording:
     # Core identifiers
     recording_id: str  # e.g., "NED-A"
     title: str
-    description: Optional[str] = None
+    description: str | None = None
 
     # Media information
-    media_file_path: Optional[str] = None  # Path to MP4 file
-    duration: Optional[str] = None  # Total recording duration (HH:MM:SS)
-    recorded_date: Optional[datetime] = None
+    media_file_path: str | None = None  # Path to MP4 file
+    duration: str | None = None  # Total recording duration (HH:MM:SS)
+    recorded_date: datetime | None = None
 
     # Audit context
-    auditor_name: Optional[str] = None
-    auditor_role: Optional[str] = None  # e.g., "Screen Reader User", "Expert Auditor"
-    test_user_account: Optional[str] = None  # Test account used (e.g., "Premium User", "Admin")
+    auditor_name: str | None = None
+    auditor_role: str | None = None  # e.g., "Screen Reader User", "Expert Auditor"
+    test_user_account: str | None = None  # Test account used (e.g., "Premium User", "Admin")
     recording_type: RecordingType = RecordingType.AUDIT
 
     # Lived experience testing participants (IDs referencing project testers/supervisors)
-    lived_experience_tester_id: Optional[str] = None  # ID of tester from project.lived_experience_testers
-    test_supervisor_id: Optional[str] = None  # ID of supervisor from project.test_supervisors
+    lived_experience_tester_id: str | None = None  # ID of tester from project.lived_experience_testers
+    test_supervisor_id: str | None = None  # ID of supervisor from project.test_supervisors
 
     # Testing scope - what content/features were tested
-    testing_scope: Dict[str, bool] = field(default_factory=dict)  # e.g., {"forms": True, "video": False, ...}
+    testing_scope: dict[str, bool] = field(default_factory=lambda: {})  # e.g., {"forms": True, "video": False, ...}
 
     # Relationships
-    project_id: Optional[str] = None  # Link to AutoA11y project
+    project_id: str | None = None  # Link to AutoA11y project
 
     # Component/Section references (context-specific based on project type)
-    website_ids: List[str] = field(default_factory=list)  # Specific websites (for WEBSITE projects)
-    page_urls: List[str] = field(default_factory=list)  # Specific page URLs
-    page_ids: List[str] = field(default_factory=list)  # Specific page IDs (from database)
-    discovered_page_ids: List[str] = field(default_factory=list)  # Discovered page IDs (from database)
-    component_names: List[str] = field(default_factory=list)  # Common components (header, nav, footer, etc.)
-    app_screens: List[str] = field(default_factory=list)  # Specific screens/views (for APP projects)
-    device_sections: List[str] = field(default_factory=list)  # Device sections (for TANGIBLE_DEVICE projects)
+    website_ids: list[str] = field(default_factory=lambda: [])  # Specific websites (for WEBSITE projects)
+    page_urls: list[str] = field(default_factory=lambda: [])  # Specific page URLs
+    page_ids: list[str] = field(default_factory=lambda: [])  # Specific page IDs (from database)
+    discovered_page_ids: list[str] = field(default_factory=lambda: [])  # Discovered page IDs (from database)
+    component_names: list[str] = field(default_factory=lambda: [])  # Common components (header, nav, footer, etc.)
+    app_screens: list[str] = field(default_factory=lambda: [])  # Specific screens/views (for APP projects)
+    device_sections: list[str] = field(default_factory=lambda: [])  # Device sections (for TANGIBLE_DEVICE projects)
 
     # Task context
-    task_description: Optional[str] = None  # Specific task performed (e.g., "Complete checkout process", "Navigate to settings")
+    task_description: str | None = None  # Specific task performed (e.g., "Complete checkout process", "Navigate to settings")
 
     # Statistics (computed from issues)
     total_issues: int = 0
@@ -69,27 +71,27 @@ class Recording:
 
     # Recording Content (Structured data) - Multi-language support
     # Each can contain 'en' and/or 'fr' keys with the content in that language
-    key_takeaways: Dict[str, List[Dict[str, Any]]] = field(default_factory=dict)  # {'en': [...], 'fr': [...]}
-    user_painpoints: Dict[str, List[Dict[str, Any]]] = field(default_factory=dict)  # {'en': [...], 'fr': [...]}
-    user_assertions: Dict[str, List[Dict[str, Any]]] = field(default_factory=dict)  # {'en': [...], 'fr': [...]}
+    key_takeaways: dict[str, list[dict[str, Any]]] = field(default_factory=lambda: {})  # {'en': [...], 'fr': [...]}
+    user_painpoints: dict[str, list[dict[str, Any]]] = field(default_factory=lambda: {})  # {'en': [...], 'fr': [...]}
+    user_assertions: dict[str, list[dict[str, Any]]] = field(default_factory=lambda: {})  # {'en': [...], 'fr': [...]}
 
     # Metadata
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
-    tags: List[str] = field(default_factory=list)
-    notes: Optional[str] = None
+    tags: list[str] = field(default_factory=lambda: [])
+    notes: str | None = None
 
     # Drupal sync (audit_video export)
-    drupal_video_uuid: Optional[str] = None  # UUID of audit_video node in Drupal
-    drupal_video_nid: Optional[int] = None  # Drupal node ID
+    drupal_video_uuid: str | None = None  # UUID of audit_video node in Drupal
+    drupal_video_nid: int | None = None  # Drupal node ID
     drupal_sync_status: DrupalSyncStatus = DrupalSyncStatus.NOT_SYNCED
-    drupal_last_synced: Optional[datetime] = None
-    drupal_error_message: Optional[str] = None
+    drupal_last_synced: datetime | None = None
+    drupal_error_message: str | None = None
 
-    _id: Optional[ObjectId] = None
+    _id: ObjectId | None = None
 
     @property
-    def id(self) -> str:
+    def id(self) -> str | None:
         """Get recording ID as string"""
         return str(self._id) if self._id else None
 
@@ -103,50 +105,37 @@ class Recording:
         """Check if recording needs to be synced to Drupal"""
         return self.drupal_sync_status in [DrupalSyncStatus.NOT_SYNCED, DrupalSyncStatus.SYNC_FAILED]
 
-    def get_key_takeaways(self, language: str = 'en') -> List[Dict[str, Any]]:
+    def get_key_takeaways(self, language: str = 'en') -> list[dict[str, Any]]:
         """Get key takeaways in specified language, fallback to English"""
-        # Handle both old format (list) and new format (dict with language keys)
-        if isinstance(self.key_takeaways, dict):
-            return self.key_takeaways.get(language, self.key_takeaways.get('en', []))
-        # Old format: just a list, return it regardless of language
-        return self.key_takeaways if self.key_takeaways else []
+        return self.key_takeaways.get(language, self.key_takeaways.get('en', []))
 
-    def get_user_painpoints(self, language: str = 'en') -> List[Dict[str, Any]]:
+    def get_user_painpoints(self, language: str = 'en') -> list[dict[str, Any]]:
         """Get user painpoints in specified language, fallback to English"""
-        # Handle both old format (list) and new format (dict with language keys)
-        if isinstance(self.user_painpoints, dict):
-            return self.user_painpoints.get(language, self.user_painpoints.get('en', []))
-        # Old format: just a list, return it regardless of language
-        return self.user_painpoints if self.user_painpoints else []
+        return self.user_painpoints.get(language, self.user_painpoints.get('en', []))
 
-    def get_user_assertions(self, language: str = 'en') -> List[Dict[str, Any]]:
+    def get_user_assertions(self, language: str = 'en') -> list[dict[str, Any]]:
         """Get user assertions in specified language, fallback to English"""
-        # Handle both old format (list) and new format (dict with language keys)
-        if isinstance(self.user_assertions, dict):
-            return self.user_assertions.get(language, self.user_assertions.get('en', []))
-        # Old format: just a list, return it regardless of language
-        return self.user_assertions if self.user_assertions else []
+        return self.user_assertions.get(language, self.user_assertions.get('en', []))
 
     @property
-    def available_languages(self) -> List[str]:
+    def available_languages(self) -> list[str]:
         """Get list of languages that have content"""
-        languages = set()
-        # Handle both old format (list) and new format (dict with language keys)
-        if self.key_takeaways and isinstance(self.key_takeaways, dict):
+        languages: set[str] = set()
+        if self.key_takeaways:
             languages.update(self.key_takeaways.keys())
-        if self.user_painpoints and isinstance(self.user_painpoints, dict):
+        if self.user_painpoints:
             languages.update(self.user_painpoints.keys())
-        if self.user_assertions and isinstance(self.user_assertions, dict):
+        if self.user_assertions:
             languages.update(self.user_assertions.keys())
-        # If no languages found from dicts, default to 'en' if any content exists
+        # If no languages found, default to 'en' if any content exists
         if not languages:
             if self.key_takeaways or self.user_painpoints or self.user_assertions:
                 languages.add('en')
         return sorted(list(languages))
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for MongoDB"""
-        data = {
+        data: dict[str, Any] = {
             'recording_id': self.recording_id,
             'title': self.title,
             'description': self.description,
@@ -191,7 +180,7 @@ class Recording:
         return data
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'Recording':
+    def from_dict(cls, data: dict[str, Any]) -> Recording:
         """Create from dictionary"""
         # Handle ObjectId
         obj_id = data.get('_id')
@@ -250,7 +239,7 @@ class Timecode:
     end: str  # HH:MM:SS.mmm format
     duration: str  # HH:MM:SS.mmm format
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, str]:
         """Convert to dictionary"""
         return {
             'start': self.start,
@@ -259,7 +248,7 @@ class Timecode:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'Timecode':
+    def from_dict(cls, data: dict[str, Any]) -> Timecode:
         """Create from dictionary"""
         return cls(
             start=data['start'],
@@ -309,9 +298,9 @@ class WCAGReference:
     """WCAG criteria reference"""
     criteria: str  # e.g., "1.3.1"
     level: str  # "A", "AA", "AAA"
-    versions: List[str] = field(default_factory=list)  # ["2.0", "2.1", "2.2"]
+    versions: list[str] = field(default_factory=lambda: [])  # ["2.0", "2.1", "2.2"]
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary"""
         return {
             'criteria': self.criteria,
@@ -320,7 +309,7 @@ class WCAGReference:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'WCAGReference':
+    def from_dict(cls, data: dict[str, Any]) -> WCAGReference:
         """Create from dictionary"""
         return cls(
             criteria=data['criteria'],

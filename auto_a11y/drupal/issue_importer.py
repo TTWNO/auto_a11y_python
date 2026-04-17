@@ -4,8 +4,10 @@ Drupal Issue Importer
 Handles importing issues from Drupal to Auto A11y via JSON:API.
 """
 
+from __future__ import annotations
+
 import logging
-from typing import Optional, Dict, Any, List
+from typing import Any
 from datetime import datetime
 
 from auto_a11y.models import Issue, ImpactLevel
@@ -22,16 +24,16 @@ class IssueImporter:
     to Auto A11y Issue objects.
     """
 
-    def __init__(self, client):
+    def __init__(self, client: Any) -> None:
         """
         Initialize issue importer.
 
         Args:
             client: DrupalJSONAPIClient instance
         """
-        self.client = client
+        self.client: Any = client
 
-    def fetch_issues_for_audit(self, audit_uuid: str) -> List[Dict[str, Any]]:
+    def fetch_issues_for_audit(self, audit_uuid: str) -> list[dict[str, Any]]:
         """
         Fetch all issues for a given audit from Drupal.
 
@@ -43,7 +45,7 @@ class IssueImporter:
         """
         logger.info(f"Fetching issues for audit {audit_uuid}")
 
-        all_issues = []
+        all_issues: list[dict[str, Any]] = []
         page_limit = 50
         offset = 0
 
@@ -59,7 +61,7 @@ class IssueImporter:
                 }
             )
 
-            issues = response.get('data', [])
+            issues: list[dict[str, Any]] = response.get('data', [])
             if not issues:
                 break
 
@@ -81,7 +83,7 @@ class IssueImporter:
         logger.info(f"Fetched {len(all_issues)} issues for audit {audit_uuid}")
         return all_issues
 
-    def _parse_issue_node(self, node: Dict[str, Any], included: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _parse_issue_node(self, node: dict[str, Any], included: list[dict[str, Any]]) -> dict[str, Any]:
         """
         Parse a Drupal issue node into a dictionary.
 
@@ -92,67 +94,67 @@ class IssueImporter:
         Returns:
             Dictionary with parsed issue data
         """
-        uuid = node.get('id')
-        attributes = node.get('attributes', {})
-        relationships = node.get('relationships', {})
+        uuid: str | None = node.get('id')
+        attributes: dict[str, Any] = node.get('attributes', {})
+        relationships: dict[str, Any] = node.get('relationships', {})
 
         # Extract basic fields
-        title = attributes.get('title', 'Untitled Issue')
+        title: str = attributes.get('title', 'Untitled Issue')
 
         # Body/description
-        body_field = attributes.get('body')
-        description = ''
+        body_field: dict[str, Any] | list[dict[str, Any]] | None = attributes.get('body')
+        description: str = ''
         if body_field and isinstance(body_field, dict):
             description = body_field.get('value', '')
         elif body_field and isinstance(body_field, list) and len(body_field) > 0:
             description = body_field[0].get('value', '')
 
         # Impact
-        impact_value = attributes.get('field_impact', 'med').lower()
-        impact_mapping = {
+        impact_value: str = attributes.get('field_impact', 'med').lower()
+        impact_mapping: dict[str, str] = {
             'low': 'low',
             'med': 'medium',
             'medium': 'medium',
             'high': 'high'
         }
-        impact = impact_mapping.get(impact_value, 'medium')
+        impact: str = impact_mapping.get(impact_value, 'medium')
 
         # Issue type (taxonomy term)
-        issue_type = self._extract_taxonomy_term(
+        issue_type: str | None = self._extract_taxonomy_term(
             relationships.get('field_issue_type'),
             included
         )
 
         # Location on page (taxonomy term)
-        location_on_page = self._extract_taxonomy_term(
+        location_on_page: str | None = self._extract_taxonomy_term(
             relationships.get('field_location_on_page'),
             included
         )
 
         # WCAG chapters (may be multiple)
-        wcag_criteria = self._extract_wcag_references(
+        wcag_criteria: list[str] = self._extract_wcag_references(
             relationships.get('field_wcag_chapter'),
             included
         )
 
         # Technical fields
-        xpath = attributes.get('field_xpath')
-        url_field = attributes.get('field_url')
-        url = None
+        xpath: str | None = attributes.get('field_xpath')
+        url_field: dict[str, str] | list[dict[str, str]] | None = attributes.get('field_url')
+        url: str | None = None
         if url_field and isinstance(url_field, dict):
             url = url_field.get('uri')
         elif url_field and isinstance(url_field, list) and len(url_field) > 0:
             url = url_field[0].get('uri')
 
-        video_timecode = attributes.get('field_video_timecode')
+        video_timecode: str | None = attributes.get('field_video_timecode')
 
         # Drupal IDs
-        drupal_issue_id = attributes.get('field_id')
-        drupal_nid = attributes.get('drupal_internal__nid')
+        drupal_issue_id: int | None = attributes.get('field_id')
+        drupal_nid: int | None = attributes.get('drupal_internal__nid')
 
         # Timestamps
-        created = attributes.get('created')
-        changed = attributes.get('changed')
+        created: str | None = attributes.get('created')
+        changed: str | None = attributes.get('changed')
 
         return {
             'uuid': uuid,
@@ -173,9 +175,9 @@ class IssueImporter:
 
     def _extract_taxonomy_term(
         self,
-        relationship: Optional[Dict[str, Any]],
-        included: List[Dict[str, Any]]
-    ) -> Optional[str]:
+        relationship: dict[str, Any] | None,
+        included: list[dict[str, Any]]
+    ) -> str | None:
         """
         Extract taxonomy term name from relationship.
 
@@ -189,31 +191,34 @@ class IssueImporter:
         if not relationship:
             return None
 
-        rel_data = relationship.get('data')
+        rel_data: dict[str, Any] | list[dict[str, Any]] | None = relationship.get('data')
         if not rel_data:
             return None
 
         # Handle single relationship
+        term_id: str | None = None
         if isinstance(rel_data, dict):
             term_id = rel_data.get('id')
         # Handle multiple (take first)
-        elif isinstance(rel_data, list) and len(rel_data) > 0:
+        elif len(rel_data) > 0:
             term_id = rel_data[0].get('id')
-        else:
+
+        if not term_id:
             return None
 
         # Find term in included
         for resource in included:
             if resource.get('id') == term_id:
-                return resource.get('attributes', {}).get('name')
+                name: str | None = resource.get('attributes', {}).get('name')
+                return name
 
         return None
 
     def _extract_wcag_references(
         self,
-        relationship: Optional[Dict[str, Any]],
-        included: List[Dict[str, Any]]
-    ) -> List[str]:
+        relationship: dict[str, Any] | None,
+        included: list[dict[str, Any]]
+    ) -> list[str]:
         """
         Extract WCAG criteria from relationship.
 
@@ -227,23 +232,26 @@ class IssueImporter:
         if not relationship:
             return []
 
-        rel_data = relationship.get('data')
+        rel_data: dict[str, Any] | list[dict[str, Any]] | None = relationship.get('data')
         if not rel_data:
             return []
 
         # Ensure it's a list
+        rel_items: list[dict[str, Any]]
         if isinstance(rel_data, dict):
-            rel_data = [rel_data]
+            rel_items = [rel_data]
+        else:
+            rel_items = rel_data
 
-        criteria = []
-        for item in rel_data:
-            wcag_id = item.get('id')
+        criteria: list[str] = []
+        for item in rel_items:
+            wcag_id: str | None = item.get('id')
 
             # Find WCAG node in included
             for resource in included:
                 if resource.get('id') == wcag_id:
                     # Extract WCAG number from title
-                    title = resource.get('attributes', {}).get('title', '')
+                    title: str = resource.get('attributes', {}).get('title', '')
                     # Title might be like "1.3.1 Info and Relationships"
                     # Extract just the number
                     parts = title.split()
@@ -255,7 +263,7 @@ class IssueImporter:
 
     def convert_to_issue_model(
         self,
-        drupal_issue: Dict[str, Any],
+        drupal_issue: dict[str, Any],
         project_id: str
     ) -> Issue:
         """
@@ -273,8 +281,8 @@ class IssueImporter:
         updated_at = datetime.fromtimestamp(drupal_issue['changed_timestamp']) if drupal_issue.get('changed_timestamp') else datetime.now()
 
         # Map impact
-        impact_str = drupal_issue['impact']
-        impact = ImpactLevel.MEDIUM
+        impact_str: str = drupal_issue['impact']
+        impact: ImpactLevel = ImpactLevel.MEDIUM
         if impact_str == 'low':
             impact = ImpactLevel.LOW
         elif impact_str == 'high':
@@ -302,7 +310,7 @@ class IssueImporter:
             drupal_last_synced=datetime.now()
         )
 
-    def to_database_dict(self, drupal_issue: Dict[str, Any], project_id: str) -> Dict[str, Any]:
+    def to_database_dict(self, drupal_issue: dict[str, Any], project_id: str) -> dict[str, Any]:
         """
         Convert Drupal issue to database-ready dictionary.
 

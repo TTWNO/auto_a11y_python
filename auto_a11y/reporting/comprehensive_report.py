@@ -1,13 +1,14 @@
 """
 Comprehensive accessibility report generation with analytics and visualizations
 """
+from __future__ import annotations
 
-from typing import Dict, List, Any, Optional
+from typing import Any
 from collections import defaultdict, Counter
 from datetime import datetime, timedelta
 import json
 import logging
-from auto_a11y.web.fluent import force_locale
+from auto_a11y.web.fluent import ftl, force_locale
 
 from auto_a11y.reporting.ai_executive_summary import AIExecutiveSummaryGenerator
 from auto_a11y.ai.claude_client import ClaudeClient, ClaudeConfig
@@ -43,7 +44,7 @@ class ComprehensiveReportGenerator:
         '5.2.4': 'A'  # Accessibility Supported
     }
 
-    def __init__(self, claude_api_key: Optional[str] = None):
+    def __init__(self, claude_api_key: str | None = None) -> None:
         self.chart_colors = {
             'high': '#dc3545',
             'medium': '#ffc107',
@@ -75,7 +76,7 @@ class ComprehensiveReportGenerator:
         else:
             self.ai_summary_generator = AIExecutiveSummaryGenerator()
     
-    def generate_comprehensive_html(self, data: Dict[str, Any], include_ai_summary: bool = True) -> str:
+    def generate_comprehensive_html(self, data: dict[str, Any], include_ai_summary: bool = True) -> str:
         """Generate comprehensive HTML report with full analytics and insights"""
         
         # Analyze the data
@@ -123,7 +124,7 @@ class ComprehensiveReportGenerator:
 </html>"""
         return html
 
-    def generate_bilingual_standalone_html(self, data: Dict[str, Any], output_path: str, include_ai_summary: bool = True) -> str:
+    def generate_bilingual_standalone_html(self, data: dict[str, Any], output_path: str, include_ai_summary: bool = True) -> str:
         """
         Generate standalone bilingual HTML report with embedded Bootstrap and bilingual AI analysis
 
@@ -165,6 +166,9 @@ class ComprehensiveReportGenerator:
             autoescape=jinja2.select_autoescape(['html', 'xml'])
         )
 
+        # Register Fluent translation functions so templates can use {{ ftl(...) }}
+        env.globals['ftl'] = ftl
+
         # Load the standalone template
         template = env.get_template('static_report/comprehensive_report_standalone.html')
 
@@ -198,7 +202,7 @@ class ComprehensiveReportGenerator:
         logger.info(f"Generated bilingual standalone comprehensive report: {output_path}")
         return output_path
 
-    def _read_embedded_assets(self) -> Dict[str, str]:
+    def _read_embedded_assets(self) -> dict[str, str]:
         """Read Bootstrap, Chart.js and icon CSS/JS files for embedding"""
         from pathlib import Path
 
@@ -246,7 +250,7 @@ class ComprehensiveReportGenerator:
 
         return assets
 
-    def _get_translations(self) -> Dict[str, Dict[str, str]]:
+    def _get_translations(self) -> dict[str, dict[str, str]]:
         """Get translations for English and French"""
         return {
             'en': {
@@ -405,89 +409,73 @@ class ComprehensiveReportGenerator:
             }
         }
 
-    def _perform_analytics(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _perform_analytics(self, data: dict[str, Any]) -> dict[str, Any]:
         """Perform comprehensive analytics on test data"""
-        analytics = {
-            'total_issues': 0,  # All items (violations + info + discovery)
-            'total_violations': 0,  # Only errors + warnings
-            'total_info': 0,  # Info items (non-violations)
-            'total_discovery': 0,  # Discovery items (exploration)
-            'by_impact': defaultdict(int),
-            'by_wcag': defaultdict(int),
-            'by_touchpoint': defaultdict(int),
-            'by_type': defaultdict(int),
-            'top_issues': [],
-            'pages_with_most_issues': [],
-            'wcag_compliance': {},
-            'historical_data': []
-        }
-        
+        by_impact: defaultdict[str, int] = defaultdict(int)
+        by_wcag: defaultdict[str, int] = defaultdict(int)
+        by_touchpoint: defaultdict[str, int] = defaultdict(int)
+        by_type: defaultdict[str, int] = defaultdict(int)
+        wcag_compliance: dict[str, dict[str, Any]] = {}
+
         # Process all test results
-        all_issues = []
-        page_issue_counts = defaultdict(lambda: defaultdict(int))
-        
+        all_issues: list[tuple[str, Any, str]] = []
+        page_issue_counts: defaultdict[str, defaultdict[str, int]] = defaultdict(lambda: defaultdict(int))
+
         for website_data in data.get('websites', []):
             for page_data in website_data.get('pages', []):
                 test_result = page_data.get('test_result')
                 page_url = page_data.get('page', {}).get('url', 'Unknown')
-                
+
                 if test_result:
                     # Count by type
                     if hasattr(test_result, 'violations'):
                         for v in test_result.violations:
                             all_issues.append(('error', v, page_url))
-                            analytics['by_type']['error'] += 1
+                            by_type['error'] += 1
                             page_issue_counts[page_url]['error'] += 1
-                    
+
                     if hasattr(test_result, 'warnings'):
                         for w in test_result.warnings:
                             all_issues.append(('warning', w, page_url))
-                            analytics['by_type']['warning'] += 1
+                            by_type['warning'] += 1
                             page_issue_counts[page_url]['warning'] += 1
-                    
+
                     if hasattr(test_result, 'info'):
                         for i in test_result.info:
                             all_issues.append(('info', i, page_url))
-                            analytics['by_type']['info'] += 1
+                            by_type['info'] += 1
                             page_issue_counts[page_url]['info'] += 1
-                    
+
                     if hasattr(test_result, 'discovery'):
                         for d in test_result.discovery:
                             all_issues.append(('discovery', d, page_url))
-                            analytics['by_type']['discovery'] += 1
+                            by_type['discovery'] += 1
                             page_issue_counts[page_url]['discovery'] += 1
-        
-        # Analyze all issues
-        analytics['total_issues'] = len(all_issues)
-        
+
         # Calculate violations vs info/discovery
-        violations_count = analytics['by_type'].get('error', 0) + analytics['by_type'].get('warning', 0)
-        info_count = analytics['by_type'].get('info', 0)
-        discovery_count = analytics['by_type'].get('discovery', 0)
-        
-        analytics['total_violations'] = violations_count
-        analytics['total_info'] = info_count
-        analytics['total_discovery'] = discovery_count
-        
+        violations_count = by_type.get('error', 0) + by_type.get('warning', 0)
+        info_count = by_type.get('info', 0)
+        discovery_count = by_type.get('discovery', 0)
+
         # Count by impact and WCAG
-        issue_frequency = Counter()
-        issue_pages = defaultdict(set)  # Track unique pages per issue
-        issue_details = {}  # Store issue details for later use
-        
+        issue_frequency: Counter[str] = Counter()
+        issue_pages: defaultdict[str, set[str]] = defaultdict(set)  # Track unique pages per issue
+        issue_details: dict[str, dict[str, Any]] = {}  # Store issue details for later use
+
         for issue_type, issue, page in all_issues:
             # Impact analysis (only for violations, not info/discovery)
             if hasattr(issue, 'impact') and issue_type in ['error', 'warning']:
                 impact_str = issue.impact.value if hasattr(issue.impact, 'value') else str(issue.impact)
-                analytics['by_impact'][impact_str.lower()] += 1
-            
+                by_impact[impact_str.lower()] += 1
+
             # WCAG analysis (only for violations, not info/discovery)
             if hasattr(issue, 'wcag_criteria') and issue_type in ['error', 'warning']:
                 for criterion in issue.wcag_criteria:
-                    analytics['by_wcag'][criterion] += 1
-            
+                    by_wcag[criterion] += 1
+
             # Touchpoint analysis
             if hasattr(issue, 'touchpoint') and issue.touchpoint:
-                analytics['by_touchpoint'][issue.touchpoint] += 1
+                by_touchpoint[issue.touchpoint] += 1
             
             # Track issue frequency and unique pages
             if hasattr(issue, 'id'):
@@ -527,18 +515,18 @@ class ComprehensiveReportGenerator:
                     }
         
         # Get top issues with unique page counts
-        analytics['top_issues'] = [
+        top_issues = [
             {
-                'id': issue_id, 
+                'id': issue_id,
                 'count': count,
                 'unique_pages': len(issue_pages.get(issue_id, set())),
                 'details': issue_details.get(issue_id, {})
             }
             for issue_id, count in issue_frequency.most_common(10)
         ]
-        
+
         # Get pages with most issues
-        page_totals = [
+        page_totals: list[dict[str, Any]] = [
             {
                 'url': page,
                 'total': sum(counts.values()),
@@ -547,21 +535,35 @@ class ComprehensiveReportGenerator:
             for page, counts in page_issue_counts.items()
         ]
         page_totals.sort(key=lambda x: x['total'], reverse=True)
-        analytics['pages_with_most_issues'] = page_totals[:10]
-        
+
         # Calculate WCAG compliance percentage
-        total_wcag_issues = sum(analytics['by_wcag'].values())
+        total_wcag_issues = sum(by_wcag.values())
         if total_wcag_issues > 0:
-            for criterion, count in analytics['by_wcag'].items():
-                analytics['wcag_compliance'][criterion] = {
+            for criterion, count in by_wcag.items():
+                wcag_compliance[criterion] = {
                     'count': count,
                     'percentage': (count / total_wcag_issues) * 100,
                     'level': self.WCAG_LEVELS.get(criterion, '')
                 }
-        
+
+        analytics: dict[str, Any] = {
+            'total_issues': len(all_issues),
+            'total_violations': violations_count,
+            'total_info': info_count,
+            'total_discovery': discovery_count,
+            'by_impact': dict(by_impact),
+            'by_wcag': dict(by_wcag),
+            'by_touchpoint': dict(by_touchpoint),
+            'by_type': dict(by_type),
+            'top_issues': top_issues,
+            'pages_with_most_issues': page_totals[:10],
+            'wcag_compliance': wcag_compliance,
+            'historical_data': [],
+        }
+
         return analytics
     
-    def _generate_header(self, data: Dict[str, Any]) -> str:
+    def _generate_header(self, data: dict[str, Any]) -> str:
         """Generate report header"""
         project = data.get('project', {})
 
@@ -610,7 +612,7 @@ class ComprehensiveReportGenerator:
         </header>
         """
     
-    def _generate_executive_summary(self, data: Dict[str, Any], analytics: Dict[str, Any], ai_summary_en: Optional[Dict[str, Any]] = None, ai_summary_fr: Optional[Dict[str, Any]] = None) -> str:
+    def _generate_executive_summary(self, data: dict[str, Any], analytics: dict[str, Any], ai_summary_en: dict[str, Any] | None = None, ai_summary_fr: dict[str, Any] | None = None) -> str:
         """Generate executive summary section with integrated bilingual analysis"""
         stats = data.get('statistics', {})
         total_issues = analytics['total_issues']
@@ -660,7 +662,7 @@ class ComprehensiveReportGenerator:
         </section>
         """
     
-    def _generate_key_metrics(self, analytics: Dict[str, Any]) -> str:
+    def _generate_key_metrics(self, analytics: dict[str, Any]) -> str:
         """Generate key metrics dashboard"""
         return f"""
         <section class="key-metrics">
@@ -712,7 +714,7 @@ class ComprehensiveReportGenerator:
         </section>
         """
     
-    def _generate_impact_analysis(self, analytics: Dict[str, Any]) -> str:
+    def _generate_impact_analysis(self, analytics: dict[str, Any]) -> str:
         """Generate impact analysis with charts"""
         return f"""
         <section class="impact-analysis">
@@ -759,7 +761,7 @@ class ComprehensiveReportGenerator:
         </section>
         """
     
-    def _generate_wcag_analysis(self, analytics: Dict[str, Any]) -> str:
+    def _generate_wcag_analysis(self, analytics: dict[str, Any]) -> str:
         """Generate WCAG compliance analysis"""
         wcag_sorted = sorted(analytics['wcag_compliance'].items(), 
                            key=lambda x: x[1]['count'], 
@@ -793,7 +795,7 @@ class ComprehensiveReportGenerator:
         </section>
         """
     
-    def _generate_issue_category_breakdown(self, analytics: Dict[str, Any]) -> str:
+    def _generate_issue_category_breakdown(self, analytics: dict[str, Any]) -> str:
         """Generate issue touchpoint breakdown"""
         # Generate touchpoint breakdown if available
         touchpoint_html = ""
@@ -897,7 +899,7 @@ class ComprehensiveReportGenerator:
         </section>
         """
     
-    def _generate_historical_trends(self, data: Dict[str, Any], analytics: Dict[str, Any]) -> str:
+    def _generate_historical_trends(self, data: dict[str, Any], analytics: dict[str, Any]) -> str:
         """Generate historical trends section"""
         # This would pull from historical data if available
         return f"""
@@ -921,7 +923,7 @@ class ComprehensiveReportGenerator:
         </section>
         """
     
-    def _generate_detailed_issues_section(self, data: Dict[str, Any], analytics: Dict[str, Any]) -> str:
+    def _generate_detailed_issues_section(self, data: dict[str, Any], analytics: dict[str, Any]) -> str:
         """Generate detailed issues tables"""
         color_contrast_breakdown = self._generate_color_contrast_breakdown(data)
 
@@ -972,7 +974,7 @@ class ComprehensiveReportGenerator:
         </section>
         """
     
-    def _generate_page_by_page_analysis(self, data: Dict[str, Any]) -> str:
+    def _generate_page_by_page_analysis(self, data: dict[str, Any]) -> str:
         """Generate page-by-page detailed analysis"""
         html = """
         <section class="page-analysis">
@@ -1010,7 +1012,7 @@ class ComprehensiveReportGenerator:
         html += "</section>"
         return html
     
-    def _generate_recommendations(self, analytics: Dict[str, Any]) -> str:
+    def _generate_recommendations(self, analytics: dict[str, Any]) -> str:
         """Generate implementation roadmap section"""
         return f"""
         <section class="recommendations">
@@ -1477,7 +1479,7 @@ class ComprehensiveReportGenerator:
         </script>
         """
     
-    def _get_chart_initialization_script(self, analytics: Dict[str, Any]) -> str:
+    def _get_chart_initialization_script(self, analytics: dict[str, Any]) -> str:
         """Generate chart initialization scripts"""
         return f"""
         <script>
@@ -1622,7 +1624,7 @@ class ComprehensiveReportGenerator:
         """Calculate percentage safely"""
         return (value / total * 100) if total > 0 else 0
     
-    def _format_executive_content(self, data: Dict[str, Any], analytics: Dict[str, Any], ai_summary_en: Optional[Dict[str, Any]] = None, ai_summary_fr: Optional[Dict[str, Any]] = None) -> str:
+    def _format_executive_content(self, data: dict[str, Any], analytics: dict[str, Any], ai_summary_en: dict[str, Any] | None = None, ai_summary_fr: dict[str, Any] | None = None) -> str:
         """Format executive summary content with optional bilingual AI insights"""
         # Add language switcher if we have both languages
         html_output = ""
@@ -1650,7 +1652,11 @@ class ComprehensiveReportGenerator:
 
         return html_output
 
-    def _format_summary_for_language(self, data: Dict[str, Any], analytics: Dict[str, Any], ai_summary: Optional[Dict[str, Any]] = None) -> str:
+    def _format_basic_summary(self, data: dict[str, Any], analytics: dict[str, Any]) -> str:
+        """Format a basic executive summary when no AI summary is available"""
+        return self._format_summary_for_language(data, analytics, ai_summary=None)
+
+    def _format_summary_for_language(self, data: dict[str, Any], analytics: dict[str, Any], ai_summary: dict[str, Any] | None = None) -> str:
         """Format executive summary content for a specific language"""
         stats = data.get('statistics', {})
         total_violations = analytics.get('total_violations', 0)
@@ -1903,7 +1909,7 @@ class ComprehensiveReportGenerator:
         }
         return colors.get(level, '#6c757d')
     
-    def _generate_wcag_rows(self, wcag_sorted: list) -> str:
+    def _generate_wcag_rows(self, wcag_sorted: list[tuple[str, dict[str, Any]]]) -> str:
         """Generate WCAG table rows"""
         wcag_descriptions = {
             '1.1.1': 'Non-text Content',
@@ -1929,7 +1935,7 @@ class ComprehensiveReportGenerator:
             """
         return html
     
-    def _generate_top_issues_rows(self, top_issues: list, data: Dict[str, Any]) -> str:
+    def _generate_top_issues_rows(self, top_issues: list[dict[str, Any]], data: dict[str, Any]) -> str:
         """Generate top issues table rows"""
         html = ""
         for issue in top_issues[:5]:
@@ -1964,7 +1970,7 @@ class ComprehensiveReportGenerator:
             """
         return html
     
-    def _get_remediation_text(self, issue_id: str, details: Dict[str, Any]) -> str:
+    def _get_remediation_text(self, issue_id: str, details: dict[str, Any]) -> str:
         """Get brief remediation text for common issues"""
         remediation_map = {
             'fonts_WarnFontNotInRecommenedListForA11y': 'Use standard web fonts',
@@ -1996,7 +2002,7 @@ class ComprehensiveReportGenerator:
         else:
             return 'Review accessibility'
     
-    def _generate_page_issues_rows(self, pages: list) -> str:
+    def _generate_page_issues_rows(self, pages: list[dict[str, Any]]) -> str:
         """Generate page issues table rows"""
         html = ""
         for page in pages[:10]:
@@ -2015,7 +2021,7 @@ class ComprehensiveReportGenerator:
             """
         return html
 
-    def _generate_color_contrast_breakdown(self, data: Dict[str, Any]) -> str:
+    def _generate_color_contrast_breakdown(self, data: dict[str, Any]) -> str:
         """Generate color contrast breakdown by breakpoint and instance"""
         # Collect all color contrast issues grouped by breakpoint
         contrast_by_breakpoint = defaultdict(list)
@@ -2070,7 +2076,7 @@ class ComprehensiveReportGenerator:
         """
 
         # Sort breakpoints with custom key to handle mixed string/int types
-        def breakpoint_sort_key(bp):
+        def breakpoint_sort_key(bp: str) -> tuple[int, str | int]:
             """Sort breakpoints: 'default' first, then numeric breakpoints in ascending order"""
             if bp == 'default':
                 return (-1, '')  # Sort 'default' first

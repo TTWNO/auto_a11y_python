@@ -2,90 +2,13 @@
 
 {% block title %}{{ ftl('common-testing-dashboard') }} - {{ ftl('common-auto-a11y') }}{% endblock %}
 
-{% block extra_css %}
-<style>
-    .stat-card {
-        transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .stat-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-    .stat-icon {
-        font-size: 1.5rem;
-        opacity: 0.7;
-    }
-    .progress-thin {
-        height: 4px;
-    }
-    .active-test-item {
-        border-left: 3px solid var(--color-brand);
-        background: var(--color-bg-subtle);
-    }
-    .schedule-item {
-        border-left: 3px solid var(--color-discovery);
-    }
-    .filter-badge {
-        font-size: 0.75rem;
-    }
-    .table-results th {
-        font-weight: 600;
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    .truncate-url {
-        max-width: 250px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        display: inline-block;
-        vertical-align: middle;
-    }
-    .empty-state {
-        padding: 2rem;
-        text-align: center;
-        color: #6c757d;
-    }
-    .empty-state i {
-        font-size: 3rem;
-        margin-bottom: 1rem;
-        opacity: 0.5;
-    }
-    .breadcrumb-link {
-        text-decoration: underline;
-        color: var(--color-brand) !important;
-    }
-    .breadcrumb-link:hover {
-        color: var(--color-link-hover) !important;
-    }
-    /* Page loading overlay */
-    .page-loading-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: var(--color-bg);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 9999;
-        transition: opacity 0.3s ease;
-    }
-    .page-loading-overlay.hidden {
-        opacity: 0;
-        pointer-events: none;
-        visibility: hidden;
-    }
-</style>
-{% endblock %}
+{# Styles for this page live in static/css/style.css under "Testing dashboard page" #}
 
 {% block content %}
 {% if greeting_only %}
 <div class="container-fluid">
     <div class="mt-4">
-        <h1><i class="bi bi-hand-wave text-primary" aria-hidden="true"></i> {{ ftl('common-hello-name', name=display_name) }}</h1>
+        <h1><i class="bi bi-hand-wave text-brand" aria-hidden="true"></i> {{ ftl('common-hello-name', name=display_name) }}</h1>
         <p class="text-muted">{{ ftl('testing-use-the-link_startprojectslink_end-page-to-view', link_start='<a href="' + url_for('projects.list_projects') + '">', link_end='</a>') }}</p>
     </div>
 </div>
@@ -93,7 +16,7 @@
 <!-- Loading Overlay - inline styles ensure immediate visibility -->
 <div id="pageLoadingOverlay" class="page-loading-overlay bg-token" style="position:fixed;top:0;left:0;width:100%;height:100%;display:flex;justify-content:center;align-items:center;z-index:9999;">
     <div class="text-center">
-        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+        <div class="spinner-border text-brand" role="status" style="width: 3rem; height: 3rem;">
             <span class="visually-hidden">{{ ftl('common-loading') }}</span>
         </div>
         <p class="mt-3 text-muted">{{ ftl('testing-loading-dashboard-data') }}</p>
@@ -105,7 +28,7 @@
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
         <div>
             <h1 class="mb-1">
-                <i class="bi bi-speedometer2 text-primary" aria-hidden="true"></i> {{ ftl('common-testing-dashboard') }}
+                <i class="bi bi-speedometer2 text-brand" aria-hidden="true"></i> {{ ftl('common-testing-dashboard') }}
             </h1>
             <p class="text-muted mb-0">
                 {% if selected_project %}
@@ -118,7 +41,7 @@
         </div>
         <div class="d-flex flex-wrap gap-2 align-items-center">
             <div class="input-group" style="width: auto;">
-                <span class="input-group-text"><i class="bi bi-folder" aria-hidden="true"></i></span>
+                <label for="projectSelect" class="input-group-text"><i class="bi bi-folder" aria-hidden="true"></i><span class="visually-hidden">{{ ftl('common-project') }}</span></label>
                 <select id="projectSelect" class="form-select" style="min-width: 200px;">
                     <option value="">{{ ftl('common-all-projects') }}</option>
                     {% for p in projects %}
@@ -129,7 +52,7 @@
                 </select>
             </div>
             <div class="input-group" style="width: auto;">
-                <span class="input-group-text"><i class="bi bi-globe" aria-hidden="true"></i></span>
+                <label for="websiteSelect" class="input-group-text"><i class="bi bi-globe" aria-hidden="true"></i><span class="visually-hidden">{{ ftl('common-website-2') }}</span></label>
                 <select id="websiteSelect" class="form-select" style="min-width: 200px;" {% if not selected_project %}disabled{% endif %}>
                     {% if selected_project %}
                         <option value="">{{ ftl('common-all-websites') }}</option>
@@ -143,7 +66,7 @@
                     {% endif %}
                 </select>
             </div>
-            <a href="{{ url_for('testing.configure_testing') }}" class="btn btn-outline-secondary" title="{{ ftl('testing-configure-testing') }}">
+            <a href="{{ url_for('testing.configure_testing') }}" class="btn btn-outline-neutral" aria-label="{{ ftl('testing-configure-testing') }}">
                 <i class="bi bi-gear" aria-hidden="true"></i>
             </a>
         </div>
@@ -160,7 +83,7 @@
                         <h3 class="card-title text-muted mb-1">{{ ftl('common-pages') }}</h3>
                         <p class="display-6 mb-0" id="statTotalPages">{{ stats.total_pages }}</p>
                     </div>
-                    <i class="bi bi-file-earmark stat-icon text-primary" aria-hidden="true"></i>
+                    <i class="bi bi-file-earmark stat-icon text-brand" aria-hidden="true"></i>
                 </div>
             </div>
         </div>
@@ -170,9 +93,9 @@
                     <div class="text-start">
                         <h3 class="card-title text-muted mb-1">{{ ftl('common-tested') }}</h3>
                         <p class="display-6 mb-0" id="statTestedPages">{{ stats.tested_pages }}</p>
-                        <small class="text-success" id="statCoverage">{{ "%.1f"|format(stats.test_coverage) }}% {{ ftl('common-coverage') }}</small>
+                        <small class="text-severity-pass" id="statCoverage">{{ "%.1f"|format(stats.test_coverage) }}% {{ ftl('common-coverage') }}</small>
                     </div>
-                    <i class="bi bi-check2-circle stat-icon text-success" aria-hidden="true"></i>
+                    <i class="bi bi-check2-circle stat-icon text-severity-pass" aria-hidden="true"></i>
                 </div>
             </div>
         </div>
@@ -181,9 +104,9 @@
                 <div class="d-flex justify-content-between align-items-start">
                     <div class="text-start">
                         <h3 class="card-title text-muted mb-1">{{ ftl('common-violations') }}</h3>
-                        <p class="display-6 mb-0 text-danger" id="statViolations">{{ stats.total_violations }}</p>
+                        <p class="display-6 mb-0 text-severity-high" id="statViolations">{{ stats.total_violations }}</p>
                     </div>
-                    <i class="bi bi-exclamation-triangle stat-icon text-danger" aria-hidden="true"></i>
+                    <i class="bi bi-exclamation-triangle stat-icon text-severity-high" aria-hidden="true"></i>
                 </div>
             </div>
         </div>
@@ -192,9 +115,9 @@
                 <div class="d-flex justify-content-between align-items-start">
                     <div class="text-start">
                         <h3 class="card-title text-muted mb-1">{{ ftl('common-warnings') }}</h3>
-                        <p class="display-6 mb-0 text-warning" id="statWarnings">{{ stats.total_warnings }}</p>
+                        <p class="display-6 mb-0 text-severity-medium" id="statWarnings">{{ stats.total_warnings }}</p>
                     </div>
-                    <i class="bi bi-exclamation-circle stat-icon text-warning" aria-hidden="true"></i>
+                    <i class="bi bi-exclamation-circle stat-icon text-severity-medium" aria-hidden="true"></i>
                 </div>
             </div>
         </div>
@@ -203,9 +126,9 @@
                 <div class="d-flex justify-content-between align-items-start">
                     <div class="text-start">
                         <h3 class="card-title text-muted mb-1">{{ ftl('common-active') }}</h3>
-                        <p class="display-6 mb-0 text-info" id="statActiveTests">{{ stats.active_tests }}</p>
+                        <p class="display-6 mb-0 text-info-custom" id="statActiveTests">{{ stats.active_tests }}</p>
                     </div>
-                    <i class="bi bi-activity stat-icon text-info" aria-hidden="true"></i>
+                    <i class="bi bi-activity stat-icon text-info-custom" aria-hidden="true"></i>
                 </div>
             </div>
         </div>
@@ -216,7 +139,7 @@
                         <h3 class="card-title text-muted mb-1">{{ ftl('common-queued') }}</h3>
                         <p class="display-6 mb-0" id="statQueuedTests">{{ stats.queued_tests }}</p>
                     </div>
-                    <i class="bi bi-hourglass-split stat-icon text-secondary" aria-hidden="true"></i>
+                    <i class="bi bi-hourglass-split stat-icon text-muted" aria-hidden="true"></i>
                 </div>
             </div>
         </div>
@@ -229,18 +152,18 @@
         <div class="col-lg-8">
             <!-- Test Actions Card -->
             <div class="card mb-4 shadow-sm">
-                <div class="card-header bg-white">
-                    <h2 class="mb-0"><i class="bi bi-play-circle text-success" aria-hidden="true"></i> {{ ftl('testing-test-actions') }}</h2>
+                <div class="card-header bg-elevated">
+                    <h2 class="mb-0"><i class="bi bi-play-circle text-severity-pass" aria-hidden="true"></i> {{ ftl('testing-test-actions') }}</h2>
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
                         <!-- Action Buttons -->
                         <div class="col-md-4">
                             <div class="d-flex flex-column gap-2">
-                                <button class="btn btn-success" id="testAllBtn" {% if not selected_project and not selected_website %}disabled{% endif %}>
+                                <button class="btn btn-pass" id="testAllBtn" {% if not selected_project and not selected_website %}disabled{% endif %}>
                                     <i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('common-test-all-pages') }}
                                 </button>
-                                <button class="btn btn-outline-primary" id="testUntestedBtn" {% if not selected_project and not selected_website %}disabled{% endif %}>
+                                <button class="btn btn-outline-brand" id="testUntestedBtn" {% if not selected_project and not selected_website %}disabled{% endif %}>
                                     <i class="bi bi-skip-forward" aria-hidden="true"></i> {{ ftl('testing-test-untested-only') }}
                                 </button>
                             </div>
@@ -253,9 +176,10 @@
 
                         <!-- Tester Selection -->
                         <div class="col-md-5">
-                            <label class="form-label fw-semibold">
+                            <fieldset>
+                            <legend class="form-label fw-semibold">
                                 <i class="bi bi-people" aria-hidden="true"></i> {{ ftl('testing-test-as') }}
-                            </label>
+                            </legend>
                             <div class="border rounded p-2" style="max-height: 120px; overflow-y: auto;">
                                 <div class="form-check">
                                     <input class="form-check-input tester-checkbox" type="checkbox" id="testerGuest" value="guest" checked>
@@ -268,7 +192,7 @@
                                     <div class="form-check">
                                         <input class="form-check-input tester-checkbox" type="checkbox" id="tester{{ user.id }}" value="{{ user.id }}">
                                         <label class="form-check-label" for="tester{{ user.id }}">
-                                            <i class="bi bi-person-fill text-primary" aria-hidden="true"></i> {{ user.name_display }}
+                                            <i class="bi bi-person-fill text-brand" aria-hidden="true"></i> {{ user.name_display }}
                                             {% if user.roles %}
                                             <small class="text-muted">({{ user.role_display }})</small>
                                             {% endif %}
@@ -282,13 +206,15 @@
                                     </small>
                                 {% endif %}
                             </div>
+                            </fieldset>
                         </div>
 
                         <!-- Options -->
                         <div class="col-md-3">
-                            <label class="form-label fw-semibold">
+                            <fieldset>
+                            <legend class="form-label fw-semibold">
                                 <i class="bi bi-gear" aria-hidden="true"></i> {{ ftl('common-options') }}
-                            </label>
+                            </legend>
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="includeScreenshots" checked>
                                 <label class="form-check-label" for="includeScreenshots">
@@ -301,6 +227,7 @@
                                     {{ ftl('testing-run-ai-analysis') }}
                                 </label>
                             </div>
+                            </fieldset>
                         </div>
                     </div>
                 </div>
@@ -308,11 +235,11 @@
 
             <!-- Trends Chart -->
             <div class="card mb-4 shadow-sm">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <div class="card-header bg-elevated d-flex justify-content-between align-items-center">
                     <h2 class="mb-0"><i class="bi bi-graph-up" aria-hidden="true"></i> {{ ftl('common-trends') }}</h2>
                     <div class="d-flex align-items-center gap-2">
                         <small class="text-muted">{{ ftl('testing-last-14-days') }}</small>
-                        <a href="{{ url_for('testing.trends_page') }}{% if selected_project %}?project_id={{ selected_project.id }}{% endif %}{% if selected_website %}&website_id={{ selected_website.id }}{% endif %}" class="btn btn-sm btn-outline-primary" title="{{ ftl('testing-view-detailed-trends') }}">
+                        <a href="{{ url_for('testing.trends_page') }}{% if selected_project %}?project_id={{ selected_project.id }}{% endif %}{% if selected_website %}&website_id={{ selected_website.id }}{% endif %}" class="btn btn-sm btn-outline-brand" aria-label="{{ ftl('common-details') }}: {{ ftl('testing-view-detailed-trends') }}">
                             <i class="bi bi-graph-up-arrow" aria-hidden="true"></i> {{ ftl('common-details') }}
                         </a>
                     </div>
@@ -327,12 +254,12 @@
 
             <!-- Recent Results Table -->
             <div class="card shadow-sm">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div class="card-header bg-elevated d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <h2 class="mb-0"><i class="bi bi-clock-history" aria-hidden="true"></i> {{ ftl('testing-recent-test-results') }}</h2>
                     <div class="btn-group btn-group-sm" role="group">
-                        <button type="button" class="btn btn-outline-secondary active" data-filter="all">{{ ftl('common-all') }}</button>
-                        <button type="button" class="btn btn-outline-danger" data-filter="errors">{{ ftl('testing-errors-only') }}</button>
-                        <button type="button" class="btn btn-outline-secondary" data-filter="today">{{ ftl('testing-today') }}</button>
+                        <button type="button" class="btn btn-outline-neutral active" data-filter="all">{{ ftl('common-all') }}</button>
+                        <button type="button" class="btn btn-outline-high" data-filter="errors">{{ ftl('testing-errors-only') }}</button>
+                        <button type="button" class="btn btn-outline-neutral" data-filter="today">{{ ftl('testing-today') }}</button>
                     </div>
                 </div>
                 <div class="card-body p-0">
@@ -340,7 +267,7 @@
                     <div class="table-responsive">
                         <table class="table table-hover table-results mb-0">
                             <caption class="visually-hidden">{{ ftl('testing-recent-accessibility-test-results') }}</caption>
-                            <thead class="table-light">
+                            <thead class="table-subtle">
                                 <tr>
                                     <th scope="col">{{ ftl('common-page-2') }}</th>
                                     <th scope="col">{{ ftl('common-project-website') }}</th>
@@ -355,7 +282,7 @@
                                 {% for item in recent_results %}
                                 <tr data-violations="{{ item.result.violation_count }}" data-date="{{ item.result.test_date.strftime('%Y-%m-%d') }}">
                                     <td>
-                                        <a href="{{ url_for('pages.view_page', page_id=item.result.page_id) }}" class="text-decoration-none" title="{{ item.page.url if item.page else '' }}">
+                                        <a href="{{ url_for('pages.view_page', page_id=item.result.page_id) }}" class="text-decoration-none">
                                             {% if item.page %}
                                                 <span class="truncate-url">{{ item.page.title or item.page.url }}</span>
                                             {% else %}
@@ -374,27 +301,27 @@
                                     </td>
                                     <td class="text-center">
                                         {% if item.result.violation_count > 0 %}
-                                        <span class="badge bg-danger">{{ item.result.violation_count }}</span>
+                                        <span class="badge badge-high">{{ item.result.violation_count }}</span>
                                         {% else %}
-                                        <span class="badge bg-light text-dark">0</span>
+                                        <span class="badge badge-subtle">0</span>
                                         {% endif %}
                                     </td>
                                     <td class="text-center">
                                         {% if item.result.warning_count > 0 %}
-                                        <span class="badge bg-warning text-dark">{{ item.result.warning_count }}</span>
+                                        <span class="badge badge-medium">{{ item.result.warning_count }}</span>
                                         {% else %}
-                                        <span class="badge bg-light text-dark">0</span>
+                                        <span class="badge badge-subtle">0</span>
                                         {% endif %}
                                     </td>
                                     <td class="text-center">
                                         {% if item.result.error %}
-                                        <span class="badge bg-danger">{{ ftl('common-error-2') }}</span>
+                                        <span class="badge badge-high">{{ ftl('common-error-2') }}</span>
                                         {% else %}
-                                        <span class="badge bg-success">{{ ftl('common-complete') }}</span>
+                                        <span class="badge badge-pass">{{ ftl('common-complete') }}</span>
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <a href="{{ url_for('pages.view_page', page_id=item.result.page_id) }}" class="btn btn-sm btn-outline-primary" title="{{ ftl('common-view-details') }}">
+                                        <a href="{{ url_for('pages.view_page', page_id=item.result.page_id) }}" class="btn btn-sm btn-outline-brand" aria-label="{{ ftl('common-view-details') }}">
                                             <i class="bi bi-eye" aria-hidden="true"></i>
                                         </a>
                                     </td>
@@ -418,9 +345,9 @@
         <div class="col-lg-4">
             <!-- Active Tests Panel -->
             <div class="card mb-4 shadow-sm">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <h2 class="mb-0"><i class="bi bi-activity text-primary" aria-hidden="true"></i> {{ ftl('testing-active-tests') }}</h2>
-                    <span class="badge bg-primary" id="activeTestsCount">{{ active_jobs|length }}</span>
+                <div class="card-header bg-elevated d-flex justify-content-between align-items-center">
+                    <h2 class="mb-0"><i class="bi bi-activity text-brand" aria-hidden="true"></i> {{ ftl('testing-active-tests') }}</h2>
+                    <span class="badge badge-brand" id="activeTestsCount">{{ active_jobs|length }}</span>
                 </div>
                 <div class="card-body" id="activeTestsPanel">
                     {% if active_jobs %}
@@ -428,7 +355,7 @@
                         <div class="active-test-item p-2 mb-2 rounded">
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <strong class="small">{{ job.get('website_name', ftl('common-unknown')) }}</strong>
-                                <span class="badge bg-info">{{ job.get('progress', 0) }}%</span>
+                                <span class="badge badge-info">{{ job.get('progress', 0) }}%</span>
                             </div>
                             <div class="progress progress-thin mb-1">
                                 <div class="progress-bar" role="progressbar" style="width: {{ job.get('progress', 0) }}%"></div>
@@ -449,14 +376,14 @@
 
             <!-- Scheduled Tests Panel -->
             <div class="card shadow-sm">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <div class="card-header bg-elevated d-flex justify-content-between align-items-center">
                     <h2 class="mb-0"><i class="bi bi-calendar-check text-discovery" aria-hidden="true"></i> {{ ftl('testing-scheduled-tests') }}</h2>
-                    <span class="badge" style="background-color: var(--color-discovery);">{{ schedules|length }}</span>
+                    <span class="badge badge-discovery">{{ schedules|length }}</span>
                 </div>
                 <div class="card-body">
                     {% if schedules %}
                         {% for schedule in schedules[:5] %}
-                        <div class="schedule-item p-2 mb-2 rounded bg-light">
+                        <div class="schedule-item p-2 mb-2 rounded bg-subtle">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
                                     <strong class="small">{{ schedule.name }}</strong>
@@ -464,7 +391,7 @@
                                     <br><small class="text-muted">{{ schedule._website_name }}</small>
                                     {% endif %}
                                 </div>
-                                <span class="badge {% if schedule.enabled %}bg-success{% else %}bg-secondary{% endif %}">
+                                <span class="badge {% if schedule.enabled %}bg-pass{% else %}bg-neutral{% endif %}">
                                     {{ ftl('common-active') if schedule.enabled else ftl('common-paused') }}
                                 </span>
                             </div>
@@ -472,14 +399,14 @@
                                 <i class="bi bi-clock" aria-hidden="true"></i> {{ schedule.schedule_summary }}
                             </small>
                             {% if schedule.next_run_at %}
-                            <br><small class="text-primary">
+                            <br><small class="text-brand">
                                 <i class="bi bi-arrow-right" aria-hidden="true"></i> {{ ftl('testing-next') }} {{ schedule.next_run_at.strftime('%Y-%m-%d %H:%M') }}
                             </small>
                             {% endif %}
                         </div>
                         {% endfor %}
                         {% if schedules|length > 5 %}
-                        <a href="{{ url_for('schedules.list_schedules') }}" class="btn btn-sm btn-outline-primary w-100 mt-2">
+                        <a href="{{ url_for('schedules.list_schedules') }}" class="btn btn-sm btn-outline-brand w-100 mt-2">
                             {{ ftl('testing-view-all') }} ({{ schedules|length }})
                         </a>
                         {% endif %}
@@ -488,7 +415,7 @@
                         <i class="bi bi-calendar-x" aria-hidden="true"></i>
                         <p class="mb-0">{{ ftl('testing-no-scheduled-tests') }}</p>
                         {% if selected_website %}
-                        <a href="{{ url_for('schedules.create_schedule', website_id=selected_website.id) }}" class="btn btn-sm btn-outline-primary mt-2">
+                        <a href="{{ url_for('schedules.create_schedule', website_id=selected_website.id) }}" class="btn btn-sm btn-outline-brand mt-2">
                             <i class="bi bi-plus" aria-hidden="true"></i> {{ ftl('common-create-schedule') }}
                         </a>
                         {% endif %}
@@ -499,7 +426,7 @@
 
             <!-- Quick Stats Summary -->
             <div class="card mt-4 shadow-sm">
-                <div class="card-header bg-white">
+                <div class="card-header bg-elevated">
                     <h2 class="mb-0"><i class="bi bi-bar-chart" aria-hidden="true"></i> {{ ftl('common-summary') }}</h2>
                 </div>
                 <div class="card-body">
@@ -755,7 +682,7 @@ function updateActiveTestsPanel(activeTests) {
             <div class="active-test-item p-2 mb-2 rounded">
                 <div class="d-flex justify-content-between align-items-center mb-1">
                     <strong class="small">${job.website_name}</strong>
-                    <span class="badge bg-info">${job.progress}%</span>
+                    <span class="badge badge-info">${job.progress}%</span>
                 </div>
                 <div class="progress progress-thin mb-1">
                     <div class="progress-bar" role="progressbar" style="width: ${job.progress}%"></div>
@@ -898,10 +825,10 @@ function showToast(title, message, type = 'info') {
     toastBody.textContent = message;
 
     // Set color based on type
-    toast.classList.remove('bg-success', 'bg-danger', 'bg-warning', 'bg-info');
-    if (type === 'success') toast.classList.add('text-bg-success');
-    else if (type === 'danger') toast.classList.add('text-bg-danger');
-    else if (type === 'warning') toast.classList.add('text-bg-warning');
+    const toastMap = {success: 'toast-pass', danger: 'toast-high', warning: 'toast-medium', info: 'toast-info'};
+    toast.classList.remove('toast-pass', 'toast-high', 'toast-medium', 'toast-info');
+    const toastClass = toastMap[type];
+    if (toastClass) toast.classList.add(toastClass);
 
     const bsToast = new bootstrap.Toast(toast);
     bsToast.show();

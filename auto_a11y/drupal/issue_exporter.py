@@ -4,9 +4,13 @@ Drupal Issue Exporter
 Handles exporting issues from Auto A11y to Drupal via JSON:API.
 """
 
+from __future__ import annotations
+
 import logging
-from typing import Optional, Dict, Any, List
-from datetime import datetime
+from typing import Any
+
+from auto_a11y.drupal.client import DrupalJSONAPIClient
+from auto_a11y.drupal.taxonomy import TaxonomyCache, WCAGChapterCache
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +22,12 @@ class IssueExporter:
     Handles creating and updating issue nodes in Drupal from Auto A11y Issue objects.
     """
 
-    def __init__(self, client, taxonomy_cache=None, wcag_cache=None):
+    def __init__(
+        self,
+        client: DrupalJSONAPIClient,
+        taxonomy_cache: TaxonomyCache | None = None,
+        wcag_cache: WCAGChapterCache | None = None,
+    ) -> None:
         """
         Initialize issue exporter.
 
@@ -27,9 +36,9 @@ class IssueExporter:
             taxonomy_cache: Optional TaxonomyCache instance for taxonomy lookups
             wcag_cache: Optional WCAGChapterCache instance for WCAG chapter lookups
         """
-        self.client = client
-        self.taxonomy_cache = taxonomy_cache
-        self.wcag_cache = wcag_cache
+        self.client: DrupalJSONAPIClient = client
+        self.taxonomy_cache: TaxonomyCache | None = taxonomy_cache
+        self.wcag_cache: WCAGChapterCache | None = wcag_cache
 
     def export_issue(
         self,
@@ -37,17 +46,17 @@ class IssueExporter:
         description: str,
         audit_uuid: str,
         impact: str = "med",
-        issue_type: Optional[str] = None,
-        location_on_page: Optional[str] = None,
-        wcag_criteria: Optional[List[str]] = None,
-        xpath: Optional[str] = None,
-        url: Optional[str] = None,
-        video_timecode: Optional[str] = None,
-        issue_id: Optional[int] = None,
-        existing_uuid: Optional[str] = None,
-        video_uuid: Optional[str] = None,
-        discovered_page_uuid: Optional[str] = None
-    ) -> Dict[str, Any]:
+        issue_type: str | None = None,
+        location_on_page: str | None = None,
+        wcag_criteria: list[str] | None = None,
+        xpath: str | None = None,
+        url: str | None = None,
+        video_timecode: str | None = None,
+        issue_id: int | None = None,
+        existing_uuid: str | None = None,
+        video_uuid: str | None = None,
+        discovered_page_uuid: str | None = None
+    ) -> dict[str, Any]:
         """
         Export an issue to Drupal.
 
@@ -121,12 +130,12 @@ class IssueExporter:
                 response = self.client.post("node/issue", payload)
 
             # Extract result
-            data = response.get('data', {})
-            uuid = data.get('id')
-            nid = data.get('attributes', {}).get('drupal_internal__nid')
+            data: dict[str, Any] = response.get('data', {})
+            uuid: str | None = data.get('id')
+            nid: int | None = data.get('attributes', {}).get('drupal_internal__nid')
 
             # Check if body field came back in the response
-            response_body = data.get('attributes', {}).get('body')
+            response_body: dict[str, Any] | None = data.get('attributes', {}).get('body')
             if response_body:
                 logger.warning(f"🔍 RESPONSE CHECK for '{title}': body field IS PRESENT in Drupal response, value length={len(response_body.get('value', ''))}")
             else:
@@ -146,13 +155,17 @@ class IssueExporter:
 
             # Try to get detailed error from response
             error_detail = str(e)
-            if hasattr(e, 'response'):
+            resp: Any = getattr(e, 'response', None)
+            if resp is not None:
                 try:
-                    error_data = e.response.json()
+                    error_data: dict[str, Any] = resp.json()
                     if 'errors' in error_data:
-                        error_messages = [err.get('detail', err.get('title', '')) for err in error_data['errors']]
+                        error_messages: list[str] = [
+                            err.get('detail', err.get('title', ''))
+                            for err in error_data['errors']
+                        ]
                         error_detail = '; '.join(error_messages)
-                except:
+                except Exception:
                     pass
 
             return {
@@ -160,7 +173,7 @@ class IssueExporter:
                 'error': error_detail
             }
 
-    def export_from_issue_model(self, issue, audit_uuid: str) -> Dict[str, Any]:
+    def export_from_issue_model(self, issue: Any, audit_uuid: str) -> dict[str, Any]:
         """
         Export an issue from an Issue model instance.
 
@@ -174,23 +187,22 @@ class IssueExporter:
         import html
 
         # Map impact enum to Drupal format
-        impact_mapping = {
+        impact_mapping: dict[str, str] = {
             'low': 'low',
             'medium': 'med',
             'high': 'high'
         }
-        impact = impact_mapping.get(issue.impact.value, 'med')
+        impact: str = impact_mapping.get(issue.impact.value, 'med')
 
         # Try to get enhanced descriptions if issue_code is available
-        description = issue.description
-        used_enhanced = False
+        description: str = issue.description
 
         if hasattr(issue, 'issue_code') and issue.issue_code:
             try:
                 from auto_a11y.reporting.issue_descriptions_translated import get_detailed_issue_description
 
                 # Build metadata for contextual substitution
-                metadata = {}
+                metadata: dict[str, str] = {}
                 if hasattr(issue, 'element') and issue.element:
                     metadata['element_text'] = issue.element
                 if hasattr(issue, 'html') and issue.html:
@@ -204,7 +216,7 @@ class IssueExporter:
 
                 if enhanced:
                     # Build enhanced description HTML
-                    description_parts = []
+                    description_parts: list[str] = []
                     if enhanced.get('what'):
                         description_parts.append(f"<h3>What the issue is</h3>\n<p>{html.escape(enhanced['what'])}</p>")
                     if enhanced.get('why'):
@@ -216,7 +228,6 @@ class IssueExporter:
 
                     if description_parts:
                         description = "\n".join(description_parts)
-                        used_enhanced = True
                         logger.info(f"Using enhanced description for issue code: {issue.issue_code}")
             except Exception as e:
                 logger.warning(f"Failed to get enhanced description for {issue.issue_code}: {e}")
@@ -236,7 +247,7 @@ class IssueExporter:
             existing_uuid=issue.drupal_uuid
         )
 
-    def export_from_recording_issue(self, recording_issue, audit_uuid: str, video_uuid: Optional[str] = None) -> Dict[str, Any]:
+    def export_from_recording_issue(self, recording_issue: Any, audit_uuid: str, video_uuid: str | None = None) -> dict[str, Any]:
         """
         Export an issue from a RecordingIssue model instance.
 
@@ -251,16 +262,16 @@ class IssueExporter:
         import html
 
         # Map impact enum to Drupal format
-        impact_mapping = {
+        impact_mapping: dict[str, str] = {
             'low': 'low',
             'medium': 'med',
             'high': 'high'
         }
-        impact = impact_mapping.get(recording_issue.impact.value, 'med')
+        impact: str = impact_mapping.get(recording_issue.impact.value, 'med')
 
         # For RecordingIssues, ALWAYS use the detailed descriptions from the recording itself
         # These come from manual audits and lived experience testing with expert-crafted content
-        description_parts = []
+        description_parts: list[str] = []
 
         logger.warning(f"🔍 RECORDING ISSUE '{recording_issue.title}': Checking fields...")
         logger.warning(f"   what: {'✓ Present' if recording_issue.what else '✗ Missing'} ({len(recording_issue.what) if recording_issue.what else 0} chars)")
@@ -277,7 +288,7 @@ class IssueExporter:
         if recording_issue.remediation:
             description_parts.append(f"<h3>How to remediate</h3>\n<p>{html.escape(recording_issue.remediation)}</p>")
 
-        description = "\n".join(description_parts) if description_parts else recording_issue.what or ""
+        description: str = "\n".join(description_parts) if description_parts else recording_issue.what or ""
 
         # Debug logging at WARNING level so it appears in Flask logs
         logger.warning(f"📦 Built description_parts list with {len(description_parts)} parts")
@@ -288,16 +299,16 @@ class IssueExporter:
             logger.warning(f"✗ RecordingIssue '{recording_issue.title}': Description is EMPTY!")
 
         # Convert timecodes to video_timecode string
-        video_timecode = None
+        video_timecode: str | None = None
         if recording_issue.timecodes:
             timecode_strs = [f"{tc.start} - {tc.end}" for tc in recording_issue.timecodes]
             video_timecode = "; ".join(timecode_strs)
 
         # Extract WCAG criteria strings
-        wcag_criteria = [w.criteria for w in recording_issue.wcag]
+        wcag_criteria: list[str] = [w.criteria for w in recording_issue.wcag]
 
         # Get first page URL if available
-        url = recording_issue.page_urls[0] if recording_issue.page_urls else None
+        url: str | None = recording_issue.page_urls[0] if recording_issue.page_urls else None
 
         # Log the exact value being passed to export_issue
         logger.warning(f"🚀 CALLING export_issue() for '{recording_issue.title}':")
@@ -326,17 +337,17 @@ class IssueExporter:
         description: str,
         audit_uuid: str,
         impact: str,
-        issue_type: Optional[str],
-        location_on_page: Optional[str],
-        wcag_criteria: List[str],
-        xpath: Optional[str],
-        url: Optional[str],
-        video_timecode: Optional[str],
-        issue_id: Optional[int],
-        existing_uuid: Optional[str] = None,
-        video_uuid: Optional[str] = None,
-        discovered_page_uuid: Optional[str] = None
-    ) -> Dict[str, Any]:
+        issue_type: str | None,
+        location_on_page: str | None,
+        wcag_criteria: list[str],
+        xpath: str | None,
+        url: str | None,
+        video_timecode: str | None,
+        issue_id: int | None,
+        existing_uuid: str | None = None,
+        video_uuid: str | None = None,
+        discovered_page_uuid: str | None = None
+    ) -> dict[str, Any]:
         """
         Build JSON:API payload for issue.
 
@@ -358,16 +369,16 @@ class IssueExporter:
             JSON:API payload dict
         """
         # Build attributes
-        attributes = {
+        attributes: dict[str, Any] = {
             'title': title,
             'status': True  # Publish the issue by default
         }
         # Note: field_ticket_status omitted - all existing issues have null for this field
 
         # Add impact as simple string field (not a taxonomy reference)
-        # Map internal values to Drupal values: "medium" → "med"
+        # Map internal values to Drupal values: "medium" -> "med"
         if impact:
-            impact_mapping = {
+            impact_mapping: dict[str, str] = {
                 'low': 'low',
                 'medium': 'med',  # Drupal uses "med" not "medium"
                 'high': 'high',
@@ -451,7 +462,7 @@ class IssueExporter:
             attributes['field_id'] = issue_id
 
         # Build relationships
-        relationships = {
+        relationships: dict[str, Any] = {
             'field_parent_audit': {
                 'data': {
                     'type': 'node--audit',
@@ -497,7 +508,7 @@ class IssueExporter:
         # Add Issue Category taxonomy relationship (from touchpoint/issue_type)
         if self.taxonomy_cache and issue_type:
             # Map touchpoint names to Drupal issue_category term names
-            touchpoint_to_category = {
+            touchpoint_to_category: dict[str, str] = {
                 'color contrast': 'Colour or Contrast',
                 'colors': 'Colour or Contrast',  # Manual recording touchpoint
                 'colour': 'Colour or Contrast',
@@ -621,7 +632,7 @@ class IssueExporter:
         # - Add workflow state handling as optional parameter
 
         # Build data section
-        data = {
+        data: dict[str, Any] = {
             'type': 'node--issue',
             'attributes': attributes,
             'relationships': relationships
@@ -632,7 +643,7 @@ class IssueExporter:
             data['id'] = existing_uuid
 
         # Build final payload
-        payload = {
+        payload: dict[str, Any] = {
             'data': data
         }
 
@@ -640,10 +651,10 @@ class IssueExporter:
 
     def batch_export(
         self,
-        issues: List[Any],
+        issues: list[Any],
         audit_uuid: str,
         continue_on_error: bool = True
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Export multiple issues in batch.
 
@@ -655,7 +666,7 @@ class IssueExporter:
         Returns:
             Dict with 'total', 'success_count', 'failure_count', 'results' keys
         """
-        results = []
+        results: list[dict[str, Any]] = []
         success_count = 0
         failure_count = 0
 

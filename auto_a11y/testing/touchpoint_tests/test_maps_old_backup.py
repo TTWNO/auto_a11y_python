@@ -4,9 +4,13 @@ Evaluates embedded digital maps for proper accessibility, distinguishing between
 interactive and non-interactive maps with appropriate requirements for each.
 """
 
+from __future__ import annotations
+
 from datetime import datetime
-from typing import Dict, Any, List, Optional
+from typing import Any
 import logging
+
+from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +52,7 @@ TEST_DOCUMENTATION = {
     ]
 }
 
-async def test_maps(page) -> Dict[str, Any]:
+async def test_maps(page: Page) -> dict[str, Any]:
     """
     Comprehensive map accessibility testing with enhanced detection
 
@@ -72,7 +76,7 @@ async def test_maps(page) -> Dict[str, Any]:
         Dictionary containing test results with errors, warnings, and discoveries
     """
     try:
-        results = await page.evaluate('''
+        results: dict[str, Any] = await page.evaluate('''
             () => {
                 const results = {
                     applicable: true,

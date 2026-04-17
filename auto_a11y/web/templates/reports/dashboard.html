@@ -18,13 +18,15 @@
 {# ── Row-fragment macros (single source of truth for every row state) ── #}
 
 {% macro report_actions(filename) %}
+{% set file_ext = filename.rsplit('.', 1)[1] | upper if '.' in filename else '' %}
 <div class="btn-group" role="group">
     <a href="{{ url_for('reports.download_report', filename=filename) }}"
-       class="btn btn-sm btn-primary" title="{{ ftl('reports-download') }}">
+       class="btn btn-sm btn-brand" aria-label="{{ ftl('reports-download') }} ({{ file_ext }})">
         <i class="bi bi-download" aria-hidden="true"></i>
+        <span class="visually-hidden"> ({{ file_ext }})</span>
     </a>
-    <button class="btn btn-sm btn-danger"
-            onclick="deleteReport('{{ filename }}')" title="{{ ftl('common-delete') }}">
+    <button class="btn btn-sm btn-high"
+            onclick="deleteReport('{{ filename }}')" aria-label="{{ ftl('common-delete') }}">
         <i class="bi bi-trash" aria-hidden="true"></i>
     </button>
 </div>
@@ -32,8 +34,8 @@
 
 {% macro completed_job_row(name, filename, date_str) %}
 <tr>
-    <td><i class="bi bi-check-circle text-success" aria-hidden="true"></i> {{ name }}</td>
-    <td><span class="badge bg-success">{{ ftl('common-complete') }}</span></td>
+    <td><i class="bi bi-check-circle text-severity-pass" aria-hidden="true"></i> {{ name }}</td>
+    <td><span class="badge badge-pass">{{ ftl('common-complete') }}</span></td>
     <td>—</td>
     <td>{{ date_str }}</td>
     <td>—</td>
@@ -44,10 +46,10 @@
 {% macro failed_job_row(name, error) %}
 <tr>
     <td>
-        <i class="bi bi-x-circle text-danger" aria-hidden="true"></i>
+        <i class="bi bi-x-circle text-severity-high" aria-hidden="true"></i>
         {{ name }}
     </td>
-    <td colspan="4"><span class="text-danger">{{ ftl('common-failed') }}: {{ error }}</span></td>
+    <td colspan="4"><span class="text-severity-high">{{ ftl('common-failed') }}: {{ error }}</span></td>
     <td>—</td>
 </tr>
 {% endmacro %}
@@ -56,7 +58,7 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>{{ ftl('common-reports') }}</h1>
-        <button class="btn btn-primary" data-open-modal="#generateReportModal">
+        <button class="btn btn-brand" data-open-modal="#generateReportModal">
             <i class="bi bi-plus-circle" aria-hidden="true"></i> {{ ftl('common-generate-report') }}
         </button>
     </div>
@@ -207,17 +209,17 @@
                             {{ job.metadata.get('display_name', ftl('reports-report')) }}
                         </td>
                         <td colspan="2">
-                            <progress value="{{ job.progress.current|default(0) }}" max="{{ job.progress.total|default(1) }}"></progress>
+                            <progress value="{{ job.progress.current|default(0) }}" max="{{ job.progress.total|default(1) }}" aria-label="{{ ftl('reports-generation-progress') }}"></progress>
                             <span class="progress-text ms-2" role="status" aria-live="polite">{{ job.progress.message|default('Starting...') }}</span>
                         </td>
                         <td>{{ ftl('reports-just-now') }}</td>
                         <td>—</td>
                         <td>
                             <div class="btn-group" role="group">
-                                <button class="btn btn-sm btn-warning" onclick="restartJob('{{ job.job_id }}')" title="{{ ftl('reports-restart') }}">
+                                <button class="btn btn-sm btn-medium" onclick="restartJob('{{ job.job_id }}')" aria-label="{{ ftl('reports-restart') }}">
                                     <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
                                 </button>
-                                <button class="btn btn-sm btn-danger" onclick="dropJob('{{ job.job_id }}')" title="{{ ftl('reports-drop') }}">
+                                <button class="btn btn-sm btn-high" onclick="dropJob('{{ job.job_id }}')" aria-label="{{ ftl('reports-drop') }}">
                                     <i class="bi bi-x-circle" aria-hidden="true"></i>
                                 </button>
                             </div>
@@ -242,21 +244,21 @@
                         {% for report in reports %}
                         <tr>
                             <td>
-                                <i class="bi bi-file-earmark-{{ {'pdf': 'pdf text-danger',
-                                                                 'excel': 'excel text-success',
-                                                                 'xlsx': 'excel text-success',
+                                <i class="bi bi-file-earmark-{{ {'pdf': 'pdf text-severity-high',
+                                                                 'excel': 'excel text-severity-pass',
+                                                                 'xlsx': 'excel text-severity-pass',
                                                                  'json': 'code text-info',
-                                                                 'html': 'text text-primary',
-                                                                 'zip': 'zip text-warning'}[report.type] or 'text' }}" aria-hidden="true"></i>
+                                                                 'html': 'text text-brand',
+                                                                 'zip': 'zip text-severity-medium'}[report.type] or 'text' }}" aria-hidden="true"></i>
                                 {{ report.name }}
                             </td>
                             <td>
-                                <span class="badge bg-{{ {'pdf': 'danger',
-                                                          'excel': 'success',
-                                                          'xlsx': 'success',
+                                <span class="badge badge-{{ {'pdf': 'high',
+                                                          'excel': 'pass',
+                                                          'xlsx': 'pass',
                                                           'json': 'info',
-                                                          'html': 'primary',
-                                                          'zip': 'warning'}[report.type] or 'secondary' }}">
+                                                          'html': 'brand',
+                                                          'zip': 'medium'}[report.type] or 'neutral' }}">
                                     {{ report.type|upper }}
                                 </span>
                             </td>
@@ -288,14 +290,14 @@
 </div>
 
 <!-- Generate Report Modal -->
-<dialog class="modal" id="generateReportModal" aria-labelledby="generateReportModalTitle">
+<dialog class="modal" id="generateReportModal" role="dialog" aria-labelledby="generateReportModalTitle" aria-modal="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 class="modal-title" id="generateReportModalTitle">{{ ftl('common-generate-report') }}</h2>
                 <button type="button" class="btn-close" data-close-modal aria-label="{{ ftl('common-close') }}"></button>
             </div>
-            <form id="generateReportForm">
+            <form id="generateReportForm" aria-labelledby="generateReportModalTitle">
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-md-6">
@@ -340,20 +342,22 @@
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label">{{ ftl('reports-date-range') }}</label>
+                    <fieldset class="mb-3">
+                        <legend class="form-label">{{ ftl('reports-date-range') }}</legend>
                         <div class="row">
                             <div class="col-md-6">
+                                <label for="startDate" class="form-label">{{ ftl('reports-start-date') }}</label>
                                 <input type="date" class="form-control" id="startDate">
                             </div>
                             <div class="col-md-6">
+                                <label for="endDate" class="form-label">{{ ftl('reports-end-date') }}</label>
                                 <input type="date" class="form-control" id="endDate">
                             </div>
                         </div>
-                    </div>
+                    </fieldset>
 
-                    <div class="mb-3">
-                        <label class="form-label">{{ ftl('common-include-in-report') }}</label>
+                    <fieldset class="mb-3">
+                        <legend class="form-label">{{ ftl('common-include-in-report') }}</legend>
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="includeViolations" checked>
                             <label class="form-check-label" for="includeViolations">
@@ -384,11 +388,11 @@
                                 {{ ftl('reports-executive-summary') }}
                             </label>
                         </div>
-                    </div>
+                    </fieldset>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-close-modal>{{ ftl('common-cancel') }}</button>
-                    <button type="submit" class="btn btn-primary">
+                    <button type="button" class="btn btn-neutral" data-close-modal>{{ ftl('common-cancel') }}</button>
+                    <button type="submit" class="btn btn-brand">
                         <i class="bi bi-file-earmark-arrow-down" aria-hidden="true"></i> {{ ftl('common-generate-report') }}
                     </button>
                 </div>
@@ -425,7 +429,8 @@ const _i18n = {
     failedToDropJob: {{ ftl('reports-failed-to-drop-job') | tojson }},
     failedToRestartJob: {{ ftl('reports-failed-to-restart-job') | tojson }},
     errorPrefix: {{ ftl('common-error') | tojson }},
-    report: {{ ftl('reports-report') | tojson }}
+    report: {{ ftl('reports-report') | tojson }},
+    generationProgress: {{ ftl('reports-generation-progress') | tojson }}
 };
 
 function cloneRowTemplate(templateId, replacements) {
@@ -493,17 +498,17 @@ function startJobPoll(jobId, displayName) {
                 ${displayName}
             </td>
             <td colspan="2">
-                <progress value="0" max="1"></progress>
+                <progress value="0" max="1" aria-label="${_i18n.generationProgress}"></progress>
                 <span class="progress-text ms-2" role="status" aria-live="polite">${_i18n.starting}</span>
             </td>
             <td>${new Date().toLocaleString()}</td>
             <td>\u2014</td>
             <td>
                 <div class="btn-group" role="group">
-                    <button class="btn btn-sm btn-warning" onclick="restartJob('${jobId}')" title="${_i18n.restart}">
+                    <button class="btn btn-sm btn-medium" onclick="restartJob('${jobId}')" aria-label="${_i18n.restart}">
                         <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
                     </button>
-                    <button class="btn btn-sm btn-danger" onclick="dropJob('${jobId}')" title="${_i18n.drop}">
+                    <button class="btn btn-sm btn-high" onclick="dropJob('${jobId}')" aria-label="${_i18n.drop}">
                         <i class="bi bi-x-circle" aria-hidden="true"></i>
                     </button>
                 </div>
@@ -528,12 +533,12 @@ function startJobPoll(jobId, displayName) {
                         const spinner = row.querySelector('.spinner-icon');
                         if (spinner) {
                             spinner.classList.remove('spinner-icon', 'bi-arrow-repeat');
-                            spinner.classList.add('bi-exclamation-triangle', 'text-warning');
+                            spinner.classList.add('bi-exclamation-triangle', 'text-severity-medium');
                         }
                         if (!row.querySelector('.badge-stalled')) {
                             const nameCell = row.querySelector('td:first-child');
                             const badge = document.createElement('span');
-                            badge.className = 'badge bg-warning text-dark ms-2 badge-stalled';
+                            badge.className = 'badge badge-medium ms-2 badge-stalled';
                             badge.textContent = _i18n.stalled;
                             nameCell.appendChild(badge);
                         }
@@ -1029,25 +1034,26 @@ function generateDiscoveryReport() {
 </script>
 
 <!-- Site Structure Report Modal -->
-<dialog class="modal" id="siteStructureModal" aria-labelledby="siteStructureModalTitle">
+<dialog class="modal" id="siteStructureModal" role="dialog" aria-labelledby="siteStructureModalTitle" aria-modal="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 class="modal-title" id="siteStructureModalTitle">{{ ftl('reports-generate-site-structure-report') }}</h2>
                 <button type="button" class="btn-close" data-close-modal aria-label="{{ ftl('common-close') }}"></button>
             </div>
-            <form id="siteStructureForm">
+            <form id="siteStructureForm" aria-labelledby="siteStructureModalTitle">
                 <div class="modal-body">
+                    <p class="form-text mb-3"><span class="text-severity-high" aria-hidden="true">*</span> {{ ftl('common-required-field') }}</p>
                     <div class="mb-3">
-                        <label for="structureProject" class="form-label">{{ ftl('reports-select-project') }}</label>
-                        <select class="form-select" id="structureProject" required>
+                        <label for="structureProject" class="form-label">{{ ftl('reports-select-project') }} <span class="text-severity-high" aria-hidden="true">*</span><span class="visually-hidden">{{ ftl('common-required') }}</span></label>
+                        <select class="form-select" id="structureProject" required aria-required="true">
                             <option value="">{{ ftl('reports-choose-a-project') }}</option>
                         </select>
                         <small class="text-muted">{{ ftl('reports-select-the-project-containing-the-website') }}</small>
                     </div>
                     <div class="mb-3">
-                        <label for="structureWebsite" class="form-label">{{ ftl('reports-select-website') }}</label>
-                        <select class="form-select" id="structureWebsite" required disabled>
+                        <label for="structureWebsite" class="form-label">{{ ftl('reports-select-website') }} <span class="text-severity-high" aria-hidden="true">*</span><span class="visually-hidden">{{ ftl('common-required') }}</span></label>
+                        <select class="form-select" id="structureWebsite" required aria-required="true" disabled>
                             <option value="">{{ ftl('reports-first-select-a-project') }}</option>
                         </select>
                         <small class="text-muted">{{ ftl('reports-select-the-website-to-analyze-its-structure') }}</small>
@@ -1065,8 +1071,8 @@ function generateDiscoveryReport() {
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-close-modal>{{ ftl('common-cancel') }}</button>
-                    <button type="submit" class="btn btn-primary">
+                    <button type="button" class="btn btn-neutral" data-close-modal>{{ ftl('common-cancel') }}</button>
+                    <button type="submit" class="btn btn-brand">
                         <i class="bi bi-diagram-3" aria-hidden="true"></i> {{ ftl('reports-generate-structure-report') }}
                     </button>
                 </div>
@@ -1076,14 +1082,14 @@ function generateDiscoveryReport() {
 </dialog>
 
 <!-- Discovery Report Modal -->
-<dialog class="modal" id="discoveryModal" aria-labelledby="discoveryModalTitle">
+<dialog class="modal" id="discoveryModal" role="dialog" aria-labelledby="discoveryModalTitle" aria-modal="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 class="modal-title" id="discoveryModalTitle">{{ ftl('reports-generate-discovery-report') }}</h2>
                 <button type="button" class="btn-close" data-close-modal aria-label="{{ ftl('common-close') }}"></button>
             </div>
-            <form id="discoveryForm">
+            <form id="discoveryForm" aria-labelledby="discoveryModalTitle">
                 <div class="modal-body">
                     <div class="alert alert-info mb-3">
                         <i class="bi bi-info-circle" aria-hidden="true"></i> {{ ftl('reports-this-report-discovers-pages-with-content') }}
@@ -1094,8 +1100,8 @@ function generateDiscoveryReport() {
                             <li>{{ ftl('reports-elements-with-poor-or-missing-labels') }}</li>
                         </ul>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">{{ ftl('common-scope') }}</label>
+                    <fieldset class="mb-3">
+                        <legend class="form-label">{{ ftl('common-scope') }}</legend>
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="discoveryScope" id="discoveryScopeWebsite" value="website" checked>
                             <label class="form-check-label" for="discoveryScopeWebsite">
@@ -1108,17 +1114,18 @@ function generateDiscoveryReport() {
                                 {{ ftl('reports-entire-project') }}
                             </label>
                         </div>
-                    </div>
+                    </fieldset>
+                    <p class="form-text mb-3"><span class="text-severity-high" aria-hidden="true">*</span> {{ ftl('common-required-field') }}</p>
                     <div class="mb-3" id="discoveryProjectGroup">
-                        <label for="discoveryProject" class="form-label">{{ ftl('reports-select-project') }}</label>
-                        <select class="form-select" id="discoveryProject" required>
+                        <label for="discoveryProject" class="form-label">{{ ftl('reports-select-project') }} <span class="text-severity-high" aria-hidden="true">*</span><span class="visually-hidden">{{ ftl('common-required') }}</span></label>
+                        <select class="form-select" id="discoveryProject" required aria-required="true">
                             <option value="">{{ ftl('reports-choose-a-project') }}</option>
                         </select>
                         <small class="text-muted" id="discoveryProjectHelpText">{{ ftl('common-select-a-project-first-2') }}</small>
                     </div>
                     <div class="mb-3" id="discoveryWebsiteGroup">
-                        <label for="discoveryWebsite" class="form-label">{{ ftl('reports-select-website') }}</label>
-                        <select class="form-select" id="discoveryWebsite" required disabled>
+                        <label for="discoveryWebsite" class="form-label">{{ ftl('reports-select-website') }} <span class="text-severity-high" aria-hidden="true">*</span><span class="visually-hidden">{{ ftl('common-required') }}</span></label>
+                        <select class="form-select" id="discoveryWebsite" required aria-required="true" disabled>
                             <option value="">{{ ftl('reports-first-select-a-project') }}</option>
                         </select>
                         <small class="text-muted">{{ ftl('reports-select-the-specific-website-to-analyze') }}</small>
@@ -1132,8 +1139,8 @@ function generateDiscoveryReport() {
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-close-modal>{{ ftl('common-cancel') }}</button>
-                    <button type="submit" class="btn btn-primary">
+                    <button type="button" class="btn btn-neutral" data-close-modal>{{ ftl('common-cancel') }}</button>
+                    <button type="submit" class="btn btn-brand">
                         <i class="bi bi-search" aria-hidden="true"></i> {{ ftl('reports-generate-discovery-report') }}
                     </button>
                 </div>
@@ -1143,14 +1150,14 @@ function generateDiscoveryReport() {
 </dialog>
 
 <!-- Static HTML Report Modal -->
-<dialog class="modal" id="staticHtmlModal" aria-labelledby="staticHtmlModalTitle">
+<dialog class="modal" id="staticHtmlModal" role="dialog" aria-labelledby="staticHtmlModalTitle" aria-modal="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 class="modal-title" id="staticHtmlModalTitle">{{ ftl('reports-generate-offline-report-static-html') }}</h2>
                 <button type="button" class="btn-close" data-close-modal aria-label="{{ ftl('common-close') }}"></button>
             </div>
-            <form id="staticHtmlForm">
+            <form id="staticHtmlForm" aria-labelledby="staticHtmlModalTitle">
                 <div class="modal-body">
                     <div class="alert alert-info mb-3">
                         <i class="bi bi-info-circle" aria-hidden="true"></i> {{ ftl('reports-this-report-generates-a-complete-offline-website') }}
@@ -1191,8 +1198,8 @@ function generateDiscoveryReport() {
                             <option value="AAA">{{ ftl('common-level-aaa-2') }}</option>
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label d-block">{{ ftl('common-options') }}</label>
+                    <fieldset class="mb-3">
+                        <legend class="form-label d-block">{{ ftl('common-options') }}</legend>
                         <div class="form-check d-flex align-items-center mb-2">
                             <input class="form-check-input me-2" type="checkbox" id="staticHtmlIncludeScreenshots" checked style="margin-top: 0;">
                             <label class="form-check-label" for="staticHtmlIncludeScreenshots">{{ ftl('reports-include-screenshots') }}</label>
@@ -1201,15 +1208,15 @@ function generateDiscoveryReport() {
                             <input class="form-check-input me-2" type="checkbox" id="staticHtmlIncludeDiscovery" checked style="margin-top: 0;">
                             <label class="form-check-label" for="staticHtmlIncludeDiscovery">{{ ftl('reports-include-discovery-items') }}</label>
                         </div>
-                    </div>
+                    </fieldset>
                 </div>
                 <div class="modal-footer flex-column align-items-stretch">
-                    <div class="alert alert-warning mb-3">
+                    <div class="alert alert-medium mb-3">
                         <i class="bi bi-exclamation-triangle" aria-hidden="true"></i> <strong>{{ ftl('common-note') }}</strong> {{ ftl('reports-large-reports-may-take-several-minutes-to') }}
                     </div>
                     <div class="d-flex justify-content-end gap-2">
-                        <button type="button" class="btn btn-secondary" data-close-modal>{{ ftl('common-cancel') }}</button>
-                        <button type="submit" class="btn btn-primary">
+                        <button type="button" class="btn btn-neutral" data-close-modal>{{ ftl('common-cancel') }}</button>
+                        <button type="submit" class="btn btn-brand">
                             <i class="bi bi-file-earmark-zip" aria-hidden="true"></i> {{ ftl('common-generate-report') }}
                         </button>
                     </div>
@@ -1299,14 +1306,14 @@ if (staticHtmlModal) {
 </script>
 
 <!-- Deduplicated Report Modal -->
-<dialog class="modal" id="deduplicatedModal" aria-labelledby="deduplicatedModalTitle">
+<dialog class="modal" id="deduplicatedModal" role="dialog" aria-labelledby="deduplicatedModalTitle" aria-modal="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 class="modal-title" id="deduplicatedModalTitle">{{ ftl('reports-generate-deduplicated-report') }}</h2>
                 <button type="button" class="btn-close" data-close-modal aria-label="{{ ftl('common-close') }}"></button>
             </div>
-            <form id="deduplicatedForm">
+            <form id="deduplicatedForm" aria-labelledby="deduplicatedModalTitle">
                 <div class="modal-body">
                     <div class="alert alert-info mb-3">
                         <i class="bi bi-info-circle" aria-hidden="true"></i> {{ ftl('reports-this-report-generates-a-single-page-offline-html') }}
@@ -1340,13 +1347,13 @@ if (staticHtmlModal) {
                             </div>
                         </div>
                     </div>
-                    <div class="alert alert-warning">
+                    <div class="alert alert-medium">
                         <i class="bi bi-exclamation-triangle" aria-hidden="true"></i> <strong>{{ ftl('common-note') }}</strong> {{ ftl('reports-large-reports-may-take-several-minutes-to') }}
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-close-modal>{{ ftl('common-cancel') }}</button>
-                    <button type="submit" class="btn btn-primary">
+                    <button type="button" class="btn btn-neutral" data-close-modal>{{ ftl('common-cancel') }}</button>
+                    <button type="submit" class="btn btn-brand">
                         <i class="bi bi-layers" aria-hidden="true"></i> {{ ftl('common-generate-report') }}
                     </button>
                 </div>
@@ -1429,14 +1436,14 @@ if (deduplicatedModal) {
 </script>
 
 <!-- Recordings Report Modal -->
-<dialog class="modal" id="recordingsModal" aria-labelledby="recordingsModalTitle">
+<dialog class="modal" id="recordingsModal" role="dialog" aria-labelledby="recordingsModalTitle" aria-modal="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 class="modal-title" id="recordingsModalTitle">{{ ftl('reports-generate-recordings-report') }}</h2>
                 <button type="button" class="btn-close" data-close-modal aria-label="{{ ftl('common-close') }}"></button>
             </div>
-            <form id="recordingsForm">
+            <form id="recordingsForm" aria-labelledby="recordingsModalTitle">
                 <div class="modal-body">
                     <div class="alert alert-info mb-3">
                         <i class="bi bi-info-circle" aria-hidden="true"></i> {{ ftl('reports-this-report-includes-manual-accessibility') }}
@@ -1448,11 +1455,12 @@ if (deduplicatedModal) {
                             <li>{{ ftl('reports-wcag-criteria-mappings-and-remediation-guidance') }}</li>
                         </ul>
                     </div>
+                    <p class="form-text mb-3"><span class="text-severity-high" aria-hidden="true">*</span> {{ ftl('common-required-field') }}</p>
                     <div class="row">
                         <div class="col-md-12">
                             <div class="mb-3">
-                                <label for="recordingsProject" class="form-label">{{ ftl('common-project') }}</label>
-                                <select class="form-select" id="recordingsProject" required>
+                                <label for="recordingsProject" class="form-label">{{ ftl('common-project') }} <span class="text-severity-high" aria-hidden="true">*</span><span class="visually-hidden">{{ ftl('common-required') }}</span></label>
+                                <select class="form-select" id="recordingsProject" required aria-required="true">
                                     <option value="">{{ ftl('reports-choose-a-project') }}</option>
                                     {% for project in projects %}
                                     <option value="{{ project.id }}">{{ project.name }}</option>
@@ -1470,8 +1478,8 @@ if (deduplicatedModal) {
                             <option value="xlsx">{{ ftl('reports-excel-spreadsheet') }}</option>
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">{{ ftl('common-include-in-report') }}</label>
+                    <fieldset class="mb-3">
+                        <legend class="form-label">{{ ftl('common-include-in-report') }}</legend>
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="recordingsIncludeSummary" checked>
                             <label class="form-check-label" for="recordingsIncludeSummary">
@@ -1496,11 +1504,11 @@ if (deduplicatedModal) {
                                 {{ ftl('reports-group-issues-by-touchpoint') }}
                             </label>
                         </div>
-                    </div>
+                    </fieldset>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-close-modal>{{ ftl('common-cancel') }}</button>
-                    <button type="submit" class="btn btn-primary">
+                    <button type="button" class="btn btn-neutral" data-close-modal>{{ ftl('common-cancel') }}</button>
+                    <button type="submit" class="btn btn-brand">
                         <i class="bi bi-mic" aria-hidden="true"></i> {{ ftl('reports-generate-recordings-report') }}
                     </button>
                 </div>
@@ -1510,7 +1518,7 @@ if (deduplicatedModal) {
 </dialog>
 
 <!-- Error/Info Dialog Modal -->
-<dialog class="modal" id="messageModal" aria-labelledby="messageModalTitle">
+<dialog class="modal" id="messageModal" role="dialog" aria-labelledby="messageModalTitle" aria-modal="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -1521,7 +1529,7 @@ if (deduplicatedModal) {
                 <p id="messageModalBody"></p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-primary" data-close-modal>{{ ftl('reports-ok') }}</button>
+                <button type="button" class="btn btn-brand" data-close-modal>{{ ftl('reports-ok') }}</button>
             </div>
         </div>
     </div>

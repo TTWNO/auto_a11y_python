@@ -437,6 +437,7 @@ common-once-per-session = Une fois par session
 common-once-you-have-been-added-to-a-project-you-will-be = Une fois ajouté à un projet, vous pourrez consulter les rapports et les résultats ici.
 common-only-enter-a-password-if-you-want-to-change-it = Entrez un mot de passe uniquement si vous souhaitez le modifier
 common-open-in-new-tab = Ouvrir dans un nouvel onglet
+common-opens-in-new-tab = s'ouvre dans un nouvel onglet
 common-optimization-opportunities = Opportunités d'optimisation
 common-option-name-r-does-not-take-a-value = L'option { $name } n'accepte pas de valeur.
 common-option-name-r-requires-an-argument = Option { $name } requires an argument.
@@ -499,6 +500,7 @@ common-reports = Rapports
 common-reports-dashboard = Tableau de bord des rapports
 common-reports-exports = Rapports et exports
 common-required = requis
+common-required-field = Champ obligatoire
 common-responsive-design = Conception adaptative
 common-review-for-improvements = Vérifier pour améliorations
 common-right-click-in-the-html-panel = Clic droit dans le panneau HTML
@@ -787,3 +789,42 @@ enum-scroll = Défilement
 enum-select = Sélection
 enum-hover = Survol
 enum-screenshot = Capture d'écran
+
+# Touchpoint enums
+enum-accessible-names = Noms accessibles
+enum-animation = Animation
+enum-buttons = Boutons
+enum-colors = Couleurs
+enum-dialogs = Boîtes de dialogue
+enum-electronic-documents = Documents électroniques
+enum-event-handling = Gestion des événements
+enum-floating-content = Contenu flottant
+enum-focus-management = Gestion du focus
+enum-fonts = Polices
+enum-forms = Formulaires
+enum-headings = Titres
+enum-images = Images
+enum-landmarks = Points de repère
+enum-language = Langue
+enum-links = Liens
+enum-lists = Listes
+enum-maps = Cartes
+enum-navigation = Navigation
+enum-page = Page
+enum-read-more-links = Liens « En savoir plus »
+enum-styles = Styles
+enum-tabindex = Index de tabulation
+enum-tables = Tableaux
+enum-timers = Minuteries
+enum-title-attributes = Attributs title
+enum-videos = Vidéos
+
+# WCAG
+wcag-criteria-not-specified = Critères non spécifiés
+
+# Landmark labels for global notification regions
+common-notifications-region = Notifications
+common-activity-status-region = Statut de l'activité
+
+# Generic actions
+common-remove-filter = Supprimer le filtre

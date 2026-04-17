@@ -1,9 +1,12 @@
 """
 Discovered Page management routes
 """
+from __future__ import annotations
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
+from flask import Blueprint, Response, render_template, request, redirect, url_for, flash, jsonify
+from werkzeug.wrappers import Response as WerkzeugResponse
 from auto_a11y.web.fluent import ftl
+from auto_a11y.web.typed_app import get_db
 from bson import ObjectId
 from datetime import datetime
 import logging
@@ -17,10 +20,10 @@ discovered_pages_bp = Blueprint('discovered_pages', __name__)
 
 
 @discovered_pages_bp.route('/discovered-pages/<page_id>')
-def view_discovered_page(page_id):
+def view_discovered_page(page_id: str) -> str | Response | WerkzeugResponse:
     """View and edit a discovered page"""
     try:
-        db = current_app.db
+        db = get_db()
 
         # Get the discovered page
         page_doc = db.discovered_pages.find_one({'_id': ObjectId(page_id)})
@@ -73,10 +76,10 @@ def view_discovered_page(page_id):
 
 
 @discovered_pages_bp.route('/discovered-pages/<page_id>/edit', methods=['POST'])
-def edit_discovered_page(page_id):
+def edit_discovered_page(page_id: str) -> Response | WerkzeugResponse | tuple[Response, int]:
     """Update a discovered page"""
     try:
-        db = current_app.db
+        db = get_db()
 
         # Get the discovered page
         page_doc = db.discovered_pages.find_one({'_id': ObjectId(page_id)})
@@ -98,7 +101,7 @@ def edit_discovered_page(page_id):
 
         # Handle interested_because (can be list from checkboxes or comma-separated string)
         if request.is_json:
-            interested_because = data.get('interested_because', [])
+            interested_because: str | list[str] = data.get('interested_because', [])
             if isinstance(interested_because, str):
                 page.interested_because = [s.strip() for s in interested_because.split(',') if s.strip()]
             else:
@@ -109,7 +112,7 @@ def edit_discovered_page(page_id):
 
         # Handle page_elements (can be list from checkboxes or comma-separated string)
         if request.is_json:
-            page_elements = data.get('page_elements', [])
+            page_elements: str | list[str] = data.get('page_elements', [])
             if isinstance(page_elements, str):
                 page.page_elements = [s.strip() for s in page_elements.split(',') if s.strip()]
             else:
@@ -146,10 +149,10 @@ def edit_discovered_page(page_id):
 
 
 @discovered_pages_bp.route('/discovered-pages/<page_id>/delete', methods=['POST'])
-def delete_discovered_page(page_id):
+def delete_discovered_page(page_id: str) -> Response | WerkzeugResponse | tuple[Response, int]:
     """Delete a discovered page"""
     try:
-        db = current_app.db
+        db = get_db()
 
         # Get the page to find its project
         page_doc = db.discovered_pages.find_one({'_id': ObjectId(page_id)})

@@ -69,9 +69,37 @@ python run.py --setup
 
 The setup process will:
 - Create necessary directories
-- Set up database indexes  
+- Set up database indexes
 - Download Chromium browser for Pyppeteer
 - Create a sample project to get started
+
+## Docker
+
+Auto A11y ships with a `docker-compose.yml` that runs the app and
+MongoDB together. With Docker (20.10+) or Podman (4.1+) installed:
+
+```bash
+docker compose up
+# or: podman-compose up
+```
+
+The UI is then available at http://localhost:5001.
+
+### Testing host-local servers
+
+To run accessibility tests against an HTTP server running on **your
+host machine** (for example a dev server on port `8080`), use the
+hostname `host.docker.internal` instead of `localhost`:
+
+| Running on host as | Enter in Auto A11y as |
+|---|---|
+| `http://localhost:80` | `http://host.docker.internal` |
+| `http://localhost:8080` | `http://host.docker.internal:8080` |
+| `http://localhost:8000` | `http://host.docker.internal:8000` |
+
+This is enabled by the `extra_hosts` entry in `docker-compose.yml`. No
+extra configuration is required. If the host server is bound only to
+`127.0.0.1`, rebind it to `0.0.0.0` so the container can reach it.
 
 ## Configuration
 
@@ -352,6 +380,31 @@ python test_fixtures.py --type Err --category Headings --limit 10
 
 Only tests that pass ALL their fixtures are enabled in production. View fixture status at `http://localhost:5001/testing/fixture-status`
 
+## Type Checking
+
+This project enforces strict static type checking via three complementary tools: **mypy**, **pyright**, and **ty**. All three must pass on every commit and in CI.
+
+### One-time setup (per clone)
+
+After cloning:
+```bash
+python run.py --install-hooks
+```
+
+This configures `git` to use the repo's `.githooks/` directory. The pre-commit hook runs all three type checkers against the scoped paths and blocks the commit on any failure.
+
+### Running checks manually
+
+```bash
+.venv/bin/python -m mypy
+.venv/bin/python -m pyright
+.venv/bin/python -m ty check
+```
+
+### Policy
+
+No `# type: ignore` or equivalent suppression comments. No `cast(Any, ...)` workarounds. No `git commit --no-verify`. Type errors are fixed, not suppressed. See [CLAUDE.md](./CLAUDE.md#type-checking-mandatory) for the full policy.
+
 ## API Usage
 
 The application provides REST API endpoints for automation:
@@ -581,6 +634,16 @@ At runtime, the app stores its data in the platform's user data directory:
 | Windows | `%APPDATA%\auto-a11y\` |
 
 Contents: `settings.json`, `mongodb/data/` (database files), `logs/`, `reports/`, `screenshots/`.
+
+## Colour System
+
+This application uses a **custom design token system** for all colours. Bootstrap colour utility classes (e.g., `btn-primary`, `bg-danger`, `text-warning`) are **not used** — instead, custom classes map directly to design tokens defined in `auto_a11y/web/static/public/css/tokens.css`.
+
+This gives full control over all colours in light mode, dark mode, and print, with WCAG 2.2 AA contrast compliance built in. See the `Colour System` section in `CLAUDE.md` for the complete class reference.
+
+**Key files:**
+- `auto_a11y/web/static/public/css/tokens.css` — design tokens (all colour values)
+- `auto_a11y/web/static/css/style.css` — custom utility classes
 
 ## Contributing
 

@@ -1,12 +1,14 @@
 """
 Project management business logic
 """
+from __future__ import annotations
 
 import logging
-from typing import List, Dict, Any, Optional
-from datetime import datetime
+from typing import Any
 
-from auto_a11y.models import Project, ProjectStatus, Website
+from bson import ObjectId
+
+from auto_a11y.models import Project, ProjectStatus
 from auto_a11y.core.database import Database
 
 logger = logging.getLogger(__name__)
@@ -28,7 +30,7 @@ class ProjectManager:
         self,
         name: str,
         description: str = "",
-        config: Optional[Dict[str, Any]] = None
+        config: dict[str, Any] | None = None
     ) -> Project:
         """
         Create a new project
@@ -42,10 +44,11 @@ class ProjectManager:
             Created project
         """
         # Check if name exists
-        existing = self.db.projects.find_one({'name': name})
+        _db: Any = self.db
+        existing: dict[str, Any] | None = _db.projects.find_one({'name': name})
         if existing:
             raise ValueError(f"Project '{name}' already exists")
-        
+
         # Create project
         project = Project(
             name=name,
@@ -53,14 +56,14 @@ class ProjectManager:
             status=ProjectStatus.ACTIVE,
             config=config or {}
         )
+
+        project_id_str = self.db.create_project(project)
+        object.__setattr__(project, '_id', ObjectId(project_id_str))
         
-        project_id = self.db.create_project(project)
-        project._id = project_id
-        
-        logger.info(f"Created project: {name} ({project_id})")
+        logger.info(f"Created project: {name} ({project_id_str})")
         return project
     
-    def get_project(self, project_id: str) -> Optional[Project]:
+    def get_project(self, project_id: str) -> Project | None:
         """
         Get project by ID
         
@@ -74,9 +77,9 @@ class ProjectManager:
     
     def list_projects(
         self,
-        status: Optional[ProjectStatus] = None,
+        status: ProjectStatus | None = None,
         limit: int = 100
-    ) -> List[Project]:
+    ) -> list[Project]:
         """
         List projects with optional filtering
         
@@ -92,10 +95,10 @@ class ProjectManager:
     def update_project(
         self,
         project_id: str,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        status: Optional[ProjectStatus] = None,
-        config: Optional[Dict[str, Any]] = None
+        name: str | None = None,
+        description: str | None = None,
+        status: ProjectStatus | None = None,
+        config: dict[str, Any] | None = None
     ) -> bool:
         """
         Update project details
@@ -142,7 +145,7 @@ class ProjectManager:
         
         return self.db.delete_project(project_id)
     
-    def get_project_statistics(self, project_id: str) -> Dict[str, Any]:
+    def get_project_statistics(self, project_id: str) -> dict[str, Any]:
         """
         Get project statistics
         

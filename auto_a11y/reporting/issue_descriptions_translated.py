@@ -8,12 +8,13 @@ The translations are loaded from issue_translations_fr.json which was extracted
 from the PO file. This approach avoids pybabel update issues that comment out
 translations for strings not found in direct _() calls.
 """
+from __future__ import annotations
 
 import re
 import json
 import logging
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -23,10 +24,10 @@ from auto_a11y.reporting.issue_descriptions_enhanced import (
     format_issue_for_display as _format_issue_for_display
 )
 
-_TRANSLATIONS_CACHE: Dict[str, Dict[str, Dict[str, str]]] = {}
+_TRANSLATIONS_CACHE: dict[str, dict[str, dict[str, str]]] = {}
 
 
-def _load_translations(lang: str) -> Dict[str, Dict[str, str]]:
+def _load_translations(lang: str) -> dict[str, dict[str, str]]:
     """Load translations for a language from JSON file."""
     if lang in _TRANSLATIONS_CACHE:
         return _TRANSLATIONS_CACHE[lang]
@@ -69,7 +70,7 @@ def _extract_error_type(issue_code: str) -> str:
     return issue_code
 
 
-def get_detailed_issue_description(issue_code: str, metadata: Dict[str, Any] = None) -> Dict[str, Any]:
+def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | None = None) -> dict[str, Any]:
     """
     Get detailed translated description for an issue code.
 
@@ -108,7 +109,7 @@ def get_detailed_issue_description(issue_code: str, metadata: Dict[str, Any] = N
     return _apply_metadata(translated_desc, metadata)
 
 
-def _apply_metadata(desc: Dict[str, Any], metadata: Dict[str, Any]) -> Dict[str, Any]:
+def _apply_metadata(desc: dict[str, Any], metadata: dict[str, Any] | None) -> dict[str, Any]:
     """Apply metadata substitution to description fields using {placeholder} syntax."""
     if not metadata:
         return desc
@@ -209,7 +210,7 @@ def _apply_metadata(desc: Dict[str, Any], metadata: Dict[str, Any]) -> Dict[str,
             # Replace standard {key} placeholders from metadata
             nested_pattern = r'\{([^}]+)\}'
             
-            def replace_nested(match):
+            def replace_nested(match: re.Match[str]) -> str:
                 path = match.group(1)
                 
                 # Skip special placeholders already handled above
@@ -237,7 +238,7 @@ def _apply_metadata(desc: Dict[str, Any], metadata: Dict[str, Any]) -> Dict[str,
             # Also handle %(key)s style placeholders (used in French translations)
             percent_pattern = r'%\(([^)]+)\)s'
 
-            def replace_percent(match):
+            def replace_percent(match: re.Match[str]) -> str:
                 key = match.group(1)
 
                 # Skip placeholders already handled above
@@ -283,7 +284,7 @@ def _apply_metadata(desc: Dict[str, Any], metadata: Dict[str, Any]) -> Dict[str,
     return desc
 
 
-def format_issue_for_display(issue_code: str, violation_data: Dict[str, Any]) -> Dict[str, str]:
+def format_issue_for_display(issue_code: str, violation_data: dict[str, Any]) -> dict[str, Any]:
     """
     Format an issue with all its metadata for display (translated).
     """

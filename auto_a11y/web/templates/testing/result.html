@@ -36,7 +36,7 @@
         </div>
         <div>
             {% if page %}
-            <a href="{{ url_for('pages.view_page', page_id=page.id) }}" class="btn btn-outline-primary">
+            <a href="{{ url_for('pages.view_page', page_id=page.id) }}" class="btn btn-outline-brand">
                 <i class="bi bi-arrow-left" aria-hidden="true"></i> {{ ftl('testing-back-to-page') }}
             </a>
             {% endif %}
@@ -48,25 +48,25 @@
     <h2 id="result-summary-heading" class="visually-hidden">{{ ftl('testing-result-summary') }}</h2>
     <div class="row mb-4 g-3">
         <div class="col-md-3">
-            <div class="card border-danger h-100">
+            <div class="card border-high h-100">
                 <div class="card-body text-center">
-                    <h3 class="card-title text-danger">{{ ftl('common-violations') }}</h3>
+                    <h3 class="card-title text-severity-high">{{ ftl('common-violations') }}</h3>
                     <p class="display-6 mb-0">{{ result.violation_count }}</p>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-warning h-100">
+            <div class="card border-medium h-100">
                 <div class="card-body text-center">
-                    <h3 class="card-title text-warning">{{ ftl('common-warnings') }}</h3>
+                    <h3 class="card-title text-severity-medium">{{ ftl('common-warnings') }}</h3>
                     <p class="display-6 mb-0">{{ result.warning_count }}</p>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-success h-100">
+            <div class="card border-pass h-100">
                 <div class="card-body text-center">
-                    <h3 class="card-title text-success">{{ ftl('common-passed-2') }}</h3>
+                    <h3 class="card-title text-severity-pass">{{ ftl('common-passed-2') }}</h3>
                     <p class="display-6 mb-0">{{ result.pass_count }}</p>
                 </div>
             </div>
@@ -74,7 +74,7 @@
         <div class="col-md-3">
             <div class="card border-info h-100">
                 <div class="card-body text-center">
-                    <h3 class="card-title text-info">{{ ftl('common-duration') }}</h3>
+                    <h3 class="card-title text-info-custom">{{ ftl('common-duration') }}</h3>
                     <p class="display-6 mb-0">{{ "%.2f"|format(result.duration_ms / 1000) }}s</p>
                 </div>
             </div>
@@ -109,14 +109,15 @@
                         {% for violation in result.violations %}
                         <div class="accordion-item">
                             <h2 class="accordion-header" id="violation-heading-{{ loop.index }}">
-                                <button class="accordion-button collapsed" type="button" 
-                                        data-bs-toggle="collapse" 
-                                        data-bs-target="#violation-{{ loop.index }}">
-                                    <span class="badge bg-{{ {'critical': 'danger', 'serious': 'danger', 'moderate': 'warning', 'minor': 'info'}[violation.impact] or 'secondary' }} me-2">
+                                <button class="accordion-button collapsed" type="button"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#violation-{{ loop.index }}"
+                                        aria-expanded="false" aria-controls="violation-{{ loop.index }}">
+                                    <span class="badge badge-{{ {'critical': 'high', 'serious': 'high', 'moderate': 'medium', 'minor': 'info'}[violation.impact] or 'neutral' }} me-2">
                                         {{ violation.impact|upper }}
                                     </span>
                                     <span class="me-auto">{{ violation.description }}</span>
-                                    <span class="badge bg-secondary">{{ violation.rule_id }}</span>
+                                    <span class="badge badge-neutral">{{ violation.rule_id }}</span>
                                 </button>
                             </h2>
                             <div id="violation-{{ loop.index }}" 
@@ -139,12 +140,12 @@
                                             {% if violation.html %}
                                             <div class="mt-3">
                                                 <strong>{{ ftl('common-html') }}</strong>
-                                                <pre class="bg-light p-3 rounded"><code>{{ violation.html|e }}</code></pre>
+                                                <pre class="bg-subtle p-3 rounded"><code>{{ violation.html|e }}</code></pre>
                                             </div>
                                             {% endif %}
                                         </div>
                                         <div class="col-md-4">
-                                            <div class="card bg-light">
+                                            <div class="card bg-subtle">
                                                 <div class="card-body">
                                                     <h3 class="card-title">{{ ftl('common-details') }}</h3>
                                                     <dl class="row mb-0">
@@ -181,7 +182,7 @@
                         {% endfor %}
                     </div>
                     {% else %}
-                    <div class="alert alert-success">
+                    <div class="alert alert-pass">
                         <i class="bi bi-check-circle" aria-hidden="true"></i> {{ ftl('testing-no-violations-found-the-page-passes-all-automated') }}
                     </div>
                     {% endif %}
@@ -222,9 +223,9 @@
                                 <dt class="col-sm-4">{{ ftl('testing-ai-analysis') }}</dt>
                                 <dd class="col-sm-8">
                                     {% if result.ai_analysis_results %}
-                                        <span class="badge bg-success">{{ ftl('common-enabled') }}</span>
+                                        <span class="badge badge-pass">{{ ftl('common-enabled') }}</span>
                                     {% else %}
-                                        <span class="badge bg-secondary">{{ ftl('common-disabled') }}</span>
+                                        <span class="badge badge-neutral">{{ ftl('common-disabled') }}</span>
                                     {% endif %}
                                 </dd>
 
@@ -240,7 +241,7 @@
                     {% if result.metadata %}
                     <hr>
                     <h3>{{ ftl('testing-additional-metadata') }}</h3>
-                    <pre class="bg-light p-3 rounded">{{ result.metadata|tojson(indent=2) }}</pre>
+                    <pre class="bg-subtle p-3 rounded">{{ result.metadata|tojson(indent=2) }}</pre>
                     {% endif %}
                 </div>
             </div>

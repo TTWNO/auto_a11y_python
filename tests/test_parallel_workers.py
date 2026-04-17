@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import Any
+
 """
 Tests for parallel worker pool in TestingJob.
 
@@ -32,14 +36,14 @@ def _make_page(page_id: str, url: str = "http://example.com") -> Page:
     return page
 
 
-def _make_test_result():
+def _make_test_result() -> MagicMock:
     """Create a mock TestResult."""
     result = MagicMock()
     result.violation_count = 0
     return result
 
 
-def _make_job(page_count: int):
+def _make_job(page_count: int) -> TestingJob:
     """Create a TestingJob with mocked JobManager."""
     job_manager = MagicMock()
     job_manager.get_job.return_value = None
@@ -56,7 +60,7 @@ def _make_job(page_count: int):
 
 
 @pytest.mark.asyncio
-async def test_all_pages_tested_with_multiple_workers():
+async def test_all_pages_tested_with_multiple_workers() -> None:
     """All pages should be tested exactly once across workers."""
     pages = [_make_page(f"page_{i}") for i in range(10)]
     job = _make_job(len(pages))
@@ -72,7 +76,7 @@ async def test_all_pages_tested_with_multiple_workers():
 
     tested_urls = []
 
-    async def mock_test_page_multi_state(page, **kwargs):
+    async def mock_test_page_multi_state(page: Any, **kwargs: Any) -> list[MagicMock]:
         tested_urls.append(page.url)
         result = _make_test_result()
         return [result]
@@ -98,7 +102,7 @@ async def test_all_pages_tested_with_multiple_workers():
 
 
 @pytest.mark.asyncio
-async def test_worker_count_capped_by_page_count():
+async def test_worker_count_capped_by_page_count() -> None:
     """If there are fewer pages than MAX_TEST_WORKERS, use fewer workers."""
     pages = [_make_page(f"page_{i}") for i in range(2)]
     job = _make_job(len(pages))
@@ -112,7 +116,7 @@ async def test_worker_count_capped_by_page_count():
         (p for p in pages if p.id == pid), None
     )
 
-    async def mock_test_page_multi_state(page, **kwargs):
+    async def mock_test_page_multi_state(page: Any, **kwargs: Any) -> list[MagicMock]:
         return [_make_test_result()]
 
     browser_config = {"MAX_TEST_WORKERS": 8, "WORKER_STAGGER_SECONDS": 0}
@@ -120,7 +124,7 @@ async def test_worker_count_capped_by_page_count():
     runners_created = []
 
     with patch("auto_a11y.core.testing_job.TestRunner") as MockRunner:
-        def make_runner(*args, **kwargs):
+        def make_runner(*args: Any, **kwargs: Any) -> AsyncMock:
             instance = AsyncMock()
             instance.test_page_multi_state = mock_test_page_multi_state
             instance.cleanup = AsyncMock()
@@ -141,7 +145,7 @@ async def test_worker_count_capped_by_page_count():
 
 
 @pytest.mark.asyncio
-async def test_cancellation_stops_workers():
+async def test_cancellation_stops_workers() -> None:
     """Workers should stop pulling pages when job is cancelled."""
     pages = [_make_page(f"page_{i}") for i in range(20)]
     job = _make_job(len(pages))
@@ -149,7 +153,7 @@ async def test_cancellation_stops_workers():
     # Cancel after a few is_cancelled checks
     call_count = 0
 
-    def check_cancelled(job_id=None):
+    def check_cancelled(job_id: str | None = None) -> bool:
         nonlocal call_count
         call_count += 1
         return call_count > 6  # Each page causes ~2 calls to is_cancelled
@@ -167,7 +171,7 @@ async def test_cancellation_stops_workers():
 
     tested_count = 0
 
-    async def mock_test_page_multi_state(page, **kwargs):
+    async def mock_test_page_multi_state(page: Any, **kwargs: Any) -> list[MagicMock]:
         nonlocal tested_count
         tested_count += 1
         return [_make_test_result()]
@@ -192,7 +196,7 @@ async def test_cancellation_stops_workers():
 
 
 @pytest.mark.asyncio
-async def test_single_page_error_does_not_crash_worker():
+async def test_single_page_error_does_not_crash_worker() -> None:
     """A page error should not stop the worker from testing remaining pages."""
     pages = [_make_page(f"page_{i}") for i in range(5)]
     job = _make_job(len(pages))
@@ -208,7 +212,7 @@ async def test_single_page_error_does_not_crash_worker():
 
     tested_urls = []
 
-    async def mock_test_page_multi_state(page, **kwargs):
+    async def mock_test_page_multi_state(page: Any, **kwargs: Any) -> list[MagicMock]:
         tested_urls.append(page.url)
         if "page_2" in page.url:
             raise RuntimeError("Simulated page error")
@@ -234,7 +238,7 @@ async def test_single_page_error_does_not_crash_worker():
 
 
 @pytest.mark.asyncio
-async def test_progress_counts_are_accurate():
+async def test_progress_counts_are_accurate() -> None:
     """Progress counters should reflect actual test outcomes."""
     pages = [_make_page(f"page_{i}") for i in range(4)]
     job = _make_job(len(pages))
@@ -248,7 +252,7 @@ async def test_progress_counts_are_accurate():
         (p for p in pages if p.id == pid), None
     )
 
-    async def mock_test_page_multi_state(page, **kwargs):
+    async def mock_test_page_multi_state(page: Any, **kwargs: Any) -> list[MagicMock]:
         if "page_1" in page.url:
             raise RuntimeError("fail")
         result = _make_test_result()

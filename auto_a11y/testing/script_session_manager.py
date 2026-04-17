@@ -2,13 +2,15 @@
 Script session manager for tracking script execution across test sessions
 """
 
+from __future__ import annotations
+
 import logging
 import uuid
-from typing import Optional
+from typing import Any
 from datetime import datetime
 
 from auto_a11y.models import (
-    ScriptExecutionSession, PageSetupScript, ExecutionTrigger, Violation
+    ScriptExecutionSession, PageSetupScript, ExecutionTrigger, Violation, ImpactLevel
 )
 from auto_a11y.core.database import Database
 
@@ -26,7 +28,7 @@ class ScriptSessionManager:
             db: Database connection
         """
         self.db = db
-        self.current_session: Optional[ScriptExecutionSession] = None
+        self.current_session: ScriptExecutionSession | None = None
 
     def start_session(self, website_id: str) -> str:
         """
@@ -51,7 +53,7 @@ class ScriptSessionManager:
 
         return session_id
 
-    def end_session(self):
+    def end_session(self) -> None:
         """End current test session"""
         if self.current_session:
             self.current_session.ended_at = datetime.now()
@@ -72,7 +74,7 @@ class ScriptSessionManager:
         if not self.current_session:
             return False
 
-        return self.current_session.has_executed(script_id)
+        return bool(self.current_session.has_executed(script_id))
 
     def mark_executed(
         self,
@@ -80,7 +82,7 @@ class ScriptSessionManager:
         page_id: str,
         success: bool,
         duration_ms: int
-    ):
+    ) -> None:
         """
         Mark script as executed in this session
 
@@ -130,7 +132,7 @@ class ScriptSessionManager:
         self,
         script: PageSetupScript,
         page_id: str
-    ) -> tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """
         Determine if script should execute based on trigger and session state
 
@@ -147,7 +149,7 @@ class ScriptSessionManager:
 
         # Check trigger conditions
         if script.trigger == ExecutionTrigger.ONCE_PER_SESSION:
-            if self.has_executed(script.id):
+            if script.id is not None and self.has_executed(script.id):
                 return False, "Already executed this session (once_per_session trigger)"
 
         elif script.trigger == ExecutionTrigger.ONCE_PER_PAGE:
@@ -156,7 +158,7 @@ class ScriptSessionManager:
 
         elif script.trigger == ExecutionTrigger.ONCE_PER_PAGE_FIRST_VISIT:
             # Only execute on first visit to this specific page
-            if self.has_executed_on_page(script.id, page_id):
+            if script.id is not None and self.has_executed_on_page(script.id, page_id):
                 return False, f"Already executed on page {page_id} this session (once_per_page_first_visit trigger)"
 
         elif script.trigger == ExecutionTrigger.CONDITIONAL:
@@ -174,7 +176,7 @@ class ScriptSessionManager:
         script: PageSetupScript,
         page_id: str,
         condition_met: bool
-    ) -> Optional[Violation]:
+    ) -> Violation | None:
         """
         Check if condition constitutes a violation
 
@@ -191,9 +193,9 @@ class ScriptSessionManager:
 
         # Record condition check
         self.current_session.add_condition_check(
-            script_id=script.id,
+            script_id=script.id or '',
             page_id=page_id,
-            condition_selector=script.condition_selector,
+            condition_selector=script.condition_selector or '',
             condition_met=condition_met,
             violation_reported=False  # Will update if violation created
         )
@@ -201,7 +203,7 @@ class ScriptSessionManager:
         # Check if we should report violation
         if condition_met and script.report_violation_if_condition_met:
             # Check if script was already executed (condition should NOT reappear)
-            if self.has_executed(script.id):
+            if script.id is not None and self.has_executed(script.id):
                 logger.warning(
                     f"Condition violation detected: {script.condition_selector} "
                     f"found on page {page_id} after script execution"
@@ -214,11 +216,12 @@ class ScriptSessionManager:
                 # Create violation
                 violation = Violation(
                     id=script.violation_code or 'WarnScriptConditionPersists',
-                    impact='medium',
-                    message=script.violation_message or
+                    impact=ImpactLevel.MEDIUM,
+                    touchpoint='page_state',
+                    description=script.violation_message or
                             f'Condition persists after script execution: {script.condition_selector}',
-                    selector=script.condition_selector,
-                    context=f'Script "{script.name}" was executed to handle this condition, '
+                    element=script.condition_selector,
+                    failure_summary=f'Script "{script.name}" was executed to handle this condition, '
                             f'but the element reappeared on page {page_id}',
                     help_url='',
                     wcag_criteria=[]
@@ -234,7 +237,7 @@ class ScriptSessionManager:
 
         return None
 
-    def get_session_stats(self) -> dict:
+    def get_session_stats(self) -> dict[str, Any]:
         """
         Get statistics for current session
 

@@ -1,4 +1,7 @@
 """Tests for the two-pass streaming report generator core methods."""
+from __future__ import annotations
+
+from typing import Any
 
 import pytest
 from unittest.mock import MagicMock, call, patch
@@ -7,7 +10,7 @@ from collections import defaultdict, Counter
 from auto_a11y.reporting.report_generator import ReportGenerator
 
 
-def _make_generator(db=None):
+def _make_generator(db: MagicMock | None = None) -> ReportGenerator:
     """Create a ReportGenerator without calling __init__."""
     rg = ReportGenerator.__new__(ReportGenerator)
     rg.db = db or MagicMock()
@@ -16,16 +19,18 @@ def _make_generator(db=None):
     return rg
 
 
-def _make_page(page_id):
+def _make_page(page_id: str) -> MagicMock:
     """Create a mock page with a given id."""
     page = MagicMock()
     page.id = page_id
     return page
 
 
-def _make_result_summary(result_id, violation_count=0, warning_count=0,
-                          info_count=0, discovery_count=0, pass_count=0,
-                          score=None):
+def _make_result_summary(result_id: str, violation_count: int = 0,
+                          warning_count: int = 0,
+                          info_count: int = 0, discovery_count: int = 0,
+                          pass_count: int = 0,
+                          score: float | None = None) -> dict[str, Any]:
     """Create a mock result summary dict."""
     return {
         'id': result_id,
@@ -41,13 +46,13 @@ def _make_result_summary(result_id, violation_count=0, warning_count=0,
 class TestCollectSummary:
     """Tests for _collect_summary."""
 
-    def test_accumulates_counts_across_pages(self):
+    def test_accumulates_counts_across_pages(self) -> None:
         db = MagicMock()
         rg = _make_generator(db)
 
         pages = [_make_page('p1'), _make_page('p2')]
 
-        def page_gen():
+        def page_gen() -> Any:
             yield from pages
 
         db.get_latest_test_result_summary.side_effect = [
@@ -71,13 +76,13 @@ class TestCollectSummary:
         assert summary['page_scores'][0] == ('p1', 80)
         assert summary['page_scores'][1] == ('p2', 90)
 
-    def test_streams_items_for_touchpoint_counting(self):
+    def test_streams_items_for_touchpoint_counting(self) -> None:
         db = MagicMock()
         rg = _make_generator(db)
 
         pages = [_make_page('p1')]
 
-        def page_gen():
+        def page_gen() -> Any:
             yield from pages
 
         db.get_latest_test_result_summary.return_value = _make_result_summary(
@@ -100,13 +105,13 @@ class TestCollectSummary:
         assert summary['impact_counts']['critical'] == 2
         assert summary['impact_counts']['serious'] == 1
 
-    def test_skips_pages_without_test_results(self):
+    def test_skips_pages_without_test_results(self) -> None:
         db = MagicMock()
         rg = _make_generator(db)
 
         pages = [_make_page('p1'), _make_page('p2')]
 
-        def page_gen():
+        def page_gen() -> Any:
             yield from pages
 
         # First page has no results, second does
@@ -122,13 +127,13 @@ class TestCollectSummary:
         assert summary['total_violations'] == 5
         assert summary['total_passes'] == 10
 
-    def test_calls_progress_callback_per_page(self):
+    def test_calls_progress_callback_per_page(self) -> None:
         db = MagicMock()
         rg = _make_generator(db)
 
         pages = [_make_page('p1'), _make_page('p2'), _make_page('p3')]
 
-        def page_gen():
+        def page_gen() -> Any:
             yield from pages
 
         db.get_latest_test_result_summary.return_value = None
@@ -137,23 +142,25 @@ class TestCollectSummary:
         rg._collect_summary(page_gen, progress)
 
         assert progress.call_count == 3
-        # Verify it was called with incrementing page counts
-        # ftl() returns the message ID in test context (no Flask app)
-        progress.assert_any_call(1, 0, "reports-collecting-summary-count")
-        progress.assert_any_call(2, 0, "reports-collecting-summary-count")
-        progress.assert_any_call(3, 0, "reports-collecting-summary-count")
+        # Verify it was called with incrementing page counts.
+        # The third arg is a resolved Fluent Markup string, so check
+        # only the numeric arguments.
+        calls = progress.call_args_list
+        assert calls[0].args[:2] == (1, 0)
+        assert calls[1].args[:2] == (2, 0)
+        assert calls[2].args[:2] == (3, 0)
 
 
 class TestWriteDetails:
     """Tests for _write_details."""
 
-    def test_calls_begin_append_finalize_in_order(self):
+    def test_calls_begin_append_finalize_in_order(self) -> None:
         db = MagicMock()
         rg = _make_generator(db)
 
         pages = [_make_page('p1'), _make_page('p2')]
 
-        def page_gen():
+        def page_gen() -> Any:
             yield from pages
 
         test_result = MagicMock()
@@ -161,10 +168,10 @@ class TestWriteDetails:
 
         formatter = MagicMock()
         output_file = MagicMock()
-        summary = {'total_pages': 2}
+        summary: dict[str, Any] = {'total_pages': 2}
 
         # Track call order
-        call_order = []
+        call_order: list[str] = []
         formatter.begin.side_effect = lambda *a: call_order.append('begin')
         formatter.append_page.side_effect = lambda *a: call_order.append('append_page')
         formatter.finalize.side_effect = lambda *a: call_order.append('finalize')
@@ -177,13 +184,13 @@ class TestWriteDetails:
         formatter.finalize.assert_called_once_with(output_file, summary)
         assert formatter.append_page.call_count == 2
 
-    def test_skips_pages_without_results(self):
+    def test_skips_pages_without_results(self) -> None:
         db = MagicMock()
         rg = _make_generator(db)
 
         pages = [_make_page('p1'), _make_page('p2')]
 
-        def page_gen():
+        def page_gen() -> Any:
             yield from pages
 
         # First page no result, second has result
@@ -192,27 +199,27 @@ class TestWriteDetails:
 
         formatter = MagicMock()
         output_file = MagicMock()
-        summary = {'total_pages': 1}
+        summary: dict[str, Any] = {'total_pages': 1}
 
         with patch.object(rg, '_prepare_single_page_data', return_value={'data': True}):
             rg._write_details(page_gen, summary, formatter, output_file, None)
 
         assert formatter.append_page.call_count == 1
 
-    def test_calls_progress_per_page(self):
+    def test_calls_progress_per_page(self) -> None:
         db = MagicMock()
         rg = _make_generator(db)
 
         pages = [_make_page('p1'), _make_page('p2')]
 
-        def page_gen():
+        def page_gen() -> Any:
             yield from pages
 
         db.get_latest_test_result.return_value = MagicMock()
 
         formatter = MagicMock()
         output_file = MagicMock()
-        summary = {'total_pages': 2}
+        summary: dict[str, Any] = {'total_pages': 2}
 
         progress = MagicMock()
 
@@ -220,15 +227,17 @@ class TestWriteDetails:
             rg._write_details(page_gen, summary, formatter, output_file, progress)
 
         assert progress.call_count == 2
-        # ftl() returns the message ID in test context (no Flask app)
-        progress.assert_any_call(1, 2, "reports-writing-details-current-total")
-        progress.assert_any_call(2, 2, "reports-writing-details-current-total")
+        # The third arg is a resolved Fluent Markup string, so check
+        # only the numeric arguments.
+        calls = progress.call_args_list
+        assert calls[0].args[:2] == (1, 2)
+        assert calls[1].args[:2] == (2, 2)
 
 
 class TestPrepareSinglePageData:
     """Tests for _prepare_single_page_data."""
 
-    def test_returns_dict_with_page_and_test_result(self):
+    def test_returns_dict_with_page_and_test_result(self) -> None:
         rg = _make_generator()
 
         page = _make_page('p1')
@@ -244,7 +253,7 @@ class TestPrepareSinglePageData:
 class TestCollectRecordingsData:
     """Tests for _collect_recordings_data."""
 
-    def test_returns_recordings_with_issues(self):
+    def test_returns_recordings_with_issues(self) -> None:
         db = MagicMock()
         rg = _make_generator(db)
 
@@ -271,7 +280,7 @@ class TestCollectRecordingsData:
         db.get_recordings.assert_called_once_with(project_id='proj1')
         db.get_recording_issues.assert_called_once_with(recording_id='rec1')
 
-    def test_returns_empty_list_when_no_recordings(self):
+    def test_returns_empty_list_when_no_recordings(self) -> None:
         db = MagicMock()
         rg = _make_generator(db)
 
@@ -285,12 +294,12 @@ class TestCollectRecordingsData:
 
 class _SimpleObj:
     """Simple object that supports __dict__ without MagicMock conflicts."""
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         for k, v in kwargs.items():
             setattr(self, k, v)
 
 
-def _make_full_generator(db):
+def _make_full_generator(db: MagicMock) -> tuple[ReportGenerator, MagicMock]:
     """Create a ReportGenerator with formatters initialised."""
     rg = ReportGenerator.__new__(ReportGenerator)
     rg.db = db
@@ -307,7 +316,7 @@ def _make_full_generator(db):
 class TestGenerateWebsiteReport:
     """Tests for generate_website_report two-pass wiring."""
 
-    def test_calls_collect_summary_and_write_details(self):
+    def test_calls_collect_summary_and_write_details(self) -> None:
         db = MagicMock()
         rg, formatter = _make_full_generator(db)
 
@@ -332,7 +341,7 @@ class TestGenerateWebsiteReport:
         assert summary_arg['website']['name'] == 'TestSite'
         assert summary_arg['project']['name'] == 'TestProject'
 
-    def test_cleans_up_on_error(self):
+    def test_cleans_up_on_error(self) -> None:
         db = MagicMock()
         rg, formatter = _make_full_generator(db)
 
@@ -352,7 +361,7 @@ class TestGenerateWebsiteReport:
         formatter.cleanup.assert_called_once()
         mock_remove.assert_called_once()
 
-    def test_raises_for_unknown_website(self):
+    def test_raises_for_unknown_website(self) -> None:
         db = MagicMock()
         rg, _ = _make_full_generator(db)
         db.get_website.return_value = None
@@ -360,7 +369,7 @@ class TestGenerateWebsiteReport:
         with pytest.raises(ValueError, match="Website"):
             rg.generate_website_report('missing')
 
-    def test_raises_for_unsupported_format(self):
+    def test_raises_for_unsupported_format(self) -> None:
         db = MagicMock()
         rg, _ = _make_full_generator(db)
 
@@ -378,7 +387,7 @@ class TestGenerateWebsiteReport:
 class TestGenerateProjectReport:
     """Tests for generate_project_report two-pass wiring."""
 
-    def test_calls_collect_summary_and_write_details(self):
+    def test_calls_collect_summary_and_write_details(self) -> None:
         db = MagicMock()
         rg, formatter = _make_full_generator(db)
 
@@ -401,7 +410,7 @@ class TestGenerateProjectReport:
         assert summary_arg['project']['name'] == 'TestProject'
         assert summary_arg['recordings'] == []
 
-    def test_cleans_up_on_error(self):
+    def test_cleans_up_on_error(self) -> None:
         db = MagicMock()
         rg, formatter = _make_full_generator(db)
 
@@ -417,7 +426,7 @@ class TestGenerateProjectReport:
         formatter.cleanup.assert_called_once()
         mock_remove.assert_called_once()
 
-    def test_raises_for_unknown_project(self):
+    def test_raises_for_unknown_project(self) -> None:
         db = MagicMock()
         rg, _ = _make_full_generator(db)
         db.get_project.return_value = None
@@ -425,7 +434,7 @@ class TestGenerateProjectReport:
         with pytest.raises(ValueError, match="Project"):
             rg.generate_project_report('missing')
 
-    def test_raises_for_unsupported_format(self):
+    def test_raises_for_unsupported_format(self) -> None:
         db = MagicMock()
         rg, _ = _make_full_generator(db)
 
@@ -439,7 +448,7 @@ class TestGenerateProjectReport:
 class TestGenerateAllProjectsReport:
     """Tests for generate_all_projects_report two-pass wiring."""
 
-    def test_calls_collect_summary_and_write_details(self):
+    def test_calls_collect_summary_and_write_details(self) -> None:
         db = MagicMock()
         rg, formatter = _make_full_generator(db)
         # _t and _sanitize_filename need to work
@@ -463,7 +472,7 @@ class TestGenerateAllProjectsReport:
         assert 'projects' in summary_arg
         assert summary_arg['projects'][0]['name'] == 'ProjectA'
 
-    def test_cleans_up_on_error(self):
+    def test_cleans_up_on_error(self) -> None:
         db = MagicMock()
         rg, formatter = _make_full_generator(db)
         rg._t = ReportGenerator._t.__get__(rg)
@@ -481,7 +490,7 @@ class TestGenerateAllProjectsReport:
         formatter.cleanup.assert_called_once()
         mock_remove.assert_called_once()
 
-    def test_raises_for_no_projects(self):
+    def test_raises_for_no_projects(self) -> None:
         db = MagicMock()
         rg, _ = _make_full_generator(db)
         db.get_projects.return_value = []
@@ -489,7 +498,7 @@ class TestGenerateAllProjectsReport:
         with pytest.raises(ValueError, match="No projects found"):
             rg.generate_all_projects_report()
 
-    def test_raises_for_unsupported_format(self):
+    def test_raises_for_unsupported_format(self) -> None:
         db = MagicMock()
         rg, _ = _make_full_generator(db)
 
@@ -503,21 +512,21 @@ class TestGenerateAllProjectsReport:
 class TestDeprecationWarnings:
     """Tests for deprecation warnings on old methods."""
 
-    def test_base_formatter_format_website_report_emits_warning(self):
+    def test_base_formatter_format_website_report_emits_warning(self) -> None:
         from auto_a11y.reporting.formatters import BaseFormatter
         fmt = BaseFormatter.__new__(BaseFormatter)
         with pytest.warns(DeprecationWarning, match="format_website_report.*deprecated"):
             with pytest.raises(NotImplementedError):
                 fmt.format_website_report({})
 
-    def test_base_formatter_format_project_report_emits_warning(self):
+    def test_base_formatter_format_project_report_emits_warning(self) -> None:
         from auto_a11y.reporting.formatters import BaseFormatter
         fmt = BaseFormatter.__new__(BaseFormatter)
         with pytest.warns(DeprecationWarning, match="format_project_report.*deprecated"):
             with pytest.raises(NotImplementedError):
                 fmt.format_project_report({})
 
-    def test_prepare_website_report_data_emits_warning(self):
+    def test_prepare_website_report_data_emits_warning(self) -> None:
         import warnings as w
         rg = _make_generator()
         with pytest.warns(DeprecationWarning, match="_prepare_website_report_data.*deprecated"):
@@ -529,7 +538,7 @@ class TestDeprecationWarnings:
             except Exception:
                 pass
 
-    def test_prepare_project_report_data_emits_warning(self):
+    def test_prepare_project_report_data_emits_warning(self) -> None:
         rg = _make_generator()
         with pytest.warns(DeprecationWarning, match="_prepare_project_report_data.*deprecated"):
             try:

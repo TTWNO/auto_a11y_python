@@ -7,16 +7,17 @@ File Format (ISO 14496-12) atom structure. Uses only Python standard library
 
 Parses the moov -> mvhd atom to read timescale and duration fields.
 """
+from __future__ import annotations
 
 import struct
 import logging
 import os
-from typing import Optional, Tuple
+from typing import BinaryIO
 
 logger = logging.getLogger(__name__)
 
 
-def get_mp4_duration(file_path: str) -> Optional[str]:
+def get_mp4_duration(file_path: str) -> str | None:
     """
     Extract duration from an MP4/M4A file and return as HH:MM:SS string.
 
@@ -32,7 +33,7 @@ def get_mp4_duration(file_path: str) -> Optional[str]:
     return _seconds_to_hhmmss(seconds)
 
 
-def get_mp4_duration_seconds(file_path: str) -> Optional[float]:
+def get_mp4_duration_seconds(file_path: str) -> float | None:
     """
     Extract duration from an MP4/M4A file in seconds.
 
@@ -45,7 +46,7 @@ def get_mp4_duration_seconds(file_path: str) -> Optional[float]:
     if not file_path:
         return None
 
-    # Skip URL paths — we can only read local files
+    # Skip URL paths -- we can only read local files
     if '://' in file_path:
         logger.info(f"Cannot extract duration from URL: {file_path}")
         return None
@@ -93,7 +94,7 @@ def get_mp4_duration_seconds(file_path: str) -> Optional[float]:
         return None
 
 
-def _find_atom(f, target_type: bytes, search_end: int) -> Optional[Tuple[int, int]]:
+def _find_atom(f: BinaryIO, target_type: bytes, search_end: int) -> tuple[int, int] | None:
     """
     Scan atoms sequentially to find one matching target_type.
 
@@ -144,7 +145,7 @@ def _find_atom(f, target_type: bytes, search_end: int) -> Optional[Tuple[int, in
     return None
 
 
-def _parse_mvhd(f, payload_size: int) -> Optional[float]:
+def _parse_mvhd(f: BinaryIO, payload_size: int) -> float | None:
     """
     Parse mvhd atom payload to extract duration in seconds.
 
@@ -186,7 +187,7 @@ def _parse_mvhd(f, payload_size: int) -> Optional[float]:
         logger.warning("mvhd timescale is 0, cannot compute duration")
         return None
 
-    return duration / timescale
+    return float(duration) / float(timescale)
 
 
 def _seconds_to_hhmmss(total_seconds: float) -> str:

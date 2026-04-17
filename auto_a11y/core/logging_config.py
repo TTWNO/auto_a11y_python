@@ -1,30 +1,36 @@
 """
 Logging configuration for Auto A11y
 """
+from __future__ import annotations
 
 import logging
 import logging.config
+import logging.handlers
 import os
 from pathlib import Path
 
 # Get log level from environment or default to WARNING for production
-LOG_LEVEL = os.getenv('LOG_LEVEL', 'WARNING').upper()
-DEBUG_MODE = os.getenv('DEBUG', 'False').lower() == 'true'
+_log_level: str = os.getenv('LOG_LEVEL', 'WARNING').upper()
+DEBUG_MODE: bool = os.getenv('DEBUG', 'False').lower() == 'true'
 
 # If in debug mode, show more logs
 if DEBUG_MODE:
-    LOG_LEVEL = 'INFO'
+    _log_level = 'INFO'
 
-# Resolve log directory — in desktop mode, use USER_DATA_DIR (writable);
+LOG_LEVEL: str = _log_level
+
+# Resolve log directory -- in desktop mode, use USER_DATA_DIR (writable);
 # otherwise use the project-relative logs/ directory.
-_user_data_dir = os.getenv('USER_DATA_DIR', '')
+_user_data_dir: str = os.getenv('USER_DATA_DIR', '')
 if os.getenv('DESKTOP_MODE', 'False').lower() == 'true' and _user_data_dir:
-    LOGS_DIR = Path(_user_data_dir) / 'logs'
+    _logs_dir: Path = Path(_user_data_dir) / 'logs'
 else:
-    LOGS_DIR = Path(__file__).parent.parent.parent / 'logs'
+    _logs_dir = Path(__file__).parent.parent.parent / 'logs'
+
+LOGS_DIR: Path = _logs_dir
 LOGS_DIR.mkdir(exist_ok=True, parents=True)
 
-LOGGING_CONFIG = {
+LOGGING_CONFIG: dict[str, object] = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
@@ -91,25 +97,25 @@ LOGGING_CONFIG = {
     }
 }
 
-def setup_logging():
+def setup_logging() -> logging.Logger:
     """Configure logging for the application"""
     logging.config.dictConfig(LOGGING_CONFIG)
-    
+
     # Set specific loggers to reduce noise
     logging.getLogger('playwright').setLevel(logging.WARNING)
     logging.getLogger('playwright._impl').setLevel(logging.WARNING)
     logging.getLogger('websockets.client').setLevel(logging.WARNING)
     logging.getLogger('websockets.protocol').setLevel(logging.WARNING)
-    
+
     # Log configuration info
     logger = logging.getLogger(__name__)
     if DEBUG_MODE:
         logger.info(f"Logging configured - Level: {LOG_LEVEL}, Debug: {DEBUG_MODE}")
-    
+
     return logger
 
 
-def reconfigure_log_path(log_dir):
+def reconfigure_log_path(log_dir: str | Path) -> None:
     """Redirect log file to a different directory (for desktop mode).
     Call after setup_logging() has been called."""
     log_dir = Path(log_dir)

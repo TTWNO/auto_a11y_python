@@ -2,6 +2,8 @@
 Touchpoint test modules for comprehensive accessibility testing
 """
 
+from __future__ import annotations
+
 from .test_headings import test_headings, TEST_DOCUMENTATION as HEADINGS_DOCS
 from .test_images import test_images, TEST_DOCUMENTATION as IMAGES_DOCS
 from .test_forms import test_forms, TEST_DOCUMENTATION as FORMS_DOCS
@@ -33,8 +35,11 @@ from .test_page import test_page, TEST_DOCUMENTATION as PAGE_DOCS
 from .test_language import test_language, TEST_DOCUMENTATION as LANGUAGE_DOCS
 from .test_semantic_structure import test_semantic_structure, TEST_DOCUMENTATION as SEMANTIC_STRUCTURE_DOCS
 
+from typing import Any, Callable, Awaitable
+from playwright.async_api import Page
+
 # Map touchpoint IDs to test functions
-TOUCHPOINT_TESTS = {
+TOUCHPOINT_TESTS: dict[str, Callable[[Page], Awaitable[dict[str, Any]]]] = {
     'headings': test_headings,
     'images': test_images,
     'forms': test_forms,

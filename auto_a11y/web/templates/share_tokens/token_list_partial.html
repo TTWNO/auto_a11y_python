@@ -2,8 +2,8 @@
    Pass: scope ("project" or "website"), scope_id (the ObjectId string) #}
 <div class="card mb-3" id="share-tokens-section">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <h3 class="mb-0">{{ ftl('settings-share-links') }}</h3>
-        <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="collapse"
+        <h3 class="mb-0" id="share-links-heading">{{ ftl('settings-share-links') }}</h3>
+        <button type="button" class="btn btn-sm btn-brand" data-bs-toggle="collapse"
                 data-bs-target="#create-token-form" aria-expanded="false"
                 aria-controls="create-token-form">
             {{ ftl('settings-create-share-link') }}
@@ -12,7 +12,7 @@
 
     <div class="collapse" id="create-token-form">
         <div class="card-body border-bottom">
-            <form id="token-create-form" onsubmit="return createShareToken(event, '{{ scope }}', '{{ scope_id }}')">
+            <form id="token-create-form" aria-labelledby="share-links-heading" onsubmit="return createShareToken(event, '{{ scope }}', '{{ scope_id }}')">
                 <div class="row g-2 align-items-end">
                     <div class="col-md-4">
                         <label for="token-label" class="form-label">{{ ftl('common-label') }}</label>
@@ -29,7 +29,7 @@
                         </select>
                     </div>
                     <div class="col-md-2">
-                        <button type="submit" class="btn btn-success">{{ ftl('common-create') }}</button>
+                        <button type="submit" class="btn btn-pass">{{ ftl('common-create') }}</button>
                     </div>
                 </div>
             </form>
@@ -59,11 +59,11 @@
 </div>
 
 {# URL alert shown after creating a token #}
-<div class="alert alert-success d-none" id="token-url-alert" role="alert">
+<div class="alert alert-pass d-none" id="token-url-alert" role="alert">
     <strong>{{ ftl('settings-share-link-created') }}</strong>
     <div class="input-group mt-2">
         <input type="text" class="form-control" id="token-url-display" readonly>
-        <button class="btn btn-outline-secondary" type="button" onclick="copyTokenUrl()">{{ ftl('settings-copy') }}</button>
+        <button class="btn btn-outline-neutral" type="button" onclick="copyTokenUrl()">{{ ftl('settings-copy') }}</button>
     </div>
     <small class="text-muted">{{ ftl('settings-this-is-the-only-time-the-full-link-is-shown') }}</small>
 </div>
@@ -88,10 +88,10 @@ function loadShareTokens(scope, scopeId) {
                     <td>${t.created_at ? new Date(t.created_at).toLocaleDateString() : '-'}</td>
                     <td>${t.expires_at ? new Date(t.expires_at).toLocaleDateString() : '{{ ftl('common-never') }}'}</td>
                     <td>${t.use_count}</td>
-                    <td>${t.revoked ? '<span class="badge bg-danger">{{ ftl('settings-revoked') }}</span>'
-                                    : (t.is_valid ? '<span class="badge bg-success">{{ ftl('common-active') }}</span>'
-                                                  : '<span class="badge bg-warning">{{ ftl('settings-expired') }}</span>')}</td>
-                    <td>${!t.revoked ? `<button class="btn btn-sm btn-outline-danger" onclick="revokeToken('${t.id}', '${scope}', '${scopeId}')">{{ ftl('settings-revoke') }}</button>` : ''}</td>
+                    <td>${t.revoked ? '<span class="badge badge-high">{{ ftl('settings-revoked') }}</span>'
+                                    : (t.is_valid ? '<span class="badge badge-pass">{{ ftl('common-active') }}</span>'
+                                                  : '<span class="badge badge-medium">{{ ftl('settings-expired') }}</span>')}</td>
+                    <td>${!t.revoked ? `<button class="btn btn-sm btn-outline-high" onclick="revokeToken('${t.id}', '${scope}', '${scopeId}')">{{ ftl('settings-revoke') }}</button>` : ''}</td>
                 </tr>
             `).join('');
         });

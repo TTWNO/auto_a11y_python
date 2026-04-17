@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Static HTML Report Generator
 
@@ -12,11 +14,11 @@ import shutil
 import zipfile
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import Any, Callable
 import jinja2
 
 logger = logging.getLogger(__name__)
-from auto_a11y.web.fluent import ftl, lazy_ftl, force_locale
+from auto_a11y.web.fluent import ftl, ftl_enum, lazy_ftl, force_locale
 
 from auto_a11y.core.database import Database
 from auto_a11y.reporting.issue_catalog import IssueCatalog
@@ -270,7 +272,7 @@ def translate_wcag_criterion(criterion_text: str, language: str = 'en') -> str:
 class StaticHTMLReportGenerator:
     """Generates self-contained multi-page static HTML accessibility reports"""
 
-    def __init__(self, database: Database, output_dir: Optional[Path] = None, language: str = 'en'):
+    def __init__(self, database: Database, output_dir: Path | None = None, language: str = 'en') -> None:
         """
         Initialize the static HTML report generator
 
@@ -294,16 +296,23 @@ class StaticHTMLReportGenerator:
 
         # Configure Jinja2 for Flask-Babel translations
         # These callables will be replaced by force_locale context manager
-        self.template_env.install_gettext_callables(
-            gettext=lambda x: x,
-            ngettext=lambda s, p, n: s if n == 1 else p,
-            newstyle=True
-        )
+        # install_gettext_callables is provided by jinja2.ext.i18n at runtime
+        install_fn = getattr(self.template_env, 'install_gettext_callables', None)
+        if install_fn is not None:
+            install_fn(
+                gettext=lambda x: x,
+                ngettext=lambda s, p, n: s if n == 1 else p,
+                newstyle=True
+            )
 
         # Add custom filters
         self._setup_template_filters()
 
-    def _get_translations(self) -> Dict[str, Dict[str, str]]:
+        # Register Fluent translation functions so templates can use {{ ftl(...) }}
+        self.template_env.globals['ftl'] = ftl
+        self.template_env.globals['ftl_enum'] = ftl_enum
+
+    def _get_translations(self) -> dict[str, dict[str, str]]:
         """Get translations for both EN and FR languages"""
         translations = {
             'en': {
@@ -682,7 +691,7 @@ class StaticHTMLReportGenerator:
         """
         return None
 
-    def _setup_template_filters(self):
+    def _setup_template_filters(self) -> None:
         """Setup custom Jinja2 filters"""
 
         def error_code_only(code: str) -> str:
@@ -725,7 +734,7 @@ class StaticHTMLReportGenerator:
         self.template_env.filters['wcag_quickref_url'] = wcag_quickref_url
         self.template_env.filters['translate_wcag'] = translate_wcag
 
-    def _read_embedded_assets(self) -> dict:
+    def _read_embedded_assets(self) -> dict[str, str]:
         """Read Bootstrap CSS and JS files for embedding inline"""
         import re
         static_dir = Path(__file__).parent.parent / 'web' / 'static'
@@ -798,15 +807,15 @@ class StaticHTMLReportGenerator:
 
     def generate_report(
         self,
-        page_ids: List[str],
+        page_ids: list[str],
         project_name: str = "Accessibility Report",
-        website_url: Optional[str] = None,
+        website_url: str | None = None,
         wcag_level: str = "AA",
-        touchpoints_tested: Optional[List[str]] = None,
+        touchpoints_tested: list[str] | None = None,
         include_screenshots: bool = True,
         include_discovery: bool = True,
         ai_tests_enabled: bool = True,
-        progress_callback=None
+        progress_callback: Callable[..., object] | None = None
     ) -> Path:
         """
         Generate complete static HTML report
@@ -869,7 +878,7 @@ class StaticHTMLReportGenerator:
             if report_dir.exists():
                 shutil.rmtree(report_dir)
 
-    def _collect_pages_data(self, page_ids: List[str], include_discovery: bool, progress_callback=None) -> List[Dict[str, Any]]:
+    def _collect_pages_data(self, page_ids: list[str], include_discovery: bool, progress_callback: Callable[..., object] | None = None) -> list[dict[str, Any]]:
         """
         Collect all data for pages to be included in report
 
@@ -880,7 +889,7 @@ class StaticHTMLReportGenerator:
         Returns:
             List of page data dictionaries
         """
-        pages_data = []
+        pages_data: list[dict[str, Any]] = []
 
         for i, page_id in enumerate(page_ids):
             if progress_callback:
@@ -1476,7 +1485,7 @@ class StaticHTMLReportGenerator:
 
         return pages_data
 
-    def _collect_summary_stats(self, page_ids, progress_callback=None):
+    def _collect_summary_stats(self, page_ids: list[str], progress_callback: Callable[..., object] | None = None) -> dict[str, Any]:
         """Pass 1: Stream pages collecting only aggregate statistics.
 
         Memory-efficient replacement for _collect_pages_data() + _generate_summary_stats().
@@ -1591,7 +1600,7 @@ class StaticHTMLReportGenerator:
 
         return stats
 
-    def _build_summary_from_stats(self, stats: Dict[str, Any]) -> Dict[str, Any]:
+    def _build_summary_from_stats(self, stats: dict[str, Any]) -> dict[str, Any]:
         """Build a summary dict (same shape as _generate_summary_stats) from streaming stats.
 
         Converts the output of _collect_summary_stats into the summary format
@@ -1627,7 +1636,7 @@ class StaticHTMLReportGenerator:
             by_touchpoint[tp] = {'errors': count, 'warnings': 0, 'info': 0}
 
         # by_wcag placeholder (same as _group_by_wcag)
-        by_wcag = {}
+        by_wcag: dict[str, Any] = {}
 
         return {
             'total_errors': total_errors,
@@ -1647,10 +1656,10 @@ class StaticHTMLReportGenerator:
         }
 
     def _generate_page_detail_htmls_streaming(
-        self, report_dir: Path, page_info: List[Dict[str, Any]],
+        self, report_dir: Path, page_info: list[dict[str, Any]],
         include_discovery: bool, project_name: str, wcag_level: str,
-        touchpoints_tested: Optional[List[str]], progress_callback=None
-    ):
+        touchpoints_tested: list[str] | None, progress_callback: Callable[..., object] | None = None
+    ) -> None:
         """Generate individual page detail HTML files one at a time (Pass 2).
 
         Loads the full test result for each page, processes it via _collect_pages_data
@@ -1801,7 +1810,7 @@ class StaticHTMLReportGenerator:
             del single_page_data
             del page
 
-    def _calculate_page_score(self, test_result) -> float:
+    def _calculate_page_score(self, test_result: Any) -> float:
         """Calculate accessibility score for a page using result_processor's scoring logic"""
         from auto_a11y.testing.result_processor import ResultProcessor
 
@@ -1810,7 +1819,7 @@ class StaticHTMLReportGenerator:
 
         return score_data['score']
 
-    def _calculate_compliance_score(self, test_result) -> Dict[str, Any]:
+    def _calculate_compliance_score(self, test_result: Any) -> dict[str, Any]:
         """Calculate compliance score (percentage of tests with zero violations)"""
         # Get unique test codes that have violations/warnings
         failed_test_codes = set()
@@ -1842,7 +1851,7 @@ class StaticHTMLReportGenerator:
             'total_tests': total_tests
         }
 
-    def _generate_summary_stats(self, pages_data: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _generate_summary_stats(self, pages_data: list[dict[str, Any]]) -> dict[str, Any]:
         """Generate summary statistics across all pages"""
         total_errors = sum(p['issues']['errors'] for p in pages_data)
         total_warnings = sum(p['issues']['warnings'] for p in pages_data)
@@ -1891,7 +1900,7 @@ class StaticHTMLReportGenerator:
             'recommendations': self._generate_recommendations(total_errors, total_warnings, average_score)
         }
 
-    def _calculate_top_issues(self, pages_data: List[Dict[str, Any]], limit: int = 10) -> List[Dict[str, Any]]:
+    def _calculate_top_issues(self, pages_data: list[dict[str, Any]], limit: int = 10) -> list[dict[str, Any]]:
         """Calculate top issues across all pages"""
         issue_counts = {}
 
@@ -1919,7 +1928,7 @@ class StaticHTMLReportGenerator:
 
         return top_issues
 
-    def _group_by_touchpoint(self, pages_data: List[Dict[str, Any]]) -> Dict[str, Dict[str, int]]:
+    def _group_by_touchpoint(self, pages_data: list[dict[str, Any]]) -> dict[str, dict[str, int]]:
         """Group issues by touchpoint"""
         touchpoint_stats = {}
 
@@ -1937,12 +1946,12 @@ class StaticHTMLReportGenerator:
 
         return touchpoint_stats
 
-    def _group_by_wcag(self, pages_data: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
+    def _group_by_wcag(self, pages_data: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
         """Group issues by WCAG principle"""
         # This would require WCAG mapping - placeholder for now
         return {}
 
-    def _generate_recommendations(self, errors: int, warnings: int, score: float) -> List[Dict[str, str]]:
+    def _generate_recommendations(self, errors: int, warnings: int, score: float) -> list[dict[str, str]]:
         """Generate priority recommendations"""
         recommendations = []
 
@@ -1966,7 +1975,7 @@ class StaticHTMLReportGenerator:
 
         return recommendations
 
-    def _create_directory_structure(self, report_dir: Path):
+    def _create_directory_structure(self, report_dir: Path) -> None:
         """Create directory structure for static report"""
         (report_dir / 'pages').mkdir(exist_ok=True)
         (report_dir / 'assets' / 'css').mkdir(parents=True, exist_ok=True)
@@ -1975,7 +1984,7 @@ class StaticHTMLReportGenerator:
         (report_dir / 'assets' / 'fonts').mkdir(parents=True, exist_ok=True)
         (report_dir / 'data').mkdir(exist_ok=True)
 
-    def _copy_assets(self, report_dir: Path, include_screenshots: bool, pages_data: Optional[List[Dict[str, Any]]]):
+    def _copy_assets(self, report_dir: Path, include_screenshots: bool, pages_data: list[dict[str, Any]] | None) -> None:
         """Copy CSS, JS, fonts, and images to report directory"""
         static_dir = Path(__file__).parent.parent / 'web' / 'static'
 
@@ -2016,9 +2025,9 @@ class StaticHTMLReportGenerator:
                             report_dir / 'assets' / 'images' / 'screenshots' / screenshot_file.name
                         )
 
-    def _generate_index_html(self, report_dir: Path, pages_data: List[Dict[str, Any]],
-                            summary: Dict[str, Any], project_name: str, website_url: Optional[str],
-                            wcag_level: str, touchpoints_tested: Optional[List[str]]):
+    def _generate_index_html(self, report_dir: Path, pages_data: list[dict[str, Any]],
+                            summary: dict[str, Any], project_name: str, website_url: str | None,
+                            wcag_level: str, touchpoints_tested: list[str] | None) -> None:
         """Generate index.html file"""
         template = self.template_env.get_template('static_report/index.html')
 
@@ -2050,10 +2059,10 @@ class StaticHTMLReportGenerator:
 
         (report_dir / 'index.html').write_text(html, encoding='utf-8')
 
-    def _generate_summary_html(self, report_dir: Path, pages_data: List[Dict[str, Any]],
-                               summary: Dict[str, Any], project_name: str, website_url: Optional[str],
-                               wcag_level: str, touchpoints_tested: Optional[List[str]],
-                               ai_tests_enabled: bool):
+    def _generate_summary_html(self, report_dir: Path, pages_data: list[dict[str, Any]],
+                               summary: dict[str, Any], project_name: str, website_url: str | None,
+                               wcag_level: str, touchpoints_tested: list[str] | None,
+                               ai_tests_enabled: bool) -> None:
         """Generate summary.html file"""
         template = self.template_env.get_template('static_report/summary.html')
 
@@ -2075,10 +2084,10 @@ class StaticHTMLReportGenerator:
 
         (report_dir / 'summary.html').write_text(html, encoding='utf-8')
 
-    def _generate_page_detail_htmls(self, report_dir: Path, pages_data: List[Dict[str, Any]],
+    def _generate_page_detail_htmls(self, report_dir: Path, pages_data: list[dict[str, Any]],
                                     project_name: str, wcag_level: str,
-                                    touchpoints_tested: Optional[List[str]],
-                                    progress_callback=None):
+                                    touchpoints_tested: list[str] | None,
+                                    progress_callback: Callable[..., object] | None = None) -> None:
         """Generate individual page detail HTML files with inlined CSS/JS"""
         template = self.template_env.get_template('static_report/page_detail.html')
 
@@ -2211,9 +2220,9 @@ class StaticHTMLReportGenerator:
             filename = f'page_{str(index).zfill(3)}.html'
             (report_dir / 'pages' / filename).write_text(html, encoding='utf-8')
 
-    def _create_manifest(self, report_dir: Path, pages_data: List[Dict[str, Any]],
-                        summary: Dict[str, Any], project_name: str, website_url: Optional[str],
-                        wcag_level: str, touchpoints_tested: Optional[List[str]], ai_tests_enabled: bool):
+    def _create_manifest(self, report_dir: Path, pages_data: list[dict[str, Any]],
+                        summary: dict[str, Any], project_name: str, website_url: str | None,
+                        wcag_level: str, touchpoints_tested: list[str] | None, ai_tests_enabled: bool) -> None:
         """Create manifest.json with report metadata"""
         manifest = {
             'report_id': f'report_{datetime.now().strftime("%Y%m%d_%H%M%S")}',
@@ -2274,9 +2283,9 @@ class StaticHTMLReportGenerator:
 
     def generate_project_deduplicated_report(
         self,
-        project_id: Optional[str] = None,
-        website_id: Optional[str] = None,
-        progress_callback=None
+        project_id: str | None = None,
+        website_id: str | None = None,
+        progress_callback: Callable[..., object] | None = None
     ) -> Path:
         """
         Generate deduplicated offline HTML report for an entire project or specific website.
@@ -2425,7 +2434,7 @@ class StaticHTMLReportGenerator:
             # Clean up temp directory
             shutil.rmtree(temp_dir, ignore_errors=True)
 
-    def _extract_common_components(self, data: Dict[str, Any]) -> Dict[str, Dict]:
+    def _extract_common_components(self, data: dict[str, Any]) -> dict[str, dict[str, Any]]:
         """
         Extract common components (forms, navs, asides, sections, headers) from discovery issues.
 
@@ -2544,7 +2553,7 @@ class StaticHTMLReportGenerator:
 
             if single_page_components:
                 # Group single-page components by (type, label, user_context)
-                merge_groups = {}
+                merge_groups: dict[tuple[str, str], dict[str, Any]] = {}
                 for sig, comp_data in single_page_components.items():
                     merge_key = (comp_data['type'], comp_data.get('user_context', 'Guest'))
                     if merge_key not in merge_groups:
@@ -2582,9 +2591,9 @@ class StaticHTMLReportGenerator:
 
     def _deduplicate_issues_by_component(
         self,
-        data: Dict[str, Any],
-        common_components: Dict[str, Dict]
-    ) -> List[Dict[str, Any]]:
+        data: dict[str, Any],
+        common_components: dict[str, dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         """
         Deduplicate issues by grouping them by component signature and rule ID.
 
@@ -2745,7 +2754,7 @@ class StaticHTMLReportGenerator:
 
         return result
 
-    def _collect_dedup_data_streaming(self, websites, progress_callback=None):
+    def _collect_dedup_data_streaming(self, websites: Any, progress_callback: Callable[..., object] | None = None) -> tuple[dict[str, dict[str, Any]], list[dict[str, Any]], list[float], list[float], int, dict[str, dict[str, Any]]]:
         """Stream through all pages once, building component and dedup indexes incrementally.
 
         Memory: O(unique_components + unique_issues + page_metadata), NOT O(all_pages * all_violations).
@@ -2979,7 +2988,7 @@ class StaticHTMLReportGenerator:
                 if len(comp_data['pages']) == 1
             }
             if single_page_components:
-                merge_groups = {}
+                merge_groups: dict[tuple[str, str], list[tuple[str, dict[str, Any]]]] = {}
                 for sig, comp_data in single_page_components.items():
                     merge_key = (comp_data['type'], comp_data.get('user_context', 'Guest'))
                     if merge_key not in merge_groups:
@@ -3012,7 +3021,7 @@ class StaticHTMLReportGenerator:
 
         # Reclassify issues whose component_signature was filtered out.
         # Issues matched to single-page components should become unassigned.
-        reclassified = {}
+        reclassified: dict[str, dict[str, Any]] = {}
         for dedup_key, issue_data in unique_issues.items():
             comp_sig = issue_data.get('component_signature')
             if comp_sig and comp_sig not in common_components:
@@ -3053,10 +3062,10 @@ class StaticHTMLReportGenerator:
 
     def _group_unassigned_by_page_streaming(
         self,
-        unassigned_issues: List[Dict[str, Any]],
-        common_components: Dict[str, Dict],
-        page_metadata: Dict[str, Dict]
-    ) -> List[Dict[str, Any]]:
+        unassigned_issues: list[dict[str, Any]],
+        common_components: dict[str, dict[str, Any]],
+        page_metadata: dict[str, dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         """
         Group unassigned issues by page using ONLY data from the dedup index.
 
@@ -3078,7 +3087,7 @@ class StaticHTMLReportGenerator:
 
         # Group dedup issues by page URL
         # Each dedup issue may appear on multiple pages
-        page_issues = {}  # page_url → {'violations': [...], 'warnings': [...], ...}
+        page_issues: dict[str, dict[str, list[dict[str, Any]]]] = {}  # page_url -> {'violations': [...], 'warnings': [...], ...}
         for issue in unassigned_issues:
             for page_url in issue['pages']:
                 if page_url not in page_issues:
@@ -3162,9 +3171,9 @@ class StaticHTMLReportGenerator:
 
     def _group_issues_by_component(
         self,
-        deduplicated_issues: List[Dict[str, Any]],
-        common_components: Dict[str, Dict]
-    ) -> Dict[str, List[Dict[str, Any]]]:
+        deduplicated_issues: list[dict[str, Any]],
+        common_components: dict[str, dict[str, Any]]
+    ) -> dict[str, list[dict[str, Any]]]:
         """
         Group deduplicated issues by their component signature.
 
@@ -3175,7 +3184,7 @@ class StaticHTMLReportGenerator:
         Returns:
             Dictionary mapping component signature -> list of issues
         """
-        grouped = {}
+        grouped: dict[str, list[dict[str, Any]]] = {}
 
         for issue in deduplicated_issues:
             component_sig = issue.get('component_signature')
@@ -3193,9 +3202,9 @@ class StaticHTMLReportGenerator:
 
     def _extract_common_issues(
         self,
-        unassigned_issues: List[Dict[str, Any]],
+        unassigned_issues: list[dict[str, Any]],
         total_pages: int
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Extract common issues from unassigned (non-component) issues.
 
@@ -3264,7 +3273,7 @@ class StaticHTMLReportGenerator:
 
         return common_issues
 
-    def _copy_dedup_assets(self, report_dir: Path):
+    def _copy_dedup_assets(self, report_dir: Path) -> None:
         """Copy CSS and JS assets to report directory"""
         static_dir = Path(__file__).parent.parent / 'web' / 'static'
 
@@ -3292,10 +3301,10 @@ class StaticHTMLReportGenerator:
         report_dir: Path,
         project: Any,
         project_name: str,
-        common_components: Dict[str, Dict],
-        issues_by_component: Dict[str, List[Dict[str, Any]]],
-        pages_with_unassigned: List[Dict[str, Any]],
-        common_issues: List[Dict[str, Any]],
+        common_components: dict[str, dict[str, Any]],
+        issues_by_component: dict[str, list[dict[str, Any]]],
+        pages_with_unassigned: list[dict[str, Any]],
+        common_issues: list[dict[str, Any]],
         total_violations: int,
         total_warnings: int,
         total_info: int,
@@ -3303,7 +3312,7 @@ class StaticHTMLReportGenerator:
         total_pages: int,
         overall_accessibility_score: float,
         overall_compliance_score: float
-    ):
+    ) -> None:
         """Generate the index page for deduplicated report"""
 
         # Prepare components data with issue counts
@@ -3395,9 +3404,9 @@ class StaticHTMLReportGenerator:
     def _generate_component_pages(
         self,
         report_dir: Path,
-        common_components: Dict[str, Dict],
-        issues_by_component: Dict[str, List[Dict[str, Any]]]
-    ):
+        common_components: dict[str, dict[str, Any]],
+        issues_by_component: dict[str, list[dict[str, Any]]]
+    ) -> None:
         """Generate individual component detail pages"""
         template = self.template_env.get_template('static_report/dedup_component.html')
 
@@ -3453,7 +3462,7 @@ class StaticHTMLReportGenerator:
         # Note: Unassigned issues are now handled by _generate_page_detail_pages()
         # which creates individual page files in the pages/ directory
 
-    def _calculate_dedup_score(self, issues: List[Dict[str, Any]]) -> float:
+    def _calculate_dedup_score(self, issues: list[dict[str, Any]]) -> float:
         """
         Calculate accessibility score for deduplicated issues.
         Uses similar logic to ResultProcessor but adapted for deduplicated data.
@@ -3501,7 +3510,7 @@ class StaticHTMLReportGenerator:
 
         return float(score)
 
-    def _calculate_score_from_violations(self, violations: List) -> float:
+    def _calculate_score_from_violations(self, violations: list[Any]) -> float:
         """
         Calculate accessibility score from raw violation objects (TestResult violations).
 
@@ -3544,10 +3553,10 @@ class StaticHTMLReportGenerator:
 
     def _group_unassigned_by_page(
         self,
-        project_data: Dict[str, Any],
-        unassigned_issues: List[Dict[str, Any]],
-        common_components: Dict[str, Dict]
-    ) -> List[Dict[str, Any]]:
+        project_data: dict[str, Any],
+        unassigned_issues: list[dict[str, Any]],
+        common_components: dict[str, dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         """
         Group unassigned issues by page and prepare page data for index.
 
@@ -3562,7 +3571,7 @@ class StaticHTMLReportGenerator:
         import hashlib
 
         # Group issues by page URL
-        issues_by_page = {}
+        issues_by_page: dict[str, list[dict[str, Any]]] = {}
         for issue in unassigned_issues:
             for page_url in issue['pages']:
                 if page_url not in issues_by_page:
@@ -3581,7 +3590,7 @@ class StaticHTMLReportGenerator:
             warnings_count = 0
             info_count = 0
             discovery_count = 0
-            original_metadata = {}
+            original_metadata: dict[str, Any] = {}
             total_page_violations = 0
             total_page_warnings = 0
             # Get actual non-deduplicated violations/warnings/info/discovery for this page only
@@ -3779,11 +3788,11 @@ class StaticHTMLReportGenerator:
     def _generate_page_detail_pages(
         self,
         report_dir: Path,
-        pages_with_unassigned: List[Dict[str, Any]],
+        pages_with_unassigned: list[dict[str, Any]],
         project: Any,
         project_name: str,
         generation_date: str
-    ):
+    ) -> None:
         """Generate individual page detail pages for unassigned issues"""
         template = self.template_env.get_template('static_report/dedup_unassigned.html')
 
@@ -3809,23 +3818,72 @@ class StaticHTMLReportGenerator:
             )
 
             # Enrich issues in both EN and FR for client-side switching
-            def enrich_issue_bilingual(issue):
-                """Convert issue object to dict with bilingual enrichment"""
-                # Convert issue object to dict
+            def enrich_issue_bilingual(issue: Any) -> dict[str, Any]:
+                """Convert issue (Violation object or dedup dict) into a dict
+                with bilingual enrichment.
+
+                Accepts either:
+                  - a Violation object (from test_result.violations / warnings / ...)
+                  - a deduplicated issue dict from _collect_dedup_data_streaming
+                    (keys: rule_id, description_en/fr, why_en/fr, who_en/fr,
+                    full_remediation_en/fr, wcag_full, ...)
+
+                Dedup dicts already have their bilingual fields populated, so we
+                copy them straight into the metadata instead of re-enriching.
+                Violation objects are enriched via IssueCatalog in both locales.
+                """
+                is_dict = isinstance(issue, dict)
+
+                # Uniform getter for either source type.
+                def _get(name: str, default: Any = '') -> Any:
+                    if is_dict:
+                        val = issue.get(name)
+                    else:
+                        val = getattr(issue, name, None)
+                    return default if val is None else val
+
+                # Dedup dicts use 'rule_id' instead of 'id'.
+                issue_id = _get('id') or _get('rule_id')
+
+                metadata_src = _get('metadata', None) or {}
+
                 issue_dict = {
-                    'id': issue.id if hasattr(issue, 'id') else '',
-                    'description': issue.description if hasattr(issue, 'description') else '',
-                    'impact': issue.impact if hasattr(issue, 'impact') else 'moderate',
-                    'xpath': issue.xpath if hasattr(issue, 'xpath') else '',
-                    'html_snippet': issue.html if hasattr(issue, 'html') else '',
-                    'touchpoint': issue.touchpoint if hasattr(issue, 'touchpoint') else '',
-                    'failure_summary': issue.failure_summary if hasattr(issue, 'failure_summary') else '',
-                    'metadata': {}
+                    'id': issue_id,
+                    'description': _get('description'),
+                    'impact': _get('impact', 'moderate'),
+                    'xpath': _get('xpath'),
+                    'html_snippet': _get('html_snippet') or _get('html'),
+                    'touchpoint': _get('touchpoint'),
+                    'failure_summary': _get('failure_summary'),
+                    'metadata': dict(metadata_src) if metadata_src else {}
                 }
 
-                # Copy metadata if present
-                if hasattr(issue, 'metadata') and issue.metadata:
-                    issue_dict['metadata'] = dict(issue.metadata)
+                # If this is a dedup dict that already has bilingual text
+                # (produced by _collect_dedup_data_streaming), trust it and
+                # skip the redundant IssueCatalog re-enrichment pass.
+                if is_dict and (issue.get('description_en') or issue.get('description_fr')):
+                    issue_dict['description_en'] = issue.get('description_en', '')
+                    issue_dict['description_fr'] = issue.get('description_fr', '')
+                    issue_dict['metadata']['what_en'] = issue.get('description_en', '')
+                    issue_dict['metadata']['what_fr'] = issue.get('description_fr', '')
+                    issue_dict['metadata']['what_generic_en'] = issue.get('description_en', '')
+                    issue_dict['metadata']['what_generic_fr'] = issue.get('description_fr', '')
+                    issue_dict['metadata']['why_en'] = issue.get('why_en', '')
+                    issue_dict['metadata']['why_fr'] = issue.get('why_fr', '')
+                    issue_dict['metadata']['who_en'] = issue.get('who_en', '')
+                    issue_dict['metadata']['who_fr'] = issue.get('who_fr', '')
+                    issue_dict['metadata']['full_remediation_en'] = issue.get('full_remediation_en', '')
+                    issue_dict['metadata']['full_remediation_fr'] = issue.get('full_remediation_fr', '')
+                    wcag_full_raw = issue.get('wcag_full', [])
+                    if isinstance(wcag_full_raw, str):
+                        issue_dict['metadata']['wcag_full'] = [
+                            c.strip() for c in wcag_full_raw.split(',') if c.strip()
+                        ]
+                    elif isinstance(wcag_full_raw, list):
+                        issue_dict['metadata']['wcag_full'] = wcag_full_raw
+                    else:
+                        issue_dict['metadata']['wcag_full'] = []
+                    return issue_dict
 
                 # Enrich with IssueCatalog in both languages
                 with force_locale('en'):

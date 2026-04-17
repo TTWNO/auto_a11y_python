@@ -2,9 +2,11 @@
 Page model for individual web pages
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional, List
+from typing import Any
 from enum import Enum
 from bson import ObjectId
 
@@ -31,60 +33,60 @@ class DrupalSyncStatus(Enum):
 @dataclass
 class Page:
     """Page model"""
-    
+
     website_id: str
     url: str
-    title: Optional[str] = None
+    title: str | None = None
     discovered_at: datetime = field(default_factory=datetime.now)
-    discovered_from: Optional[str] = None  # URL that linked to this page
-    discovery_run_id: Optional[str] = None  # ID of the discovery run that found this page
-    last_tested: Optional[datetime] = None
+    discovered_from: str | None = None  # URL that linked to this page
+    discovery_run_id: str | None = None  # ID of the discovery run that found this page
+    last_tested: datetime | None = None
     status: PageStatus = PageStatus.DISCOVERED
     violation_count: int = 0
     warning_count: int = 0
     info_count: int = 0
     discovery_count: int = 0
     pass_count: int = 0
-    test_duration_ms: Optional[int] = None
+    test_duration_ms: int | None = None
     priority: str = "normal"  # high, normal, low
     depth: int = 0  # Crawl depth from start page
-    error_reason: Optional[str] = None  # Reason for discovery/test failure
+    error_reason: str | None = None  # Reason for discovery/test failure
     is_in_latest_discovery: bool = True  # Is this page in the most recent discovery?
-    screenshot_path: Optional[str] = None  # Path to page screenshot
-    setup_script_id: Optional[str] = None  # Reference to page_setup_scripts._id
-    visible_to_users: List[str] = field(default_factory=list)  # List of user IDs who can access this page (empty string for guest, user_id for authenticated)
+    screenshot_path: str | None = None  # Path to page screenshot
+    setup_script_id: str | None = None  # Reference to page_setup_scripts._id
+    visible_to_users: list[str] = field(default_factory=lambda: [])  # List of user IDs who can access this page (empty string for guest, user_id for authenticated)
 
     # Discovered Page (Drupal) Integration Fields
     is_flagged_for_discovery: bool = False  # Flag this page as "discovered page" for export to Drupal
-    discovery_reasons: List[str] = field(default_factory=list)  # "Interested because" taxonomy term names
-    discovery_areas: List[str] = field(default_factory=list)  # "Page elements" (area of display) taxonomy term names
-    discovery_notes_private: Optional[str] = None  # Private notes for auditors (HTML)
-    discovery_notes_public: Optional[str] = None  # Public notes for audit reports (HTML)
-    drupal_discovered_page_uuid: Optional[str] = None  # UUID of corresponding discovered_page in Drupal
+    discovery_reasons: list[str] = field(default_factory=lambda: [])  # "Interested because" taxonomy term names
+    discovery_areas: list[str] = field(default_factory=lambda: [])  # "Page elements" (area of display) taxonomy term names
+    discovery_notes_private: str | None = None  # Private notes for auditors (HTML)
+    discovery_notes_public: str | None = None  # Public notes for audit reports (HTML)
+    drupal_discovered_page_uuid: str | None = None  # UUID of corresponding discovered_page in Drupal
     drupal_sync_status: DrupalSyncStatus = DrupalSyncStatus.NOT_SYNCED  # Sync status with Drupal
-    drupal_last_synced: Optional[datetime] = None  # Timestamp of last successful sync
-    drupal_error_message: Optional[str] = None  # Error message if sync failed
+    drupal_last_synced: datetime | None = None  # Timestamp of last successful sync
+    drupal_error_message: str | None = None  # Error message if sync failed
 
-    _id: Optional[ObjectId] = None
-    
+    _id: ObjectId | None = None
+
     @property
-    def id(self) -> str:
+    def id(self) -> str | None:
         """Get page ID as string"""
         return str(self._id) if self._id else None
-    
+
     @property
     def needs_testing(self) -> bool:
         """Check if page needs testing"""
         return self.status in [PageStatus.DISCOVERED, PageStatus.QUEUED, PageStatus.ERROR]
-    
+
     @property
     def has_issues(self) -> bool:
         """Check if page has accessibility issues"""
         return self.violation_count > 0 or self.warning_count > 0 or self.info_count > 0 or self.discovery_count > 0
-    
-    def to_dict(self) -> dict:
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for MongoDB"""
-        data = {
+        data: dict[str, Any] = {
             'website_id': self.website_id,
             'url': self.url,
             'title': self.title,
@@ -119,9 +121,9 @@ class Page:
         if self._id:
             data['_id'] = self._id
         return data
-    
+
     @classmethod
-    def from_dict(cls, data: dict) -> 'Page':
+    def from_dict(cls, data: dict[str, Any]) -> Page:
         """Create from MongoDB document"""
         return cls(
             website_id=data['website_id'],

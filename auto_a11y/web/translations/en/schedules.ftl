@@ -106,3 +106,5 @@ schedules-tuesday = Tuesday
 schedules-upcoming-runs = Upcoming Runs
 schedules-wednesday = Wednesday
 schedules-weekly-on = Weekly on
+
+schedules-filter-schedules = Filter schedules

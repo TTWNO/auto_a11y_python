@@ -1,11 +1,16 @@
 """
 Routes for Automated Tests management
 """
+from __future__ import annotations
 
-from flask import Blueprint, render_template, request, jsonify, current_app
+from flask import Blueprint, Response, render_template, request, jsonify, current_app
 from bson import ObjectId
+from auto_a11y.web.typed_app import get_db
 from datetime import datetime
 import logging
+
+from collections.abc import Iterator, Mapping
+from typing import Any
 
 from auto_a11y.core.database import Database
 from auto_a11y.models import Project
@@ -27,9 +32,9 @@ bp = Blueprint('automated_tests', __name__, url_prefix='/automated_tests')
 
 
 @bp.route('/projects/<project_id>/filter-options')
-def get_filter_options(project_id):
+def get_filter_options(project_id: str) -> Response | tuple[Response, int]:
     """Get available filter options for automated tests."""
-    db = current_app.db
+    db = get_db()
 
     # Get project
     project_doc = db.projects.find_one({'_id': ObjectId(project_id)})
@@ -45,9 +50,13 @@ def get_filter_options(project_id):
     total_issues = 0
 
     for website in websites:
+        if not website.id:
+            continue
         pages = db.get_pages(website.id)
 
         for page in pages:
+            if not page.id:
+                continue
             test_result = db.get_latest_test_result(page.id)
             if test_result:
                 # Add page to list
@@ -83,9 +92,9 @@ def get_filter_options(project_id):
 
 
 @bp.route('/projects/<project_id>')
-def project_automated_tests(project_id):
+def project_automated_tests(project_id: str) -> str | Response | tuple[str, int]:
     """View automated test results for a project with filtering options."""
-    db = current_app.db
+    db = get_db()
 
     # Get project
     project_doc = db.projects.find_one({'_id': ObjectId(project_id)})
@@ -99,19 +108,23 @@ def project_automated_tests(project_id):
     website_lookup = {w.id: w for w in websites}
 
     # Collect all page IDs across all project websites
-    all_page_ids = []
-    page_to_website = {}
-    page_lookup = {}
+    all_page_ids: list[str] = []
+    page_to_website: dict[str, str | None] = {}
+    page_lookup: dict[str, Any] = {}
     for website in websites:
+        if not website.id:
+            continue
         pages = db.get_pages(website.id)
         for page in pages:
+            if not page.id:
+                continue
             all_page_ids.append(page.id)
             page_to_website[page.id] = website.id
             page_lookup[page.id] = page
 
     # Use a single aggregation to get latest result counts per page
     # instead of N+1 queries that crash on large projects
-    pipeline = [
+    pipeline: list[Mapping[str, Any]] = [
         {'$match': {'page_id': {'$in': all_page_ids}}},
         {'$sort': {'test_date': -1}},
         {'$group': {
@@ -128,20 +141,20 @@ def project_automated_tests(project_id):
     test_results_data = []
     for r in latest_results:
         page_id = r['_id']
-        page = page_lookup.get(page_id)
-        website_id = page_to_website.get(page_id)
-        website = website_lookup.get(website_id) if website_id else None
-        if not page or not website:
+        result_page = page_lookup.get(page_id)
+        result_website_id = page_to_website.get(page_id)
+        result_website = website_lookup.get(result_website_id) if result_website_id else None
+        if not result_page or not result_website:
             continue
 
         total = r['violation_count'] + r['warning_count'] + r['info_count']
         # Build a lightweight object with .id for the template url_for
         class _ResultRef:
-            def __init__(self, rid):
+            def __init__(self, rid: object) -> None:
                 self.id = str(rid)
         test_results_data.append({
-            'page': page,
-            'website': website,
+            'page': result_page,
+            'website': result_website,
             'test_result': _ResultRef(r['result_id']),
             'violation_count': r['violation_count'],
             'warning_count': r['warning_count'],
@@ -152,8 +165,8 @@ def project_automated_tests(project_id):
     # Get unique touchpoints / WCAG criteria from the aggregated violation items
     # Use a lightweight aggregation on test_result_items or just provide empty
     # lists (filters load dynamically via the filter-options API endpoint).
-    touchpoints = []
-    wcag_criteria = []
+    touchpoints: list[str] = []
+    wcag_criteria: list[str] = []
 
     return render_template(
         'automated_tests/list.html',
@@ -165,9 +178,9 @@ def project_automated_tests(project_id):
 
 
 @bp.route('/projects/<project_id>/filter', methods=['POST'])
-def filter_test_results(project_id):
+def filter_test_results(project_id: str) -> Response:
     """Filter test results based on user criteria."""
-    db = current_app.db
+    db = get_db()
 
     # Get filter criteria from request
     filters = request.json
@@ -182,9 +195,13 @@ def filter_test_results(project_id):
     filtered_results = []
 
     for website in websites:
+        if not website.id:
+            continue
         pages = db.get_pages(website.id)
 
         for page in pages:
+            if not page.id:
+                continue
             # Filter by page URL if specified
             if page_urls and page.url not in page_urls:
                 continue
@@ -237,7 +254,7 @@ def filter_test_results(project_id):
 
 
 @bp.route('/projects/<project_id>/upload', methods=['POST'])
-def upload_to_drupal(project_id):
+def upload_to_drupal(project_id: str) -> Response:
     """
     Upload filtered automated test results to Drupal with streaming progress.
 
@@ -258,12 +275,12 @@ def upload_to_drupal(project_id):
     impact_levels = filters.get('impact_levels', [])
     min_component_pages = filters.get('min_component_pages', 2)
 
-    def generate():
+    def generate() -> Iterator[str]:
         import json
 
-        def emit(event_type, message, percent=None, results=None):
+        def emit(event_type: str, message: str, percent: int | None = None, results: dict[str, Any] | None = None) -> str:
             """Helper to emit SSE events"""
-            data = {'type': event_type, 'message': message}
+            data: dict[str, Any] = {'type': event_type, 'message': message}
             if percent is not None:
                 data['percent'] = percent
             if results is not None:
@@ -271,7 +288,7 @@ def upload_to_drupal(project_id):
             return f"data: {json.dumps(data)}\n\n"
 
         try:
-            db = current_app.db
+            db = get_db()
 
             # Get project
             yield emit('info', 'Loading project...')
@@ -297,10 +314,14 @@ def upload_to_drupal(project_id):
             # Prepare website data with test results
             website_data = []
             for website in websites:
+                if not website.id:
+                    continue
                 pages = db.get_pages(website.id)
                 page_results = []
 
                 for page in pages:
+                    if not page.id:
+                        continue
                     # Apply page URL filter
                     if page_urls and page.url not in page_urls:
                         continue
@@ -313,9 +334,9 @@ def upload_to_drupal(project_id):
                         # Apply violation-level filters
                         if touchpoints or wcag_criteria or impact_levels:
                             # Filter violations
-                            filtered_violations = []
-                            filtered_warnings = []
-                            filtered_info = []
+                            filtered_violations: list[Any] = []
+                            filtered_warnings: list[Any] = []
+                            filtered_info: list[Any] = []
 
                             for v_list, target_list in [
                                 (test_result.violations, filtered_violations),
@@ -416,7 +437,7 @@ def upload_to_drupal(project_id):
             # Initialize exporters
             taxonomies = DiscoveredPageTaxonomies(client)
             page_exporter = DiscoveredPageExporter(client, taxonomies)
-            wcag_cache = WCAGChapterCache(client, taxonomies.cache)
+            wcag_cache = WCAGChapterCache(client)
             issue_exporter = IssueExporter(client, taxonomies.cache, wcag_cache)
 
             # Step 5: Upload Discovered Pages to Drupal
@@ -434,10 +455,10 @@ def upload_to_drupal(project_id):
                         continue
 
                     from auto_a11y.models import DiscoveredPage, DrupalSyncStatus
-                    page = DiscoveredPage.from_dict(page_doc)
+                    disc_page = DiscoveredPage.from_dict(page_doc)
 
                     # Export page
-                    result = page_exporter.export_from_discovered_page_model(page, audit_uuid)
+                    result = page_exporter.export_from_discovered_page_model(disc_page, audit_uuid)
 
                     if result.get('success'):
                         # Update database with Drupal UUID

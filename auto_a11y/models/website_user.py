@@ -2,9 +2,11 @@
 WebsiteUser model for managing test users with different roles
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Any
 from bson import ObjectId
 from enum import Enum
 
@@ -23,24 +25,24 @@ class LoginConfig:
     authentication_method: AuthenticationMethod = AuthenticationMethod.FORM_LOGIN
 
     # Form login configuration
-    login_url: Optional[str] = None  # URL of login page
-    username_field_selector: Optional[str] = None  # CSS selector for username field
-    password_field_selector: Optional[str] = None  # CSS selector for password field
-    submit_button_selector: Optional[str] = None  # CSS selector for submit button
-    success_indicator_selector: Optional[str] = None  # Selector to verify successful login
+    login_url: str | None = None  # URL of login page
+    username_field_selector: str | None = None  # CSS selector for username field
+    password_field_selector: str | None = None  # CSS selector for password field
+    submit_button_selector: str | None = None  # CSS selector for submit button
+    success_indicator_selector: str | None = None  # Selector to verify successful login
 
     # Logout configuration
-    logout_url: Optional[str] = None  # URL to visit for logout (e.g., /logout)
-    logout_button_selector: Optional[str] = None  # CSS selector for logout button/link
-    logout_success_indicator_selector: Optional[str] = None  # Selector to verify successful logout
+    logout_url: str | None = None  # URL to visit for logout (e.g., /logout)
+    logout_button_selector: str | None = None  # CSS selector for logout button/link
+    logout_success_indicator_selector: str | None = None  # Selector to verify successful logout
 
     # Additional login steps (for multi-step logins)
-    additional_steps: List[Dict[str, Any]] = field(default_factory=list)  # PageSetupScript-like steps
+    additional_steps: list[dict[str, Any]] = field(default_factory=lambda: [])  # PageSetupScript-like steps
 
     # Session configuration
     session_timeout_minutes: int = 30  # How long the session is valid
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary"""
         return {
             'authentication_method': self.authentication_method.value,
@@ -57,7 +59,7 @@ class LoginConfig:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'LoginConfig':
+    def from_dict(cls, data: dict[str, Any]) -> LoginConfig:
         """Create from dictionary"""
         if not data:
             return cls()
@@ -90,27 +92,27 @@ class WebsiteUser:
     password: str  # Password (will be encrypted in future)
 
     # User identification
-    display_name: Optional[str] = None  # Friendly name like "Student User" or "John Doe"
-    roles: List[str] = field(default_factory=list)  # User roles: ["student", "premium"], etc.
-    description: Optional[str] = None  # Notes about this user
+    display_name: str | None = None  # Friendly name like "Student User" or "John Doe"
+    roles: list[str] = field(default_factory=lambda: [])  # User roles: ["student", "premium"], etc.
+    description: str | None = None  # Notes about this user
 
     # Login configuration
     login_config: LoginConfig = field(default_factory=LoginConfig)
 
     # Status and metadata
     enabled: bool = True  # Can be disabled without deleting
-    last_used: Optional[datetime] = None  # When this user was last used for testing
-    last_login_success: Optional[bool] = None  # Did last login attempt succeed?
-    last_login_error: Optional[str] = None  # Error message from last failed login
+    last_used: datetime | None = None  # When this user was last used for testing
+    last_login_success: bool | None = None  # Did last login attempt succeed?
+    last_login_error: str | None = None  # Error message from last failed login
 
     # Timestamps
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
 
-    _id: Optional[ObjectId] = None
+    _id: ObjectId | None = None
 
     @property
-    def id(self) -> str:
+    def id(self) -> str | None:
         """Get user ID as string"""
         return str(self._id) if self._id else None
 
@@ -124,20 +126,20 @@ class WebsiteUser:
         """Get display name or username"""
         return self.display_name or self.username
 
-    def update_timestamp(self):
+    def update_timestamp(self) -> None:
         """Update the updated_at timestamp"""
         self.updated_at = datetime.now()
 
-    def mark_login_attempt(self, success: bool, error: Optional[str] = None):
+    def mark_login_attempt(self, success: bool, error: str | None = None) -> None:
         """Record the result of a login attempt"""
         self.last_used = datetime.now()
         self.last_login_success = success
         self.last_login_error = error if not success else None
         self.update_timestamp()
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for MongoDB"""
-        data = {
+        data: dict[str, Any] = {
             'website_id': self.website_id,
             'username': self.username,
             'password': self.password,  # TODO: Encrypt in production
@@ -157,7 +159,7 @@ class WebsiteUser:
         return data
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'WebsiteUser':
+    def from_dict(cls, data: dict[str, Any]) -> WebsiteUser:
         """Create from MongoDB document"""
         return cls(
             website_id=data['website_id'],

@@ -4,9 +4,10 @@ Drupal Configuration Management
 Handles loading and validation of Drupal connection settings.
 """
 
+from __future__ import annotations
+
 import os
 import logging
-from typing import Optional
 from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
@@ -22,7 +23,7 @@ class DrupalConfig:
     enabled: bool = True
 
     @classmethod
-    def from_env(cls) -> 'DrupalConfig':
+    def from_env(cls) -> DrupalConfig:
         """
         Load configuration from environment variables.
 
@@ -43,10 +44,10 @@ class DrupalConfig:
         password = os.getenv('DRUPAL_PASSWORD')
         enabled = os.getenv('DRUPAL_EXPORT_ENABLED', 'true').lower() == 'true'
 
-        if not all([base_url, username, password]):
+        if not base_url or not username or not password:
             raise ValueError(
                 "Missing required Drupal configuration. "
-                "Set DRUPAL_BASE_URL, DRUPAL_USERNAME, and DRUPAL_PASSWORD"
+                + "Set DRUPAL_BASE_URL, DRUPAL_USERNAME, and DRUPAL_PASSWORD"
             )
 
         return cls(
@@ -57,7 +58,7 @@ class DrupalConfig:
         )
 
     @classmethod
-    def from_config_file(cls, config_path: Optional[str] = None) -> 'DrupalConfig':
+    def from_config_file(cls, config_path: str | None = None) -> DrupalConfig:
         """
         Load configuration from a config file.
 
@@ -83,7 +84,7 @@ class DrupalConfig:
             raise FileNotFoundError(f"Drupal config file not found: {config_path}")
 
         # Simple key=value parser
-        config = {}
+        config: dict[str, str] = {}
         with open(config_path, 'r') as f:
             for line in f:
                 line = line.strip()
@@ -99,10 +100,10 @@ class DrupalConfig:
         password = config.get('password')
         enabled = config.get('enabled', 'true').lower() == 'true'
 
-        if not all([base_url, username, password]):
+        if not base_url or not username or not password:
             raise ValueError(
                 f"Missing required Drupal configuration in {config_path}. "
-                "Need: base_url, username, password"
+                + "Need: base_url, username, password"
             )
 
         logger.info(f"Loaded Drupal config from {config_path}")
@@ -115,7 +116,7 @@ class DrupalConfig:
         )
 
     @classmethod
-    def default(cls) -> 'DrupalConfig':
+    def default(cls) -> DrupalConfig:
         """
         Get default configuration (for development/testing).
 
@@ -158,7 +159,7 @@ class DrupalConfig:
         return True
 
 
-def get_drupal_config(config_path: Optional[str] = None) -> DrupalConfig:
+def get_drupal_config(config_path: str | None = None) -> DrupalConfig:
     """
     Get Drupal configuration, trying multiple sources.
 
@@ -205,6 +206,6 @@ def get_drupal_config(config_path: Optional[str] = None) -> DrupalConfig:
     # All methods failed
     raise ValueError(
         "Could not load Drupal configuration. "
-        "Please set environment variables (DRUPAL_BASE_URL, DRUPAL_USERNAME, DRUPAL_PASSWORD) "
-        "or create a config file at config/drupal.conf"
+        + "Please set environment variables (DRUPAL_BASE_URL, DRUPAL_USERNAME, DRUPAL_PASSWORD) "
+        + "or create a config file at config/drupal.conf"
     )

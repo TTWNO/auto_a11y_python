@@ -26,12 +26,12 @@
             <p class="text-muted">
                 {{ ftl('websites-started-2') }} {{ discovery_run.started_at.strftime('%Y-%m-%d %H:%M') }}
                 {% if discovery_run.is_latest %}
-                <span class="badge bg-primary ms-2">{{ ftl('websites-latest') }}</span>
+                <span class="badge badge-brand ms-2">{{ ftl('websites-latest') }}</span>
                 {% endif %}
             </p>
         </div>
         <div>
-            <a href="{{ url_for('websites.view_discovery_history', website_id=website.id) }}" class="btn btn-secondary">
+            <a href="{{ url_for('websites.view_discovery_history', website_id=website.id) }}" class="btn btn-neutral">
                 <i class="bi bi-arrow-left" aria-hidden="true"></i> {{ ftl('websites-back-to-history') }}
             </a>
         </div>
@@ -46,13 +46,13 @@
                     <div class="card-body">
                         <h3 class="card-subtitle mb-2 text-muted">{{ ftl('common-status') }}</h3>
                     {% if discovery_run.status.value == 'completed' %}
-                    <span class="badge bg-success fs-6">{{ ftl('common-completed') }}</span>
+                    <span class="badge badge-pass fs-6">{{ ftl('common-completed') }}</span>
                     {% elif discovery_run.status.value == 'running' %}
-                    <span class="badge bg-warning fs-6">{{ ftl('common-running-2') }}</span>
+                    <span class="badge badge-medium fs-6">{{ ftl('common-running-2') }}</span>
                     {% elif discovery_run.status.value == 'failed' %}
-                    <span class="badge bg-danger fs-6">{{ ftl('common-failed') }}</span>
+                    <span class="badge badge-high fs-6">{{ ftl('common-failed') }}</span>
                     {% elif discovery_run.status.value == 'cancelled' %}
-                    <span class="badge bg-secondary fs-6">{{ ftl('common-cancelled') }}</span>
+                    <span class="badge badge-neutral fs-6">{{ ftl('common-cancelled') }}</span>
                     {% endif %}
                 </div>
             </div>
@@ -66,10 +66,10 @@
                 </div>
             </div>
             <div class="col-md-2">
-                <div class="card{% if discovery_run.pages_failed > 0 %} border-warning{% endif %}">
+                <div class="card{% if discovery_run.pages_failed > 0 %} border-medium{% endif %}">
                     <div class="card-body">
                         <h3 class="card-subtitle mb-2 text-muted">{{ ftl('websites-pages-failed') }}</h3>
-                        <p class="h4 mb-0{% if discovery_run.pages_failed > 0 %} text-warning{% endif %}">{{ discovery_run.pages_failed }}</p>
+                        <p class="h4 mb-0{% if discovery_run.pages_failed > 0 %} text-severity-medium{% endif %}">{{ discovery_run.pages_failed }}</p>
                     </div>
                 </div>
             </div>
@@ -107,13 +107,13 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-4">
-                        <div class="alert alert-success">
+                        <div class="alert alert-pass">
                             <h3><i class="bi bi-plus-circle" aria-hidden="true"></i> {{ ftl('websites-pages-added') }}</h3>
                             <p class="h3 mb-0">{{ comparison.added_count }}</p>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="alert alert-danger">
+                        <div class="alert alert-high">
                             <h3><i class="bi bi-dash-circle" aria-hidden="true"></i> {{ ftl('websites-pages-removed') }}</h3>
                             <p class="h3 mb-0">{{ comparison.removed_count }}</p>
                         </div>
@@ -204,7 +204,7 @@
             <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
                 <table class="table table-sm table-hover">
                     <caption class="visually-hidden">{{ ftl('websites-pages-discovered-in-this-run') }}</caption>
-                    <thead class="sticky-top bg-white">
+                    <thead class="sticky-top bg-elevated">
                         <tr>
                             <th scope="col">{{ ftl('common-url') }}</th>
                             <th scope="col">{{ ftl('common-title') }}</th>
@@ -225,16 +225,16 @@
                             <td>{{ page.depth }}</td>
                             <td>
                                 {% if page.status == 'discovered' %}
-                                <span class="badge bg-info">{{ ftl('common-discovered') }}</span>
+                                <span class="badge badge-info">{{ ftl('common-discovered') }}</span>
                                 {% elif page.status == 'discovery_failed' %}
-                                <span class="badge bg-danger">{{ ftl('common-failed') }}</span>
+                                <span class="badge badge-high">{{ ftl('common-failed') }}</span>
                                 {% else %}
-                                <span class="badge bg-secondary">{{ page.status }}</span>
+                                <span class="badge badge-neutral">{{ page.status }}</span>
                                 {% endif %}
                             </td>
                             <td>
                                 {% if page.error_reason %}
-                                <small class="text-danger">{{ page.error_reason|truncate(50) }}</small>
+                                <small class="text-severity-high">{{ page.error_reason|truncate(50) }}</small>
                                 {% else %}
                                 -
                                 {% endif %}
@@ -252,8 +252,8 @@
 
     {% if discovery_run.failed_pages_details %}
     <!-- Failed Pages -->
-    <div class="card mt-4 border-warning">
-        <div class="card-header bg-warning">
+    <div class="card mt-4 border-medium">
+        <div class="card-header bg-medium">
             <h2 class="mb-0"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> {{ ftl('websites-discovery-issues') }} ({{ discovery_run.failed_pages_details|length }})</h2>
         </div>
         <div class="card-body">
@@ -271,12 +271,12 @@
 
     {% if discovery_run.error_message %}
     <!-- Error Details -->
-    <div class="card mt-4 border-danger">
-        <div class="card-header bg-danger text-white">
+    <div class="card mt-4 border-high">
+        <div class="card-header bg-high text-inverse">
             <h2 class="mb-0">{{ ftl('websites-error-details') }}</h2>
         </div>
         <div class="card-body">
-            <pre class="text-danger">{{ discovery_run.error_message }}</pre>
+            <pre class="text-severity-high">{{ discovery_run.error_message }}</pre>
         </div>
     </section>
     {% endif %}

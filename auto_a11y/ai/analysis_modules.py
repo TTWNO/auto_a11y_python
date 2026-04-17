@@ -2,77 +2,81 @@
 Specific AI analysis modules for different accessibility aspects
 """
 
+from __future__ import annotations
+
 import logging
-from typing import Dict, Any, List, Optional
-from bs4 import BeautifulSoup, NavigableString
-import re
+from typing import Any
+from bs4 import BeautifulSoup
+from bs4.element import Tag
+from auto_a11y.ai.claude_client import ClaudeClient
 
 logger = logging.getLogger(__name__)
 
 
-def find_element_xpath_by_text(html: str, text_sample: str) -> Optional[str]:
+def find_element_xpath_by_text(html: str, text_sample: str) -> str | None:
     """
     Find an element in HTML by its text content and return a precise xpath.
-    
+
     Args:
         html: The HTML content to search
         text_sample: The text to find
-        
+
     Returns:
         XPath string or None if not found
     """
     if not html or not text_sample:
         return None
-        
+
     soup = BeautifulSoup(html, 'html.parser')
-    
+
     # Clean the text sample for comparison
     clean_text = text_sample.strip()
-    
+
     # Find elements containing this text
     # First try exact match, then partial match
-    for element in soup.find_all(string=lambda t: t and clean_text in t):
-        if isinstance(element, NavigableString):
-            parent = element.parent
-            if parent and parent.name:
-                xpath = _build_xpath_for_element(parent, soup)
-                if xpath:
-                    return xpath
-    
+    for nav_str in soup.find_all(string=lambda t: bool(t and clean_text in t)):
+        parent = nav_str.parent
+        if parent is not None and parent.name:
+            xpath = _build_xpath_for_element(parent, soup)
+            if xpath:
+                return xpath
+
     # Also try finding by normalized text in elements
-    for tag in ['p', 'span', 'div', 'a', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'td', 'th', 'label', 'button']:
-        for element in soup.find_all(tag):
-            element_text = element.get_text(strip=True)
+    for tag_name in ['p', 'span', 'div', 'a', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'td', 'th', 'label', 'button']:
+        for el in soup.find_all(tag_name):
+            element_text = el.get_text(strip=True)
             if clean_text in element_text:
-                xpath = _build_xpath_for_element(element, soup)
+                xpath = _build_xpath_for_element(el, soup)
                 if xpath:
                     return xpath
-    
+
     return None
 
 
-def _build_xpath_for_element(element, soup) -> Optional[str]:
+def _build_xpath_for_element(element: Tag, soup: BeautifulSoup) -> str | None:
     """
     Build a precise xpath for a BeautifulSoup element.
-    
+
     Args:
-        element: BeautifulSoup element
+        element: BeautifulSoup Tag element
         soup: Root soup object
-        
+
     Returns:
         XPath string
     """
     if not element or not element.name:
         return None
-    
-    tag = element.name
-    
+
+    tag: str = element.name
+
     # Priority 1: ID (most specific)
-    if element.get('id'):
-        return f"//*[@id='{element.get('id')}']"
-    
+    element_id = element.get('id')
+    if element_id and isinstance(element_id, str):
+        return f"//*[@id='{element_id}']"
+
     # Priority 2: Unique class combination
-    classes = element.get('class', [])
+    raw_classes = element.get('class')
+    classes: list[str] = raw_classes if isinstance(raw_classes, list) else ([str(raw_classes)] if raw_classes else [])
     if classes:
         class_str = ' '.join(classes)
         # Check if this class combo is unique
@@ -92,35 +96,42 @@ def _build_xpath_for_element(element, soup) -> Optional[str]:
                     else:
                         conditions = " and ".join([f"contains(@class, '{c}')" for c in classes])
                         return f"(//{tag}[{conditions}])[{idx}]"
-    
+
     # Priority 3: Text content (for short, unique text)
     element_text = element.get_text(strip=True)
     if element_text and len(element_text) <= 60:
         # Escape quotes
         escaped_text = element_text.replace("'", "&apos;")
-        # Check uniqueness
-        matching = soup.find_all(tag, string=lambda t: t and element_text in t)
-        if len(matching) <= 1:
+        # Check uniqueness -- find all tags then filter by text content
+        all_tags = soup.find_all(tag)
+        text_matches = [t for t in all_tags if element_text in t.get_text()]
+        if len(text_matches) <= 1:
             if len(element_text) <= 30:
                 return f"//{tag}[normalize-space()='{escaped_text}']"
             else:
                 return f"//{tag}[contains(normalize-space(), '{escaped_text[:40]}')]"
-    
+
     # Priority 4: Position among all same tags
     all_same_tags = soup.find_all(tag)
     for idx, el in enumerate(all_same_tags, 1):
         if el == element:
             return f"(//{tag})[{idx}]"
-    
+
     return f"//{tag}"
 
 
-def generate_xpath(element_tag: str, element_id: str = None, element_class: str = None, 
-                   element_text: str = None, element_index: int = None, use_text: bool = False) -> str:
+def generate_xpath(
+    element_tag: str,
+    element_id: str | None = None,
+    element_class: str | None = None,
+    element_text: str | None = None,
+    element_index: int | None = None,
+    use_text: bool = False,
+) -> str:
     """
     Generate an XPath selector from element attributes
     Similar to Chrome DevTools Elements.DOMPath.xPath for consistency
-    
+
     Args:
         element_tag: HTML tag name
         element_id: Element ID attribute
@@ -128,7 +139,7 @@ def generate_xpath(element_tag: str, element_id: str = None, element_class: str 
         element_text: Text content (only used if use_text=True)
         element_index: Position index among siblings
         use_text: Whether to include text in XPath (default False for reliability)
-        
+
     Returns:
         XPath selector string that can be used in Chrome DevTools
     """
@@ -139,13 +150,13 @@ def generate_xpath(element_tag: str, element_id: str = None, element_class: str 
         element_id = element_id.strip()
     if element_class:
         element_class = element_class.strip()
-        
+
     # Priority 1: ID (most specific and reliable)
     if element_id:
         # Escape single quotes in ID
         escaped_id = element_id.replace("'", "&apos;")
         return f"//*[@id='{escaped_id}']"
-    
+
     # Priority 2: Class name (without text to avoid duplicates)
     elif element_class:
         # Handle multiple classes
@@ -158,30 +169,30 @@ def generate_xpath(element_tag: str, element_id: str = None, element_class: str 
             # Multiple classes - use contains for each
             class_conditions = " and ".join([f"contains(@class, '{cls.replace(chr(39), '&apos;')}')" for cls in classes])
             xpath = f"//{element_tag}[{class_conditions}]"
-        
+
         # Add index if provided for more specificity
         if element_index is not None and element_index > 0:
             xpath = f"({xpath})[{element_index}]"
-            
+
         return xpath
-    
+
     # Priority 3: Position index (more reliable than text)
     elif element_index is not None and element_index > 0:
         return f"(//{element_tag})[{element_index}]"
-    
+
     # Priority 4: Text content (only if explicitly requested and no other option)
     elif use_text and element_text:
         # Clean and escape text
         text_snippet = element_text[:50].replace("'", "&apos;").replace('"', "&quot;")
-        
-        # Special case for single character elements (like × for close buttons)
+
+        # Special case for single character elements (like x for close buttons)
         if len(element_text) == 1:
             return f"//{element_tag}[text()='{text_snippet}']"
         elif len(element_text) <= 30:
             return f"//{element_tag}[normalize-space()='{text_snippet}']"
         else:
             return f"//{element_tag}[contains(normalize-space(), '{text_snippet}')]"
-    
+
     # Last resort: Tag with first position
     else:
         # Return first occurrence to be more specific
@@ -191,24 +202,24 @@ def generate_xpath(element_tag: str, element_id: str = None, element_class: str 
 
 class HeadingAnalyzer:
     """Analyzes heading structure visually and semantically"""
-    
-    def __init__(self, client):
+
+    def __init__(self, client: ClaudeClient) -> None:
         """
         Initialize heading analyzer
-        
+
         Args:
             client: Claude client instance
         """
-        self.client = client
-    
-    async def analyze(self, screenshot: bytes, html: str) -> Dict[str, Any]:
+        self.client: ClaudeClient = client
+
+    async def analyze(self, screenshot: bytes, html: str) -> dict[str, Any]:
         """
         Analyze headings for visual/semantic mismatches
-        
+
         Args:
             screenshot: Page screenshot
             html: Page HTML
-            
+
         Returns:
             Analysis results with specific issue codes
         """
@@ -225,7 +236,7 @@ ISSUE CODES:
 1. AI_ErrVisualHeadingNotMarked - Text looks like heading but uses <div>, <p>, <span>
    Required: visual_text (exact text), element_tag, element_class, element_id, suggested_level
 
-2. AI_ErrHeadingLevelMismatch - Heading level wrong for visual prominence  
+2. AI_ErrHeadingLevelMismatch - Heading level wrong for visual prominence
    Required: heading_text, element_tag, current_level, suggested_level, element_class, element_id
 
 Return JSON:
@@ -249,18 +260,18 @@ RULES:
 - Do NOT report text already in h1-h6 tags
 - Extract element_class and element_id from the HTML
 - Report only clear issues where heading markup is missing"""
-        
+
         try:
-            result = await self.client.analyze_with_image_and_html(
+            result: dict[str, Any] = await self.client.analyze_with_image_and_html(
                 screenshot, html, prompt
             )
-            
+
             # Ensure we have the expected structure
             if 'issues' not in result:
                 result['issues'] = []
-            
+
             return result
-            
+
         except Exception as e:
             logger.error(f"Heading analysis failed: {e}")
             return {
@@ -271,18 +282,18 @@ RULES:
 
 class ReadingOrderAnalyzer:
     """Analyzes reading order consistency"""
-    
-    def __init__(self, client):
-        self.client = client
-    
-    async def analyze(self, screenshot: bytes, html: str) -> Dict[str, Any]:
+
+    def __init__(self, client: ClaudeClient) -> None:
+        self.client: ClaudeClient = client
+
+    async def analyze(self, screenshot: bytes, html: str) -> dict[str, Any]:
         """
         Check if visual reading order matches DOM order
-        
+
         Args:
             screenshot: Page screenshot
             html: Page HTML
-            
+
         Returns:
             Reading order analysis with specific issue codes
         """
@@ -313,9 +324,9 @@ Return ONLY valid JSON:
 }
 
 IMPORTANT: Only report SIGNIFICANT mismatches that affect comprehension. Minor reordering within a section is usually fine."""
-        
+
         try:
-            result = await self.client.analyze_with_image_and_html(
+            result: dict[str, Any] = await self.client.analyze_with_image_and_html(
                 screenshot, html, prompt
             )
             if 'issues' not in result:
@@ -328,18 +339,18 @@ IMPORTANT: Only report SIGNIFICANT mismatches that affect comprehension. Minor r
 
 class ModalAnalyzer:
     """Analyzes modal dialogs and overlays"""
-    
-    def __init__(self, client):
-        self.client = client
-    
-    async def analyze(self, screenshot: bytes, html: str) -> Dict[str, Any]:
+
+    def __init__(self, client: ClaudeClient) -> None:
+        self.client: ClaudeClient = client
+
+    async def analyze(self, screenshot: bytes, html: str) -> dict[str, Any]:
         """
         Detect and analyze modal dialogs
-        
+
         Args:
             screenshot: Page screenshot
             html: Page HTML
-            
+
         Returns:
             Modal analysis with specific issue codes
         """
@@ -377,9 +388,9 @@ Return ONLY valid JSON:
 }
 
 IMPORTANT: Only analyze modals that are CURRENTLY VISIBLE in the screenshot."""
-        
+
         try:
-            result = await self.client.analyze_with_image_and_html(
+            result: dict[str, Any] = await self.client.analyze_with_image_and_html(
                 screenshot, html, prompt
             )
             if 'issues' not in result:
@@ -392,31 +403,33 @@ IMPORTANT: Only analyze modals that are CURRENTLY VISIBLE in the screenshot."""
 
 class LanguageAnalyzer:
     """Analyzes language declarations and changes"""
-    
-    def __init__(self, client):
-        self.client = client
-    
-    async def analyze(self, screenshot: bytes, html: str) -> Dict[str, Any]:
+
+    def __init__(self, client: ClaudeClient) -> None:
+        self.client: ClaudeClient = client
+
+    async def analyze(self, screenshot: bytes, html: str) -> dict[str, Any]:
         """
         Detect language usage and proper markup
-        
+
         Args:
-            screenshot: Page screenshot  
+            screenshot: Page screenshot
             html: Page HTML
-            
+
         Returns:
             Language analysis with specific issue codes
         """
         # First check HTML for lang attribute
         soup = BeautifulSoup(html, 'html.parser')
         html_tag = soup.find('html')
-        html_lang = html_tag.get('lang') if html_tag else None
-        
+        html_lang: str | list[str] | None = html_tag.get('lang') if isinstance(html_tag, Tag) else None
+        # Normalise to str | None (bs4 .get() can return list for multi-valued attrs)
+        lang_str: str | None = html_lang if isinstance(html_lang, str) else None
+
         prompt = f"""Analyze language usage in this web page screenshot and HTML.
 
-The HTML tag has lang="{html_lang or 'not set'}".
+The HTML tag has lang="{lang_str or 'not set'}".
 
-Look for text in DIFFERENT languages than the page's primary language ({html_lang or 'unknown'}).
+Look for text in DIFFERENT languages than the page's primary language ({lang_str or 'unknown'}).
 Use the HTML to find the EXACT text - do NOT guess or paraphrase text.
 
 ISSUE CODES (use these exactly):
@@ -432,7 +445,7 @@ For each foreign text found:
 Return ONLY valid JSON:
 {{
     "detected_language": "en/fr/es/de/etc",
-    "html_lang": "{html_lang or 'missing'}",
+    "html_lang": "{lang_str or 'missing'}",
     "language_matches": true/false,
     "foreign_content": [
         {{
@@ -456,12 +469,12 @@ Return ONLY valid JSON:
     ]
 }}
 
-CRITICAL: 
+CRITICAL:
 - Use the EXACT text from the HTML. Do NOT paraphrase or translate the text.
 - Always try to find a class or id attribute for element identification."""
-        
+
         try:
-            result = await self.client.analyze_with_image_and_html(screenshot, html, prompt)
+            result: dict[str, Any] = await self.client.analyze_with_image_and_html(screenshot, html, prompt)
             if 'issues' not in result:
                 result['issues'] = []
             return result
@@ -472,17 +485,17 @@ CRITICAL:
 
 class AnimationAnalyzer:
     """Analyzes animations and motion"""
-    
-    def __init__(self, client):
-        self.client = client
-    
-    async def analyze(self, html: str) -> Dict[str, Any]:
+
+    def __init__(self, client: ClaudeClient) -> None:
+        self.client: ClaudeClient = client
+
+    async def analyze(self, html: str) -> dict[str, Any]:
         """
         Detect animations and motion in HTML/CSS
-        
+
         Args:
             html: Page HTML including styles
-            
+
         Returns:
             Animation analysis with specific issue codes
         """
@@ -511,9 +524,9 @@ Return ONLY valid JSON:
 }
 
 IMPORTANT: Only flag animations that are CLEARLY problematic. Brief hover transitions are fine."""
-        
+
         try:
-            result = await self.client.analyze_html(html, prompt)
+            result: dict[str, Any] = await self.client.analyze_html(html, prompt)
             if 'issues' not in result:
                 result['issues'] = []
             return result
@@ -524,18 +537,18 @@ IMPORTANT: Only flag animations that are CLEARLY problematic. Brief hover transi
 
 class InteractiveAnalyzer:
     """Analyzes interactive elements for keyboard accessibility"""
-    
-    def __init__(self, client):
-        self.client = client
-    
-    async def analyze(self, screenshot: bytes, html: str) -> Dict[str, Any]:
+
+    def __init__(self, client: ClaudeClient) -> None:
+        self.client: ClaudeClient = client
+
+    async def analyze(self, screenshot: bytes, html: str) -> dict[str, Any]:
         """
         Analyze interactive elements
-        
+
         Args:
             screenshot: Page screenshot
             html: Page HTML
-            
+
         Returns:
             Interactive element analysis with specific issue codes
         """
@@ -566,13 +579,13 @@ Return ONLY valid JSON:
     ]
 }
 
-IMPORTANT: 
+IMPORTANT:
 - Only report elements that are CLEARLY meant to be interactive
 - Don't flag <div> with click if it also has proper role="button" and tabindex
 - Focus on HIGH-CONFIDENCE issues only"""
-        
+
         try:
-            result = await self.client.analyze_with_image_and_html(
+            result: dict[str, Any] = await self.client.analyze_with_image_and_html(
                 screenshot, html, prompt
             )
             if 'issues' not in result:

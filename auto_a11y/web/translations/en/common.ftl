@@ -437,6 +437,7 @@ common-once-per-session = Once Per Session
 common-once-you-have-been-added-to-a-project-you-will-be = Once you have been added to a project, you will be able to view reports and results here.
 common-only-enter-a-password-if-you-want-to-change-it = Only enter a password if you want to change it
 common-open-in-new-tab = Open in New Tab
+common-opens-in-new-tab = opens in new tab
 common-optimization-opportunities = Optimization opportunities
 common-option-name-r-does-not-take-a-value = Option { $name } does not take a value.
 common-option-name-r-requires-an-argument = Option { $name } requires an argument.
@@ -499,6 +500,7 @@ common-reports = Reports
 common-reports-dashboard = Reports Dashboard
 common-reports-exports = Reports & Exports
 common-required = required
+common-required-field = Required field
 common-responsive-design = Responsive Design
 common-review-for-improvements = Review for improvements
 common-right-click-in-the-html-panel = Right-click in the HTML panel
@@ -787,3 +789,42 @@ enum-scroll = Scroll
 enum-select = Select
 enum-hover = Hover
 enum-screenshot = Screenshot
+
+# Touchpoint enums
+enum-accessible-names = Accessible Names
+enum-animation = Animation
+enum-buttons = Buttons
+enum-colors = Colors
+enum-dialogs = Dialogs
+enum-electronic-documents = Electronic Documents
+enum-event-handling = Event Handling
+enum-floating-content = Floating Content
+enum-focus-management = Focus Management
+enum-fonts = Fonts
+enum-forms = Forms
+enum-headings = Headings
+enum-images = Images
+enum-landmarks = Landmarks
+enum-language = Language
+enum-links = Links
+enum-lists = Lists
+enum-maps = Maps
+enum-navigation = Navigation
+enum-page = Page
+enum-read-more-links = Read More Links
+enum-styles = Styles
+enum-tabindex = Tabindex
+enum-tables = Tables
+enum-timers = Timers
+enum-title-attributes = Title Attributes
+enum-videos = Videos
+
+# WCAG
+wcag-criteria-not-specified = Criteria not specified
+
+# Landmark labels for global notification regions
+common-notifications-region = Notifications
+common-activity-status-region = Activity status
+
+# Generic actions
+common-remove-filter = Remove filter

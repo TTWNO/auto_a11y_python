@@ -6,9 +6,13 @@ Handles caching and lookup of Drupal taxonomy terms, particularly:
 - "page_elements" - Areas of display (16 terms)
 """
 
+from __future__ import annotations
+
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Any
 from datetime import datetime, timedelta
+
+from auto_a11y.drupal.client import DrupalJSONAPIClient
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +24,7 @@ class TaxonomyCache:
     Caches taxonomy terms by vocabulary and provides efficient lookup by name or UUID.
     """
 
-    def __init__(self, client, cache_duration_hours: int = 24):
+    def __init__(self, client: DrupalJSONAPIClient, cache_duration_hours: int = 24) -> None:
         """
         Initialize taxonomy cache.
 
@@ -28,13 +32,13 @@ class TaxonomyCache:
             client: DrupalJSONAPIClient instance
             cache_duration_hours: How long to cache terms before refresh (default: 24 hours)
         """
-        self.client = client
-        self.cache_duration = timedelta(hours=cache_duration_hours)
+        self.client: DrupalJSONAPIClient = client
+        self.cache_duration: timedelta = timedelta(hours=cache_duration_hours)
 
         # Cache structure: {vocabulary_name: {'terms': [...], 'last_updated': datetime, 'by_name': {}, 'by_uuid': {}}}
-        self._cache: Dict[str, dict] = {}
+        self._cache: dict[str, dict[str, Any]] = {}
 
-    def get_terms(self, vocabulary: str, force_refresh: bool = False) -> List[Dict]:
+    def get_terms(self, vocabulary: str, force_refresh: bool = False) -> list[dict[str, Any]]:
         """
         Get all terms for a vocabulary.
 
@@ -49,9 +53,11 @@ class TaxonomyCache:
         if force_refresh or vocabulary not in self._cache or self._is_cache_expired(vocabulary):
             self._refresh_vocabulary(vocabulary)
 
-        return self._cache.get(vocabulary, {}).get('terms', [])
+        cache_entry = self._cache.get(vocabulary, {})
+        terms: list[dict[str, Any]] = cache_entry.get('terms', [])
+        return terms
 
-    def get_uuid_by_name(self, vocabulary: str, term_name: str) -> Optional[str]:
+    def get_uuid_by_name(self, vocabulary: str, term_name: str) -> str | None:
         """
         Look up a term UUID by its name.
 
@@ -66,10 +72,10 @@ class TaxonomyCache:
         if vocabulary not in self._cache:
             self._refresh_vocabulary(vocabulary)
 
-        by_name = self._cache.get(vocabulary, {}).get('by_name', {})
+        by_name: dict[str, str] = self._cache.get(vocabulary, {}).get('by_name', {})
         return by_name.get(term_name.lower())
 
-    def get_name_by_uuid(self, vocabulary: str, term_uuid: str) -> Optional[str]:
+    def get_name_by_uuid(self, vocabulary: str, term_uuid: str) -> str | None:
         """
         Look up a term name by its UUID.
 
@@ -84,10 +90,10 @@ class TaxonomyCache:
         if vocabulary not in self._cache:
             self._refresh_vocabulary(vocabulary)
 
-        by_uuid = self._cache.get(vocabulary, {}).get('by_uuid', {})
+        by_uuid: dict[str, str] = self._cache.get(vocabulary, {}).get('by_uuid', {})
         return by_uuid.get(term_uuid)
 
-    def get_term_details(self, vocabulary: str, term_name: str) -> Optional[Dict]:
+    def get_term_details(self, vocabulary: str, term_name: str) -> dict[str, Any] | None:
         """
         Get full term details by name.
 
@@ -102,7 +108,7 @@ class TaxonomyCache:
         if vocabulary not in self._cache:
             self._refresh_vocabulary(vocabulary)
 
-        terms = self._cache.get(vocabulary, {}).get('terms', [])
+        terms: list[dict[str, Any]] = self._cache.get(vocabulary, {}).get('terms', [])
         term_name_lower = term_name.lower()
 
         for term in terms:
@@ -111,7 +117,7 @@ class TaxonomyCache:
 
         return None
 
-    def lookup_uuids(self, vocabulary: str, term_names: List[str]) -> List[str]:
+    def lookup_uuids(self, vocabulary: str, term_names: list[str]) -> list[str]:
         """
         Look up UUIDs for multiple term names.
 
@@ -122,7 +128,7 @@ class TaxonomyCache:
         Returns:
             List of UUIDs (skips terms not found, logs warning)
         """
-        uuids = []
+        uuids: list[str] = []
 
         for name in term_names:
             uuid = self.get_uuid_by_name(vocabulary, name)
@@ -133,7 +139,7 @@ class TaxonomyCache:
 
         return uuids
 
-    def lookup_names(self, vocabulary: str, term_uuids: List[str]) -> List[str]:
+    def lookup_names(self, vocabulary: str, term_uuids: list[str]) -> list[str]:
         """
         Look up names for multiple term UUIDs.
 
@@ -144,7 +150,7 @@ class TaxonomyCache:
         Returns:
             List of term names (skips UUIDs not found, logs warning)
         """
-        names = []
+        names: list[str] = []
 
         for uuid in term_uuids:
             name = self.get_name_by_uuid(vocabulary, uuid)
@@ -155,13 +161,13 @@ class TaxonomyCache:
 
         return names
 
-    def refresh_all(self):
+    def refresh_all(self) -> None:
         """Refresh all cached vocabularies."""
         vocabularies = list(self._cache.keys())
         for vocab in vocabularies:
             self._refresh_vocabulary(vocab)
 
-    def clear_cache(self):
+    def clear_cache(self) -> None:
         """Clear all cached taxonomy data."""
         self._cache.clear()
         logger.info("Taxonomy cache cleared")
@@ -171,13 +177,13 @@ class TaxonomyCache:
         if vocabulary not in self._cache:
             return True
 
-        last_updated = self._cache[vocabulary].get('last_updated')
+        last_updated: datetime | None = self._cache[vocabulary].get('last_updated')
         if not last_updated:
             return True
 
         return datetime.now() - last_updated > self.cache_duration
 
-    def _refresh_vocabulary(self, vocabulary: str):
+    def _refresh_vocabulary(self, vocabulary: str) -> None:
         """
         Refresh a vocabulary from Drupal.
 
@@ -189,7 +195,7 @@ class TaxonomyCache:
         try:
             # Fetch all terms for this vocabulary
             # Use pagination to get all terms (some vocabularies have 75+ terms)
-            all_terms = []
+            all_terms: list[dict[str, Any]] = []
             page_limit = 50
             offset = 0
 
@@ -204,7 +210,7 @@ class TaxonomyCache:
                     }
                 )
 
-                terms = response.get('data', [])
+                terms: list[dict[str, Any]] = response.get('data', [])
                 if not terms:
                     break
 
@@ -216,18 +222,18 @@ class TaxonomyCache:
                     break
 
             # Process terms into cache structure
-            by_name = {}
-            by_uuid = {}
-            processed_terms = []
+            by_name: dict[str, str] = {}
+            by_uuid: dict[str, str] = {}
+            processed_terms: list[dict[str, Any]] = []
 
             for term in all_terms:
-                uuid = term.get('id')
-                attributes = term.get('attributes', {})
-                name = attributes.get('name')
-                tid = attributes.get('drupal_internal__tid')
-                weight = attributes.get('weight', 0)
-                desc_field = attributes.get('description')
-                description = desc_field.get('value', '') if desc_field and isinstance(desc_field, dict) else ''
+                uuid: str | None = term.get('id')
+                attributes: dict[str, Any] = term.get('attributes', {})
+                name: str | None = attributes.get('name')
+                tid: int | None = attributes.get('drupal_internal__tid')
+                weight: int = attributes.get('weight', 0)
+                desc_field: dict[str, Any] | None = attributes.get('description')
+                description: str = desc_field.get('value', '') if desc_field else ''
 
                 if not uuid or not name:
                     logger.warning(f"Skipping invalid term in {vocabulary}: {term}")
@@ -271,19 +277,19 @@ class DiscoveredPageTaxonomies:
     """
 
     # Vocabulary machine names
-    INTERESTED_BECAUSE = "interested_in_because"
-    PAGE_ELEMENTS = "page_elements"
+    INTERESTED_BECAUSE: str = "interested_in_because"
+    PAGE_ELEMENTS: str = "page_elements"
 
-    def __init__(self, client):
+    def __init__(self, client: DrupalJSONAPIClient) -> None:
         """
         Initialize taxonomy manager.
 
         Args:
             client: DrupalJSONAPIClient instance
         """
-        self.cache = TaxonomyCache(client)
+        self.cache: TaxonomyCache = TaxonomyCache(client)
 
-    def get_interested_because_terms(self, force_refresh: bool = False) -> List[Dict]:
+    def get_interested_because_terms(self, force_refresh: bool = False) -> list[dict[str, Any]]:
         """
         Get all "interested because" terms.
 
@@ -292,7 +298,7 @@ class DiscoveredPageTaxonomies:
         """
         return self.cache.get_terms(self.INTERESTED_BECAUSE, force_refresh)
 
-    def get_page_elements_terms(self, force_refresh: bool = False) -> List[Dict]:
+    def get_page_elements_terms(self, force_refresh: bool = False) -> list[dict[str, Any]]:
         """
         Get all "page elements" (area of display) terms.
 
@@ -301,7 +307,7 @@ class DiscoveredPageTaxonomies:
         """
         return self.cache.get_terms(self.PAGE_ELEMENTS, force_refresh)
 
-    def lookup_interested_because_uuids(self, term_names: List[str]) -> List[str]:
+    def lookup_interested_because_uuids(self, term_names: list[str]) -> list[str]:
         """
         Convert "interested because" term names to UUIDs.
 
@@ -313,7 +319,7 @@ class DiscoveredPageTaxonomies:
         """
         return self.cache.lookup_uuids(self.INTERESTED_BECAUSE, term_names)
 
-    def lookup_page_elements_uuids(self, term_names: List[str]) -> List[str]:
+    def lookup_page_elements_uuids(self, term_names: list[str]) -> list[str]:
         """
         Convert "page elements" term names to UUIDs.
 
@@ -325,7 +331,7 @@ class DiscoveredPageTaxonomies:
         """
         return self.cache.lookup_uuids(self.PAGE_ELEMENTS, term_names)
 
-    def lookup_interested_because_names(self, term_uuids: List[str]) -> List[str]:
+    def lookup_interested_because_names(self, term_uuids: list[str]) -> list[str]:
         """
         Convert "interested because" UUIDs to term names.
 
@@ -337,7 +343,7 @@ class DiscoveredPageTaxonomies:
         """
         return self.cache.lookup_names(self.INTERESTED_BECAUSE, term_uuids)
 
-    def lookup_page_elements_names(self, term_uuids: List[str]) -> List[str]:
+    def lookup_page_elements_names(self, term_uuids: list[str]) -> list[str]:
         """
         Convert "page elements" UUIDs to term names.
 
@@ -349,7 +355,7 @@ class DiscoveredPageTaxonomies:
         """
         return self.cache.lookup_names(self.PAGE_ELEMENTS, term_uuids)
 
-    def validate_term_names(self, vocabulary: str, term_names: List[str]) -> Tuple[List[str], List[str]]:
+    def validate_term_names(self, vocabulary: str, term_names: list[str]) -> tuple[list[str], list[str]]:
         """
         Validate term names against a vocabulary.
 
@@ -360,8 +366,8 @@ class DiscoveredPageTaxonomies:
         Returns:
             Tuple of (valid_names, invalid_names)
         """
-        valid = []
-        invalid = []
+        valid: list[str] = []
+        invalid: list[str] = []
 
         for name in term_names:
             if self.cache.get_uuid_by_name(vocabulary, name):
@@ -371,7 +377,7 @@ class DiscoveredPageTaxonomies:
 
         return valid, invalid
 
-    def get_term_suggestions(self, vocabulary: str, partial_name: str, limit: int = 10) -> List[Dict]:
+    def get_term_suggestions(self, vocabulary: str, partial_name: str, limit: int = 10) -> list[dict[str, Any]]:
         """
         Get term suggestions based on partial name match.
 
@@ -397,11 +403,11 @@ class DiscoveredPageTaxonomies:
 
         return matches[:limit]
 
-    def refresh_all(self):
+    def refresh_all(self) -> None:
         """Refresh all taxonomy caches."""
         self.cache.refresh_all()
 
-    def clear_cache(self):
+    def clear_cache(self) -> None:
         """Clear all taxonomy caches."""
         self.cache.clear_cache()
 
@@ -414,7 +420,7 @@ class WCAGChapterCache:
     that matches WCAG success criteria format (e.g., "1.3.1", "2.4.6").
     """
 
-    def __init__(self, client, cache_duration_hours: int = 24):
+    def __init__(self, client: DrupalJSONAPIClient, cache_duration_hours: int = 24) -> None:
         """
         Initialize WCAG chapter cache.
 
@@ -422,13 +428,13 @@ class WCAGChapterCache:
             client: DrupalJSONAPIClient instance
             cache_duration_hours: How long to cache chapters before refresh (default: 24 hours)
         """
-        self.client = client
-        self.cache_duration = timedelta(hours=cache_duration_hours)
+        self.client: DrupalJSONAPIClient = client
+        self.cache_duration: timedelta = timedelta(hours=cache_duration_hours)
 
         # Cache structure: {'chapters': [...], 'by_number': {number: uuid}, 'by_uuid': {uuid: number}, 'last_updated': datetime}
-        self._cache: Optional[dict] = None
+        self._cache: dict[str, Any] | None = None
 
-    def get_chapters(self, force_refresh: bool = False) -> List[Dict]:
+    def get_chapters(self, force_refresh: bool = False) -> list[dict[str, Any]]:
         """
         Get all WCAG chapters.
 
@@ -441,9 +447,11 @@ class WCAGChapterCache:
         if force_refresh or not self._cache or self._is_cache_expired():
             self._refresh_chapters()
 
-        return self._cache.get('chapters', [])
+        assert self._cache is not None
+        chapters: list[dict[str, Any]] = self._cache.get('chapters', [])
+        return chapters
 
-    def get_uuid_by_number(self, chapter_number: str) -> Optional[str]:
+    def get_uuid_by_number(self, chapter_number: str) -> str | None:
         """
         Look up a WCAG chapter UUID by its number.
 
@@ -456,10 +464,11 @@ class WCAGChapterCache:
         if not self._cache:
             self._refresh_chapters()
 
-        by_number = self._cache.get('by_number', {})
+        assert self._cache is not None
+        by_number: dict[str, str] = self._cache.get('by_number', {})
         return by_number.get(chapter_number)
 
-    def get_number_by_uuid(self, chapter_uuid: str) -> Optional[str]:
+    def get_number_by_uuid(self, chapter_uuid: str) -> str | None:
         """
         Look up a WCAG chapter number by its UUID.
 
@@ -472,10 +481,11 @@ class WCAGChapterCache:
         if not self._cache:
             self._refresh_chapters()
 
-        by_uuid = self._cache.get('by_uuid', {})
+        assert self._cache is not None
+        by_uuid: dict[str, str] = self._cache.get('by_uuid', {})
         return by_uuid.get(chapter_uuid)
 
-    def lookup_uuids(self, chapter_numbers: List[str]) -> List[str]:
+    def lookup_uuids(self, chapter_numbers: list[str]) -> list[str]:
         """
         Look up UUIDs for multiple WCAG chapter numbers.
 
@@ -485,7 +495,7 @@ class WCAGChapterCache:
         Returns:
             List of UUIDs (skips chapters not found, logs warning)
         """
-        uuids = []
+        uuids: list[str] = []
 
         for number in chapter_numbers:
             uuid = self.get_uuid_by_number(number)
@@ -496,11 +506,11 @@ class WCAGChapterCache:
 
         return uuids
 
-    def refresh(self):
+    def refresh(self) -> None:
         """Refresh the WCAG chapter cache."""
         self._refresh_chapters()
 
-    def clear_cache(self):
+    def clear_cache(self) -> None:
         """Clear cached WCAG chapter data."""
         self._cache = None
         logger.info("WCAG chapter cache cleared")
@@ -510,19 +520,19 @@ class WCAGChapterCache:
         if not self._cache:
             return True
 
-        last_updated = self._cache.get('last_updated')
+        last_updated: datetime | None = self._cache.get('last_updated')
         if not last_updated:
             return True
 
         return datetime.now() - last_updated > self.cache_duration
 
-    def _refresh_chapters(self):
+    def _refresh_chapters(self) -> None:
         """Refresh WCAG chapters from Drupal."""
         logger.info("Refreshing WCAG chapters from Drupal")
 
         try:
             # Fetch all WCAG chapter nodes with pagination
-            all_chapters = []
+            all_chapters: list[dict[str, Any]] = []
             page_limit = 50
             offset = 0
 
@@ -536,7 +546,7 @@ class WCAGChapterCache:
                     }
                 )
 
-                chapters = response.get('data', [])
+                chapters: list[dict[str, Any]] = response.get('data', [])
                 if not chapters:
                     break
 
@@ -548,16 +558,16 @@ class WCAGChapterCache:
                     break
 
             # Process chapters into cache structure
-            by_number = {}
-            by_uuid = {}
-            processed_chapters = []
+            by_number: dict[str, str] = {}
+            by_uuid: dict[str, str] = {}
+            processed_chapters: list[dict[str, Any]] = []
 
             for chapter in all_chapters:
-                uuid = chapter.get('id')
-                attributes = chapter.get('attributes', {})
-                chapter_number = attributes.get('field_chapter_number')
-                title = attributes.get('title')
-                nid = attributes.get('drupal_internal__nid')
+                uuid: str | None = chapter.get('id')
+                attributes: dict[str, Any] = chapter.get('attributes', {})
+                chapter_number: str | None = attributes.get('field_chapter_number')
+                title: str | None = attributes.get('title')
+                nid: int | None = attributes.get('drupal_internal__nid')
 
                 if not uuid or not chapter_number:
                     logger.warning(f"Skipping invalid WCAG chapter: {chapter}")

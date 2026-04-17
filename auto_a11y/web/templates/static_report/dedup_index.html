@@ -21,8 +21,8 @@
     }
 
     .stat-card {
-        background: white;
-        border: 1px solid #dee2e6;
+        background: var(--color-bg);
+        border: 1px solid var(--color-border-table);
         border-radius: 8px;
         padding: 1.5rem;
         text-align: center;
@@ -35,15 +35,15 @@
     }
 
     .stat-label {
-        color: #6c757d;
+        color: var(--color-text-muted);
         font-size: 0.875rem;
         text-transform: uppercase;
         letter-spacing: 0.05em;
     }
 
     .component-card {
-        background: white;
-        border: 1px solid #dee2e6;
+        background: var(--color-bg);
+        border: 1px solid var(--color-border-table);
         border-radius: 8px;
         padding: 1.5rem;
         margin-bottom: 1rem;
@@ -69,7 +69,7 @@
     }
 
     .component-label {
-        color: #6c757d;
+        color: var(--color-text-muted);
         margin-bottom: 0.5rem;
     }
 
@@ -77,7 +77,7 @@
         display: flex;
         gap: 1rem;
         font-size: 0.875rem;
-        color: #6c757d;
+        color: var(--color-text-muted);
     }
 
     .component-badge {
@@ -88,13 +88,21 @@
         white-space: nowrap;
     }
 
-    .component-badge.navigation { background-color: #cfe2ff; color: #084298; }
-    .component-badge.header { background-color: #e2d9f3; color: #432874; }
-    .component-badge.footer { background-color: #d1e7dd; color: #0f5132; }
-    .component-badge.form { background-color: #ffe5d0; color: #984c0c; }
-    .component-badge.aside { background-color: #f8d7da; color: #842029; }
-    .component-badge.section { background-color: #d3f9d8; color: #0a3622; }
-    .component-badge.search { background-color: #fff3cd; color: #664d03; }
+    /* Component-type badges share a neutral surface — the text and icon convey
+       the component type, so we use a single design-token surface to stay in
+       sync with the rest of the design system (and dark mode). */
+    .component-badge,
+    .component-badge.navigation,
+    .component-badge.header,
+    .component-badge.footer,
+    .component-badge.form,
+    .component-badge.aside,
+    .component-badge.section,
+    .component-badge.search {
+        background-color: var(--color-bg-subtle);
+        color: var(--color-text);
+        border: 1px solid var(--color-border-table, #dee2e6);
+    }
 
     .issue-summary {
         display: flex;
@@ -109,15 +117,29 @@
         font-weight: 600;
     }
 
-    .issue-count.violations { background-color: #f8d7da; color: #842029; }
-    .issue-count.warnings { background-color: #fff3cd; color: #856404; }
-    .issue-count.info { background-color: #cfe2ff; color: #084298; }
-    .issue-count.discovery { background-color: #e2d9f3; color: #432874; }
+    /* Issue count chips reuse the severity tokens so they match the rest of
+       the report and respect dark-mode/contrast tokens. */
+    .issue-count.violations {
+        background-color: var(--color-severity-high-bg, #fdedec);
+        color: var(--color-severity-high, #922b21);
+    }
+    .issue-count.warnings {
+        background-color: var(--color-severity-medium-bg, #fff3cd);
+        color: var(--color-severity-medium, #7d6608);
+    }
+    .issue-count.info {
+        background-color: var(--color-info-bg, #e0f3f8);
+        color: var(--color-info, #0e7490);
+    }
+    .issue-count.discovery {
+        background-color: var(--color-discovery-bg, #f3eefa);
+        color: var(--color-discovery, #6f42c1);
+    }
 
     .no-components {
         text-align: center;
         padding: 3rem;
-        color: #6c757d;
+        color: var(--color-text-muted);
     }
 
     .common-issue-card {
@@ -132,7 +154,7 @@
     /* Language Switcher */
     .lang-switcher {
         display: inline-flex;
-        background: #f8f9fa;
+        background: var(--color-bg-subtle);
         border-radius: 6px;
         padding: 4px;
         gap: 4px;
@@ -147,17 +169,17 @@
         font-weight: 500;
         font-size: 0.875rem;
         transition: all 0.2s;
-        color: #6c757d;
+        color: var(--color-text-muted);
     }
 
     .lang-switcher button:hover {
-        background: #e9ecef;
-        color: #495057;
+        background: var(--color-progress-track);
+        color: var(--color-text-muted);
     }
 
     .lang-switcher button.active {
-        background: #0d6efd;
-        color: white;
+        background: var(--color-brand);
+        color: var(--color-text-inverse);
     }
 
     .lang-inactive {
@@ -173,25 +195,56 @@
     }
 
     /* WCAG AA Contrast Overrides */
-    .text-info {
+    .text-info-custom {
         color: #0e7490 !important; /* Dark cyan with 4.5:1 contrast on white */
     }
-    .text-warning {
+    .text-severity-medium {
         color: #856404 !important; /* Dark yellow/brown with 4.6:1 contrast on white */
     }
 
     /* Severity color utility classes */
     :root {
         --color-discovery: #6f42c1;
+        --color-discovery-bg: #f3eefa;
+        --color-text: #1c1c1c;
+        --color-text-muted: #4a4a4a;
+        --color-bg: #ffffff;
+        --color-bg-subtle: #f4f6f7;
+        --color-brand: #1a5276;
+        --color-border-table: #dee2e6;
+        --color-progress-track: #e9ecef;
+        --color-text-inverse: #ffffff;
+        --color-severity-high: #922b21;
+        --color-severity-high-bg: #fdedec;
+        --color-severity-medium: #7d6608;
+        --color-severity-medium-bg: #fff3cd;
+        --color-severity-pass: #1e8449;
+        --color-info: #0e7490;
+        --color-info-bg: #e0f3f8;
+        /* Link + focus tokens - mirror tokens.css */
+        --color-link: #0a58ca;
+        --color-focus-ring: #0a58ca;
+        --color-focus-ring-inverse: #ffffff;
     }
     .text-discovery { color: var(--color-discovery) !important; }
+
+    @media (prefers-reduced-motion: reduce) {
+        * {
+            animation-duration: 0.01ms !important;
+            transition-duration: 0.01ms !important;
+        }
+    }
+
+    *:focus-visible {
+        outline: 2px solid var(--color-focus-ring, #0d6efd);
+        outline-offset: 2px;
+    }
     </style>
 </head>
 <body>
 <a href="#main-content" class="visually-hidden-focusable">{{ ftl('common-skip-to-main-content') }}</a>
-<main id="main-content" class="container py-4">
-    <!-- Header with Language Switcher -->
-    <div class="d-flex justify-content-between align-items-start mb-4">
+<header role="banner" class="container py-3">
+    <div class="d-flex justify-content-between align-items-start">
         <div>
             <h1 data-i18n="deduplicated_report">{{ t['deduplicated_report'] }}</h1>
             <p class="text-muted">
@@ -199,60 +252,62 @@
             </p>
         </div>
         <div class="lang-switcher">
-            <button onclick="switchLanguage('en')" id="lang-en" class="{{ 'active' if language == 'en' else '' }}" lang="en" aria-label="{{ ftl('reports-switch-to-english') }}">EN</button>
-            <button onclick="switchLanguage('fr')" id="lang-fr" class="{{ 'active' if language == 'fr' else '' }}" lang="fr" aria-label="{{ ftl('reports-switch-to-french') }}">FR</button>
+            <button onclick="switchLanguage('en')" id="lang-en" class="{{ 'active' if language == 'en' else '' }}" lang="en" aria-label="{{ ftl('reports-switch-to-english') }}" aria-pressed="{{ 'true' if language == 'en' else 'false' }}">EN</button>
+            <button onclick="switchLanguage('fr')" id="lang-fr" class="{{ 'active' if language == 'fr' else '' }}" lang="fr" aria-label="{{ ftl('reports-switch-to-french') }}" aria-pressed="{{ 'true' if language == 'fr' else 'false' }}">FR</button>
         </div>
     </div>
+</header>
+<main id="main-content" tabindex="-1" class="container py-4">
 
     <!-- Statistics Dashboard -->
-    <div class="summary-cards">
+    <ul class="summary-cards list-unstyled" role="list">
         <!-- Accessibility Score Card -->
         {% if overall_accessibility_score is defined %}
-        <div class="stat-card">
-            <div class="stat-value {% if overall_accessibility_score >= 90 %}text-success{% elif overall_accessibility_score >= 70 %}text-warning{% else %}text-danger{% endif %}">
+        <li class="stat-card">
+            <div class="stat-value {% if overall_accessibility_score >= 90 %}text-severity-pass{% elif overall_accessibility_score >= 70 %}text-severity-medium{% else %}text-severity-high{% endif %}">
                 {{ "%.1f"|format(overall_accessibility_score) }}%
             </div>
             <div class="stat-label" data-i18n="accessibility_score">{{ t['accessibility_score'] }}</div>
-        </div>
+        </li>
         {% endif %}
 
         <!-- Compliance Score Card -->
         {% if overall_compliance_score is defined %}
-        <div class="stat-card">
-            <div class="stat-value {% if overall_compliance_score >= 90 %}text-success{% elif overall_compliance_score >= 70 %}text-warning{% else %}text-danger{% endif %}">
+        <li class="stat-card">
+            <div class="stat-value {% if overall_compliance_score >= 90 %}text-severity-pass{% elif overall_compliance_score >= 70 %}text-severity-medium{% else %}text-severity-high{% endif %}">
                 {{ "%.1f"|format(overall_compliance_score) }}%
             </div>
             <div class="stat-label" data-i18n="compliance_score">{{ t['compliance_score'] }}</div>
-        </div>
+        </li>
         {% endif %}
 
-        <div class="stat-card">
-            <div class="stat-value text-danger">{{ total_violations }}</div>
+        <li class="stat-card">
+            <div class="stat-value text-severity-high">{{ total_violations }}</div>
             <div class="stat-label" data-i18n="violations">{{ t['violations'] }}</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-value text-warning">{{ total_warnings }}</div>
+        </li>
+        <li class="stat-card">
+            <div class="stat-value text-severity-medium">{{ total_warnings }}</div>
             <div class="stat-label" data-i18n="warnings">{{ t['warnings'] }}</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-value text-info">{{ total_info }}</div>
+        </li>
+        <li class="stat-card">
+            <div class="stat-value text-info-custom">{{ total_info }}</div>
             <div class="stat-label" data-i18n="info_items">{{ t['info_items'] }}</div>
-        </div>
+        </li>
         {% if total_discovery is defined and total_discovery > 0 %}
-        <div class="stat-card">
+        <li class="stat-card">
             <div class="stat-value text-discovery">{{ total_discovery }}</div>
             <div class="stat-label" data-i18n="discovery">{{ t.get('discovery', 'Discovery') }}</div>
-        </div>
+        </li>
         {% endif %}
-        <div class="stat-card">
-            <div class="stat-value text-primary">{{ total_components }}</div>
+        <li class="stat-card">
+            <div class="stat-value text-brand">{{ total_components }}</div>
             <div class="stat-label" data-i18n="components">{{ t['components'] }}</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-value text-secondary">{{ total_pages }}</div>
+        </li>
+        <li class="stat-card">
+            <div class="stat-value text-muted">{{ total_pages }}</div>
             <div class="stat-label" data-i18n="pages">{{ t['pages'] }}</div>
-        </div>
-    </div>
+        </li>
+    </ul>
 
     <!-- Common Components List -->
     <div class="card">
@@ -262,7 +317,9 @@
         </div>
         <div class="card-body">
             {% if components_with_issues %}
+                <ul class="list-unstyled mb-0" role="list">
                 {% for comp_data in components_with_issues %}
+                <li>
                 <a href="components/{{ comp_data.safe_signature }}.html" class="text-decoration-none component-link" data-component-lang="{{ comp_data.lang }}">
                     <div class="component-card">
                         <div class="component-info">
@@ -271,16 +328,16 @@
                                 {% if comp_data.type == 'Form' %}{{ comp_data.label }} <span data-i18n="fields">{{ t.get('fields', 'fields') }}</span>{% else %}{{ comp_data.label }}{% endif %}
                                 <code class="ms-2 small text-muted">{{ comp_data.signature[:8] }}</code>
                             </div>
-                            <div class="component-meta">
-                                <span><i class="bi bi-file-earmark" aria-hidden="true"></i> {{ comp_data.page_count }} <span data-i18n="page_s">{{ t['page_s'] }}</span></span>
+                            <ul class="component-meta list-unstyled mb-0" role="list">
+                                <li><i class="bi bi-file-earmark" aria-hidden="true"></i> {{ comp_data.page_count }} <span data-i18n="page_s">{{ t['page_s'] }}</span></li>
                                 {% if comp_data.score is defined %}
-                                <span><i class="bi bi-graph-up" aria-hidden="true"></i> <span data-i18n="score">{{ t['score'] }}</span>:
-                                    <strong class="{% if comp_data.score >= 90 %}text-success{% elif comp_data.score >= 70 %}text-warning{% else %}text-danger{% endif %}">
+                                <li><i class="bi bi-graph-up" aria-hidden="true"></i> <span data-i18n="score">{{ t['score'] }}</span>:
+                                    <strong class="{% if comp_data.score >= 90 %}text-severity-pass{% elif comp_data.score >= 70 %}text-severity-medium{% else %}text-severity-high{% endif %}">
                                         {{ "%.1f"|format(comp_data.score) }}%
                                     </strong>
-                                </span>
+                                </li>
                                 {% endif %}
-                            </div>
+                            </ul>
                         </div>
                         <div class="issue-summary">
                             {% if comp_data.violations > 0 %}
@@ -299,7 +356,9 @@
                         </div>
                     </div>
                 </a>
+                </li>
                 {% endfor %}
+                </ul>
             {% else %}
                 <div class="no-components">
                     <i class="bi bi-inbox" style="font-size: 3rem; opacity: 0.3;" aria-hidden="true"></i>
@@ -318,8 +377,9 @@
             <small class="text-muted" data-i18n="common_issues_description">{{ t.get('common_issues_description', 'Issues appearing on multiple pages across the site') }}</small>
         </div>
         <div class="card-body">
+            <ul class="list-unstyled mb-0" role="list">
             {% for issue in common_issues %}
-            <div class="component-card common-issue-card">
+            <li class="component-card common-issue-card">
                 <div class="component-info">
                     <div class="component-type">
                         {% if issue.type == 'violation' %}
@@ -341,39 +401,40 @@
                         {% endif %}
                     </div>
                     <div class="mt-1">
-                        <span class="lang-{{ 'active' if language == 'en' else 'inactive' }}" data-lang="en">{{ issue.description_en }}</span>
-                        <span class="lang-{{ 'active' if language == 'fr' else 'inactive' }}" data-lang="fr">{{ issue.description_fr }}</span>
+                        <span class="lang-{{ 'active' if language == 'en' else 'inactive' }}" data-lang="en" lang="en">{{ issue.description_en }}</span>
+                        <span class="lang-{{ 'active' if language == 'fr' else 'inactive' }}" data-lang="fr" lang="fr">{{ issue.description_fr }}</span>
                     </div>
-                    <div class="component-meta mt-1">
-                        <span>
+                    <ul class="component-meta mt-1 list-unstyled mb-0" role="list">
+                        <li>
                             <i class="bi bi-files" aria-hidden="true"></i>
                             <span data-i18n="appears_on">{{ t.get('appears_on', 'Appears on') }}</span>
                             <strong>{{ issue.page_count }}</strong>
                             <span data-i18n="page_s">{{ t['page_s'] }}</span>
                             ({{ issue.percentage }}% <span data-i18n="of_pages">{{ t.get('of_pages', 'of pages') }}</span>)
-                        </span>
+                        </li>
                         {% if issue.touchpoint %}
-                        <span>
+                        <li>
                             <i class="bi bi-tag" aria-hidden="true"></i>
                             <span data-i18n="{{ issue.touchpoint|lower|replace(' ', '_') }}">{{ t.get(issue.touchpoint|lower|replace(' ', '_'), issue.touchpoint) }}</span>
-                        </span>
+                        </li>
                         {% endif %}
                         {% if issue.impact %}
-                        <span>
+                        <li>
                             <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
                             <span data-i18n="{{ issue.impact|lower }}">{{ t.get(issue.impact|lower, issue.impact) }}</span>
-                        </span>
+                        </li>
                         {% endif %}
                         {% if issue.wcag %}
-                        <span>
+                        <li>
                             <i class="bi bi-check-circle" aria-hidden="true"></i>
                             WCAG {{ issue.wcag }}
-                        </span>
+                        </li>
                         {% endif %}
-                    </div>
+                    </ul>
                 </div>
-            </div>
+            </li>
             {% endfor %}
+            </ul>
         </div>
     </div>
     {% endif %}
@@ -387,10 +448,13 @@
         </div>
         <div class="card-body">
             <div class="page-search-filter mb-3">
+                <label for="pageSearch" class="visually-hidden" data-i18n="search_pages">{{ t['search_pages'] }}</label>
                 <input type="text" class="form-control" id="pageSearch" data-i18n-placeholder="search_pages" placeholder="{{ t['search_pages'] }}">
             </div>
 
+            <ul class="list-unstyled mb-0" role="list">
             {% for page_data in pages_with_unassigned %}
+            <li>
             <a href="pages/{{ page_data.safe_url }}.html" class="text-decoration-none">
                 <div class="component-card">
                     <div class="component-info">
@@ -401,7 +465,7 @@
                         <div class="component-meta">
                             {% if page_data.dedup_score is defined %}
                             <span><i class="bi bi-graph-up" aria-hidden="true"></i> <span data-i18n="score">{{ t['score'] }}</span>:
-                                <strong class="{% if page_data.dedup_score >= 90 %}text-success{% elif page_data.dedup_score >= 70 %}text-warning{% else %}text-danger{% endif %}">
+                                <strong class="{% if page_data.dedup_score >= 90 %}text-severity-pass{% elif page_data.dedup_score >= 70 %}text-severity-medium{% else %}text-severity-high{% endif %}">
                                     {{ "%.1f"|format(page_data.dedup_score) }}%
                                 </strong>
                             </span>
@@ -425,11 +489,17 @@
                     </div>
                 </div>
             </a>
+            </li>
             {% endfor %}
+            </ul>
         </div>
     </div>
     {% endif %}
 </main>
+
+<footer role="contentinfo" class="container py-3 mt-4 border-top text-muted small">
+    <p class="mb-0">{{ ftl('reports-generated-by-auto-a11y') }} &middot; {{ report_date.strftime('%Y-%m-%d %H:%M') }}</p>
+</footer>
 
 <script>
 /* Bootstrap JS */
@@ -452,8 +522,11 @@ function switchLanguage(lang) {
     // Update active button
     document.querySelectorAll('.lang-switcher button').forEach(btn => {
         btn.classList.remove('active');
+            btn.setAttribute('aria-pressed', 'false');
     });
     document.getElementById(`lang-${lang}`).classList.add('active');
+            const _btn = document.getElementById(`lang-${lang}`);
+            if (_btn) _btn.setAttribute('aria-pressed', 'true');
 
     // Update HTML lang attribute
     document.documentElement.lang = lang;
@@ -512,10 +585,12 @@ function filterComponentsByLanguage(lang) {
 
     componentLinks.forEach(link => {
         const componentLang = link.getAttribute('data-component-lang');
+        // Hide the wrapping <li> when present so empty list items don't take up space.
+        const wrapper = link.closest('li') || link;
         if (showAll || !componentLang || componentLang === lang) {
-            link.style.display = '';
+            wrapper.style.display = '';
         } else {
-            link.style.display = 'none';
+            wrapper.style.display = 'none';
         }
     });
 }
@@ -537,14 +612,38 @@ if (pageSearch) {
 
         cards.forEach(card => {
             const text = card.textContent.toLowerCase();
+            // Walk up to the <li> wrapper if present, otherwise hide the closest ancestor.
+            const wrapper = card.closest('li') || card.parentElement;
             if (text.includes(searchTerm)) {
-                card.parentElement.style.display = '';
+                wrapper.style.display = '';
             } else {
-                card.parentElement.style.display = 'none';
+                wrapper.style.display = 'none';
             }
         });
     });
 }
+</script>
+
+<!-- Accessibility enhancements: Space key on link-styled-as-button, new-window warning -->
+<script>
+document.addEventListener('keydown', function(e) {
+    if (e.key === ' ' && e.target.tagName === 'A') {
+        e.preventDefault();
+        e.target.click();
+    }
+});
+document.addEventListener('DOMContentLoaded', function() {
+    var newWindowLabel = {{ ftl('common-opens-in-new-tab') | tojson }};
+    document.querySelectorAll('a[target="_blank"]').forEach(function(link) {
+        var ariaLabel = link.getAttribute('aria-label') || '';
+        if (!link.querySelector('.visually-hidden') && !/new\s*(window|tab)/i.test(ariaLabel)) {
+            var span = document.createElement('span');
+            span.className = 'visually-hidden';
+            span.textContent = ' (' + newWindowLabel + ')';
+            link.appendChild(span);
+        }
+    });
+});
 </script>
 </body>
 </html>

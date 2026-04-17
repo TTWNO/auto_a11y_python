@@ -3,8 +3,12 @@ Headings touchpoint test module
 Evaluates the document's heading structure to ensure proper hierarchy, positioning, and semantic markup.
 """
 
-from typing import Dict, Any
+from __future__ import annotations
+
+from typing import Any
 import logging
+
+from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +43,7 @@ TEST_DOCUMENTATION = {
     ]
 }
 
-async def test_headings(page) -> Dict[str, Any]:
+async def test_headings(page: Page) -> dict[str, Any]:
     """
     Test headings for proper hierarchy and structure
     
@@ -51,7 +55,7 @@ async def test_headings(page) -> Dict[str, Any]:
     """
     try:
         # Execute JavaScript to analyze headings
-        results = await page.evaluate('''
+        results: dict[str, Any] = await page.evaluate('''
             () => {
                 const results = {
                     applicable: true,

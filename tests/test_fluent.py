@@ -1,4 +1,8 @@
 """Tests for the Flask-Fluent integration layer (auto_a11y.web.fluent)."""
+from __future__ import annotations
+
+from typing import Any
+from collections.abc import Iterator
 
 import os
 import tempfile
@@ -51,7 +55,7 @@ search-input = Rechercher
 # ---------------------------------------------------------------------------
 
 @pytest.fixture()
-def fluent_app(tmp_path):
+def fluent_app(tmp_path: Any) -> Iterator[Any]:
     """Create a minimal Flask app with Fluent initialized from temp FTL files."""
     # Write FTL files
     en_dir = tmp_path / "en"
@@ -87,45 +91,45 @@ def fluent_app(tmp_path):
 
 class TestFtlResolution:
 
-    def test_simple_en(self, fluent_app):
+    def test_simple_en(self, fluent_app: Any) -> None:
         with fluent_app.test_request_context():
             session["language"] = "en"
             assert str(ftl("hello")) == "Hello"
 
-    def test_simple_fr(self, fluent_app):
+    def test_simple_fr(self, fluent_app: Any) -> None:
         with fluent_app.test_request_context():
             session["language"] = "fr"
             assert str(ftl("hello")) == "Bonjour"
 
-    def test_returns_markup(self, fluent_app):
+    def test_returns_markup(self, fluent_app: Any) -> None:
         with fluent_app.test_request_context():
             session["language"] = "en"
             result = ftl("hello")
             assert isinstance(result, Markup)
 
-    def test_variable_substitution(self, fluent_app):
+    def test_variable_substitution(self, fluent_app: Any) -> None:
         with fluent_app.test_request_context():
             session["language"] = "en"
             assert str(ftl("greeting", name="World")) == "Hello, World!"
 
-    def test_variable_substitution_fr(self, fluent_app):
+    def test_variable_substitution_fr(self, fluent_app: Any) -> None:
         with fluent_app.test_request_context():
             session["language"] = "fr"
             result = str(ftl("greeting", name="Monde"))
             assert "Bonjour" in result
             assert "Monde" in result
 
-    def test_plural_one(self, fluent_app):
+    def test_plural_one(self, fluent_app: Any) -> None:
         with fluent_app.test_request_context():
             session["language"] = "en"
             assert str(ftl("item-count", count=1)) == "One item"
 
-    def test_plural_other(self, fluent_app):
+    def test_plural_other(self, fluent_app: Any) -> None:
         with fluent_app.test_request_context():
             session["language"] = "en"
             assert str(ftl("item-count", count=5)) == "5 items"
 
-    def test_plural_fr(self, fluent_app):
+    def test_plural_fr(self, fluent_app: Any) -> None:
         with fluent_app.test_request_context():
             session["language"] = "fr"
             assert str(ftl("item-count", count=1)) == "Un élément"
@@ -140,7 +144,7 @@ class TestFtlResolution:
 
 class TestFallback:
 
-    def test_missing_returns_message_id(self, fluent_app):
+    def test_missing_returns_message_id(self, fluent_app: Any) -> None:
         """A completely missing message returns the message ID as a plain string."""
         with fluent_app.test_request_context():
             session["language"] = "en"
@@ -148,7 +152,7 @@ class TestFallback:
             assert result == "does-not-exist"
             assert not isinstance(result, Markup)
 
-    def test_fr_falls_back_to_en(self, fluent_app):
+    def test_fr_falls_back_to_en(self, fluent_app: Any) -> None:
         """A message present in EN but missing in FR falls back to English."""
         with fluent_app.test_request_context():
             session["language"] = "fr"
@@ -163,7 +167,7 @@ class TestFallback:
 
 class TestEscaping:
 
-    def test_french_apostrophe_escaped(self, fluent_app):
+    def test_french_apostrophe_escaped(self, fluent_app: Any) -> None:
         """French text with apostrophes is HTML-escaped via markupsafe.escape()."""
         with fluent_app.test_request_context():
             session["language"] = "fr"
@@ -180,12 +184,12 @@ class TestEscaping:
 
 class TestFtlAttr:
 
-    def test_attr_en(self, fluent_app):
+    def test_attr_en(self, fluent_app: Any) -> None:
         with fluent_app.test_request_context():
             session["language"] = "en"
             assert str(ftl_attr("search-input", "placeholder")) == "Enter query"
 
-    def test_attr_fr(self, fluent_app):
+    def test_attr_fr(self, fluent_app: Any) -> None:
         with fluent_app.test_request_context():
             session["language"] = "fr"
             result = str(ftl_attr("search-input", "placeholder"))
@@ -198,7 +202,7 @@ class TestFtlAttr:
 
 class TestForceLocale:
 
-    def test_overrides_session(self, fluent_app):
+    def test_overrides_session(self, fluent_app: Any) -> None:
         """force_locale overrides the session language."""
         with fluent_app.test_request_context():
             session["language"] = "en"
@@ -207,7 +211,7 @@ class TestForceLocale:
             # After exiting, session locale is restored
             assert str(ftl("hello")) == "Hello"
 
-    def test_works_outside_request_context(self, fluent_app):
+    def test_works_outside_request_context(self, fluent_app: Any) -> None:
         """force_locale works in an app_context (no request)."""
         with fluent_app.app_context():
             with force_locale("fr"):
@@ -222,7 +226,7 @@ class TestForceLocale:
 
 class TestLazyFtl:
 
-    def test_resolves_at_str_time(self, fluent_app):
+    def test_resolves_at_str_time(self, fluent_app: Any) -> None:
         """lazy_ftl defers resolution until str() is called."""
         lazy = lazy_ftl("hello")
         # At this point no request context — resolution happens later
@@ -230,7 +234,7 @@ class TestLazyFtl:
             session["language"] = "en"
             assert str(lazy) == "Hello"
 
-    def test_html_returns_markup(self, fluent_app):
+    def test_html_returns_markup(self, fluent_app: Any) -> None:
         """__html__() returns Markup for Jinja2 auto-escaping."""
         lazy = lazy_ftl("hello")
         with fluent_app.test_request_context():
@@ -239,13 +243,13 @@ class TestLazyFtl:
             assert isinstance(html_val, Markup)
             assert str(html_val) == "Hello"
 
-    def test_lazy_with_variable(self, fluent_app):
+    def test_lazy_with_variable(self, fluent_app: Any) -> None:
         lazy = lazy_ftl("greeting", name="Alice")
         with fluent_app.test_request_context():
             session["language"] = "en"
             assert str(lazy) == "Hello, Alice!"
 
-    def test_lazy_respects_force_locale(self, fluent_app):
+    def test_lazy_respects_force_locale(self, fluent_app: Any) -> None:
         lazy = lazy_ftl("hello")
         with fluent_app.app_context():
             with force_locale("fr"):

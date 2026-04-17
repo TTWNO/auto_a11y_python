@@ -73,6 +73,38 @@ Le processus de configuration va :
 - Télécharger le navigateur Chromium pour Pyppeteer
 - Créer un projet exemple pour démarrer
 
+## Docker
+
+Auto A11y inclut un fichier `docker-compose.yml` qui démarre
+l'application et MongoDB ensemble. Avec Docker (20.10+) ou Podman
+(4.1+) installé :
+
+```bash
+docker compose up
+# ou : podman-compose up
+```
+
+L'interface est ensuite accessible à l'adresse http://localhost:5001.
+
+### Tester des serveurs locaux sur l'hôte
+
+Pour exécuter des tests d'accessibilité sur un serveur HTTP qui tourne
+sur **votre machine hôte** (par exemple un serveur de développement
+sur le port `8080`), utilisez le nom d'hôte `host.docker.internal` à
+la place de `localhost` :
+
+| Sur l'hôte | À saisir dans Auto A11y |
+|---|---|
+| `http://localhost:80` | `http://host.docker.internal` |
+| `http://localhost:8080` | `http://host.docker.internal:8080` |
+| `http://localhost:8000` | `http://host.docker.internal:8000` |
+
+Ce comportement est activé par l'entrée `extra_hosts` du fichier
+`docker-compose.yml`. Aucune configuration supplémentaire n'est
+requise. Si le serveur de l'hôte écoute uniquement sur `127.0.0.1`,
+reconfigurez-le pour écouter sur `0.0.0.0` afin que le conteneur
+puisse l'atteindre.
+
 ## Configuration
 
 Modifiez `config.py` pour personnaliser vos paramètres :
@@ -352,6 +384,31 @@ python test_fixtures.py --type Err --category Headings --limit 10
 
 Seuls les tests qui réussissent TOUTES leurs fixtures sont activés en production. Consultez l'état des fixtures à l'adresse `http://localhost:5001/testing/fixture-status`
 
+## Vérification des types
+
+Ce projet impose une vérification stricte des types au moyen de trois outils complémentaires : **mypy**, **pyright** et **ty**. Les trois doivent réussir à chaque commit et dans la CI.
+
+### Configuration unique (par clone)
+
+Après le clonage :
+```bash
+python run.py --install-hooks
+```
+
+Cela configure `git` pour utiliser le répertoire `.githooks/` du dépôt. Le crochet pre-commit exécute les trois vérificateurs de types sur les chemins ciblés et bloque le commit en cas d'échec.
+
+### Exécution manuelle des vérifications
+
+```bash
+.venv/bin/python -m mypy
+.venv/bin/python -m pyright
+.venv/bin/python -m ty check
+```
+
+### Politique
+
+Aucun commentaire `# type: ignore` ni équivalent. Aucun contournement `cast(Any, ...)`. Aucun `git commit --no-verify`. Les erreurs de typage doivent être corrigées, pas supprimées. Voir [CLAUDE.md](./CLAUDE.md#type-checking-mandatory) pour la politique complète.
+
 ## Utilisation de l'API
 
 L'application fournit des points d'accès API REST pour l'automatisation :
@@ -581,6 +638,16 @@ resources/
 | Windows | `%APPDATA%\auto-a11y\` |
 
 Contenu : `settings.json`, `mongodb/data/` (fichiers de la base de données), `logs/`, `reports/`, `screenshots/`.
+
+## Système de couleurs
+
+Cette application utilise un **système de jetons de design personnalisés** pour toutes les couleurs. Les classes utilitaires de couleur Bootstrap (par ex. `btn-primary`, `bg-danger`, `text-warning`) **ne sont pas utilisées** — à la place, des classes personnalisées sont directement liées aux jetons de design définis dans `auto_a11y/web/static/public/css/tokens.css`.
+
+Cela donne un contrôle total sur toutes les couleurs en mode clair, mode sombre et impression, avec une conformité WCAG 2.2 AA intégrée. Consultez la section `Colour System` dans `CLAUDE.md` pour la référence complète des classes.
+
+**Fichiers clés :**
+- `auto_a11y/web/static/public/css/tokens.css` — jetons de design (toutes les valeurs de couleur)
+- `auto_a11y/web/static/css/style.css` — classes utilitaires personnalisées
 
 ## Contribuer
 

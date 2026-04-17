@@ -3,9 +3,13 @@ Maps touchpoint test module
 Evaluates embedded digital maps for proper accessibility attributes and alternative content.
 """
 
+from __future__ import annotations
+
 from datetime import datetime
-from typing import Dict, Any, List, Optional
+from typing import Any
 import logging
+
+from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +51,7 @@ TEST_DOCUMENTATION = {
     ]
 }
 
-async def test_maps(page) -> Dict[str, Any]:
+async def test_maps(page: Page) -> dict[str, Any]:
     """
     Test for embedded digital maps and their accessibility attributes
     
@@ -59,7 +63,7 @@ async def test_maps(page) -> Dict[str, Any]:
     """
     try:
         # Execute JavaScript to analyze maps
-        results = await page.evaluate('''
+        results: dict[str, Any] = await page.evaluate('''
             () => {
                 const results = {
                     applicable: true,

@@ -57,7 +57,7 @@
 
     .overview-card .card-label {
         font-size: 1rem;
-        color: #6c757d;
+        color: var(--color-text-muted);
         text-transform: uppercase;
         letter-spacing: 1px;
     }
@@ -74,7 +74,7 @@
         font-size: 1.75rem;
         margin-bottom: 1.5rem;
         padding-bottom: 0.75rem;
-        border-bottom: 2px solid #e9ecef;
+        border-bottom: 2px solid var(--color-border-table);
     }
 
     .issue-breakdown {
@@ -105,8 +105,8 @@
     }
 
     .issue-type-card.discovery {
-        background-color: #f0f0f0;
-        border-color: #6c757d;
+        background-color: var(--color-bg-subtle);
+        border-color: var(--color-border-strong);
     }
 
     .issue-type-card .type-icon {
@@ -129,7 +129,7 @@
 
     .issue-type-card .type-pages {
         font-size: 0.875rem;
-        color: #6c757d;
+        color: var(--color-text-muted);
         margin-top: 0.5rem;
     }
 
@@ -144,7 +144,7 @@
         align-items: center;
         padding: 1rem;
         margin-bottom: 0.75rem;
-        background: #f8f9fa;
+        background: var(--color-bg-subtle);
         border-left: 4px solid;
         border-radius: 4px;
     }
@@ -160,7 +160,7 @@
     .top-issue-item .issue-rank {
         font-size: 1.5rem;
         font-weight: bold;
-        color: #6c757d;
+        color: var(--color-text-muted);
         margin-right: 1rem;
         min-width: 2rem;
     }
@@ -176,7 +176,7 @@
 
     .top-issue-item .issue-count {
         font-size: 0.875rem;
-        color: #6c757d;
+        color: var(--color-text-muted);
     }
 
     .top-issue-item .issue-impact {
@@ -199,8 +199,8 @@
     }
 
     .impact-low {
-        background-color: #17a2b8;
-        color: white;
+        background-color: var(--color-info);
+        color: var(--color-text-inverse);
     }
 
     .wcag-compliance {
@@ -210,7 +210,7 @@
     }
 
     .wcag-principle {
-        background: #f8f9fa;
+        background: var(--color-bg-subtle);
         padding: 1.5rem;
         border-radius: 8px;
     }
@@ -218,7 +218,7 @@
     .wcag-principle h3 {
         font-size: 1.25rem;
         margin-bottom: 1rem;
-        color: #0d6efd;
+        color: var(--color-brand);
     }
 
     .wcag-criteria {
@@ -229,7 +229,7 @@
 
     .wcag-criteria li {
         padding: 0.5rem 0;
-        border-bottom: 1px solid #dee2e6;
+        border-bottom: 1px solid var(--color-border-table);
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -241,12 +241,12 @@
 
     .wcag-criteria .criterion-code {
         font-weight: 600;
-        color: #495057;
+        color: var(--color-text-muted);
     }
 
     .wcag-criteria .criterion-count {
-        background: #0d6efd;
-        color: white;
+        background: var(--color-brand);
+        color: var(--color-text-inverse);
         padding: 0.125rem 0.5rem;
         border-radius: 12px;
         font-size: 0.875rem;
@@ -260,16 +260,16 @@
     }
 
     .touchpoint-card {
-        background: #f8f9fa;
+        background: var(--color-bg-subtle);
         padding: 1.5rem;
         border-radius: 8px;
-        border-left: 4px solid #0d6efd;
+        border-left: 4px solid var(--color-brand);
     }
 
     .touchpoint-card h3 {
         font-size: 1.125rem;
         margin-bottom: 1rem;
-        color: #212529;
+        color: var(--color-text);
     }
 
     .touchpoint-stats {
@@ -334,6 +334,11 @@
         color: #58151c;
         border: 2px solid var(--color-severity-high);
     }
+
+    *:focus-visible {
+        outline: 2px solid var(--color-focus-ring, #0d6efd);
+        outline-offset: 2px;
+    }
 </style>
 {% endblock %}
 
@@ -349,26 +354,26 @@
     <!-- Overview Cards -->
     <div class="overview-cards">
         <div class="overview-card">
-            <div class="card-icon"><i class="bi bi-file-earmark-text text-primary" aria-hidden="true"></i></div>
-            <div class="card-value text-primary">{{ pages|length }}</div>
+            <div class="card-icon"><i class="bi bi-file-earmark-text text-brand" aria-hidden="true"></i></div>
+            <div class="card-value text-brand">{{ pages|length }}</div>
             <div class="card-label">{{ ftl('common-pages-tested-2') }}</div>
         </div>
 
         <div class="overview-card">
-            <div class="card-icon"><i class="bi bi-exclamation-octagon text-danger" aria-hidden="true"></i></div>
-            <div class="card-value text-danger">{{ summary.total_errors|default(0) }}</div>
+            <div class="card-icon"><i class="bi bi-exclamation-octagon text-severity-high" aria-hidden="true"></i></div>
+            <div class="card-value text-severity-high">{{ summary.total_errors|default(0) }}</div>
             <div class="card-label">{{ ftl('reports-total-errors') }}</div>
         </div>
 
         <div class="overview-card">
-            <div class="card-icon"><i class="bi bi-exclamation-triangle text-warning" aria-hidden="true"></i></div>
-            <div class="card-value text-warning">{{ summary.total_warnings|default(0) }}</div>
+            <div class="card-icon"><i class="bi bi-exclamation-triangle text-severity-medium" aria-hidden="true"></i></div>
+            <div class="card-value text-severity-medium">{{ summary.total_warnings|default(0) }}</div>
             <div class="card-label">{{ ftl('common-total-warnings') }}</div>
         </div>
 
         <div class="overview-card">
-            <div class="card-icon"><i class="bi bi-check-circle text-success" aria-hidden="true"></i></div>
-            <div class="card-value text-success">{{ "%.1f"|format(summary.average_score|default(0)) }}%</div>
+            <div class="card-icon"><i class="bi bi-check-circle text-severity-pass" aria-hidden="true"></i></div>
+            <div class="card-value text-severity-pass">{{ "%.1f"|format(summary.average_score|default(0)) }}%</div>
             <div class="card-label">{{ ftl('reports-average-score') }}</div>
         </div>
     </div>
@@ -400,21 +405,21 @@
         <h2><i class="bi bi-pie-chart" aria-hidden="true"></i> {{ ftl('reports-issue-breakdown-by-type') }}</h2>
         <div class="issue-breakdown">
             <div class="issue-type-card errors">
-                <div class="type-icon text-danger">
+                <div class="type-icon text-severity-high">
                     <i class="bi bi-x-circle-fill" aria-hidden="true"></i>
                 </div>
-                <div class="type-count text-danger">{{ summary.total_errors|default(0) }}</div>
-                <div class="type-label text-danger">{{ ftl('common-errors') }}</div>
+                <div class="type-count text-severity-high">{{ summary.total_errors|default(0) }}</div>
+                <div class="type-label text-severity-high">{{ ftl('common-errors') }}</div>
                 <div class="type-pages">
                     {{ ftl('reports-on') }} {{ summary.pages_with_errors|default(0) }} {{ ftl('common-page') }}{{ 's' if summary.pages_with_errors != 1 }}
                 </div>
             </div>
 
             <div class="issue-type-card warnings">
-                <div class="type-icon text-warning">
+                <div class="type-icon text-severity-medium">
                     <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
                 </div>
-                <div class="type-count text-warning">{{ summary.total_warnings|default(0) }}</div>
+                <div class="type-count text-severity-medium">{{ summary.total_warnings|default(0) }}</div>
                 <div class="type-label text-severity-medium">{{ ftl('common-warnings') }}</div>
                 <div class="type-pages">
                     {{ ftl('reports-on') }} {{ summary.pages_with_warnings|default(0) }} {{ ftl('common-page') }}{{ 's' if summary.pages_with_warnings != 1 }}
@@ -422,11 +427,11 @@
             </div>
 
             <div class="issue-type-card info">
-                <div class="type-icon text-info">
+                <div class="type-icon text-info-custom">
                     <i class="bi bi-info-circle-fill" aria-hidden="true"></i>
                 </div>
-                <div class="type-count text-info">{{ summary.total_info|default(0) }}</div>
-                <div class="type-label text-info">{{ ftl('common-informational') }}</div>
+                <div class="type-count text-info-custom">{{ summary.total_info|default(0) }}</div>
+                <div class="type-label text-info-custom">{{ ftl('common-informational') }}</div>
                 <div class="type-pages">
                     {{ ftl('reports-on') }} {{ summary.pages_with_info|default(0) }} {{ ftl('common-page') }}{{ 's' if summary.pages_with_info != 1 }}
                 </div>
@@ -481,20 +486,20 @@
                 <div class="touchpoint-stats">
                     {% if stats.errors > 0 %}
                     <div class="touchpoint-stat">
-                        <i class="bi bi-x-circle-fill text-danger" aria-hidden="true"></i>
-                        <span class="text-danger fw-bold">{{ stats.errors }}</span>
+                        <i class="bi bi-x-circle-fill text-severity-high" aria-hidden="true"></i>
+                        <span class="text-severity-high fw-bold">{{ stats.errors }}</span>
                     </div>
                     {% endif %}
                     {% if stats.warnings > 0 %}
                     <div class="touchpoint-stat">
-                        <i class="bi bi-exclamation-triangle-fill text-warning" aria-hidden="true"></i>
-                        <span class="text-warning fw-bold">{{ stats.warnings }}</span>
+                        <i class="bi bi-exclamation-triangle-fill text-severity-medium" aria-hidden="true"></i>
+                        <span class="text-severity-medium fw-bold">{{ stats.warnings }}</span>
                     </div>
                     {% endif %}
                     {% if stats.info > 0 %}
                     <div class="touchpoint-stat">
-                        <i class="bi bi-info-circle-fill text-info" aria-hidden="true"></i>
-                        <span class="text-info fw-bold">{{ stats.info }}</span>
+                        <i class="bi bi-info-circle-fill text-info-custom" aria-hidden="true"></i>
+                        <span class="text-info-custom fw-bold">{{ stats.info }}</span>
                     </div>
                     {% endif %}
                 </div>

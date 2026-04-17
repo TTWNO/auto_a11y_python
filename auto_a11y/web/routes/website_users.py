@@ -1,10 +1,17 @@
 """
 Routes for managing website users (test users for authenticated testing)
 """
+from __future__ import annotations
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify
+import asyncio
+
+from flask import Blueprint, Response, render_template, request, redirect, url_for, flash, jsonify
+from werkzeug.wrappers import Response as WerkzeugResponse
 from auto_a11y.web.fluent import ftl
+from auto_a11y.web.typed_app import get_db, get_app_config
 from auto_a11y.models import WebsiteUser, LoginConfig, AuthenticationMethod
+from auto_a11y.core.browser_manager import BrowserManager
+from auto_a11y.testing.login_automation import LoginAutomation
 import logging
 
 logger = logging.getLogger(__name__)
@@ -13,21 +20,21 @@ website_users_bp = Blueprint('website_users', __name__)
 
 
 @website_users_bp.route('/website/<website_id>/users')
-def list_users(website_id):
+def list_users(website_id: str) -> str | Response | WerkzeugResponse:
     """List all test users for a website"""
-    website = current_app.db.get_website(website_id)
+    website = get_db().get_website(website_id)
     if not website:
         flash(ftl('common-website-not-found'), 'error')
         return redirect(url_for('index'))
 
     # Get project for context
-    project = current_app.db.get_project(website.project_id) if website else None
+    project = get_db().get_project(website.project_id) if website else None
 
     # Get all users
-    users = current_app.db.get_website_users(website_id)
+    users = get_db().get_website_users(website_id)
 
     # Get unique roles
-    all_roles = current_app.db.get_user_roles_for_website(website_id)
+    all_roles = get_db().get_user_roles_for_website(website_id)
 
     return render_template('website_users/list.html',
                          website=website,
@@ -37,14 +44,14 @@ def list_users(website_id):
 
 
 @website_users_bp.route('/website/<website_id>/users/create', methods=['GET', 'POST'])
-def create_user(website_id):
+def create_user(website_id: str) -> str | Response | WerkzeugResponse:
     """Create a new test user"""
-    website = current_app.db.get_website(website_id)
+    website = get_db().get_website(website_id)
     if not website:
         flash(ftl('common-website-not-found'), 'error')
         return redirect(url_for('index'))
 
-    project = current_app.db.get_project(website.project_id) if website else None
+    project = get_db().get_project(website.project_id) if website else None
 
     if request.method == 'POST':
         try:
@@ -81,7 +88,7 @@ def create_user(website_id):
                 enabled=data.get('enabled') == 'on'
             )
 
-            user_id = current_app.db.create_website_user(user)
+            user_id = get_db().create_website_user(user)
             flash(ftl('common-test-user-name-created-successfully', name=user.name_display), 'success')
             return redirect(url_for('website_users.list_users', website_id=website_id))
 
@@ -90,7 +97,7 @@ def create_user(website_id):
             flash(ftl('common-error-creating-user-error', error=str(e)), 'error')
 
     # Get existing roles for autocomplete
-    existing_roles = current_app.db.get_user_roles_for_website(website_id)
+    existing_roles = get_db().get_user_roles_for_website(website_id)
 
     return render_template('website_users/create.html',
                          website=website,
@@ -100,15 +107,15 @@ def create_user(website_id):
 
 
 @website_users_bp.route('/user/<user_id>')
-def view_user(user_id):
+def view_user(user_id: str) -> str | Response | WerkzeugResponse:
     """View user details"""
-    user = current_app.db.get_website_user(user_id)
+    user = get_db().get_website_user(user_id)
     if not user:
         flash(ftl('common-user-not-found'), 'error')
         return redirect(url_for('index'))
 
-    website = current_app.db.get_website(user.website_id)
-    project = current_app.db.get_project(website.project_id) if website else None
+    website = get_db().get_website(user.website_id)
+    project = get_db().get_project(website.project_id) if website else None
 
     return render_template('website_users/view.html',
                          user=user,
@@ -117,15 +124,15 @@ def view_user(user_id):
 
 
 @website_users_bp.route('/user/<user_id>/edit', methods=['GET', 'POST'])
-def edit_user(user_id):
+def edit_user(user_id: str) -> str | Response | WerkzeugResponse:
     """Edit a test user"""
-    user = current_app.db.get_website_user(user_id)
+    user = get_db().get_website_user(user_id)
     if not user:
         flash(ftl('common-user-not-found'), 'error')
         return redirect(url_for('index'))
 
-    website = current_app.db.get_website(user.website_id)
-    project = current_app.db.get_project(website.project_id) if website else None
+    website = get_db().get_website(user.website_id)
+    project = get_db().get_project(website.project_id) if website else None
 
     if request.method == 'POST':
         try:
@@ -159,7 +166,7 @@ def edit_user(user_id):
             user.description = data.get('description', '').strip() or None
             user.enabled = data.get('enabled') == 'on'
 
-            current_app.db.update_website_user(user)
+            get_db().update_website_user(user)
             flash(ftl('common-test-user-name-updated-successfully', name=user.name_display), 'success')
             return redirect(url_for('website_users.list_users', website_id=user.website_id))
 
@@ -168,7 +175,7 @@ def edit_user(user_id):
             flash(ftl('common-error-updating-user-error', error=str(e)), 'error')
 
     # Get existing roles for autocomplete
-    existing_roles = current_app.db.get_user_roles_for_website(user.website_id)
+    existing_roles = get_db().get_user_roles_for_website(user.website_id)
 
     return render_template('website_users/edit.html',
                          user=user,
@@ -179,15 +186,15 @@ def edit_user(user_id):
 
 
 @website_users_bp.route('/user/<user_id>/delete', methods=['POST'])
-def delete_user(user_id):
+def delete_user(user_id: str) -> Response | tuple[Response, int]:
     """Delete a test user"""
-    user = current_app.db.get_website_user(user_id)
+    user = get_db().get_website_user(user_id)
     if not user:
         return jsonify({'error': ftl('common-user-not-found')}), 404
 
     try:
         website_id = user.website_id
-        current_app.db.delete_website_user(user_id)
+        get_db().delete_website_user(user_id)
         return jsonify({
             'success': True,
             'message': ftl('common-user-deleted-successfully'),
@@ -198,16 +205,75 @@ def delete_user(user_id):
         return jsonify({'error': str(e)}), 500
 
 
+@website_users_bp.route('/user/<user_id>/test-login', methods=['POST'])
+def test_login(user_id: str) -> Response | tuple[Response, int]:
+    """Test login for a website user without running a full test"""
+    user = get_db().get_website_user(user_id)
+    if not user:
+        return jsonify({'error': ftl('common-user-not-found')}), 404
+
+    login_config = user.login_config
+    if not login_config.login_url:
+        return jsonify({
+            'success': False,
+            'error': ftl('websites-login-url-not-configured')
+        })
+
+    # Build browser config
+    website = get_db().get_website(user.website_id)
+    project = get_db().get_project(website.project_id) if website else None
+    browser_config = get_app_config().__dict__.copy()
+    if project and project.config:
+        browser_config['stealth_mode'] = project.config.get('stealth_mode', False)
+        headless_setting = project.config.get('headless_browser', 'true')
+        browser_config['BROWSER_HEADLESS'] = (headless_setting == 'true')
+    else:
+        browser_config['stealth_mode'] = False
+
+    async def _do_test_login() -> dict[str, object]:
+        bm = BrowserManager(browser_config)
+        try:
+            await bm.start()
+            context = await bm.create_context()
+            page = await context.new_page()
+            login_automation = LoginAutomation(get_db())
+            result = await login_automation.perform_login(page, user, timeout=30000)
+            return result
+        finally:
+            await bm.stop()
+
+    try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            result = loop.run_until_complete(_do_test_login())
+        finally:
+            loop.close()
+
+        return jsonify({
+            'success': result.get('success', False),
+            'error': result.get('error'),
+            'duration_ms': result.get('duration_ms', 0)
+        })
+
+    except Exception as e:
+        logger.error(f"Test login error for user {user_id}: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
 @website_users_bp.route('/user/<user_id>/toggle', methods=['POST'])
-def toggle_user(user_id):
+def toggle_user(user_id: str) -> Response | tuple[Response, int]:
     """Enable/disable a test user"""
-    user = current_app.db.get_website_user(user_id)
+    user = get_db().get_website_user(user_id)
     if not user:
         return jsonify({'error': ftl('common-user-not-found')}), 404
 
     try:
         user.enabled = not user.enabled
-        success = current_app.db.update_website_user(user)
+        success = get_db().update_website_user(user)
 
         return jsonify({
             'success': success,

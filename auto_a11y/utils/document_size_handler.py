@@ -9,28 +9,30 @@ Handles MongoDB's 16MB document size limit gracefully by:
 POLICY: NEVER truncate actual test results (violations, warnings, passes, etc.).
 Only optimize/remove screenshots and generate clear error reports for oversized results.
 """
+from __future__ import annotations
 
 import json
 import logging
-from typing import Dict, Any, Tuple, Optional
+from typing import Any
+from datetime import datetime
 from bson import encode
 
 logger = logging.getLogger(__name__)
 
 # MongoDB limits
-MONGODB_MAX_DOCUMENT_SIZE = 16 * 1024 * 1024  # 16 MB in bytes
-SAFE_DOCUMENT_SIZE = int(MONGODB_MAX_DOCUMENT_SIZE * 0.9)  # 90% of max for safety buffer
+MONGODB_MAX_DOCUMENT_SIZE: int = 16 * 1024 * 1024  # 16 MB in bytes
+SAFE_DOCUMENT_SIZE: int = int(MONGODB_MAX_DOCUMENT_SIZE * 0.9)  # 90% of max for safety buffer
 
 
 class DocumentSizeError(Exception):
     """Raised when a document exceeds MongoDB size limits even after screenshot removal"""
-    def __init__(self, message: str, size: int, page_id: str = None):
+    def __init__(self, message: str, size: int, page_id: str | None = None) -> None:
         super().__init__(message)
         self.size = size
         self.page_id = page_id
 
 
-def get_document_size(document: Dict[str, Any]) -> int:
+def get_document_size(document: dict[str, Any]) -> int:
     """
     Calculate the BSON size of a document
 
@@ -49,12 +51,12 @@ def get_document_size(document: Dict[str, Any]) -> int:
         # Fallback to JSON size estimate (usually close enough)
         try:
             return len(json.dumps(document, default=str).encode('utf-8'))
-        except:
+        except Exception:
             return 0
 
 
-def check_document_size(document: Dict[str, Any],
-                       max_size: int = SAFE_DOCUMENT_SIZE) -> Tuple[bool, int]:
+def check_document_size(document: dict[str, Any],
+                       max_size: int = SAFE_DOCUMENT_SIZE) -> tuple[bool, int]:
     """
     Check if document size is within limits
 
@@ -87,8 +89,8 @@ def format_size(size_bytes: int) -> str:
         return f"{size_bytes / (1024 * 1024):.2f} MB"
 
 
-def handle_oversized_test_result(test_result_dict: Dict[str, Any],
-                                 max_size: int = SAFE_DOCUMENT_SIZE) -> Tuple[Dict[str, Any], Optional[Dict[str, Any]]]:
+def handle_oversized_test_result(test_result_dict: dict[str, Any],
+                                 max_size: int = SAFE_DOCUMENT_SIZE) -> tuple[dict[str, Any], dict[str, Any] | None]:
     """
     Handle oversized test results by removing screenshots if necessary.
     NEVER truncates actual test data (violations, warnings, passes).
@@ -106,15 +108,16 @@ def handle_oversized_test_result(test_result_dict: Dict[str, Any],
         Tuple of (processed_result, size_report or None)
     """
     result = test_result_dict.copy()
-    size_report = {
-        'original_size': get_document_size(result),
+    original_size = get_document_size(result)
+    size_report: dict[str, Any] = {
+        'original_size': original_size,
         'final_size': 0,
         'actions_taken': [],
         'screenshot_removed': False,
         'size_error': False
     }
 
-    current_size = size_report['original_size']
+    current_size: int = original_size
 
     # If within limits, no action needed
     if current_size <= max_size:
@@ -128,7 +131,8 @@ def handle_oversized_test_result(test_result_dict: Dict[str, Any],
         original_path = result['screenshot_path']
         result['screenshot_path'] = None
         size_report['screenshot_removed'] = True
-        size_report['actions_taken'].append({
+        actions: list[dict[str, Any]] = size_report['actions_taken']
+        actions.append({
             'action': 'removed_screenshot_path',
             'original_path': original_path,
             'reason': 'Document too large'
@@ -148,12 +152,13 @@ def handle_oversized_test_result(test_result_dict: Dict[str, Any],
 
         logger.error(
             f"Test result still too large after screenshot removal: {format_size(current_size)}. "
-            f"Violations: {violation_count}, Warnings: {warning_count}, "
-            f"Info: {info_count}, Discovery: {discovery_count}, Passes: {pass_count}"
+            + f"Violations: {violation_count}, Warnings: {warning_count}, "
+            + f"Info: {info_count}, Discovery: {discovery_count}, Passes: {pass_count}"
         )
 
         size_report['size_error'] = True
-        size_report['actions_taken'].append({
+        actions_list: list[dict[str, Any]] = size_report['actions_taken']
+        actions_list.append({
             'action': 'size_limit_exceeded',
             'size_after_optimization': current_size,
             'counts': {
@@ -169,7 +174,7 @@ def handle_oversized_test_result(test_result_dict: Dict[str, Any],
         raise DocumentSizeError(
             f"Test result too large even after removing screenshot: {format_size(current_size)} > {format_size(max_size)}",
             size=current_size,
-            page_id=result.get('page_id')
+            page_id=str(result.get('page_id')) if result.get('page_id') is not None else None
         )
 
     # Add size metadata to result if screenshot was removed
@@ -184,8 +189,8 @@ def handle_oversized_test_result(test_result_dict: Dict[str, Any],
     return result, size_report
 
 
-def create_size_error_result(page_id: str, test_date, duration_ms: int,
-                            error_details: Dict[str, Any]) -> Dict[str, Any]:
+def create_size_error_result(page_id: str, test_date: datetime | str, duration_ms: int,
+                            error_details: dict[str, Any]) -> dict[str, Any]:
     """
     Create a minimal error result when test results are too large to store
 
@@ -231,9 +236,9 @@ def create_size_error_result(page_id: str, test_date, duration_ms: int,
     }
 
 
-def validate_document_size_or_handle(document: Dict[str, Any],
+def validate_document_size_or_handle(document: dict[str, Any],
                                     document_type: str = "document",
-                                    max_size: int = SAFE_DOCUMENT_SIZE) -> Tuple[Dict[str, Any], Optional[Dict[str, Any]]]:
+                                    max_size: int = SAFE_DOCUMENT_SIZE) -> tuple[dict[str, Any], dict[str, Any] | None]:
     """
     Validate document size and handle if necessary (screenshot removal only)
 

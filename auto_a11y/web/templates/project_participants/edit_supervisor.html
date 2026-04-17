@@ -17,14 +17,14 @@
         </ol>
     </nav>
 
-    <h1 class="mb-4">
+    <h1 class="mb-4" id="edit-supervisor-heading">
         <i class="bi bi-person-check" aria-hidden="true"></i> {{ ftl('projects-edit-test-supervisor') }}
     </h1>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
-            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+            <div class="alert alert-{{ {'error': 'high', 'success': 'pass', 'warning': 'medium', 'info': 'info'}.get(category, 'info') }} alert-dismissible fade show" role="alert">
                 {{ message }}
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
@@ -32,7 +32,7 @@
         {% endif %}
     {% endwith %}
 
-    <form method="POST" class="needs-validation" novalidate>
+    <form method="POST" class="needs-validation" novalidate aria-labelledby="edit-supervisor-heading">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <div class="row">
             <div class="col-md-8">
@@ -44,7 +44,7 @@
                         <fieldset>
                             <legend class="visually-hidden">{{ ftl('projects-supervisor-information') }}</legend>
                             <div class="mb-3">
-                                <label for="name" class="form-label">{{ ftl('common-name') }} <span class="text-danger">*</span></label>
+                                <label for="name" class="form-label">{{ ftl('common-name') }} <span class="text-severity-high" aria-hidden="true">*</span><span class="visually-hidden">{{ ftl('common-required') }}</span></label>
                                 <input type="text" class="form-control" id="name" name="name" required
                                        value="{{ supervisor.name }}"
                                        placeholder="{{ ftl('projects-e-g-dr-sarah-johnson') }}"
@@ -103,7 +103,7 @@
             <!-- Help Sidebar -->
             <div class="col-md-4">
                 <div class="card sticky-top" style="top: 20px;">
-                    <div class="card-header bg-info text-white">
+                    <div class="card-header card-header-info">
                         <h2 class="mb-0"><i class="bi bi-question-circle" aria-hidden="true"></i> {{ ftl('common-help') }}</h2>
                     </div>
                     <div class="card-body">
@@ -141,10 +141,10 @@
         <div class="row">
             <div class="col-md-8">
                 <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-success">
+                    <button type="submit" class="btn btn-pass">
                         <i class="bi bi-check-circle" aria-hidden="true"></i> {{ ftl('projects-update-supervisor') }}
                     </button>
-                    <a href="{{ url_for('project_participants.list_participants', project_id=project.id) }}" class="btn btn-secondary">
+                    <a href="{{ url_for('project_participants.list_participants', project_id=project.id) }}" class="btn btn-neutral">
                         <i class="bi bi-x-circle" aria-hidden="true"></i> {{ ftl('common-cancel') }}
                     </a>
                 </div>

@@ -1,16 +1,19 @@
 """
 Email sending via SMTP for Auto A11y.
 """
+from __future__ import annotations
 
 import logging
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+from config import Config
+
 logger = logging.getLogger(__name__)
 
 
-def send_email(config, to, subject, text_body, html_body):
+def send_email(config: Config, to: str, subject: str, text_body: str, html_body: str) -> bool:
     """
     Send an email using SMTP settings from config.
 

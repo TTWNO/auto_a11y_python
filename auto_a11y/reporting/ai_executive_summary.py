@@ -1,9 +1,10 @@
 """
 AI-powered executive summary generator for accessibility reports
 """
+from __future__ import annotations
 
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Any
 from datetime import datetime
 import json
 
@@ -15,7 +16,7 @@ logger = logging.getLogger(__name__)
 class AIExecutiveSummaryGenerator:
     """Generate intelligent executive summaries using Claude AI"""
     
-    def __init__(self, claude_client: Optional[ClaudeClient] = None):
+    def __init__(self, claude_client: ClaudeClient | None = None) -> None:
         """
         Initialize AI executive summary generator
         
@@ -24,7 +25,7 @@ class AIExecutiveSummaryGenerator:
         """
         self.claude_client = claude_client
         
-    def generate_executive_summary(self, report_data: Dict[str, Any], language: str = 'en') -> Dict[str, Any]:
+    def generate_executive_summary(self, report_data: dict[str, Any], language: str = 'en') -> dict[str, Any]:
         """
         Generate comprehensive executive summary using Claude AI
 
@@ -54,6 +55,7 @@ class AIExecutiveSummaryGenerator:
     
     def _get_claude_response(self, prompt: str) -> str:
         """Get response from Claude using sync client"""
+        assert self.claude_client is not None
         try:
             # Use the sync client directly
             message = self.claude_client.sync_client.messages.create(
@@ -66,10 +68,11 @@ class AIExecutiveSummaryGenerator:
                     "content": prompt
                 }]
             )
-            
+
             # Extract text from response
             if hasattr(message, 'content') and len(message.content) > 0:
-                response_text = message.content[0].text
+                block = message.content[0]
+                response_text: str = block.text if hasattr(block, 'text') else str(block)
                 logger.info(f"Claude response length: {len(response_text)} chars")
                 logger.debug(f"Claude response preview: {response_text[:200]}...")
                 return response_text
@@ -80,7 +83,7 @@ class AIExecutiveSummaryGenerator:
             logger.error(f"Error calling Claude API: {e}")
             raise
     
-    def _create_analysis_prompt(self, report_data: Dict[str, Any], language: str = 'en') -> str:
+    def _create_analysis_prompt(self, report_data: dict[str, Any], language: str = 'en') -> str:
         """Create detailed prompt for Claude analysis"""
 
         stats = report_data.get('statistics', {})
@@ -252,13 +255,13 @@ class AIExecutiveSummaryGenerator:
 
         return prompt
     
-    def _get_violation_patterns(self, violations: List[Dict]) -> str:
+    def _get_violation_patterns(self, violations: list[dict[str, Any]]) -> str:
         """Analyze and summarize violation patterns"""
         if not violations:
             return "No violations to analyze"
         
         # Count violations by category
-        category_counts = {}
+        category_counts: dict[str, int] = {}
         for v in violations:
             category = v.get('category', 'general')
             category_counts[category] = category_counts.get(category, 0) + 1
@@ -273,7 +276,7 @@ class AIExecutiveSummaryGenerator:
         
         return "\n".join(patterns)
     
-    def _parse_ai_response(self, response: str, report_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _parse_ai_response(self, response: str, report_data: dict[str, Any]) -> dict[str, Any]:
         """Parse Claude's response into structured format"""
         try:
             # Try to parse as JSON first
@@ -329,12 +332,12 @@ class AIExecutiveSummaryGenerator:
             logger.error(f"Failed to parse AI response: {e}")
             return self._get_fallback_summary(report_data)
     
-    def _parse_text_response(self, response: str) -> Dict[str, Any]:
+    def _parse_text_response(self, response: str) -> dict[str, Any]:
         """Parse unstructured text response into structured format"""
         # This is a fallback parser for non-JSON responses
-        sections = {}
-        current_section = None
-        current_content = []
+        sections: dict[str, str] = {}
+        current_section: str | None = None
+        current_content: list[str] = []
         
         for line in response.split('\n'):
             line = line.strip()
@@ -356,7 +359,7 @@ class AIExecutiveSummaryGenerator:
         
         return sections
     
-    def _get_fallback_summary(self, report_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _get_fallback_summary(self, report_data: dict[str, Any]) -> dict[str, Any]:
         """Generate a basic summary when AI is not available"""
         stats = report_data.get('statistics', {})
         total_issues = stats.get('total_violations', 0) + stats.get('total_warnings', 0)
@@ -437,7 +440,7 @@ class AIExecutiveSummaryGenerator:
             'ai_model': 'Fallback (AI not available)'
         }
     
-    def format_executive_summary_html(self, ai_summary: Dict[str, Any]) -> str:
+    def format_executive_summary_html(self, ai_summary: dict[str, Any]) -> str:
         """Format AI executive summary as HTML"""
         
         assessment = ai_summary.get('overall_assessment', {})
@@ -560,7 +563,7 @@ class AIExecutiveSummaryGenerator:
         
         return html
     
-    def _format_show_stoppers(self, show_stoppers: List) -> str:
+    def _format_show_stoppers(self, show_stoppers: list[str]) -> str:
         """Format show stopper issues"""
         if not show_stoppers:
             return ""
@@ -575,7 +578,7 @@ class AIExecutiveSummaryGenerator:
         </div>
         """
     
-    def _format_user_impact(self, impact: Dict[str, str]) -> str:
+    def _format_user_impact(self, impact: dict[str, str]) -> str:
         """Format user impact analysis"""
         impact_html = ""
         icons = {

@@ -114,7 +114,7 @@ class ReportNavigation {
     addBackToTopButton() {
         const button = document.createElement('button');
         button.id = 'back-to-top';
-        button.className = 'btn btn-primary';
+        button.className = 'btn btn-brand';
         button.innerHTML = '<i class="bi bi-arrow-up" aria-hidden="true"></i>';
         button.setAttribute('aria-label', 'Back to top');
         button.style.cssText = `

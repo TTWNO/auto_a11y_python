@@ -1,15 +1,17 @@
 """
 Website management business logic
 """
+from __future__ import annotations
 
 import logging
-from typing import List, Dict, Any, Optional
+from typing import Any
 from datetime import datetime
 from urllib.parse import urlparse
 
+from bson import ObjectId
+
 from auto_a11y.models import Website, ScrapingConfig, Page, PageStatus
 from auto_a11y.core.database import Database
-from auto_a11y.core.scraper import ScrapingEngine
 from auto_a11y.core.scraping_job import ScrapingJob
 from auto_a11y.core.testing_job import TestingJob
 from auto_a11y.core.job_manager import JobManager, JobType
@@ -20,7 +22,7 @@ logger = logging.getLogger(__name__)
 class WebsiteManager:
     """Manages website operations"""
     
-    def __init__(self, database: Database, browser_config: Dict[str, Any]):
+    def __init__(self, database: Database, browser_config: dict[str, Any]):
         """
         Initialize website manager
         
@@ -31,9 +33,9 @@ class WebsiteManager:
         self.db = database
         self.browser_config = browser_config
         # Initialize job manager for database-backed job tracking
-        self.job_manager = JobManager(database)
+        self.job_manager: JobManager = JobManager(database)
     
-    def cancel_testing(self, job_id: str, user_id: Optional[str] = None) -> bool:
+    def cancel_testing(self, job_id: str, user_id: str | None = None) -> bool:
         """
         Cancel a testing job
         
@@ -62,7 +64,7 @@ class WebsiteManager:
             logger.warning(f"Could not cancel testing job {job_id} - may already be completed or cancelled")
         return success
     
-    def cancel_discovery(self, job_id: str, user_id: Optional[str] = None) -> bool:
+    def cancel_discovery(self, job_id: str, user_id: str | None = None) -> bool:
         """
         Cancel a discovery job
         
@@ -80,20 +82,21 @@ class WebsiteManager:
         # Log all discovery jobs in database for debugging
         all_discovery_jobs = self.job_manager.get_active_jobs(job_type=JobType.DISCOVERY)
         logger.info(f"  Active discovery jobs in database: {len(all_discovery_jobs)}")
-        for job in all_discovery_jobs:
-            logger.info(f"    - Job ID: '{job.get('job_id')}' Status: {job.get('status')}")
-        
+        for dj in all_discovery_jobs:
+            logger.info(f"    - Job ID: '{dj.get('job_id')}' Status: {dj.get('status')}")
+
         # First check if job exists
-        job = self.job_manager.get_job(job_id)
+        job: dict[str, Any] | None = self.job_manager.get_job(job_id)
         if not job:
             logger.error(f"Job '{job_id}' not found in database")
             
             # Try to find similar job IDs
-            all_jobs = self.job_manager.collection.find({'job_type': JobType.DISCOVERY.value}, {'job_id': 1}).limit(10)
-            logger.error(f"  Recent discovery job IDs in DB:")
-            for j in all_jobs:
+            _jm: Any = self.job_manager
+            all_jobs_cursor: Any = _jm.collection.find({'job_type': JobType.DISCOVERY.value}, {'job_id': 1}).limit(10)
+            logger.error("  Recent discovery job IDs in DB:")
+            for j in all_jobs_cursor:
                 logger.error(f"    - '{j.get('job_id')}'")
-            
+
             return False
         
         logger.info(f"Found job {job_id} with status: {job.get('status')}")
@@ -110,8 +113,8 @@ class WebsiteManager:
         self,
         project_id: str,
         url: str,
-        name: Optional[str] = None,
-        scraping_config: Optional[ScrapingConfig] = None
+        name: str | None = None,
+        scraping_config: ScrapingConfig | None = None
     ) -> Website:
         """
         Add website to project
@@ -141,7 +144,8 @@ class WebsiteManager:
             url = url[:-1]
         
         # Check if website already exists in project
-        existing = self.db.websites.find_one({
+        _db: Any = self.db
+        existing: dict[str, Any] | None = _db.websites.find_one({
             'project_id': project_id,
             'url': url
         })
@@ -156,13 +160,13 @@ class WebsiteManager:
             scraping_config=scraping_config or ScrapingConfig()
         )
         
-        website_id = self.db.create_website(website)
-        website._id = website_id
-        
+        website_id_str = self.db.create_website(website)
+        object.__setattr__(website, '_id', ObjectId(website_id_str))
+
         logger.info(f"Added website: {url} to project {project_id}")
         return website
     
-    def get_website(self, website_id: str) -> Optional[Website]:
+    def get_website(self, website_id: str) -> Website | None:
         """
         Get website by ID
         
@@ -174,7 +178,7 @@ class WebsiteManager:
         """
         return self.db.get_website(website_id)
     
-    def list_websites(self, project_id: str) -> List[Website]:
+    def list_websites(self, project_id: str) -> list[Website]:
         """
         List websites in project
         
@@ -189,9 +193,9 @@ class WebsiteManager:
     def update_website(
         self,
         website_id: str,
-        url: Optional[str] = None,
-        name: Optional[str] = None,
-        scraping_config: Optional[ScrapingConfig] = None
+        url: str | None = None,
+        name: str | None = None,
+        scraping_config: ScrapingConfig | None = None
     ) -> bool:
         """
         Update website details
@@ -238,11 +242,11 @@ class WebsiteManager:
     async def discover_pages(
         self,
         website_id: str,
-        max_pages: Optional[int] = None,
-        job_id: Optional[str] = None,
-        user_id: Optional[str] = None,
-        session_id: Optional[str] = None,
-        website_user_ids: Optional[List[str]] = None
+        max_pages: int | None = None,
+        job_id: str | None = None,
+        user_id: str | None = None,
+        session_id: str | None = None,
+        website_user_ids: list[str] | None = None
     ) -> ScrapingJob:
         """
         Start page discovery for website
@@ -302,15 +306,15 @@ class WebsiteManager:
     async def test_website(
         self,
         website_id: str,
-        page_ids: Optional[List[str]] = None,
-        job_id: Optional[str] = None,
-        user_id: Optional[str] = None,
-        session_id: Optional[str] = None,
+        page_ids: list[str] | None = None,
+        job_id: str | None = None,
+        user_id: str | None = None,
+        session_id: str | None = None,
         test_all: bool = False,
         take_screenshot: bool = True,
-        run_ai_analysis: Optional[bool] = None,
-        ai_api_key: Optional[str] = None,
-        website_user_id: Optional[str] = None,
+        run_ai_analysis: bool | None = None,
+        ai_api_key: str | None = None,
+        website_user_id: str | None = None,
         skip_completion: bool = False
     ) -> TestingJob:
         """
@@ -377,14 +381,14 @@ class WebsiteManager:
     async def test_project(
         self,
         project_id: str,
-        job_id: Optional[str] = None,
-        user_id: Optional[str] = None,
-        session_id: Optional[str] = None,
+        job_id: str | None = None,
+        user_id: str | None = None,
+        session_id: str | None = None,
         test_all: bool = True,
         take_screenshot: bool = True,
-        run_ai_analysis: Optional[bool] = None,
-        ai_api_key: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        run_ai_analysis: bool | None = None,
+        ai_api_key: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Test all websites in a project
         
@@ -414,29 +418,29 @@ class WebsiteManager:
             return []
         
         # Create jobs for each website
-        jobs = []
+        jobs: list[dict[str, Any]] = []
         for i, website in enumerate(websites):
-            website_job_id = f"{job_id or 'proj-test'}_{i}_{website.id}" if job_id else None
-            
+            website_id = website.id
+            if website_id is None:
+                continue
+            website_job_id = f"{job_id or 'proj-test'}_{i}_{website_id}" if job_id else None
+
             try:
                 logger.info(f"Starting test for website {website.name} ({website.url})")
-                
+
                 # Get pages to test
-                if test_all:
-                    pages = self.db.get_pages(website.id)
-                else:
-                    pages = self.db.get_untested_pages(website.id)
-                
+                pages = self.db.get_pages(website_id)
+
                 if not pages:
-                    logger.info(f"No pages to test for website {website.id}")
+                    logger.info(f"No pages to test for website {website_id}")
                     continue
-                
-                page_ids = [p.id for p in pages]
-                
+
+                page_id_list: list[str] = [p_id for p in pages if (p_id := p.id) is not None]
+
                 # Start async test for this website
-                job = await self.test_website(
-                    website_id=website.id,
-                    page_ids=page_ids,
+                testing_job = await self.test_website(
+                    website_id=website_id,
+                    page_ids=page_id_list,
                     job_id=website_job_id,
                     user_id=user_id,
                     session_id=session_id,
@@ -447,17 +451,17 @@ class WebsiteManager:
                 )
                 
                 jobs.append({
-                    'website_id': website.id,
+                    'website_id': website_id,
                     'website_name': website.name,
                     'website_url': website.url,
-                    'job_id': job.job_id,
-                    'pages_tested': len(page_ids)
+                    'job_id': testing_job.job_id,
+                    'pages_tested': len(page_id_list)
                 })
-                
+
             except Exception as e:
-                logger.error(f"Failed to test website {website.id}: {e}")
+                logger.error(f"Failed to test website {website_id}: {e}")
                 jobs.append({
-                    'website_id': website.id,
+                    'website_id': website_id,
                     'website_name': website.name,
                     'website_url': website.url,
                     'error': str(e)
@@ -466,7 +470,7 @@ class WebsiteManager:
         logger.info(f"Completed project testing for {project_id} with {len(jobs)} website jobs")
         return jobs
     
-    def get_job_status(self, job_id: str) -> Optional[Dict[str, Any]]:
+    def get_job_status(self, job_id: str) -> dict[str, Any] | None:
         """
         Get job status from database
         
@@ -525,18 +529,18 @@ class WebsiteManager:
             status=PageStatus.DISCOVERED
         )
         
-        page_id = self.db.create_page(page)
-        page._id = page_id
-        
+        page_id_str = self.db.create_page(page)
+        object.__setattr__(page, '_id', ObjectId(page_id_str))
+
         logger.info(f"Manually added page: {url} to website {website_id}")
         return page
     
     def list_pages(
         self,
         website_id: str,
-        status: Optional[PageStatus] = None,
+        status: PageStatus | None = None,
         limit: int = 0
-    ) -> List[Page]:
+    ) -> list[Page]:
         """
         List pages in website
         
@@ -550,7 +554,7 @@ class WebsiteManager:
         """
         return self.db.get_pages(website_id, status=status, limit=limit)
     
-    def get_website_statistics(self, website_id: str) -> Dict[str, Any]:
+    def get_website_statistics(self, website_id: str) -> dict[str, Any]:
         """
         Get website statistics
         
@@ -578,7 +582,3 @@ class WebsiteManager:
             'total_warnings': sum(p.warning_count for p in pages),
             'test_coverage': (len(tested_pages) / len(pages) * 100) if pages else 0
         }
-
-
-# Import asyncio here to avoid circular import
-import asyncio

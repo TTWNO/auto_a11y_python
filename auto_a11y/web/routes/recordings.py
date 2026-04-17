@@ -1,13 +1,16 @@
 """
 Recording management routes for manual audits
 """
+from __future__ import annotations
 
 from flask import (
-    Blueprint, render_template, request, redirect,
-    url_for, flash, jsonify, current_app, g, session
+    Blueprint, Response, render_template, request, redirect,
+    url_for, flash, jsonify, g, session
 )
 from auto_a11y.web.fluent import ftl
+from auto_a11y.web.typed_app import get_db
 from werkzeug.utils import secure_filename
+from werkzeug.wrappers import Response as WerkzeugResponse
 import logging
 import json
 from pathlib import Path
@@ -21,7 +24,7 @@ recordings_bp = Blueprint('recordings', __name__)
 
 
 @recordings_bp.route('/')
-def list_recordings():
+def list_recordings() -> str | Response:
     """List all recordings"""
     try:
         project_id = request.args.get('project_id')
@@ -35,13 +38,13 @@ def list_recordings():
             except ValueError:
                 pass
 
-        recordings = current_app.db.get_recordings(
+        recordings = get_db().get_recordings(
             project_id=project_id,
             recording_type=recording_type_enum
         )
 
         # Get projects for filter dropdown
-        projects = current_app.db.get_all_projects()
+        projects = get_db().get_all_projects()
 
         return render_template(
             'recordings/list.html',
@@ -57,10 +60,10 @@ def list_recordings():
 
 
 @recordings_bp.route('/<recording_id>')
-def view_recording(recording_id):
+def view_recording(recording_id: str) -> str | Response | WerkzeugResponse:
     """View recording details"""
     try:
-        recording = current_app.db.get_recording(recording_id)
+        recording = get_db().get_recording(recording_id)
         if not recording:
             flash(ftl('recordings-recording-not-found'), "danger")
             return redirect(url_for('recordings.list_recordings'))
@@ -76,7 +79,7 @@ def view_recording(recording_id):
         logger.info(f"Viewing recording {recording.recording_id} with language: {language}")
 
         # Get ALL issues for this recording
-        all_issues = current_app.db.get_recording_issues_for_recording(recording.recording_id)
+        all_issues = get_db().get_recording_issues_for_recording(recording.recording_id)
 
         logger.info(f"Total issues found: {len(all_issues)}")
 
@@ -113,7 +116,7 @@ def view_recording(recording_id):
         removed_criteria = [c for c in all_criteria if c.id in removed_criteria_ids]
 
         # Group issues by touchpoint
-        issues_by_touchpoint = {}
+        issues_by_touchpoint: dict[str, list[RecordingIssue]] = {}
         for issue in issues:
             touchpoint = issue.touchpoint or "General"
             if touchpoint not in issues_by_touchpoint:
@@ -123,7 +126,7 @@ def view_recording(recording_id):
         # Get project if linked
         project = None
         if recording.project_id:
-            project = current_app.db.get_project(recording.project_id)
+            project = get_db().get_project(recording.project_id)
 
         # Get discovered pages for this recording
         discovered_pages = []
@@ -132,7 +135,7 @@ def view_recording(recording_id):
             from auto_a11y.models import DiscoveredPage
             for page_id in recording.discovered_page_ids:
                 try:
-                    page_doc = current_app.db.discovered_pages.find_one({'_id': ObjectId(page_id)})
+                    page_doc = get_db().discovered_pages.find_one({'_id': ObjectId(page_id)})
                     if page_doc:
                         discovered_pages.append(DiscoveredPage.from_dict(page_doc))
                 except Exception as e:
@@ -159,17 +162,17 @@ def view_recording(recording_id):
 
 
 @recordings_bp.route('/combined/<project_id>')
-def view_combined_recordings(project_id):
+def view_combined_recordings(project_id: str) -> str | Response | WerkzeugResponse:
     """View all recordings for a project combined into a single issue list"""
     try:
         # Get project
-        project = current_app.db.get_project(project_id)
+        project = get_db().get_project(project_id)
         if not project:
             flash(ftl('common-project-not-found'), "danger")
             return redirect(url_for('recordings.list_recordings'))
 
         # Get all recordings for this project
-        recordings = current_app.db.get_recordings(project_id=project_id)
+        recordings = get_db().get_recordings(project_id=project_id)
 
         if not recordings:
             flash(ftl('recordings-no-recordings-found-for-this-project'), "info")
@@ -178,14 +181,14 @@ def view_combined_recordings(project_id):
         # Collect all issues from all recordings
         all_issues = []
         for recording in recordings:
-            issues = current_app.db.get_recording_issues_for_recording(recording.recording_id)
+            issues = get_db().get_recording_issues_for_recording(recording.recording_id)
             # Add recording reference to each issue for display
             for issue in issues:
-                issue.recording_ref = recording
+                setattr(issue, 'recording_ref', recording)
             all_issues.extend(issues)
 
         # Group all issues by touchpoint
-        issues_by_touchpoint = {}
+        issues_by_touchpoint: dict[str, list[RecordingIssue]] = {}
         for issue in all_issues:
             touchpoint = issue.touchpoint or "General"
             if touchpoint not in issues_by_touchpoint:
@@ -216,10 +219,10 @@ def view_combined_recordings(project_id):
 
 
 @recordings_bp.route('/upload', methods=['GET', 'POST'])
-def upload_recording():
+def upload_recording() -> str | Response | WerkzeugResponse:
     """Upload Dictaphone JSON file"""
     if request.method == 'GET':
-        projects = current_app.db.get_all_projects()
+        projects = get_db().get_all_projects()
         return render_template('recordings/upload.html', projects=projects)
 
     try:
@@ -233,7 +236,7 @@ def upload_recording():
             flash(ftl('recordings-english-json-file-is-required'), "danger")
             return redirect(url_for('recordings.upload_recording'))
 
-        if not file_en.filename.endswith('.json'):
+        if not file_en.filename or not file_en.filename.endswith('.json'):
             flash(ftl('recordings-file-must-be-a-json-file'), "danger")
             return redirect(url_for('recordings.upload_recording'))
 
@@ -367,7 +370,7 @@ def upload_recording():
         # Read French file content if provided
         content_fr = None
         data_fr = None
-        if has_french:
+        if has_french and file_fr is not None:
             content_fr = file_fr.read().decode('utf-8')
             data_fr = json.loads(content_fr)
             # Verify both files have the same recording_id
@@ -378,13 +381,13 @@ def upload_recording():
 
         # If lived experience tester selected but no auditor name, look up tester name
         if lived_experience_tester_id and not auditor_name:
-            project = current_app.db.get_project(project_id)
+            project = get_db().get_project(project_id)
             if project and project.lived_experience_testers:
                 for tester in project.lived_experience_testers:
-                    if tester.get('_id') == lived_experience_tester_id:
+                    if tester.id == lived_experience_tester_id:
                         # Format: "Name (Disability)"
-                        name = tester.get('name', 'Unknown')
-                        disability = tester.get('disability_type', '')
+                        name = tester.name or 'Unknown'
+                        disability = tester.disability_type or ''
                         auditor_name = f"{name} ({disability})" if disability else name
                         break
 
@@ -404,7 +407,7 @@ def upload_recording():
         }
 
         # Check if recording with this recording_id already exists
-        existing = current_app.db.get_recording_by_recording_id(recording_id_value)
+        existing = get_db().get_recording_by_recording_id(recording_id_value)
         if existing:
             flash(ftl('recordings-recording-id-already-exists-please-use-a', id=recording_id_value), "danger")
             return redirect(url_for('recordings.upload_recording'))
@@ -436,6 +439,7 @@ def upload_recording():
 
             # Process French issues if provided
             if has_french:
+                assert content_fr is not None
                 tmp_file_fr = None
                 try:
                     with tempfile.NamedTemporaryFile(mode='w', suffix='_fr.json', delete=False) as tmp_file:
@@ -462,15 +466,15 @@ def upload_recording():
                         Path(tmp_file_fr).unlink(missing_ok=True)
 
             # Save to database
-            recording_id = current_app.db.create_recording(recording)
-            issue_ids = current_app.db.create_recording_issues_bulk(all_issues)
+            recording_id = get_db().create_recording(recording)
+            issue_ids = get_db().create_recording_issues_bulk(all_issues)
 
             # Update project's recording_ids
-            project = current_app.db.get_project(project_id)
+            project = get_db().get_project(project_id)
             if project:
                 if recording_id not in project.recording_ids:
                     project.recording_ids.append(recording_id)
-                    current_app.db.update_project(project)
+                    get_db().update_project(project)
 
             lang_detail = f"{len(issues_en)} EN" + (f", {len(issues_fr)} FR" if has_french else "")
             flash(ftl('recordings-successfully-imported-recording-id-with-count', id=recording.recording_id, count=len(all_issues), detail=lang_detail), "success")
@@ -492,10 +496,10 @@ def upload_recording():
 
 
 @recordings_bp.route('/<recording_id>/edit', methods=['POST'])
-def edit_recording(recording_id):
+def edit_recording(recording_id: str) -> Response | WerkzeugResponse | tuple[Response, int]:
     """Edit a recording's page URLs and discovered pages"""
     try:
-        recording = current_app.db.get_recording(recording_id)
+        recording = get_db().get_recording(recording_id)
         if not recording:
             return jsonify({'success': False, 'error': ftl('recordings-recording-not-found')}), 404
 
@@ -510,7 +514,7 @@ def edit_recording(recording_id):
             recording.page_urls = page_urls_str
 
         # Update discovered_page_ids
-        discovered_page_ids = data.get('discovered_page_ids', [])
+        discovered_page_ids: str | list[str] = data.get('discovered_page_ids', [])
         if isinstance(discovered_page_ids, str):
             # Handle comma-separated string
             recording.discovered_page_ids = [id.strip() for id in discovered_page_ids.split(',') if id.strip()]
@@ -524,7 +528,7 @@ def edit_recording(recording_id):
         recording.updated_at = datetime.now()
 
         # Save to database
-        current_app.db.update_recording(recording)
+        get_db().update_recording(recording)
 
         if request.is_json:
             return jsonify({'success': True, 'message': ftl('recordings-recording-updated-successfully')})
@@ -542,23 +546,23 @@ def edit_recording(recording_id):
 
 
 @recordings_bp.route('/<recording_id>/delete', methods=['POST'])
-def delete_recording(recording_id):
+def delete_recording(recording_id: str) -> WerkzeugResponse:
     """Delete a recording"""
     try:
-        recording = current_app.db.get_recording(recording_id)
+        recording = get_db().get_recording(recording_id)
         if not recording:
             flash(ftl('recordings-recording-not-found'), "danger")
             return redirect(url_for('recordings.list_recordings'))
 
         # Remove from project's recording_ids
         if recording.project_id:
-            project = current_app.db.get_project(recording.project_id)
+            project = get_db().get_project(recording.project_id)
             if project and recording_id in project.recording_ids:
                 project.recording_ids.remove(recording_id)
-                current_app.db.update_project(project)
+                get_db().update_project(project)
 
         # Delete recording (will also delete related issues)
-        current_app.db.delete_recording(recording_id)
+        get_db().delete_recording(recording_id)
 
         flash(ftl('recordings-recording-id-deleted-successfully', id=recording.recording_id), "success")
         return redirect(url_for('recordings.list_recordings'))
@@ -571,11 +575,11 @@ def delete_recording(recording_id):
 # API endpoints
 
 @recordings_bp.route('/api/list')
-def api_list_recordings():
+def api_list_recordings() -> Response | tuple[Response, int]:
     """API endpoint to list recordings"""
     try:
         project_id = request.args.get('project_id')
-        recordings = current_app.db.get_recordings(project_id=project_id)
+        recordings = get_db().get_recordings(project_id=project_id)
 
         return jsonify({
             'success': True,
@@ -602,14 +606,14 @@ def api_list_recordings():
 
 
 @recordings_bp.route('/api/<recording_id>/issues')
-def api_recording_issues(recording_id):
+def api_recording_issues(recording_id: str) -> Response | tuple[Response, int]:
     """API endpoint to get issues for a recording"""
     try:
-        recording = current_app.db.get_recording(recording_id)
+        recording = get_db().get_recording(recording_id)
         if not recording:
             return jsonify({'success': False, 'error': ftl('recordings-recording-not-found')}), 404
 
-        issues = current_app.db.get_recording_issues_for_recording(recording.recording_id)
+        issues = get_db().get_recording_issues_for_recording(recording.recording_id)
 
         return jsonify({
             'success': True,
@@ -636,14 +640,14 @@ def api_recording_issues(recording_id):
 
 
 @recordings_bp.route('/api/issue/<issue_id>/status', methods=['POST'])
-def api_update_issue_status(issue_id):
+def api_update_issue_status(issue_id: str) -> Response | tuple[Response, int]:
     """API endpoint to update issue status"""
     try:
         status = request.json.get('status')
         if not status:
             return jsonify({'success': False, 'error': ftl('recordings-status-is-required')}), 400
 
-        success = current_app.db.update_recording_issue_status(issue_id, status)
+        success = get_db().update_recording_issue_status(issue_id, status)
 
         if success:
             return jsonify({'success': True})

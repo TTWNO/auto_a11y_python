@@ -35,7 +35,7 @@
             {% endif %}
         </div>
         <div>
-            <a href="{{ url_for('scripts.edit_script', script_id=script.id) }}" class="btn btn-primary">
+            <a href="{{ url_for('scripts.edit_script', script_id=script.id) }}" class="btn btn-brand">
                 <i class="bi bi-pencil" aria-hidden="true"></i> {{ ftl('scripts-edit-script') }}
             </a>
         </div>
@@ -54,11 +54,11 @@
                         <dt class="col-sm-4">{{ ftl('common-status') }}</dt>
                         <dd class="col-sm-8">
                             {% if script.enabled %}
-                            <span class="badge bg-success">
+                            <span class="badge badge-pass">
                                 <i class="bi bi-check-circle" aria-hidden="true"></i> {{ ftl('common-enabled') }}
                             </span>
                             {% else %}
-                            <span class="badge bg-secondary">
+                            <span class="badge badge-neutral">
                                 <i class="bi bi-pause-circle" aria-hidden="true"></i> {{ ftl('common-disabled') }}
                             </span>
                             {% endif %}
@@ -67,9 +67,9 @@
                         <dt class="col-sm-4">{{ ftl('common-scope') }}</dt>
                         <dd class="col-sm-8">
                             {% if script.scope.value == 'page' %}
-                            <span class="badge bg-primary">{{ ftl('scripts-page-level') }}</span>
+                            <span class="badge badge-brand">{{ ftl('scripts-page-level') }}</span>
                             {% elif script.scope.value == 'website' %}
-                            <span class="badge bg-info">{{ ftl('scripts-website-wide') }}</span>
+                            <span class="badge badge-info">{{ ftl('scripts-website-wide') }}</span>
                             {% endif %}
                         </dd>
 
@@ -79,12 +79,12 @@
                         <dt class="col-sm-4">{{ ftl('scripts-multi-state-testing') }}</dt>
                         <dd class="col-sm-8">
                             {% if script.test_before_execution %}
-                            <span class="badge bg-success">
+                            <span class="badge badge-pass">
                                 <i class="bi bi-check" aria-hidden="true"></i> {{ ftl('scripts-test-before-execution') }}
                             </span>
                             {% endif %}
                             {% if script.test_after_execution %}
-                            <span class="badge bg-success">
+                            <span class="badge badge-pass">
                                 <i class="bi bi-check" aria-hidden="true"></i> {{ ftl('scripts-test-after-execution') }}
                             </span>
                             {% endif %}
@@ -103,7 +103,7 @@
                 <div class="card-header">
                     <h2 id="script-steps-heading" class="mb-0">
                         <i class="bi bi-list-ol" aria-hidden="true"></i> {{ ftl('scripts-script-steps') }}
-                        <span class="badge bg-secondary">{{ script.steps|length }}</span>
+                        <span class="badge badge-neutral">{{ script.steps|length }}</span>
                     </h2>
                 </div>
                 <div class="card-body">
@@ -186,13 +186,18 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <a href="{{ url_for('scripts.edit_script', script_id=script.id) }}" class="btn btn-primary">
+                        <button type="button" class="btn btn-outline-brand"
+                                id="test-script-btn-{{ script.id }}"
+                                onclick="testScript('{{ script.id }}')">
+                            <i class="bi bi-play-circle" aria-hidden="true"></i> {{ ftl('scripts-test-script') }}
+                        </button>
+                        <a href="{{ url_for('scripts.edit_script', script_id=script.id) }}" class="btn btn-brand">
                             <i class="bi bi-pencil" aria-hidden="true"></i> {{ ftl('scripts-edit-script') }}
                         </a>
-                        <button class="btn btn-outline-info" onclick="toggleScript('{{ script.id }}')">
+                        <button class="btn btn-outline-brand" onclick="toggleScript('{{ script.id }}')">
                             <i class="bi bi-toggle-on" aria-hidden="true"></i> {{ ftl('common-disable') if script.enabled else ftl('common-enable') }} {{ ftl('scripts-script') }}
                         </button>
-                        <button class="btn btn-outline-danger" onclick="deleteScript('{{ script.id }}')">
+                        <button class="btn btn-outline-high" onclick="deleteScript('{{ script.id }}')">
                             <i class="bi bi-trash" aria-hidden="true"></i> {{ ftl('scripts-delete-script') }}
                         </button>
                     </div>
@@ -226,6 +231,52 @@
 
 {% block extra_js %}
 <script>
+function testScript(scriptId) {
+    const btn = document.getElementById(`test-script-btn-${scriptId}`);
+    const icon = btn.querySelector('i');
+    const originalIconClass = icon.className;
+
+    // Reset any previous result state
+    btn.classList.remove('btn-outline-pass', 'btn-outline-high');
+    btn.classList.add('btn-outline-brand');
+
+    // Show spinner
+    btn.disabled = true;
+    icon.className = 'bi bi-arrow-repeat spin';
+    btn.title = {{ ftl('scripts-testing-script') | tojson }};
+
+    fetch(`/scripts/${scriptId}/test`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.disabled = false;
+        if (data.success) {
+            icon.className = 'bi bi-check-circle-fill';
+            btn.classList.remove('btn-outline-brand');
+            btn.classList.add('btn-outline-pass');
+            btn.title = {{ ftl('scripts-script-test-succeeded') | tojson }} + ' (' + (data.duration_ms || 0) + 'ms)';
+        } else {
+            icon.className = 'bi bi-x-circle-fill';
+            btn.classList.remove('btn-outline-brand');
+            btn.classList.add('btn-outline-high');
+            btn.title = data.error || {{ ftl('scripts-script-test-failed') | tojson }};
+        }
+    })
+    .catch(err => {
+        btn.disabled = false;
+        icon.className = originalIconClass;
+        btn.classList.remove('btn-outline-pass', 'btn-outline-high');
+        if (!btn.classList.contains('btn-outline-brand')) {
+            btn.classList.add('btn-outline-brand');
+        }
+        alert({{ ftl('scripts-error-testing-script') | tojson }} + ' ' + err.message);
+    });
+}
+
 function toggleScript(scriptId) {
     if (!confirm('{{ ftl('scripts-toggle-this-script-enable-disable') }}')) return;
 

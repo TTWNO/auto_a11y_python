@@ -8,33 +8,33 @@
     <div class="mb-4">
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
             <div>
-                <h1 class="mb-2">
-                    {{ project.name }}
-                    <span class="badge bg-{{ {'active': 'success', 'paused': 'warning', 'completed': 'info', 'archived': 'secondary'}[project.status.value] }}">
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                    <h1 class="mb-0">{{ project.name }}</h1>
+                    <span class="badge badge-{{ {'active': 'pass', 'paused': 'medium', 'completed': 'info', 'archived': 'neutral'}[project.status.value] }}">
                         {{ ftl_enum(project.status.value) }}
                     </span>
-                </h1>
+                </div>
                 <p class="text-muted mb-0">{{ project.description or ftl('projects-no-description') }}</p>
             </div>
         </div>
         <!-- Action Buttons - flex wrap for all screen sizes -->
         <div class="d-flex flex-wrap gap-2 mt-3">
-            <button type="button" class="btn btn-success" onclick="testAllWebsites()">
+            <button type="button" class="btn btn-pass" onclick="testAllWebsites()">
                 <i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('projects-test-all-websites') }}
             </button>
-            <a href="{{ url_for('project_users.list_users', project_id=project.id) }}" class="btn btn-outline-secondary">
+            <a href="{{ url_for('project_users.list_users', project_id=project.id) }}" class="btn btn-outline-neutral">
                 <i class="bi bi-people" aria-hidden="true"></i> {{ ftl('common-test-users') }}
             </a>
-            <a href="{{ url_for('project_participants.list_participants', project_id=project.id) }}" class="btn btn-outline-info">
+            <a href="{{ url_for('project_participants.list_participants', project_id=project.id) }}" class="btn btn-outline-brand">
                 <i class="bi bi-person-badge" aria-hidden="true"></i> {{ ftl('projects-participants') }}
             </a>
-            <a href="{{ url_for('automated_tests.project_automated_tests', project_id=project.id) }}" class="btn btn-outline-primary">
+            <a href="{{ url_for('automated_tests.project_automated_tests', project_id=project.id) }}" class="btn btn-outline-brand">
                 <i class="bi bi-robot" aria-hidden="true"></i> {{ ftl('common-automated-tests') }}
             </a>
-            <a href="{{ url_for('projects.edit_project', project_id=project.id) }}" class="btn btn-outline-primary">
+            <a href="{{ url_for('projects.edit_project', project_id=project.id) }}" class="btn btn-outline-brand">
                 <i class="bi bi-pencil" aria-hidden="true"></i> {{ ftl('common-edit') }}
             </a>
-            <button type="button" class="btn btn-outline-danger" data-open-modal="#deleteModal">
+            <button type="button" class="btn btn-outline-high" data-open-modal="#deleteModal">
                 <i class="bi bi-trash" aria-hidden="true"></i> {{ ftl('common-delete') }}
             </button>
         </div>
@@ -64,8 +64,8 @@
         <div class="card text-center flex-fill" style="min-width: 140px;">
             <div class="card-body py-3">
                 <h2 class="card-title text-muted mb-1">{{ ftl('common-issues-2') }}</h2>
-                <p class="display-6 mb-0 text-danger">{{ stats.total_violations }}</p>
-                <small class="text-warning">{{ stats.total_warnings }} {{ ftl('common-warnings-2') }}</small>
+                <p class="display-6 mb-0 text-severity-high">{{ stats.total_violations }}</p>
+                <small class="text-severity-medium">{{ stats.total_warnings }} {{ ftl('common-warnings-2') }}</small>
             </div>
         </div>
     </div>
@@ -74,7 +74,7 @@
     <section class="card mb-4" aria-labelledby="websites-heading">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h2 class="mb-0" id="websites-heading">{{ ftl('common-websites') }}</h2>
-            <button class="btn btn-sm btn-primary" data-open-modal="#addWebsiteModal">
+            <button class="btn btn-sm btn-brand" data-open-modal="#addWebsiteModal">
                 <i class="bi bi-plus-circle" aria-hidden="true"></i> {{ ftl('projects-add-website') }}
             </button>
         </div>
@@ -93,10 +93,10 @@
                         </div>
                         <div class="d-flex flex-wrap gap-2">
                             {% if ws_stats.violations > 0 %}
-                            <span class="badge bg-danger">{{ ws_stats.violations }} {{ ftl('common-issues') }}</span>
+                            <span class="badge badge-high">{{ ws_stats.violations }} {{ ftl('common-issues') }}</span>
                             {% endif %}
                             {% if ws_stats.warnings > 0 %}
-                            <span class="badge bg-warning text-dark">{{ ws_stats.warnings }} {{ ftl('common-warnings-2') }}</span>
+                            <span class="badge badge-medium">{{ ws_stats.warnings }} {{ ftl('common-warnings-2') }}</span>
                             {% endif %}
                         </div>
                     </div>
@@ -111,10 +111,10 @@
                     </div>
                     
                     <div class="d-flex flex-wrap gap-2">
-                        <a href="{{ url_for('websites.view_website', website_id=website.id) }}" class="btn btn-sm btn-primary">
+                        <a href="{{ url_for('websites.view_website', website_id=website.id) }}" class="btn btn-sm btn-brand">
                             <i class="bi bi-eye" aria-hidden="true"></i> {{ ftl('common-view') }}
                         </a>
-                        <button class="btn btn-sm btn-success" onclick="discoverPages('{{ website.id }}')">
+                        <button class="btn btn-sm btn-pass" onclick="discoverPages('{{ website.id }}')">
                             <i class="bi bi-search" aria-hidden="true"></i> {{ ftl('projects-discover') }}
                         </button>
                         <button class="btn btn-sm btn-info" onclick="testWebsite('{{ website.id }}')">
@@ -136,7 +136,7 @@
             <h2 class="mb-0" id="discovered-pages-heading">
                 <i class="bi bi-file-earmark-text" aria-hidden="true"></i> {{ ftl('common-discovered-pages') }}
             </h2>
-            <span class="badge bg-primary">{{ discovered_pages|length }}</span>
+            <span class="badge badge-brand">{{ discovered_pages|length }}</span>
         </div>
         <div class="card-body">
             {% if discovered_pages %}
@@ -146,13 +146,13 @@
                     <caption class="visually-hidden">{{ ftl('common-discovered-pages') }}</caption>
                     <thead>
                         <tr>
-                            <th>{{ ftl('common-title') }}</th>
-                            <th>{{ ftl('common-url') }}</th>
-                            <th>{{ ftl('common-interested-because') }}</th>
-                            <th>{{ ftl('common-page-elements') }}</th>
-                            <th>{{ ftl('common-status') }}</th>
-                            <th>{{ ftl('common-sync-status') }}</th>
-                            <th>{{ ftl('common-actions') }}</th>
+                            <th scope="col">{{ ftl('common-title') }}</th>
+                            <th scope="col">{{ ftl('common-url') }}</th>
+                            <th scope="col">{{ ftl('common-interested-because') }}</th>
+                            <th scope="col">{{ ftl('common-page-elements') }}</th>
+                            <th scope="col">{{ ftl('common-status') }}</th>
+                            <th scope="col">{{ ftl('common-sync-status') }}</th>
+                            <th scope="col">{{ ftl('common-actions') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -180,24 +180,24 @@
                             </td>
                             <td>
                                 {% if page.audited %}
-                                <span class="badge bg-success">{{ ftl('common-audited') }}</span>
+                                <span class="badge badge-pass">{{ ftl('common-audited') }}</span>
                                 {% else %}
-                                <span class="badge bg-secondary">{{ ftl('common-not-audited') }}</span>
+                                <span class="badge badge-neutral">{{ ftl('common-not-audited') }}</span>
                                 {% endif %}
                                 {% if page.manual_audit %}
-                                <span class="badge bg-info">{{ ftl('common-manual') }}</span>
+                                <span class="badge badge-info">{{ ftl('common-manual') }}</span>
                                 {% endif %}
                             </td>
                             <td>
                                 {% if page.drupal_uuid %}
                                     {% if page.drupal_sync_status == 'synced' %}
-                                    <span class="badge bg-success">{{ ftl('common-synced') }}</span>
+                                    <span class="badge badge-pass">{{ ftl('common-synced') }}</span>
                                     {% elif page.drupal_sync_status == 'sync_failed' %}
-                                    <span class="badge bg-danger" title="{{ page.drupal_error_message }}">{{ ftl('common-failed') }}</span>
+                                    <span class="badge badge-high">{{ ftl('common-failed') }}<span class="visually-hidden">: {{ page.drupal_error_message }}</span></span>
                                     {% elif page.drupal_sync_status == 'pending' %}
-                                    <span class="badge bg-warning">{{ ftl('common-pending') }}</span>
+                                    <span class="badge badge-medium">{{ ftl('common-pending') }}</span>
                                     {% else %}
-                                    <span class="badge bg-secondary">{{ ftl('common-not-synced') }}</span>
+                                    <span class="badge badge-neutral">{{ ftl('common-not-synced') }}</span>
                                     {% endif %}
                                 {% else %}
                                 <span class="text-muted">-</span>
@@ -205,7 +205,7 @@
                             </td>
                             <td>
                                 <div class="btn-group" role="group">
-                                    <button class="btn btn-sm btn-outline-primary" onclick="viewPageDetails('{{ page._id }}')">
+                                    <button class="btn btn-sm btn-outline-brand" onclick="viewPageDetails('{{ page._id }}')">
                                         <i class="bi bi-eye"></i>
                                     </button>
                                 </div>
@@ -221,10 +221,10 @@
                 <div class="card mb-2 shadow-sm">
                     <div class="card-body py-2 px-3">
                         <div class="d-flex justify-content-between align-items-start mb-1">
-                            <h3 class="mb-0 text-break" style="font-size: 0.9rem;">{{ page.title or ftl('projects-untitled') }}</h3>
+                            <h3 class="mb-0 text-break text-size-card-title">{{ page.title or ftl('projects-untitled') }}</h3>
                             <div class="d-flex flex-wrap gap-1 ms-2">
                                 {% if page.audited %}
-                                <span class="badge bg-success" style="font-size: 0.7rem;">{{ ftl('common-audited') }}</span>
+                                <span class="badge badge-pass text-size-card-badge">{{ ftl('common-audited') }}</span>
                                 {% endif %}
                             </div>
                         </div>
@@ -236,7 +236,7 @@
                                 {% if page.interested_because %}{{ page.interested_because|length }} {{ ftl('projects-reasons') }}{% endif %}
                                 {% if page.page_elements %} | {{ page.page_elements|length }} {{ ftl('projects-elements') }}{% endif %}
                             </small>
-                            <button class="btn btn-sm btn-outline-primary" onclick="viewPageDetails('{{ page._id }}')">
+                            <button class="btn btn-sm btn-outline-brand" onclick="viewPageDetails('{{ page._id }}')">
                                 <i class="bi bi-eye"></i>
                             </button>
                         </div>
@@ -262,7 +262,7 @@
             <h2 class="mb-0" id="recordings-heading">
                 <i class="bi bi-mic" aria-hidden="true"></i> {{ ftl('common-recordings') }}
             </h2>
-            <a href="{{ url_for('recordings.upload_recording') }}" class="btn btn-sm btn-primary">
+            <a href="{{ url_for('recordings.upload_recording') }}" class="btn btn-sm btn-brand">
                 <i class="bi bi-plus-circle" aria-hidden="true"></i> <span class="d-none d-sm-inline">{{ ftl('projects-add-recording') }}</span><span class="d-sm-none">{{ ftl('common-add') }}</span>
             </a>
         </div>
@@ -274,13 +274,13 @@
                     <caption class="visually-hidden">{{ ftl('common-recordings') }}</caption>
                     <thead>
                         <tr>
-                            <th>{{ ftl('common-id') }}</th>
-                            <th>{{ ftl('common-title') }}</th>
-                            <th>{{ ftl('common-type') }}</th>
-                            <th>{{ ftl('projects-auditor-tester') }}</th>
-                            <th>{{ ftl('common-date') }}</th>
-                            <th>{{ ftl('common-issues-2') }}</th>
-                            <th>{{ ftl('common-actions') }}</th>
+                            <th scope="col">{{ ftl('common-id') }}</th>
+                            <th scope="col">{{ ftl('common-title') }}</th>
+                            <th scope="col">{{ ftl('common-type') }}</th>
+                            <th scope="col">{{ ftl('projects-auditor-tester') }}</th>
+                            <th scope="col">{{ ftl('common-date') }}</th>
+                            <th scope="col">{{ ftl('common-issues-2') }}</th>
+                            <th scope="col">{{ ftl('common-actions') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -291,7 +291,7 @@
                             </td>
                             <td>{{ recording.title }}</td>
                             <td>
-                                <span class="badge bg-secondary">
+                                <span class="badge badge-neutral">
                                     {{ ftl_enum(recording.recording_type.value) }}
                                 </span>
                             </td>
@@ -301,14 +301,14 @@
                             </td>
                             <td>
                                 {% if recording.total_issues > 0 %}
-                                <span class="badge bg-danger">{{ recording.total_issues }}</span>
+                                <span class="badge badge-high">{{ recording.total_issues }}</span>
                                 {% else %}
                                 <span class="text-muted">-</span>
                                 {% endif %}
                             </td>
                             <td>
                                 <a href="{{ url_for('recordings.view_recording', recording_id=recording.id) }}"
-                                   class="btn btn-sm btn-primary">
+                                   class="btn btn-sm btn-brand">
                                     <i class="bi bi-eye" aria-hidden="true"></i> {{ ftl('common-view') }}
                                 </a>
                             </td>
@@ -317,10 +317,10 @@
 
                         {# Summary row showing combined totals #}
                         {% if recordings|length > 1 %}
-                        <tr class="table-secondary fw-bold">
+                        <tr class="table-neutral fw-bold">
                             <td colspan="2">{{ ftl('common-all-recordings-combined') }}</td>
                             <td>
-                                <span class="badge bg-dark">{{ recordings|length }} {{ ftl('common-recordings-2') }}</span>
+                                <span class="badge bg-header">{{ recordings|length }} {{ ftl('common-recordings-2') }}</span>
                             </td>
                             <td>-</td>
                             <td>-</td>
@@ -330,14 +330,14 @@
                                     {% set total.issues = total.issues + recording.total_issues %}
                                 {% endfor %}
                                 {% if total.issues > 0 %}
-                                <span class="badge bg-danger">{{ total.issues }}</span>
+                                <span class="badge badge-high">{{ total.issues }}</span>
                                 {% else %}
                                 <span class="text-muted">-</span>
                                 {% endif %}
                             </td>
                             <td>
                                 <a href="{{ url_for('recordings.view_combined_recordings', project_id=project.id) }}"
-                                   class="btn btn-sm btn-outline-primary">
+                                   class="btn btn-sm btn-outline-brand">
                                     <i class="bi bi-list-ul" aria-hidden="true"></i> {{ ftl('projects-view-combined') }}
                                 </a>
                             </td>
@@ -353,21 +353,21 @@
                     <div class="card-body py-2 px-3">
                         <div class="d-flex justify-content-between align-items-start mb-1">
                             <div class="flex-grow-1 me-2">
-                                <h3 class="mb-0 text-break" style="font-size: 0.9rem;">{{ recording.title }}</h3>
+                                <h3 class="mb-0 text-break text-size-card-title">{{ recording.title }}</h3>
                                 <small class="text-muted">{{ recording.recording_id }}</small>
                             </div>
                             {% if recording.total_issues > 0 %}
-                            <span class="badge bg-danger">{{ recording.total_issues }}</span>
+                            <span class="badge badge-high">{{ recording.total_issues }}</span>
                             {% endif %}
                         </div>
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <span class="badge bg-secondary" style="font-size: 0.7rem;">{{ ftl_enum(recording.recording_type.value) }}</span>
+                                <span class="badge badge-neutral text-size-card-badge">{{ ftl_enum(recording.recording_type.value) }}</span>
                                 {% if recording.recorded_date %}
                                 <small class="text-muted ms-1">{{ recording.recorded_date.strftime('%m/%d') }}</small>
                                 {% endif %}
                             </div>
-                            <a href="{{ url_for('recordings.view_recording', recording_id=recording.id) }}" class="btn btn-sm btn-primary">
+                            <a href="{{ url_for('recordings.view_recording', recording_id=recording.id) }}" class="btn btn-sm btn-brand">
                                 <i class="bi bi-eye"></i>
                             </a>
                         </div>
@@ -375,7 +375,7 @@
                 </div>
                 {% endfor %}
                 {% if recordings|length > 1 %}
-                <a href="{{ url_for('recordings.view_combined_recordings', project_id=project.id) }}" class="btn btn-outline-primary w-100 mt-2">
+                <a href="{{ url_for('recordings.view_combined_recordings', project_id=project.id) }}" class="btn btn-outline-brand w-100 mt-2">
                     <i class="bi bi-list-ul" aria-hidden="true"></i> {{ ftl('projects-view-all-combined') }}
                 </a>
                 {% endif %}
@@ -396,7 +396,7 @@
         </div>
         <div class="card-body">
             <div id="members-loading" class="text-center py-3">
-                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                <div class="spinner-border spinner-border-sm text-brand" role="status">
                     <span class="visually-hidden">{{ ftl('common-loading') }}</span>
                 </div>
             </div>
@@ -409,7 +409,7 @@
                         <div class="combobox-wrapper" id="member-combobox">
                             <div id="member-chip" class="combobox-chip" style="display:none;">
                                 <span id="member-chip-text"></span>
-                                <button type="button" class="combobox-chip-clear" aria-label="{{ ftl('projects-clear-selection') }}" onclick="clearMemberSelection()">&times;</button>
+                                <button type="button" class="combobox-chip-clear" aria-label="{{ ftl('projects-clear-selection') }} (×)" onclick="clearMemberSelection()">&times;</button>
                             </div>
                             <input type="text" id="member-search-input"
                                    class="form-control form-control-sm"
@@ -439,7 +439,7 @@
                         </fieldset>
                     </div>
                     <div class="col-md-3">
-                        <button type="button" class="btn btn-sm btn-primary w-100" onclick="addMember()">
+                        <button type="button" class="btn btn-sm btn-brand w-100" onclick="addMember()">
                             <i class="bi bi-plus-circle" aria-hidden="true"></i> {{ ftl('common-add') }}
                         </button>
                     </div>
@@ -451,9 +451,9 @@
                 <table class="table table-hover" id="members-table" style="display:none;">
                     <thead>
                         <tr>
-                            <th>{{ ftl('common-user') }}</th>
-                            <th>{{ ftl('common-groups') }}</th>
-                            <th class="text-end">{{ ftl('common-actions') }}</th>
+                            <th scope="col">{{ ftl('common-user') }}</th>
+                            <th scope="col">{{ ftl('common-groups') }}</th>
+                            <th scope="col" class="text-end">{{ ftl('common-actions') }}</th>
                         </tr>
                     </thead>
                     <tbody id="members-tbody"></tbody>
@@ -467,14 +467,14 @@
 </div>
 
 <!-- Add Website Modal -->
-<dialog class="modal" id="addWebsiteModal" aria-labelledby="addWebsiteModalLabel">
+<dialog class="modal" id="addWebsiteModal" role="dialog" aria-labelledby="addWebsiteModalLabel" aria-modal="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 class="modal-title" id="addWebsiteModalLabel">{{ ftl('projects-add-website') }}</h2>
                 <button type="button" class="btn-close" data-close-modal aria-label="{{ ftl('common-close') }}"></button>
             </div>
-            <form method="POST" action="{{ url_for('projects.add_website', project_id=project.id) }}">
+            <form method="POST" action="{{ url_for('projects.add_website', project_id=project.id) }}" aria-labelledby="addWebsiteModalLabel">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <div class="modal-body">
                     <div class="mb-3">
@@ -489,8 +489,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-close-modal>{{ ftl('common-cancel') }}</button>
-                    <button type="submit" class="btn btn-primary">{{ ftl('projects-add-website') }}</button>
+                    <button type="button" class="btn btn-neutral" data-close-modal>{{ ftl('common-cancel') }}</button>
+                    <button type="submit" class="btn btn-brand">{{ ftl('projects-add-website') }}</button>
                 </div>
             </form>
         </div>
@@ -498,19 +498,19 @@
 </dialog>
 
 <!-- Discovery Options Modal -->
-<dialog class="modal" id="discoveryModal" aria-labelledby="discoveryModalLabel">
+<dialog class="modal" id="discoveryModal" role="dialog" aria-labelledby="discoveryModalLabel" aria-modal="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 class="modal-title" id="discoveryModalLabel">{{ ftl('common-discovery-options') }}</h2>
                 <button type="button" class="btn-close" data-close-modal aria-label="{{ ftl('common-close') }}"></button>
             </div>
-            <form id="discoveryForm">
+            <form id="discoveryForm" aria-labelledby="discoveryModalLabel">
                 <input type="hidden" id="discoveryWebsiteId" />
                 <input type="hidden" id="discoveryWebsiteName" />
                 <div class="modal-body">
-                    <div class="mb-4">
-                        <label class="form-label"><strong>{{ ftl('common-select-users-for-discovery') }}</strong></label>
+                    <fieldset class="mb-4">
+                        <legend class="form-label"><strong>{{ ftl('common-select-users-for-discovery') }}</strong></legend>
                         <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
                             <div class="form-check mb-2">
                                 <input class="form-check-input modal-discovery-user-checkbox" type="checkbox" value="" id="modal-discovery-user-guest" checked>
@@ -541,7 +541,7 @@
                             <a href="{{ url_for('project_users.list_users', project_id=project.id) }}">{{ ftl('common-add-test-users') }}</a> {{ ftl('projects-to-discover-pages-requiring-authentication') }}
                             {% endif %}
                         </small>
-                    </div>
+                    </fieldset>
                     <div class="mb-3">
                         <label for="maxPages" class="form-label">{{ ftl('common-maximum-pages-to-discover') }}</label>
                         <input type="number" class="form-control" id="maxPages" min="1" max="1000"
@@ -553,8 +553,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-close-modal>{{ ftl('common-cancel') }}</button>
-                    <button type="submit" class="btn btn-success">
+                    <button type="button" class="btn btn-neutral" data-close-modal>{{ ftl('common-cancel') }}</button>
+                    <button type="submit" class="btn btn-pass">
                         <i class="bi bi-search" aria-hidden="true"></i> {{ ftl('common-start-discovery') }}
                     </button>
                 </div>
@@ -564,14 +564,14 @@
 </dialog>
 
 <!-- Test All Websites Modal -->
-<dialog class="modal" id="testAllModal" aria-labelledby="testAllModalLabel">
+<dialog class="modal" id="testAllModal" role="dialog" aria-labelledby="testAllModalLabel" aria-modal="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 class="modal-title" id="testAllModalLabel">{{ ftl('projects-test-all-websites-in-project') }}</h2>
                 <button type="button" class="btn-close" data-close-modal aria-label="{{ ftl('common-close') }}"></button>
             </div>
-            <form id="testAllForm" method="POST" action="{{ url_for('projects.test_project', project_id=project.id) }}">
+            <form id="testAllForm" method="POST" action="{{ url_for('projects.test_project', project_id=project.id) }}" aria-labelledby="testAllModalLabel">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <div class="modal-body">
                     <p>{{ ftl('projects-this-will-test-all-websites-in-the-project') }} "{{ project.name }}".</p>
@@ -603,8 +603,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-close-modal>{{ ftl('common-cancel') }}</button>
-                    <button type="submit" class="btn btn-success">
+                    <button type="button" class="btn btn-neutral" data-close-modal>{{ ftl('common-cancel') }}</button>
+                    <button type="submit" class="btn btn-pass">
                         <i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('projects-start-testing-all-websites') }}
                     </button>
                 </div>
@@ -614,7 +614,7 @@
 </dialog>
 
 <!-- Delete Project Modal -->
-<dialog class="modal" id="deleteModal" aria-labelledby="deleteModalLabel">
+<dialog class="modal" id="deleteModal" role="dialog" aria-labelledby="deleteModalLabel" aria-modal="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -623,13 +623,13 @@
             </div>
             <div class="modal-body">
                 <p>{{ ftl('projects-are-you-sure-you-want-to-delete-the-project') }} "{{ project.name }}"?</p>
-                <p class="text-danger">{{ ftl('projects-this-will-permanently-delete-all-websites-pages') }}</p>
+                <p class="text-severity-high">{{ ftl('projects-this-will-permanently-delete-all-websites-pages') }}</p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-close-modal>{{ ftl('common-cancel') }}</button>
-                <form method="POST" action="{{ url_for('projects.delete_project', project_id=project.id) }}" style="display: inline;">
+                <button type="button" class="btn btn-neutral" data-close-modal>{{ ftl('common-cancel') }}</button>
+                <form method="POST" action="{{ url_for('projects.delete_project', project_id=project.id) }}" style="display: inline;" aria-labelledby="deleteModalLabel">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                    <button type="submit" class="btn btn-danger">{{ ftl('projects-delete-project') }}</button>
+                    <button type="submit" class="btn btn-high">{{ ftl('projects-delete-project') }}</button>
                 </form>
             </div>
         </div>
@@ -667,23 +667,25 @@ async function loadMembers() {
                 const tr = document.createElement('tr');
                 const memberGroupIds = m.groups.map(g => g.id);
                 const groupBadges = m.groups.map(g =>
-                    `<span class="badge bg-secondary">${escapeHtml(g.name)}</span>`
+                    `<span class="badge badge-neutral">${escapeHtml(g.name)}</span>`
                 ).join(' ');
                 const groupCheckboxes = availableGroups.map(g => {
                     const checked = memberGroupIds.includes(g.id) ? 'checked' : '';
+                    const cbId = `member-group-${m.user_id}-${g.id}`;
                     return `<div class="form-check form-check-inline">
                         <input class="form-check-input member-group-cb" type="checkbox"
+                               id="${cbId}"
                                value="${g.id}" ${checked}
                                data-user-id="${m.user_id}"
                                onchange="updateMemberGroups('${m.user_id}')">
-                        <label class="form-check-label">${escapeHtml(g.name)}</label>
+                        <label class="form-check-label" for="${cbId}">${escapeHtml(g.name)}</label>
                     </div>`;
                 }).join('');
                 tr.innerHTML = `
                     <td>${escapeHtml(m.display_name || m.email)}</td>
                     <td>${groupCheckboxes}</td>
                     <td class="text-end">
-                        <button class="btn btn-sm btn-outline-danger" onclick="removeMember('${m.user_id}')">
+                        <button class="btn btn-sm btn-outline-high" onclick="removeMember('${m.user_id}')">
                             <i class="bi bi-trash" aria-hidden="true"></i>
                         </button>
                     </td>`;
@@ -985,7 +987,7 @@ function startWebsiteStatusPolling(websiteId) {
     }
     
     // Show testing status immediately
-    updateWebsiteStatus(websiteId, '<span class="badge bg-info"><span class="spinner-border spinner-border-sm me-1" role="status"></span>{{ ftl('common-testing-2') }}</span>');
+    updateWebsiteStatus(websiteId, '<span class="badge badge-info"><span class="spinner-border spinner-border-sm me-1" role="status"><span class="visually-hidden">{{ ftl('common-loading') }}</span></span>{{ ftl('common-testing-2') }}</span>');
     websitesBeingTested.add(websiteId);
     
     // Poll for website testing status
@@ -1009,13 +1011,13 @@ function startWebsiteStatusPolling(websiteId) {
                 // Still testing - show progress
                 const progressText = `{{ ftl('common-testing') }}: ${data.tested_pages}/${data.total_pages} {{ ftl('common-pages-2') }}`;
                 updateWebsiteStatus(websiteId,
-                    `<span class="badge bg-info"><span class="spinner-border spinner-border-sm me-1" role="status"></span>${progressText}</span>`
+                    `<span class="badge badge-info"><span class="spinner-border spinner-border-sm me-1" role="status"><span class="visually-hidden">{{ ftl('common-loading') }}</span></span>${progressText}</span>`
                 );
             }
         }).fail(function() {
             // On error, just show generic testing message
             updateWebsiteStatus(websiteId,
-                '<span class="badge bg-info"><span class="spinner-border spinner-border-sm me-1" role="status"></span>{{ ftl('common-testing-2') }}</span>'
+                '<span class="badge badge-info"><span class="spinner-border spinner-border-sm me-1" role="status"><span class="visually-hidden">{{ ftl('common-loading') }}</span></span>{{ ftl('common-testing-2') }}</span>'
             );
         });
     }, 3000); // Poll every 3 seconds
@@ -1092,7 +1094,7 @@ $('#discoveryForm').submit(function(e) {
 
     if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> {{ ftl('common-starting') }}';
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"><span class="visually-hidden">{{ ftl('common-loading') }}</span></span> {{ ftl('common-starting') }}';
     }
 
     $.ajax({
@@ -1185,8 +1187,8 @@ function startDiscoveryPolling(websiteId, btn) {
 
     // Change button to show cancel option
     btn.disabled = false;
-    btn.classList.remove('btn-success');
-    btn.classList.add('btn-danger');
+    btn.classList.remove('btn-pass');
+    btn.classList.add('btn-high');
     btn.innerHTML = '<i class="bi bi-x-circle" aria-hidden="true"></i><span class="d-none d-lg-inline"> {{ ftl('common-cancel') }}</span>';
     btn.onclick = function() {
         if (confirm('{{ ftl('projects-cancel-the-discovery-process') }}')) {
@@ -1214,8 +1216,8 @@ function startDiscoveryPolling(websiteId, btn) {
                 // Update button
                 btn.innerHTML = `<i class="bi bi-check-circle" aria-hidden="true"></i><span class="d-none d-lg-inline"> {{ ftl('common-found') }} ${data.pages_found} {{ ftl('common-pages-2') }}</span>`;
                 btn.disabled = false;
-                btn.classList.remove('btn-danger');
-                btn.classList.add('btn-success');
+                btn.classList.remove('btn-high');
+                btn.classList.add('btn-pass');
                 btn.onclick = function() { discoverPages(websiteId); };
 
                 // Remove from global tracking
@@ -1237,8 +1239,8 @@ function startDiscoveryPolling(websiteId, btn) {
                 // Update button
                 btn.innerHTML = '<i class="bi bi-x-circle" aria-hidden="true"></i><span class="d-none d-lg-inline"> {{ ftl('common-failed') }}</span>';
                 btn.disabled = false;
-                btn.classList.remove('btn-danger');
-                btn.classList.add('btn-warning');
+                btn.classList.remove('btn-high');
+                btn.classList.add('btn-medium');
 
                 // Remove from global tracking
                 if (typeof TestTracker !== 'undefined') {
@@ -1275,7 +1277,7 @@ function testAllWebsites() {
 function testWebsite(websiteId) {
     const btn = event.target.closest('button');
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Starting...';
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"><span class="visually-hidden">{{ ftl('common-loading') }}</span></span> {{ ftl('common-starting') }}';
     
     // Get website name for tracking
     const websiteRow = btn.closest('tr');

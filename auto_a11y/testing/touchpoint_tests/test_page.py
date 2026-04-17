@@ -3,8 +3,12 @@ Page-level touchpoint test module
 Tests page-level accessibility including page titles, responsive breakpoints, etc.
 """
 
-from typing import Dict, Any
+from __future__ import annotations
+
+from typing import Any
 import logging
+
+from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +36,7 @@ TEST_DOCUMENTATION = {
     ]
 }
 
-async def test_page(page) -> Dict[str, Any]:
+async def test_page(page: Page) -> dict[str, Any]:
     """
     Test page-level accessibility including page title and responsive breakpoints
 
@@ -42,8 +46,8 @@ async def test_page(page) -> Dict[str, Any]:
     Returns:
         Dictionary containing test results
     """
-    results = {
-        'applicable': True,
+    results: dict[str, Any] = {
+            'applicable': True,
         'errors': [],
         'warnings': [],
         'passes': [],

@@ -2,12 +2,13 @@
 Page setup script model for interactive page training
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import List, Optional, Dict, Any, Set
+from typing import Any
 from enum import Enum
 from bson import ObjectId
-import uuid
 
 
 class ScriptScope(Enum):
@@ -47,13 +48,13 @@ class ScriptStep:
     step_number: int
     action_type: ActionType
     description: str
-    selector: Optional[str] = None
-    value: Optional[str] = None  # For type, select actions or wait duration
+    selector: str | None = None
+    value: str | None = None  # For type, select actions or wait duration
     timeout: int = 5000  # milliseconds
     wait_after: int = 0  # milliseconds to wait after action
     screenshot_after: bool = False
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary"""
         return {
             'step_number': self.step_number,
@@ -67,7 +68,7 @@ class ScriptStep:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'ScriptStep':
+    def from_dict(cls, data: dict[str, Any]) -> ScriptStep:
         """Create from dictionary"""
         return cls(
             step_number=data['step_number'],
@@ -85,11 +86,11 @@ class ScriptStep:
 class ScriptValidation:
     """Validation rules for script execution"""
 
-    success_selector: Optional[str] = None
-    success_text: Optional[str] = None
-    failure_selectors: List[str] = field(default_factory=list)
+    success_selector: str | None = None
+    success_text: str | None = None
+    failure_selectors: list[str] = field(default_factory=lambda: [])
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary"""
         return {
             'success_selector': self.success_selector,
@@ -98,7 +99,7 @@ class ScriptValidation:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'ScriptValidation':
+    def from_dict(cls, data: dict[str, Any]) -> ScriptValidation:
         """Create from dictionary"""
         return cls(
             success_selector=data.get('success_selector'),
@@ -111,12 +112,12 @@ class ScriptValidation:
 class ExecutionStats:
     """Statistics for script execution"""
 
-    last_executed: Optional[datetime] = None
+    last_executed: datetime | None = None
     success_count: int = 0
     failure_count: int = 0
     average_duration_ms: int = 0
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary"""
         return {
             'last_executed': self.last_executed,
@@ -126,7 +127,7 @@ class ExecutionStats:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'ExecutionStats':
+    def from_dict(cls, data: dict[str, Any]) -> ExecutionStats:
         """Create from dictionary"""
         return cls(
             last_executed=data.get('last_executed'),
@@ -145,26 +146,26 @@ class PageSetupScript:
 
     # NEW: Scope configuration (where script is associated)
     scope: ScriptScope = ScriptScope.PAGE
-    website_id: Optional[str] = None      # Required if scope=WEBSITE or TEST_RUN
-    page_id: Optional[str] = None         # Required if scope=PAGE
-    test_run_id: Optional[str] = None     # Required if scope=TEST_RUN
+    website_id: str | None = None      # Required if scope=WEBSITE or TEST_RUN
+    page_id: str | None = None         # Required if scope=PAGE
+    test_run_id: str | None = None     # Required if scope=TEST_RUN
 
     # NEW: Execution configuration (when script runs)
     trigger: ExecutionTrigger = ExecutionTrigger.ONCE_PER_PAGE
-    condition_selector: Optional[str] = None   # Required if trigger=CONDITIONAL
+    condition_selector: str | None = None   # Required if trigger=CONDITIONAL
 
     # NEW: Violation detection
     report_violation_if_condition_met: bool = False
-    violation_message: Optional[str] = None
-    violation_code: Optional[str] = None
+    violation_message: str | None = None
+    violation_code: str | None = None
 
     # NEW: Multi-state testing configuration
     test_before_execution: bool = False  # Test page BEFORE running script
     test_after_execution: bool = True    # Test page AFTER running script
 
     # NEW: Expected state changes after execution
-    expect_visible_after: List[str] = field(default_factory=list)   # Selectors that should become visible
-    expect_hidden_after: List[str] = field(default_factory=list)    # Selectors that should become hidden
+    expect_visible_after: list[str] = field(default_factory=lambda: [])   # Selectors that should become visible
+    expect_hidden_after: list[str] = field(default_factory=lambda: [])    # Selectors that should become hidden
 
     # NEW: Clean state options (especially useful for website-level scripts)
     clear_cookies_before: bool = False       # Clear cookies before executing script
@@ -174,22 +175,22 @@ class PageSetupScript:
 
     # Existing fields
     enabled: bool = True
-    steps: List[ScriptStep] = field(default_factory=list)
-    validation: Optional[ScriptValidation] = None
-    created_by: Optional[str] = None
+    steps: list[ScriptStep] = field(default_factory=lambda: [])
+    validation: ScriptValidation | None = None
+    created_by: str | None = None
     created_date: datetime = field(default_factory=datetime.now)
     last_modified: datetime = field(default_factory=datetime.now)
     execution_stats: ExecutionStats = field(default_factory=ExecutionStats)
-    _id: Optional[ObjectId] = None
+    _id: ObjectId | None = None
 
     @property
-    def id(self) -> str:
+    def id(self) -> str | None:
         """Get script ID as string"""
         return str(self._id) if self._id else None
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for MongoDB"""
-        data = {
+        data: dict[str, Any] = {
             'name': self.name,
             'description': self.description,
             # Scope configuration
@@ -228,7 +229,7 @@ class PageSetupScript:
         return data
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'PageSetupScript':
+    def from_dict(cls, data: dict[str, Any]) -> PageSetupScript:
         """Create from MongoDB document"""
         return cls(
             name=data['name'],
@@ -266,7 +267,7 @@ class PageSetupScript:
             _id=data.get('_id')
         )
 
-    def update_timestamp(self):
+    def update_timestamp(self) -> None:
         """Update the last_modified timestamp"""
         self.last_modified = datetime.now()
 
@@ -281,7 +282,7 @@ class ScriptExecutionRecord:
     success: bool
     duration_ms: int
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary"""
         return {
             'script_id': self.script_id,
@@ -292,7 +293,7 @@ class ScriptExecutionRecord:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'ScriptExecutionRecord':
+    def from_dict(cls, data: dict[str, Any]) -> ScriptExecutionRecord:
         """Create from dictionary"""
         return cls(
             script_id=data['script_id'],
@@ -314,7 +315,7 @@ class ConditionCheck:
     condition_met: bool
     violation_reported: bool
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary"""
         return {
             'script_id': self.script_id,
@@ -326,7 +327,7 @@ class ConditionCheck:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'ConditionCheck':
+    def from_dict(cls, data: dict[str, Any]) -> ConditionCheck:
         """Create from dictionary"""
         return cls(
             script_id=data['script_id'],
@@ -346,19 +347,19 @@ class PageTestState:
     description: str
 
     # Scripts executed to reach this state
-    scripts_executed: List[str] = field(default_factory=list)  # Script IDs
+    scripts_executed: list[str] = field(default_factory=lambda: [])  # Script IDs
 
     # Buttons/elements clicked to reach this state
-    elements_clicked: List[Dict[str, Any]] = field(default_factory=list)  # [{selector, description, timestamp}]
+    elements_clicked: list[dict[str, Any]] = field(default_factory=lambda: [])  # [{selector, description, timestamp}]
 
     # Expected conditions
-    elements_visible: List[str] = field(default_factory=list)   # Selectors that should be visible
-    elements_hidden: List[str] = field(default_factory=list)    # Selectors that should be hidden
+    elements_visible: list[str] = field(default_factory=lambda: [])   # Selectors that should be visible
+    elements_hidden: list[str] = field(default_factory=lambda: [])    # Selectors that should be hidden
 
     # Timestamp
     captured_at: datetime = field(default_factory=datetime.now)
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary"""
         return {
             'state_id': self.state_id,
@@ -371,7 +372,7 @@ class PageTestState:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'PageTestState':
+    def from_dict(cls, data: dict[str, Any]) -> PageTestState:
         """Create from dictionary"""
         return cls(
             state_id=data['state_id'],
@@ -391,13 +392,13 @@ class ScriptExecutionSession:
     session_id: str
     website_id: str
     started_at: datetime
-    ended_at: Optional[datetime] = None
-    executed_scripts: List[ScriptExecutionRecord] = field(default_factory=list)
-    condition_checks: List[ConditionCheck] = field(default_factory=list)
-    _id: Optional[ObjectId] = None
+    ended_at: datetime | None = None
+    executed_scripts: list[ScriptExecutionRecord] = field(default_factory=lambda: [])
+    condition_checks: list[ConditionCheck] = field(default_factory=lambda: [])
+    _id: ObjectId | None = None
 
     @property
-    def id(self) -> str:
+    def id(self) -> str | None:
         """Get session ID as string"""
         return str(self._id) if self._id else None
 
@@ -411,7 +412,7 @@ class ScriptExecutionSession:
         page_id: str,
         success: bool,
         duration_ms: int
-    ):
+    ) -> None:
         """Add an execution record"""
         record = ScriptExecutionRecord(
             script_id=script_id,
@@ -429,7 +430,7 @@ class ScriptExecutionSession:
         condition_selector: str,
         condition_met: bool,
         violation_reported: bool
-    ):
+    ) -> None:
         """Add a condition check record"""
         check = ConditionCheck(
             script_id=script_id,
@@ -441,9 +442,9 @@ class ScriptExecutionSession:
         )
         self.condition_checks.append(check)
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for MongoDB"""
-        data = {
+        data: dict[str, Any] = {
             'session_id': self.session_id,
             'website_id': self.website_id,
             'started_at': self.started_at,
@@ -456,7 +457,7 @@ class ScriptExecutionSession:
         return data
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'ScriptExecutionSession':
+    def from_dict(cls, data: dict[str, Any]) -> ScriptExecutionSession:
         """Create from MongoDB document"""
         return cls(
             session_id=data['session_id'],

@@ -2,6 +2,14 @@
 
 {% block title %}{{ ftl('common-test-users') }} - {{ project.name }} - {{ ftl('common-auto-a11y') }}{% endblock %}
 
+{% block extra_css %}
+<style>
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
     <!-- Breadcrumb -->
@@ -22,7 +30,7 @@
             <p class="text-muted">{{ ftl('common-manage-authenticated-test-users-for-name', name=project.name) }}</p>
         </div>
         <div>
-            <a href="{{ url_for('project_users.create_user', project_id=project.id) }}" class="btn btn-primary">
+            <a href="{{ url_for('project_users.create_user', project_id=project.id) }}" class="btn btn-brand">
                 <i class="bi bi-plus-circle" aria-hidden="true"></i> {{ ftl('common-create-test-user') }}
             </a>
         </div>
@@ -31,7 +39,7 @@
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
-            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+            <div class="alert alert-{{ {'error': 'high', 'success': 'pass', 'warning': 'medium', 'info': 'info'}.get(category, 'info') }} alert-dismissible fade show" role="alert">
                 {{ message }}
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
@@ -48,10 +56,10 @@
 
     {% if users %}
     <div class="card">
-        <div class="card-header bg-primary text-white">
+        <div class="card-header bg-brand text-inverse">
             <h2 class="mb-0">
                 <i class="bi bi-people" aria-hidden="true"></i> {{ ftl('common-test-users') }}
-                <span class="badge bg-light text-dark">{{ users|length }}</span>
+                <span class="badge badge-subtle">{{ users|length }}</span>
             </h2>
         </div>
         <div class="card-body">
@@ -82,7 +90,7 @@
                             <td>
                                 {% if user.roles %}
                                     {% for role in user.roles %}
-                                    <span class="badge bg-secondary">{{ role }}</span>
+                                    <span class="badge badge-neutral">{{ role }}</span>
                                     {% endfor %}
                                 {% else %}
                                 <span class="text-muted">{{ ftl('common-no-roles') }}</span>
@@ -93,21 +101,21 @@
                             </td>
                             <td>
                                 {% if user.enabled %}
-                                <span class="badge bg-success">
+                                <span class="badge badge-pass">
                                     <i class="bi bi-check-circle" aria-hidden="true"></i> {{ ftl('common-enabled') }}
                                 </span>
                                 {% else %}
-                                <span class="badge bg-secondary">
+                                <span class="badge badge-neutral">
                                     <i class="bi bi-pause-circle" aria-hidden="true"></i> {{ ftl('common-disabled') }}
                                 </span>
                                 {% endif %}
 
                                 {% if user.last_login_success == False %}
-                                <br><span class="badge bg-danger mt-1" title="{{ user.last_login_error }}">
-                                    <i class="bi bi-exclamation-triangle" aria-hidden="true"></i> {{ ftl('common-login-failed') }}
+                                <br><span class="badge badge-high mt-1">
+                                    <i class="bi bi-exclamation-triangle" aria-hidden="true"></i> {{ ftl('common-login-failed') }}<span class="visually-hidden">: {{ user.last_login_error }}</span>
                                 </span>
                                 {% elif user.last_login_success == True %}
-                                <br><span class="badge bg-success mt-1">
+                                <br><span class="badge badge-pass mt-1">
                                     <i class="bi bi-check" aria-hidden="true"></i> {{ ftl('common-login-ok') }}
                                 </span>
                                 {% endif %}
@@ -122,19 +130,24 @@
                             <td>
                                 <div class="btn-group btn-group-sm" role="group">
                                     <a href="{{ url_for('project_users.view_user', user_id=user.id) }}"
-                                       class="btn btn-outline-primary" title="{{ ftl('common-view') }}">
+                                       class="btn btn-outline-brand" aria-label="{{ ftl('common-view') }}">
                                         <i class="bi bi-eye" aria-hidden="true"></i>
                                     </a>
                                     <a href="{{ url_for('project_users.edit_user', user_id=user.id) }}"
-                                       class="btn btn-outline-secondary" title="{{ ftl('common-edit') }}">
+                                       class="btn btn-outline-neutral" aria-label="{{ ftl('common-edit') }}">
                                         <i class="bi bi-pencil" aria-hidden="true"></i>
                                     </a>
-                                    <button type="button" class="btn btn-outline-{% if user.enabled %}success{% else %}secondary{% endif %}"
-                                            onclick="toggleUser('{{ user.id }}')" title="{% if user.enabled %}{{ ftl('common-disable') }}{% else %}{{ ftl('common-enable') }}{% endif %}">
+                                    <button type="button" class="btn btn-outline-brand"
+                                            id="test-login-btn-{{ user.id }}"
+                                            onclick="testLogin('{{ user.id }}')" aria-label="{{ ftl('websites-test-login') }}">
+                                        <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-{% if user.enabled %}pass{% else %}neutral{% endif %}"
+                                            onclick="toggleUser('{{ user.id }}')" aria-label="{% if user.enabled %}{{ ftl('common-disable') }}{% else %}{{ ftl('common-enable') }}{% endif %}">
                                         <i class="bi bi-toggle-{% if user.enabled %}on{% else %}off{% endif %}" aria-hidden="true"></i>
                                     </button>
-                                    <button type="button" class="btn btn-outline-danger"
-                                            onclick="deleteUser('{{ user.id }}')" title="{{ ftl('common-delete') }}">
+                                    <button type="button" class="btn btn-outline-high"
+                                            onclick="deleteUser('{{ user.id }}')" aria-label="{{ ftl('common-delete') }}">
                                         <i class="bi bi-trash" aria-hidden="true"></i>
                                     </button>
                                 </div>
@@ -154,7 +167,7 @@
         </div>
         <div class="card-body">
             {% for role in all_roles %}
-            <span class="badge bg-secondary me-2">{{ role }}</span>
+            <span class="badge badge-neutral me-2">{{ role }}</span>
             {% endfor %}
         </div>
     </div>
@@ -162,9 +175,9 @@
 
     {% else %}
     <div class="text-center py-5">
-        <i class="bi bi-people text-placeholder" aria-hidden="true" style="font-size: 3rem;"></i>
+        <i class="bi bi-people text-placeholder empty-state-icon" aria-hidden="true"></i>
         <p class="text-muted mt-3">{{ ftl('common-no-test-users-yet') }}</p>
-        <a href="{{ url_for('project_users.create_user', project_id=project.id) }}" class="btn btn-primary">
+        <a href="{{ url_for('project_users.create_user', project_id=project.id) }}" class="btn btn-brand">
             <i class="bi bi-plus-circle" aria-hidden="true"></i> {{ ftl('common-create-your-first-test-user') }}
         </a>
     </div>
@@ -175,6 +188,46 @@
 
 {% block extra_js %}
 <script>
+function testLogin(userId) {
+    const btn = document.getElementById(`test-login-btn-${userId}`);
+    const icon = btn.querySelector('i');
+    const originalClass = icon.className;
+
+    // Show spinner
+    btn.disabled = true;
+    icon.className = 'bi bi-arrow-repeat spin';
+    btn.title = {{ ftl('websites-testing-login') | tojson }};
+
+    fetch(`/projects/users/${userId}/test-login`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.disabled = false;
+        if (data.success) {
+            icon.className = 'bi bi-check-circle-fill';
+            btn.classList.remove('btn-outline-brand');
+            btn.classList.add('btn-outline-pass');
+            btn.title = {{ ftl('websites-login-test-succeeded', duration='') | tojson }} + data.duration_ms + 'ms';
+        } else {
+            icon.className = 'bi bi-x-circle-fill';
+            btn.classList.remove('btn-outline-brand');
+            btn.classList.add('btn-outline-high');
+            btn.title = (data.error || {{ ftl('websites-login-test-failed') | tojson }});
+        }
+        // Reload after 3 seconds to update the status column
+        setTimeout(() => location.reload(), 3000);
+    })
+    .catch(err => {
+        btn.disabled = false;
+        icon.className = originalClass;
+        alert({{ ftl('websites-error-testing-login') | tojson }} + ' ' + err.message);
+    });
+}
+
 function toggleUser(userId) {
     fetch(`/projects/users/${userId}/toggle`, {
         method: 'POST',

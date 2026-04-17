@@ -67,9 +67,11 @@ class IssueFilterManager {
         if (this.activeFilters[filterType].has(filterValue)) {
             this.activeFilters[filterType].delete(filterValue);
             chip.classList.remove('active');
+            chip.setAttribute('aria-pressed', 'false');
         } else {
             this.activeFilters[filterType].add(filterValue);
             chip.classList.add('active');
+            chip.setAttribute('aria-pressed', 'true');
         }
 
         this.applyFilters();
@@ -167,41 +169,56 @@ class IssueFilterManager {
             activeFiltersDiv.style.display = 'block';
             activeFilterTags.innerHTML = '';
 
+            // Helper that produces an accessible <button> remove control.
+            // Using a real button (instead of <span>) gives keyboard activation,
+            // a button role, and a discoverable accessible name for screen
+            // readers — required by WCAG 4.1.2 Name, Role, Value.
+            const makeRemoveButton = (type, value, labelText) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'remove-filter';
+                btn.dataset.type = type;
+                if (value !== undefined) btn.dataset.value = value;
+                btn.setAttribute('aria-label', `Remove filter: ${labelText}`);
+                // Visible glyph; aria-hidden so the accessible name is the
+                // aria-label only, not "× Remove filter: ...".
+                const glyph = document.createElement('span');
+                glyph.setAttribute('aria-hidden', 'true');
+                glyph.textContent = '\u00d7';
+                btn.appendChild(glyph);
+                return btn;
+            };
+
             // Display active filters as tags
             Object.entries(this.activeFilters).forEach(([type, values]) => {
                 if (typeof values === 'string' && values) {
                     // Search filter - use textContent for user value
                     const tag = document.createElement('span');
                     tag.className = 'active-filter-tag';
-                    tag.textContent = `Search: "${values}" `;
-                    const removeBtn = document.createElement('span');
-                    removeBtn.className = 'remove-filter';
-                    removeBtn.dataset.type = type;
-                    removeBtn.textContent = '\u00d7';
-                    tag.appendChild(removeBtn);
+                    const label = `Search: "${values}"`;
+                    tag.textContent = `${label} `;
+                    tag.appendChild(makeRemoveButton(type, undefined, label));
                     activeFilterTags.appendChild(tag);
                 } else if (values.size > 0) {
                     // Other filters - use textContent for user values
                     values.forEach(value => {
                         const tag = document.createElement('span');
                         tag.className = 'active-filter-tag';
-                        tag.textContent = `${type}: ${value} `;
-                        const removeBtn = document.createElement('span');
-                        removeBtn.className = 'remove-filter';
-                        removeBtn.dataset.type = type;
-                        removeBtn.dataset.value = value;
-                        removeBtn.textContent = '\u00d7';
-                        tag.appendChild(removeBtn);
+                        const label = `${type}: ${value}`;
+                        tag.textContent = `${label} `;
+                        tag.appendChild(makeRemoveButton(type, value, label));
                         activeFilterTags.appendChild(tag);
                     });
                 }
             });
 
-            // Add remove handlers
+            // Add remove handlers (use currentTarget so clicks on inner glyph
+            // still resolve to the button)
             activeFilterTags.querySelectorAll('.remove-filter').forEach(btn => {
                 btn.addEventListener('click', (e) => {
-                    const type = e.target.dataset.type;
-                    const value = e.target.dataset.value;
+                    const target = e.currentTarget;
+                    const type = target.dataset.type;
+                    const value = target.dataset.value;
 
                     if (type === 'search') {
                         this.activeFilters.search = '';
@@ -211,7 +228,10 @@ class IssueFilterManager {
                         this.activeFilters[type].delete(value);
                         // Update UI
                         const chip = document.querySelector(`[data-filter-type="${type}"][data-filter-value="${value}"]`);
-                        if (chip) chip.classList.remove('active');
+                        if (chip) {
+                            chip.classList.remove('active');
+                            chip.setAttribute('aria-pressed', 'false');
+                        }
                     }
 
                     this.applyFilters();
@@ -303,6 +323,7 @@ class IssueFilterManager {
         // Reset UI
         document.querySelectorAll('.filter-chip.active').forEach(chip => {
             chip.classList.remove('active');
+            chip.setAttribute('aria-pressed', 'false');
         });
 
         const touchpointFilter = document.getElementById('touchpointFilter');

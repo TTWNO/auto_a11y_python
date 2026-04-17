@@ -4,38 +4,42 @@ State validator for page setup scripts
 Validates that page state matches expectations after script execution.
 """
 
-from typing import List, Dict, Any
+from __future__ import annotations
+
+from typing import Any
+
+from playwright.async_api import Page
+
 from auto_a11y.models import Violation, ImpactLevel, PageTestState
 
 
 class StateValidator:
     """Validates page state after script execution"""
 
-    async def _find_element(self, page, selector: str):
+    async def _find_element(self, page: Page, selector: str) -> Any:
         """
         Find element by CSS selector or XPath
 
         Args:
-            page: Pyppeteer page object
+            page: Playwright Page object
             selector: CSS selector or XPath (XPath must start with / or //)
 
         Returns:
-            Element handle or None
+            Locator first element or None
         """
         if selector.startswith('/'):
-            # XPath selector
-            elements = await page.xpath(selector)
-            return elements[0] if elements else None
+            locator = page.locator(f"xpath={selector}")
         else:
-            # CSS selector
-            return await page.querySelector(selector)
+            locator = page.locator(selector)
+        count = await locator.count()
+        return locator.first if count > 0 else None
 
-    async def _is_element_visible(self, page, selector: str) -> bool:
+    async def _is_element_visible(self, page: Page, selector: str) -> bool:
         """
         Check if element is visible (supports both CSS and XPath)
 
         Args:
-            page: Pyppeteer page object
+            page: Playwright Page object
             selector: CSS selector or XPath
 
         Returns:
@@ -43,7 +47,7 @@ class StateValidator:
         """
         if selector.startswith('/'):
             # XPath selector
-            return await page.evaluate('''(xpath) => {
+            result: bool = await page.evaluate('''(xpath) => {
                 const result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
                 const el = result.singleNodeValue;
                 if (!el) return false;
@@ -53,9 +57,10 @@ class StateValidator:
                        style.opacity !== '0' &&
                        el.offsetParent !== null;
             }''', selector)
+            return result
         else:
             # CSS selector
-            return await page.evaluate('''(selector) => {
+            result = await page.evaluate('''(selector) => {
                 const el = document.querySelector(selector);
                 if (!el) return false;
                 const style = window.getComputedStyle(el);
@@ -64,12 +69,13 @@ class StateValidator:
                        style.opacity !== '0' &&
                        el.offsetParent !== null;
             }''', selector)
+            return bool(result)
 
     async def validate_state(
         self,
-        page,
+        page: Page,
         expected_state: PageTestState
-    ) -> List[Violation]:
+    ) -> list[Violation]:
         """
         Validate that page is in expected state
 
@@ -164,11 +170,11 @@ class StateValidator:
 
     async def capture_current_state(
         self,
-        page,
+        page: Page,
         state_id: str,
         description: str,
-        scripts_executed: List[str] = None,
-        elements_clicked: List[Dict[str, Any]] = None
+        scripts_executed: list[str] | None = None,
+        elements_clicked: list[dict[str, Any]] | None = None
     ) -> PageTestState:
         """
         Capture the current state of the page
@@ -201,10 +207,10 @@ class StateValidator:
         self,
         state_id: str,
         description: str,
-        scripts_executed: List[str],
-        expect_visible: List[str],
-        expect_hidden: List[str],
-        elements_clicked: List[Dict[str, Any]] = None
+        scripts_executed: list[str],
+        expect_visible: list[str],
+        expect_hidden: list[str],
+        elements_clicked: list[dict[str, Any]] | None = None
     ) -> PageTestState:
         """
         Create an expected page state from script configuration

@@ -4,9 +4,13 @@ Recording Exporter
 Handles exporting Audio/Video recordings from Auto A11y to Drupal as audit_video nodes.
 """
 
+from __future__ import annotations
+
 import logging
-from typing import Optional, Dict, Any, List
+from typing import Any
 from datetime import datetime
+
+from auto_a11y.drupal.client import DrupalJSONAPIClient
 
 logger = logging.getLogger(__name__)
 
@@ -19,28 +23,28 @@ class RecordingExporter:
     including file references and metadata.
     """
 
-    def __init__(self, client):
+    def __init__(self, client: DrupalJSONAPIClient) -> None:
         """
         Initialize exporter.
 
         Args:
             client: DrupalJSONAPIClient instance
         """
-        self.client = client
+        self.client: DrupalJSONAPIClient = client
 
     def export_recording(
         self,
         title: str,
-        description: Optional[str],
+        description: str | None,
         audit_uuid: str,
-        media_url: Optional[str] = None,
-        duration: Optional[str] = None,
-        auditor_name: Optional[str] = None,
-        auditor_role: Optional[str] = None,
-        recording_date: Optional[datetime] = None,
-        existing_uuid: Optional[str] = None,
-        discovered_page_uuids: Optional[List[str]] = None
-    ) -> Dict[str, Any]:
+        media_url: str | None = None,
+        duration: str | None = None,
+        auditor_name: str | None = None,
+        auditor_role: str | None = None,
+        recording_date: datetime | None = None,
+        existing_uuid: str | None = None,
+        discovered_page_uuids: list[str] | None = None
+    ) -> dict[str, Any]:
         """
         Export a recording to Drupal as audit_video.
 
@@ -94,9 +98,9 @@ class RecordingExporter:
                 response = self.client.post("node/audit_video", payload)
 
             # Extract result
-            data = response.get('data', {})
-            uuid = data.get('id')
-            nid = data.get('attributes', {}).get('drupal_internal__nid')
+            data: dict[str, Any] = response.get('data', {})
+            uuid: str | None = data.get('id')
+            nid: int | None = data.get('attributes', {}).get('drupal_internal__nid')
 
             logger.info(f"Successfully exported audit_video: UUID={uuid}, NID={nid}")
 
@@ -112,13 +116,17 @@ class RecordingExporter:
 
             # Try to get detailed error from response
             error_detail = str(e)
-            if hasattr(e, 'response'):
+            resp: Any = getattr(e, 'response', None)
+            if resp is not None:
                 try:
-                    error_data = e.response.json()
+                    error_data: dict[str, Any] = resp.json()
                     if 'errors' in error_data:
-                        error_messages = [err.get('detail', err.get('title', '')) for err in error_data['errors']]
+                        error_messages: list[str] = [
+                            err.get('detail', err.get('title', ''))
+                            for err in error_data['errors']
+                        ]
                         error_detail = '; '.join(error_messages)
-                except:
+                except Exception:
                     pass
 
             return {
@@ -126,7 +134,7 @@ class RecordingExporter:
                 'error': error_detail
             }
 
-    def export_from_recording_model(self, recording, audit_uuid: str, discovered_page_uuids: Optional[List[str]] = None, include_french: bool = False) -> Dict[str, Any]:
+    def export_from_recording_model(self, recording: Any, audit_uuid: str, discovered_page_uuids: list[str] | None = None, include_french: bool = False) -> dict[str, Any]:
         """
         Export an audit_video from a Recording model instance.
 
@@ -140,7 +148,7 @@ class RecordingExporter:
             Dict with 'success', 'uuid', and optional 'error' keys
         """
         # Build description HTML from recording details
-        html_parts = []
+        html_parts: list[str] = []
 
         # Basic description
         if recording.description:
@@ -157,7 +165,7 @@ class RecordingExporter:
             html_parts.append(f"<p><strong>Pages tested:</strong> {len(recording.page_urls)}</p>")
 
         # Auditor metadata (since we can't use separate fields)
-        metadata_parts = []
+        metadata_parts: list[str] = []
         if recording.auditor_name:
             metadata_parts.append(f"<strong>Auditor:</strong> {self._escape_html(recording.auditor_name)}")
         if recording.auditor_role:
@@ -172,29 +180,38 @@ class RecordingExporter:
 
         # Add key takeaways, painpoints, and assertions as HTML sections
         # Check if French content is available and requested
-        available_languages = recording.available_languages
+        available_languages: list[str] = recording.available_languages
         has_french = 'fr' in available_languages
         should_include_french = include_french and has_french
 
         # Fetch English content
-        key_takeaways_en = recording.get_key_takeaways('en')
-        user_painpoints_en = recording.get_user_painpoints('en')
-        user_assertions_en = recording.get_user_assertions('en')
+        key_takeaways_en: list[dict[str, Any]] = recording.get_key_takeaways('en')
+        user_painpoints_en: list[dict[str, Any]] = recording.get_user_painpoints('en')
+        user_assertions_en: list[dict[str, Any]] = recording.get_user_assertions('en')
+
+        # Initialize French content (populated only when should_include_french)
+        key_takeaways_fr: list[dict[str, Any]] = []
+        user_painpoints_fr: list[dict[str, Any]] = []
+        user_assertions_fr: list[dict[str, Any]] = []
 
         if should_include_french:
             # Fetch French content
             key_takeaways_fr = recording.get_key_takeaways('fr')
             user_painpoints_fr = recording.get_user_painpoints('fr')
             user_assertions_fr = recording.get_user_assertions('fr')
-            logger.info(f"Recording has {len(key_takeaways_en)} EN / {len(key_takeaways_fr)} FR key takeaways, "
-                       f"{len(user_painpoints_en)} EN / {len(user_painpoints_fr)} FR painpoints, "
-                       f"{len(user_assertions_en)} EN / {len(user_assertions_fr)} FR assertions (uploading both languages)")
+            logger.info(
+                f"Recording has {len(key_takeaways_en)} EN / {len(key_takeaways_fr)} FR key takeaways, "
+                + f"{len(user_painpoints_en)} EN / {len(user_painpoints_fr)} FR painpoints, "
+                + f"{len(user_assertions_en)} EN / {len(user_assertions_fr)} FR assertions (uploading both languages)"
+            )
         else:
             if include_french and not has_french:
                 logger.info(f"French content requested but not available for recording '{recording.title}', uploading English only")
             else:
-                logger.info(f"Recording has {len(key_takeaways_en)} key takeaways, {len(user_painpoints_en)} painpoints, "
-                           f"{len(user_assertions_en)} assertions (uploading English only)")
+                logger.info(
+                    f"Recording has {len(key_takeaways_en)} key takeaways, {len(user_painpoints_en)} painpoints, "
+                    + f"{len(user_assertions_en)} assertions (uploading English only)"
+                )
 
         # Generate English sections
         key_takeaways_html = self._generate_key_takeaways_html(key_takeaways_en, language='en')
@@ -229,7 +246,7 @@ class RecordingExporter:
                 logger.info(f"Generated French assertions HTML: {len(assertions_html_fr)} chars")
                 html_parts.append(assertions_html_fr)
 
-        description = "\n".join(html_parts) if html_parts else None
+        description: str | None = "\n".join(html_parts) if html_parts else None
 
         return self.export_recording(
             title=recording.title,
@@ -245,11 +262,11 @@ class RecordingExporter:
 
     def batch_export(
         self,
-        recordings: List[Any],
+        recordings: list[Any],
         audit_uuid: str,
         continue_on_error: bool = True,
         include_french: bool = False
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Export multiple recordings in batch.
 
@@ -262,7 +279,7 @@ class RecordingExporter:
         Returns:
             Dict with 'total', 'success_count', 'failure_count', 'results' keys
         """
-        results = []
+        results: list[dict[str, Any]] = []
         success_count = 0
         failure_count = 0
 
@@ -300,16 +317,16 @@ class RecordingExporter:
     def _build_payload(
         self,
         title: str,
-        description: Optional[str],
+        description: str | None,
         audit_uuid: str,
-        media_url: Optional[str],
-        duration: Optional[str],
-        auditor_name: Optional[str],
-        auditor_role: Optional[str],
-        recording_date: Optional[datetime],
-        existing_uuid: Optional[str] = None,
-        discovered_page_uuids: Optional[List[str]] = None
-    ) -> Dict[str, Any]:
+        media_url: str | None,
+        duration: str | None,
+        auditor_name: str | None,
+        auditor_role: str | None,
+        recording_date: datetime | None,
+        existing_uuid: str | None = None,
+        discovered_page_uuids: list[str] | None = None
+    ) -> dict[str, Any]:
         """
         Build JSON:API payload for audit_video.
 
@@ -329,7 +346,7 @@ class RecordingExporter:
             JSON:API payload dict
         """
         # Build attributes
-        attributes = {
+        attributes: dict[str, Any] = {
             'title': title
         }
 
@@ -352,7 +369,7 @@ class RecordingExporter:
 
         # Build relationships
         # Note: The relationship field is 'field_audit', not 'field_parent_audit'
-        relationships = {
+        relationships: dict[str, Any] = {
             'field_audit': {
                 'data': {
                     'type': 'node--audit',
@@ -374,7 +391,7 @@ class RecordingExporter:
             }
 
         # Build data section
-        data = {
+        data: dict[str, Any] = {
             'type': 'node--audit_video',
             'attributes': attributes,
             'relationships': relationships
@@ -385,7 +402,7 @@ class RecordingExporter:
             data['id'] = existing_uuid
 
         # Build final payload
-        payload = {
+        payload: dict[str, Any] = {
             'data': data
         }
 
@@ -395,7 +412,7 @@ class RecordingExporter:
         self,
         title: str,
         audit_uuid: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Validate data before export.
 
@@ -406,8 +423,8 @@ class RecordingExporter:
         Returns:
             Dict with 'valid', 'errors', 'warnings' keys
         """
-        errors = []
-        warnings = []
+        errors: list[str] = []
+        warnings: list[str] = []
 
         # Check required fields
         if not title:
@@ -427,7 +444,7 @@ class RecordingExporter:
         import html
         return html.escape(text)
 
-    def _generate_key_takeaways_html(self, key_takeaways: list, language: str = 'en') -> str:
+    def _generate_key_takeaways_html(self, key_takeaways: list[dict[str, Any]], language: str = 'en') -> str:
         """
         Generate HTML for key takeaways.
 
@@ -442,8 +459,8 @@ class RecordingExporter:
             return ""
 
         # Set header based on language
-        header = "Key Takeaways" if language == 'en' else "Points clés"
-        html_parts = [f"<h3>{header}</h3>"]
+        header = "Key Takeaways" if language == 'en' else "Points cl\u00e9s"
+        html_parts: list[str] = [f"<h3>{header}</h3>"]
 
         for item in key_takeaways:
             number = item.get('number', '')
@@ -455,7 +472,7 @@ class RecordingExporter:
 
         return "\n".join(html_parts)
 
-    def _generate_user_painpoints_html(self, painpoints: list, language: str = 'en') -> str:
+    def _generate_user_painpoints_html(self, painpoints: list[dict[str, Any]], language: str = 'en') -> str:
         """
         Generate HTML for user painpoints.
 
@@ -471,18 +488,18 @@ class RecordingExporter:
 
         # Set headers based on language
         header = "User Painpoints" if language == 'en' else "Points de friction"
-        user_statement_header = "User Statement" if language == 'en' else "Déclaration de l'utilisateur"
+        user_statement_header = "User Statement" if language == 'en' else "D\u00e9claration de l'utilisateur"
         location_header = "Location" if language == 'en' else "Emplacement"
-        start_label = "Start" if language == 'en' else "Début"
+        start_label = "Start" if language == 'en' else "D\u00e9but"
         end_label = "End" if language == 'en' else "Fin"
-        duration_label = "Duration" if language == 'en' else "Durée"
+        duration_label = "Duration" if language == 'en' else "Dur\u00e9e"
 
-        html_parts = [f"<h3>{header}</h3>"]
+        html_parts: list[str] = [f"<h3>{header}</h3>"]
 
         for item in painpoints:
             title = self._escape_html(item.get('title', ''))
             user_quote = self._escape_html(item.get('user_quote', ''))
-            timecodes = item.get('timecodes', [])
+            timecodes: list[dict[str, str]] = item.get('timecodes', [])
 
             html_parts.append(f"<h4>{title}</h4>")
             html_parts.append(f"<h5>{user_statement_header}</h5>")
@@ -505,7 +522,7 @@ class RecordingExporter:
 
         return "\n".join(html_parts)
 
-    def _generate_user_assertions_html(self, assertions: list, language: str = 'en') -> str:
+    def _generate_user_assertions_html(self, assertions: list[dict[str, Any]], language: str = 'en') -> str:
         """
         Generate HTML for user assertions.
 
@@ -521,18 +538,18 @@ class RecordingExporter:
 
         # Set headers based on language
         header = "User Assertions" if language == 'en' else "Affirmations de l'utilisateur"
-        text_spoken_header = "Text Spoken" if language == 'en' else "Texte prononcé"
-        start_time_header = "Start Time" if language == 'en' else "Heure de début"
+        text_spoken_header = "Text Spoken" if language == 'en' else "Texte prononc\u00e9"
+        start_time_header = "Start Time" if language == 'en' else "Heure de d\u00e9but"
         end_time_header = "End Time" if language == 'en' else "Heure de fin"
-        duration_header = "Duration" if language == 'en' else "Durée"
+        duration_header = "Duration" if language == 'en' else "Dur\u00e9e"
 
-        html_parts = [f"<h3>{header}</h3>"]
+        html_parts: list[str] = [f"<h3>{header}</h3>"]
 
         for item in assertions:
             number = item.get('number', '')
             assertion = self._escape_html(item.get('assertion', ''))
             user_quote = self._escape_html(item.get('user_quote', ''))
-            timecodes = item.get('timecodes', [])
+            timecodes: list[dict[str, str]] = item.get('timecodes', [])
 
             html_parts.append(f"<h4>{number}. {assertion}</h4>")
             html_parts.append(f"<h5>{text_spoken_header}</h5>")

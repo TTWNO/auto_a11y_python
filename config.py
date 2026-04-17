@@ -1,6 +1,7 @@
 """
 Configuration management for Auto A11y Python
 """
+from __future__ import annotations
 
 import os
 import secrets
@@ -8,7 +9,6 @@ import logging
 from pathlib import Path
 from dotenv import load_dotenv
 from dataclasses import dataclass
-from typing import Optional
 
 _config_logger = logging.getLogger(__name__)
 
@@ -142,7 +142,7 @@ class Config:
         return f'https://login.microsoftonline.com/{self.MICROSOFT_TENANT_ID}'
 
     @property
-    def MICROSOFT_SCOPE(self) -> list:
+    def MICROSOFT_SCOPE(self) -> list[str]:
         return ['User.Read']
 
     @property
@@ -166,7 +166,7 @@ class Config:
         if self.RUN_AI_ANALYSIS and not self.CLAUDE_API_KEY:
             if self.DESKTOP_MODE:
                 # In desktop mode, silently disable AI instead of crashing
-                self.RUN_AI_ANALYSIS = False
+                object.__setattr__(self, 'RUN_AI_ANALYSIS', False)
             else:
                 raise ValueError("CLAUDE_API_KEY is required when RUN_AI_ANALYSIS is True")
         return True
@@ -180,5 +180,5 @@ if not config.SECRET_KEY:
     config.SECRET_KEY = secrets.token_hex(32)
     _config_logger.warning(
         "No SECRET_KEY set — using a random key. Sessions will not persist across restarts. "
-        "Set SECRET_KEY in your .env file for production."
+        + "Set SECRET_KEY in your .env file for production."
     )

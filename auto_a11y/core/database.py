@@ -1,8 +1,10 @@
 """
 Database connection and repository management
 """
+from __future__ import annotations
 
-from typing import List, Optional, Dict, Any
+from typing import Any, Iterator
+from collections.abc import Generator
 from pymongo import MongoClient
 from pymongo.database import Database as MongoDatabase
 from pymongo.collection import Collection
@@ -23,6 +25,7 @@ from auto_a11y.models import (
     TestSchedule, ScheduleType, ScheduleRunStatus,
     ShareToken, TokenScope
 )
+from auto_a11y.models.permission_group import PermissionGroup
 
 logger = logging.getLogger(__name__)
 
@@ -40,41 +43,41 @@ class Database:
         """
         # Use TLS for remote MongoDB connections (e.g. Atlas), skip for local/Docker
         if 'mongodb+srv' in connection_uri or 'tls=true' in connection_uri or 'ssl=true' in connection_uri:
-            self.client = MongoClient(connection_uri, tlsCAFile=certifi.where())
+            self.client: MongoClient[dict[str, Any]] = MongoClient(connection_uri, tlsCAFile=certifi.where())
         else:
             self.client = MongoClient(connection_uri)
-        self.db: MongoDatabase = self.client[database_name]
+        self.db: MongoDatabase[dict[str, Any]] = self.client[database_name]
         
         # Collections
-        self.projects: Collection = self.db.projects
-        self.websites: Collection = self.db.websites
-        self.pages: Collection = self.db.pages
-        self.test_results: Collection = self.db.test_results
-        self.test_result_items: Collection = self.db.test_result_items  # NEW: Detailed violations/warnings
-        self.document_references: Collection = self.db.document_references
-        self.discovery_runs: Collection = self.db.discovery_runs
-        self.issue_documentation_status: Collection = self.db.issue_documentation_status
-        self.page_setup_scripts: Collection = self.db.page_setup_scripts  # Page training scripts
-        self.script_execution_sessions: Collection = self.db.script_execution_sessions  # Session tracking
-        self.website_users: Collection = self.db.website_users  # Test users for authenticated testing (deprecated)
-        self.project_users: Collection = self.db.project_users  # Test users at project level
-        self.recordings: Collection = self.db.recordings  # Manual audit recordings from Dictaphone
-        self.recording_issues: Collection = self.db.recording_issues  # Issues from manual audits
-        self.discovered_pages: Collection = self.db.discovered_pages  # Discovered pages for Drupal export
-        self.drupal_issues: Collection = self.db.drupal_issues  # Track Drupal issue uploads by violation ID
-        self.test_state_matrices: Collection = self.db.test_state_matrices  # Multi-state test configuration matrices
-        self.app_users: Collection = self.db.app_users  # Application users for authentication
-        self.test_schedules: Collection = self.db.test_schedules  # Scheduled test configurations
-        self.share_tokens: Collection = self.db.share_tokens  # Public share tokens
-        self.groups: Collection = self.db['groups']  # Permission groups
-        self.issues: Collection = self.db.issues  # Issues for Drupal sync
+        self.projects: Collection[dict[str, Any]] = self.db.projects
+        self.websites: Collection[dict[str, Any]] = self.db.websites
+        self.pages: Collection[dict[str, Any]] = self.db.pages
+        self.test_results: Collection[dict[str, Any]] = self.db.test_results
+        self.test_result_items: Collection[dict[str, Any]] = self.db.test_result_items  # NEW: Detailed violations/warnings
+        self.document_references: Collection[dict[str, Any]] = self.db.document_references
+        self.discovery_runs: Collection[dict[str, Any]] = self.db.discovery_runs
+        self.issue_documentation_status: Collection[dict[str, Any]] = self.db.issue_documentation_status
+        self.page_setup_scripts: Collection[dict[str, Any]] = self.db.page_setup_scripts  # Page training scripts
+        self.script_execution_sessions: Collection[dict[str, Any]] = self.db.script_execution_sessions  # Session tracking
+        self.website_users: Collection[dict[str, Any]] = self.db.website_users  # Test users for authenticated testing (deprecated)
+        self.project_users: Collection[dict[str, Any]] = self.db.project_users  # Test users at project level
+        self.recordings: Collection[dict[str, Any]] = self.db.recordings  # Manual audit recordings from Dictaphone
+        self.recording_issues: Collection[dict[str, Any]] = self.db.recording_issues  # Issues from manual audits
+        self.discovered_pages: Collection[dict[str, Any]] = self.db.discovered_pages  # Discovered pages for Drupal export
+        self.drupal_issues: Collection[dict[str, Any]] = self.db.drupal_issues  # Track Drupal issue uploads by violation ID
+        self.test_state_matrices: Collection[dict[str, Any]] = self.db.test_state_matrices  # Multi-state test configuration matrices
+        self.app_users: Collection[dict[str, Any]] = self.db.app_users  # Application users for authentication
+        self.test_schedules: Collection[dict[str, Any]] = self.db.test_schedules  # Scheduled test configurations
+        self.share_tokens: Collection[dict[str, Any]] = self.db.share_tokens  # Public share tokens
+        self.groups: Collection[dict[str, Any]] = self.db['groups']  # Permission groups
+        self.issues: Collection[dict[str, Any]] = self.db.issues  # Issues for Drupal sync
 
         # Create indexes
         self._create_indexes()
         
         logger.info(f"Connected to MongoDB database: {database_name}")
     
-    def _create_indexes(self):
+    def _create_indexes(self) -> None:
         """Create database indexes for performance"""
         # Projects
         self.projects.create_index("name")
@@ -223,11 +226,11 @@ class Database:
             logger.error(f"Database connection test failed: {e}")
             return False
     
-    def create_indexes(self):
+    def create_indexes(self) -> None:
         """Public method to create indexes"""
         self._create_indexes()
     
-    def close(self):
+    def close(self) -> None:
         """Close database connection"""
         self.client.close()
         logger.info("Database connection closed")
@@ -238,41 +241,42 @@ class Database:
         """Create new project"""
         result = self.projects.insert_one(project.to_dict())
         project._id = result.inserted_id
-        logger.info(f"Created project: {project.name} ({project.id})")
-        return project.id
+        project_id = str(result.inserted_id)
+        logger.info(f"Created project: {project.name} ({project_id})")
+        return project_id
     
-    def get_project(self, project_id: str) -> Optional[Project]:
+    def get_project(self, project_id: str) -> Project | None:
         """Get project by ID"""
         doc = self.projects.find_one({"_id": ObjectId(project_id)})
         return Project.from_dict(doc) if doc else None
     
     def get_projects(
         self,
-        status: Optional[ProjectStatus] = None,
+        status: ProjectStatus | None = None,
         limit: int = 0,
         skip: int = 0
-    ) -> List[Project]:
+    ) -> list[Project]:
         """Get projects with optional filtering"""
-        query = {}
+        query: dict[str, Any] = {}
         if status:
             query["status"] = status.value
         
         docs = self.projects.find(query).limit(limit).skip(skip)
         return [Project.from_dict(doc) for doc in docs]
     
-    def get_all_projects(self) -> List[Project]:
+    def get_all_projects(self) -> list[Project]:
         """Get all projects"""
         docs = self.projects.find()
         return [Project.from_dict(doc) for doc in docs]
 
-    def get_projects_for_user(self, user_id: str) -> List[Project]:
+    def get_projects_for_user(self, user_id: str) -> list[Project]:
         """Return projects where user_id is a member."""
         cursor = self.projects.find({"members.user_id": user_id})
         return [Project.from_dict(doc) for doc in cursor]
 
     # Project member operations
 
-    def add_project_member(self, project_id: str, user_id: str, group_ids: list) -> bool:
+    def add_project_member(self, project_id: str, user_id: str, group_ids: list[str]) -> bool:
         """Add or update a member on a project with given group IDs."""
         self.projects.update_one(
             {"_id": ObjectId(project_id)},
@@ -292,7 +296,7 @@ class Database:
         )
         return result.modified_count > 0
 
-    def update_project_member_groups(self, project_id: str, user_id: str, group_ids: list) -> bool:
+    def update_project_member_groups(self, project_id: str, user_id: str, group_ids: list[str]) -> bool:
         """Update a member's group assignments on a project."""
         result = self.projects.update_one(
             {"_id": ObjectId(project_id), "members.user_id": user_id},
@@ -314,7 +318,8 @@ class Database:
         # Delete related data
         websites = self.get_websites(project_id)
         for website in websites:
-            self.delete_website(website.id)
+            if website.id:
+                self.delete_website(website.id)
         
         # Delete project
         result = self.projects.delete_one({"_id": ObjectId(project_id)})
@@ -334,20 +339,26 @@ class Database:
             {"$push": {"website_ids": website.id}}
         )
         
-        logger.info(f"Created website: {website.url} ({website.id})")
-        return website.id
+        website_id = str(result.inserted_id)
+        logger.info(f"Created website: {website.url} ({website_id})")
+        return website_id
     
-    def get_website(self, website_id: str) -> Optional[Website]:
+    def get_website(self, website_id: str) -> Website | None:
         """Get website by ID"""
         doc = self.websites.find_one({"_id": ObjectId(website_id)})
         return Website.from_dict(doc) if doc else None
     
-    def get_websites(self, project_id: str) -> List[Website]:
+    def get_all_websites(self) -> list[Website]:
+        """Get all websites across all projects"""
+        docs = self.websites.find()
+        return [Website.from_dict(doc) for doc in docs]
+
+    def get_websites(self, project_id: str) -> list[Website]:
         """Get all websites for a project"""
         docs = self.websites.find({"project_id": project_id})
         return [Website.from_dict(doc) for doc in docs]
 
-    def yield_websites(self, project_id: str):
+    def yield_websites(self, project_id: str) -> Generator[Website, None, None]:
         """Yield Website objects one at a time from cursor."""
         cursor = self.websites.find({"project_id": project_id}, no_cursor_timeout=True)
         try:
@@ -373,7 +384,8 @@ class Database:
         # Delete related pages and test results
         pages = self.get_pages(website_id)
         for page in pages:
-            self.delete_page(page.id)
+            if page.id:
+                self.delete_page(page.id)
         
         # Remove from project's website list
         self.projects.update_one(
@@ -385,7 +397,78 @@ class Database:
         result = self.websites.delete_one({"_id": ObjectId(website_id)})
         logger.info(f"Deleted website: {website_id}")
         return result.deleted_count > 0
-    
+
+    def clear_website_test_results(self, website_id: str) -> dict[str, int]:
+        """
+        Clear all test data for every page in a website.
+
+        Deletes all test_results documents for pages belonging to this website
+        and resets each page's cached test state (violation/warning/info/
+        discovery/pass counts, last_tested, test_duration_ms) so the pages
+        show as untested. Pages whose status was TESTED, TESTING, or ERROR
+        are moved back to DISCOVERED so they can be re-tested.
+
+        Pages themselves, their screenshots, discovery runs, and document
+        references are preserved.
+
+        Args:
+            website_id: Website ID
+
+        Returns:
+            Dict with counts: {'test_results_deleted', 'pages_reset'}
+        """
+        # Collect page IDs for this website so we can delete their test results
+        page_id_strings = [
+            str(doc['_id'])
+            for doc in self.pages.find({"website_id": website_id}, {"_id": 1})
+        ]
+
+        test_results_deleted = 0
+        if page_id_strings:
+            del_result = self.test_results.delete_many(
+                {"page_id": {"$in": page_id_strings}}
+            )
+            test_results_deleted = del_result.deleted_count
+
+        # Reset per-page cached test state
+        reset_result = self.pages.update_many(
+            {"website_id": website_id},
+            {"$set": {
+                "violation_count": 0,
+                "warning_count": 0,
+                "info_count": 0,
+                "discovery_count": 0,
+                "pass_count": 0,
+                "last_tested": None,
+                "test_duration_ms": None,
+            }}
+        )
+
+        # Reset status for pages that were tested/testing/errored back to DISCOVERED.
+        # Leave DISCOVERED, QUEUED, SKIPPED, and DISCOVERY_FAILED alone.
+        self.pages.update_many(
+            {
+                "website_id": website_id,
+                "status": {"$in": [
+                    PageStatus.TESTED.value,
+                    PageStatus.TESTING.value,
+                    PageStatus.ERROR.value,
+                ]},
+            },
+            {"$set": {"status": PageStatus.DISCOVERED.value}}
+        )
+
+        pages_reset = reset_result.modified_count
+        logger.info(
+            f"Cleared test results for website {website_id}: "
+            f"{test_results_deleted} test_results deleted, "
+            f"{pages_reset} pages reset"
+        )
+        return {
+            'test_results_deleted': test_results_deleted,
+            'pages_reset': pages_reset,
+        }
+
     # Page operations
     
     def create_page(self, page: Page) -> str:
@@ -409,14 +492,14 @@ class Database:
             {"$inc": {"page_count": 1}}
         )
         
-        return page.id
+        return str(result.inserted_id)
     
-    def get_page(self, page_id: str) -> Optional[Page]:
+    def get_page(self, page_id: str) -> Page | None:
         """Get page by ID"""
         doc = self.pages.find_one({"_id": ObjectId(page_id)})
         return Page.from_dict(doc) if doc else None
     
-    def get_page_by_url(self, website_id: str, url: str) -> Optional[Page]:
+    def get_page_by_url(self, website_id: str, url: str) -> Page | None:
         """Get page by URL"""
         doc = self.pages.find_one({
             "website_id": website_id,
@@ -427,13 +510,13 @@ class Database:
     def get_pages(
         self,
         website_id: str,
-        status: Optional[PageStatus] = None,
+        status: PageStatus | None = None,
         limit: int = 0,
         skip: int = 0,
         latest_only: bool = True
-    ) -> List[Page]:
+    ) -> list[Page]:
         """Get pages for a website"""
-        query = {"website_id": website_id}
+        query: dict[str, Any] = {"website_id": website_id}
         if status:
             query["status"] = status.value
         
@@ -444,11 +527,11 @@ class Database:
         docs = self.pages.find(query).limit(limit).skip(skip)
         return [Page.from_dict(doc) for doc in docs]
 
-    def yield_pages(self, website_id: str, sort_field: str = 'url', sort_order: int = 1, latest_only: bool = True):
+    def yield_pages(self, website_id: str, sort_field: str = 'url', sort_order: int = 1, latest_only: bool = True) -> Generator[Page, None, None]:
         """Yield Page objects one at a time from cursor.
         Memory-efficient alternative to get_pages() for report generation.
         Uses no_cursor_timeout to prevent timeout during long operations."""
-        query = {"website_id": website_id}
+        query: dict[str, Any] = {"website_id": website_id}
         if latest_only:
             query["is_in_latest_discovery"] = True
         cursor = self.pages.find(query, no_cursor_timeout=True).sort(sort_field, sort_order)
@@ -483,7 +566,7 @@ class Database:
         result = self.pages.delete_one({"_id": ObjectId(page_id)})
         return result.deleted_count > 0
     
-    def bulk_create_pages(self, pages: List[Page]) -> int:
+    def bulk_create_pages(self, pages: list[Page]) -> int:
         """Create multiple pages efficiently"""
         if not pages:
             return 0
@@ -736,9 +819,9 @@ class Database:
             self.update_page(page)
 
         logger.info(f"Created test result for page: {test_result.page_id}")
-        return test_result.id
+        return str(test_result._id) if test_result._id else ""
 
-    def _get_test_result_items(self, test_result_id: ObjectId, item_type: Optional[str] = None) -> List[Dict[str, Any]]:
+    def _get_test_result_items(self, test_result_id: ObjectId, item_type: str | None = None) -> list[dict[str, Any]]:
         """
         Get test result items from the test_result_items collection
 
@@ -749,17 +832,17 @@ class Database:
         Returns:
             List of item dictionaries
         """
-        query = {'test_result_id': test_result_id}
+        query: dict[str, Any] = {'test_result_id': test_result_id}
         if item_type:
             query['item_type'] = item_type
 
         items = list(self.test_result_items.find(query))
         return items
 
-    def yield_test_result_items(self, test_result_id, item_type=None):
+    def yield_test_result_items(self, test_result_id: ObjectId, item_type: str | None = None) -> Generator[dict[str, Any], None, None]:
         """Yield individual test result items from cursor.
         Each item is a raw dict from MongoDB."""
-        query = {'test_result_id': test_result_id}
+        query: dict[str, Any] = {'test_result_id': test_result_id}
         if item_type:
             query['item_type'] = item_type
         cursor = self.test_result_items.find(query, no_cursor_timeout=True)
@@ -769,7 +852,7 @@ class Database:
         finally:
             cursor.close()
 
-    def get_test_result(self, result_id: str) -> Optional[TestResult]:
+    def get_test_result(self, result_id: str) -> TestResult | None:
         """
         Get test result by ID
 
@@ -832,7 +915,7 @@ class Database:
         # Old schema already has arrays, just use as-is
         return TestResult.from_dict(doc)
     
-    def get_latest_test_result(self, page_id: str) -> Optional[TestResult]:
+    def get_latest_test_result(self, page_id: str) -> TestResult | None:
         """
         Get most recent test result for a page
 
@@ -898,7 +981,7 @@ class Database:
         # Old schema already has arrays, just use as-is
         return TestResult.from_dict(doc)
 
-    def get_latest_test_result_summary(self, page_id: str):
+    def get_latest_test_result_summary(self, page_id: str) -> dict[str, Any] | None:
         """Get summary counts for the latest test result without loading items.
         Returns a lightweight dict, NOT a full TestResult object."""
         doc = self.test_results.find_one(
@@ -921,14 +1004,14 @@ class Database:
 
     def get_test_results(
         self,
-        page_id: Optional[str] = None,
-        page_ids: Optional[set] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
+        page_id: str | None = None,
+        page_ids: set[str] | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
         limit: int = 0,
         skip: int = 0,
         summary_only: bool = False
-    ) -> List[TestResult]:
+    ) -> list[TestResult]:
         """Get test results with optional filtering
 
         Args:
@@ -940,7 +1023,7 @@ class Database:
             skip: Number of results to skip (for pagination)
             summary_only: If True, skip loading detailed items (much faster for trend analysis)
         """
-        query = {}
+        query: dict[str, Any] = {}
         if page_id:
             query["page_id"] = page_id
         elif page_ids:
@@ -1019,7 +1102,7 @@ class Database:
 
     # Multi-state test result methods
 
-    def get_test_results_by_session(self, session_id: str) -> List[TestResult]:
+    def get_test_results_by_session(self, session_id: str) -> list[TestResult]:
         """
         Get all test results for a script execution session
 
@@ -1091,7 +1174,7 @@ class Database:
         self,
         page_id: str,
         session_id: str
-    ) -> List[TestResult]:
+    ) -> list[TestResult]:
         """
         Get all test results for a specific page in a session
 
@@ -1108,7 +1191,7 @@ class Database:
         }).sort("state_sequence", 1)
         return [TestResult.from_dict(doc) for doc in docs]
 
-    def get_related_test_results(self, result_id: str) -> List[TestResult]:
+    def get_related_test_results(self, result_id: str) -> list[TestResult]:
         """
         Get all test results related to a specific result
 
@@ -1132,7 +1215,7 @@ class Database:
         self,
         page_id: str,
         limit: int = 1
-    ) -> Dict[int, TestResult]:
+    ) -> dict[int, TestResult]:
         """
         Get the most recent test result for each state sequence
 
@@ -1144,7 +1227,7 @@ class Database:
             Dictionary of {state_sequence: TestResult}
         """
         # Get all test results for page, grouped by session
-        pipeline = [
+        pipeline: list[dict[str, Any]] = [
             {"$match": {"page_id": page_id}},
             {"$sort": {"test_date": -1}},
             {"$group": {
@@ -1155,7 +1238,7 @@ class Database:
         ]
 
         results = self.test_results.aggregate(pipeline)
-        state_results = {}
+        state_results: dict[int, TestResult] = {}
 
         for doc in results:
             result = TestResult.from_dict(doc['latest'])
@@ -1168,7 +1251,7 @@ class Database:
 
     # Query methods for reporting
 
-    def get_violations_by_issue(self, test_result_id: str, item_type: str = 'violation') -> Dict[str, List[Dict[str, Any]]]:
+    def get_violations_by_issue(self, test_result_id: str, item_type: str = 'violation') -> dict[str, list[dict[str, Any]]]:
         """
         Get violations grouped by issue_id for deduplication in reports
 
@@ -1181,16 +1264,16 @@ class Database:
         """
         items = self._get_test_result_items(ObjectId(test_result_id), item_type=item_type)
 
-        grouped = {}
+        grouped: dict[str, list[dict[str, Any]]] = {}
         for item in items:
-            issue_id = item.get('issue_id')
+            issue_id: str = item.get('issue_id', '')
             if issue_id not in grouped:
                 grouped[issue_id] = []
             grouped[issue_id].append(item)
 
         return grouped
 
-    def count_violations_by_type(self, test_result_id: str) -> Dict[str, int]:
+    def count_violations_by_type(self, test_result_id: str) -> dict[str, int]:
         """
         Get counts of violations grouped by issue_id using aggregation
 
@@ -1200,7 +1283,7 @@ class Database:
         Returns:
             Dictionary of {issue_id: count}
         """
-        pipeline = [
+        pipeline: list[dict[str, Any]] = [
             {'$match': {
                 'test_result_id': ObjectId(test_result_id),
                 'item_type': 'violation'
@@ -1215,7 +1298,7 @@ class Database:
         results = self.test_result_items.aggregate(pipeline)
         return {item['_id']: item['count'] for item in results}
 
-    def get_violations_by_touchpoint(self, test_result_id: str) -> Dict[str, int]:
+    def get_violations_by_touchpoint(self, test_result_id: str) -> dict[str, int]:
         """
         Get violation counts grouped by touchpoint
 
@@ -1225,7 +1308,7 @@ class Database:
         Returns:
             Dictionary of {touchpoint: count}
         """
-        pipeline = [
+        pipeline: list[dict[str, Any]] = [
             {'$match': {
                 'test_result_id': ObjectId(test_result_id),
                 'item_type': 'violation'
@@ -1240,7 +1323,7 @@ class Database:
         results = self.test_result_items.aggregate(pipeline)
         return {item['_id']: item['count'] for item in results}
 
-    def get_sample_violations(self, test_result_id: str, issue_id: str, limit: int = 10) -> List[Dict[str, Any]]:
+    def get_sample_violations(self, test_result_id: str, issue_id: str, limit: int = 10) -> list[dict[str, Any]]:
         """
         Get sample violations for a specific issue (for displaying in reports)
 
@@ -1262,7 +1345,7 @@ class Database:
 
     # Statistics
     
-    def get_project_stats(self, project_id: str) -> Dict[str, Any]:
+    def get_project_stats(self, project_id: str) -> dict[str, Any]:
         """Get statistics for a project"""
         websites = self.get_websites(project_id)
 
@@ -1271,6 +1354,8 @@ class Database:
         tested_page_ids = []
 
         for website in websites:
+            if not website.id:
+                continue
             pages = self.get_pages(website.id)
             total_pages += len(pages)
 
@@ -1283,7 +1368,7 @@ class Database:
         total_violations = 0
         total_warnings = 0
         if tested_page_ids:
-            pipeline = [
+            pipeline: list[dict[str, Any]] = [
                 {'$match': {'page_id': {'$in': tested_page_ids}}},
                 {'$sort': {'test_date': -1}},
                 {'$group': {
@@ -1307,7 +1392,7 @@ class Database:
         }
     
     # Document Reference methods
-    def add_document_reference(self, doc_ref: 'DocumentReference') -> str:
+    def add_document_reference(self, doc_ref: DocumentReference) -> str:
         """Add or update a document reference"""
         from auto_a11y.models import DocumentReference
         
@@ -1338,18 +1423,18 @@ class Database:
             result = self.document_references.insert_one(doc_data)
             return str(result.inserted_id)
     
-    def get_document_references(self, website_id: str, internal_only: bool = None) -> List['DocumentReference']:
+    def get_document_references(self, website_id: str, internal_only: bool | None = None) -> list[DocumentReference]:
         """Get document references for a website"""
         from auto_a11y.models import DocumentReference
         
-        query = {'website_id': website_id}
+        query: dict[str, Any] = {'website_id': website_id}
         if internal_only is not None:
             query['is_internal'] = internal_only
         
         docs = self.document_references.find(query)
         return [DocumentReference.from_dict(doc) for doc in docs]
     
-    def get_all_document_references(self, project_id: str = None) -> List['DocumentReference']:
+    def get_all_document_references(self, project_id: str | None = None) -> list[DocumentReference]:
         """Get all document references, optionally filtered by project"""
         from auto_a11y.models import DocumentReference
         
@@ -1369,7 +1454,7 @@ class Database:
         return result.deleted_count > 0
     
     # Discovery Run methods
-    def create_discovery_run(self, discovery_run: 'DiscoveryRun') -> str:
+    def create_discovery_run(self, discovery_run: DiscoveryRun) -> str:
         """Create a new discovery run"""
         from auto_a11y.models import DiscoveryRun
         
@@ -1382,17 +1467,18 @@ class Database:
         # Insert new discovery run
         result = self.discovery_runs.insert_one(discovery_run.to_dict())
         discovery_run._id = result.inserted_id
-        logger.info(f"Created discovery run {discovery_run.id} for website {discovery_run.website_id}")
-        return discovery_run.id
+        discovery_run_id = str(result.inserted_id)
+        logger.info(f"Created discovery run {discovery_run_id} for website {discovery_run.website_id}")
+        return discovery_run_id
     
-    def get_discovery_run(self, discovery_run_id: str) -> Optional['DiscoveryRun']:
+    def get_discovery_run(self, discovery_run_id: str) -> DiscoveryRun | None:
         """Get a discovery run by ID"""
         from auto_a11y.models import DiscoveryRun
         
         doc = self.discovery_runs.find_one({'_id': ObjectId(discovery_run_id)})
         return DiscoveryRun.from_dict(doc) if doc else None
     
-    def get_latest_discovery_run(self, website_id: str) -> Optional['DiscoveryRun']:
+    def get_latest_discovery_run(self, website_id: str) -> DiscoveryRun | None:
         """Get the latest discovery run for a website"""
         from auto_a11y.models import DiscoveryRun
         
@@ -1402,14 +1488,14 @@ class Database:
         })
         return DiscoveryRun.from_dict(doc) if doc else None
     
-    def get_discovery_runs(self, website_id: str) -> List['DiscoveryRun']:
+    def get_discovery_runs(self, website_id: str) -> list[DiscoveryRun]:
         """Get all discovery runs for a website, ordered by date descending"""
         from auto_a11y.models import DiscoveryRun
         
         docs = self.discovery_runs.find({'website_id': website_id}).sort('started_at', -1)
         return [DiscoveryRun.from_dict(doc) for doc in docs]
     
-    def update_discovery_run(self, discovery_run: 'DiscoveryRun') -> bool:
+    def update_discovery_run(self, discovery_run: DiscoveryRun) -> bool:
         """Update a discovery run"""
         result = self.discovery_runs.update_one(
             {'_id': discovery_run._id},
@@ -1417,7 +1503,7 @@ class Database:
         )
         return result.modified_count > 0
     
-    def bulk_create_pages_with_discovery(self, pages: List[Page], discovery_run_id: str) -> int:
+    def bulk_create_pages_with_discovery(self, pages: list[Page], discovery_run_id: str) -> int:
         """Create multiple pages with discovery run tracking"""
         if not pages:
             return 0
@@ -1540,9 +1626,9 @@ class Database:
             )
             return str(result.inserted_id)
     
-    def get_pages_for_testing(self, website_id: str, status: Optional[PageStatus] = None) -> List[Page]:
+    def get_pages_for_testing(self, website_id: str, status: PageStatus | None = None) -> list[Page]:
         """Get pages for testing (only from latest discovery)"""
-        query = {
+        query: dict[str, Any] = {
             'website_id': website_id,
             'is_in_latest_discovery': True
         }
@@ -1553,7 +1639,7 @@ class Database:
         docs = self.pages.find(query)
         return [Page.from_dict(doc) for doc in docs]
     
-    def compare_discoveries(self, website_id: str, old_run_id: str, new_run_id: str) -> Dict[str, Any]:
+    def compare_discoveries(self, website_id: str, old_run_id: str, new_run_id: str) -> dict[str, Any]:
         """Compare two discovery runs to find added/removed pages"""
         
         # Get pages from old discovery
@@ -1582,7 +1668,7 @@ class Database:
 
     # Issue Documentation Status Methods
 
-    def get_issue_documentation_status(self, issue_code: str) -> Optional[Dict[str, Any]]:
+    def get_issue_documentation_status(self, issue_code: str) -> dict[str, Any] | None:
         """Get documentation status for an issue code"""
         return self.issue_documentation_status.find_one({'issue_code': issue_code})
 
@@ -1608,26 +1694,26 @@ class Database:
 
         return result.modified_count > 0 or result.upserted_id is not None
 
-    def get_all_issue_documentation_statuses(self) -> Dict[str, bool]:
+    def get_all_issue_documentation_statuses(self) -> dict[str, bool]:
         """Get all issue documentation statuses as a dict of issue_code -> production_ready"""
         statuses = {}
         for doc in self.issue_documentation_status.find():
             statuses[doc['issue_code']] = doc.get('production_ready', False)
         return statuses
 
-    def get_production_ready_issues(self) -> List[str]:
+    def get_production_ready_issues(self) -> list[str]:
         """Get list of issue codes marked as production ready"""
         docs = self.issue_documentation_status.find({'production_ready': True})
         return [doc['issue_code'] for doc in docs]
 
-    def get_not_production_ready_issues(self) -> List[str]:
+    def get_not_production_ready_issues(self) -> list[str]:
         """Get list of issue codes not marked as production ready"""
         docs = self.issue_documentation_status.find({'production_ready': {'$ne': True}})
         return [doc['issue_code'] for doc in docs]
 
     # Page Setup Script Methods
 
-    def create_page_setup_script(self, script: 'PageSetupScript') -> str:
+    def create_page_setup_script(self, script: PageSetupScript) -> str:
         """
         Create a new page setup script
 
@@ -1641,10 +1727,11 @@ class Database:
 
         result = self.page_setup_scripts.insert_one(script.to_dict())
         script._id = result.inserted_id
-        logger.info(f"Created page setup script: {script.name} ({script.id}) for page {script.page_id}")
-        return script.id
+        script_id = str(result.inserted_id)
+        logger.info(f"Created page setup script: {script.name} ({script_id}) for page {script.page_id}")
+        return script_id
 
-    def get_page_setup_script(self, script_id: str) -> Optional['PageSetupScript']:
+    def get_page_setup_script(self, script_id: str) -> PageSetupScript | None:
         """
         Get a page setup script by ID
 
@@ -1659,7 +1746,7 @@ class Database:
         doc = self.page_setup_scripts.find_one({"_id": ObjectId(script_id)})
         return PageSetupScript.from_dict(doc) if doc else None
 
-    def get_page_setup_scripts_for_page(self, page_id: str, enabled_only: bool = False) -> List['PageSetupScript']:
+    def get_page_setup_scripts_for_page(self, page_id: str, enabled_only: bool = False) -> list[PageSetupScript]:
         """
         Get all setup scripts for a page
 
@@ -1672,14 +1759,14 @@ class Database:
         """
         from auto_a11y.models import PageSetupScript
 
-        query = {"page_id": page_id}
+        query: dict[str, Any] = {"page_id": page_id}
         if enabled_only:
             query["enabled"] = True
 
         docs = self.page_setup_scripts.find(query).sort("created_date", -1)
         return [PageSetupScript.from_dict(doc) for doc in docs]
 
-    def get_enabled_script_for_page(self, page_id: str) -> Optional['PageSetupScript']:
+    def get_enabled_script_for_page(self, page_id: str) -> PageSetupScript | None:
         """
         Get the enabled setup script for a page (returns first enabled script)
 
@@ -1697,7 +1784,7 @@ class Database:
         )
         return PageSetupScript.from_dict(doc) if doc else None
 
-    def update_page_setup_script(self, script: 'PageSetupScript') -> bool:
+    def update_page_setup_script(self, script: PageSetupScript) -> bool:
         """
         Update an existing page setup script
 
@@ -1829,9 +1916,9 @@ class Database:
     def get_scripts_for_website(
         self,
         website_id: str,
-        scope: Optional[str] = None,
+        scope: str | None = None,
         enabled_only: bool = True
-    ) -> List['PageSetupScript']:
+    ) -> list[PageSetupScript]:
         """
         Get scripts for a website (any scope or specific scope)
 
@@ -1845,7 +1932,7 @@ class Database:
         """
         from auto_a11y.models import PageSetupScript
 
-        query = {"website_id": website_id}
+        query: dict[str, Any] = {"website_id": website_id}
         if scope:
             query["scope"] = scope
         if enabled_only:
@@ -1859,7 +1946,7 @@ class Database:
         page_id: str,
         website_id: str,
         enabled_only: bool = True
-    ) -> List['PageSetupScript']:
+    ) -> list[PageSetupScript]:
         """
         Get all applicable scripts for a page (both page-level and website-level)
 
@@ -1897,7 +1984,7 @@ class Database:
 
     # Script Execution Session Methods
 
-    def create_script_session(self, session: 'ScriptExecutionSession') -> str:
+    def create_script_session(self, session: ScriptExecutionSession) -> str:
         """
         Create a new script execution session
 
@@ -1914,7 +2001,7 @@ class Database:
         logger.info(f"Created script execution session: {session.session_id} for website {session.website_id}")
         return session.session_id
 
-    def get_script_session(self, session_id: str) -> Optional['ScriptExecutionSession']:
+    def get_script_session(self, session_id: str) -> ScriptExecutionSession | None:
         """
         Get a script execution session by session ID
 
@@ -1929,7 +2016,7 @@ class Database:
         doc = self.script_execution_sessions.find_one({"session_id": session_id})
         return ScriptExecutionSession.from_dict(doc) if doc else None
 
-    def update_script_session(self, session: 'ScriptExecutionSession') -> bool:
+    def update_script_session(self, session: ScriptExecutionSession) -> bool:
         """
         Update an existing script execution session
 
@@ -1953,7 +2040,7 @@ class Database:
             return True
         return False
 
-    def get_latest_session_for_website(self, website_id: str) -> Optional['ScriptExecutionSession']:
+    def get_latest_session_for_website(self, website_id: str) -> ScriptExecutionSession | None:
         """
         Get the most recent session for a website
 
@@ -1973,7 +2060,7 @@ class Database:
 
     # ==================== Website Users ====================
 
-    def create_website_user(self, user: 'WebsiteUser') -> str:
+    def create_website_user(self, user: WebsiteUser) -> str:
         """
         Create a new website user for authenticated testing
 
@@ -1990,7 +2077,7 @@ class Database:
         logger.info(f"Created website user: {user.username} for website {user.website_id}")
         return str(result.inserted_id)
 
-    def get_website_user(self, user_id: str) -> Optional['WebsiteUser']:
+    def get_website_user(self, user_id: str) -> WebsiteUser | None:
         """
         Get a website user by ID
 
@@ -2005,7 +2092,7 @@ class Database:
         doc = self.website_users.find_one({"_id": ObjectId(user_id)})
         return WebsiteUser.from_dict(doc) if doc else None
 
-    def get_website_users(self, website_id: str, enabled_only: bool = False, role: Optional[str] = None) -> List['WebsiteUser']:
+    def get_website_users(self, website_id: str, enabled_only: bool = False, role: str | None = None) -> list[WebsiteUser]:
         """
         Get all users for a website
 
@@ -2019,7 +2106,7 @@ class Database:
         """
         from auto_a11y.models import WebsiteUser
 
-        query = {"website_id": website_id}
+        query: dict[str, Any] = {"website_id": website_id}
         if enabled_only:
             query["enabled"] = True
         if role:
@@ -2028,7 +2115,7 @@ class Database:
         docs = self.website_users.find(query).sort("display_name", 1)
         return [WebsiteUser.from_dict(doc) for doc in docs]
 
-    def get_website_user_by_username(self, website_id: str, username: str) -> Optional['WebsiteUser']:
+    def get_website_user_by_username(self, website_id: str, username: str) -> WebsiteUser | None:
         """
         Get a website user by username
 
@@ -2047,7 +2134,7 @@ class Database:
         })
         return WebsiteUser.from_dict(doc) if doc else None
 
-    def update_website_user(self, user: 'WebsiteUser') -> bool:
+    def update_website_user(self, user: WebsiteUser) -> bool:
         """
         Update a website user
 
@@ -2094,7 +2181,7 @@ class Database:
             return True
         return False
 
-    def get_user_roles_for_website(self, website_id: str) -> List[str]:
+    def get_user_roles_for_website(self, website_id: str) -> list[str]:
         """
         Get all unique roles used by users in a website
 
@@ -2104,7 +2191,7 @@ class Database:
         Returns:
             List of unique role names
         """
-        pipeline = [
+        pipeline: list[dict[str, Any]] = [
             {"$match": {"website_id": website_id}},
             {"$unwind": "$roles"},
             {"$group": {"_id": "$roles"}},
@@ -2123,16 +2210,16 @@ class Database:
         logger.info(f"Created project user: {user.username} for project {user.project_id}")
         return str(result.inserted_id)
 
-    def get_project_user(self, user_id: str) -> Optional[ProjectUser]:
+    def get_project_user(self, user_id: str) -> ProjectUser | None:
         """Get a project user by ID"""
         from auto_a11y.models import ProjectUser
         doc = self.project_users.find_one({"_id": ObjectId(user_id)})
         return ProjectUser.from_dict(doc) if doc else None
 
-    def get_project_users(self, project_id: str, enabled_only: bool = False, role: Optional[str] = None) -> List[ProjectUser]:
+    def get_project_users(self, project_id: str, enabled_only: bool = False, role: str | None = None) -> list[ProjectUser]:
         """Get all users for a project"""
         from auto_a11y.models import ProjectUser
-        query = {"project_id": project_id}
+        query: dict[str, Any] = {"project_id": project_id}
         if enabled_only:
             query["enabled"] = True
         if role:
@@ -2140,7 +2227,7 @@ class Database:
         docs = self.project_users.find(query).sort("display_name", 1)
         return [ProjectUser.from_dict(doc) for doc in docs]
 
-    def get_project_user_by_username(self, project_id: str, username: str) -> Optional[ProjectUser]:
+    def get_project_user_by_username(self, project_id: str, username: str) -> ProjectUser | None:
         """Get a project user by username"""
         from auto_a11y.models import ProjectUser
         doc = self.project_users.find_one({"project_id": project_id, "username": username})
@@ -2169,9 +2256,9 @@ class Database:
             return True
         return False
 
-    def get_user_roles_for_project(self, project_id: str) -> List[str]:
+    def get_user_roles_for_project(self, project_id: str) -> list[str]:
         """Get all unique roles used by users in a project"""
-        pipeline = [
+        pipeline: list[dict[str, Any]] = [
             {"$match": {"project_id": project_id}},
             {"$unwind": "$roles"},
             {"$group": {"_id": "$roles"}},
@@ -2186,28 +2273,29 @@ class Database:
         """Create new recording"""
         result = self.recordings.insert_one(recording.to_dict())
         recording._id = result.inserted_id
-        logger.info(f"Created recording: {recording.recording_id} ({recording.id})")
-        return recording.id
+        rec_id = str(result.inserted_id)
+        logger.info(f"Created recording: {recording.recording_id} ({rec_id})")
+        return rec_id
 
-    def get_recording(self, recording_id: str) -> Optional[Recording]:
+    def get_recording(self, recording_id: str) -> Recording | None:
         """Get recording by MongoDB ID"""
         doc = self.recordings.find_one({"_id": ObjectId(recording_id)})
         return Recording.from_dict(doc) if doc else None
 
-    def get_recording_by_recording_id(self, recording_id: str) -> Optional[Recording]:
+    def get_recording_by_recording_id(self, recording_id: str) -> Recording | None:
         """Get recording by recording_id field (e.g., 'NED-A')"""
         doc = self.recordings.find_one({"recording_id": recording_id})
         return Recording.from_dict(doc) if doc else None
 
     def get_recordings(
         self,
-        project_id: Optional[str] = None,
-        recording_type: Optional[RecordingType] = None,
+        project_id: str | None = None,
+        recording_type: RecordingType | None = None,
         limit: int = 0,
         skip: int = 0
-    ) -> List[Recording]:
+    ) -> list[Recording]:
         """Get recordings with optional filtering"""
-        query = {}
+        query: dict[str, Any] = {}
         if project_id:
             query["project_id"] = project_id
         if recording_type:
@@ -2216,7 +2304,7 @@ class Database:
         docs = self.recordings.find(query).sort("recorded_date", -1).limit(limit).skip(skip)
         return [Recording.from_dict(doc) for doc in docs]
 
-    def get_recordings_for_project(self, project_id: str) -> List[Recording]:
+    def get_recordings_for_project(self, project_id: str) -> list[Recording]:
         """Get all recordings for a project"""
         docs = self.recordings.find({"project_id": project_id}).sort("recorded_date", -1)
         return [Recording.from_dict(doc) for doc in docs]
@@ -2243,7 +2331,7 @@ class Database:
         logger.info(f"Deleted recording: {recording_id}")
         return result.deleted_count > 0
 
-    def get_recording_count(self, project_id: Optional[str] = None) -> int:
+    def get_recording_count(self, project_id: str | None = None) -> int:
         """Get total count of recordings"""
         query = {}
         if project_id:
@@ -2256,9 +2344,9 @@ class Database:
         """Create new recording issue"""
         result = self.recording_issues.insert_one(issue.to_dict())
         issue._id = result.inserted_id
-        return issue.id
+        return str(result.inserted_id)
 
-    def create_recording_issues_bulk(self, issues: List[RecordingIssue]) -> List[str]:
+    def create_recording_issues_bulk(self, issues: list[RecordingIssue]) -> list[str]:
         """Create multiple recording issues at once"""
         if not issues:
             return []
@@ -2273,21 +2361,21 @@ class Database:
         logger.info(f"Created {len(issues)} recording issues")
         return [str(id) for id in result.inserted_ids]
 
-    def get_recording_issue(self, issue_id: str) -> Optional[RecordingIssue]:
+    def get_recording_issue(self, issue_id: str) -> RecordingIssue | None:
         """Get recording issue by ID"""
         doc = self.recording_issues.find_one({"_id": ObjectId(issue_id)})
         return RecordingIssue.from_dict(doc) if doc else None
 
     def get_recording_issues(
         self,
-        recording_id: Optional[str] = None,
-        project_id: Optional[str] = None,
-        status: Optional[str] = None,
+        recording_id: str | None = None,
+        project_id: str | None = None,
+        status: str | None = None,
         limit: int = 0,
         skip: int = 0
-    ) -> List[RecordingIssue]:
+    ) -> list[RecordingIssue]:
         """Get recording issues with optional filtering"""
-        query = {}
+        query: dict[str, Any] = {}
         if recording_id:
             query["recording_id"] = recording_id
         if project_id:
@@ -2298,7 +2386,7 @@ class Database:
         docs = self.recording_issues.find(query).limit(limit).skip(skip)
         return [RecordingIssue.from_dict(doc) for doc in docs]
 
-    def get_recording_issues_for_recording(self, recording_id: str) -> List[RecordingIssue]:
+    def get_recording_issues_for_recording(self, recording_id: str) -> list[RecordingIssue]:
         """Get all issues for a specific recording"""
         docs = self.recording_issues.find({"recording_id": recording_id})
         return [RecordingIssue.from_dict(doc) for doc in docs]
@@ -2319,11 +2407,11 @@ class Database:
 
     def get_recording_issue_count(
         self,
-        recording_id: Optional[str] = None,
-        project_id: Optional[str] = None
+        recording_id: str | None = None,
+        project_id: str | None = None
     ) -> int:
         """Get total count of recording issues"""
-        query = {}
+        query: dict[str, Any] = {}
         if recording_id:
             query["recording_id"] = recording_id
         if project_id:
@@ -2376,12 +2464,12 @@ class Database:
             logger.error(f"Failed to create discovered page: {e}")
             raise
 
-    def get_discovered_page_by_id(self, page_id: str) -> Optional[DiscoveredPage]:
+    def get_discovered_page_by_id(self, page_id: str) -> DiscoveredPage | None:
         """Get discovered page by ID"""
         doc = self.discovered_pages.find_one({"_id": ObjectId(page_id)})
         return DiscoveredPage.from_dict(doc) if doc else None
 
-    def get_discovered_page_by_url(self, project_id: str, url: str) -> Optional[DiscoveredPage]:
+    def get_discovered_page_by_url(self, project_id: str, url: str) -> DiscoveredPage | None:
         """
         Get discovered page by project ID and URL.
         Used for deduplication check before creating new pages.
@@ -2402,9 +2490,9 @@ class Database:
     def get_discovered_pages_for_project(
         self,
         project_id: str,
-        source_type: Optional[str] = None,
-        include_in_report: Optional[bool] = None
-    ) -> List[DiscoveredPage]:
+        source_type: str | None = None,
+        include_in_report: bool | None = None
+    ) -> list[DiscoveredPage]:
         """
         Get all discovered pages for a project with optional filtering.
 
@@ -2416,7 +2504,7 @@ class Database:
         Returns:
             List of DiscoveredPage instances
         """
-        query = {"project_id": project_id}
+        query: dict[str, Any] = {"project_id": project_id}
         if source_type:
             query["source_type"] = source_type
         if include_in_report is not None:
@@ -2439,7 +2527,7 @@ class Database:
         result = self.discovered_pages.delete_one({"_id": ObjectId(page_id)})
         return result.deleted_count > 0
 
-    def get_discovered_pages_needing_sync(self, project_id: Optional[str] = None) -> List[DiscoveredPage]:
+    def get_discovered_pages_needing_sync(self, project_id: str | None = None) -> list[DiscoveredPage]:
         """
         Get discovered pages that need to be synced to Drupal.
 
@@ -2449,7 +2537,7 @@ class Database:
         Returns:
             List of DiscoveredPage instances that need sync
         """
-        query = {
+        query: dict[str, Any] = {
             "drupal_sync_status": {"$in": ["not_synced", "sync_failed"]}
         }
         if project_id:
@@ -2476,7 +2564,7 @@ class Database:
         result = self.test_state_matrices.insert_one(matrix_dict)
         return str(result.inserted_id)
 
-    def get_test_state_matrix(self, matrix_id: str) -> Optional[TestStateMatrix]:
+    def get_test_state_matrix(self, matrix_id: str) -> TestStateMatrix | None:
         """
         Get test state matrix by ID
 
@@ -2489,7 +2577,7 @@ class Database:
         doc = self.test_state_matrices.find_one({"_id": ObjectId(matrix_id)})
         return TestStateMatrix.from_dict(doc) if doc else None
 
-    def get_test_state_matrix_by_page(self, page_id: str) -> Optional[TestStateMatrix]:
+    def get_test_state_matrix_by_page(self, page_id: str) -> TestStateMatrix | None:
         """
         Get test state matrix for a specific page
 
@@ -2502,7 +2590,7 @@ class Database:
         doc = self.test_state_matrices.find_one({"page_id": page_id})
         return TestStateMatrix.from_dict(doc) if doc else None
 
-    def update_test_state_matrix(self, matrix: TestStateMatrix):
+    def update_test_state_matrix(self, matrix: TestStateMatrix) -> None:
         """
         Update existing test state matrix
 
@@ -2521,7 +2609,7 @@ class Database:
         )
         logger.info(f"Updated test state matrix {matrix.id}")
 
-    def delete_test_state_matrix(self, matrix_id: str):
+    def delete_test_state_matrix(self, matrix_id: str) -> None:
         """
         Delete test state matrix
 
@@ -2531,7 +2619,7 @@ class Database:
         self.test_state_matrices.delete_one({"_id": ObjectId(matrix_id)})
         logger.info(f"Deleted test state matrix {matrix_id}")
 
-    def list_test_state_matrices(self, website_id: Optional[str] = None) -> List[TestStateMatrix]:
+    def list_test_state_matrices(self, website_id: str | None = None) -> list[TestStateMatrix]:
         """
         List test state matrices
 
@@ -2541,7 +2629,7 @@ class Database:
         Returns:
             List of TestStateMatrix instances
         """
-        query = {}
+        query: dict[str, Any] = {}
         if website_id:
             query["website_id"] = website_id
 
@@ -2573,12 +2661,12 @@ class Database:
                 raise ValueError(f"User with email {user.email} already exists")
             raise
 
-    def get_app_user(self, user_id: str) -> Optional[AppUser]:
+    def get_app_user(self, user_id: str) -> AppUser | None:
         """Get app user by ID"""
         doc = self.app_users.find_one({"_id": ObjectId(user_id)})
         return AppUser.from_dict(doc) if doc else None
 
-    def get_app_user_by_email(self, email: str) -> Optional[AppUser]:
+    def get_app_user_by_email(self, email: str) -> AppUser | None:
         """Get app user by email"""
         doc = self.app_users.find_one({"email": email.lower()})
         return AppUser.from_dict(doc) if doc else None
@@ -2614,13 +2702,13 @@ class Database:
 
     def get_app_users(
         self,
-        role: Optional[UserRole] = None,
-        is_active: Optional[bool] = None,
+        role: UserRole | None = None,
+        is_active: bool | None = None,
         limit: int = 0,
         skip: int = 0
-    ) -> List[AppUser]:
+    ) -> list[AppUser]:
         """Get app users with optional filtering"""
-        query = {}
+        query: dict[str, Any] = {}
         if role:
             query["role"] = role.value
         if is_active is not None:
@@ -2632,9 +2720,9 @@ class Database:
     def search_app_users(
         self,
         query: str,
-        exclude_user_ids: Optional[List[str]] = None,
+        exclude_user_ids: list[str] | None = None,
         limit: int = 10
-    ) -> List[AppUser]:
+    ) -> list[AppUser]:
         """Search active app users by email or display_name.
 
         Args:
@@ -2649,7 +2737,7 @@ class Database:
         if not terms:
             return []
 
-        mongo_query: dict = {"is_active": True}
+        mongo_query: dict[str, Any] = {"is_active": True}
 
         # Each term must match email OR display_name
         and_conditions = []
@@ -2672,7 +2760,7 @@ class Database:
         docs = self.app_users.find(mongo_query).sort("email", 1).limit(limit)
         return [AppUser.from_dict(doc) for doc in docs]
 
-    def count_app_users(self, role: Optional[UserRole] = None) -> int:
+    def count_app_users(self, role: UserRole | None = None) -> int:
         """Count app users"""
         query = {}
         if role:
@@ -2687,29 +2775,29 @@ class Database:
     # Permission Group operations
     # ==========================================
 
-    def create_group(self, group) -> str:
+    def create_group(self, group: PermissionGroup) -> str:
         """Create a permission group. Returns inserted ID as string."""
         result = self.groups.insert_one(group.to_dict())
         return str(result.inserted_id)
 
-    def get_group(self, group_id: str):
+    def get_group(self, group_id: str) -> PermissionGroup | None:
         """Get a single group by ID."""
         from auto_a11y.models.permission_group import PermissionGroup
         doc = self.groups.find_one({"_id": ObjectId(group_id)})
         return PermissionGroup.from_dict(doc) if doc else None
 
-    def get_group_by_name(self, name: str):
+    def get_group_by_name(self, name: str) -> PermissionGroup | None:
         """Get a group by its name."""
         from auto_a11y.models.permission_group import PermissionGroup
         doc = self.groups.find_one({"name": name})
         return PermissionGroup.from_dict(doc) if doc else None
 
-    def get_all_groups(self):
+    def get_all_groups(self) -> list[PermissionGroup]:
         """Get all permission groups."""
         from auto_a11y.models.permission_group import PermissionGroup
         return [PermissionGroup.from_dict(doc) for doc in self.groups.find()]
 
-    def get_groups_by_ids(self, group_ids):
+    def get_groups_by_ids(self, group_ids: list[str]) -> list[PermissionGroup]:
         """Get multiple groups by their IDs. Silently skips missing IDs."""
         from auto_a11y.models.permission_group import PermissionGroup
         if not group_ids:
@@ -2723,7 +2811,7 @@ class Database:
         docs = self.groups.find({"_id": {"$in": oids}})
         return [PermissionGroup.from_dict(doc) for doc in docs]
 
-    def update_group(self, group) -> bool:
+    def update_group(self, group: PermissionGroup) -> bool:
         """Update an existing group."""
         from datetime import datetime
         group.updated_at = datetime.now()
@@ -2766,7 +2854,7 @@ class Database:
         logger.info(f"Created test schedule: {schedule.name} for website {schedule.website_id}")
         return str(result.inserted_id)
 
-    def get_test_schedule(self, schedule_id: str) -> Optional[TestSchedule]:
+    def get_test_schedule(self, schedule_id: str) -> TestSchedule | None:
         """
         Get test schedule by ID
 
@@ -2779,7 +2867,7 @@ class Database:
         doc = self.test_schedules.find_one({"_id": ObjectId(schedule_id)})
         return TestSchedule.from_dict(doc) if doc else None
 
-    def get_test_schedule_by_apscheduler_id(self, apscheduler_job_id: str) -> Optional[TestSchedule]:
+    def get_test_schedule_by_apscheduler_id(self, apscheduler_job_id: str) -> TestSchedule | None:
         """
         Get test schedule by APScheduler job ID
 
@@ -2796,7 +2884,7 @@ class Database:
         self,
         website_id: str,
         enabled_only: bool = False
-    ) -> List[TestSchedule]:
+    ) -> list[TestSchedule]:
         """
         Get all test schedules for a website
 
@@ -2807,14 +2895,14 @@ class Database:
         Returns:
             List of TestSchedule instances
         """
-        query = {"website_id": website_id}
+        query: dict[str, Any] = {"website_id": website_id}
         if enabled_only:
             query["enabled"] = True
 
         docs = self.test_schedules.find(query).sort("created_at", -1)
         return [TestSchedule.from_dict(doc) for doc in docs]
 
-    def get_enabled_test_schedules(self) -> List[TestSchedule]:
+    def get_enabled_test_schedules(self) -> list[TestSchedule]:
         """
         Get all enabled test schedules across all websites
 
@@ -2826,9 +2914,9 @@ class Database:
 
     def get_all_test_schedules(
         self,
-        project_id: Optional[str] = None,
+        project_id: str | None = None,
         enabled_only: bool = False
-    ) -> List[TestSchedule]:
+    ) -> list[TestSchedule]:
         """
         Get all test schedules across all websites, optionally filtered by project
 
@@ -2839,7 +2927,7 @@ class Database:
         Returns:
             List of TestSchedule instances
         """
-        query = {}
+        query: dict[str, Any] = {}
         if enabled_only:
             query["enabled"] = True
 
@@ -2928,7 +3016,7 @@ class Database:
         schedule_id: str,
         job_id: str,
         status: ScheduleRunStatus,
-        next_run_at: Optional[datetime] = None
+        next_run_at: datetime | None = None
     ) -> bool:
         """
         Update execution status of a test schedule
@@ -2993,7 +3081,7 @@ class Database:
 
     def count_test_schedules(
         self,
-        website_id: Optional[str] = None,
+        website_id: str | None = None,
         enabled_only: bool = False
     ) -> int:
         """
@@ -3006,7 +3094,7 @@ class Database:
         Returns:
             Number of schedules
         """
-        query = {}
+        query: dict[str, Any] = {}
         if website_id:
             query["website_id"] = website_id
         if enabled_only:
@@ -3025,7 +3113,12 @@ class Database:
         logger.info(f"Created share token: {token.label} ({token.scope.value}:{token.scope_id})")
         return str(result.inserted_id)
 
-    def get_share_token_by_hash(self, token_hash: str) -> Optional[ShareToken]:
+    def get_share_token(self, token_id: str) -> ShareToken | None:
+        """Get share token by its ID"""
+        doc = self.share_tokens.find_one({"_id": ObjectId(token_id)})
+        return ShareToken.from_dict(doc) if doc else None
+
+    def get_share_token_by_hash(self, token_hash: str) -> ShareToken | None:
         """Get share token by its hash"""
         doc = self.share_tokens.find_one({"token_hash": token_hash})
         return ShareToken.from_dict(doc) if doc else None
@@ -3034,7 +3127,7 @@ class Database:
         self,
         scope: TokenScope,
         scope_id: str
-    ) -> List[ShareToken]:
+    ) -> list[ShareToken]:
         """Get all share tokens for a given scope (project or website)"""
         docs = self.share_tokens.find({
             "scope": scope.value,

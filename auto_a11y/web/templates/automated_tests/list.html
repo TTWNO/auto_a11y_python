@@ -14,7 +14,7 @@
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>{{ ftl('common-automated-tests') }}</h1>
-        <button id="uploadBtn" class="btn btn-primary" disabled>
+        <button id="uploadBtn" class="btn btn-brand" disabled>
             <i class="bi bi-cloud-upload" aria-hidden="true"></i> {{ ftl('testing-upload-to-drupal') }}
         </button>
     </div>
@@ -22,16 +22,16 @@
     <!-- Filters Section -->
     <div class="card mb-4">
         <div class="card-header">
-            <h2 class="mb-0">
+            <h2 class="mb-0" id="filter-form-heading">
                 <i class="bi bi-funnel" aria-hidden="true"></i> {{ ftl('testing-filters') }}
             </h2>
         </div>
         <div class="card-body">
-            <form id="filterForm">
+            <form id="filterForm" aria-labelledby="filter-form-heading">
                 <div class="row">
                     <!-- Page URL Filter -->
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">{{ ftl('testing-page-urls') }}</label>
+                        <label class="form-label" for="pageUrlsFilter">{{ ftl('testing-page-urls') }}</label>
                         <select id="pageUrlsFilter" class="form-select" multiple size="5">
                             <option value="">{{ ftl('common-all-pages') }}</option>
                             {% for result in test_results_data %}
@@ -43,7 +43,7 @@
 
                     <!-- Touchpoint Filter -->
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">{{ ftl('testing-touchpoints') }}</label>
+                        <label class="form-label" for="touchpointsFilter">{{ ftl('testing-touchpoints') }}</label>
                         <select id="touchpointsFilter" class="form-select" multiple size="5">
                             <option value="">{{ ftl('common-all-touchpoints') }}</option>
                             {% for touchpoint in touchpoints %}
@@ -55,7 +55,7 @@
 
                     <!-- WCAG Criteria Filter -->
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">{{ ftl('common-wcag-success-criteria') }}</label>
+                        <label class="form-label" for="wcagFilter">{{ ftl('common-wcag-success-criteria') }}</label>
                         <select id="wcagFilter" class="form-select" multiple size="5">
                             <option value="">{{ ftl('common-all-wcag-criteria') }}</option>
                             {% for criterion in wcag_criteria %}
@@ -67,7 +67,7 @@
 
                     <!-- Impact Level Filter -->
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">{{ ftl('common-impact-level') }}</label>
+                        <label class="form-label" for="impactFilter">{{ ftl('common-impact-level') }}</label>
                         <select id="impactFilter" class="form-select" multiple size="5">
                             <option value="">{{ ftl('testing-all-impact-levels') }}</option>
                             <option value="critical">{{ ftl('common-critical') }}</option>
@@ -81,10 +81,10 @@
 
                 <!-- Filter Actions -->
                 <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" class="btn btn-brand">
                         <i class="bi bi-search" aria-hidden="true"></i> {{ ftl('common-apply-filters') }}
                     </button>
-                    <button type="button" id="clearFiltersBtn" class="btn btn-secondary">
+                    <button type="button" id="clearFiltersBtn" class="btn btn-neutral">
                         <i class="bi bi-x-circle" aria-hidden="true"></i> {{ ftl('common-clear-filters') }}
                     </button>
                 </div>
@@ -127,20 +127,20 @@
                             </td>
                             <td>{{ result.website.name }}</td>
                             <td class="text-center">
-                                <span class="badge bg-danger">{{ result.violation_count }}</span>
+                                <span class="badge badge-high">{{ result.violation_count }}</span>
                             </td>
                             <td class="text-center">
-                                <span class="badge bg-warning text-dark">{{ result.warning_count }}</span>
+                                <span class="badge badge-medium">{{ result.warning_count }}</span>
                             </td>
                             <td class="text-center">
-                                <span class="badge bg-info">{{ result.info_count }}</span>
+                                <span class="badge badge-info">{{ result.info_count }}</span>
                             </td>
                             <td class="text-center">
                                 <strong>{{ result.total_issues }}</strong>
                             </td>
                             <td>
                                 <a href="{{ url_for('testing.view_result', result_id=result.test_result.id) }}"
-                                   class="btn btn-sm btn-outline-primary">
+                                   class="btn btn-sm btn-outline-brand">
                                     {{ ftl('common-view-details') }}
                                 </a>
                             </td>
@@ -161,7 +161,7 @@
 </div>
 
 <!-- Upload Progress Modal -->
-<dialog class="modal" id="uploadModal" aria-labelledby="uploadModalTitle">
+<dialog class="modal" id="uploadModal" role="dialog" aria-labelledby="uploadModalTitle" aria-modal="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -181,20 +181,20 @@
                     </div>
                 </div>
                 <div id="uploadComplete" class="d-none">
-                    <div class="alert alert-success">
+                    <div class="alert alert-pass">
                         <h3>{{ ftl('common-upload-complete') }}</h3>
                         <ul id="uploadResultsList" class="mb-0"></ul>
                     </div>
                 </div>
                 <div id="uploadError" class="d-none">
-                    <div class="alert alert-danger">
+                    <div class="alert alert-high">
                         <h3>{{ ftl('testing-upload-failed') }}</h3>
                         <p id="uploadErrorMessage"></p>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-close-modal>{{ ftl('common-close') }}</button>
+                <button type="button" class="btn btn-neutral" data-close-modal>{{ ftl('common-close') }}</button>
             </div>
         </div>
     </div>
@@ -316,12 +316,12 @@
             row.innerHTML = `
                 <td>${result.page_title}</td>
                 <td>${result.website_name}</td>
-                <td class="text-center"><span class="badge bg-danger">${result.violation_count}</span></td>
-                <td class="text-center"><span class="badge bg-warning text-dark">0</span></td>
-                <td class="text-center"><span class="badge bg-info">0</span></td>
+                <td class="text-center"><span class="badge badge-high">${result.violation_count}</span></td>
+                <td class="text-center"><span class="badge badge-medium">0</span></td>
+                <td class="text-center"><span class="badge badge-info">0</span></td>
                 <td class="text-center"><strong>${result.violation_count}</strong></td>
                 <td>
-                    <button class="btn btn-sm btn-outline-primary" onclick="viewViolations('${result.page_url}')">
+                    <button class="btn btn-sm btn-outline-brand" onclick="viewViolations('${result.page_url}')">
                         ${i18n.viewDetails}
                     </button>
                 </td>
@@ -374,7 +374,7 @@
                 <li>${i18n.discoveredPagesSynced} ${data.discovered_pages_synced}</li>
                 <li>${i18n.issuesCreated} ${data.issues_created}</li>
                 <li>${i18n.issuesUpdated} ${data.issues_updated}</li>
-                ${data.issues_failed > 0 ? `<li class="text-danger">${i18n.issuesFailed} ${data.issues_failed}</li>` : ''}
+                ${data.issues_failed > 0 ? `<li class="text-severity-high">${i18n.issuesFailed} ${data.issues_failed}</li>` : ''}
             `;
 
         } catch (error) {

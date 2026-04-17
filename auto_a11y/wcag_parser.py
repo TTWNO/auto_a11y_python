@@ -19,9 +19,11 @@ W3C Document License: https://www.w3.org/Consortium/Legal/2015/doc-license
 All additional code, analysis, and features provided by Auto A11y are clearly
 distinguished from the original W3C WCAG content.
 """
+from __future__ import annotations
 
 import json
-from typing import List, Dict, Optional, Set
+from typing import Any
+from typing_extensions import override
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -34,27 +36,28 @@ class SuccessCriterion:
     handle: str
     title: str
     level: str  # A, AA, or AAA
-    versions: List[str]
+    versions: list[str]
     content: str
 
-    def __str__(self):
+    @override
+    def __str__(self) -> str:
         return f"{self.num} {self.handle} (Level {self.level})"
 
 
 class WCAGParser:
     """Parser for WCAG 2.2 JSON data"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Load WCAG 2.2 JSON data"""
         data_file = Path(__file__).parent / 'data' / 'wcag' / 'wcag22.json'
         with open(data_file, 'r', encoding='utf-8') as f:
-            self.data = json.load(f)
+            self.data: dict[str, Any] = json.load(f)
 
         # Cache all success criteria
-        self._criteria_cache: Dict[str, SuccessCriterion] = {}
+        self._criteria_cache: dict[str, SuccessCriterion] = {}
         self._load_criteria()
 
-    def _load_criteria(self):
+    def _load_criteria(self) -> None:
         """Load all success criteria into cache"""
         for principle in self.data.get('principles', []):
             for guideline in principle.get('guidelines', []):
@@ -70,7 +73,7 @@ class WCAGParser:
                     )
                     self._criteria_cache[sc['id']] = criterion
 
-    def get_all_criteria(self, level: Optional[str] = None, version: str = '2.2') -> List[SuccessCriterion]:
+    def get_all_criteria(self, level: str | None = None, version: str = '2.2') -> list[SuccessCriterion]:
         """
         Get all success criteria, optionally filtered by level
 
@@ -91,18 +94,18 @@ class WCAGParser:
 
         return sorted(criteria, key=lambda x: x.num)
 
-    def get_criterion_by_id(self, criterion_id: str) -> Optional[SuccessCriterion]:
+    def get_criterion_by_id(self, criterion_id: str) -> SuccessCriterion | None:
         """Get a specific success criterion by ID"""
         return self._criteria_cache.get(criterion_id)
 
-    def get_criterion_by_num(self, num: str) -> Optional[SuccessCriterion]:
+    def get_criterion_by_num(self, num: str) -> SuccessCriterion | None:
         """Get a specific success criterion by number (e.g., '1.1.1')"""
         for sc in self._criteria_cache.values():
             if sc.num == num:
                 return sc
         return None
 
-    def get_criteria_for_level(self, target_level: str) -> List[SuccessCriterion]:
+    def get_criteria_for_level(self, target_level: str) -> list[SuccessCriterion]:
         """
         Get all criteria up to and including the specified level
 
@@ -131,7 +134,7 @@ class TestingScopeMapper:
     # ONLY includes criteria that are EXCLUSIVELY about that specific content type
     # General criteria (like 1.1.1, 1.3.1, keyboard access, etc.) are NOT included
     # as they apply broadly regardless of specific content types tested
-    SCOPE_TO_CRITERIA = {
+    SCOPE_TO_CRITERIA: dict[str, list[str]] = {
         'forms': [
             'identify-input-purpose',  # 1.3.5 - Autocomplete (forms-specific)
             'error-identification',  # 3.3.1 - Error identification (forms-specific)
@@ -185,7 +188,7 @@ class TestingScopeMapper:
         ],
     }
 
-    def __init__(self, wcag_parser: WCAGParser):
+    def __init__(self, wcag_parser: WCAGParser) -> None:
         """
         Initialize with a WCAG parser instance
 
@@ -194,8 +197,8 @@ class TestingScopeMapper:
         """
         self.parser = wcag_parser
 
-    def get_applicable_criteria(self, testing_scope: Dict[str, bool],
-                                target_level: str = 'AA') -> List[SuccessCriterion]:
+    def get_applicable_criteria(self, testing_scope: dict[str, bool],
+                                target_level: str = 'AA') -> list[SuccessCriterion]:
         """
         Get all applicable WCAG Success Criteria based on testing scope.
 
@@ -212,12 +215,12 @@ class TestingScopeMapper:
         """
         # Start with ALL criteria for the target level
         all_criteria = self.parser.get_criteria_for_level(target_level)
-        applicable_ids: Set[str] = set(c.id for c in all_criteria)
+        applicable_ids: set[str] = set(c.id for c in all_criteria)
 
         # Build sets of criteria to potentially remove (from untested scopes)
         # and criteria to keep (from tested scopes)
-        criteria_to_remove: Set[str] = set()
-        criteria_to_keep: Set[str] = set()
+        criteria_to_remove: set[str] = set()
+        criteria_to_keep: set[str] = set()
 
         for scope_key, is_tested in testing_scope.items():
             if scope_key in self.SCOPE_TO_CRITERIA:
@@ -234,7 +237,7 @@ class TestingScopeMapper:
         applicable_ids.difference_update(criteria_to_actually_remove)
 
         # Get the actual criterion objects for remaining IDs
-        criteria = []
+        criteria: list[SuccessCriterion] = []
         for criterion_id in applicable_ids:
             sc = self.parser.get_criterion_by_id(criterion_id)
             if sc:
@@ -252,11 +255,11 @@ class TestingScopeMapper:
         target_idx = level_hierarchy.index(target_level)
         return criterion_idx <= target_idx
 
-    def get_scope_categories(self) -> List[str]:
+    def get_scope_categories(self) -> list[str]:
         """Get all available testing scope categories"""
         return sorted(self.SCOPE_TO_CRITERIA.keys())
 
-    def get_criteria_for_scope(self, scope_key: str) -> List[SuccessCriterion]:
+    def get_criteria_for_scope(self, scope_key: str) -> list[SuccessCriterion]:
         """
         Get all criteria associated with a specific scope category
 
@@ -269,7 +272,7 @@ class TestingScopeMapper:
         if scope_key not in self.SCOPE_TO_CRITERIA:
             return []
 
-        criteria = []
+        criteria: list[SuccessCriterion] = []
         for criterion_id in self.SCOPE_TO_CRITERIA[scope_key]:
             sc = self.parser.get_criterion_by_id(criterion_id)
             if sc:
@@ -279,8 +282,8 @@ class TestingScopeMapper:
 
 
 # Singleton instances for easy access
-_wcag_parser_instance = None
-_scope_mapper_instance = None
+_wcag_parser_instance: WCAGParser | None = None
+_scope_mapper_instance: TestingScopeMapper | None = None
 
 
 def get_wcag_parser() -> WCAGParser:

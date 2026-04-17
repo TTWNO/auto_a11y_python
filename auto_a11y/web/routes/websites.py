@@ -1,9 +1,15 @@
 """
 Website management routes
 """
+from __future__ import annotations
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app, session
+from collections.abc import Mapping
+from typing import Any
+
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session
+from werkzeug.wrappers import Response
 from auto_a11y.web.fluent import ftl
+from auto_a11y.web.typed_app import get_db, get_app_config
 from auto_a11y.models import Website, ScrapingConfig, Page, PageStatus
 from datetime import datetime
 import asyncio
@@ -14,10 +20,10 @@ websites_bp = Blueprint('websites', __name__)
 
 
 @websites_bp.route('/api/list')
-def api_list_websites():
+def api_list_websites() -> Response | tuple[Response, int]:
     """API endpoint to list all websites"""
     try:
-        websites = current_app.db.get_all_websites()
+        websites = get_db().get_all_websites()
         return jsonify({
             'success': True,
             'websites': [
@@ -35,20 +41,20 @@ def api_list_websites():
 
 
 @websites_bp.route('/<website_id>')
-def view_website(website_id):
+def view_website(website_id: str) -> str | Response:
     """View website details"""
-    website = current_app.db.get_website(website_id)
+    website = get_db().get_website(website_id)
     if not website:
         flash(ftl('common-website-not-found'), 'error')
         return redirect(url_for('projects.list_projects'))
 
-    project = current_app.db.get_project(website.project_id)
+    project = get_db().get_project(website.project_id)
 
     # Get pagination parameters from request, with config defaults and limits
     page_num = request.args.get('page', 1, type=int)
     # Use getattr with defaults for backward compatibility if config not reloaded
-    default_per_page = getattr(current_app.app_config, 'PAGES_PER_PAGE', 100)
-    max_per_page = getattr(current_app.app_config, 'MAX_PAGES_PER_PAGE', 500)
+    default_per_page = getattr(get_app_config(), 'PAGES_PER_PAGE', 100)
+    max_per_page = getattr(get_app_config(), 'MAX_PAGES_PER_PAGE', 500)
     per_page = request.args.get('per_page', default_per_page, type=int)
 
     # Enforce max pages per page limit
@@ -58,11 +64,11 @@ def view_website(website_id):
         per_page = 10
 
     # Get total count of ALL pages for this website (not limited to latest discovery)
-    total_page_count = current_app.db.pages.count_documents({'website_id': website_id})
+    total_page_count = get_db().pages.count_documents({'website_id': website_id})
 
     # Calculate statistics using database aggregation (efficient for large datasets)
     # This ensures we show stats for ALL discovered pages, not just the limited set
-    pipeline = [
+    pipeline: list[Mapping[str, Any]] = [
         {'$match': {'website_id': website_id}},
         {'$group': {
             '_id': None,
@@ -78,7 +84,7 @@ def view_website(website_id):
         }}
     ]
 
-    stats_result = list(current_app.db.pages.aggregate(pipeline))
+    stats_result = list(get_db().pages.aggregate(pipeline))
     if stats_result:
         stats = stats_result[0]
         # Remove MongoDB's _id field
@@ -97,7 +103,7 @@ def view_website(website_id):
 
     # Get paginated pages for display - show ALL pages, not just latest discovery
     skip = (page_num - 1) * per_page
-    pages = current_app.db.get_pages(website_id, limit=per_page, skip=skip, latest_only=False)
+    pages = get_db().get_pages(website_id, limit=per_page, skip=skip, latest_only=False)
 
     # Calculate pagination info
     total_pages_pagination = (total_page_count + per_page - 1) // per_page  # Ceiling division
@@ -109,7 +115,7 @@ def view_website(website_id):
     end_page = min(total_pages_pagination, page_num + 2)
 
     # Get available test users for this project
-    project_users = current_app.db.get_project_users(website.project_id, enabled_only=True)
+    project_users = get_db().get_project_users(website.project_id, enabled_only=True)
 
     return render_template('websites/view.html',
                          website=website,
@@ -132,9 +138,9 @@ def view_website(website_id):
 
 
 @websites_bp.route('/<website_id>/edit', methods=['GET', 'POST'])
-def edit_website(website_id):
+def edit_website(website_id: str) -> str | Response:
     """Edit website configuration"""
-    website = current_app.db.get_website(website_id)
+    website = get_db().get_website(website_id)
     if not website:
         flash(ftl('common-website-not-found'), 'error')
         return redirect(url_for('projects.list_projects'))
@@ -151,47 +157,72 @@ def edit_website(website_id):
         website.scraping_config.respect_robots = request.form.get('respect_robots') == 'on'
         website.scraping_config.request_delay = float(request.form.get('request_delay', 1.0))
         
-        if current_app.db.update_website(website):
+        if get_db().update_website(website):
             flash(ftl('websites-website-updated-successfully'), 'success')
             return redirect(url_for('websites.view_website', website_id=website_id))
         else:
             flash(ftl('websites-failed-to-update-website'), 'error')
     
-    project = current_app.db.get_project(website.project_id)
+    project = get_db().get_project(website.project_id)
     return render_template('websites/edit.html', website=website, project=project)
 
 
 @websites_bp.route('/<website_id>/delete', methods=['POST'])
-def delete_website(website_id):
+def delete_website(website_id: str) -> Response:
     """Delete website"""
-    website = current_app.db.get_website(website_id)
+    website = get_db().get_website(website_id)
     if not website:
         flash(ftl('common-website-not-found'), 'error')
         return redirect(url_for('projects.list_projects'))
 
     project_id = website.project_id
-    
-    if current_app.db.delete_website(website_id):
+
+    if get_db().delete_website(website_id):
         flash(ftl('websites-website-name-deleted-successfully', name=website.display_name), 'success')
     else:
         flash(ftl('websites-failed-to-delete-website'), 'error')
-    
+
     return redirect(url_for('projects.view_project', project_id=project_id))
 
 
+@websites_bp.route('/<website_id>/clear-test-results', methods=['POST'])
+def clear_test_results(website_id: str) -> Response:
+    """Delete all test results and reset page counters for this website."""
+    website = get_db().get_website(website_id)
+    if not website:
+        flash(ftl('common-website-not-found'), 'error')
+        return redirect(url_for('projects.list_projects'))
+
+    try:
+        result = get_db().clear_website_test_results(website_id)
+        flash(
+            ftl(
+                'websites-test-results-cleared',
+                test_results=result['test_results_deleted'],
+                pages=result['pages_reset'],
+            ),
+            'success',
+        )
+    except Exception as e:
+        logger.error(f"Failed to clear test results for website {website_id}: {e}")
+        flash(ftl('websites-failed-to-clear-test-results'), 'error')
+
+    return redirect(url_for('websites.edit_website', website_id=website_id))
+
+
 @websites_bp.route('/<website_id>/discover', methods=['POST'])
-def discover_pages(website_id):
+def discover_pages(website_id: str) -> Response | tuple[Response, int]:
     """Start page discovery for website with optional max pages limit"""
     from auto_a11y.core.website_manager import WebsiteManager
     from auto_a11y.core.task_runner import task_runner
     
-    website = current_app.db.get_website(website_id)
+    website = get_db().get_website(website_id)
     if not website:
         return jsonify({'error': ftl('common-website-not-found')}), 404
 
     # Get parameters from request
     data = request.get_json() if request.is_json else {}
-    max_pages = data.get('max_pages') if request.is_json else request.form.get('max_pages')
+    max_pages_raw = data.get('max_pages') if request.is_json else request.form.get('max_pages')
 
     # Get project_user_ids (project-level test users)
     # Still accept 'website_user_ids' key name for backward compatibility with JavaScript
@@ -208,9 +239,10 @@ def discover_pages(website_id):
     # Keep the old variable name for compatibility with existing code paths
     website_user_ids = user_ids
 
-    if max_pages:
+    max_pages: int | None = None
+    if max_pages_raw:
         try:
-            max_pages = int(max_pages)
+            max_pages = int(max_pages_raw)
             if max_pages <= 0:
                 max_pages = None
             else:
@@ -223,10 +255,10 @@ def discover_pages(website_id):
         # which auto-detects the executable and can install it at runtime.
 
         # Get project to access stealth_mode setting
-        project = current_app.db.get_project(website.project_id)
+        project = get_db().get_project(website.project_id)
 
         # Create browser config with project-specific stealth_mode and headless settings
-        browser_config = current_app.app_config.__dict__.copy()
+        browser_config = get_app_config().__dict__.copy()
         if project and project.config:
             browser_config['stealth_mode'] = project.config.get('stealth_mode', False)
 
@@ -237,7 +269,7 @@ def discover_pages(website_id):
             browser_config['stealth_mode'] = False
 
         # Create website manager
-        website_manager = WebsiteManager(current_app.db, browser_config)
+        website_manager = WebsiteManager(get_db(), browser_config)
 
         # Get user info from session if available
         session_user_id = session.get('user_id') if session else None
@@ -249,7 +281,7 @@ def discover_pages(website_id):
         logger.info(f"Submitting discovery task with ID: {task_id} for {len(website_user_ids)} users")
 
         # Create a wrapper that handles the async execution properly
-        def discovery_wrapper():
+        def discovery_wrapper() -> object:
             import asyncio
             import nest_asyncio
             nest_asyncio.apply()
@@ -302,7 +334,7 @@ def discover_pages(website_id):
         user_count = len(website_user_ids)
         if user_count == 1:
             if website_user_ids[0]:
-                user_info = current_app.db.get_project_user(website_user_ids[0])
+                user_info = get_db().get_project_user(website_user_ids[0])
                 message = f'Page discovery started as {user_info.name_display if user_info else "user"}'
             else:
                 message = f'Page discovery started as guest'
@@ -331,14 +363,14 @@ def discover_pages(website_id):
 
 
 @websites_bp.route('/<website_id>/discovery-status')
-def discovery_status(website_id):
+def discovery_status(website_id: str) -> Response:
     """Check discovery job status with enhanced progress tracking"""
     from auto_a11y.core.website_manager import WebsiteManager
     
     job_id = request.args.get('job_id')
     
     # Get total page count for website
-    total_pages = current_app.db.pages.count_documents({'website_id': website_id})
+    total_pages = get_db().pages.count_documents({'website_id': website_id})
     
     if not job_id:
         # No specific job requested, check if any discovery is running
@@ -350,7 +382,7 @@ def discovery_status(website_id):
         })
     
     # Get job status from database via WebsiteManager
-    website_manager = WebsiteManager(current_app.db, current_app.app_config.__dict__)
+    website_manager = WebsiteManager(get_db(), get_app_config().__dict__)
     job_status = website_manager.get_job_status(job_id)
     
     if not job_status:
@@ -419,7 +451,7 @@ def discovery_status(website_id):
 
 
 @websites_bp.route('/<website_id>/cancel-discovery', methods=['POST'])
-def cancel_discovery(website_id):
+def cancel_discovery(website_id: str) -> Response | tuple[Response, int]:
     """Cancel an active discovery job"""
     from auto_a11y.core.website_manager import WebsiteManager
     
@@ -453,7 +485,7 @@ def cancel_discovery(website_id):
         logger.info(f"Attempting to cancel discovery job {job_id} for website {website_id}")
         
         # Cancel using the database-backed job manager
-        website_manager = WebsiteManager(current_app.db, current_app.app_config.__dict__)
+        website_manager = WebsiteManager(get_db(), get_app_config().__dict__)
         
         # Get user info for tracking who cancelled
         try:
@@ -487,9 +519,9 @@ def cancel_discovery(website_id):
 
 
 @websites_bp.route('/<website_id>/add-page', methods=['POST'])
-def add_page(website_id):
+def add_page(website_id: str) -> Response | tuple[Response, int]:
     """Manually add a page to website"""
-    website = current_app.db.get_website(website_id)
+    website = get_db().get_website(website_id)
     if not website:
         return jsonify({'error': ftl('common-website-not-found')}), 404
 
@@ -505,7 +537,7 @@ def add_page(website_id):
         discovered_from='manual'
     )
     
-    page_id = current_app.db.create_page(page)
+    page_id = get_db().create_page(page)
     
     return jsonify({
         'success': True,
@@ -515,13 +547,13 @@ def add_page(website_id):
 
 
 @websites_bp.route('/<website_id>/test-all', methods=['POST'])
-def test_all_pages(website_id):
+def test_all_pages(website_id: str) -> Response | tuple[Response, int]:
     """Start testing all pages in website using database-backed job management"""
     from auto_a11y.core.website_manager import WebsiteManager
     from auto_a11y.core.task_runner import task_runner
     import uuid
 
-    website = current_app.db.get_website(website_id)
+    website = get_db().get_website(website_id)
     if not website:
         return jsonify({'error': ftl('common-website-not-found')}), 404
 
@@ -547,7 +579,7 @@ def test_all_pages(website_id):
     untested_only = data.get('untested_only', False)
 
     # Use latest_only=False and limit=0 to get all pages (consistent with stats shown in UI)
-    pages = current_app.db.get_pages(website_id, latest_only=False, limit=0)
+    pages = get_db().get_pages(website_id, latest_only=False, limit=0)
     # Allow testing of all pages, not just untested ones
     # Users may want to re-test pages to check for improvements
     testable_pages = [p for p in pages if p.status != PageStatus.TESTING]  # Exclude currently testing pages
@@ -568,10 +600,10 @@ def test_all_pages(website_id):
 
     try:
         # Get project to access stealth_mode setting
-        project = current_app.db.get_project(website.project_id)
+        project = get_db().get_project(website.project_id)
 
         # Create browser config with project-specific stealth_mode and headless settings
-        browser_config = current_app.app_config.__dict__.copy()
+        browser_config = get_app_config().__dict__.copy()
         if project and project.config:
             browser_config['stealth_mode'] = project.config.get('stealth_mode', False)
 
@@ -582,10 +614,10 @@ def test_all_pages(website_id):
             browser_config['stealth_mode'] = False
 
         # Create website manager
-        website_manager = WebsiteManager(current_app.db, browser_config)
+        website_manager = WebsiteManager(get_db(), browser_config)
 
         # Get AI configuration
-        ai_key = getattr(current_app.app_config, 'CLAUDE_API_KEY', None)
+        ai_key = getattr(get_app_config(), 'CLAUDE_API_KEY', None)
 
         # Get user info from session if available
         session_user_id = session.get('user_id') if session else None
@@ -599,7 +631,7 @@ def test_all_pages(website_id):
 
         # Create a wrapper that handles the async execution properly
         # Process all users sequentially within this single job
-        def testing_wrapper():
+        def testing_wrapper() -> object:
             import asyncio
             import nest_asyncio
             nest_asyncio.apply()
@@ -617,7 +649,7 @@ def test_all_pages(website_id):
 
             try:
                 # Get page IDs for testing
-                page_ids = [p.id for p in testable_pages]
+                page_ids = [p.id for p in testable_pages if p.id is not None]
                 last_result = None
                 num_users = len(website_user_ids)
 
@@ -686,7 +718,7 @@ def test_all_pages(website_id):
         user_count = len(website_user_ids)
         if user_count == 1:
             if website_user_ids[0]:
-                user_info = current_app.db.get_project_user(website_user_ids[0])
+                user_info = get_db().get_project_user(website_user_ids[0])
                 message = f'Testing {len(testable_pages)} pages as {user_info.name_display if user_info else "user"}'
             else:
                 message = f'Testing {len(testable_pages)} pages as guest'
@@ -714,7 +746,7 @@ def test_all_pages(website_id):
 
 
 @websites_bp.route('/<website_id>/cancel-testing', methods=['POST'])
-def cancel_testing(website_id):
+def cancel_testing(website_id: str) -> Response | tuple[Response, int]:
     """Cancel an active testing job"""
     from auto_a11y.core.website_manager import WebsiteManager
     
@@ -740,7 +772,7 @@ def cancel_testing(website_id):
         logger.info(f"Attempting to cancel testing job {job_id} for website {website_id}")
         
         # Cancel using the database-backed job manager
-        website_manager = WebsiteManager(current_app.db, current_app.app_config.__dict__)
+        website_manager = WebsiteManager(get_db(), get_app_config().__dict__)
         
         # Get user info for tracking who cancelled
         user_id = session.get('user_id') if session else None
@@ -770,17 +802,17 @@ def cancel_testing(website_id):
 
 
 @websites_bp.route('/<website_id>/documents')
-def view_documents(website_id):
+def view_documents(website_id: str) -> str | Response:
     """View document references for a website"""
-    website = current_app.db.get_website(website_id)
+    website = get_db().get_website(website_id)
     if not website:
         flash(ftl('common-website-not-found'), 'error')
         return redirect(url_for('projects.list_projects'))
 
-    project = current_app.db.get_project(website.project_id)
+    project = get_db().get_project(website.project_id)
 
     # Get document references
-    documents = current_app.db.get_document_references(website_id)
+    documents = get_db().get_document_references(website_id)
     
     # Separate internal and external
     internal_docs = [d for d in documents if d.is_internal]
@@ -795,7 +827,7 @@ def view_documents(website_id):
 
 
 @websites_bp.route('/<website_id>/test-status')
-def test_status(website_id):
+def test_status(website_id: str) -> Response | tuple[Response, int]:
     """Check testing status using database-backed job management"""
     from auto_a11y.core.website_manager import WebsiteManager
     from auto_a11y.core.job_manager import JobType
@@ -807,7 +839,7 @@ def test_status(website_id):
     logger.warning(f"DEBUG test_status: job_id={job_id}")
     
     # Get fresh website data from database
-    website = current_app.db.get_website(website_id)
+    website = get_db().get_website(website_id)
     if not website:
         logger.warning(f"DEBUG test_status: website not found!")
         return jsonify({'error': ftl('common-website-not-found')}), 404
@@ -816,7 +848,7 @@ def test_status(website_id):
     
     # If a specific job_id is provided, get its status
     if job_id:
-        website_manager = WebsiteManager(current_app.db, current_app.app_config.__dict__)
+        website_manager = WebsiteManager(get_db(), get_app_config().__dict__)
         job_status = website_manager.get_job_status(job_id)
         
         if job_status:
@@ -842,7 +874,7 @@ def test_status(website_id):
     
     # Otherwise, get page-level status (for backward compatibility)
     logger.warning(f"DEBUG test_status: using page-level status (no job_id)")
-    pages = current_app.db.get_pages(website_id)
+    pages = get_db().get_pages(website_id)
     
     # Count pages by status
     total_pages = len(pages)
@@ -857,7 +889,7 @@ def test_status(website_id):
     # Get last tested time - refresh from database to get latest
     if all_complete:
         # Refresh website data to get the updated last_tested
-        website = current_app.db.get_website(website_id)
+        website = get_db().get_website(website_id)
     
     last_tested = None
     if website and website.last_tested:
@@ -867,7 +899,7 @@ def test_status(website_id):
     message = f'Testing: {testing_pages}/{total_pages}'
     logger.warning(f"DEBUG test_status: Looking for active jobs for {website_id}")
     try:
-        website_manager = WebsiteManager(current_app.db, current_app.app_config.__dict__)
+        website_manager = WebsiteManager(get_db(), get_app_config().__dict__)
         active_jobs = website_manager.job_manager.get_active_jobs(
             website_id=website_id
         )
@@ -895,17 +927,17 @@ def test_status(website_id):
 
 
 @websites_bp.route('/<website_id>/discovery-history')
-def view_discovery_history(website_id):
+def view_discovery_history(website_id: str) -> str | Response:
     """View discovery history for a website"""
-    website = current_app.db.get_website(website_id)
+    website = get_db().get_website(website_id)
     if not website:
         flash(ftl('common-website-not-found'), 'error')
         return redirect(url_for('projects.list_projects'))
 
-    project = current_app.db.get_project(website.project_id)
+    project = get_db().get_project(website.project_id)
 
     # Get all discovery runs for this website
-    discovery_runs = current_app.db.get_discovery_runs(website_id)
+    discovery_runs = get_db().get_discovery_runs(website_id)
     
     return render_template('websites/discovery_history.html',
                          website=website,
@@ -914,23 +946,23 @@ def view_discovery_history(website_id):
 
 
 @websites_bp.route('/<website_id>/discovery/<discovery_run_id>')
-def view_discovery_run(website_id, discovery_run_id):
+def view_discovery_run(website_id: str, discovery_run_id: str) -> str | Response:
     """View details of a specific discovery run"""
-    website = current_app.db.get_website(website_id)
+    website = get_db().get_website(website_id)
     if not website:
         flash(ftl('common-website-not-found'), 'error')
         return redirect(url_for('projects.list_projects'))
 
-    project = current_app.db.get_project(website.project_id)
+    project = get_db().get_project(website.project_id)
 
     # Get the discovery run
-    discovery_run = current_app.db.get_discovery_run(discovery_run_id)
+    discovery_run = get_db().get_discovery_run(discovery_run_id)
     if not discovery_run:
         flash(ftl('websites-discovery-run-not-found'), 'error')
         return redirect(url_for('websites.view_discovery_history', website_id=website_id))
     
     # Get pages from this discovery run
-    pages = current_app.db.pages.find({
+    pages = get_db().pages.find({
         'website_id': website_id,
         'discovery_run_id': discovery_run_id
     })
@@ -938,7 +970,7 @@ def view_discovery_run(website_id, discovery_run_id):
     
     # If there's a previous run, get comparison data
     comparison = None
-    discovery_runs = current_app.db.get_discovery_runs(website_id)
+    discovery_runs = get_db().get_discovery_runs(website_id)
     
     # Find the previous run (the one right after this one in the list, since list is sorted descending)
     previous_run = None
@@ -947,8 +979,8 @@ def view_discovery_run(website_id, discovery_run_id):
             previous_run = discovery_runs[i + 1]
             break
     
-    if previous_run:
-        comparison = current_app.db.compare_discoveries(
+    if previous_run and previous_run.id:
+        comparison = get_db().compare_discoveries(
             website_id,
             previous_run.id,
             discovery_run_id

@@ -2,15 +2,17 @@
 Project-level Accessibility Report Generator
 Aggregates data from multiple websites in a project
 """
+from __future__ import annotations
 
 import logging
-from typing import Dict, List, Any, Optional
+from typing import Any, Callable
 from datetime import datetime
 import json
 from pathlib import Path
 
 from auto_a11y.web.fluent import ftl, force_locale
 from auto_a11y.models import Project, Website, Page, PageStatus
+from auto_a11y.core.database import Database
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +20,7 @@ logger = logging.getLogger(__name__)
 class ProjectReport:
     """Generates project-level accessibility reports"""
     
-    def __init__(self, database, project: Project, websites: List[Website], pages_by_website: Dict[str, List[Page]], language: str = 'en'):
+    def __init__(self, database: Database, project: Project, websites: list[Website], pages_by_website: dict[str, list[Page]], language: str = 'en') -> None:
         """
         Initialize project report
         
@@ -33,9 +35,9 @@ class ProjectReport:
         self.websites = websites
         self.pages_by_website = pages_by_website
         self.language = language
-        self.report_data = None
+        self.report_data: dict[str, Any] | None = None
     
-    def generate(self, progress_callback=None) -> Dict[str, Any]:
+    def generate(self, progress_callback: Callable[[int, int, str], None] | None = None) -> dict[str, Any]:
         """
         Generate the project-level report
 
@@ -45,7 +47,7 @@ class ProjectReport:
         logger.info(f"Generating project-level report for {self.project.name}")
 
         # Pre-compute total pages for progress tracking
-        total_page_count = sum(len(self.pages_by_website.get(w.id, [])) for w in self.websites)
+        total_page_count = sum(len(self.pages_by_website.get(w.id or '', [])) for w in self.websites)
         page_count = 0
 
         # Calculate aggregate statistics
@@ -61,7 +63,7 @@ class ProjectReport:
             if progress_callback:
                 with force_locale(self.language):
                     progress_callback(page_count, max(total_page_count, 1), ftl('reports-processing-name', name=website.name))
-            pages = self.pages_by_website.get(website.id, [])
+            pages = self.pages_by_website.get(website.id or '', [])
             
             website_tested = sum(1 for p in pages if p.status == PageStatus.TESTED)
             website_issues = sum(1 for p in pages if p.has_issues)
@@ -123,7 +125,8 @@ class ProjectReport:
         """
         if not self.report_data:
             self.generate()
-        
+        assert self.report_data is not None
+
         html = f"""
 <!DOCTYPE html>
 <html lang="en">
@@ -211,13 +214,13 @@ class ProjectReport:
             </div>
             <div class="col-md-2">
                 <div class="stat-card">
-                    <div class="stat-value text-danger">{self.report_data['summary']['total_violations']}</div>
+                    <div class="stat-value text-severity-high">{self.report_data['summary']['total_violations']}</div>
                     <div class="stat-label">Violations</div>
                 </div>
             </div>
             <div class="col-md-2">
                 <div class="stat-card">
-                    <div class="stat-value text-warning">{self.report_data['summary']['total_warnings']}</div>
+                    <div class="stat-value text-severity-medium">{self.report_data['summary']['total_warnings']}</div>
                     <div class="stat-label">Warnings</div>
                 </div>
             </div>
@@ -234,7 +237,7 @@ class ProjectReport:
             <div class="col-12">
                 <h5>Overall Test Coverage</h5>
                 <div class="progress" style="height: 30px;">
-                    <div class="progress-bar {'bg-success' if self.report_data['summary']['test_coverage'] >= 80 else 'bg-warning' if self.report_data['summary']['test_coverage'] >= 50 else 'bg-danger'}" 
+                    <div class="progress-bar {'progress-pass' if self.report_data['summary']['test_coverage'] >= 80 else 'progress-medium' if self.report_data['summary']['test_coverage'] >= 50 else 'progress-high'}" 
                          role="progressbar" 
                          style="width: {self.report_data['summary']['test_coverage']}%"
                          aria-valuenow="{self.report_data['summary']['test_coverage']}"
@@ -258,7 +261,7 @@ class ProjectReport:
         
         # Add website cards
         for website in self.report_data['websites']:
-            coverage_color = 'success' if website['test_coverage'] >= 80 else 'warning' if website['test_coverage'] >= 50 else 'danger'
+            coverage_color = 'pass' if website['test_coverage'] >= 80 else 'medium' if website['test_coverage'] >= 50 else 'high'
             
             html += f"""
             <div class="col-md-6 col-lg-4">
@@ -274,7 +277,7 @@ class ProjectReport:
                         
                         <div class="mb-3">
                             <div class="progress" style="height: 20px;">
-                                <div class="progress-bar bg-{coverage_color}" 
+                                <div class="progress-bar progress-{coverage_color}" 
                                      role="progressbar" 
                                      style="width: {website['test_coverage']}%">
                                     {website['test_coverage']:.0f}% tested
@@ -288,11 +291,11 @@ class ProjectReport:
                                 <small class="text-muted">Pages</small>
                             </div>
                             <div class="col-4">
-                                <div class="fw-bold text-danger">{website['total_violations']}</div>
+                                <div class="fw-bold text-severity-high">{website['total_violations']}</div>
                                 <small class="text-muted">Violations</small>
                             </div>
                             <div class="col-4">
-                                <div class="fw-bold text-warning">{website['total_warnings']}</div>
+                                <div class="fw-bold text-severity-medium">{website['total_warnings']}</div>
                                 <small class="text-muted">Warnings</small>
                             </div>
                         </div>
@@ -330,10 +333,11 @@ class ProjectReport:
         """
         if not self.report_data:
             self.generate()
-        
+        assert self.report_data is not None
+
         return json.dumps(self.report_data, indent=2, default=str)
     
-    def save(self, format: str = 'html', reports_dir: str = None) -> str:
+    def save(self, format: str = 'html', reports_dir: str | None = None) -> str:
         """
         Save report to file
 
@@ -344,29 +348,32 @@ class ProjectReport:
         Returns:
             Path to saved file
         """
+        resolved_dir: Path
         if reports_dir:
-            reports_dir = Path(reports_dir)
+            resolved_dir = Path(reports_dir)
         else:
             # Try getting from Flask current_app if available
+            resolved_dir_found = False
             try:
                 from flask import current_app
                 if current_app and hasattr(current_app, 'app_config'):
-                    reports_dir = Path(current_app.app_config.REPORTS_DIR)
-            except:
+                    resolved_dir = Path(current_app.app_config.REPORTS_DIR)
+                    resolved_dir_found = True
+            except Exception:
                 pass
 
             # Fall back to environment variable or default
-            if not reports_dir:
+            if not resolved_dir_found:
                 import os
                 reports_dir_str = os.environ.get('REPORTS_DIR', 'reports')
-                reports_dir = Path(reports_dir_str)
-        
+                resolved_dir = Path(reports_dir_str)
+
         # Ensure directory exists
-        reports_dir.mkdir(parents=True, exist_ok=True)
-        
+        resolved_dir.mkdir(parents=True, exist_ok=True)
+
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         filename = f"project_report_{self.project.id}_{timestamp}.{format}"
-        filepath = reports_dir / filename
+        filepath = resolved_dir / filename
         
         # Generate content based on format
         if format == 'html':

@@ -3,10 +3,14 @@ Fonts touchpoint test module
 Evaluates webpage font usage and typography for accessibility concerns.
 """
 
+from __future__ import annotations
+
 import json
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any
 import logging
+
+from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +60,7 @@ TEST_DOCUMENTATION = {
 }
 
 
-def load_inaccessible_fonts_config():
+def load_inaccessible_fonts_config() -> dict[str, Any] | None:
     """
     Load inaccessible fonts configuration from JSON file
 
@@ -97,7 +101,7 @@ def load_inaccessible_fonts_config():
             'categories': {}
         }
 
-async def test_fonts(page, project_config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+async def test_fonts(page: Page, project_config: dict[str, Any] | None = None) -> dict[str, Any]:
     """
     Test fonts and typography for accessibility requirements
 
@@ -115,20 +119,20 @@ async def test_fonts(page, project_config: Optional[Dict[str, Any]] = None) -> D
         from auto_a11y.utils.font_config import font_config_manager
 
         font_config_data = load_inaccessible_fonts_config()
-        font_categories = font_config_data['categories']
+        font_categories = font_config_data['categories'] if font_config_data else {}
 
         # Get the appropriate font list based on project config
         if project_config:
             inaccessible_fonts_list = list(font_config_manager.get_project_inaccessible_fonts(project_config))
             logger.info(f"Using project-specific font configuration: {len(inaccessible_fonts_list)} fonts")
         else:
-            inaccessible_fonts_list = font_config_data['fonts']
+            inaccessible_fonts_list = font_config_data['fonts'] if font_config_data else []
             logger.info(f"Using system default font configuration: {len(inaccessible_fonts_list)} fonts")
 
         # Execute JavaScript to analyze fonts and typography
         # Pass the font configuration to JavaScript as a single object
         # Playwright's evaluate() accepts only one argument, so we bundle them together
-        results = await page.evaluate('''
+        results: dict[str, Any] = await page.evaluate('''
             (args) => {
                 const inaccessibleFontsList = args.fonts;
                 const fontCategoriesData = args.categories;

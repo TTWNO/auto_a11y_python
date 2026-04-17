@@ -12,15 +12,15 @@
                     <li class="breadcrumb-item"><a href="{{ url_for('projects.list_projects') }}">{{ ftl('common-projects') }}</a></li>
                     <li class="breadcrumb-item"><a href="{{ url_for('projects.view_project', project_id=project.id) }}">{{ project.name }}</a></li>
                     <li class="breadcrumb-item"><a href="{{ url_for('websites.view_website', website_id=website.id) }}">{{ website.display_name }}</a></li>
-                    <li class="breadcrumb-item active">{{ ftl('common-edit') }}</li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ ftl('common-edit') }}</li>
                 </ol>
             </nav>
 
-            <h1 class="mb-4">{{ ftl('websites-edit-website') }}</h1>
+            <h1 class="mb-4" id="edit-website-heading">{{ ftl('websites-edit-website') }}</h1>
 
             <div class="card">
                 <div class="card-body">
-                    <form method="POST" action="{{ url_for('websites.edit_website', website_id=website.id) }}">
+                    <form method="POST" action="{{ url_for('websites.edit_website', website_id=website.id) }}" aria-labelledby="edit-website-heading">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <fieldset>
                             <legend id="basic-info-heading">{{ ftl('common-basic-information') }}</legend>
@@ -99,19 +99,32 @@
                         </fieldset>
 
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn btn-brand">
                                 <i class="bi bi-check-circle" aria-hidden="true"></i> {{ ftl('websites-update-website') }}
                             </button>
                             <a href="{{ url_for('websites.view_website', website_id=website.id) }}"
-                               class="btn btn-outline-secondary">
+                               class="btn btn-outline-neutral">
                                 <i class="bi bi-x-circle" aria-hidden="true"></i> {{ ftl('common-cancel') }}
                             </a>
                         </div>
 
                         <hr class="my-4">
 
+                        <div class="mb-3">
+                            <p class="text-muted small mb-2">
+                                {{ ftl('websites-clear-test-results-help') }}
+                            </p>
+                            <div class="d-grid">
+                                <button type="button" class="btn btn-outline-medium" data-open-modal="#clearTestResultsModal">
+                                    <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> {{ ftl('websites-clear-test-results') }}
+                                </button>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
                         <div class="d-grid">
-                            <button type="button" class="btn btn-outline-danger" data-open-modal="#deleteWebsiteModal">
+                            <button type="button" class="btn btn-outline-high" data-open-modal="#deleteWebsiteModal">
                                 <i class="bi bi-trash" aria-hidden="true"></i> {{ ftl('websites-delete-website') }}
                             </button>
                         </div>
@@ -122,8 +135,31 @@
     </div>
 </div>
 
+<!-- Clear Test Results Modal -->
+<dialog class="modal" id="clearTestResultsModal" role="dialog" aria-labelledby="clearTestResultsModalLabel" aria-modal="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="clearTestResultsModalLabel">{{ ftl('websites-clear-test-results') }}</h2>
+                <button type="button" class="btn-close" data-close-modal aria-label="{{ ftl('common-close') }}"></button>
+            </div>
+            <div class="modal-body">
+                <p>{{ ftl('websites-clear-test-results-confirm', name=website.display_name) }}</p>
+                <p class="text-severity-medium">{{ ftl('websites-clear-test-results-warning') }}</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-neutral" data-close-modal>{{ ftl('common-cancel') }}</button>
+                <form method="POST" action="{{ url_for('websites.clear_test_results', website_id=website.id) }}" style="display: inline;" aria-labelledby="clearTestResultsModalLabel">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <button type="submit" class="btn btn-medium">{{ ftl('websites-clear-test-results') }}</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</dialog>
+
 <!-- Delete Website Modal -->
-<dialog class="modal" id="deleteWebsiteModal" aria-labelledby="deleteWebsiteModalLabel">
+<dialog class="modal" id="deleteWebsiteModal" role="dialog" aria-labelledby="deleteWebsiteModalLabel" aria-modal="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -132,13 +168,13 @@
             </div>
             <div class="modal-body">
                 <p>{{ ftl('websites-are-you-sure-you-want-to-delete-the-website') }} "{{ website.display_name }}"?</p>
-                <p class="text-danger">{{ ftl('websites-this-will-permanently-delete-all-pages-and-test') }}</p>
+                <p class="text-severity-high">{{ ftl('websites-this-will-permanently-delete-all-pages-and-test') }}</p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-close-modal>{{ ftl('common-cancel') }}</button>
-                <form method="POST" action="{{ url_for('websites.delete_website', website_id=website.id) }}" style="display: inline;">
+                <button type="button" class="btn btn-neutral" data-close-modal>{{ ftl('common-cancel') }}</button>
+                <form method="POST" action="{{ url_for('websites.delete_website', website_id=website.id) }}" style="display: inline;" aria-labelledby="deleteWebsiteModalLabel">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                    <button type="submit" class="btn btn-danger">{{ ftl('websites-delete-website') }}</button>
+                    <button type="submit" class="btn btn-high">{{ ftl('websites-delete-website') }}</button>
                 </form>
             </div>
         </div>

@@ -3,9 +3,13 @@ Read More Links touchpoint test module
 Evaluates links and buttons with generic text for proper accessibility.
 """
 
+from __future__ import annotations
+
 from datetime import datetime
-from typing import Dict, Any, List, Optional
+from typing import Any
 import logging
+
+from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +44,7 @@ TEST_DOCUMENTATION = {
     ]
 }
 
-async def test_read_more_links(page) -> Dict[str, Any]:
+async def test_read_more_links(page: Page) -> dict[str, Any]:
     """
     Test 'read more' type links and buttons for proper accessible names
     
@@ -52,7 +56,7 @@ async def test_read_more_links(page) -> Dict[str, Any]:
     """
     try:
         # Execute JavaScript to analyze generic links
-        results = await page.evaluate('''
+        results: dict[str, Any] = await page.evaluate('''
             () => {
                 const results = {
                     applicable: true,

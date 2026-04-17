@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 """
+from __future__ import annotations
+
+from typing import Any
+
 Check all HTML GET endpoints for Flask error pages.
 
 Reads CI_USERNAME / CI_PASSWORD from .env (or environment), fetches real
@@ -40,11 +44,11 @@ ERROR_PATTERNS = [
 ]
 
 
-def get_ids_from_db():
+def get_ids_from_db() -> dict[str, str | None]:
     """Fetch real entity IDs from MongoDB so parameterised routes can be tested."""
     mongo_uri = os.getenv('MONGODB_URI', 'mongodb://127.0.0.1:27017/')
     db_name = os.getenv('DATABASE_NAME', os.getenv('MONGODB_DATABASE', 'auto_a11y'))
-    client = MongoClient(mongo_uri)
+    client: MongoClient = MongoClient(mongo_uri)
     db = client[db_name]
 
     ids = {}
@@ -99,7 +103,7 @@ def get_ids_from_db():
     return ids
 
 
-def build_endpoint_list(ids):
+def build_endpoint_list(ids: dict[str, str | None]) -> list[tuple[str, str]]:
     """Return list of (label, url) tuples for every GET endpoint."""
     pid = ids.get("project_id")
     wid = ids.get("website_id")
@@ -243,7 +247,7 @@ def build_endpoint_list(ids):
     return endpoints
 
 
-def login(session, creds):
+def login(session: Any, creds: dict[str, str]) -> bool:
     """Log in via the auth form and return True on success."""
     # First GET login page (for CSRF token)
     resp = session.get(f"{BASE_URL}/auth/login")
@@ -290,7 +294,7 @@ def login(session, creds):
     return False
 
 
-def check_for_errors(text, status_code):
+def check_for_errors(text: str, status_code: int) -> list[str]:
     """Return list of matched error patterns in response text."""
     if status_code == 500:
         return ["HTTP 500"]
@@ -301,7 +305,7 @@ def check_for_errors(text, status_code):
     return found
 
 
-def main():
+def main() -> None:
     print("=" * 70)
     print("AUTO A11Y - Endpoint Health Check")
     print("=" * 70)

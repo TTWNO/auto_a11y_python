@@ -2,8 +2,10 @@
 Process and transform JavaScript test results into structured data
 """
 
+from __future__ import annotations
+
 import logging
-from typing import List, Dict, Any, Optional
+from typing import Any
 from datetime import datetime
 from auto_a11y.web.fluent import ftl
 
@@ -91,11 +93,11 @@ class ResultProcessor:
     def process_test_results(
         self,
         page_id: str,
-        raw_results: Dict[str, Dict[str, Any]],
-        screenshot_path: Optional[str] = None,
+        raw_results: dict[str, dict[str, Any]],
+        screenshot_path: str | None = None,
         duration_ms: int = 0,
-        ai_findings: Optional[List[Any]] = None,
-        ai_analysis_results: Optional[Dict[str, Any]] = None
+        ai_findings: list[Any] | None = None,
+        ai_analysis_results: dict[str, Any] | None = None
     ) -> TestResult:
         """
         Process raw JavaScript test results and AI findings into TestResult model
@@ -335,16 +337,16 @@ class ResultProcessor:
         
         # Create touchpoint summary for Test Check Details
         # This aggregates all issues by touchpoint to create a summary that matches Latest Test Results
-        touchpoint_summary = {}
+        touchpoint_summary: dict[str, dict[str, Any]] = {}
         all_issues = violations + warnings + info + discovery
-        
+
         # Count issues by touchpoint
         for issue in all_issues:
-            touchpoint = issue.touchpoint
-            if touchpoint not in touchpoint_summary:
-                touchpoint_name = touchpoint.replace('_', ' ').lower()
-                touchpoint_summary[touchpoint] = {
-                    'test_name': touchpoint.replace('_', ' ').title(),
+            tp: str = issue.touchpoint
+            if tp not in touchpoint_summary:
+                touchpoint_name = tp.replace('_', ' ').lower()
+                touchpoint_summary[tp] = {
+                    'test_name': tp.replace('_', ' ').title(),
                     'description': ftl('common-accessibility-checks-for-touchpoint', touchpoint=touchpoint_name),
                     'wcag': set(),
                     'total': 0,
@@ -358,24 +360,24 @@ class ResultProcessor:
             
             # Count issue types
             if issue in violations:
-                touchpoint_summary[touchpoint]['violations'] += 1
-                touchpoint_summary[touchpoint]['failed'] += 1
+                touchpoint_summary[tp]['violations'] += 1
+                touchpoint_summary[tp]['failed'] += 1
             elif issue in warnings:
-                touchpoint_summary[touchpoint]['warnings'] += 1
-                touchpoint_summary[touchpoint]['failed'] += 1
+                touchpoint_summary[tp]['warnings'] += 1
+                touchpoint_summary[tp]['failed'] += 1
             elif issue in info:
-                touchpoint_summary[touchpoint]['info'] += 1
+                touchpoint_summary[tp]['info'] += 1
                 # Info items don't count as failures
             elif issue in discovery:
-                touchpoint_summary[touchpoint]['discovery'] += 1
+                touchpoint_summary[tp]['discovery'] += 1
                 # Discovery items don't count as failures
             
-            touchpoint_summary[touchpoint]['total'] += 1
+            touchpoint_summary[tp]['total'] += 1
             
             # Collect WCAG criteria
             if hasattr(issue, 'wcag_criteria') and issue.wcag_criteria:
                 for criterion in issue.wcag_criteria:
-                    touchpoint_summary[touchpoint]['wcag'].add(criterion)
+                    touchpoint_summary[tp]['wcag'].add(criterion)
         
         # Replace the checks list with our touchpoint summary
         # This ensures Test Check Details shows a summary of Latest Test Results
@@ -394,7 +396,7 @@ class ResultProcessor:
         sorted_checks = sorted(checks, key=lambda x: x.get('test_name', ''))
         
         # Create test result
-        test_result = TestResult(
+        final_result = TestResult(
             page_id=page_id,
             test_date=datetime.now(),
             duration_ms=duration_ms,
@@ -415,15 +417,15 @@ class ResultProcessor:
                 'checks': sorted_checks
             }
         )
-        
-        return test_result
+
+        return final_result
     
     def _process_violation(
         self,
-        violation_data: Dict[str, Any],
+        violation_data: dict[str, Any],
         source_test: str,
         violation_type: str
-    ) -> Optional[Violation]:
+    ) -> Violation | None:
         """
         Process individual violation into Violation model
         
@@ -607,7 +609,7 @@ class ResultProcessor:
         
         return descriptions.get(error_code, f'Accessibility issue: {error_code}')
     
-    def _get_ai_wcag_criteria(self, analysis_type: str) -> List[str]:
+    def _get_ai_wcag_criteria(self, analysis_type: str) -> list[str]:
         """
         Get WCAG criteria for AI analysis types
         
@@ -702,7 +704,7 @@ class ResultProcessor:
         
         return wcag_urls.get(error_code, "https://www.w3.org/WAI/WCAG21/quickref/")
     
-    def _get_failure_summary(self, error_code: str, violation_data: Dict[str, Any]) -> str:
+    def _get_failure_summary(self, error_code: str, violation_data: dict[str, Any]) -> str:
         """
         Get failure summary for violation
         
@@ -727,7 +729,7 @@ class ResultProcessor:
         
         return summaries.get(error_code, f'Fix the {error_code} issue')
     
-    def calculate_score(self, test_result: TestResult) -> Dict[str, Any]:
+    def calculate_score(self, test_result: TestResult) -> dict[str, Any]:
         """
         Calculate accessibility score from test results using applicability-aware scoring
         
@@ -811,7 +813,7 @@ class ResultProcessor:
             'method': 'applicability-aware'
         }
     
-    def _get_grade(self, score: int) -> str:
+    def _get_grade(self, score: float) -> str:
         """Get letter grade from score"""
         if score >= 90:
             return 'A'

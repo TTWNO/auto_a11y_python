@@ -17,8 +17,8 @@
     }
 
     .test-details-modal .modal-header {
-        background-color: #f8f9fa;
-        border-bottom: 2px solid #dee2e6;
+        background-color: var(--color-bg-subtle);
+        border-bottom: 2px solid var(--color-border-table);
     }
 
     .test-details-section {
@@ -26,7 +26,7 @@
     }
 
     .test-details-section h6 {
-        color: #495057;
+        color: var(--color-text-muted);
         font-weight: 600;
         margin-bottom: 0.5rem;
         font-size: 0.95rem;
@@ -48,14 +48,14 @@
 <div class="container">
     <div class="row">
         <div class="col-md-8 col-lg-6 mx-auto">
-            <h1 class="mb-4">{{ ftl('projects-edit-project') }}</h1>
+            <h1 class="mb-4" id="edit-project-heading">{{ ftl('projects-edit-project') }}</h1>
             
             <div class="card">
                 <div class="card-body">
-                    <form method="POST" action="{{ url_for('projects.edit_project', project_id=project.id) }}">
+                    <form method="POST" action="{{ url_for('projects.edit_project', project_id=project.id) }}" aria-labelledby="edit-project-heading">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <fieldset class="mb-4">
-                            <legend class="h5">{{ ftl('projects-project-details') }}</legend>
+                            <legend><h2 class="h5 mb-0">{{ ftl('projects-project-details') }}</h2></legend>
                             <div class="mb-3">
                                 <label for="name" class="form-label">{{ ftl('projects-project-name') }} *</label>
                                 <input type="text" class="form-control" id="name" name="name"
@@ -91,7 +91,7 @@
                         </fieldset>
 
                         <fieldset class="mb-4">
-                            <legend class="h5">{{ ftl('projects-compliance-settings') }}</legend>
+                            <legend><h2 class="h5 mb-0">{{ ftl('projects-compliance-settings') }}</h2></legend>
                             <div class="mb-3">
                                 <label for="wcag_level" class="form-label">{{ ftl('projects-wcag-compliance-level') }}</label>
                                 <select class="form-select" id="wcag_level" name="wcag_level" aria-describedby="wcag-level-help">
@@ -169,7 +169,7 @@
 
                             <!-- Font Accessibility Configuration -->
                             <div class="mb-3">
-                                <label class="form-label">{{ ftl('projects-inaccessible-fonts-configuration') }}</label>
+                                <p class="form-label">{{ ftl('projects-inaccessible-fonts-configuration') }}</p>
                                 <div class="form-text mb-2">
                                     {{ ftl('projects-configure-which-fonts-should-be-flagged-as') }}
                                     {{ ftl('projects-the-system-includes-a-research-backed-default') }}
@@ -206,13 +206,13 @@
 
                             <div class="accordion mb-3" id="fontDefaultsAccordion">
                                 <div class="accordion-item">
-                                    <h2 class="accordion-header">
+                                    <h2 class="accordion-header" id="fontDefaultsListHeading">
                                         <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                                                data-bs-target="#fontDefaultsList" aria-expanded="false">
+                                                data-bs-target="#fontDefaultsList" aria-expanded="false" aria-controls="fontDefaultsList">
                                             {{ ftl('projects-view-system-default-inaccessible-fonts-list') }}
                                         </button>
                                     </h2>
-                                    <div id="fontDefaultsList" class="accordion-collapse collapse" data-bs-parent="#fontDefaultsAccordion">
+                                    <div id="fontDefaultsList" class="accordion-collapse collapse" data-bs-parent="#fontDefaultsAccordion" role="region" aria-labelledby="fontDefaultsListHeading">
                                         <div class="accordion-body">
                                             <div class="row">
                                                 <div class="col-md-6">
@@ -279,7 +279,7 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div class="alert alert-warning small mt-3 mb-0">
+                                            <div class="alert alert-medium small mt-3 mb-0">
                                                 <strong>{{ ftl('common-note') }}</strong> {{ ftl('projects-this-list-is-based-on-accessibility-research-from') }}
                                             </div>
                                         </div>
@@ -291,19 +291,19 @@
 
                         <!-- Touchpoint Testing Configuration -->
                         <fieldset class="mb-4">
-                            <legend class="h5">{{ ftl('projects-touchpoint-tests') }}</legend>
+                            <legend><h2 class="h5 mb-0">{{ ftl('projects-touchpoint-tests') }}</h2></legend>
                             <div class="mb-3">
-                            <label class="form-label">{{ ftl('projects-touchpoint-tests-configuration') }}</label>
+                            <p class="form-label">{{ ftl('projects-touchpoint-tests-configuration') }}</p>
                             <div class="form-text mb-2">
                                 {{ ftl('projects-configure-which-accessibility-tests-to-run-tests') }}
                             </div>
 
                             <!-- Global Controls -->
                             <div class="btn-group mb-3" role="group">
-                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAllTests(true)">{{ ftl('projects-enable-all') }}</button>
-                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="selectAllTests(false)">{{ ftl('projects-disable-all') }}</button>
-                                <button type="button" class="btn btn-sm btn-outline-info" onclick="applyPreset('minimal')">{{ ftl('projects-minimal') }}</button>
-                                <button type="button" class="btn btn-sm btn-outline-info" onclick="applyPreset('wcag-aa')">{{ ftl('projects-wcag-aa') }}</button>
+                                <button type="button" class="btn btn-sm btn-outline-brand" onclick="selectAllTests(true)">{{ ftl('projects-enable-all') }}</button>
+                                <button type="button" class="btn btn-sm btn-outline-neutral" onclick="selectAllTests(false)">{{ ftl('projects-disable-all') }}</button>
+                                <button type="button" class="btn btn-sm btn-outline-brand" onclick="applyPreset('minimal')">{{ ftl('projects-minimal') }}</button>
+                                <button type="button" class="btn btn-sm btn-outline-brand" onclick="applyPreset('wcag-aa')">{{ ftl('projects-wcag-aa') }}</button>
                             </div>
                             
                             <!-- Touchpoint Tree -->
@@ -327,7 +327,7 @@
                                                    onchange="toggleTouchpoint('{{ touchpoint_id }}')">
                                             <label class="form-check-label fw-bold" for="touchpoint_{{ touchpoint_id }}">
                                                 <i class="bi bi-folder2 me-1" aria-hidden="true"></i>{{ touchpoint_name }}
-                                                <span class="badge bg-secondary ms-2">{{ test_ids|length }}</span>
+                                                <span class="badge badge-neutral ms-2">{{ test_ids|length }}</span>
                                             </label>
                                         </div>
                                     </div>
@@ -344,9 +344,9 @@
                                             <label class="form-check-label small" for="test_{{ touchpoint_id }}_{{ test_id }}">
                                                 <i class="bi bi-file-earmark-code me-1" aria-hidden="true"></i>
                                                 <code>{{ test_id }}</code>
-                                                <button type="button" class="btn btn-sm btn-outline-info test-help-btn"
+                                                <button type="button" class="btn btn-sm btn-outline-brand test-help-btn"
                                                         onclick="showTestDetails('{{ test_id }}')"
-                                                        title="{{ ftl('projects-view-test-details') }}">
+                                                        aria-label="{{ ftl('projects-view-test-details') }}">
                                                     <i class="bi bi-question-circle" aria-hidden="true"></i>
                                                 </button>
                                             </label>
@@ -361,7 +361,7 @@
 
                         <!-- AI Testing Configuration -->
                         <fieldset class="mb-4">
-                            <legend class="h5">{{ ftl('projects-ai-assisted-testing') }}</legend>
+                            <legend><h2 class="h5 mb-0">{{ ftl('projects-ai-assisted-testing') }}</h2></legend>
                             <div class="mb-3">
                                 <div class="form-check form-switch mb-2">
                                     <input class="form-check-input" type="checkbox" id="enable_ai_testing" name="enable_ai_testing"
@@ -376,7 +376,7 @@
                                 </div>
                             
                             <div id="ai_tests_selection" style="display: {% if project.config.get('enable_ai_testing', False) %}block{% else %}none{% endif %};">
-                                <label class="form-label">{{ ftl('projects-select-ai-tests-to-run') }}</label>
+                                <p class="form-label">{{ ftl('projects-select-ai-tests-to-run') }}</p>
                                 <div class="ms-3">
                                     <div class="form-check">
                                         <input class="form-check-input ai-test-checkbox" type="checkbox" id="ai_test_headings"
@@ -435,11 +435,11 @@
                         </fieldset>
 
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn btn-brand">
                                 <i class="bi bi-check-circle" aria-hidden="true"></i> {{ ftl('projects-update-project') }}
                             </button>
                             <a href="{{ url_for('projects.view_project', project_id=project.id) }}"
-                               class="btn btn-outline-secondary">
+                               class="btn btn-outline-neutral">
                                 <i class="bi bi-x-circle" aria-hidden="true"></i> {{ ftl('common-cancel') }}
                             </a>
                         </div>
@@ -447,7 +447,7 @@
                         <hr class="my-4">
 
                         <div class="d-grid">
-                            <button type="button" class="btn btn-outline-danger" data-open-modal="#deleteProjectModal">
+                            <button type="button" class="btn btn-outline-high" data-open-modal="#deleteProjectModal">
                                 <i class="bi bi-trash" aria-hidden="true"></i> {{ ftl('projects-delete-project') }}
                             </button>
                         </div>
@@ -459,7 +459,7 @@
 </div>
 
 <!-- Delete Project Modal -->
-<dialog class="modal" id="deleteProjectModal" aria-labelledby="deleteProjectModalLabel">
+<dialog class="modal" id="deleteProjectModal" role="dialog" aria-labelledby="deleteProjectModalLabel" aria-modal="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -468,13 +468,13 @@
             </div>
             <div class="modal-body">
                 <p>{{ ftl('projects-are-you-sure-you-want-to-delete-the-project') }} "{{ project.name }}"?</p>
-                <p class="text-danger">{{ ftl('projects-this-will-permanently-delete-all-websites-pages') }}</p>
+                <p class="text-severity-high">{{ ftl('projects-this-will-permanently-delete-all-websites-pages') }}</p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-close-modal>{{ ftl('common-cancel') }}</button>
-                <form method="POST" action="{{ url_for('projects.delete_project', project_id=project.id) }}" style="display: inline;">
+                <button type="button" class="btn btn-neutral" data-close-modal>{{ ftl('common-cancel') }}</button>
+                <form method="POST" action="{{ url_for('projects.delete_project', project_id=project.id) }}" style="display: inline;" aria-labelledby="deleteProjectModalLabel">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                    <button type="submit" class="btn btn-danger">{{ ftl('projects-delete-project') }}</button>
+                    <button type="submit" class="btn btn-high">{{ ftl('projects-delete-project') }}</button>
                 </form>
             </div>
         </div>
@@ -482,7 +482,7 @@
 </dialog>
 
 <!-- Test Details Modal -->
-<dialog class="modal test-details-modal" id="testDetailsModal" aria-labelledby="testDetailsModalLabel">
+<dialog class="modal test-details-modal" id="testDetailsModal" role="dialog" aria-labelledby="testDetailsModalLabel" aria-modal="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
@@ -494,14 +494,14 @@
             </div>
             <div class="modal-body" id="testDetailsBody">
                 <div class="text-center py-4">
-                    <div class="spinner-border text-primary" role="status">
+                    <div class="spinner-border text-brand" role="status">
                         <span class="visually-hidden">{{ ftl('common-loading') }}</span>
                     </div>
                     <p class="mt-2 text-muted">{{ ftl('projects-loading-test-details') }}</p>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-close-modal>{{ ftl('common-close') }}</button>
+                <button type="button" class="btn btn-neutral" data-close-modal>{{ ftl('common-close') }}</button>
             </div>
         </div>
     </div>
@@ -592,18 +592,30 @@ function applyPreset(presetName) {
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(button => {
         const targetId = button.getAttribute('data-bs-target');
-        const target = document.querySelector(targetId);
+        const target = targetId ? document.querySelector(targetId) : null;
         const chevron = button.querySelector('i');
 
         if (target) {
             target.addEventListener('show.bs.collapse', function() {
-                chevron.classList.remove('bi-chevron-right');
-                chevron.classList.add('bi-chevron-down');
+                if (chevron) {
+                    chevron.classList.remove('bi-chevron-right');
+                    chevron.classList.add('bi-chevron-down');
+                }
             });
 
             target.addEventListener('hide.bs.collapse', function() {
-                chevron.classList.remove('bi-chevron-down');
-                chevron.classList.add('bi-chevron-right');
+                if (chevron) {
+                    chevron.classList.remove('bi-chevron-down');
+                    chevron.classList.add('bi-chevron-right');
+                }
+            });
+
+            target.addEventListener('shown.bs.collapse', function() {
+                button.setAttribute('aria-expanded', 'true');
+            });
+
+            target.addEventListener('hidden.bs.collapse', function() {
+                button.setAttribute('aria-expanded', 'false');
             });
         }
     });
@@ -648,7 +660,7 @@ function showTestDetails(testId) {
     // Show loading state
     bodyEl.innerHTML = `
         <div class="text-center py-4">
-            <div class="spinner-border text-primary" role="status">
+            <div class="spinner-border text-brand" role="status">
                 <span class="visually-hidden">{{ ftl('common-loading') }}</span>
             </div>
             <p class="mt-2 text-muted">{{ ftl('projects-loading-test-details') }}</p>
@@ -666,23 +678,23 @@ function showTestDetails(testId) {
                 const test = data.test;
 
                 // Build impact badge
-                let impactClass = 'secondary';
-                if (test.impact === 'High' || test.impact === 'Critical') impactClass = 'danger';
-                else if (test.impact === 'Medium') impactClass = 'warning';
+                let impactClass = 'neutral';
+                if (test.impact === 'High' || test.impact === 'Critical') impactClass = 'high';
+                else if (test.impact === 'Medium') impactClass = 'medium';
                 else if (test.impact === 'Low') impactClass = 'info';
 
                 // Build WCAG badges
                 let wcagBadges = '';
                 if (test.wcag && test.wcag.length > 0) {
-                    wcagBadges = test.wcag.map(w => `<span class="badge bg-primary me-1">${w}</span>`).join('');
+                    wcagBadges = test.wcag.map(w => `<span class="badge badge-brand me-1">${w}</span>`).join('');
                 }
 
                 // Build modal content
                 bodyEl.innerHTML = `
                     <div class="mb-3">
                         <div class="d-flex align-items-center mb-2">
-                            <span class="badge bg-${impactClass} impact-badge me-2">${test.impact} {{ ftl('common-impact-2') }}</span>
-                            <span class="badge bg-secondary me-2">${test.type}</span>
+                            <span class="badge badge-${impactClass} impact-badge me-2">${test.impact} {{ ftl('common-impact-2') }}</span>
+                            <span class="badge badge-neutral me-2">${test.type}</span>
                             ${wcagBadges}
                         </div>
                         ${test.wcag_full ? `<small class="text-muted">${test.wcag_full}</small>` : ''}
@@ -716,7 +728,7 @@ function showTestDetails(testId) {
                 `;
             } else {
                 bodyEl.innerHTML = `
-                    <div class="alert alert-warning">
+                    <div class="alert alert-medium">
                         <i class="bi bi-exclamation-triangle me-2" aria-hidden="true"></i>
                         <strong>{{ ftl('projects-test-information-not-available') }}</strong>
                         <p class="mb-0 mt-2">{{ ftl('projects-details-for-test') }} <code>${testId}</code> {{ ftl('projects-are-not-available-in-the-catalog') }}</p>
@@ -727,7 +739,7 @@ function showTestDetails(testId) {
         .catch(error => {
             console.error('Error fetching test details:', error);
             bodyEl.innerHTML = `
-                <div class="alert alert-danger">
+                <div class="alert alert-high">
                     <i class="bi bi-x-circle me-2" aria-hidden="true"></i>
                     <strong>{{ ftl('projects-error-loading-test-details') }}</strong>
                     <p class="mb-0 mt-2">{{ ftl('projects-an-error-occurred-while-loading-the-test-details') }}</p>

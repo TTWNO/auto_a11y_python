@@ -1,4 +1,6 @@
 """Tests for Fluent FTL translation quality."""
+from __future__ import annotations
+
 import os
 from pathlib import Path
 
@@ -24,7 +26,7 @@ def _collect_message_ids(ftl_dir: Path) -> set[str]:
     return ids
 
 
-def _pattern_has_content(pattern) -> bool:
+def _pattern_has_content(pattern: fluent_ast.Pattern | None) -> bool:
     """Return True if a Fluent Pattern has any real content (text or placeables)."""
     if pattern is None:
         return False
@@ -77,7 +79,7 @@ def _collect_message_values(ftl_dir: Path) -> dict[str, str | None]:
 class TestTranslationQuality:
     """Checks that catch common FTL translation problems before they reach users."""
 
-    def test_every_en_message_has_fr_translation(self):
+    def test_every_en_message_has_fr_translation(self) -> None:
         """Every EN message ID must have a corresponding FR message ID."""
         en_ids = _collect_message_ids(EN_DIR)
         fr_ids = _collect_message_ids(FR_DIR)
@@ -92,7 +94,7 @@ class TestTranslationQuality:
             + (f"\n  ... and {len(missing) - 50} more" if len(missing) > 50 else "")
         )
 
-    def test_no_empty_fr_messages(self):
+    def test_no_empty_fr_messages(self) -> None:
         """No FR message should have a None or empty value."""
         fr_values = _collect_message_values(FR_DIR)
         assert fr_values, "No FR messages found"
@@ -106,7 +108,7 @@ class TestTranslationQuality:
             + "\n".join(f"  - {m}" for m in empty[:50])
         )
 
-    def test_ftl_files_parse_without_errors(self):
+    def test_ftl_files_parse_without_errors(self) -> None:
         """All FTL files should parse without Junk entries."""
         failures = []
 

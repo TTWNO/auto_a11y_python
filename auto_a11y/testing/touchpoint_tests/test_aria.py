@@ -3,9 +3,13 @@ ARIA touchpoint test module
 Tests for proper ARIA attribute usage and accessibility.
 """
 
+from __future__ import annotations
+
 from datetime import datetime
-from typing import Dict, Any, List, Optional
+from typing import Any
 import logging
+
+from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +30,7 @@ TEST_DOCUMENTATION = {
     ]
 }
 
-async def test_aria(page) -> Dict[str, Any]:
+async def test_aria(page: Page) -> dict[str, Any]:
     """
     Test ARIA attributes for accessibility issues
 
@@ -42,7 +46,7 @@ async def test_aria(page) -> Dict[str, Any]:
     """
     try:
         # Execute JavaScript to analyze ARIA label usage
-        results = await page.evaluate('''
+        results: dict[str, Any] = await page.evaluate('''
             () => {
                 const results = {
                     applicable: true,

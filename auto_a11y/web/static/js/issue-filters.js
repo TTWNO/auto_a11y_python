@@ -88,9 +88,9 @@ class IssueFilterManager {
         const filterPanelHTML = `
             <div class="filter-panel mb-3" style="background: var(--color-bg-subtle); border-radius: 8px; padding: 1.5rem;">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0"><i class="bi bi-funnel"></i> ${translate('Filter Test Results')}</h5>
-                    <button class="btn btn-sm btn-outline-secondary" id="clearFilters">
-                        <i class="bi bi-x-circle"></i> ${translate('Clear All')}
+                    <h3 class="mb-0"><i class="bi bi-funnel" aria-hidden="true"></i> ${translate('Filter Test Results')}</h3>
+                    <button class="btn btn-sm btn-outline-neutral" id="clearFilters">
+                        <i class="bi bi-x-circle" aria-hidden="true"></i> ${translate('Clear All')}
                     </button>
                 </div>
 
@@ -112,42 +112,42 @@ class IssueFilterManager {
                 <div class="row g-3">
                     <!-- Issue Type Filter -->
                     <div class="col-md-6 col-lg-3">
-                        <label class="form-label fw-bold small">${translate('Issue Type')}</label>
+                        <p class="form-label fw-bold small">${translate('Issue Type')}</p>
                         <div class="filter-chips">
-                            <button class="btn btn-sm btn-outline-secondary filter-chip me-2 mb-2" data-filter-type="type" data-filter-value="error">
-                                ${translate('Errors')} <span class="badge bg-danger ms-1 error-count">0</span>
+                            <button class="btn btn-sm btn-outline-neutral filter-chip me-2 mb-2" data-filter-type="type" data-filter-value="error">
+                                ${translate('Errors')} <span class="badge badge-high ms-1 error-count">0</span>
                             </button>
-                            <button class="btn btn-sm btn-outline-secondary filter-chip me-2 mb-2" data-filter-type="type" data-filter-value="warning">
-                                ${translate('Warnings')} <span class="badge bg-warning text-dark ms-1 warning-count">0</span>
+                            <button class="btn btn-sm btn-outline-neutral filter-chip me-2 mb-2" data-filter-type="type" data-filter-value="warning">
+                                ${translate('Warnings')} <span class="badge badge-medium ms-1 warning-count">0</span>
                             </button>
-                            <button class="btn btn-sm btn-outline-secondary filter-chip me-2 mb-2" data-filter-type="type" data-filter-value="info">
-                                ${translate('Info')} <span class="badge bg-info ms-1 info-count">0</span>
+                            <button class="btn btn-sm btn-outline-neutral filter-chip me-2 mb-2" data-filter-type="type" data-filter-value="info">
+                                ${translate('Info')} <span class="badge badge-info ms-1 info-count">0</span>
                             </button>
-                            <button class="btn btn-sm btn-outline-secondary filter-chip me-2 mb-2" data-filter-type="type" data-filter-value="discovery">
-                                ${translate('Discovery')} <span class="badge bg-purple ms-1 discovery-count" style="background-color: #6f42c1;">0</span>
+                            <button class="btn btn-sm btn-outline-neutral filter-chip me-2 mb-2" data-filter-type="type" data-filter-value="discovery">
+                                ${translate('Discovery')} <span class="badge badge-discovery ms-1 discovery-count">0</span>
                             </button>
                         </div>
                     </div>
 
                     <!-- Impact Level Filter -->
                     <div class="col-md-6 col-lg-3">
-                        <label class="form-label fw-bold small">${translate('Impact Level')}</label>
+                        <p class="form-label fw-bold small">${translate('Impact Level')}</p>
                         <div class="filter-chips">
-                            <button class="btn btn-sm btn-outline-secondary filter-chip me-2 mb-2" data-filter-type="impact" data-filter-value="high">
-                                ${translate('High')} <span class="badge bg-danger ms-1" id="highImpactCount">0</span>
+                            <button class="btn btn-sm btn-outline-neutral filter-chip me-2 mb-2" data-filter-type="impact" data-filter-value="high">
+                                ${translate('High')} <span class="badge badge-high ms-1" id="highImpactCount">0</span>
                             </button>
-                            <button class="btn btn-sm btn-outline-secondary filter-chip me-2 mb-2" data-filter-type="impact" data-filter-value="medium">
-                                ${translate('Medium')} <span class="badge bg-warning text-dark ms-1" id="mediumImpactCount">0</span>
+                            <button class="btn btn-sm btn-outline-neutral filter-chip me-2 mb-2" data-filter-type="impact" data-filter-value="medium">
+                                ${translate('Medium')} <span class="badge badge-medium ms-1" id="mediumImpactCount">0</span>
                             </button>
-                            <button class="btn btn-sm btn-outline-secondary filter-chip me-2 mb-2" data-filter-type="impact" data-filter-value="low">
-                                ${translate('Low')} <span class="badge bg-info ms-1" id="lowImpactCount">0</span>
+                            <button class="btn btn-sm btn-outline-neutral filter-chip me-2 mb-2" data-filter-type="impact" data-filter-value="low">
+                                ${translate('Low')} <span class="badge badge-info ms-1" id="lowImpactCount">0</span>
                             </button>
                         </div>
                     </div>
 
                     <!-- WCAG Criteria Filter -->
                     <div class="col-md-6 col-lg-3">
-                        <label class="form-label fw-bold small">${translate('WCAG Criteria')}</label>
+                        <label class="form-label fw-bold small" for="wcagFilter">${translate('WCAG Criteria')}</label>
                         <select class="form-select form-select-sm" id="wcagFilter" multiple style="height: 100px;">
                             <option value="">${translate('Loading...')}</option>
                         </select>
@@ -155,7 +155,7 @@ class IssueFilterManager {
 
                     <!-- Touchpoint Filter -->
                     <div class="col-md-6 col-lg-3">
-                        <label class="form-label fw-bold small">${translate('Touchpoint')}</label>
+                        <label class="form-label fw-bold small" for="touchpointFilter">${translate('Touchpoint')}</label>
                         <select class="form-select form-select-sm" id="touchpointFilter" multiple style="height: 100px;">
                             <option value="">${translate('Loading...')}</option>
                         </select>
@@ -165,22 +165,22 @@ class IssueFilterManager {
                 <!-- User Impact Filter -->
                 <div class="row g-3 mt-2">
                     <div class="col-12">
-                        <label class="form-label fw-bold small">${translate('Affected User Groups')}</label>
+                        <p class="form-label fw-bold small">${translate('Affected User Groups')}</p>
                         <div class="filter-chips">
-                            <button class="btn btn-sm btn-outline-secondary filter-chip me-2 mb-2" data-filter-type="user" data-filter-value="vision">
-                                <i class="bi bi-eye-slash me-1"></i>${translate('Vision')}
+                            <button class="btn btn-sm btn-outline-neutral filter-chip me-2 mb-2" data-filter-type="user" data-filter-value="vision">
+                                <i class="bi bi-eye-slash me-1" aria-hidden="true"></i>${translate('Vision')}
                             </button>
-                            <button class="btn btn-sm btn-outline-secondary filter-chip me-2 mb-2" data-filter-type="user" data-filter-value="hearing">
-                                <i class="bi bi-ear me-1"></i>${translate('Hearing')}
+                            <button class="btn btn-sm btn-outline-neutral filter-chip me-2 mb-2" data-filter-type="user" data-filter-value="hearing">
+                                <i class="bi bi-ear me-1" aria-hidden="true"></i>${translate('Hearing')}
                             </button>
-                            <button class="btn btn-sm btn-outline-secondary filter-chip me-2 mb-2" data-filter-type="user" data-filter-value="motor">
-                                <i class="bi bi-hand-index me-1"></i>${translate('Motor')}
+                            <button class="btn btn-sm btn-outline-neutral filter-chip me-2 mb-2" data-filter-type="user" data-filter-value="motor">
+                                <i class="bi bi-hand-index me-1" aria-hidden="true"></i>${translate('Motor')}
                             </button>
-                            <button class="btn btn-sm btn-outline-secondary filter-chip me-2 mb-2" data-filter-type="user" data-filter-value="cognitive">
-                                <i class="bi bi-brain me-1"></i>${translate('Cognitive')}
+                            <button class="btn btn-sm btn-outline-neutral filter-chip me-2 mb-2" data-filter-type="user" data-filter-value="cognitive">
+                                <i class="bi bi-brain me-1" aria-hidden="true"></i>${translate('Cognitive')}
                             </button>
-                            <button class="btn btn-sm btn-outline-secondary filter-chip me-2 mb-2" data-filter-type="user" data-filter-value="seizure">
-                                <i class="bi bi-lightning me-1"></i>${translate('Seizure')}
+                            <button class="btn btn-sm btn-outline-neutral filter-chip me-2 mb-2" data-filter-type="user" data-filter-value="seizure">
+                                <i class="bi bi-lightning me-1" aria-hidden="true"></i>${translate('Seizure')}
                             </button>
                         </div>
                     </div>
@@ -189,7 +189,7 @@ class IssueFilterManager {
                 <!-- Test User Filter -->
                 <div class="row g-3 mt-2">
                     <div class="col-12">
-                        <label class="form-label fw-bold small">${translate('Test User')}</label>
+                        <p class="form-label fw-bold small">${translate('Test User')}</p>
                         <div class="filter-chips" id="testUserFilterChips">
                             <!-- Dynamically populated based on test results -->
                         </div>
@@ -199,8 +199,9 @@ class IssueFilterManager {
                 <!-- Quick Search -->
                 <div class="row g-3 mt-2">
                     <div class="col-12">
+                        <label for="quickSearch" class="form-label fw-bold small">${translate('Quick Search')}</label>
                         <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <span class="input-group-text"><i class="bi bi-search" aria-hidden="true"></i></span>
                             <input type="text" class="form-control" id="quickSearch"
                                    placeholder="${translate('Search in issue descriptions, IDs, or code...')}">
                         </div>
@@ -271,7 +272,7 @@ class IssueFilterManager {
             
             // Extract test user from badge
             const button = item.querySelector('.accordion-button');
-            const userBadge = button?.querySelector('.badge.bg-secondary');
+            const userBadge = button?.querySelector('.badge.badge-neutral');
             const userIds = new Set();
 
             if (userBadge) {
@@ -294,7 +295,7 @@ class IssueFilterManager {
                 }
             } else {
                 // No direct badge - check if this is a group with nested instances
-                const nestedInstances = item.querySelectorAll('.accordion-item .badge.bg-secondary');
+                const nestedInstances = item.querySelectorAll('.accordion-item .badge.badge-neutral');
                 nestedInstances.forEach(nestedBadge => {
                     const badgeText = nestedBadge.textContent.trim();
                     const userMatch = badgeText.match(/^(.*?)\s*(?:\((.*?)\))?$/);
@@ -382,13 +383,13 @@ class IssueFilterManager {
 
             sortedUsers.forEach(([userId, userInfo]) => {
                 const chip = document.createElement('button');
-                chip.className = 'btn btn-sm btn-outline-secondary filter-chip me-2 mb-2';
+                chip.className = 'btn btn-sm btn-outline-neutral filter-chip me-2 mb-2';
                 chip.setAttribute('data-filter-type', 'testUser');
                 chip.setAttribute('data-filter-value', userId);
 
                 const icon = userId === 'guest' ? 'bi-person' : 'bi-person-fill';
                 const roleText = userInfo.roles ? ` (${userInfo.roles})` : '';
-                chip.innerHTML = `<i class="bi ${icon} me-1"></i>${userInfo.displayName}${roleText}`;
+                chip.innerHTML = `<i class="bi ${icon} me-1" aria-hidden="true"></i>${userInfo.displayName}${roleText}`;
 
                 testUserChips.appendChild(chip);
             });
@@ -433,12 +434,12 @@ class IssueFilterManager {
         
         if (this.activeFilters[filterType].has(filterValue)) {
             this.activeFilters[filterType].delete(filterValue);
-            chip.classList.remove('btn-primary');
-            chip.classList.add('btn-outline-secondary');
+            chip.classList.remove('btn-brand');
+            chip.classList.add('btn-outline-neutral');
         } else {
             this.activeFilters[filterType].add(filterValue);
-            chip.classList.remove('btn-outline-secondary');
-            chip.classList.add('btn-primary');
+            chip.classList.remove('btn-outline-neutral');
+            chip.classList.add('btn-brand');
         }
         
         this.applyFilters();
@@ -606,7 +607,7 @@ class IssueFilterManager {
                 if (typeof values === 'string' && values) {
                     // Search filter
                     const tag = `
-                        <span class="badge bg-primary me-2 mb-1">
+                        <span class="badge badge-brand me-2 mb-1">
                             Search: "${values}"
                             <button type="button" class="btn-close btn-close-white ms-1" style="width: 0.5em; height: 0.5em; vertical-align: middle;" aria-label="Remove search filter" onclick="filterManager.removeFilter('${type}')"></button>
                         </span>
@@ -616,7 +617,7 @@ class IssueFilterManager {
                     // Other filters
                     values.forEach(value => {
                         const tag = `
-                            <span class="badge bg-primary me-2 mb-1">
+                            <span class="badge badge-brand me-2 mb-1">
                                 ${type}: ${value}
                                 <button type="button" class="btn-close btn-close-white ms-1" style="width: 0.5em; height: 0.5em; vertical-align: middle;" aria-label="Remove ${type} ${value} filter" onclick="filterManager.removeFilter('${type}', '${value}')"></button>
                             </span>
@@ -639,8 +640,8 @@ class IssueFilterManager {
             // Update UI
             const chip = document.querySelector(`[data-filter-type="${type}"][data-filter-value="${value}"]`);
             if (chip) {
-                chip.classList.remove('btn-primary');
-                chip.classList.add('btn-outline-secondary');
+                chip.classList.remove('btn-brand');
+                chip.classList.add('btn-outline-neutral');
             }
         }
         
@@ -695,8 +696,8 @@ class IssueFilterManager {
         
         // Reset UI
         document.querySelectorAll('.filter-chip').forEach(chip => {
-            chip.classList.remove('btn-primary');
-            chip.classList.add('btn-outline-secondary');
+            chip.classList.remove('btn-brand');
+            chip.classList.add('btn-outline-neutral');
         });
         
         const wcagFilter = document.getElementById('wcagFilter');

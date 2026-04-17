@@ -2,9 +2,10 @@
 Site Structure Report Generator
 Generates a tree view of website pages based on URL hierarchy
 """
+from __future__ import annotations
 
 import logging
-from typing import Dict, List, Any
+from typing import Any, Callable, TYPE_CHECKING
 from urllib.parse import urlparse, unquote
 from datetime import datetime
 import json
@@ -14,18 +15,22 @@ from io import StringIO
 from auto_a11y.web.fluent import ftl, force_locale
 from auto_a11y.models import Page, PageStatus
 
+if TYPE_CHECKING:
+    from auto_a11y.core.database import Database
+    from auto_a11y.models import Website, Project
+
 logger = logging.getLogger(__name__)
 
 
 class PageNode:
     """Represents a node in the page tree structure"""
     
-    def __init__(self, name: str, url: str = None, is_directory: bool = False):
+    def __init__(self, name: str, url: str | None = None, is_directory: bool = False) -> None:
         self.name = name
         self.url = url
         self.is_directory = is_directory
-        self.children = []
-        self.page_data = None
+        self.children: list[PageNode] = []
+        self.page_data: Page | None = None
         self.stats = {
             'total_pages': 0,
             'tested_pages': 0,
@@ -34,11 +39,11 @@ class PageNode:
             'total_warnings': 0
         }
     
-    def add_child(self, child: 'PageNode'):
+    def add_child(self, child: PageNode) -> None:
         """Add a child node"""
         self.children.append(child)
-    
-    def find_or_create_child(self, name: str, is_directory: bool = False) -> 'PageNode':
+
+    def find_or_create_child(self, name: str, is_directory: bool = False) -> PageNode:
         """Find existing child or create new one"""
         for child in self.children:
             if child.name == name and child.is_directory == is_directory:
@@ -48,7 +53,7 @@ class PageNode:
         self.add_child(new_child)
         return new_child
     
-    def update_stats(self, page: Page):
+    def update_stats(self, page: Page) -> None:
         """Update statistics based on page data"""
         self.stats['total_pages'] += 1
         if page.status == PageStatus.TESTED:
@@ -58,7 +63,7 @@ class PageNode:
         self.stats['total_violations'] += page.violation_count
         self.stats['total_warnings'] += page.warning_count
     
-    def aggregate_stats(self):
+    def aggregate_stats(self) -> None:
         """Aggregate statistics from children"""
         for child in self.children:
             child.aggregate_stats()
@@ -68,7 +73,7 @@ class PageNode:
             self.stats['total_violations'] += child.stats['total_violations']
             self.stats['total_warnings'] += child.stats['total_warnings']
     
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert node to dictionary"""
         return {
             'name': self.name,
@@ -82,7 +87,7 @@ class PageNode:
 class PageStructureReport:
     """Generates site structure tree report"""
     
-    def __init__(self, database, website, pages: List[Page], project=None, language='en'):
+    def __init__(self, database: Database, website: Website, pages: list[Page], project: Project | None = None, language: str = 'en') -> None:
         """
         Initialize site structure report
 
@@ -98,10 +103,10 @@ class PageStructureReport:
         self.pages = pages
         self.project = project
         self.language = language
-        self.root = None
-        self.tree_data = None
+        self.root: PageNode | None = None
+        self.tree_data: dict[str, Any] | None = None
 
-    def _get_translations(self) -> Dict[str, str]:
+    def _get_translations(self) -> dict[str, str]:
         """Get translations for the current language"""
         translations = {
             'en': {
@@ -183,7 +188,7 @@ class PageStructureReport:
         }
         return translations.get(self.language, translations['en'])
 
-    def generate(self, progress_callback=None) -> Dict[str, Any]:
+    def generate(self, progress_callback: Callable[[int, int, str], None] | None = None) -> dict[str, Any]:
         """
         Generate the page structure report
 
@@ -225,7 +230,7 @@ class PageStructureReport:
         logger.info(f"Site structure report generated with {len(self.pages)} pages")
         return self.tree_data
     
-    def _build_tree(self, progress_callback=None) -> PageNode:
+    def _build_tree(self, progress_callback: Callable[[int, int, str], None] | None = None) -> PageNode:
         """
         Build tree structure from pages
 
@@ -250,7 +255,7 @@ class PageStructureReport:
 
         return root
     
-    def _add_page_to_tree(self, root: PageNode, page: Page):
+    def _add_page_to_tree(self, root: PageNode, page: Page) -> None:
         """
         Add a page to the tree structure
         
@@ -339,6 +344,8 @@ class PageStructureReport:
         """
         if not self.tree_data:
             self.generate()
+        assert self.tree_data is not None
+        assert self.root is not None
 
         # Get all translations as JSON for JavaScript
         # Temporarily change language to get translations for both languages
@@ -476,14 +483,9 @@ class PageStructureReport:
             font-weight: 600;
         }}
         /* Improve button styling */
-        .btn-outline-primary, .btn-outline-secondary {{
+        .btn-outline-brand, .btn-outline-neutral {{
             margin-right: 5px;
             margin-top: 10px;
-        }}
-
-        /* WCAG AA Contrast Overrides */
-        .text-warning {{
-            color: #856404 !important; /* Dark yellow/brown with 4.6:1 contrast on white */
         }}
     </style>
 </head>
@@ -501,7 +503,7 @@ class PageStructureReport:
                         </p>
                     </div>
                     <div class="dropdown">
-                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="languageDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button class="btn btn-outline-neutral dropdown-toggle" type="button" id="languageDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-translate"></i> <span data-i18n="language">{t['language']}</span>: <span id="current-lang-display">{self.language.upper()}</span>
                         </button>
                         <ul class="dropdown-menu" aria-labelledby="languageDropdown">
@@ -522,8 +524,8 @@ class PageStructureReport:
                             <li><strong><span data-i18n="total_pages">{t['total_pages']}</span>:</strong> {self.tree_data['summary']['total_pages']}</li>
                             <li><strong><span data-i18n="tested_pages">{t['tested_pages']}</span>:</strong> {self.tree_data['summary']['tested_pages']}</li>
                             <li><strong><span data-i18n="pages_with_issues">{t['pages_with_issues']}</span>:</strong> {self.tree_data['summary']['pages_with_issues']}</li>
-                            <li><strong><span data-i18n="total_violations">{t['total_violations']}</span>:</strong> <span class="text-danger">{self.tree_data['summary']['total_violations']}</span></li>
-                            <li><strong><span data-i18n="total_warnings">{t['total_warnings']}</span>:</strong> <span class="text-warning">{self.tree_data['summary']['total_warnings']}</span></li>
+                            <li><strong><span data-i18n="total_violations">{t['total_violations']}</span>:</strong> <span class="text-severity-high">{self.tree_data['summary']['total_violations']}</span></li>
+                            <li><strong><span data-i18n="total_warnings">{t['total_warnings']}</span>:</strong> <span class="text-severity-medium">{self.tree_data['summary']['total_warnings']}</span></li>
                             <li><strong><span data-i18n="max_depth">{t['max_depth']}</span>:</strong> {self.tree_data['summary']['max_depth']} <span data-i18n="levels">{t['levels']}</span></li>
                         </ul>
                     </div>
@@ -533,16 +535,16 @@ class PageStructureReport:
                     <div class="card-body">
                         <h5 class="card-title" data-i18n="legend">{t['legend']}</h5>
                         <div class="legend">
-                            <div><i class="bi bi-folder text-warning"></i> <span data-i18n="directory_section">{t['directory_section']}</span></div>
-                            <div><i class="bi bi-file-earmark text-primary"></i> <span data-i18n="page">{t['page']}</span></div>
-                            <div><span class="badge bg-success" data-i18n="tested">{t['tested']}</span> <span data-i18n="page_has_been_tested">{t['page_has_been_tested']}</span></div>
-                            <div><span class="badge bg-danger" data-i18n="issues">{t['issues']}</span> <span data-i18n="page_has_issues">{t['page_has_issues']}</span></div>
-                            <div><span class="badge bg-secondary" data-i18n="not_tested">{t['not_tested']}</span> <span data-i18n="page_not_tested">{t['page_not_tested']}</span></div>
+                            <div><i class="bi bi-folder text-severity-medium"></i> <span data-i18n="directory_section">{t['directory_section']}</span></div>
+                            <div><i class="bi bi-file-earmark text-brand"></i> <span data-i18n="page">{t['page']}</span></div>
+                            <div><span class="badge badge-pass" data-i18n="tested">{t['tested']}</span> <span data-i18n="page_has_been_tested">{t['page_has_been_tested']}</span></div>
+                            <div><span class="badge badge-high" data-i18n="issues">{t['issues']}</span> <span data-i18n="page_has_issues">{t['page_has_issues']}</span></div>
+                            <div><span class="badge badge-neutral" data-i18n="not_tested">{t['not_tested']}</span> <span data-i18n="page_not_tested">{t['page_not_tested']}</span></div>
                         </div>
-                        <button class="btn btn-sm btn-outline-primary" onclick="expandAll()">
+                        <button class="btn btn-sm btn-outline-brand" onclick="expandAll()">
                             <i class="bi bi-arrows-expand"></i> <span data-i18n="expand_all">{t['expand_all']}</span>
                         </button>
-                        <button class="btn btn-sm btn-outline-secondary" onclick="collapseAll()">
+                        <button class="btn btn-sm btn-outline-neutral" onclick="collapseAll()">
                             <i class="bi bi-arrows-collapse"></i> <span data-i18n="collapse_all">{t['collapse_all']}</span>
                         </button>
                     </div>
@@ -744,7 +746,7 @@ class PageStructureReport:
 """
         return html
     
-    def _generate_tree_html(self, node: PageNode, node_id: str = "root", depth: int = 0, t: Dict[str, str] = None) -> str:
+    def _generate_tree_html(self, node: PageNode, node_id: str = "root", depth: int = 0, t: dict[str, str] | None = None) -> str:
         """
         Generate HTML for a tree node using WAI-ARIA treeview pattern.
 
@@ -791,9 +793,9 @@ class PageStructureReport:
 
         # Icon
         if node.is_directory:
-            html += '<i class="bi bi-folder-fill text-warning node-icon" aria-hidden="true"></i>'
+            html += '<i class="bi bi-folder-fill text-severity-medium node-icon" aria-hidden="true"></i>'
         else:
-            html += '<i class="bi bi-file-earmark text-primary node-icon" aria-hidden="true"></i>'
+            html += '<i class="bi bi-file-earmark text-brand node-icon" aria-hidden="true"></i>'
 
         # Name/URL
         if node.url:
@@ -806,18 +808,18 @@ class PageStructureReport:
             html += '<span class="node-stats">'
 
             if node.stats['tested_pages'] == node.stats['total_pages']:
-                html += f'<span class="badge bg-success stats-badge" data-i18n="tested">{t["tested"]}</span>'
+                html += f'<span class="badge badge-pass stats-badge" data-i18n="tested">{t["tested"]}</span>'
             elif node.stats['tested_pages'] > 0:
-                html += f'<span class="badge bg-warning stats-badge">{node.stats["tested_pages"]}/{node.stats["total_pages"]} <span data-i18n="x_tested">{t["x_tested"]}</span></span>'
+                html += f'<span class="badge badge-medium stats-badge">{node.stats["tested_pages"]}/{node.stats["total_pages"]} <span data-i18n="x_tested">{t["x_tested"]}</span></span>'
             else:
-                html += f'<span class="badge bg-secondary stats-badge" data-i18n="not_tested">{t["not_tested"]}</span>'
+                html += f'<span class="badge badge-neutral stats-badge" data-i18n="not_tested">{t["not_tested"]}</span>'
 
             if node.stats['pages_with_issues'] > 0:
                 page_text_key = "page_with_issues_count" if node.stats["pages_with_issues"] == 1 else "pages_with_issues_count"
-                html += f'<span class="badge bg-danger stats-badge">{node.stats["pages_with_issues"]} <span data-i18n="{page_text_key}">{t[page_text_key]}</span></span>'
+                html += f'<span class="badge badge-high stats-badge">{node.stats["pages_with_issues"]} <span data-i18n="{page_text_key}">{t[page_text_key]}</span></span>'
 
             if node.stats['total_violations'] > 0:
-                html += f'<span class="text-danger ms-2">({node.stats["total_violations"]} <span data-i18n="total_violations_count">{t["total_violations_count"]}</span>)</span>'
+                html += f'<span class="text-severity-high ms-2">({node.stats["total_violations"]} <span data-i18n="total_violations_count">{t["total_violations_count"]}</span>)</span>'
 
             html += '</span>'
 
@@ -844,7 +846,8 @@ class PageStructureReport:
         """
         if not self.tree_data:
             self.generate()
-        
+        assert self.tree_data is not None
+
         return json.dumps(self.tree_data, indent=2, default=str)
     
     def to_csv(self) -> str:
@@ -856,12 +859,13 @@ class PageStructureReport:
         """
         if not self.tree_data:
             self.generate()
-        
+        assert self.root is not None
+
         t = self._get_translations()
-        
+
         output = StringIO()
         writer = csv.writer(output)
-        
+
         # Header - translated
         writer.writerow([
             t['csv_path'],
@@ -874,13 +878,13 @@ class PageStructureReport:
             t['total_violations'],
             t['total_warnings']
         ])
-        
+
         # Flatten tree and write rows
         self._write_csv_node(writer, self.root, '', 0, t)
         
         return output.getvalue()
     
-    def _write_csv_node(self, writer, node: PageNode, path: str, level: int, t: Dict[str, str]):
+    def _write_csv_node(self, writer: Any, node: PageNode, path: str, level: int, t: dict[str, str]) -> None:
         """
         Write a node and its children to CSV
         

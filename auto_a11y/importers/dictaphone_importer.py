@@ -4,16 +4,16 @@ Dictaphone JSON importer for AutoA11y
 Imports manual accessibility audit data from Dictaphone format into AutoA11y's
 recording and issue tracking system.
 """
+from __future__ import annotations
 
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
-from datetime import datetime
+from typing import Any, cast
 
 from auto_a11y.models import (
     Recording, RecordingIssue, RecordingType,
-    Timecode, WCAGReference, ImpactLevel
+    Timecode, ImpactLevel
 )
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ class DictaphoneImporter:
     that data into AutoA11y's Recording and RecordingIssue models.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the importer"""
         pass
 
@@ -36,19 +36,19 @@ class DictaphoneImporter:
         self,
         json_file_path: str,
         project_id: str,
-        website_ids: Optional[List[str]] = None,
-        page_urls: Optional[List[str]] = None,
-        page_ids: Optional[List[str]] = None,
-        discovered_page_ids: Optional[List[str]] = None,
-        component_names: Optional[List[str]] = None,
-        app_screens: Optional[List[str]] = None,
-        device_sections: Optional[List[str]] = None,
-        task_description: Optional[str] = None,
-        auditor_info: Optional[Dict[str, Any]] = None,
+        website_ids: list[str] | None = None,
+        page_urls: list[str] | None = None,
+        page_ids: list[str] | None = None,
+        discovered_page_ids: list[str] | None = None,
+        component_names: list[str] | None = None,
+        app_screens: list[str] | None = None,
+        device_sections: list[str] | None = None,
+        task_description: str | None = None,
+        auditor_info: dict[str, Any] | None = None,
         recording_type: str = "audit",
-        testing_scope: Optional[Dict[str, bool]] = None,
+        testing_scope: dict[str, bool] | None = None,
         language: str = "en"
-    ) -> Tuple[Recording, List[RecordingIssue]]:
+    ) -> tuple[Recording, list[RecordingIssue]]:
         """
         Import a Dictaphone JSON file.
 
@@ -80,7 +80,7 @@ class DictaphoneImporter:
             raise FileNotFoundError(f"Dictaphone JSON file not found: {json_file_path}")
 
         with open(file_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
+            data: dict[str, Any] | list[dict[str, Any]] = json.load(f)
 
         logger.info(f"Parsing Dictaphone JSON from {json_file_path}")
 
@@ -108,21 +108,21 @@ class DictaphoneImporter:
 
     def parse_dictaphone_json(
         self,
-        data: dict,
+        data: dict[str, Any] | list[dict[str, Any]],
         project_id: str,
-        website_ids: List[str],
-        page_urls: List[str],
-        page_ids: List[str],
-        discovered_page_ids: List[str],
-        component_names: List[str],
-        app_screens: List[str],
-        device_sections: List[str],
-        task_description: Optional[str],
-        auditor_info: Dict[str, Any],
+        website_ids: list[str],
+        page_urls: list[str],
+        page_ids: list[str],
+        discovered_page_ids: list[str],
+        component_names: list[str],
+        app_screens: list[str],
+        device_sections: list[str],
+        task_description: str | None,
+        auditor_info: dict[str, Any],
         recording_type: str,
-        testing_scope: Dict[str, bool],
+        testing_scope: dict[str, bool],
         language: str = 'en'
-    ) -> Tuple[Recording, List[RecordingIssue]]:
+    ) -> tuple[Recording, list[RecordingIssue]]:
         """
         Parse Dictaphone JSON structure into Recording and RecordingIssue objects.
 
@@ -143,6 +143,9 @@ class DictaphoneImporter:
         # Handle both formats:
         # 1. Standard format: {"recording": "ID", "issues": [...]}
         # 2. Claude format: [{"recording": "ID", "title": "...", ...}, ...]
+
+        recording_id: str
+        issues_data: list[dict[str, Any]]
 
         if isinstance(data, list):
             # Claude format - array of issues with recording field in each
@@ -221,36 +224,36 @@ class DictaphoneImporter:
         )
 
         # Parse issues
-        issues = []
+        issues: list[RecordingIssue] = []
         for issue_data in issues_data:
             try:
-                issue = RecordingIssue.from_dictaphone_issue(
+                parsed_issue = RecordingIssue.from_dictaphone_issue(
                     issue_data,
                     recording_id=recording_id,
                     project_id=project_id,
                     language=language
                 )
                 # Add component references from recording
-                issue.website_ids = website_ids
-                issue.page_urls = page_urls
-                issue.page_ids = page_ids
-                issue.component_names = component_names
-                issue.app_screens = app_screens
-                issue.device_sections = device_sections
-                issue.task_description = task_description
+                parsed_issue.website_ids = website_ids
+                parsed_issue.page_urls = page_urls
+                parsed_issue.page_ids = page_ids
+                parsed_issue.component_names = component_names
+                parsed_issue.app_screens = app_screens
+                parsed_issue.device_sections = device_sections
+                parsed_issue.task_description = task_description
 
                 # Infer touchpoint from WCAG criteria if not present
-                if not issue.touchpoint:
-                    issue.touchpoint = self._infer_touchpoint(issue_data)
+                if not parsed_issue.touchpoint:
+                    parsed_issue.touchpoint = self._infer_touchpoint(issue_data)
 
-                issues.append(issue)
+                issues.append(parsed_issue)
             except Exception as e:
                 logger.error(f"Error parsing issue '{issue_data.get('title', 'unknown')}': {e}")
                 # Continue with other issues
 
         return recording, issues
 
-    def _calculate_total_duration(self, issues_data: List[Dict]) -> Optional[str]:
+    def _calculate_total_duration(self, issues_data: list[dict[str, Any]]) -> str | None:
         """
         Calculate total recording duration from issue timecodes.
         Returns the maximum end time found across all timecodes.
@@ -289,7 +292,7 @@ class DictaphoneImporter:
 
         return None
 
-    def _infer_touchpoint(self, issue_data: Dict) -> str:
+    def _infer_touchpoint(self, issue_data: dict[str, Any]) -> str:
         """
         Infer accessibility touchpoint/category from issue details.
 
@@ -303,7 +306,7 @@ class DictaphoneImporter:
         short_title = issue_data.get('short_title', '').lower()
 
         # Mapping of keywords to touchpoints
-        keyword_mapping = {
+        keyword_mapping: dict[str, str] = {
             'landmark': 'Landmarks',
             'aside': 'Landmarks',
             'navigation': 'Navigation',
@@ -346,9 +349,9 @@ class DictaphoneImporter:
                 return touchpoint
 
         # Check WCAG criteria for hints
-        wcag_list = issue_data.get('wcag', [])
+        wcag_list: list[dict[str, Any]] = issue_data.get('wcag', [])
         if wcag_list:
-            first_criteria = wcag_list[0].get('criteria', '')
+            first_criteria: str = wcag_list[0].get('criteria', '')
             if first_criteria.startswith('1.1'):
                 return 'Images'
             elif first_criteria.startswith('1.3'):
@@ -379,7 +382,7 @@ class DictaphoneImporter:
         """
         impact_lower = impact_str.lower() if impact_str else 'medium'
 
-        mapping = {
+        mapping: dict[str, ImpactLevel] = {
             'low': ImpactLevel.LOW,
             'minor': ImpactLevel.LOW,
             'medium': ImpactLevel.MEDIUM,
@@ -391,7 +394,7 @@ class DictaphoneImporter:
 
         return mapping.get(impact_lower, ImpactLevel.MEDIUM)
 
-    def validate_dictaphone_json(self, data: dict) -> Tuple[bool, Optional[str]]:
+    def validate_dictaphone_json(self, data: dict[str, Any]) -> tuple[bool, str | None]:
         """
         Validate Dictaphone JSON structure.
 
@@ -412,7 +415,8 @@ class DictaphoneImporter:
             return False, "'issues' must be an array"
 
         # Validate each issue has required fields
-        for i, issue in enumerate(data['issues']):
+        issues_list: list[dict[str, Any]] = cast(list[dict[str, Any]], data['issues'])
+        for i, issue in enumerate(issues_list):
             if 'title' not in issue:
                 return False, f"Issue {i} missing required field: 'title'"
 

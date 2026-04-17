@@ -1,13 +1,18 @@
 """
 Testing and analysis routes
 """
+from __future__ import annotations
 
-from flask import Blueprint, render_template, request, jsonify, current_app, url_for
+from collections.abc import Mapping
+from typing import Any
+
+from flask import Blueprint, Response, render_template, request, jsonify, current_app, url_for
 from flask_login import login_required, current_user
 from auto_a11y.models import PageStatus
 from auto_a11y.models.app_user import UserRole
 from auto_a11y.web.routes.auth import project_role_required, get_effective_role
 from auto_a11y.core.job_manager import JobType, JobStatus
+from auto_a11y.web.typed_app import get_db, get_app_config
 import asyncio
 import logging
 from datetime import datetime, timedelta
@@ -16,7 +21,7 @@ logger = logging.getLogger(__name__)
 testing_bp = Blueprint('testing', __name__)
 
 
-def calculate_aggregate_stats(db):
+def calculate_aggregate_stats(db: Any) -> dict[str, Any]:
     """Calculate aggregate statistics across all projects"""
     projects = db.get_all_projects()
 
@@ -45,7 +50,7 @@ def calculate_aggregate_stats(db):
     }
 
 
-def get_recent_results_with_context(db, project_id=None, website_id=None, limit=20):
+def get_recent_results_with_context(db: Any, project_id: str | None = None, website_id: str | None = None, limit: int = 20) -> list[dict[str, Any]]:
     """Get recent test results with full page/website/project context.
 
     Optimized to minimize database queries by:
@@ -123,13 +128,13 @@ def get_recent_results_with_context(db, project_id=None, website_id=None, limit=
     return filtered_results
 
 
-def get_trend_data(db, project_id=None, website_id=None, days=30):
+def get_trend_data(db: Any, project_id: str | None = None, website_id: str | None = None, days: int = 30) -> list[dict[str, Any]]:
     """Get trend data for violations/warnings over time"""
     end_date = datetime.now()
     start_date = end_date - timedelta(days=days)
 
     # Initialize daily buckets
-    trend_data = []
+    trend_data: list[dict[str, Any]] = []
     current_date = start_date
     while current_date <= end_date:
         trend_data.append({
@@ -179,7 +184,7 @@ def get_trend_data(db, project_id=None, website_id=None, days=30):
 # Enhanced Trend Analysis Functions
 # ============================================================================
 
-def get_page_ids_for_scope(db, project_id=None, website_id=None):
+def get_page_ids_for_scope(db: Any, project_id: str | None = None, website_id: str | None = None) -> set[str]:
     """Get all page IDs for a given project or website scope"""
     page_ids = set()
     if website_id:
@@ -193,14 +198,14 @@ def get_page_ids_for_scope(db, project_id=None, website_id=None):
     return page_ids
 
 
-def aggregate_by_granularity(data_points, granularity='daily'):
+def aggregate_by_granularity(data_points: list[dict[str, Any]], granularity: str = 'daily') -> list[dict[str, Any]]:
     """Aggregate daily data into weekly or monthly buckets"""
     if granularity == 'daily':
         return data_points
 
     from collections import defaultdict
 
-    buckets = defaultdict(lambda: {'violations': 0, 'warnings': 0, 'tests': 0})
+    buckets: defaultdict[str, dict[str, int]] = defaultdict(lambda: {'violations': 0, 'warnings': 0, 'tests': 0})
 
     for point in data_points:
         date = datetime.strptime(point['date'], '%Y-%m-%d')
@@ -231,7 +236,7 @@ def aggregate_by_granularity(data_points, granularity='daily'):
     return result
 
 
-def calculate_moving_averages(time_series, windows=[7, 30]):
+def calculate_moving_averages(time_series: list[dict[str, Any]], windows: list[int] = [7, 30]) -> list[dict[str, Any]]:
     """Add moving averages to time series data
 
     Args:
@@ -260,7 +265,7 @@ def calculate_moving_averages(time_series, windows=[7, 30]):
     return time_series
 
 
-def calculate_trend_direction(time_series, threshold_percent=5):
+def calculate_trend_direction(time_series: list[dict[str, Any]], threshold_percent: int = 5) -> tuple[str, float]:
     """Determine overall trend direction based on time series data
 
     Compares the average of the most recent third of data to the first third.
@@ -305,7 +310,7 @@ def calculate_trend_direction(time_series, threshold_percent=5):
         return 'stable', round(change_percent, 1)
 
 
-def get_filtered_item_counts(db, result_ids, result_date_map, filters, issue_types):
+def get_filtered_item_counts(db: Any, result_ids: list[Any], result_date_map: dict[str, str], filters: dict[str, Any], issue_types: list[str]) -> dict[str, dict[str, int]]:
     """Get filtered violation/warning counts from test_result_items collection
 
     Args:
@@ -341,7 +346,7 @@ def get_filtered_item_counts(db, result_ids, result_date_map, filters, issue_typ
         return {}
 
     # Build match criteria
-    match_criteria = {'test_result_id': {'$in': object_ids}}
+    match_criteria: dict[str, Any] = {'test_result_id': {'$in': object_ids}}
 
     # Filter by item type
     if issue_types:
@@ -412,10 +417,10 @@ def get_filtered_item_counts(db, result_ids, result_date_map, filters, issue_typ
         return {}
 
 
-def get_detailed_trend_data(db, project_id=None, website_id=None,
-                            start_date=None, end_date=None,
-                            granularity='daily', include_breakdown=True,
-                            filters=None):
+def get_detailed_trend_data(db: Any, project_id: str | None = None, website_id: str | None = None,
+                            start_date: datetime | None = None, end_date: datetime | None = None,
+                            granularity: str = 'daily', include_breakdown: bool = True,
+                            filters: dict[str, Any] | None = None) -> dict[str, Any]:
     """Get comprehensive trend data with statistics and optional breakdowns
 
     Args:
@@ -446,7 +451,7 @@ def get_detailed_trend_data(db, project_id=None, website_id=None,
     page_ids = get_page_ids_for_scope(db, project_id, website_id)
 
     # Initialize daily buckets
-    daily_data = []
+    daily_data: list[dict[str, Any]] = []
     current_date = start_date
     while current_date <= end_date:
         daily_data.append({
@@ -564,7 +569,7 @@ def get_detailed_trend_data(db, project_id=None, website_id=None,
     return response
 
 
-def get_trends_by_touchpoint(db, result_ids, limit=10, filters=None):
+def get_trends_by_touchpoint(db: Any, result_ids: list[Any], limit: int = 10, filters: dict[str, Any] | None = None) -> dict[str, dict[str, Any]]:
     """Get violation counts grouped by touchpoint using MongoDB aggregation
 
     Args:
@@ -658,7 +663,7 @@ def get_trends_by_touchpoint(db, result_ids, limit=10, filters=None):
         return {}
 
 
-def get_trends_by_impact(db, result_ids, filters=None):
+def get_trends_by_impact(db: Any, result_ids: list[Any], filters: dict[str, Any] | None = None) -> dict[str, dict[str, int | float]]:
     """Get violation counts grouped by impact level
 
     Args:
@@ -758,7 +763,7 @@ def get_trends_by_impact(db, result_ids, filters=None):
                 'low': {'count': 0, 'percent': 0}}
 
 
-def get_top_issues(db, result_ids, limit=10, filters=None):
+def get_top_issues(db: Any, result_ids: list[Any], limit: int = 10, filters: dict[str, Any] | None = None) -> list[dict[str, Any]]:
     """Get the most common issues (by issue_id) from test results
 
     Args:
@@ -851,8 +856,8 @@ def get_top_issues(db, result_ids, limit=10, filters=None):
         return []
 
 
-def compare_periods(db, project_id, website_id, period_a_start, period_a_end,
-                   period_b_start, period_b_end):
+def compare_periods(db: Any, project_id: str | None, website_id: str | None, period_a_start: datetime, period_a_end: datetime,
+                   period_b_start: datetime, period_b_end: datetime) -> dict[str, Any]:
     """Compare two time periods for violations/warnings
 
     Args:
@@ -867,7 +872,7 @@ def compare_periods(db, project_id, website_id, period_a_start, period_a_end,
     """
     page_ids = get_page_ids_for_scope(db, project_id, website_id)
 
-    def get_period_stats(start, end):
+    def get_period_stats(start: datetime, end: datetime) -> dict[str, int]:
         # Filter at database level for efficiency
         limit = min(len(page_ids) * 10, 500) if page_ids else 2000
         # Use summary_only=True - we only need counts for comparison
@@ -894,7 +899,7 @@ def compare_periods(db, project_id, website_id, period_a_start, period_a_end,
     stats_a = get_period_stats(period_a_start, period_a_end)
     stats_b = get_period_stats(period_b_start, period_b_end)
 
-    def calc_change(old_val, new_val):
+    def calc_change(old_val: int, new_val: int) -> dict[str, int | float]:
         if old_val == 0:
             return {'absolute': new_val, 'percent': 100 if new_val > 0 else 0}
         return {
@@ -921,7 +926,7 @@ def compare_periods(db, project_id, website_id, period_a_start, period_a_end,
     }
 
 
-def calculate_progress_metrics(db, project_id=None, website_id=None, days=30):
+def calculate_progress_metrics(db: Any, project_id: str | None = None, website_id: str | None = None, days: int = 30) -> dict[str, Any]:
     """Calculate progress metrics showing improvement/regression
 
     Args:
@@ -1054,16 +1059,16 @@ def calculate_progress_metrics(db, project_id=None, website_id=None, days=30):
 
 
 @testing_bp.route('/result/<result_id>')
-def view_result(result_id):
+def view_result(result_id: str) -> str | tuple[Response, int]:
     """View individual test result details"""
-    result = current_app.db.get_test_result(result_id)
+    result = get_db().get_test_result(result_id)
     if not result:
         return jsonify({'error': 'Test result not found'}), 404
     
     # Get related page and website info
-    page = current_app.db.get_page(result.page_id)
-    website = current_app.db.get_website(page.website_id) if page else None
-    project = current_app.db.get_project(website.project_id) if website else None
+    page = get_db().get_page(result.page_id)
+    website = get_db().get_website(page.website_id) if page else None
+    project = get_db().get_project(website.project_id) if website else None
     
     return render_template('testing/result.html',
                          result=result,
@@ -1074,9 +1079,9 @@ def view_result(result_id):
 
 @testing_bp.route('/dashboard')
 @login_required
-def testing_dashboard():
+def testing_dashboard() -> str:
     """Testing dashboard - comprehensive testing control center"""
-    db = current_app.db
+    db = get_db()
 
     if not getattr(current_user, 'is_superadmin', False):
         # Non-admin users see a simple greeting on the dashboard
@@ -1121,7 +1126,7 @@ def testing_dashboard():
         total_violations = 0
         total_warnings = 0
         if tested_page_ids:
-            pipeline = [
+            pipeline: list[Mapping[str, Any]] = [
                 {'$match': {'page_id': {'$in': tested_page_ids}}},
                 {'$sort': {'test_date': -1}},
                 {'$group': {
@@ -1183,9 +1188,11 @@ def testing_dashboard():
         schedules = db.get_test_schedules_for_website(website_id)[:5]
     elif project_id:
         for w in websites[:3]:  # Limit to first 3 websites for speed
+            if not w.id:
+                continue
             website_schedules = db.get_test_schedules_for_website(w.id)
             for s in website_schedules:
-                s._website_name = w.name  # Add website name for display
+                setattr(s, '_website_name', w.name)  # Add website name for display
             schedules.extend(website_schedules)
             if len(schedules) >= 5:
                 break
@@ -1214,7 +1221,7 @@ def testing_dashboard():
 
 
 @testing_bp.route('/run-test', methods=['POST'])
-def run_test():
+def run_test() -> tuple[Response, int] | Response:
     """Run accessibility test on specified page(s)"""
     data = request.get_json()
     
@@ -1227,7 +1234,7 @@ def run_test():
     # Validate pages exist
     valid_pages = []
     for page_id in page_ids:
-        page = current_app.db.get_page(page_id)
+        page = get_db().get_page(page_id)
         if page:
             valid_pages.append(page)
     
@@ -1242,7 +1249,7 @@ def run_test():
         
         # Update page status
         page.status = PageStatus.QUEUED
-        current_app.db.update_page(page)
+        get_db().update_page(page)
     
     return jsonify({
         'success': True,
@@ -1253,7 +1260,7 @@ def run_test():
 
 
 @testing_bp.route('/batch-test', methods=['POST'])
-def batch_test():
+def batch_test() -> tuple[Response, int] | Response:
     """Run batch testing on multiple pages"""
     data = request.get_json()
     
@@ -1265,7 +1272,7 @@ def batch_test():
         return jsonify({'error': 'Website ID required'}), 400
     
     # Get pages based on filter
-    pages = current_app.db.get_pages(website_id)
+    pages = get_db().get_pages(website_id)
     
     # Apply filters
     if filter_criteria.get('untested_only'):
@@ -1290,7 +1297,7 @@ def batch_test():
 
 
 @testing_bp.route('/job/<job_id>/status')
-def job_status(job_id):
+def job_status(job_id: str) -> Response:
     """Get status of testing job"""
     # In production, check actual job queue
     return jsonify({
@@ -1305,7 +1312,7 @@ def job_status(job_id):
 
 
 @testing_bp.route('/job/<job_id>/cancel', methods=['POST'])
-def cancel_job(job_id):
+def cancel_job(job_id: str) -> Response:
     """Cancel testing job"""
     # In production, cancel actual job
     return jsonify({
@@ -1315,13 +1322,13 @@ def cancel_job(job_id):
 
 
 @testing_bp.route('/fixture-status')
-def fixture_status():
+def fixture_status() -> str:
     """Display fixture test status page"""
     return render_template('testing/fixture_status.html')
 
 
 @testing_bp.route('/configure', methods=['GET', 'POST'])
-def configure_testing():
+def configure_testing() -> str | tuple[Response, int] | Response:
     """Configure testing settings"""
     if request.method == 'POST':
         # Save testing configuration
@@ -1333,23 +1340,23 @@ def configure_testing():
 
         # Update runtime configuration
         if 'parallel_tests' in config:
-            current_app.app_config.PARALLEL_TESTS = config['parallel_tests']
+            get_app_config().PARALLEL_TESTS = config['parallel_tests']
         if 'test_timeout' in config:
-            current_app.app_config.TEST_TIMEOUT = config['test_timeout']
+            get_app_config().TEST_TIMEOUT = config['test_timeout']
         if 'run_ai_analysis' in config:
-            current_app.app_config.RUN_AI_ANALYSIS = config['run_ai_analysis']
+            get_app_config().RUN_AI_ANALYSIS = config['run_ai_analysis']
         if 'browser_headless' in config:
-            current_app.app_config.BROWSER_HEADLESS = config['browser_headless']
+            get_app_config().BROWSER_HEADLESS = config['browser_headless']
         if 'viewport_width' in config:
-            current_app.app_config.BROWSER_VIEWPORT_WIDTH = config['viewport_width']
+            get_app_config().BROWSER_VIEWPORT_WIDTH = config['viewport_width']
         if 'viewport_height' in config:
-            current_app.app_config.BROWSER_VIEWPORT_HEIGHT = config['viewport_height']
+            get_app_config().BROWSER_VIEWPORT_HEIGHT = config['viewport_height']
         if 'pages_per_page' in config:
-            current_app.app_config.PAGES_PER_PAGE = config['pages_per_page']
+            get_app_config().PAGES_PER_PAGE = config['pages_per_page']
         if 'max_pages_per_page' in config:
-            current_app.app_config.MAX_PAGES_PER_PAGE = config['max_pages_per_page']
+            get_app_config().MAX_PAGES_PER_PAGE = config['max_pages_per_page']
         if 'show_error_codes' in config:
-            current_app.app_config.SHOW_ERROR_CODES = config['show_error_codes']
+            get_app_config().SHOW_ERROR_CODES = config['show_error_codes']
 
         return jsonify({
             'success': True,
@@ -1358,15 +1365,15 @@ def configure_testing():
 
     # Get current configuration with backward compatibility
     current_config = {
-        'parallel_tests': current_app.app_config.PARALLEL_TESTS,
-        'test_timeout': current_app.app_config.TEST_TIMEOUT,
-        'run_ai_analysis': current_app.app_config.RUN_AI_ANALYSIS,
-        'browser_headless': current_app.app_config.BROWSER_HEADLESS,
-        'viewport_width': current_app.app_config.BROWSER_VIEWPORT_WIDTH,
-        'viewport_height': current_app.app_config.BROWSER_VIEWPORT_HEIGHT,
-        'pages_per_page': getattr(current_app.app_config, 'PAGES_PER_PAGE', 100),
-        'max_pages_per_page': getattr(current_app.app_config, 'MAX_PAGES_PER_PAGE', 500),
-        'show_error_codes': getattr(current_app.app_config, 'SHOW_ERROR_CODES', False)
+        'parallel_tests': get_app_config().PARALLEL_TESTS,
+        'test_timeout': get_app_config().TEST_TIMEOUT,
+        'run_ai_analysis': get_app_config().RUN_AI_ANALYSIS,
+        'browser_headless': get_app_config().BROWSER_HEADLESS,
+        'viewport_width': get_app_config().BROWSER_VIEWPORT_WIDTH,
+        'viewport_height': get_app_config().BROWSER_VIEWPORT_HEIGHT,
+        'pages_per_page': getattr(get_app_config(),'PAGES_PER_PAGE', 100),
+        'max_pages_per_page': getattr(get_app_config(),'MAX_PAGES_PER_PAGE', 500),
+        'show_error_codes': getattr(get_app_config(),'SHOW_ERROR_CODES', False)
     }
 
     return render_template('testing/configure.html', config=current_config)
@@ -1378,9 +1385,9 @@ def configure_testing():
 
 @testing_bp.route('/api/stats')
 @login_required
-def api_stats():
+def api_stats() -> tuple[Response, int] | Response:
     """API endpoint for real-time stats (for polling)"""
-    db = current_app.db
+    db = get_db()
 
     project_id = request.args.get('project_id')
     website_id = request.args.get('website_id')
@@ -1408,7 +1415,7 @@ def api_stats():
             total_violations = 0
             total_warnings = 0
             if tested_page_ids:
-                pipeline = [
+                pipeline2: list[Mapping[str, Any]] = [
                     {'$match': {'page_id': {'$in': tested_page_ids}}},
                     {'$sort': {'test_date': -1}},
                     {'$group': {
@@ -1417,7 +1424,7 @@ def api_stats():
                         'warning_count': {'$first': {'$ifNull': ['$warning_count', 0]}},
                     }},
                 ]
-                for result in db.test_results.aggregate(pipeline):
+                for result in db.test_results.aggregate(pipeline2):
                     total_violations += result.get('violation_count', 0)
                     total_warnings += result.get('warning_count', 0)
 
@@ -1468,7 +1475,7 @@ def api_stats():
 
 @testing_bp.route('/api/active-tests')
 @login_required
-def api_active_tests():
+def api_active_tests() -> Response:
     """API endpoint for active test progress (for polling)"""
     active_jobs = []
 
@@ -1480,9 +1487,9 @@ def api_active_tests():
                     # Get website info for display
                     website_name = 'Unknown'
                     if job.get('website_id'):
-                        website = current_app.db.get_website(job['website_id'])
+                        website = get_db().get_website(job['website_id'])
                         if website:
-                            website_name = website.name
+                            website_name = website.name or 'Unknown'
 
                     active_jobs.append({
                         'job_id': job.get('job_id'),
@@ -1507,7 +1514,7 @@ def api_active_tests():
 
 @testing_bp.route('/api/run-tests', methods=['POST'])
 @login_required
-def api_run_tests():
+def api_run_tests() -> tuple[Response, int] | Response:
     """API endpoint to start testing (enhanced version)"""
     data = request.get_json() or {}
 
@@ -1536,7 +1543,7 @@ def api_run_tests():
     if not tester_ids:
         return jsonify({'error': 'At least one tester must be selected'}), 400
 
-    db = current_app.db
+    db = get_db()
 
     try:
         if website_id:
@@ -1583,6 +1590,8 @@ def api_run_tests():
             total_pages = 0
 
             for website in websites:
+                if not website.id:
+                    continue
                 pages = db.get_pages(website.id)
                 if test_untested_only:
                     pages = [p for p in pages if p.status != PageStatus.TESTED]
@@ -1612,6 +1621,9 @@ def api_run_tests():
                 'tester_ids': tester_ids
             })
 
+        else:
+            return jsonify({'error': 'Either website_id or project_id is required'}), 400
+
     except Exception as e:
         logger.error(f"Error starting tests: {e}")
         return jsonify({'error': str(e)}), 500
@@ -1619,9 +1631,9 @@ def api_run_tests():
 
 @testing_bp.route('/api/trends')
 @login_required
-def api_trends():
+def api_trends() -> tuple[Response, int] | Response:
     """API endpoint for trend data"""
-    db = current_app.db
+    db = get_db()
 
     project_id = request.args.get('project_id')
     website_id = request.args.get('website_id')
@@ -1648,9 +1660,9 @@ def api_trends():
 
 @testing_bp.route('/api/trends/detailed')
 @login_required
-def api_trends_detailed():
+def api_trends_detailed() -> tuple[Response, int] | Response:
     """API endpoint for detailed trend data with breakdowns and statistics"""
-    db = current_app.db
+    db = get_db()
 
     project_id = request.args.get('project_id')
     website_id = request.args.get('website_id')
@@ -1673,15 +1685,17 @@ def api_trends_detailed():
     start_date = None
     end_date = None
 
-    if request.args.get('start_date'):
+    start_date_str = request.args.get('start_date')
+    if start_date_str:
         try:
-            start_date = datetime.strptime(request.args.get('start_date'), '%Y-%m-%d')
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
         except ValueError:
             return jsonify({'error': 'Invalid start_date format. Use YYYY-MM-DD'}), 400
 
-    if request.args.get('end_date'):
+    end_date_str = request.args.get('end_date')
+    if end_date_str:
         try:
-            end_date = datetime.strptime(request.args.get('end_date'), '%Y-%m-%d')
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
             # Include the full end day
             end_date = end_date.replace(hour=23, minute=59, second=59)
         except ValueError:
@@ -1738,9 +1752,9 @@ def api_trends_detailed():
 
 @testing_bp.route('/api/trends/compare')
 @login_required
-def api_trends_compare():
+def api_trends_compare() -> tuple[Response, int] | Response:
     """API endpoint for comparing time periods"""
-    db = current_app.db
+    db = get_db()
 
     project_id = request.args.get('project_id')
     website_id = request.args.get('website_id')
@@ -1816,7 +1830,7 @@ def api_trends_compare():
             total_violations = 0
             total_warnings = 0
             if tested_page_ids:
-                pipeline = [
+                pipeline3: list[Mapping[str, Any]] = [
                     {'$match': {'page_id': {'$in': tested_page_ids}}},
                     {'$sort': {'test_date': -1}},
                     {'$group': {
@@ -1825,7 +1839,7 @@ def api_trends_compare():
                         'warning_count': {'$first': {'$ifNull': ['$warning_count', 0]}},
                     }},
                 ]
-                for result in db.test_results.aggregate(pipeline):
+                for result in db.test_results.aggregate(pipeline3):
                     total_violations += result.get('violation_count', 0)
                     total_warnings += result.get('warning_count', 0)
 
@@ -1850,9 +1864,9 @@ def api_trends_compare():
 
 @testing_bp.route('/api/trends/progress')
 @login_required
-def api_trends_progress():
+def api_trends_progress() -> tuple[Response, int] | Response:
     """API endpoint for progress/compliance metrics"""
-    db = current_app.db
+    db = get_db()
 
     project_id = request.args.get('project_id')
     website_id = request.args.get('website_id')
@@ -1887,9 +1901,9 @@ def api_trends_progress():
 
 @testing_bp.route('/trends')
 @login_required
-def trends_page():
+def trends_page() -> str:
     """Dedicated trends analysis page"""
-    db = current_app.db
+    db = get_db()
 
     # Get filter parameters
     project_id = request.args.get('project_id')
@@ -1921,9 +1935,9 @@ def trends_page():
 
 @testing_bp.route('/api/websites/<project_id>')
 @login_required
-def api_project_websites(project_id):
+def api_project_websites(project_id: str) -> tuple[Response, int] | Response:
     """API endpoint to get websites for a project (for dynamic dropdown)"""
-    db = current_app.db
+    db = get_db()
 
     project = db.get_project(project_id)
     if not project:

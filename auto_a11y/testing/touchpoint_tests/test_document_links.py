@@ -3,9 +3,13 @@ Document Links touchpoint test module
 Identifies links to electronic documents like PDFs, Word documents, spreadsheets, etc.
 """
 
+from __future__ import annotations
+
 from datetime import datetime
-from typing import Dict, Any, List, Optional
+from typing import Any
 import logging
+
+from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +44,7 @@ TEST_DOCUMENTATION = {
     ]
 }
 
-async def test_document_links(page) -> Dict[str, Any]:
+async def test_document_links(page: Page) -> dict[str, Any]:
     """
     Test for links to electronic documents (PDF, DOC, DOCX, XLS, XLSX, etc.)
     
@@ -52,7 +56,7 @@ async def test_document_links(page) -> Dict[str, Any]:
     """
     try:
         # Execute JavaScript to analyze document links
-        results = await page.evaluate('''
+        results: dict[str, Any] = await page.evaluate('''
             () => {
                 const results = {
                     applicable: true,

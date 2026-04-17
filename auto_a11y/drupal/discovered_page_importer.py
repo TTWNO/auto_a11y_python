@@ -4,8 +4,10 @@ Discovered Page Importer
 Handles importing discovered pages from Drupal to Auto A11y via JSON:API.
 """
 
+from __future__ import annotations
+
 import logging
-from typing import Optional, Dict, Any, List
+from typing import Any
 from datetime import datetime
 
 from auto_a11y.models.page import DrupalSyncStatus
@@ -21,7 +23,7 @@ class DiscoveredPageImporter:
     it to Auto A11y DiscoveredPage or Page model format.
     """
 
-    def __init__(self, client, taxonomies):
+    def __init__(self, client: Any, taxonomies: Any) -> None:
         """
         Initialize importer.
 
@@ -29,14 +31,14 @@ class DiscoveredPageImporter:
             client: DrupalJSONAPIClient instance
             taxonomies: DiscoveredPageTaxonomies instance
         """
-        self.client = client
-        self.taxonomies = taxonomies
+        self.client: Any = client
+        self.taxonomies: Any = taxonomies
 
     def fetch_discovered_pages_for_audit(
         self,
         audit_uuid: str,
         include_relationships: bool = True
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Fetch all discovered pages for an audit.
 
@@ -51,7 +53,7 @@ class DiscoveredPageImporter:
             logger.info(f"Fetching discovered pages for audit {audit_uuid}")
 
             # Build query params
-            params = {
+            params: dict[str, Any] = {
                 'filter[field_parent_audit_discovery.id]': audit_uuid,
                 'sort': 'created'
             }
@@ -60,7 +62,7 @@ class DiscoveredPageImporter:
                 params['include'] = 'field_interested_because,field_relevant_page_elements,field_parent_audit_discovery'
 
             # Fetch pages (may need pagination)
-            all_pages = []
+            all_pages: list[dict[str, Any]] = []
             page_limit = 50
             offset = 0
 
@@ -69,7 +71,7 @@ class DiscoveredPageImporter:
                 params['page[offset]'] = offset
 
                 response = self.client.get('node/discovered_page', params=params)
-                pages = response.get('data', [])
+                pages: list[dict[str, Any]] = response.get('data', [])
 
                 if not pages:
                     break
@@ -92,7 +94,7 @@ class DiscoveredPageImporter:
             logger.error(f"Failed to fetch discovered pages: {e}")
             raise
 
-    def fetch_single_page(self, page_uuid: str) -> Optional[Dict[str, Any]]:
+    def fetch_single_page(self, page_uuid: str) -> dict[str, Any] | None:
         """
         Fetch a single discovered page by UUID.
 
@@ -110,7 +112,7 @@ class DiscoveredPageImporter:
                 params={'include': 'field_interested_because,field_relevant_page_elements'}
             )
 
-            page_data = response.get('data')
+            page_data: dict[str, Any] | None = response.get('data')
             if not page_data:
                 return None
 
@@ -122,9 +124,9 @@ class DiscoveredPageImporter:
 
     def import_to_discovered_page_model(
         self,
-        drupal_page: Dict[str, Any],
+        drupal_page: dict[str, Any],
         project_id: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Convert Drupal discovered_page to DiscoveredPage model dict.
 
@@ -159,8 +161,8 @@ class DiscoveredPageImporter:
 
     def sync_to_page_model(
         self,
-        drupal_page: Dict[str, Any],
-        page_instance
+        drupal_page: dict[str, Any],
+        page_instance: Any
     ) -> bool:
         """
         Sync Drupal discovered_page data to an existing Page model instance.
@@ -215,9 +217,9 @@ class DiscoveredPageImporter:
 
     def _convert_drupal_page(
         self,
-        page_data: Dict[str, Any],
-        included: List[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        page_data: dict[str, Any],
+        included: list[dict[str, Any]] | None = None
+    ) -> dict[str, Any]:
         """
         Convert Drupal JSON:API page data to simplified dict.
 
@@ -228,46 +230,46 @@ class DiscoveredPageImporter:
         Returns:
             Simplified page dict
         """
-        attributes = page_data.get('attributes', {})
-        relationships = page_data.get('relationships', {})
+        attributes: dict[str, Any] = page_data.get('attributes', {})
+        relationships: dict[str, Any] = page_data.get('relationships', {})
 
         # Extract basic fields
-        uuid = page_data.get('id')
-        nid = attributes.get('drupal_internal__nid')
-        title = attributes.get('title', '')
-        url_field = attributes.get('field_page_url', {})
-        url = url_field.get('uri', '') if url_field else ''
+        uuid: str | None = page_data.get('id')
+        nid: int | None = attributes.get('drupal_internal__nid')
+        title: str = attributes.get('title', '')
+        url_field: dict[str, str] | None = attributes.get('field_page_url', {})
+        url: str = url_field.get('uri', '') if url_field else ''
 
-        include_in_report = attributes.get('field_include_in_report', True)
-        audited = attributes.get('field_audited', False)
-        manual_audit = attributes.get('field_manual_audit', False)
+        include_in_report: bool = attributes.get('field_include_in_report', True)
+        audited: bool = attributes.get('field_audited', False)
+        manual_audit: bool = attributes.get('field_manual_audit', False)
 
         # Extract notes
-        private_notes_list = attributes.get('field_notes_in_discovery', [])
-        private_notes = private_notes_list[0].get('value', '') if private_notes_list else None
+        private_notes_list: list[dict[str, str]] = attributes.get('field_notes_in_discovery', [])
+        private_notes: str | None = private_notes_list[0].get('value', '') if private_notes_list else None
 
-        public_note_field = attributes.get('field_public_note_on_page', {})
-        public_notes = public_note_field.get('value', '') if public_note_field else None
+        public_note_field: dict[str, str] | None = attributes.get('field_public_note_on_page', {})
+        public_notes: str | None = public_note_field.get('value', '') if public_note_field else None
 
         # Extract document links
-        doc_links_raw = attributes.get('field_document_links_on_page', [])
-        document_links = [
+        doc_links_raw: list[dict[str, str]] = attributes.get('field_document_links_on_page', [])
+        document_links: list[dict[str, str]] = [
             {'uri': link.get('uri', ''), 'title': link.get('title', '')}
             for link in doc_links_raw
         ] if doc_links_raw else []
 
         # Extract taxonomy terms from relationships
-        interested_because_terms = []
-        page_elements_terms = []
+        interested_because_terms: list[str] = []
+        page_elements_terms: list[str] = []
 
         # Get interested_because term UUIDs from relationship
-        interested_rel = relationships.get('field_interested_because', {}).get('data', [])
+        interested_rel: list[dict[str, str]] = relationships.get('field_interested_because', {}).get('data', [])
         if interested_rel:
             interested_uuids = [term.get('id') for term in interested_rel if term.get('id')]
             interested_because_terms = self.taxonomies.lookup_interested_because_names(interested_uuids)
 
         # Get page_elements term UUIDs from relationship
-        elements_rel = relationships.get('field_relevant_page_elements', {}).get('data', [])
+        elements_rel: list[dict[str, str]] = relationships.get('field_relevant_page_elements', {}).get('data', [])
         if elements_rel:
             element_uuids = [term.get('id') for term in elements_rel if term.get('id')]
             page_elements_terms = self.taxonomies.lookup_page_elements_names(element_uuids)
@@ -292,9 +294,9 @@ class DiscoveredPageImporter:
 
     def match_with_existing_pages(
         self,
-        drupal_pages: List[Dict[str, Any]],
-        existing_pages: List[Any]
-    ) -> Dict[str, Any]:
+        drupal_pages: list[dict[str, Any]],
+        existing_pages: list[Any]
+    ) -> dict[str, Any]:
         """
         Match Drupal discovered pages with existing scraped pages by URL.
 
@@ -306,13 +308,12 @@ class DiscoveredPageImporter:
             Dict with 'matched', 'unmatched_drupal', 'unmatched_local' lists
         """
         # Build URL lookup for existing pages
-        existing_by_url = {page.url: page for page in existing_pages}
-        drupal_by_url = {page['url']: page for page in drupal_pages}
+        existing_by_url: dict[str, Any] = {page.url: page for page in existing_pages}
 
         # Find matches
-        matched = []
-        unmatched_drupal = []
-        unmatched_local = list(existing_pages)
+        matched: list[dict[str, Any]] = []
+        unmatched_drupal: list[dict[str, Any]] = []
+        unmatched_local: list[Any] = list(existing_pages)
 
         for drupal_page in drupal_pages:
             url = drupal_page['url']

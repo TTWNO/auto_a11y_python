@@ -4,9 +4,10 @@ Discovered Page Exporter
 Handles exporting discovered pages from Auto A11y to Drupal via JSON:API.
 """
 
+from __future__ import annotations
+
 import logging
-from typing import Optional, Dict, Any, List
-from datetime import datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,7 @@ class DiscoveredPageExporter:
     including taxonomy term lookups and field formatting.
     """
 
-    def __init__(self, client, taxonomies):
+    def __init__(self, client: Any, taxonomies: Any) -> None:
         """
         Initialize exporter.
 
@@ -27,23 +28,23 @@ class DiscoveredPageExporter:
             client: DrupalJSONAPIClient instance
             taxonomies: DiscoveredPageTaxonomies instance
         """
-        self.client = client
-        self.taxonomies = taxonomies
+        self.client: Any = client
+        self.taxonomies: Any = taxonomies
 
     def export_discovered_page(
         self,
         title: str,
         url: str,
         audit_uuid: str,
-        interested_because: List[str] = None,
-        page_elements: List[str] = None,
-        private_notes: Optional[str] = None,
-        public_notes: Optional[str] = None,
+        interested_because: list[str] | None = None,
+        page_elements: list[str] | None = None,
+        private_notes: str | None = None,
+        public_notes: str | None = None,
         include_in_report: bool = True,
         manual_audit: bool = True,
-        document_links: List[Dict[str, str]] = None,
-        existing_uuid: Optional[str] = None
-    ) -> Dict[str, Any]:
+        document_links: list[dict[str, str]] | None = None,
+        existing_uuid: str | None = None
+    ) -> dict[str, Any]:
         """
         Export a discovered page to Drupal.
 
@@ -103,9 +104,9 @@ class DiscoveredPageExporter:
                 response = self.client.post("node/discovered_page", payload)
 
             # Extract result
-            data = response.get('data', {})
-            uuid = data.get('id')
-            nid = data.get('attributes', {}).get('drupal_internal__nid')
+            data: dict[str, Any] = response.get('data', {})
+            uuid: str | None = data.get('id')
+            nid: int | None = data.get('attributes', {}).get('drupal_internal__nid')
 
             logger.info(f"Successfully exported discovered page: UUID={uuid}, NID={nid}")
 
@@ -121,13 +122,17 @@ class DiscoveredPageExporter:
 
             # Try to get detailed error from response
             error_detail = str(e)
-            if hasattr(e, 'response'):
+            resp: Any = getattr(e, 'response', None)
+            if resp is not None:
                 try:
-                    error_data = e.response.json()
+                    error_data: dict[str, Any] = resp.json()
                     if 'errors' in error_data:
-                        error_messages = [err.get('detail', err.get('title', '')) for err in error_data['errors']]
+                        error_messages: list[str] = [
+                            err.get('detail', err.get('title', ''))
+                            for err in error_data['errors']
+                        ]
                         error_detail = '; '.join(error_messages)
-                except:
+                except Exception:
                     pass
 
             return {
@@ -135,7 +140,7 @@ class DiscoveredPageExporter:
                 'error': error_detail
             }
 
-    def export_from_page_model(self, page, project_id: str, audit_uuid: str) -> Dict[str, Any]:
+    def export_from_page_model(self, page: Any, project_id: str, audit_uuid: str) -> dict[str, Any]:
         """
         Export a discovered page from a Page model instance.
 
@@ -159,7 +164,7 @@ class DiscoveredPageExporter:
             existing_uuid=page.drupal_discovered_page_uuid
         )
 
-    def export_from_discovered_page_model(self, discovered_page, audit_uuid: str) -> Dict[str, Any]:
+    def export_from_discovered_page_model(self, discovered_page: Any, audit_uuid: str) -> dict[str, Any]:
         """
         Export from a DiscoveredPage model instance.
 
@@ -185,11 +190,11 @@ class DiscoveredPageExporter:
 
     def batch_export(
         self,
-        pages: List[Any],
+        pages: list[Any],
         audit_uuid: str,
         batch_size: int = 10,
         continue_on_error: bool = True
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Export multiple discovered pages in batches.
 
@@ -202,7 +207,7 @@ class DiscoveredPageExporter:
         Returns:
             Dict with 'total', 'success_count', 'failure_count', 'results' keys
         """
-        results = []
+        results: list[dict[str, Any]] = []
         success_count = 0
         failure_count = 0
 
@@ -249,14 +254,14 @@ class DiscoveredPageExporter:
         title: str,
         url: str,
         audit_uuid: str,
-        interested_because: List[str],
-        page_elements: List[str],
-        private_notes: Optional[str],
-        public_notes: Optional[str],
+        interested_because: list[str],
+        page_elements: list[str],
+        private_notes: str | None,
+        public_notes: str | None,
         include_in_report: bool,
         manual_audit: bool,
-        document_links: List[Dict[str, str]]
-    ) -> Dict[str, Any]:
+        document_links: list[dict[str, str]]
+    ) -> dict[str, Any]:
         """
         Build JSON:API payload for discovered_page.
 
@@ -280,7 +285,7 @@ class DiscoveredPageExporter:
         element_uuids = self.taxonomies.lookup_page_elements_uuids(page_elements)
 
         # Build attributes
-        attributes = {
+        attributes: dict[str, Any] = {
             'title': title,
             'field_page_url': {
                 'uri': url,
@@ -320,7 +325,7 @@ class DiscoveredPageExporter:
             ]
 
         # Build relationships
-        relationships = {
+        relationships: dict[str, Any] = {
             'field_parent_audit_discovery': {
                 'data': {
                     'type': 'node--audit',
@@ -354,7 +359,7 @@ class DiscoveredPageExporter:
             }
 
         # Build final payload
-        payload = {
+        payload: dict[str, Any] = {
             'data': {
                 'type': 'node--discovered_page',
                 'attributes': attributes,
@@ -369,9 +374,9 @@ class DiscoveredPageExporter:
         title: str,
         url: str,
         audit_uuid: str,
-        interested_because: List[str] = None,
-        page_elements: List[str] = None
-    ) -> Dict[str, Any]:
+        interested_because: list[str] | None = None,
+        page_elements: list[str] | None = None
+    ) -> dict[str, Any]:
         """
         Validate data before export.
 
@@ -385,8 +390,8 @@ class DiscoveredPageExporter:
         Returns:
             Dict with 'valid', 'errors', 'warnings' keys
         """
-        errors = []
-        warnings = []
+        errors: list[str] = []
+        warnings: list[str] = []
 
         # Check required fields
         if not title:
@@ -404,7 +409,7 @@ class DiscoveredPageExporter:
 
         # Validate taxonomy terms
         if interested_because:
-            valid, invalid = self.taxonomies.validate_term_names(
+            _valid, invalid = self.taxonomies.validate_term_names(
                 self.taxonomies.INTERESTED_BECAUSE,
                 interested_because
             )
@@ -412,7 +417,7 @@ class DiscoveredPageExporter:
                 warnings.append(f"Invalid 'interested_because' terms: {invalid}")
 
         if page_elements:
-            valid, invalid = self.taxonomies.validate_term_names(
+            _valid, invalid = self.taxonomies.validate_term_names(
                 self.taxonomies.PAGE_ELEMENTS,
                 page_elements
             )

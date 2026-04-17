@@ -5,10 +5,12 @@ Handles low-level communication with Drupal's JSON:API endpoints using
 HTTP Basic Authentication.
 """
 
+from __future__ import annotations
+
 import logging
 import base64
 import requests
-from typing import Dict, List, Optional, Any
+from typing import Any
 from urllib.parse import urljoin, urlencode
 
 logger = logging.getLogger(__name__)
@@ -42,7 +44,7 @@ class DrupalJSONAPIClient:
     and error handling.
     """
 
-    def __init__(self, base_url: str, username: str, password: str):
+    def __init__(self, base_url: str, username: str, password: str) -> None:
         """
         Initialize the Drupal JSON:API client.
 
@@ -51,28 +53,28 @@ class DrupalJSONAPIClient:
             username: Drupal username for Basic Auth
             password: Drupal password for Basic Auth
         """
-        self.base_url = base_url.rstrip('/')
-        self.username = username
-        self.password = password
+        self.base_url: str = base_url.rstrip('/')
+        self.username: str = username
+        self.password: str = password
 
         # Create auth header
         credentials = f"{username}:{password}"
         b64_credentials = base64.b64encode(credentials.encode()).decode()
 
         # Standard JSON:API headers
-        self.headers = {
+        self.headers: dict[str, str] = {
             'Accept': 'application/vnd.api+json',
             'Content-Type': 'application/vnd.api+json',
             'Authorization': f'Basic {b64_credentials}'
         }
 
         # Session for connection pooling
-        self.session = requests.Session()
+        self.session: requests.Session = requests.Session()
         self.session.headers.update(self.headers)
 
         logger.info(f"Initialized Drupal JSON:API client for {self.base_url}")
 
-    def _build_url(self, endpoint: str, params: Optional[Dict[str, Any]] = None) -> str:
+    def _build_url(self, endpoint: str, params: dict[str, Any] | None = None) -> str:
         """
         Build a complete URL for a JSON:API endpoint.
 
@@ -135,7 +137,7 @@ class DrupalJSONAPIClient:
         except requests.exceptions.RequestException as e:
             raise DrupalConnectionError(f"Connection error: {e}")
 
-    def get(self, endpoint: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def get(self, endpoint: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Perform a GET request to a JSON:API endpoint.
 
@@ -164,18 +166,19 @@ class DrupalJSONAPIClient:
 
             response.raise_for_status()
 
-            return response.json()
+            result: dict[str, Any] = response.json()
+            return result
 
         except requests.exceptions.Timeout:
             raise DrupalConnectionError(f"Request to {url} timed out")
 
         except requests.exceptions.RequestException as e:
             logger.error(f"GET request failed: {e}")
-            if hasattr(e.response, 'text'):
+            if e.response is not None and hasattr(e.response, 'text'):
                 logger.error(f"Response: {e.response.text}")
             raise DrupalJSONAPIError(f"GET request failed: {e}")
 
-    def post(self, endpoint: str, data: Dict[str, Any]) -> Dict[str, Any]:
+    def post(self, endpoint: str, data: dict[str, Any]) -> dict[str, Any]:
         """
         Perform a POST request to a JSON:API endpoint.
 
@@ -213,7 +216,7 @@ class DrupalJSONAPIClient:
 
             response.raise_for_status()
 
-            result = response.json()
+            result: dict[str, Any] = response.json()
             logger.info(f"Successfully created entity: {result.get('data', {}).get('id')}")
 
             return result
@@ -228,7 +231,7 @@ class DrupalJSONAPIClient:
                 logger.error(f"Response: {e.response.text}")
             raise DrupalJSONAPIError(f"POST request failed: {e}")
 
-    def patch(self, endpoint: str, uuid: str, data: Dict[str, Any]) -> Dict[str, Any]:
+    def patch(self, endpoint: str, uuid: str, data: dict[str, Any]) -> dict[str, Any]:
         """
         Perform a PATCH request to update an entity.
 
@@ -262,7 +265,8 @@ class DrupalJSONAPIClient:
 
             response.raise_for_status()
 
-            return response.json()
+            result: dict[str, Any] = response.json()
+            return result
 
         except requests.exceptions.RequestException as e:
             logger.error(f"PATCH request failed: {e}")
@@ -270,7 +274,7 @@ class DrupalJSONAPIClient:
                 logger.error(f"Response: {e.response.text}")
             raise DrupalJSONAPIError(f"PATCH request failed: {e}")
 
-    def _parse_validation_errors(self, error_data: Dict[str, Any]) -> str:
+    def _parse_validation_errors(self, error_data: dict[str, Any]) -> str:
         """
         Parse JSON:API validation errors into a readable message.
 
@@ -280,16 +284,16 @@ class DrupalJSONAPIClient:
         Returns:
             Human-readable error message
         """
-        errors = error_data.get('errors', [])
+        errors: list[dict[str, Any]] = error_data.get('errors', [])
         if not errors:
             return "Unknown validation error"
 
-        messages = []
+        messages: list[str] = []
         for error in errors:
-            title = error.get('title', 'Validation error')
-            detail = error.get('detail', '')
-            source = error.get('source', {})
-            pointer = source.get('pointer', '')
+            title: str = error.get('title', 'Validation error')
+            detail: str = error.get('detail', '')
+            source: dict[str, str] = error.get('source', {})
+            pointer: str = source.get('pointer', '')
 
             if pointer:
                 messages.append(f"{pointer}: {title} - {detail}")
@@ -298,7 +302,7 @@ class DrupalJSONAPIClient:
 
         return "; ".join(messages)
 
-    def close(self):
+    def close(self) -> None:
         """Close the session and clean up resources."""
         self.session.close()
         logger.debug("Closed Drupal JSON:API client session")

@@ -5,27 +5,31 @@ Parses HTML fragments containing key takeaways, user painpoints, and user assert
 into structured data for the Recording model.
 """
 
+from __future__ import annotations
+
 import re
-from typing import List, Dict, Any, Optional
+from typing import Any, cast
+from typing_extensions import override
 from html.parser import HTMLParser
 
 
 class RecordingContentHTMLParser(HTMLParser):
     """Base HTML parser for recording content"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
-        self.current_tag = None
-        self.current_text = []
-        self.items = []
-        self.current_item = {}
-        self.in_h4 = False
-        self.in_h5 = False
-        self.in_p = False
-        self.current_h5_label = None
-        self.pending_text = []  # Text after h5 but before next tag
+        self.current_tag: str | None = None
+        self.current_text: list[str] = []
+        self.items: list[dict[str, Any]] = []
+        self.current_item: dict[str, Any] = {}
+        self.in_h4: bool = False
+        self.in_h5: bool = False
+        self.in_p: bool = False
+        self.current_h5_label: str | None = None
+        self.pending_text: list[str] = []  # Text after h5 but before next tag
 
-    def handle_starttag(self, tag, attrs):
+    @override
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         # Process any pending text from after h5
         if self.pending_text and self.current_h5_label:
             text = ''.join(self.pending_text).strip()
@@ -49,7 +53,8 @@ class RecordingContentHTMLParser(HTMLParser):
             self.in_p = True
             self.current_text = []
 
-    def handle_endtag(self, tag):
+    @override
+    def handle_endtag(self, tag: str) -> None:
         if tag == 'h4':
             self.in_h4 = False
             text = ''.join(self.current_text).strip()
@@ -80,26 +85,27 @@ class RecordingContentHTMLParser(HTMLParser):
             self.current_text = []
         self.current_tag = None
 
-    def handle_data(self, data):
+    @override
+    def handle_data(self, data: str) -> None:
         if self.in_h4 or self.in_h5 or self.in_p:
             self.current_text.append(data)
         elif self.current_h5_label and not self.in_h4:
             # Collecting text after h5 ended but before next tag
             self.pending_text.append(data)
 
-    def process_h4(self, text):
+    def process_h4(self, text: str) -> None:
         """Override in subclasses"""
         pass
 
-    def process_paragraph(self, text):
+    def process_paragraph(self, text: str) -> None:
         """Override in subclasses"""
         pass
 
-    def process_labeled_content(self, label, text):
+    def process_labeled_content(self, label: str, text: str) -> None:
         """Override in subclasses"""
         pass
 
-    def get_items(self):
+    def get_items(self) -> list[dict[str, Any]]:
         """Return parsed items"""
         # Process any pending text before finalizing
         if self.pending_text and self.current_h5_label:
@@ -116,7 +122,8 @@ class RecordingContentHTMLParser(HTMLParser):
 class KeyTakeawaysParser(RecordingContentHTMLParser):
     """Parse key takeaways HTML"""
 
-    def process_h4(self, text):
+    @override
+    def process_h4(self, text: str) -> None:
         """Process h4 tag - extract number and title"""
         # Extract number and title (e.g., "1. Missing skip to main content link")
         match = re.match(r'(\d+)\.\s*(.*)', text)
@@ -127,7 +134,8 @@ class KeyTakeawaysParser(RecordingContentHTMLParser):
             self.current_item['title'] = text
             self.current_item['number'] = len(self.items) + 1
 
-    def process_paragraph(self, text):
+    @override
+    def process_paragraph(self, text: str) -> None:
         """Process paragraph - extract description and timecode"""
         # Extract timecodes from description (format: HH:MM:SS.mmm - HH:MM:SS.mmm)
         timecode_pattern = r'\((\d{2}:\d{2}:\d{2}\.\d{3})\s*-\s*(\d{2}:\d{2}:\d{2}\.\d{3})'
@@ -135,7 +143,7 @@ class KeyTakeawaysParser(RecordingContentHTMLParser):
 
         if timecode_matches:
             # Extract timecodes
-            timecodes = []
+            timecodes: list[dict[str, str]] = []
             for match in timecode_matches:
                 timecodes.append({
                     'start': match.group(1),
@@ -153,12 +161,14 @@ class KeyTakeawaysParser(RecordingContentHTMLParser):
 class UserPainpointsParser(RecordingContentHTMLParser):
     """Parse user painpoints HTML"""
 
-    def process_h4(self, text):
+    @override
+    def process_h4(self, text: str) -> None:
         """Process h4 tag - the title of the painpoint"""
         self.current_item['title'] = text
         self.current_item['locations'] = []
 
-    def process_labeled_content(self, label, text):
+    @override
+    def process_labeled_content(self, label: str, text: str) -> None:
         """Process labeled content (User Statement, User Quote, Location, etc.)"""
         label_lower = label.lower()
 
@@ -188,7 +198,7 @@ class UserPainpointsParser(RecordingContentHTMLParser):
                 self.current_item['locations'] = []
             # Location data will be in subsequent text lines
             # Parse inline format: "Start: HH:MM:SS End: HH:MM:SS Duration: HH:MM:SS"
-            location = {}
+            location: dict[str, str] = {}
             lines = text.split('\n')
             for line in lines:
                 line = line.strip()
@@ -200,7 +210,7 @@ class UserPainpointsParser(RecordingContentHTMLParser):
                     location['duration'] = line.replace('Duration:', '').strip()
 
             if location:
-                self.current_item['locations'].append(location)
+                cast(list[dict[str, str]], self.current_item['locations']).append(location)
         elif 'start time' in label_lower or 'start' in label_lower:
             # Parse start time - create location with single timecode
             if 'locations' not in self.current_item:
@@ -216,15 +226,16 @@ class UserPainpointsParser(RecordingContentHTMLParser):
             if location:
                 if 'locations' not in self.current_item:
                     self.current_item['locations'] = []
-                self.current_item['locations'].append(location)
+                cast(list[dict[str, str]], self.current_item['locations']).append(location)
                 self.current_item['_temp_location'] = {}
 
-    def get_items(self):
+    @override
+    def get_items(self) -> list[dict[str, Any]]:
         """Clean up temporary fields and return items"""
         if self.current_item:
             # Clean up temporary location if exists
             if '_temp_location' in self.current_item:
-                loc = self.current_item.pop('_temp_location')
+                loc: dict[str, str] = self.current_item.pop('_temp_location')
                 if loc:
                     self.current_item.setdefault('locations', []).append(loc)
             self.items.append(self.current_item)
@@ -239,7 +250,8 @@ class UserPainpointsParser(RecordingContentHTMLParser):
 class UserAssertionsParser(RecordingContentHTMLParser):
     """Parse user assertions HTML"""
 
-    def process_h4(self, text):
+    @override
+    def process_h4(self, text: str) -> None:
         """Process h4 tag - extract number and title"""
         # Extract number and title (e.g., "1. Aside region incorrectly placed")
         match = re.match(r'(\d+)\.\s*(.*)', text)
@@ -250,7 +262,8 @@ class UserAssertionsParser(RecordingContentHTMLParser):
             self.current_item['title'] = text
             self.current_item['number'] = len(self.items) + 1
 
-    def process_labeled_content(self, label, text):
+    @override
+    def process_labeled_content(self, label: str, text: str) -> None:
         """Process labeled content (Text Spoken, Quote, User Statement, Start Time, etc.)"""
         label_lower = label.lower()
 
@@ -315,7 +328,7 @@ class UserAssertionsParser(RecordingContentHTMLParser):
                     self.current_item['start_time'] = times[0]
 
 
-def parse_key_takeaways_html(html_content: str) -> List[Dict[str, Any]]:
+def parse_key_takeaways_html(html_content: str) -> list[dict[str, Any]]:
     """
     Parse key takeaways HTML into structured data.
 
@@ -330,7 +343,7 @@ def parse_key_takeaways_html(html_content: str) -> List[Dict[str, Any]]:
     return parser.get_items()
 
 
-def parse_user_painpoints_html(html_content: str) -> List[Dict[str, Any]]:
+def parse_user_painpoints_html(html_content: str) -> list[dict[str, Any]]:
     """
     Parse user painpoints HTML into structured data.
 
@@ -345,7 +358,7 @@ def parse_user_painpoints_html(html_content: str) -> List[Dict[str, Any]]:
     return parser.get_items()
 
 
-def parse_user_assertions_html(html_content: str) -> List[Dict[str, Any]]:
+def parse_user_assertions_html(html_content: str) -> list[dict[str, Any]]:
     """
     Parse user assertions HTML into structured data.
 
@@ -362,7 +375,7 @@ def parse_user_assertions_html(html_content: str) -> List[Dict[str, Any]]:
 
 # JSON Parsing Functions
 
-def parse_key_takeaways_json(json_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+def parse_key_takeaways_json(json_data: dict[str, Any] | str) -> list[dict[str, Any]]:
     """
     Parse key takeaways JSON into structured data.
 
@@ -387,13 +400,16 @@ def parse_key_takeaways_json(json_data: Dict[str, Any]) -> List[Dict[str, Any]]:
     import json
 
     # If json_data is a string, parse it
+    parsed: dict[str, Any]
     if isinstance(json_data, str):
-        json_data = json.loads(json_data)
+        parsed = json.loads(json_data)
+    else:
+        parsed = json_data
 
-    takeaways = json_data.get('takeaways', [])
+    takeaways: list[dict[str, Any]] = parsed.get('takeaways', [])
 
     # Keep the original JSON structure
-    result = []
+    result: list[dict[str, Any]] = []
     for item in takeaways:
         result.append({
             'number': item.get('number', 0),
@@ -404,7 +420,7 @@ def parse_key_takeaways_json(json_data: Dict[str, Any]) -> List[Dict[str, Any]]:
     return result
 
 
-def parse_user_painpoints_json(json_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+def parse_user_painpoints_json(json_data: dict[str, Any] | str) -> list[dict[str, Any]]:
     """
     Parse user painpoints JSON into structured data.
 
@@ -436,14 +452,17 @@ def parse_user_painpoints_json(json_data: Dict[str, Any]) -> List[Dict[str, Any]
     import json
 
     # If json_data is a string, parse it
+    parsed: dict[str, Any]
     if isinstance(json_data, str):
-        json_data = json.loads(json_data)
+        parsed = json.loads(json_data)
+    else:
+        parsed = json_data
 
     # Support both "pain_points" and "painpoints" keys
-    painpoints = json_data.get('pain_points', json_data.get('painpoints', []))
+    painpoints: list[dict[str, Any]] = parsed.get('pain_points', parsed.get('painpoints', []))
 
     # Keep the original JSON structure
-    result = []
+    result: list[dict[str, Any]] = []
     for item in painpoints:
         result.append({
             'title': item.get('title', ''),
@@ -455,7 +474,7 @@ def parse_user_painpoints_json(json_data: Dict[str, Any]) -> List[Dict[str, Any]
     return result
 
 
-def parse_user_assertions_json(json_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+def parse_user_assertions_json(json_data: dict[str, Any] | str) -> list[dict[str, Any]]:
     """
     Parse user assertions JSON into structured data.
 
@@ -488,13 +507,16 @@ def parse_user_assertions_json(json_data: Dict[str, Any]) -> List[Dict[str, Any]
     import json
 
     # If json_data is a string, parse it
+    parsed: dict[str, Any]
     if isinstance(json_data, str):
-        json_data = json.loads(json_data)
+        parsed = json.loads(json_data)
+    else:
+        parsed = json_data
 
-    assertions = json_data.get('assertions', [])
+    assertions: list[dict[str, Any]] = parsed.get('assertions', [])
 
     # Keep the original JSON structure
-    result = []
+    result: list[dict[str, Any]] = []
     for item in assertions:
         result.append({
             'number': item.get('number', 0),

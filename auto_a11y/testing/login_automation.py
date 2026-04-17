@@ -2,9 +2,17 @@
 Login automation for authenticated testing using Playwright
 """
 
+from __future__ import annotations
+
 import logging
-from typing import Dict, Any, Optional
+from typing import Any, cast, TYPE_CHECKING
 from datetime import datetime
+
+from playwright.async_api import Page
+
+if TYPE_CHECKING:
+    from auto_a11y.core.database import Database
+    from auto_a11y.models import WebsiteUser, ProjectUser
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +20,7 @@ logger = logging.getLogger(__name__)
 class LoginAutomation:
     """Handles automated login for authenticated testing"""
 
-    def __init__(self, database: object) -> None:
+    def __init__(self, database: Database) -> None:
         """
         Initialize login automation
 
@@ -23,10 +31,10 @@ class LoginAutomation:
 
     async def perform_login(
         self,
-        browser_page,
-        user: 'WebsiteUser',
+        browser_page: Page,
+        user: WebsiteUser,
         timeout: int = 30000
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Perform automated login for a user
 
@@ -57,7 +65,7 @@ class LoginAutomation:
             # Update user's login status in database
             duration_ms = int((datetime.now() - start_time).total_seconds() * 1000)
             user.mark_login_attempt(result['success'], result.get('error'))
-            self.db.update_project_user(user)
+            self.db.update_project_user(cast(Any, user))
 
             result['duration_ms'] = duration_ms
             return result
@@ -69,7 +77,7 @@ class LoginAutomation:
 
             # Update user's login status
             user.mark_login_attempt(False, error_msg)
-            self.db.update_project_user(user)
+            self.db.update_project_user(cast(Any, user))
 
             return {
                 'success': False,
@@ -79,10 +87,10 @@ class LoginAutomation:
 
     async def _perform_form_login(
         self,
-        browser_page,
-        user: 'WebsiteUser',
+        browser_page: Page,
+        user: WebsiteUser,
         timeout: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Perform form-based login
 
@@ -168,9 +176,9 @@ class LoginAutomation:
 
     async def _perform_basic_auth(
         self,
-        browser_page,
-        user: 'WebsiteUser'
-    ) -> Dict[str, Any]:
+        browser_page: Page,
+        user: WebsiteUser
+    ) -> dict[str, Any]:
         """
         Perform HTTP Basic Authentication
 
@@ -183,9 +191,8 @@ class LoginAutomation:
         """
         try:
             # Set authentication credentials (Playwright API - set on context)
-            await browser_page.context.set_http_credentials({
-                'username': user.username,
-                'password': user.password
+            await browser_page.context.set_extra_http_headers({
+                'Authorization': 'Basic ' + __import__('base64').b64encode(f'{user.username}:{user.password}'.encode()).decode()
             })
 
             logger.info(f"Basic auth credentials set for user: {user.username}")
@@ -198,10 +205,10 @@ class LoginAutomation:
 
     async def perform_logout(
         self,
-        browser_page,
-        user: 'WebsiteUser',
+        browser_page: Page,
+        user: WebsiteUser,
         timeout: int = 30000
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Perform automated logout for a user
 
@@ -298,7 +305,7 @@ class LoginAutomation:
                 'duration_ms': duration_ms
             }
 
-    def is_session_valid(self, user: 'WebsiteUser') -> bool:
+    def is_session_valid(self, user: WebsiteUser) -> bool:
         """
         Check if a user's session is still valid based on timeout
 

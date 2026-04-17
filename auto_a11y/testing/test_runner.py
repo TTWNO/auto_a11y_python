@@ -2,13 +2,16 @@
 Main test runner for accessibility testing
 """
 
+from __future__ import annotations
+
 import asyncio
 import logging
-from typing import Dict, Any, Optional, List
+from typing import Any, Callable, Awaitable, TYPE_CHECKING
 from datetime import datetime
 from pathlib import Path
 import time
 
+from bson import ObjectId
 from auto_a11y.models import Page, PageStatus, TestResult
 from auto_a11y.core.database import Database
 from auto_a11y.core.browser_manager import BrowserManager
@@ -19,40 +22,43 @@ from auto_a11y.testing.script_session_manager import ScriptSessionManager
 from auto_a11y.testing.multi_state_test_runner import MultiStateTestRunner
 from auto_a11y.testing.login_automation import LoginAutomation
 
+if TYPE_CHECKING:
+    from auto_a11y.models import WebsiteUser
+
 logger = logging.getLogger(__name__)
 
 
 class TestRunner:
     """Runs accessibility tests on web pages"""
     
-    def __init__(self, database: Database, browser_config: Dict[str, Any]):
+    def __init__(self, database: Database, browser_config: dict[str, Any]) -> None:
         """
         Initialize test runner
-        
+
         Args:
             database: Database connection
             browser_config: Browser configuration
         """
-        self.db = database
-        self.browser_manager = BrowserManager(browser_config)
-        self.script_injector = ScriptInjector()  # Will use test_config from project
-        self.result_processor = ResultProcessor()
-        self.script_executor = ScriptExecutor()  # For executing page setup scripts
-        self.session_manager = ScriptSessionManager(database)  # For tracking script execution
-        self.multi_state_runner = MultiStateTestRunner(self.script_executor)  # For multi-state testing
-        self.login_automation = LoginAutomation(database)  # For authenticated testing
-        self.screenshot_dir = Path(browser_config.get('SCREENSHOTS_DIR', 'screenshots'))
+        self.db: Database = database
+        self.browser_manager: BrowserManager = BrowserManager(browser_config)
+        self.script_injector: ScriptInjector = ScriptInjector()  # Will use test_config from project
+        self.result_processor: ResultProcessor = ResultProcessor()
+        self.script_executor: ScriptExecutor = ScriptExecutor()  # For executing page setup scripts
+        self.session_manager: ScriptSessionManager = ScriptSessionManager(database)  # For tracking script execution
+        self.multi_state_runner: MultiStateTestRunner = MultiStateTestRunner(self.script_executor)  # For multi-state testing
+        self.login_automation: LoginAutomation = LoginAutomation(database)  # For authenticated testing
+        self.screenshot_dir: Path = Path(browser_config.get('SCREENSHOTS_DIR', 'screenshots'))
         self.screenshot_dir.mkdir(exist_ok=True, parents=True)
-        self._current_website_id = None  # Track current website for session management
-        self._logged_in_user = None  # Track currently logged in user
+        self._current_website_id: str | None = None  # Track current website for session management
+        self._logged_in_user: WebsiteUser | None = None  # Track currently logged in user
     
     async def test_page(
         self,
         page: Page,
         take_screenshot: bool = True,
         run_ai_analysis: bool = False,
-        ai_api_key: Optional[str] = None,
-        website_user_id: Optional[str] = None
+        ai_api_key: str | None = None,
+        website_user_id: str | None = None
     ) -> TestResult:
         """
         Run accessibility tests on a single page
@@ -100,7 +106,7 @@ class TestRunner:
                 if website_user_id:
                     logger.debug(f"DEBUG: Testing page {page.url} with user_id: {website_user_id}")
                     # Try project user first, then website user
-                    user = self.db.get_project_user(website_user_id)
+                    user: Any = self.db.get_project_user(website_user_id)
                     if not user:
                         user = self.db.get_website_user(website_user_id)
                     if user:
@@ -171,7 +177,7 @@ class TestRunner:
 
                 # Get all applicable scripts for this page (website-level + page-level)
                 scripts_to_execute = self.db.get_scripts_for_page_v2(
-                    page_id=page.id,
+                    page_id=page.id or '',
                     website_id=page.website_id,
                     enabled_only=True
                 )
@@ -184,7 +190,7 @@ class TestRunner:
                         result = await self.script_executor.execute_with_session(
                             browser_page,
                             script,
-                            page.id,
+                            page.id or '',
                             self.session_manager
                         )
 
@@ -200,7 +206,7 @@ class TestRunner:
                             logger.info(f"Script '{script.name}' completed successfully in {result['duration_ms']}ms")
                             # Update execution stats
                             self.db.update_script_execution_stats(
-                                script.id,
+                                script.id or '',
                                 success=True,
                                 duration_ms=result['duration_ms']
                             )
@@ -208,7 +214,7 @@ class TestRunner:
                             logger.warning(f"Script '{script.name}' failed: {result.get('error', 'Unknown error')}")
                             # Update execution stats
                             self.db.update_script_execution_stats(
-                                script.id,
+                                script.id or '',
                                 success=False,
                                 duration_ms=result['duration_ms']
                             )
@@ -326,7 +332,7 @@ class TestRunner:
                 screenshot_bytes = None
                 if take_screenshot:
                     # Take screenshot once and reuse bytes for AI analysis
-                    screenshot_path, screenshot_bytes = await self._take_screenshot_with_bytes(browser_page, page.id)
+                    screenshot_path, screenshot_bytes = await self._take_screenshot_with_bytes(browser_page, page.id or '')
                 
                 # Check if project has AI testing enabled
                 ai_findings = []
@@ -419,7 +425,7 @@ class TestRunner:
 
                 # Process results (including AI findings)
                 test_result = self.result_processor.process_test_results(
-                    page_id=page.id,
+                    page_id=page.id or '',
                     raw_results=raw_results,
                     screenshot_path=screenshot_path,
                     duration_ms=duration_ms,
@@ -436,7 +442,7 @@ class TestRunner:
                 if script_violations:
                     logger.info(f"Adding {len(script_violations)} script violations to test result")
                     test_result.violations.extend(script_violations)
-                    test_result.violation_count += len(script_violations)
+                    # violation_count is a read-only property; violations already extended above
 
                 # Add test user information to metadata (Guest or authenticated user)
                 if authenticated_user:
@@ -476,7 +482,8 @@ class TestRunner:
 
                 # Save test result to database
                 result_id = self.db.create_test_result(test_result)
-                test_result._id = result_id
+                from bson import ObjectId as BsonObjectId
+                test_result._id = BsonObjectId(result_id) if isinstance(result_id, str) else result_id
 
                 # Free heavy data from memory now that it's persisted to DB
                 test_result.js_test_results = {}
@@ -515,7 +522,7 @@ class TestRunner:
             
             # Create error result
             test_result = TestResult(
-                page_id=page.id,
+                page_id=page.id or '',
                 test_date=datetime.now(),
                 duration_ms=int((time.time() - start_time) * 1000),
                 error=str(e),
@@ -526,7 +533,7 @@ class TestRunner:
             
             # Save error result
             result_id = self.db.create_test_result(test_result)
-            test_result._id = result_id
+            test_result._id = ObjectId(result_id) if isinstance(result_id, str) else result_id
             
             return test_result
 
@@ -536,9 +543,9 @@ class TestRunner:
         enable_multi_state: bool = True,
         take_screenshot: bool = True,
         run_ai_analysis: bool = False,
-        ai_api_key: Optional[str] = None,
-        website_user_id: Optional[str] = None
-    ) -> List[TestResult]:
+        ai_api_key: str | None = None,
+        website_user_id: str | None = None
+    ) -> list[TestResult]:
         """
         Run accessibility tests on a single page across multiple states
 
@@ -590,7 +597,7 @@ class TestRunner:
             logger.debug(f"DEBUG multi-state: website_user_id={website_user_id}")
             if website_user_id:
                 # Try project user first, then website user
-                user = self.db.get_project_user(website_user_id)
+                user: Any = self.db.get_project_user(website_user_id)
                 logger.debug(f"DEBUG multi-state: get_project_user returned: {user}")
                 if not user:
                     user = self.db.get_website_user(website_user_id)
@@ -647,7 +654,7 @@ class TestRunner:
 
             # Get all applicable scripts for this page
             scripts_to_execute = self.db.get_scripts_for_page_v2(
-                page_id=page.id,
+                page_id=page.id or '',
                 website_id=page.website_id,
                 enabled_only=True
             )
@@ -671,7 +678,7 @@ class TestRunner:
             logger.debug(f"DEBUG: Testing page {page.url} with {len(multi_state_scripts)} multi-state scripts")
 
             # Create a test function that can be called multiple times
-            async def run_single_test(browser_page, page_id):
+            async def run_single_test(browser_page: Any, page_id: str) -> TestResult:
                 """Run accessibility tests and return TestResult"""
                 # Verify browser connection before starting tests
                 try:
@@ -861,7 +868,7 @@ class TestRunner:
             # Run multi-state testing with fresh pages for stability
             results = await self.multi_state_runner.test_page_multi_state(
                 page=browser_page,
-                page_id=page.id,
+                page_id=page.id or '',
                 scripts=multi_state_scripts,
                 test_function=run_single_test,
                 session_id=session_id,
@@ -911,7 +918,7 @@ class TestRunner:
             # Save all results to database and free heavy data from memory
             for result in results:
                 result_id = self.db.create_test_result(result)
-                result._id = result_id
+                result._id = ObjectId(result_id) if isinstance(result_id, str) else result_id
                 result.js_test_results = {}
                 result.ai_analysis_results = {}
 
@@ -952,7 +959,7 @@ class TestRunner:
 
             # Create error result
             test_result = TestResult(
-                page_id=page.id,
+                page_id=page.id or '',
                 test_date=datetime.now(),
                 duration_ms=0,
                 error=str(e),
@@ -963,7 +970,7 @@ class TestRunner:
 
             # Save error result
             result_id = self.db.create_test_result(test_result)
-            test_result._id = result_id
+            test_result._id = ObjectId(result_id) if isinstance(result_id, str) else result_id
 
             return [test_result]
         
@@ -980,12 +987,12 @@ class TestRunner:
 
     async def test_pages(
         self,
-        pages: List[Page],
+        pages: list[Page],
         parallel: int = 1,
         take_screenshots: bool = True,
-        progress_callback: Optional[callable] = None,
-        website_user_id: Optional[str] = None
-    ) -> Dict[str, Any]:
+        progress_callback: Callable[[dict[str, Any]], Awaitable[None]] | None = None,
+        website_user_id: str | None = None
+    ) -> dict[str, Any]:
         """
         Test multiple pages with multi-state support.
 
@@ -1042,12 +1049,15 @@ class TestRunner:
                         total_warnings += result.warning_count
                         total_passes += result.pass_count
                         total_duration_ms += result.duration_ms
+                elif isinstance(result_list, BaseException):
+                    logger.error(f"Test failed with base exception: {result_list}")
                 elif result_list is not None:
+                    single_result: TestResult = result_list
                     total_results += 1
-                    total_violations += result_list.violation_count
-                    total_warnings += result_list.warning_count
-                    total_passes += result_list.pass_count
-                    total_duration_ms += result_list.duration_ms
+                    total_violations += single_result.violation_count
+                    total_warnings += single_result.warning_count
+                    total_passes += single_result.pass_count
+                    total_duration_ms += single_result.duration_ms
 
             # Explicitly free batch results
             del batch_results
@@ -1073,9 +1083,9 @@ class TestRunner:
     async def test_website(
         self,
         website_id: str,
-        page_filter: Optional[Dict[str, Any]] = None,
+        page_filter: dict[str, Any] | None = None,
         parallel: int = 1
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Test all pages in a website
         
@@ -1123,7 +1133,7 @@ class TestRunner:
         summary['website_id'] = website_id
         return summary
     
-    async def _take_screenshot(self, browser_page, page_id: str) -> str:
+    async def _take_screenshot(self, browser_page: Any, page_id: str) -> str | None:
         """
         Take screenshot of page
 
@@ -1162,7 +1172,7 @@ class TestRunner:
             logger.error(f"Failed to take screenshot: {e}")
             return None
 
-    async def _take_screenshot_with_bytes(self, browser_page, page_id: str) -> tuple:
+    async def _take_screenshot_with_bytes(self, browser_page: Any, page_id: str) -> tuple[str | None, bytes | None]:
         """
         Take screenshot of page and return both path and bytes.
 
@@ -1208,18 +1218,18 @@ class TestRunner:
 class TestJob:
     """Represents a testing job"""
     
-    def __init__(self, job_id: str, pages: List[Page]):
+    def __init__(self, job_id: str, pages: list[Page]) -> None:
         """
         Initialize test job
-        
+
         Args:
             job_id: Job ID
             pages: Pages to test
         """
-        self.job_id = job_id
-        self.pages = pages
-        self.status = 'pending'
-        self.progress = {
+        self.job_id: str = job_id
+        self.pages: list[Page] = pages
+        self.status: str = 'pending'
+        self.progress: dict[str, Any] = {
             'total': len(pages),
             'completed': 0,
             'failed': 0,
@@ -1229,10 +1239,10 @@ class TestJob:
             'results': []
         }
     
-    async def run(self, test_runner: TestRunner):
+    async def run(self, test_runner: TestRunner) -> None:
         """
         Run the test job
-        
+
         Args:
             test_runner: Test runner instance
         """

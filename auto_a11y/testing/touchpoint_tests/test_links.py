@@ -15,10 +15,14 @@ WCAG Success Criteria:
 - 2.4.11 Focus Appearance (Level AAA)
 """
 
+from __future__ import annotations
+
 import asyncio
 import logging
+
+from playwright.async_api import Page
 import re
-from typing import Dict, Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +44,7 @@ TEST_DOCUMENTATION = {
 }
 
 
-def parse_color(color_str: str) -> Dict[str, float]:
+def parse_color(color_str: str) -> dict[str, float]:
     """Parse CSS color string to RGBA dict"""
     if not color_str or color_str == 'transparent':
         return {'r': 0, 'g': 0, 'b': 0, 'a': 0}
@@ -67,7 +71,7 @@ def parse_color(color_str: str) -> Dict[str, float]:
     return {'r': 0, 'g': 0, 'b': 0, 'a': 1.0}
 
 
-def get_luminance(color: Dict[str, float]) -> float:
+def get_luminance(color: dict[str, float]) -> float:
     """Calculate relative luminance"""
     r_srgb = color['r'] / 255.0
     g_srgb = color['g'] / 255.0
@@ -80,7 +84,7 @@ def get_luminance(color: Dict[str, float]) -> float:
     return 0.2126 * r + 0.7152 * g + 0.0722 * b
 
 
-def get_contrast_ratio(color1: Dict[str, float], color2: Dict[str, float]) -> float:
+def get_contrast_ratio(color1: dict[str, float], color2: dict[str, float]) -> float:
     """Calculate contrast ratio between two colors"""
     lum1 = get_luminance(color1)
     lum2 = get_luminance(color2)
@@ -138,7 +142,7 @@ def has_gradient_background(bg_str: str) -> bool:
     return 'gradient' in bg_str.lower()
 
 
-def merge_focus_styles(link_data: Dict, css_focus_rules: Optional[Dict]) -> Dict:
+def merge_focus_styles(link_data: dict[str, Any], css_focus_rules: dict[str, Any] | None) -> dict[str, Any]:
     """
     Merge pre-captured CSS focus rules into link data.
     
@@ -203,7 +207,7 @@ def merge_focus_styles(link_data: Dict, css_focus_rules: Optional[Dict]) -> Dict
     return link_data
 
 
-async def test_links(page) -> Dict[str, Any]:
+async def test_links(page: Page) -> dict[str, Any]:
     """
     Test links for visible focus indicators
     
@@ -217,7 +221,7 @@ async def test_links(page) -> Dict[str, Any]:
         dict: Test results with errors, warnings, and passes
     """
 
-    results = {
+    results: dict[str, Any] = {
         'errors': [],
         'warnings': [],
         'passes': [],
@@ -442,7 +446,7 @@ async def test_links(page) -> Dict[str, Any]:
         logger.debug(f"Could not extract page scripts: {e}")
         page_scripts = ""
 
-    def has_space_key_handler(link: Dict) -> bool:
+    def has_space_key_handler(link: dict[str, Any]) -> bool:
         """Check if link has a Space key handler"""
         on_keydown = link.get('onKeyDownAttr', '')
         on_keypress = link.get('onKeyPressAttr', '')
@@ -464,8 +468,8 @@ async def test_links(page) -> Dict[str, Any]:
         if page_scripts and link.get('elementId'):
             element_id = link.get('elementId')
             patterns = [
-                rf'getElementById\(["\']?{re.escape(element_id)}["\']?\)\.addEventListener\s*\(\s*["\']key',
-                rf'#{re.escape(element_id)}.*\.on\s*\(\s*["\']key'
+                rf'getElementById\(["\']?{re.escape(str(element_id))}["\']?\)\.addEventListener\s*\(\s*["\']key',
+                rf'#{re.escape(str(element_id))}.*\.on\s*\(\s*["\']key'
             ]
             for pattern in patterns:
                 match = re.search(pattern, page_scripts, re.IGNORECASE)
@@ -477,7 +481,7 @@ async def test_links(page) -> Dict[str, Any]:
 
         return False
 
-    def has_underline_on_focus(link: Dict) -> bool:
+    def has_underline_on_focus(link: dict[str, Any]) -> bool:
         """Check if link has underline on focus"""
         text_dec = link.get('focusTextDecoration', '')
         text_dec_line = link.get('focusTextDecorationLine', '')

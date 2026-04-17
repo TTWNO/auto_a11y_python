@@ -8,11 +8,15 @@ This avoids the expensive runtime iteration through document.styleSheets
 which can cause browser timeouts on pages with many stylesheets.
 """
 
+from __future__ import annotations
+
 import asyncio
 import logging
 import re
-from typing import Dict, List, Any, Optional, Set
+from typing import Any, Callable
 from dataclasses import dataclass, field
+
+from playwright.async_api import Page, Response
 
 logger = logging.getLogger(__name__)
 
@@ -21,16 +25,16 @@ logger = logging.getLogger(__name__)
 class FocusRule:
     """Represents a CSS focus rule"""
     selector: str
-    properties: Dict[str, str]
+    properties: dict[str, str]
     source_url: str = ""
 
 
 @dataclass
 class CSSFocusCache:
     """Cache for focus rules extracted from stylesheets"""
-    focus_rules: List[FocusRule] = field(default_factory=list)
-    selectors_with_focus: Set[str] = field(default_factory=set)
-    captured_urls: Set[str] = field(default_factory=set)
+    focus_rules: list[FocusRule] = field(default_factory=list)
+    selectors_with_focus: set[str] = field(default_factory=set)
+    captured_urls: set[str] = field(default_factory=set)
     is_complete: bool = False
 
 
@@ -38,13 +42,13 @@ class CSSFocusCapture:
     """Captures and parses CSS focus rules during page load"""
 
     def __init__(self) -> None:
-        self.cache = CSSFocusCache()
-        self._response_handler = None
-        self._page = None
-        self._pending_responses: List[Any] = []
-        self._loop = None
+        self.cache: CSSFocusCache = CSSFocusCache()
+        self._response_handler: Callable[[Response], None] | None = None
+        self._page: Page | None = None
+        self._pending_responses: list[Response] = []
+        self._loop: asyncio.AbstractEventLoop | None = None
     
-    async def start_capture(self, page) -> None:
+    async def start_capture(self, page: Page) -> None:
         """
         Start capturing CSS responses on the page.
         Call this BEFORE navigating to the page.
@@ -61,7 +65,7 @@ class CSSFocusCapture:
         except RuntimeError:
             self._loop = None
         
-        def handle_response(response):
+        def handle_response(response: Response) -> None:
             """Synchronous handler that queues CSS responses for later processing"""
             try:
                 content_type = response.headers.get('content-type', '')
@@ -101,7 +105,7 @@ class CSSFocusCapture:
         logger.debug(f"CSS focus capture stopped. Captured {len(self.cache.captured_urls)} stylesheets, "
                     f"found {len(self.cache.focus_rules)} focus rules")
     
-    async def capture_inline_styles(self, page) -> None:
+    async def capture_inline_styles(self, page: Page) -> None:
         """
         Capture focus rules from inline <style> tags.
         Call this AFTER the page has loaded.
@@ -179,7 +183,7 @@ class CSSFocusCapture:
             except Exception as e:
                 logger.debug(f"Error parsing focus rule: {e}")
     
-    def _parse_properties(self, properties_text: str) -> Dict[str, str]:
+    def _parse_properties(self, properties_text: str) -> dict[str, str]:
         """
         Parse CSS properties from a rule body.
         
@@ -203,7 +207,7 @@ class CSSFocusCapture:
         
         return properties
     
-    def get_focus_styles_for_selector(self, selector: str) -> Optional[Dict[str, str]]:
+    def get_focus_styles_for_selector(self, selector: str) -> dict[str, str] | None:
         """
         Get focus styles that might apply to an element matching the selector.
         
@@ -259,13 +263,13 @@ class CSSFocusCapture:
         """Check if any focus rules were captured"""
         return len(self.cache.focus_rules) > 0
     
-    def get_all_focus_rules(self) -> List[FocusRule]:
+    def get_all_focus_rules(self) -> list[FocusRule]:
         """Get all captured focus rules"""
         return self.cache.focus_rules.copy()
     
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert cache to dictionary for passing to page.evaluate()"""
-        rules_dict = {}
+        rules_dict: dict[str, dict[str, str]] = {}
         
         for rule in self.cache.focus_rules:
             base_selector = rule.selector.replace(':focus-visible', ':focus').replace(':focus-within', ':focus')
@@ -283,22 +287,22 @@ class CSSFocusCapture:
         }
 
 
-_page_css_cache: Dict[int, CSSFocusCapture] = {}
+_page_css_cache: dict[int, CSSFocusCapture] = {}
 
 
-def get_css_capture_for_page(page) -> Optional[CSSFocusCapture]:
+def get_css_capture_for_page(page: Page) -> CSSFocusCapture | None:
     """Get the CSS capture instance for a page"""
     page_id = id(page)
     return _page_css_cache.get(page_id)
 
 
-def set_css_capture_for_page(page, capture: CSSFocusCapture) -> None:
+def set_css_capture_for_page(page: Page, capture: CSSFocusCapture) -> None:
     """Store CSS capture instance for a page"""
     page_id = id(page)
     _page_css_cache[page_id] = capture
 
 
-def clear_css_capture_for_page(page) -> None:
+def clear_css_capture_for_page(page: Page) -> None:
     """Remove CSS capture instance for a page"""
     page_id = id(page)
     if page_id in _page_css_cache:

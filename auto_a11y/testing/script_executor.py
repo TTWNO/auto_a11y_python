@@ -4,23 +4,30 @@ Script executor for running page setup scripts before accessibility testing
 Uses Playwright for browser automation.
 """
 
+from __future__ import annotations
+
 import asyncio
 import logging
 import os
 import time
-from typing import Optional, Dict, Any
+from typing import Any, TYPE_CHECKING
 from pathlib import Path
 
-from playwright.async_api import Page, TimeoutError as PlaywrightTimeoutError
+from playwright.async_api import Page, Locator, TimeoutError as PlaywrightTimeoutError
 
-from auto_a11y.models import PageSetupScript, ActionType, ExecutionTrigger
+from auto_a11y.models import PageSetupScript, ScriptStep, ActionType, ExecutionTrigger
+
+if TYPE_CHECKING:
+    from auto_a11y.testing.script_session_manager import ScriptSessionManager
+    from auto_a11y.models import WebsiteUser
+    from auto_a11y.testing.login_automation import LoginAutomation
 
 logger = logging.getLogger(__name__)
 
 
 class ScriptExecutionError(Exception):
     """Raised when script execution fails"""
-    def __init__(self, message: str, step_number: Optional[int] = None):
+    def __init__(self, message: str, step_number: int | None = None) -> None:
         super().__init__(message)
         self.step_number = step_number
 
@@ -28,7 +35,7 @@ class ScriptExecutionError(Exception):
 class ScriptExecutor:
     """Executes page setup scripts on browser pages"""
 
-    def __init__(self, screenshot_dir: Optional[Path] = None):
+    def __init__(self, screenshot_dir: Path | None = None) -> None:
         """
         Initialize script executor
 
@@ -42,11 +49,11 @@ class ScriptExecutor:
         self,
         page: Page,
         script: PageSetupScript,
-        environment_vars: Optional[Dict[str, str]] = None,
-        authenticated_user=None,
-        login_automation=None,
-        page_url: Optional[str] = None
-    ) -> Dict[str, Any]:
+        environment_vars: dict[str, str] | None = None,
+        authenticated_user: WebsiteUser | None = None,
+        login_automation: LoginAutomation | None = None,
+        page_url: str | None = None
+    ) -> dict[str, Any]:
         """
         Execute a page setup script
 
@@ -156,10 +163,10 @@ class ScriptExecutor:
                 'duration_ms': duration_ms,
                 'steps_executed': len(execution_log),
                 'execution_log': execution_log,
-                'error': str(e) if 'e' in locals() else 'Unknown error'
+                'error': 'Script execution failed'
             }
 
-    async def _find_element(self, page: Page, selector: str):
+    async def _find_element(self, page: Page, selector: str) -> Locator | None:
         """
         Find element by CSS selector or XPath
 
@@ -185,7 +192,7 @@ class ScriptExecutor:
         except Exception:
             return None
 
-    async def _wait_for_selector(self, page: Page, selector: str, timeout: int):
+    async def _wait_for_selector(self, page: Page, selector: str, timeout: int) -> None:
         """
         Wait for element by CSS selector or XPath
 
@@ -213,9 +220,9 @@ class ScriptExecutor:
     async def _execute_step(
         self,
         page: Page,
-        step,
-        env_vars: Dict[str, str]
-    ):
+        step: ScriptStep,
+        env_vars: dict[str, str]
+    ) -> None:
         """
         Execute a single script step
 
@@ -225,6 +232,7 @@ class ScriptExecutor:
             env_vars: Environment variables for substitution
         """
         action = step.action_type
+        selector = step.selector or ""
 
         # Substitute environment variables in value
         value = self._substitute_env_vars(step.value, env_vars) if step.value else None
@@ -232,28 +240,28 @@ class ScriptExecutor:
         if action == ActionType.CLICK:
             timeout_ms = step.timeout or 5000
             # Get the selector in Playwright format
-            selector = f"xpath={step.selector}" if step.selector.startswith('/') else step.selector
+            pw_selector = f"xpath={selector}" if selector.startswith('/') else selector
 
             try:
                 # Playwright's click auto-waits for element, so we can use it directly
-                await page.click(selector, timeout=timeout_ms)
+                await page.click(pw_selector, timeout=timeout_ms)
                 # Allow time for click effects to settle
                 await asyncio.sleep(0.3)
             except PlaywrightTimeoutError:
-                raise ScriptExecutionError(f"Timeout waiting for element: {step.selector}")
+                raise ScriptExecutionError(f"Timeout waiting for element: {selector}")
             except Exception as click_err:
                 raise ScriptExecutionError(f"Click failed: {click_err}")
 
         elif action == ActionType.TYPE:
             # Get the selector in Playwright format
-            selector = f"xpath={step.selector}" if step.selector.startswith('/') else step.selector
+            pw_selector = f"xpath={selector}" if selector.startswith('/') else selector
             timeout_ms = step.timeout or 5000
 
             try:
                 # Playwright's fill() auto-waits and clears before typing
-                await page.fill(selector, value, timeout=timeout_ms)
+                await page.fill(pw_selector, value or '', timeout=timeout_ms)
             except PlaywrightTimeoutError:
-                raise ScriptExecutionError(f"Timeout waiting for element: {step.selector}")
+                raise ScriptExecutionError(f"Timeout waiting for element: {selector}")
             except Exception as e:
                 raise ScriptExecutionError(f"Type failed: {e}")
 
@@ -264,7 +272,7 @@ class ScriptExecutor:
 
         elif action == ActionType.WAIT_FOR_SELECTOR:
             # Wait for element to appear
-            await self._wait_for_selector(page, step.selector, step.timeout)
+            await self._wait_for_selector(page, selector, step.timeout)
 
         elif action == ActionType.WAIT_FOR_NAVIGATION:
             # Wait for page navigation
@@ -282,7 +290,7 @@ class ScriptExecutor:
 
         elif action == ActionType.SCROLL:
             # Scroll to element - use Playwright locator
-            selector = f"xpath={step.selector}" if step.selector.startswith('/') else step.selector
+            pw_selector = f"xpath={selector}" if selector.startswith('/') else selector
             try:
                 await page.locator(selector).scroll_into_view_if_needed()
             except Exception as e:
@@ -290,17 +298,17 @@ class ScriptExecutor:
 
         elif action == ActionType.SELECT:
             # Select dropdown option
-            selector = f"xpath={step.selector}" if step.selector.startswith('/') else step.selector
+            pw_selector = f"xpath={selector}" if selector.startswith('/') else selector
             try:
-                await page.select_option(selector, value)
+                await page.select_option(pw_selector, value or '')
             except Exception as e:
                 raise ScriptExecutionError(f"Select failed: {e}")
 
         elif action == ActionType.HOVER:
             # Hover over element
-            selector = f"xpath={step.selector}" if step.selector.startswith('/') else step.selector
+            pw_selector = f"xpath={selector}" if selector.startswith('/') else selector
             try:
-                await page.hover(selector)
+                await page.hover(pw_selector)
             except Exception as e:
                 raise ScriptExecutionError(f"Hover failed: {e}")
 
@@ -311,7 +319,7 @@ class ScriptExecutor:
         else:
             raise ScriptExecutionError(f"Unknown action type: {action}")
 
-    def _substitute_env_vars(self, value: str, env_vars: Dict[str, str]) -> str:
+    def _substitute_env_vars(self, value: str, env_vars: dict[str, str]) -> str:
         """
         Substitute ${ENV:VAR_NAME} patterns with environment variables
 
@@ -328,14 +336,14 @@ class ScriptExecutor:
         import re
         pattern = r'\$\{ENV:([A-Z_][A-Z0-9_]*)\}'
 
-        def replace_var(match):
+        def replace_var(match: re.Match[str]) -> str:
             var_name = match.group(1)
             # Check provided env_vars first, then os.environ
             return env_vars.get(var_name, os.environ.get(var_name, ''))
 
         return re.sub(pattern, replace_var, value)
 
-    async def _validate_execution(self, page: Page, script: PageSetupScript):
+    async def _validate_execution(self, page: Page, script: PageSetupScript) -> None:
         """
         Validate script execution using validation rules
 
@@ -379,10 +387,10 @@ class ScriptExecutor:
     async def _take_debug_screenshot(
         self,
         page: Page,
-        script: Optional[PageSetupScript],
-        step,
+        script: PageSetupScript | None,
+        step: ScriptStep,
         error: bool = False
-    ):
+    ) -> None:
         """
         Take a debug screenshot
 
@@ -409,9 +417,9 @@ class ScriptExecutor:
         page: Page,
         script: PageSetupScript,
         page_id: str,
-        session_manager: 'ScriptSessionManager',
-        environment_vars: Optional[Dict[str, str]] = None
-    ) -> Dict[str, Any]:
+        session_manager: ScriptSessionManager,
+        environment_vars: dict[str, str] | None = None
+    ) -> dict[str, Any]:
         """
         Execute script with session awareness
 
@@ -438,7 +446,7 @@ class ScriptExecutor:
 
         # For conditional trigger, check if element exists first
         if script.trigger == ExecutionTrigger.CONDITIONAL:
-            condition_met = await self._check_condition(page, script.condition_selector)
+            condition_met = await self._check_condition(page, script.condition_selector or '')
 
             logger.debug(
                 f"Condition check for script '{script.name}': "
@@ -451,7 +459,7 @@ class ScriptExecutor:
                 script, page_id, condition_met
             )
             if violation:
-                logger.warning(f"Condition violation detected: {violation.message}")
+                logger.warning(f"Condition violation detected: {violation.description}")
                 return {
                     'success': True,
                     'skipped': True,
@@ -499,7 +507,7 @@ class ScriptExecutor:
         # Mark as executed in session if successful
         if result['success']:
             session_manager.mark_executed(
-                script.id,
+                script.id or '',
                 page_id,
                 success=True,
                 duration_ms=duration_ms
@@ -509,7 +517,7 @@ class ScriptExecutor:
             )
         else:
             session_manager.mark_executed(
-                script.id,
+                script.id or '',
                 page_id,
                 success=False,
                 duration_ms=duration_ms
@@ -536,7 +544,7 @@ class ScriptExecutor:
             logger.debug(f"Error checking condition selector '{selector}': {e}")
             return False
 
-    async def _clear_browser_state(self, page: Page, script: PageSetupScript):
+    async def _clear_browser_state(self, page: Page, script: PageSetupScript) -> None:
         """
         Clear cookies and/or localStorage before script execution
 

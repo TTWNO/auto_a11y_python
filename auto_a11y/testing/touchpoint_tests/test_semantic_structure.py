@@ -3,8 +3,12 @@ Semantic Structure touchpoint test module
 Tests HTML document structure including DOCTYPE declaration
 """
 
-from typing import Dict, Any
+from __future__ import annotations
+
+from typing import Any
 import logging
+
+from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +29,7 @@ TEST_DOCUMENTATION = {
     ]
 }
 
-async def test_semantic_structure(page) -> Dict[str, Any]:
+async def test_semantic_structure(page: Page) -> dict[str, Any]:
     """
     Test HTML document semantic structure
 
@@ -41,7 +45,7 @@ async def test_semantic_structure(page) -> Dict[str, Any]:
     """
     try:
         # Execute JavaScript to check DOCTYPE
-        results = await page.evaluate('''
+        results: dict[str, Any] = await page.evaluate('''
             () => {
                 const results = {
                     applicable: true,

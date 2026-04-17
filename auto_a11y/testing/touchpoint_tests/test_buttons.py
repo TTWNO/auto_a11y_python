@@ -3,8 +3,12 @@ Button touchpoint test module
 Tests for proper button focus indicators and keyboard accessibility.
 """
 
-from typing import Dict, Any
+from __future__ import annotations
+
+from typing import Any
 import logging
+
+from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +29,7 @@ TEST_DOCUMENTATION = {
     ]
 }
 
-async def test_buttons(page) -> Dict[str, Any]:
+async def test_buttons(page: Page) -> dict[str, Any]:
     """
     Test button focus indicators for keyboard accessibility
 
@@ -358,7 +362,7 @@ async def test_buttons(page) -> Dict[str, Any]:
             }
         ''')
 
-        results = {
+        results: dict[str, Any] = {
             'applicable': True,
             'errors': [],
             'warnings': [],
@@ -379,7 +383,7 @@ async def test_buttons(page) -> Dict[str, Any]:
         results['elements_tested'] = len(button_data)
 
         # Helper function to parse color values
-        def parse_color(color_str):
+        def parse_color(color_str: str | None) -> dict[str, float]:
             if not color_str or color_str == 'transparent':
                 return {'r': 0, 'g': 0, 'b': 0, 'a': 0}
 
@@ -407,7 +411,7 @@ async def test_buttons(page) -> Dict[str, Any]:
 
             return {'r': 0, 'g': 0, 'b': 0, 'a': 1.0}
 
-        def get_luminance(color):
+        def get_luminance(color: dict[str, float]) -> float:
             r_srgb = color['r'] / 255.0
             g_srgb = color['g'] / 255.0
             b_srgb = color['b'] / 255.0
@@ -418,7 +422,7 @@ async def test_buttons(page) -> Dict[str, Any]:
 
             return 0.2126 * r + 0.7152 * g + 0.0722 * b
 
-        def get_contrast_ratio(color1, color2):
+        def get_contrast_ratio(color1: dict[str, float], color2: dict[str, float]) -> float:
             lum1 = get_luminance(color1)
             lum2 = get_luminance(color2)
             lighter = max(lum1, lum2)
@@ -426,7 +430,7 @@ async def test_buttons(page) -> Dict[str, Any]:
             return (lighter + 0.05) / (darker + 0.05)
 
         # Helper function to parse px values (including em/rem)
-        def parse_px(value_str, font_size=16, root_font_size=16):
+        def parse_px(value_str: str | None, font_size: float = 16, root_font_size: float = 16) -> float:
             """Parse CSS pixel values, return float or 0
 
             Args:
@@ -479,19 +483,19 @@ async def test_buttons(page) -> Dict[str, Any]:
                 return 0.0
 
         # Helper to detect gradient backgrounds
-        def has_gradient_background(bg_str):
+        def has_gradient_background(bg_str: str | None) -> bool:
             if not bg_str:
                 return False
             return 'gradient' in bg_str.lower()
 
         # Helper to detect image backgrounds
-        def has_image_background(bg_str):
+        def has_image_background(bg_str: str | None) -> bool:
             if not bg_str:
                 return False
             return 'url(' in bg_str.lower()
 
         # Helper to analyze box-shadow (check if it's on all sides)
-        def is_single_side_box_shadow(box_shadow_str):
+        def is_single_side_box_shadow(box_shadow_str: str | None) -> bool:
             """Check if box-shadow only appears on one side (not all around)"""
             if not box_shadow_str or box_shadow_str == 'none':
                 return False
@@ -513,7 +517,7 @@ async def test_buttons(page) -> Dict[str, Any]:
                 y_offset_str = match.group(2)
 
                 # Simple px parser for box-shadow (usually in px)
-                def simple_parse_px(val_str):
+                def simple_parse_px(val_str: str | None) -> float:
                     if not val_str:
                         return 0.0
                     val_str = val_str.strip()
@@ -537,7 +541,7 @@ async def test_buttons(page) -> Dict[str, Any]:
             return False
 
         # Helper to detect clip-path (non-rectangular buttons)
-        def has_clip_path(clip_path_str):
+        def has_clip_path(clip_path_str: str | None) -> bool:
             """Check if button has non-rectangular clip-path"""
             if not clip_path_str or clip_path_str == 'none':
                 return False

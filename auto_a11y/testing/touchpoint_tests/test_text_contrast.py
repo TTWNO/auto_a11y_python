@@ -3,8 +3,12 @@ Text contrast touchpoint test module
 Tests for WCAG text contrast requirements at AA and AAA levels for normal and large text.
 """
 
-from typing import Dict, Any
+from __future__ import annotations
+
+from typing import Any
 import logging
+
+from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +50,7 @@ TEST_DOCUMENTATION = {
     ]
 }
 
-async def test_text_contrast(page) -> Dict[str, Any]:
+async def test_text_contrast(page: Page) -> dict[str, Any]:
     """
     Test text color contrast against background colors
 
@@ -101,7 +105,7 @@ async def test_text_contrast(page) -> Dict[str, Any]:
         ''')
 
         # Aggregate results across all breakpoints
-        results = {
+        results: dict[str, Any] = {
             'applicable': True,
             'errors': [],
             'warnings': [],
@@ -933,12 +937,12 @@ async def test_text_contrast(page) -> Dict[str, Any]:
                 deduped_errors.append(err)
         results['errors'] = deduped_errors
 
-        seen_warning_xpaths = set()
-        deduped_warnings = []
+        seen_warning_xpaths: set[tuple[Any, ...]] = set()
+        deduped_warnings: list[Any] = []
         for warn in results['warnings']:
-            key = (warn.get('xpath', ''), warn.get('err', ''))
-            if key not in seen_warning_xpaths:
-                seen_warning_xpaths.add(key)
+            warn_key: tuple[Any, ...] = (warn.get('xpath', ''), warn.get('err', ''))
+            if warn_key not in seen_warning_xpaths:
+                seen_warning_xpaths.add(warn_key)
                 deduped_warnings.append(warn)
         results['warnings'] = deduped_warnings
 

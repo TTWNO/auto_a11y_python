@@ -3,9 +3,13 @@ Accessible Names touchpoint test module
 Analyzes all interactive elements for proper accessible names using the W3C accessible name computation algorithm.
 """
 
+from __future__ import annotations
+
 from datetime import datetime
-from typing import Dict, Any, List, Optional
+from typing import Any
 import logging
+
+from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +58,7 @@ TEST_DOCUMENTATION = {
     ]
 }
 
-async def test_accessible_names(page) -> Dict[str, Any]:
+async def test_accessible_names(page: Page) -> dict[str, Any]:
     """
     Test accessible names for all visible elements, ensuring they have appropriate labels.
     Uses the W3C accessible name computation algorithm.
@@ -67,7 +71,7 @@ async def test_accessible_names(page) -> Dict[str, Any]:
     """
     try:
         # Execute JavaScript to analyze accessible names
-        results = await page.evaluate('''
+        results: dict[str, Any] = await page.evaluate('''
             () => {
                 const results = {
                     applicable: true,

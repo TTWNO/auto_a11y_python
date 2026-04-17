@@ -8,9 +8,11 @@ much faster than restarting the browser between states (the approach required
 with Pyppeteer due to connection instability).
 """
 
+from __future__ import annotations
+
 import asyncio
 import logging
-from typing import List, Dict, Any, Optional
+from typing import Any, Callable, Awaitable, TYPE_CHECKING
 from datetime import datetime
 import uuid
 
@@ -20,6 +22,10 @@ from auto_a11y.models import TestResult, PageSetupScript, PageTestState
 from auto_a11y.testing.state_validator import StateValidator
 from auto_a11y.testing.script_executor import ScriptExecutor
 
+if TYPE_CHECKING:
+    from auto_a11y.core.browser_manager import BrowserManager
+    from auto_a11y.testing.login_automation import LoginAutomation
+    from auto_a11y.models import WebsiteUser
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +33,7 @@ logger = logging.getLogger(__name__)
 class MultiStateTestRunner:
     """Execute tests across multiple page states using browser context isolation"""
 
-    def __init__(self, script_executor: ScriptExecutor):
+    def __init__(self, script_executor: ScriptExecutor) -> None:
         """
         Initialize multi-state test runner
 
@@ -39,11 +45,11 @@ class MultiStateTestRunner:
 
     async def _create_fresh_context_and_page(
         self,
-        browser_manager,
-        authenticated_user,
-        login_automation,
+        browser_manager: BrowserManager,
+        authenticated_user: WebsiteUser | None,
+        login_automation: LoginAutomation | None,
         page_url: str
-    ) -> tuple:
+    ) -> tuple[BrowserContext, Page]:
         """
         Create a fresh browser context and page for testing a new state.
 
@@ -87,17 +93,17 @@ class MultiStateTestRunner:
 
     async def test_page_multi_state(
         self,
-        page,
+        page: Page,
         page_id: str,
-        scripts: List[PageSetupScript],
-        test_function,
-        session_id: str,
-        environment_vars: Optional[Dict[str, str]] = None,
-        browser_manager=None,
-        page_url: Optional[str] = None,
-        authenticated_user=None,
-        login_automation=None
-    ) -> List[TestResult]:
+        scripts: list[PageSetupScript],
+        test_function: Callable[[Page, str], Awaitable[TestResult]],
+        session_id: str | None,
+        environment_vars: dict[str, str] | None = None,
+        browser_manager: BrowserManager | None = None,
+        page_url: str | None = None,
+        authenticated_user: WebsiteUser | None = None,
+        login_automation: LoginAutomation | None = None
+    ) -> list[TestResult]:
         """
         Test page across multiple states using browser context isolation.
 
@@ -197,7 +203,8 @@ class MultiStateTestRunner:
                 logger.warning(f"Script '{script.name}' failed, skipping tests for this state")
                 continue
 
-            scripts_executed_so_far.append(script.id)
+            if script.id is not None:
+                scripts_executed_so_far.append(script.id)
 
             # Brief wait for page to stabilize after script
             await asyncio.sleep(0.5)
@@ -278,11 +285,11 @@ class MultiStateTestRunner:
         self,
         page: Page,
         page_id: str,
-        button_selectors: List[str],
-        test_function,
+        button_selectors: list[str],
+        test_function: Callable[[Page, str], Awaitable[TestResult]],
         session_id: str,
         reload_between_tests: bool = True
-    ) -> List[TestResult]:
+    ) -> list[TestResult]:
         """
         Test page by iterating through buttons
 
@@ -392,7 +399,7 @@ class MultiStateTestRunner:
 
         return results
 
-    async def _clear_browser_state(self, page: Page, script: PageSetupScript):
+    async def _clear_browser_state(self, page: Page, script: PageSetupScript) -> None:
         """
         Clear cookies and/or localStorage before script execution
 
@@ -422,12 +429,12 @@ class MultiStateTestRunner:
         self,
         page: Page,
         page_id: str,
-        test_state_matrix,  # TestStateMatrix instance
-        scripts_by_id: Dict[str, PageSetupScript],
-        test_function,
+        test_state_matrix: Any,  # TestStateMatrix instance
+        scripts_by_id: dict[str, PageSetupScript],
+        test_function: Callable[[Page, str], Awaitable[TestResult]],
         session_id: str,
-        environment_vars: Optional[Dict[str, str]] = None
-    ) -> List[TestResult]:
+        environment_vars: dict[str, str] | None = None
+    ) -> list[TestResult]:
         """
         Test page using a state matrix to define which combinations to test
 

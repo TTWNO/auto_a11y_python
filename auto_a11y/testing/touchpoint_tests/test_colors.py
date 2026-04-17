@@ -3,8 +3,12 @@ Colors touchpoint test module
 Evaluates color usage and contrast ratios on the page to ensure content is perceivable by users with low vision.
 """
 
-from typing import Dict, Any
+from __future__ import annotations
+
+from typing import Any
 import logging
+
+from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +29,7 @@ TEST_DOCUMENTATION = {
     ]
 }
 
-async def test_colors(page) -> Dict[str, Any]:
+async def test_colors(page: Page) -> dict[str, Any]:
     """
     Test color usage and contrast requirements across the page
     
@@ -37,7 +41,7 @@ async def test_colors(page) -> Dict[str, Any]:
     """
     try:
         # Execute JavaScript to analyze colors and contrast
-        results = await page.evaluate('''
+        results: dict[str, Any] = await page.evaluate('''
             () => {
                 const results = {
                     applicable: true,

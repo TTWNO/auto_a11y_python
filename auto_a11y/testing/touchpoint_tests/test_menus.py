@@ -3,9 +3,13 @@ Menus touchpoint test module
 Evaluates website navigation menus and landmarks for proper semantic structure and ARIA attributes.
 """
 
+from __future__ import annotations
+
 from datetime import datetime
-from typing import Dict, Any, List, Optional
+from typing import Any
 import logging
+
+from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +51,7 @@ TEST_DOCUMENTATION = {
     ]
 }
 
-async def test_menus(page) -> Dict[str, Any]:
+async def test_menus(page: Page) -> dict[str, Any]:
     """
     Test proper implementation of menus and navigation
     
@@ -59,7 +63,7 @@ async def test_menus(page) -> Dict[str, Any]:
     """
     try:
         # Execute JavaScript to analyze menus and navigation
-        results = await page.evaluate('''
+        results: dict[str, Any] = await page.evaluate('''
             () => {
                 const results = {
                     applicable: true,

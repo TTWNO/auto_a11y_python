@@ -3,9 +3,13 @@ Event Handlers touchpoint test module
 Analyzes page for event handling accessibility issues and keyboard navigation patterns.
 """
 
+from __future__ import annotations
+
 from datetime import datetime
-from typing import Dict, Any, List, Optional
+from typing import Any
 import logging
+
+from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +65,7 @@ TEST_DOCUMENTATION = {
     ]
 }
 
-async def test_event_handlers(page) -> Dict[str, Any]:
+async def test_event_handlers(page: Page) -> dict[str, Any]:
     """
     Test event handlers and tab order accessibility requirements
     
@@ -73,7 +77,7 @@ async def test_event_handlers(page) -> Dict[str, Any]:
     """
     try:
         # Execute JavaScript to analyze event handlers
-        results = await page.evaluate('''
+        results: dict[str, Any] = await page.evaluate('''
             () => {
                 const results = {
                     applicable: true,
@@ -724,7 +728,7 @@ async def test_event_handlers(page) -> Dict[str, Any]:
         if focus_elements:
             import re
 
-            def parse_px(value):
+            def parse_px(value: str | None) -> float:
                 """Parse pixel value from CSS string"""
                 if not value:
                     return 0
@@ -735,7 +739,7 @@ async def test_event_handlers(page) -> Dict[str, Any]:
                 except:
                     return 0
 
-            def parse_color(color_str):
+            def parse_color(color_str: str | None) -> dict[str, float]:
                 """Parse CSS color to RGBA dict"""
                 if not color_str or color_str == 'transparent' or color_str == 'initial':
                     return {'r': 0, 'g': 0, 'b': 0, 'a': 0}
@@ -758,7 +762,7 @@ async def test_event_handlers(page) -> Dict[str, Any]:
                     }
                 return {'r': 0, 'g': 0, 'b': 0, 'a': 1}
 
-            def get_luminance(color):
+            def get_luminance(color: dict[str, float]) -> float:
                 """Calculate relative luminance"""
                 r = color['r'] / 255.0
                 g = color['g'] / 255.0
@@ -768,7 +772,7 @@ async def test_event_handlers(page) -> Dict[str, Any]:
                 b = b / 12.92 if b <= 0.03928 else ((b + 0.055) / 1.055) ** 2.4
                 return 0.2126 * r + 0.7152 * g + 0.0722 * b
 
-            def get_contrast_ratio(color1, color2):
+            def get_contrast_ratio(color1: dict[str, float], color2: dict[str, float]) -> float:
                 """Calculate contrast ratio between two colors"""
                 l1 = get_luminance(color1)
                 l2 = get_luminance(color2)

@@ -3,9 +3,13 @@ Modals touchpoint test module
 Evaluates modal dialogs for proper accessibility implementation.
 """
 
+from __future__ import annotations
+
 from datetime import datetime
-from typing import Dict, Any, List, Optional
+from typing import Any
 import logging
+
+from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +51,7 @@ TEST_DOCUMENTATION = {
     ]
 }
 
-async def test_modals(page) -> Dict[str, Any]:
+async def test_modals(page: Page) -> dict[str, Any]:
     """
     Test modal dialogs for accessibility requirements including proper headings
 
@@ -59,7 +63,7 @@ async def test_modals(page) -> Dict[str, Any]:
     """
     try:
         # Execute JavaScript to analyze modals
-        results = await page.evaluate('''
+        results: dict[str, Any] = await page.evaluate('''
             () => {
                 const results = {
                     applicable: true,

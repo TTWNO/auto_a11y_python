@@ -3,14 +3,18 @@ Language touchpoint test module
 Tests language declarations and attributes for accessibility compliance.
 """
 
-from typing import Dict, Any, List, Set
+from __future__ import annotations
+
+from typing import Any
 import logging
+
+from playwright.async_api import Page
 import re
 
 logger = logging.getLogger(__name__)
 
 # ISO 639-1 two-letter language codes (most widely supported)
-VALID_LANGUAGE_CODES: Set[str] = {
+VALID_LANGUAGE_CODES: set[str] = {
     'aa', 'ab', 'ae', 'af', 'ak', 'am', 'an', 'ar', 'as', 'av', 'ay', 'az',
     'ba', 'be', 'bg', 'bh', 'bi', 'bm', 'bn', 'bo', 'br', 'bs',
     'ca', 'ce', 'ch', 'co', 'cr', 'cs', 'cu', 'cv', 'cy',
@@ -40,7 +44,7 @@ VALID_LANGUAGE_CODES: Set[str] = {
 }
 
 # ISO 3166-1 alpha-2 region codes (subset of most common ones)
-VALID_REGION_CODES: Set[str] = {
+VALID_REGION_CODES: set[str] = {
     'AD', 'AE', 'AF', 'AG', 'AL', 'AM', 'AO', 'AR', 'AT', 'AU', 'AZ',
     'BA', 'BB', 'BD', 'BE', 'BF', 'BG', 'BH', 'BI', 'BJ', 'BN', 'BO', 'BR', 'BS', 'BT', 'BW', 'BY', 'BZ',
     'CA', 'CD', 'CF', 'CG', 'CH', 'CI', 'CL', 'CM', 'CN', 'CO', 'CR', 'CU', 'CV', 'CY', 'CZ',
@@ -146,7 +150,7 @@ def validate_language_code(lang_code: str) -> tuple[bool, bool, bool, bool, str,
     return (True, is_correctly_formatted, is_recognized_lang, is_recognized_region, primary_lang, region_code)
 
 
-async def test_language(page) -> Dict[str, Any]:
+async def test_language(page: Page) -> dict[str, Any]:
     """
     Test language declarations and attributes.
 
@@ -234,7 +238,7 @@ async def test_language(page) -> Dict[str, Any]:
             }
         ''')
 
-        results = {
+        results: dict[str, Any] = {
             'applicable': True,
             'errors': [],
             'warnings': [],
@@ -353,7 +357,7 @@ async def test_language(page) -> Dict[str, Any]:
 
         # Test 2: Language changes on other elements
         if lang_data['elementsWithLang']:
-            lang_change_check = {
+            lang_change_check: dict[str, Any] = {
                 'description': 'Language changes properly marked',
                 'wcag': ['3.1.2'],
                 'total': len(lang_data['elementsWithLang']),
@@ -513,7 +517,7 @@ async def test_language(page) -> Dict[str, Any]:
 
         # Test 3: XML:lang attribute on HTML element with full validation
         if lang_data['htmlHasXmlLang']:
-            xml_lang_check = {
+            xml_lang_check: dict[str, Any] = {
                 'description': 'XML:lang attribute is valid',
                 'wcag': ['3.1.1'],
                 'total': 1,
@@ -619,7 +623,7 @@ async def test_language(page) -> Dict[str, Any]:
 
         # Test 4: Hreflang attributes
         if lang_data['elementsWithHreflang']:
-            hreflang_check = {
+            hreflang_check: dict[str, Any] = {
                 'description': 'Hreflang attributes properly used',
                 'wcag': ['3.1.1'],
                 'total': len(lang_data['elementsWithHreflang']),

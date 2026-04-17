@@ -3,9 +3,13 @@ Lists touchpoint test module
 Evaluates the implementation and styling of HTML lists to ensure proper semantic structure.
 """
 
+from __future__ import annotations
+
 from datetime import datetime
-from typing import Dict, Any, List, Optional
+from typing import Any
 import logging
+
+from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +51,7 @@ TEST_DOCUMENTATION = {
     ]
 }
 
-async def test_lists(page) -> Dict[str, Any]:
+async def test_lists(page: Page) -> dict[str, Any]:
     """
     Test proper implementation of lists and their styling
     
@@ -59,7 +63,7 @@ async def test_lists(page) -> Dict[str, Any]:
     """
     try:
         # Execute JavaScript to analyze lists
-        results = await page.evaluate(r'''
+        results: dict[str, Any] = await page.evaluate(r'''
             () => {
                 const results = {
                     applicable: true,

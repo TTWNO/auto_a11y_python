@@ -3,9 +3,13 @@ Forms touchpoint test module
 Evaluates web forms for accessibility requirements including proper labeling, structure, and contrast.
 """
 
+from __future__ import annotations
+
 from datetime import datetime
-from typing import Dict, Any, List, Optional
+from typing import Any
 import logging
+
+from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +51,7 @@ TEST_DOCUMENTATION = {
     ]
 }
 
-async def test_forms(page) -> Dict[str, Any]:
+async def test_forms(page: Page) -> dict[str, Any]:
     """
     Test forms for accessibility requirements
     
@@ -59,7 +63,7 @@ async def test_forms(page) -> Dict[str, Any]:
     """
     try:
         # Execute JavaScript to analyze forms
-        results = await page.evaluate('''
+        results: dict[str, Any] = await page.evaluate('''
             () => {
                 const results = {
                     applicable: true,
@@ -785,7 +789,7 @@ async def test_forms(page) -> Dict[str, Any]:
 
         # TEST INPUT FIELD FOCUS INDICATORS
         # Extract focus styles from stylesheets for text input fields
-        input_styles = await page.evaluate('''
+        input_styles: list[dict[str, Any]] = await page.evaluate('''
             () => {
                 const inputs = [];
                 const fields = document.querySelectorAll('input[type="text"], input[type="email"], input[type="password"], input[type="search"], input[type="tel"], input[type="url"], input[type="number"], textarea, input:not([type])');
@@ -1061,15 +1065,15 @@ async def test_forms(page) -> Dict[str, Any]:
         if input_styles:
             import re
 
-            def parse_px(value):
+            def parse_px(value: str | None) -> float:
                 if not value or value == 'auto': return 0
                 try:
                     if 'em' in value:
                         return float(value.replace('em', '').replace('rem', '')) * 16
                     return float(value.replace('px', ''))
-                except: return 0
+                except Exception: return 0
 
-            def parse_color(color_str):
+            def parse_color(color_str: str | None) -> dict[str, float]:
                 if not color_str: return {'r': 0, 'g': 0, 'b': 0, 'a': 1}
                 rgba_match = re.match(r'rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)', color_str)
                 if rgba_match:
@@ -1078,9 +1082,9 @@ async def test_forms(page) -> Dict[str, Any]:
                             'a': float(rgba_match.group(4)) if rgba_match.group(4) else 1.0}
                 return {'r': 0, 'g': 0, 'b': 0, 'a': 1}
 
-            def get_contrast_ratio(color1, color2):
-                def luminance(c):
-                    def adjust(val):
+            def get_contrast_ratio(color1: dict[str, float], color2: dict[str, float]) -> float:
+                def luminance(c: dict[str, float]) -> float:
+                    def adjust(val: float) -> float:
                         val = val / 255.0
                         return val / 12.92 if val <= 0.03928 else ((val + 0.055) / 1.055) ** 2.4
                     return 0.2126 * adjust(c['r']) + 0.7152 * adjust(c['g']) + 0.0722 * adjust(c['b'])
@@ -1088,13 +1092,13 @@ async def test_forms(page) -> Dict[str, Any]:
                 l2 = luminance(color2)
                 return (max(l1, l2) + 0.05) / (min(l1, l2) + 0.05)
 
-            def has_gradient_background(bg_string):
+            def has_gradient_background(bg_string: str | None) -> bool:
                 if not bg_string or bg_string == 'none':
                     return False
                 gradient_patterns = ['linear-gradient', 'radial-gradient', 'repeating-linear-gradient', 'repeating-radial-gradient', 'conic-gradient']
                 return any(pattern in bg_string for pattern in gradient_patterns)
 
-            def has_image_background(bg_string):
+            def has_image_background(bg_string: str | None) -> bool:
                 if not bg_string or bg_string == 'none':
                     return False
                 # Check for url() but exclude gradient data URIs
@@ -1104,9 +1108,9 @@ async def test_forms(page) -> Dict[str, Any]:
                     return True
                 return False
 
-            def check_input_border_contrast(field):
+            def check_input_border_contrast(field: dict[str, Any]) -> list[tuple[str, ...]]:
                 """Check contrast of focus border when border thickens"""
-                issues = []
+                issues: list[tuple[str, ...]] = []
 
                 # Parse border dimensions
                 normal_border_width = parse_px(field.get('normalBorderWidth', '0px'))
@@ -1153,9 +1157,9 @@ async def test_forms(page) -> Dict[str, Any]:
 
                 return issues
 
-            def check_input_outline_contrast(field):
+            def check_input_outline_contrast(field: dict[str, Any]) -> list[tuple[str, ...]]:
                 """Check contrast of focus outline using button algorithm logic"""
-                issues = []
+                issues: list[tuple[str, ...]] = []
 
                 # Parse outline dimensions
                 outline_width = parse_px(field.get('focusOutlineWidth', '0px'))
@@ -1256,7 +1260,7 @@ async def test_forms(page) -> Dict[str, Any]:
                 violation_reason = None
 
                 element_id = f"#{field['id']}" if field.get('id') else (
-                    f".{field.get('className', '').split()[0]}" if field.get('className') and field.get('className').strip() else
+                    f".{field.get('className', '').split()[0]}" if field.get('className') and str(field.get('className', '')).strip() else
                     f"[name='{field.get('name', '')}']" if field.get('name') else
                     f"{field.get('tag', 'input')}[{field.get('index', 0)}]"
                 )
@@ -1286,8 +1290,8 @@ async def test_forms(page) -> Dict[str, Any]:
                     focus_border_left - normal_border_left
                 )
 
-                normal_border_color = field['normalBorderColor'] or field['normalBorderTopColor']
-                focus_border_color = field['focusBorderColor'] or field['focusBorderTopColor']
+                normal_border_color: str = field.get('normalBorderColor') or field.get('normalBorderTopColor') or ''
+                focus_border_color: str = field.get('focusBorderColor') or field.get('focusBorderTopColor') or ''
                 # If focus border color is None, it means no change (use normal color)
                 if focus_border_color is None:
                     focus_border_color = normal_border_color
@@ -1323,7 +1327,7 @@ async def test_forms(page) -> Dict[str, Any]:
                 outline_width = parse_px(field['focusOutlineWidth']) if has_outline else 0
 
                 # DETECTION LOGIC - Check all conditions independently
-                issues_found = []
+                issues_found: list[tuple[Any, ...]] = []
 
                 # Check 1: Single-sided box-shadow (highest priority error)
                 if is_single_side_shadow:
@@ -1388,15 +1392,15 @@ async def test_forms(page) -> Dict[str, Any]:
                 for issue in issues_found:
                     # Handle both old tuple format and new format
                     if len(issue) == 3:
-                        error_code, violation_reason, extra_metadata = issue
+                        error_code, violation_reason, extra_metadata = issue[0], issue[1], issue[2]
                     else:
-                        error_code, violation_reason = issue
+                        error_code, violation_reason = issue[0], issue[1]
                         extra_metadata = {}
 
                     result_type = 'warn' if error_code.startswith('Warn') else 'err'
                     result_list = results['warnings'] if result_type == 'warn' else results['errors']
 
-                    metadata_dict = {
+                    metadata_dict: dict[str, Any] = {
                         'element_type': f"{field['tag']}[type='{field['type']}']",
                         'identifier': element_id
                     }

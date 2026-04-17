@@ -4,9 +4,11 @@ JavaScript test script injection for browser context
 Uses Playwright for browser automation.
 """
 
+from __future__ import annotations
+
 import logging
 from pathlib import Path
-from typing import List, Optional, Dict, Any
+from typing import Any
 
 from playwright.async_api import Page
 
@@ -28,18 +30,19 @@ class ScriptInjector:
     ]
     
     # No JavaScript tests remain - all replaced by Python touchpoint tests
-    TEST_FUNCTIONS = {}
+    TEST_FUNCTIONS: dict[str, str] = {}
     
-    def __init__(self, test_config=None):
+    def __init__(self, test_config: Any = None) -> None:
         """Initialize script injector
-        
+
         Args:
             test_config: TestConfiguration instance for enabling/disabling tests
         """
-        self.test_config = test_config
-        self.loaded_scripts = self._load_scripts()
-        
-    def _load_scripts(self) -> Dict[str, str]:
+        self.test_config: Any = test_config
+        self.project_config: dict[str, Any] | None = None
+        self.loaded_scripts: dict[str, str] = self._load_scripts()
+
+    def _load_scripts(self) -> dict[str, str]:
         """
         Load all JavaScript files into memory
         
@@ -155,7 +158,7 @@ class ScriptInjector:
             logger.error(f"Failed to inject script files: {e}")
             return False
     
-    async def run_test(self, page: Page, test_name: str) -> Dict[str, Any]:
+    async def run_test(self, page: Page, test_name: str) -> dict[str, Any]:
         """
         Run a specific test function on the page
 
@@ -177,7 +180,7 @@ class ScriptInjector:
                 raise RuntimeError(f"Test function {function_name} not found in page context")
             
             # Run the test
-            result = await page.evaluate(f'{function_name}()')
+            result: dict[str, Any] = await page.evaluate(f'{function_name}()')
             
             # Add metadata
             if isinstance(result, dict):
@@ -196,7 +199,7 @@ class ScriptInjector:
                 'passes': []
             }
     
-    async def run_all_tests(self, page: Page) -> Dict[str, Dict[str, Any]]:
+    async def run_all_tests(self, page: Page) -> dict[str, dict[str, Any]]:
         """
         Run all available tests on the page (JavaScript and Python-based)
 
@@ -206,7 +209,7 @@ class ScriptInjector:
         Returns:
             Dictionary mapping test names to results
         """
-        results = {}
+        results: dict[str, dict[str, Any]] = {}
         
         # Import test config if not provided
         if self.test_config is None:
@@ -267,8 +270,9 @@ class ScriptInjector:
                             # Run the Python-based test
                             test_count += 1
                             logger.debug(f"DEBUG run_all_tests: Running test #{test_count}: {touchpoint_id}")
-                            result = await test_func(page)
+                            tp_result: Any = await test_func(page)
                             
+                            result = tp_result
                             # Filter results based on individual test settings AND fixture validation
                             if 'errors' in result:
                                 filtered_errors = []
@@ -391,7 +395,7 @@ class ScriptInjector:
         
         return js_test_to_touchpoint.get(test_name, 'general')
     
-    def get_available_tests(self) -> List[str]:
+    def get_available_tests(self) -> list[str]:
         """
         Get list of available tests
         

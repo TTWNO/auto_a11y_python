@@ -3,9 +3,13 @@ Tabindex touchpoint test module
 Evaluates the proper usage of tabindex attributes across different element types.
 """
 
+from __future__ import annotations
+
 from datetime import datetime
-from typing import Dict, Any, List, Optional
+from typing import Any
 import logging
+
+from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +51,7 @@ TEST_DOCUMENTATION = {
     ]
 }
 
-async def test_tabindex(page) -> Dict[str, Any]:
+async def test_tabindex(page: Page) -> dict[str, Any]:
     """
     Test tabindex attributes for proper usage across different element types
     
@@ -59,7 +63,7 @@ async def test_tabindex(page) -> Dict[str, Any]:
     """
     try:
         # Execute JavaScript to analyze tabindex usage
-        results = await page.evaluate('''
+        results: dict[str, Any] = await page.evaluate('''
             () => {
                 const results = {
                     applicable: true,

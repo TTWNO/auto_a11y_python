@@ -3,9 +3,13 @@ Styles touchpoint test module
 Evaluates inline style attributes to ensure proper separation of presentation from content.
 """
 
+from __future__ import annotations
+
 from datetime import datetime
-from typing import Dict, Any, List, Optional
+from typing import Any
 import logging
+
+from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +37,7 @@ TEST_DOCUMENTATION = {
     ]
 }
 
-async def test_styles(page) -> Dict[str, Any]:
+async def test_styles(page: Page) -> dict[str, Any]:
     """
     Test inline style attributes for proper separation of concerns
 
@@ -45,7 +49,7 @@ async def test_styles(page) -> Dict[str, Any]:
     """
     try:
         # Execute JavaScript to analyze inline styles
-        results = await page.evaluate('''
+        results: dict[str, Any] = await page.evaluate('''
             () => {
                 const results = {
                     applicable: true,

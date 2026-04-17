@@ -3,9 +3,13 @@ Videos touchpoint test module
 Evaluates the presence and accessibility of video elements on the page.
 """
 
+from __future__ import annotations
+
 from datetime import datetime
-from typing import Dict, Any, List, Optional
+from typing import Any
 import logging
+
+from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +51,7 @@ TEST_DOCUMENTATION = {
     ]
 }
 
-async def test_videos(page) -> Dict[str, Any]:
+async def test_videos(page: Page) -> dict[str, Any]:
     """
     Test for presence of videos and their accessibility features
     
@@ -59,7 +63,7 @@ async def test_videos(page) -> Dict[str, Any]:
     """
     try:
         # Execute JavaScript to analyze videos
-        results = await page.evaluate('''
+        results: dict[str, Any] = await page.evaluate('''
             () => {
                 const results = {
                     applicable: true,

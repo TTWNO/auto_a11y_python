@@ -89,14 +89,12 @@ def ftl(message_id: str, **kwargs: object) -> Markup | str:
             if _resolve(loc, message_id, kwargs) is None
         ]
         if missing:
+            paths = "\n".join(
+                f"    auto_a11y/web/translations/{loc}/*.ftl"
+                for loc in missing
+            )
             raise MissingTranslationError(
-                f"Fluent message {message_id!r} missing from locale(s): "
-                f"{', '.join(missing)}\n"
-                f"  Strict mode is active (Flask debug). Add this message ID to:\n"
-                + "\n".join(
-                    f"    auto_a11y/web/translations/{loc}/*.ftl"
-                    for loc in missing
-                )
+                f"Fluent message {message_id!r} missing from locale(s): {', '.join(missing)}\n  Strict mode is active (Flask debug). Add this message ID to:\n{paths}"
             )
 
     # Non-strict path (also the post-strict-check path)

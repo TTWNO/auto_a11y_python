@@ -250,3 +250,26 @@ class TestLazyFtl:
         with fluent_app.app_context():
             with force_locale("fr"):
                 assert str(lazy) == "Bonjour"
+
+
+# ---------------------------------------------------------------------------
+# Tests: MissingTranslationError
+# ---------------------------------------------------------------------------
+
+class TestMissingTranslationError:
+
+    def test_import(self):
+        """MissingTranslationError is importable from auto_a11y.web.fluent."""
+        from auto_a11y.web.fluent import MissingTranslationError
+        assert MissingTranslationError is not None
+
+    def test_subclasses_keyerror(self):
+        """MissingTranslationError subclasses KeyError so existing
+        except-KeyError blocks keep working."""
+        from auto_a11y.web.fluent import MissingTranslationError
+        assert issubclass(MissingTranslationError, KeyError)
+
+    def test_can_raise_with_message(self):
+        from auto_a11y.web.fluent import MissingTranslationError
+        with pytest.raises(MissingTranslationError, match="test msg"):
+            raise MissingTranslationError("test msg")

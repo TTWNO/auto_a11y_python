@@ -27,6 +27,16 @@ from fluent_compiler.bundle import FluentBundle
 
 logger = logging.getLogger(__name__)
 
+
+class MissingTranslationError(KeyError):
+    """Raised in debug (strict) mode when a Fluent message is missing
+    from one or more supported locales, or when format-time errors occur.
+
+    Subclasses ``KeyError`` so existing ``except KeyError`` blocks in
+    production code paths continue to work unchanged in non-strict mode.
+    """
+
+
 # ContextVar for locale override via force_locale().
 # NOTE: ContextVar does NOT propagate to child threads.  If you spawn
 # threads inside a force_locale() block the override will not be visible

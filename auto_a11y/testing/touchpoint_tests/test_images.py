@@ -5,12 +5,10 @@ Evaluates images on the page for proper alternative text and ARIA roles.
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any
 import logging
 
 from playwright.async_api import Page
-import re
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +55,7 @@ async def test_images(page: Page) -> dict[str, Any]:
     """
     try:
         # Execute JavaScript to analyze images
-        results: dict[str, Any] = await page.evaluate('''
+        results: dict[str, Any] = await page.evaluate(r'''
             () => {
                 const results = {
                     applicable: true,

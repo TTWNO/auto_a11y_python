@@ -5,7 +5,6 @@ Evaluates floating dialogs and modal windows for accessibility compliance.
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any
 import logging
 
@@ -107,8 +106,8 @@ async def test_floating_dialogs(page: Page) -> dict[str, Any]:
 
         # Collect all errors/warnings/passes across all breakpoints
         all_errors: list[dict[str, Any]] = []
-        all_warnings = []
-        all_passes = []
+        all_warnings: list[dict[str, Any]] = []
+        all_passes: list[dict[str, Any]] = []
         total_elements_tested = 0
         total_elements_passed = 0
         total_elements_failed = 0
@@ -688,15 +687,15 @@ async def test_floating_dialogs(page: Page) -> dict[str, Any]:
         }
 
         if test_applicable and total_elements_tested > 0:
-            if 'checks' not in final_results:
-                final_results['checks'] = []
-            final_results['checks'].append({
+            checks_list: list[dict[str, object]] = final_results.get('checks', [])
+            checks_list.append({
                 'description': 'Dialog accessibility',
                 'wcag': ['4.1.2', '2.4.6', '2.1.1', '2.1.2'],
                 'total': total_elements_tested * 3,
                 'passed': total_elements_passed,
                 'failed': total_elements_failed
             })
+            final_results['checks'] = checks_list
 
         return final_results
         

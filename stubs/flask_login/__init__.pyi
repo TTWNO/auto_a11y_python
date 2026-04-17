@@ -1,8 +1,10 @@
 from collections.abc import Callable
 from datetime import timedelta
-from typing import Protocol
+from typing import Any, Protocol, TypeVar
 
 from flask import Flask
+
+_F = TypeVar("_F", bound=Callable[..., Any])
 
 
 class CurrentUserProtocol(Protocol):
@@ -18,7 +20,17 @@ class CurrentUserProtocol(Protocol):
     is_active: bool
     is_anonymous: bool
     is_superadmin: bool  # project-specific extension
+
+    # AppUser fields accessed via current_user in auth routes
+    id: str | None
+    email: str
+    display_name: str | None
+    password_hint: str | None
+
     def get_id(self) -> str | None: ...
+    def check_password(self, password: str) -> bool: ...
+    def set_password(self, password: str) -> None: ...
+    def update_timestamp(self) -> None: ...
 
 
 class LoginManager:
@@ -41,7 +53,7 @@ class LoginManager:
 
 current_user: CurrentUserProtocol
 
-def login_required(func: Callable[..., object]) -> Callable[..., object]: ...
+def login_required(func: _F) -> _F: ...
 
 def login_user(
     user: object,

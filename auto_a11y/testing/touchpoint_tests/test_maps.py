@@ -6,7 +6,6 @@ interactive and non-interactive maps with appropriate requirements for each.
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any
 import logging
 
@@ -47,7 +46,7 @@ TEST_DOCUMENTATION = {
             "name": "Map Provider Discovery",
             "description": "Identifies all maps on the page with metadata about provider, type, and accessibility features.",
             "impact": "informational",
-            "wcagCriteria": [],
+            "wcagCriteria": list[str](),
         }
     ]
 }
@@ -76,7 +75,7 @@ async def test_maps(page: Page) -> dict[str, Any]:
         Dictionary containing test results with errors, warnings, and discoveries
     """
     try:
-        results: dict[str, Any] = await page.evaluate('''
+        results: dict[str, Any] = await page.evaluate(r'''
             () => {
                 const results = {
                     applicable: true,

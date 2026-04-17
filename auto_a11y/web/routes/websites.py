@@ -10,9 +10,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from werkzeug.wrappers import Response
 from auto_a11y.web.fluent import ftl
 from auto_a11y.web.typed_app import get_db, get_app_config
-from auto_a11y.models import Website, ScrapingConfig, Page, PageStatus
-from datetime import datetime
-import asyncio
+from auto_a11y.models import Page, PageStatus
 import logging
 
 logger = logging.getLogger(__name__)
@@ -221,23 +219,25 @@ def discover_pages(website_id: str) -> Response | tuple[Response, int]:
         return jsonify({'error': ftl('common-website-not-found')}), 404
 
     # Get parameters from request
-    data = request.get_json() if request.is_json else {}
-    max_pages_raw = data.get('max_pages') if request.is_json else request.form.get('max_pages')
+    data: dict[str, Any] = request.get_json() if request.is_json else {}
+    max_pages_raw: str | None = data.get('max_pages') if request.is_json else request.form.get('max_pages')
 
     # Get project_user_ids (project-level test users)
     # Still accept 'website_user_ids' key name for backward compatibility with JavaScript
-    user_ids = data.get('project_user_ids') or data.get('website_user_ids', [])
+    user_ids_raw: list[str] | str = data.get('project_user_ids') or data.get('website_user_ids', [])
 
     # Convert to list if single value provided
-    if isinstance(user_ids, str):
-        user_ids = [user_ids]
+    if isinstance(user_ids_raw, str):
+        user_ids_list: list[str] = [user_ids_raw]
+    else:
+        user_ids_list = user_ids_raw
 
     # Default to guest only if no users specified
-    if not user_ids:
-        user_ids = ['']  # empty string represents guest/no login
+    if not user_ids_list:
+        user_ids_list = ['']  # empty string represents guest/no login
 
     # Keep the old variable name for compatibility with existing code paths
-    website_user_ids = user_ids
+    website_user_ids: list[str] = user_ids_list
 
     max_pages: int | None = None
     if max_pages_raw:
@@ -422,7 +422,7 @@ def discovery_status(website_id: str) -> Response:
     if status == 'running':
         pages_found = details.get('pages_found', 0)
         pages_failed = details.get('pages_failed', 0)
-        queue_size = details.get('queue_size', 0)
+        _queue_size = details.get('queue_size', 0)
         current_url = progress.get('message', '')
         if current_url:
             # Don't truncate URLs - users need to see what's being processed
@@ -558,25 +558,27 @@ def test_all_pages(website_id: str) -> Response | tuple[Response, int]:
         return jsonify({'error': ftl('common-website-not-found')}), 404
 
     # Extract user IDs from request (array of user IDs, empty string for guest)
-    data = request.get_json() if request.is_json else {}
+    data: dict[str, Any] = request.get_json() if request.is_json else {}
 
     # Get project_user_ids (project-level test users)
     # Still accept 'website_user_ids' key name for backward compatibility with JavaScript
-    user_ids = data.get('project_user_ids') or data.get('website_user_ids', [])
+    uids_raw: list[str] | str = data.get('project_user_ids') or data.get('website_user_ids', [])
 
     # Convert to list if single value provided
-    if isinstance(user_ids, str):
-        user_ids = [user_ids]
+    if isinstance(uids_raw, str):
+        uids_list: list[str] = [uids_raw]
+    else:
+        uids_list = uids_raw
 
     # Default to guest if no users specified
-    if not user_ids:
-        user_ids = ['']  # empty string represents guest/no login
+    if not uids_list:
+        uids_list = ['']  # empty string represents guest/no login
 
     # Keep the old variable name for compatibility with existing code paths
-    website_user_ids = user_ids
+    website_user_ids: list[str] = uids_list
 
     # Filter to untested pages only if requested
-    untested_only = data.get('untested_only', False)
+    untested_only: bool = data.get('untested_only', False)
 
     # Use latest_only=False and limit=0 to get all pages (consistent with stats shown in UI)
     pages = get_db().get_pages(website_id, latest_only=False, limit=0)
@@ -588,8 +590,8 @@ def test_all_pages(website_id: str) -> Response | tuple[Response, int]:
         testable_pages = [p for p in testable_pages if p.status != PageStatus.TESTED]
 
     # Limit number of pages if max_pages specified
-    max_pages = data.get('max_pages')
-    if max_pages and isinstance(max_pages, int) and max_pages > 0:
+    max_pages: int | None = data.get('max_pages')
+    if max_pages and max_pages > 0:
         testable_pages = testable_pages[:max_pages]
 
     if not testable_pages:
@@ -830,8 +832,6 @@ def view_documents(website_id: str) -> str | Response:
 def test_status(website_id: str) -> Response | tuple[Response, int]:
     """Check testing status using database-backed job management"""
     from auto_a11y.core.website_manager import WebsiteManager
-    from auto_a11y.core.job_manager import JobType
-    
     logger.warning(f"DEBUG test_status called for website {website_id}")
     
     # Get job_id from request args if provided

@@ -14,7 +14,6 @@ import asyncio
 import logging
 from typing import Any, Callable, Awaitable, TYPE_CHECKING
 from datetime import datetime
-import uuid
 
 from playwright.async_api import Page, BrowserContext
 
@@ -25,7 +24,7 @@ from auto_a11y.testing.script_executor import ScriptExecutor
 if TYPE_CHECKING:
     from auto_a11y.core.browser_manager import BrowserManager
     from auto_a11y.testing.login_automation import LoginAutomation
-    from auto_a11y.models import WebsiteUser
+    from auto_a11y.models import WebsiteUser, ProjectUser
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +45,7 @@ class MultiStateTestRunner:
     async def _create_fresh_context_and_page(
         self,
         browser_manager: BrowserManager,
-        authenticated_user: WebsiteUser | None,
+        authenticated_user: WebsiteUser | ProjectUser | None,
         login_automation: LoginAutomation | None,
         page_url: str
     ) -> tuple[BrowserContext, Page]:
@@ -101,7 +100,7 @@ class MultiStateTestRunner:
         environment_vars: dict[str, str] | None = None,
         browser_manager: BrowserManager | None = None,
         page_url: str | None = None,
-        authenticated_user: WebsiteUser | None = None,
+        authenticated_user: WebsiteUser | ProjectUser | None = None,
         login_automation: LoginAutomation | None = None
     ) -> list[TestResult]:
         """
@@ -131,9 +130,9 @@ class MultiStateTestRunner:
             List of TestResult objects (one per state tested)
         """
         logger.debug(f"test_page_multi_state: {len(scripts)} scripts for page_id={page_id}")
-        results = []
+        results: list[TestResult] = []
         state_sequence = 0
-        scripts_executed_so_far = []
+        scripts_executed_so_far: list[str] = []
 
         current_page = page
         current_context = None
@@ -167,7 +166,7 @@ class MultiStateTestRunner:
             state_sequence += 1
 
         # SUBSEQUENT STATES: One per script
-        for script_idx, script in enumerate(scripts):
+        for _script_idx, script in enumerate(scripts):
             logger.info(f"Processing script '{script.name}' (ID: {script.id})")
 
             # Create fresh context for this state
@@ -313,7 +312,7 @@ class MultiStateTestRunner:
         Returns:
             List of TestResult objects (one per state)
         """
-        results = []
+        results: list[TestResult] = []
         state_sequence = 0
 
         # Test initial state
@@ -453,10 +452,8 @@ class MultiStateTestRunner:
         Returns:
             List of TestResult objects (one per state combination tested)
         """
-        from auto_a11y.models import TestStateMatrix, StateCombination
-
         logger.info(f"Starting matrix-based multi-state testing for page {page_id}")
-        results = []
+        results: list[TestResult] = []
         state_sequence = 0
 
         # Get all enabled state combinations from the matrix
@@ -477,7 +474,7 @@ class MultiStateTestRunner:
                 await asyncio.sleep(0.3)
 
             # Execute scripts to reach this state
-            scripts_executed = []
+            scripts_executed: list[str] = []
             for script_def in sorted(test_state_matrix.scripts, key=lambda s: s.execution_order):
                 script_id = script_def.script_id
                 desired_state = combination.script_states.get(script_id)
@@ -511,7 +508,7 @@ class MultiStateTestRunner:
                         logger.warning(f"Script '{script.name}' failed: {script_result.get('error', 'Unknown error')}")
 
             # Create state description
-            state_description_parts = []
+            state_description_parts: list[str] = []
             for script_def in test_state_matrix.scripts:
                 script_id = script_def.script_id
                 state = combination.script_states.get(script_id, "before")

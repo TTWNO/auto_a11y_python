@@ -6,14 +6,14 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from flask import Blueprint, Response, render_template, request, jsonify, current_app, url_for
+from flask import Blueprint, Response, render_template, request, jsonify, current_app
 from flask_login import login_required, current_user
-from auto_a11y.models import PageStatus
+from auto_a11y.models import PageStatus, Page, Website, Project
 from auto_a11y.models.app_user import UserRole
-from auto_a11y.web.routes.auth import project_role_required, get_effective_role
+from auto_a11y.web.routes.auth import get_effective_role
+from auto_a11y.core.database import Database
 from auto_a11y.core.job_manager import JobType, JobStatus
 from auto_a11y.web.typed_app import get_db, get_app_config
-import asyncio
 import logging
 from datetime import datetime, timedelta
 
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 testing_bp = Blueprint('testing', __name__)
 
 
-def calculate_aggregate_stats(db: Any) -> dict[str, Any]:
+def calculate_aggregate_stats(db: Database) -> dict[str, Any]:
     """Calculate aggregate statistics across all projects"""
     projects = db.get_all_projects()
 
@@ -32,6 +32,8 @@ def calculate_aggregate_stats(db: Any) -> dict[str, Any]:
     website_count = 0
 
     for project in projects:
+        if not project.id:
+            continue
         stats = db.get_project_stats(project.id)
         total_pages += stats.get('total_pages', 0)
         tested_pages += stats.get('tested_pages', 0)
@@ -46,11 +48,11 @@ def calculate_aggregate_stats(db: Any) -> dict[str, Any]:
         'untested_pages': total_pages - tested_pages,
         'total_violations': total_violations,
         'total_warnings': total_warnings,
-        'test_coverage': (tested_pages / total_pages * 100) if total_pages > 0 else 0
+        'test_coverage': (tested_pages / total_pages * 100) if total_pages != 0 else 0
     }
 
 
-def get_recent_results_with_context(db: Any, project_id: str | None = None, website_id: str | None = None, limit: int = 20) -> list[dict[str, Any]]:
+def get_recent_results_with_context(db: Database, project_id: str | None = None, website_id: str | None = None, limit: int = 20) -> list[dict[str, Any]]:
     """Get recent test results with full page/website/project context.
 
     Optimized to minimize database queries by:
@@ -70,56 +72,56 @@ def get_recent_results_with_context(db: Any, project_id: str | None = None, webs
         return []
 
     # Bulk load all pages we need (single query)
-    pages_map = {}
+    pages_map: dict[str, Page] = {}
     for page_id in page_ids:
-        page = db.get_page(page_id)
-        if page:
-            pages_map[page_id] = page
+        loaded_page = db.get_page(page_id)
+        if loaded_page:
+            pages_map[page_id] = loaded_page
 
     # Collect website IDs from pages
-    website_ids = list(set(p.website_id for p in pages_map.values() if p.website_id))
+    website_ids: list[str] = list(set(p.website_id for p in pages_map.values() if p.website_id))
 
     # Bulk load all websites (could optimize further with a bulk query method)
-    websites_map = {}
+    websites_map: dict[str, Website] = {}
     for ws_id in website_ids:
         ws = db.get_website(ws_id)
         if ws:
             websites_map[ws_id] = ws
 
     # Collect project IDs from websites
-    project_ids = list(set(w.project_id for w in websites_map.values() if w.project_id))
+    project_ids: list[str] = list(set(w.project_id for w in websites_map.values() if w.project_id))
 
     # Bulk load all projects
-    projects_map = {}
+    projects_map: dict[str, Project] = {}
     for proj_id in project_ids:
         proj = db.get_project(proj_id)
         if proj:
             projects_map[proj_id] = proj
 
     # Now filter results based on project_id/website_id if specified
-    filtered_results = []
+    filtered_results: list[dict[str, Any]] = []
     for result in results:
-        page = pages_map.get(result.page_id)
-        if not page:
+        r_page = pages_map.get(result.page_id)
+        if not r_page:
             continue
 
-        website = websites_map.get(page.website_id)
-        if not website:
+        r_website = websites_map.get(r_page.website_id)
+        if not r_website:
             continue
 
-        project = projects_map.get(website.project_id) if website.project_id else None
+        r_project = projects_map.get(r_website.project_id) if r_website.project_id else None
 
         # Apply filters
-        if website_id and page.website_id != website_id:
+        if website_id and r_page.website_id != website_id:
             continue
-        if project_id and (not website.project_id or website.project_id != project_id):
+        if project_id and (not r_website.project_id or r_website.project_id != project_id):
             continue
 
         filtered_results.append({
             'result': result,
-            'page': page,
-            'website': website,
-            'project': project
+            'page': r_page,
+            'website': r_website,
+            'project': r_project
         })
 
         if len(filtered_results) >= limit:
@@ -128,7 +130,7 @@ def get_recent_results_with_context(db: Any, project_id: str | None = None, webs
     return filtered_results
 
 
-def get_trend_data(db: Any, project_id: str | None = None, website_id: str | None = None, days: int = 30) -> list[dict[str, Any]]:
+def get_trend_data(db: Database, project_id: str | None = None, website_id: str | None = None, days: int = 30) -> list[dict[str, Any]]:
     """Get trend data for violations/warnings over time"""
     end_date = datetime.now()
     start_date = end_date - timedelta(days=days)
@@ -150,16 +152,18 @@ def get_trend_data(db: Any, project_id: str | None = None, website_id: str | Non
     results = db.get_test_results(limit=min(days * 20, 500), summary_only=True)
 
     # Filter by date range and optionally by project/website
-    page_ids = None
+    page_ids: set[str] | None = None
     if website_id:
         pages = db.get_pages(website_id)
-        page_ids = set(p.id for p in pages)
+        page_ids = {p.id for p in pages if p.id}
     elif project_id:
         websites = db.get_websites(project_id)
         page_ids = set()
         for website in websites:
+            if not website.id:
+                continue
             pages = db.get_pages(website.id)
-            page_ids.update(p.id for p in pages)
+            page_ids.update(p.id for p in pages if p.id)
 
     # Aggregate by day
     date_to_index = {d['date']: i for i, d in enumerate(trend_data)}
@@ -184,17 +188,19 @@ def get_trend_data(db: Any, project_id: str | None = None, website_id: str | Non
 # Enhanced Trend Analysis Functions
 # ============================================================================
 
-def get_page_ids_for_scope(db: Any, project_id: str | None = None, website_id: str | None = None) -> set[str]:
+def get_page_ids_for_scope(db: Database, project_id: str | None = None, website_id: str | None = None) -> set[str]:
     """Get all page IDs for a given project or website scope"""
-    page_ids = set()
+    page_ids: set[str] = set()
     if website_id:
         pages = db.get_pages(website_id)
-        page_ids = set(p.id for p in pages)
+        page_ids = {p.id for p in pages if p.id}
     elif project_id:
         websites = db.get_websites(project_id)
         for website in websites:
+            if not website.id:
+                continue
             pages = db.get_pages(website.id)
-            page_ids.update(p.id for p in pages)
+            page_ids.update(p.id for p in pages if p.id)
     return page_ids
 
 
@@ -224,7 +230,7 @@ def aggregate_by_granularity(data_points: list[dict[str, Any]], granularity: str
         buckets[bucket_key]['tests'] += point['tests']
 
     # Convert to sorted list
-    result = []
+    result: list[dict[str, Any]] = []
     for period, values in sorted(buckets.items()):
         result.append({
             'period': period,
@@ -310,7 +316,7 @@ def calculate_trend_direction(time_series: list[dict[str, Any]], threshold_perce
         return 'stable', round(change_percent, 1)
 
 
-def get_filtered_item_counts(db: Any, result_ids: list[Any], result_date_map: dict[str, str], filters: dict[str, Any], issue_types: list[str]) -> dict[str, dict[str, int]]:
+def get_filtered_item_counts(db: Database, result_ids: list[Any], result_date_map: dict[str, str], filters: dict[str, Any], issue_types: list[str]) -> dict[str, dict[str, int]]:
     """Get filtered violation/warning counts from test_result_items collection
 
     Args:
@@ -332,14 +338,14 @@ def get_filtered_item_counts(db: Any, result_ids: list[Any], result_date_map: di
         logger.warning(f"Limiting filtered item counts to {MAX_RESULT_IDS} results for performance")
 
     # Convert string IDs to ObjectId
-    object_ids = []
+    object_ids: list[ObjectId] = []
     for rid in result_ids:
         if isinstance(rid, str):
             try:
                 object_ids.append(ObjectId(rid))
-            except:
+            except Exception:
                 pass
-        else:
+        elif isinstance(rid, ObjectId):
             object_ids.append(rid)
 
     if not object_ids:
@@ -354,7 +360,7 @@ def get_filtered_item_counts(db: Any, result_ids: list[Any], result_date_map: di
 
     # Filter by impact levels
     if filters.get('impact_levels'):
-        impact_values = []
+        impact_values: list[str] = []
         for level in filters['impact_levels']:
             # Handle both string and enum values
             impact_values.append(level.lower())
@@ -377,7 +383,7 @@ def get_filtered_item_counts(db: Any, result_ids: list[Any], result_date_map: di
 
     try:
         # Query with aggregation to get counts per result_id and item_type
-        pipeline = [
+        pipeline: list[dict[str, Any]] = [
             {'$match': match_criteria},
             {'$group': {
                 '_id': {
@@ -394,7 +400,7 @@ def get_filtered_item_counts(db: Any, result_ids: list[Any], result_date_map: di
             return {}
 
         # Aggregate counts by date
-        date_counts = {}
+        date_counts: dict[str, dict[str, int]] = {}
         for r in results:
             result_id = str(r['_id']['result_id'])
             item_type = r['_id']['item_type']
@@ -417,7 +423,7 @@ def get_filtered_item_counts(db: Any, result_ids: list[Any], result_date_map: di
         return {}
 
 
-def get_detailed_trend_data(db: Any, project_id: str | None = None, website_id: str | None = None,
+def get_detailed_trend_data(db: Database, project_id: str | None = None, website_id: str | None = None,
                             start_date: datetime | None = None, end_date: datetime | None = None,
                             granularity: str = 'daily', include_breakdown: bool = True,
                             filters: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -482,8 +488,8 @@ def get_detailed_trend_data(db: Any, project_id: str | None = None, website_id: 
 
     # Aggregate by day
     date_to_index = {d['date']: i for i, d in enumerate(daily_data)}
-    result_ids = []
-    result_date_map = {}  # Map result_id to date string
+    result_ids: list[str | None] = []
+    result_date_map: dict[str, str] = {}  # Map result_id to date string
 
     # Check if we have active filters that require item-level filtering
     has_item_filters = bool(
@@ -550,7 +556,7 @@ def get_detailed_trend_data(db: Any, project_id: str | None = None, website_id: 
         'change_percent': change_percent
     }
 
-    response = {
+    response: dict[str, Any] = {
         'period': {
             'start': start_date.strftime('%Y-%m-%d'),
             'end': end_date.strftime('%Y-%m-%d'),
@@ -569,7 +575,7 @@ def get_detailed_trend_data(db: Any, project_id: str | None = None, website_id: 
     return response
 
 
-def get_trends_by_touchpoint(db: Any, result_ids: list[Any], limit: int = 10, filters: dict[str, Any] | None = None) -> dict[str, dict[str, Any]]:
+def get_trends_by_touchpoint(db: Database, result_ids: list[Any], limit: int = 10, filters: dict[str, Any] | None = None) -> dict[str, dict[str, Any]]:
     """Get violation counts grouped by touchpoint using MongoDB aggregation
 
     Args:
@@ -596,25 +602,25 @@ def get_trends_by_touchpoint(db: Any, result_ids: list[Any], limit: int = 10, fi
         from bson import ObjectId
 
         # Convert string IDs to ObjectId if needed
-        object_ids = []
+        object_ids: list[ObjectId] = []
         for rid in result_ids:
             if isinstance(rid, str):
                 try:
                     object_ids.append(ObjectId(rid))
-                except:
+                except Exception:
                     pass
-            else:
+            elif isinstance(rid, ObjectId):
                 object_ids.append(rid)
 
         # Build match criteria
-        match_criteria = {
+        match_criteria: dict[str, Any] = {
             'test_result_id': {'$in': object_ids},
             'item_type': 'violation'
         }
 
         # Apply filters
         if filters.get('impact_levels'):
-            impact_values = []
+            impact_values: list[str] = []
             for level in filters['impact_levels']:
                 impact_values.append(level.lower())
                 impact_values.append(level.capitalize())
@@ -629,7 +635,7 @@ def get_trends_by_touchpoint(db: Any, result_ids: list[Any], limit: int = 10, fi
         if filters.get('wcag_criteria'):
             match_criteria['wcag_criteria'] = {'$in': filters['wcag_criteria']}
 
-        pipeline = [
+        pipeline: list[dict[str, Any]] = [
             {'$match': match_criteria},
             {'$group': {
                 '_id': '$touchpoint',
@@ -647,9 +653,9 @@ def get_trends_by_touchpoint(db: Any, result_ids: list[Any], limit: int = 10, fi
             return {}
 
         # Format results
-        touchpoints = {}
+        touchpoints: dict[str, dict[str, Any]] = {}
         for r in results:
-            touchpoint = r['_id'] or 'Unknown'
+            touchpoint: str = r['_id'] or 'Unknown'
             touchpoints[touchpoint] = {
                 'count': r['count'],
                 'trend': 'stable',  # Would need historical comparison for actual trend
@@ -663,7 +669,7 @@ def get_trends_by_touchpoint(db: Any, result_ids: list[Any], limit: int = 10, fi
         return {}
 
 
-def get_trends_by_impact(db: Any, result_ids: list[Any], filters: dict[str, Any] | None = None) -> dict[str, dict[str, int | float]]:
+def get_trends_by_impact(db: Database, result_ids: list[Any], filters: dict[str, Any] | None = None) -> dict[str, dict[str, int | float]]:
     """Get violation counts grouped by impact level
 
     Args:
@@ -689,18 +695,18 @@ def get_trends_by_impact(db: Any, result_ids: list[Any], filters: dict[str, Any]
     try:
         from bson import ObjectId
 
-        object_ids = []
+        object_ids: list[ObjectId] = []
         for rid in result_ids:
             if isinstance(rid, str):
                 try:
                     object_ids.append(ObjectId(rid))
-                except:
+                except Exception:
                     pass
-            else:
+            elif isinstance(rid, ObjectId):
                 object_ids.append(rid)
 
         # Build match criteria
-        match_criteria = {
+        match_criteria: dict[str, Any] = {
             'test_result_id': {'$in': object_ids},
             'item_type': 'violation'
         }
@@ -712,7 +718,7 @@ def get_trends_by_impact(db: Any, result_ids: list[Any], filters: dict[str, Any]
         if filters.get('wcag_criteria'):
             match_criteria['wcag_criteria'] = {'$in': filters['wcag_criteria']}
 
-        pipeline = [
+        pipeline: list[dict[str, Any]] = [
             {'$match': match_criteria},
             {'$group': {
                 '_id': '$impact',
@@ -730,7 +736,7 @@ def get_trends_by_impact(db: Any, result_ids: list[Any], filters: dict[str, Any]
         # Count by impact
         counts = {'high': 0, 'medium': 0, 'low': 0}
         for r in results:
-            impact = str(r['_id']).lower() if r['_id'] else 'medium'
+            impact: str = str(r['_id']).lower() if r['_id'] else 'medium'
             # Normalize impact values
             if impact in ['high', 'serious', 'critical']:
                 counts['high'] += r['count']
@@ -763,7 +769,7 @@ def get_trends_by_impact(db: Any, result_ids: list[Any], filters: dict[str, Any]
                 'low': {'count': 0, 'percent': 0}}
 
 
-def get_top_issues(db: Any, result_ids: list[Any], limit: int = 10, filters: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+def get_top_issues(db: Database, result_ids: list[Any], limit: int = 10, filters: dict[str, Any] | None = None) -> list[dict[str, Any]]:
     """Get the most common issues (by issue_id) from test results
 
     Args:
@@ -788,25 +794,25 @@ def get_top_issues(db: Any, result_ids: list[Any], limit: int = 10, filters: dic
     try:
         from bson import ObjectId
 
-        object_ids = []
+        object_ids: list[ObjectId] = []
         for rid in result_ids:
             if isinstance(rid, str):
                 try:
                     object_ids.append(ObjectId(rid))
-                except:
+                except Exception:
                     pass
-            else:
+            elif isinstance(rid, ObjectId):
                 object_ids.append(rid)
 
         # Build match criteria
-        match_criteria = {
+        match_criteria: dict[str, Any] = {
             'test_result_id': {'$in': object_ids},
             'item_type': 'violation'
         }
 
         # Apply filters
         if filters.get('impact_levels'):
-            impact_values = []
+            impact_values: list[str] = []
             for level in filters['impact_levels']:
                 impact_values.append(level.lower())
                 impact_values.append(level.capitalize())
@@ -825,7 +831,7 @@ def get_top_issues(db: Any, result_ids: list[Any], limit: int = 10, filters: dic
         if filters.get('wcag_criteria'):
             match_criteria['wcag_criteria'] = {'$in': filters['wcag_criteria']}
 
-        pipeline = [
+        pipeline: list[dict[str, Any]] = [
             {'$match': match_criteria},
             {'$group': {
                 '_id': '$issue_id',
@@ -840,7 +846,7 @@ def get_top_issues(db: Any, result_ids: list[Any], limit: int = 10, filters: dic
         else:
             return []
 
-        top_issues = []
+        top_issues: list[dict[str, Any]] = []
         for r in results:
             top_issues.append({
                 'issue_id': r['_id'] or 'unknown',
@@ -856,7 +862,7 @@ def get_top_issues(db: Any, result_ids: list[Any], limit: int = 10, filters: dic
         return []
 
 
-def compare_periods(db: Any, project_id: str | None, website_id: str | None, period_a_start: datetime, period_a_end: datetime,
+def compare_periods(db: Database, project_id: str | None, website_id: str | None, period_a_start: datetime, period_a_end: datetime,
                    period_b_start: datetime, period_b_end: datetime) -> dict[str, Any]:
     """Compare two time periods for violations/warnings
 
@@ -926,7 +932,7 @@ def compare_periods(db: Any, project_id: str | None, website_id: str | None, per
     }
 
 
-def calculate_progress_metrics(db: Any, project_id: str | None = None, website_id: str | None = None, days: int = 30) -> dict[str, Any]:
+def calculate_progress_metrics(db: Database, project_id: str | None = None, website_id: str | None = None, days: int = 30) -> dict[str, Any]:
     """Calculate progress metrics showing improvement/regression
 
     Args:
@@ -954,16 +960,17 @@ def calculate_progress_metrics(db: Any, project_id: str | None = None, website_i
     MAX_PAGES_TO_ANALYZE = 50
 
     if website_id:
-        pages = db.get_pages(website_id)
+        pages_list: list[Page] = db.get_pages(website_id)
     elif project_id:
-        pages = []
+        pages_list = []
         for ws in db.get_websites(project_id):
-            pages.extend(db.get_pages(ws.id))
+            if ws.id:
+                pages_list.extend(db.get_pages(ws.id))
     else:
-        pages = []
+        pages_list = []
 
     # Limit pages analyzed for performance
-    pages_to_analyze = pages[:MAX_PAGES_TO_ANALYZE] if len(pages) > MAX_PAGES_TO_ANALYZE else pages
+    pages_to_analyze: list[Page] = pages_list[:MAX_PAGES_TO_ANALYZE] if len(pages_list) > MAX_PAGES_TO_ANALYZE else pages_list
     analyzed_count = 0
 
     for page in pages_to_analyze:
@@ -992,7 +999,7 @@ def calculate_progress_metrics(db: Any, project_id: str | None = None, website_i
             pages_stable += 1
 
     # Total pages is the full count, analyzed is the sample
-    total_pages = len(pages) if pages else 0
+    total_pages = len(pages_list) if pages_list else 0
 
     # Calculate issue flow - filter at database level for efficiency
     limit = min(len(page_ids) * 10, 500) if page_ids else 2000
@@ -1025,7 +1032,7 @@ def calculate_progress_metrics(db: Any, project_id: str | None = None, website_i
 
     # Calculate compliance score (violations per page, inverted)
     current_violations_per_page = second_half_violations / max(total_pages, 1)
-    target_violations_per_page = 0  # Perfect compliance
+    _target_violations_per_page = 0  # Perfect compliance
 
     # Score: 100 - (avg violations * 10), capped at 0-100
     compliance_score = max(0, min(100, 100 - (current_violations_per_page * 2)))
@@ -1161,10 +1168,12 @@ def testing_dashboard() -> str:
     # Get active and queued test counts from job manager
     active_tests = 0
     queued_tests = 0
-    active_jobs = []
+    active_jobs: list[dict[str, Any]] = []
     try:
-        if hasattr(current_app, 'job_manager') and current_app.job_manager:
-            all_jobs = current_app.job_manager.get_active_jobs(job_type=JobType.TESTING)
+        from auto_a11y.core.job_manager import JobManager
+        jm: JobManager | None = getattr(current_app, 'job_manager', None)
+        if jm is not None:
+            all_jobs: list[dict[str, Any]] = jm.get_active_jobs(job_type=JobType.TESTING)
             for job in all_jobs:
                 if job.get('status') == JobStatus.RUNNING.value:
                     active_tests += 1
@@ -1183,7 +1192,8 @@ def testing_dashboard() -> str:
     recent_results = get_recent_results_with_context(db, project_id, website_id, limit=10)
 
     # Get scheduled tests (limit to 5)
-    schedules = []
+    from auto_a11y.models import TestSchedule
+    schedules: list[TestSchedule] = []
     if website_id:
         schedules = db.get_test_schedules_for_website(website_id)[:5]
     elif project_id:
@@ -1223,26 +1233,26 @@ def testing_dashboard() -> str:
 @testing_bp.route('/run-test', methods=['POST'])
 def run_test() -> tuple[Response, int] | Response:
     """Run accessibility test on specified page(s)"""
-    data = request.get_json()
-    
-    page_ids = data.get('page_ids', [])
-    test_config = data.get('config', {})
-    
+    data: dict[str, Any] = request.get_json() or {}
+
+    page_ids: list[str] = data.get('page_ids', [])
+    _test_config: dict[str, Any] = data.get('config', {})
+
     if not page_ids:
         return jsonify({'error': 'No pages specified'}), 400
-    
+
     # Validate pages exist
-    valid_pages = []
+    valid_pages: list[Page] = []
     for page_id in page_ids:
-        page = get_db().get_page(page_id)
-        if page:
-            valid_pages.append(page)
-    
+        found_page = get_db().get_page(page_id)
+        if found_page:
+            valid_pages.append(found_page)
+
     if not valid_pages:
         return jsonify({'error': 'No valid pages found'}), 400
-    
+
     # Queue test jobs
-    job_ids = []
+    job_ids: list[str] = []
     for page in valid_pages:
         job_id = f'test_{page.id}_{datetime.now().timestamp()}'
         job_ids.append(job_id)
@@ -1262,11 +1272,11 @@ def run_test() -> tuple[Response, int] | Response:
 @testing_bp.route('/batch-test', methods=['POST'])
 def batch_test() -> tuple[Response, int] | Response:
     """Run batch testing on multiple pages"""
-    data = request.get_json()
-    
-    website_id = data.get('website_id')
-    filter_criteria = data.get('filter', {})
-    test_config = data.get('config', {})
+    data: dict[str, Any] = request.get_json() or {}
+
+    website_id: str | None = data.get('website_id')
+    filter_criteria: dict[str, Any] = data.get('filter', {})
+    _test_config: dict[str, Any] = data.get('config', {})
     
     if not website_id:
         return jsonify({'error': 'Website ID required'}), 400
@@ -1453,9 +1463,11 @@ def api_stats() -> tuple[Response, int] | Response:
     active_tests = 0
     queued_tests = 0
     try:
-        if hasattr(current_app, 'job_manager') and current_app.job_manager:
-            all_jobs = current_app.job_manager.get_active_jobs(job_type=JobType.TESTING)
-            for job in all_jobs:
+        from auto_a11y.core.job_manager import JobManager
+        jm2: JobManager | None = getattr(current_app, 'job_manager', None)
+        if jm2 is not None:
+            all_jobs2: list[dict[str, Any]] = jm2.get_active_jobs(job_type=JobType.TESTING)
+            for job in all_jobs2:
                 if job.get('status') == JobStatus.RUNNING.value:
                     active_tests += 1
                 elif job.get('status') == JobStatus.PENDING.value:
@@ -1477,20 +1489,24 @@ def api_stats() -> tuple[Response, int] | Response:
 @login_required
 def api_active_tests() -> Response:
     """API endpoint for active test progress (for polling)"""
-    active_jobs = []
+    active_jobs: list[dict[str, Any]] = []
 
     try:
-        if hasattr(current_app, 'job_manager') and current_app.job_manager:
-            all_jobs = current_app.job_manager.get_active_jobs(job_type=JobType.TESTING)
-            for job in all_jobs:
+        from auto_a11y.core.job_manager import JobManager
+        jm3: JobManager | None = getattr(current_app, 'job_manager', None)
+        if jm3 is not None:
+            all_jobs3: list[dict[str, Any]] = jm3.get_active_jobs(job_type=JobType.TESTING)
+            for job in all_jobs3:
                 if job.get('status') == JobStatus.RUNNING.value:
                     # Get website info for display
                     website_name = 'Unknown'
                     if job.get('website_id'):
-                        website = get_db().get_website(job['website_id'])
+                        ws_id: str = job['website_id']
+                        website = get_db().get_website(ws_id)
                         if website:
                             website_name = website.name or 'Unknown'
 
+                    started_at_val = job.get('started_at')
                     active_jobs.append({
                         'job_id': job.get('job_id'),
                         'website_id': job.get('website_id'),
@@ -1499,7 +1515,7 @@ def api_active_tests() -> Response:
                         'pages_completed': job.get('pages_completed', 0),
                         'pages_total': job.get('pages_total', 0),
                         'current_page': job.get('current_page', ''),
-                        'started_at': job.get('started_at', '').isoformat() if job.get('started_at') else None,
+                        'started_at': started_at_val.isoformat() if isinstance(started_at_val, datetime) else None,
                         'violations_found': job.get('violations_found', 0)
                     })
     except Exception as e:
@@ -1516,14 +1532,14 @@ def api_active_tests() -> Response:
 @login_required
 def api_run_tests() -> tuple[Response, int] | Response:
     """API endpoint to start testing (enhanced version)"""
-    data = request.get_json() or {}
+    data: dict[str, Any] = request.get_json() or {}
 
-    website_id = data.get('website_id')
-    project_id = data.get('project_id')
-    test_untested_only = data.get('untested_only', False)
-    include_screenshots = data.get('include_screenshots', True)
-    run_ai_analysis = data.get('run_ai_analysis', False)
-    tester_ids = data.get('tester_ids', ['guest'])  # List of tester IDs or 'guest'
+    website_id: str | None = data.get('website_id')
+    project_id: str | None = data.get('project_id')
+    test_untested_only: bool = data.get('untested_only', False)
+    _include_screenshots: bool = data.get('include_screenshots', True)
+    _run_ai_analysis: bool = data.get('run_ai_analysis', False)
+    tester_ids: list[str] = data.get('tester_ids', ['guest'])  # List of tester IDs or 'guest'
 
     if not website_id and not project_id:
         return jsonify({'error': 'Either website_id or project_id is required'}), 400
@@ -1706,7 +1722,7 @@ def api_trends_detailed() -> tuple[Response, int] | Response:
         return jsonify({'error': 'Invalid granularity. Use daily, weekly, or monthly'}), 400
 
     # Parse filter parameters
-    filters = {}
+    filters: dict[str, Any] = {}
 
     # Issue types (violation, warning)
     issue_types = request.args.getlist('issue_types[]') or request.args.getlist('issue_types')
@@ -1816,7 +1832,7 @@ def api_trends_compare() -> tuple[Response, int] | Response:
         if len(website_ids) < 2:
             return jsonify({'error': 'At least 2 website_ids required for comparison'}), 400
 
-        items = []
+        items: list[dict[str, Any]] = []
         for ws_id in website_ids[:5]:  # Limit to 5 websites
             website = db.get_website(ws_id)
             if not website:

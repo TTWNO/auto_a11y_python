@@ -10,7 +10,8 @@ import re
 import tempfile
 import os
 import warnings
-from typing import Any, IO
+from typing import IO, Any, TextIO
+from typing_extensions import override
 from datetime import datetime
 from pathlib import Path
 import logging
@@ -22,6 +23,13 @@ from io import StringIO
 _UNRESOLVED_PLACEHOLDER_RE = re.compile(r'\{[a-zA-Z_]+\}|%\([a-zA-Z_]+\)s')
 
 logger = logging.getLogger(__name__)
+
+
+def _dict_or_attr(obj: object, key: str, default: object = '') -> object:
+    """Return obj[key] if obj is dict-like, else getattr(obj, key, default)."""
+    if hasattr(obj, 'get'):
+        return getattr(obj, 'get')(key, default)
+    return getattr(obj, key, default)
 
 
 class BaseFormatter:
@@ -356,15 +364,55 @@ class BaseFormatter:
         # The metadata dict may hold a clean English what_generic (stored by
         # result_processor at test time) and/or the original JS description
         # with values already interpolated.
-        meta = issue_dict.get('metadata', {}) or {}
-        meta_generic: str = meta.get('what_generic', '') or ''
+        meta: dict[str, Any] = issue_dict.get('metadata') or {}
+        meta_generic: str = str(meta.get('what_generic', '') or '')
         if _clean(meta_generic):
             return meta_generic
-        meta_desc: str = meta.get('description', '') or ''
+        meta_desc: str = str(meta.get('description', '') or '')
         if _clean(meta_desc):
             return meta_desc
         # Nothing clean available — return the best we have as-is
         return desc or generic or raw or ''
+
+    @staticmethod
+    def get_page_url(page: dict[str, Any] | object) -> str:
+        """Extract page URL from page object or dict."""
+        return str(_dict_or_attr(page, 'url', ''))
+
+    @staticmethod
+    def get_page_title(page: dict[str, Any] | object) -> str:
+        """Extract page title from page object or dict."""
+        return str(_dict_or_attr(page, 'title', ''))
+
+    @staticmethod
+    def get_issue_list(test_result: dict[str, Any] | object, attr: str) -> list[Any]:
+        """Extract an issue list (violations/warnings) from test_result object or dict."""
+        raw = _dict_or_attr(test_result, attr, [])
+        if hasattr(raw, '__iter__') and not isinstance(raw, (str, bytes)):
+            result: list[Any] = list(getattr(raw, '__iter__')())
+            return result
+        return []
+
+    @staticmethod
+    def to_enriched_dict(issue: dict[str, Any] | object) -> dict[str, Any]:
+        """Convert an issue (object or dict) to an enriched dict."""
+        raw: dict[str, Any]
+        if hasattr(issue, 'items'):
+            # dict-like object - use the attribute to get it as dict
+            raw = dict(getattr(issue, 'items')())
+        elif hasattr(issue, 'to_dict'):
+            raw = getattr(issue, 'to_dict')()
+        elif hasattr(issue, '__dict__'):
+            raw = dict(vars(issue))
+        else:
+            raw = {}
+        return IssueCatalog.enrich_issue(raw)
+
+    @staticmethod
+    def _format_wcag(issue_dict: dict[str, Any]) -> str:
+        """Format WCAG criteria from an issue dict to a comma-separated string."""
+        wcag_val: list[str] = issue_dict.get('wcag_criteria', [])
+        return ', '.join(str(c) for c in wcag_val) if wcag_val else ''
 
     def format_page_report(self, data: dict[str, Any]) -> str | bytes:
         """Format page report data"""
@@ -413,13 +461,17 @@ class BaseFormatter:
 
 class HTMLFormatter(BaseFormatter):
     """HTML report formatter"""
-    
+
     def __init__(self, config: dict[str, Any], language: str = 'en') -> None:
         super().__init__(config, language)
         self.extension = 'html'
         # Pass Claude API key if available
         claude_api_key = config.get('CLAUDE_API_KEY')
         self.comprehensive_generator = ComprehensiveReportGenerator(claude_api_key=claude_api_key)
+        # Streaming state (initialized in begin())
+        self._output_file: str = ''
+        self._summary: dict[str, Any] = {}
+        self._body_tempfile: IO[str] | None = None
     
     def format_all_projects_report(self, data: dict[str, Any]) -> str:
         """Format report for all projects as HTML"""
@@ -522,6 +574,7 @@ class HTMLFormatter(BaseFormatter):
         </div>
         """
     
+    @override
     def format_page_report(self, data: dict[str, Any]) -> str:
         """Generate HTML report for a page"""
 
@@ -529,11 +582,8 @@ class HTMLFormatter(BaseFormatter):
         test_result = data.get('test_result', {})
         page_state_info = ""
         if test_result and test_result.get('session_id'):
-            page_state = test_result.get('page_state', {})
-            if isinstance(page_state, dict):
-                state_desc = page_state.get('description', '')
-            else:
-                state_desc = ''
+            page_state: dict[str, Any] = test_result.get('page_state', {}) or {}
+            state_desc: str = str(page_state.get('description', ''))
 
             if state_desc:
                 page_state_info = f"""
@@ -585,12 +635,14 @@ class HTMLFormatter(BaseFormatter):
 
         return html
     
+    @override
     def format_website_report(self, data: dict[str, Any]) -> str:
         """Generate HTML report for a website"""
-        
+
         # Use comprehensive report generator for website reports
         return self.comprehensive_generator.generate_comprehensive_html(data)
-    
+
+    @override
     def format_project_report(self, data: dict[str, Any]) -> str:
         """Generate bilingual HTML report for a project"""
 
@@ -606,9 +658,10 @@ class HTMLFormatter(BaseFormatter):
         with open(output_path, 'r', encoding='utf-8') as f:
             return f.read()
     
+    @override
     def format_summary_report(self, data: dict[str, Any]) -> str:
         """Generate executive summary report"""
-        
+
         projects_html = ""
         for project in data['projects']:
             projects_html += f"""
@@ -862,7 +915,7 @@ class HTMLFormatter(BaseFormatter):
                 <h4>{v.get('rule_id', self._t('unknown'))}
                     <span class="impact {impact_class}">{self._translate_impact(v.get('impact', 'moderate'))}</span>
                 </h4>
-                <p><strong>{self._t('description')}:</strong> {self._best_description(v) if isinstance(v, dict) else v.get('description', self._t('no_description'))}</p>
+                <p><strong>{self._t('description')}:</strong> {self._best_description(v)}</p>
                 <p><strong>{self._t('wcag_criteria')}:</strong> {', '.join(v.get('wcag_criteria', []))}</p>
                 <p><strong>{self._t('elements_affected')}:</strong> {v.get('node_count', 0)}</p>
                 {metadata_html}
@@ -890,7 +943,7 @@ class HTMLFormatter(BaseFormatter):
             html += f"""
             <div class="warning">
                 <h4>{w.get('rule_id', self._t('unknown'))}</h4>
-                <p>{self._best_description(w) if isinstance(w, dict) else w.get('description', self._t('no_description'))}</p>
+                <p>{self._best_description(w)}</p>
                 {metadata_html}
             </div>"""
         html += "</section>"
@@ -915,7 +968,7 @@ class HTMLFormatter(BaseFormatter):
             html += f"""
             <div class="info-item">
                 <h4>{item.get('id', self._t('unknown'))}</h4>
-                <p><strong>{self._t('description')}:</strong> {self._best_description(item) if isinstance(item, dict) else item.get('description', self._t('no_description'))}</p>
+                <p><strong>{self._t('description')}:</strong> {self._best_description(item)}</p>
                 <p><strong>{self._t('category')}:</strong> {item.get('category', 'General')}</p>
                 {f"<p><strong>{self._t('wcag_criteria')}:</strong> {', '.join(item.get('wcag_criteria', []))}</p>" if item.get('wcag_criteria') else ""}
                 {metadata_html}
@@ -943,7 +996,7 @@ class HTMLFormatter(BaseFormatter):
             html += f"""
             <div class="discovery-item">
                 <h4>{item.get('id', self._t('unknown'))}</h4>
-                <p><strong>{self._t('description')}:</strong> {self._best_description(item) if isinstance(item, dict) else item.get('description', self._t('no_description'))}</p>
+                <p><strong>{self._t('description')}:</strong> {self._best_description(item)}</p>
                 <p><strong>{self._t('category')}:</strong> {item.get('category', 'General')}</p>
                 {f"<p><strong>{self._t('location')}:</strong> <code>{item.get('xpath', self._t('not_specified'))}</code></p>" if item.get('xpath') else ""}
                 {metadata_html}
@@ -1044,11 +1097,11 @@ class HTMLFormatter(BaseFormatter):
             total_discovery = 0
             total_passes = 0
             
-            all_violations = []
-            all_warnings = []
-            all_info = []
-            all_discovery = []
-            
+            all_violations: list[dict[str, Any]] = []
+            all_warnings: list[dict[str, Any]] = []
+            all_info: list[dict[str, Any]] = []
+            all_discovery: list[dict[str, Any]] = []
+
             for p in pages:
                 test_result = p['test_result']
                 if hasattr(test_result, 'violation_count'):
@@ -1057,14 +1110,14 @@ class HTMLFormatter(BaseFormatter):
                     total_info += test_result.info_count
                     total_discovery += test_result.discovery_count
                     total_passes += test_result.pass_count
-                    
+
                     # Collect all issues for detailed display
                     for v in test_result.violations:
                         all_violations.append({'page': p['page'].url, 'issue': v})
                     for w in test_result.warnings:
                         all_warnings.append({'page': p['page'].url, 'issue': w})
-                    for i in test_result.info:
-                        all_info.append({'page': p['page'].url, 'issue': i})
+                    for i_item in test_result.info:
+                        all_info.append({'page': p['page'].url, 'issue': i_item})
                     for d in test_result.discovery:
                         all_discovery.append({'page': p['page'].url, 'issue': d})
             
@@ -1102,9 +1155,11 @@ class HTMLFormatter(BaseFormatter):
             # Add detailed issues if they exist
             if all_violations:
                 html += f"<h4>{self._t('errors_violations')}</h4><ul>"
-                for item in all_violations[:10]:  # Show first 10
-                    issue = item['issue']
-                    html += f"<li><strong>{issue.id if hasattr(issue, 'id') else self._t('unknown')}:</strong> {issue.description if hasattr(issue, 'description') else self._t('no_description')} - <em>{item['page']}</em></li>"
+                for v_item in all_violations[:10]:  # Show first 10
+                    v_issue: object = v_item['issue']
+                    issue_id: str = str(getattr(v_issue, 'id', self._t('unknown')))
+                    issue_desc: str = str(getattr(v_issue, 'description', self._t('no_description')))
+                    html += f"<li><strong>{issue_id}:</strong> {issue_desc} - <em>{v_item['page']}</em></li>"
                 if len(all_violations) > 10:
                     remaining = len(all_violations) - 10
                     html += f"<li><em>... {remaining} more</em></li>"
@@ -1112,9 +1167,11 @@ class HTMLFormatter(BaseFormatter):
 
             if all_warnings:
                 html += f"<h4>{self._t('warnings')}</h4><ul>"
-                for item in all_warnings[:10]:  # Show first 10
-                    issue = item['issue']
-                    html += f"<li><strong>{issue.id if hasattr(issue, 'id') else self._t('unknown')}:</strong> {issue.description if hasattr(issue, 'description') else self._t('no_description')} - <em>{item['page']}</em></li>"
+                for w_item in all_warnings[:10]:  # Show first 10
+                    w_issue: object = w_item['issue']
+                    issue_id = str(getattr(w_issue, 'id', self._t('unknown')))
+                    issue_desc = str(getattr(w_issue, 'description', self._t('no_description')))
+                    html += f"<li><strong>{issue_id}:</strong> {issue_desc} - <em>{w_item['page']}</em></li>"
                 if len(all_warnings) > 10:
                     remaining = len(all_warnings) - 10
                     html += f"<li><em>... {remaining} more</em></li>"
@@ -1122,9 +1179,11 @@ class HTMLFormatter(BaseFormatter):
 
             if all_info:
                 html += f"<h4>{self._t('information_notes')}</h4><ul>"
-                for item in all_info[:5]:  # Show first 5
-                    issue = item['issue']
-                    html += f"<li><strong>{issue.id if hasattr(issue, 'id') else self._t('unknown')}:</strong> {issue.description if hasattr(issue, 'description') else self._t('no_description')} - <em>{item['page']}</em></li>"
+                for info_item in all_info[:5]:  # Show first 5
+                    i_issue: object = info_item['issue']
+                    issue_id = str(getattr(i_issue, 'id', self._t('unknown')))
+                    issue_desc = str(getattr(i_issue, 'description', self._t('no_description')))
+                    html += f"<li><strong>{issue_id}:</strong> {issue_desc} - <em>{info_item['page']}</em></li>"
                 if len(all_info) > 5:
                     remaining = len(all_info) - 5
                     html += f"<li><em>... {remaining} more</em></li>"
@@ -1132,9 +1191,11 @@ class HTMLFormatter(BaseFormatter):
 
             if all_discovery:
                 html += f"<h4>{self._t('discovery_items')}</h4><ul>"
-                for item in all_discovery[:5]:  # Show first 5
-                    issue = item['issue']
-                    html += f"<li><strong>{issue.id if hasattr(issue, 'id') else self._t('unknown')}:</strong> {issue.description if hasattr(issue, 'description') else self._t('no_description')} - <em>{item['page']}</em></li>"
+                for d_item in all_discovery[:5]:  # Show first 5
+                    d_issue: object = d_item['issue']
+                    issue_id = str(getattr(d_issue, 'id', self._t('unknown')))
+                    issue_desc = str(getattr(d_issue, 'description', self._t('no_description')))
+                    html += f"<li><strong>{issue_id}:</strong> {issue_desc} - <em>{d_item['page']}</em></li>"
                 if len(all_discovery) > 5:
                     remaining = len(all_discovery) - 5
                     html += f"<li><em>... {remaining} more</em></li>"
@@ -1147,6 +1208,7 @@ class HTMLFormatter(BaseFormatter):
 
     # --- Streaming interface ---
 
+    @override
     def begin(self, output_file: str, summary: dict[str, Any]) -> None:
         """Open a temp body file for page HTML sections.
 
@@ -1159,6 +1221,7 @@ class HTMLFormatter(BaseFormatter):
             mode='w', suffix='.html', delete=False, encoding='utf-8'
         )
 
+    @override
     def append_page(self, output_file: str, page_data: dict[str, Any]) -> None:
         """Write one page's violations/warnings as an HTML section to the temp body file."""
         page = page_data.get('page', {})
@@ -1166,17 +1229,11 @@ class HTMLFormatter(BaseFormatter):
         if test_result is None:
             return
 
-        page_url = page.url if hasattr(page, 'url') else (page.get('url', '') if isinstance(page, dict) else '')
-        page_title = page.title if hasattr(page, 'title') else (page.get('title', '') if isinstance(page, dict) else '')
+        page_url: str = self.get_page_url(page)
+        page_title: str = self.get_page_title(page)
 
-        violations = (
-            test_result.violations if hasattr(test_result, 'violations')
-            else test_result.get('violations', []) if isinstance(test_result, dict) else []
-        ) or []
-        warnings = (
-            test_result.warnings if hasattr(test_result, 'warnings')
-            else test_result.get('warnings', []) if isinstance(test_result, dict) else []
-        ) or []
+        violations: list[Any] = self.get_issue_list(test_result, 'violations')
+        warnings_list: list[Any] = self.get_issue_list(test_result, 'warnings')
 
         section = f'<div class="page-section"><h3><a href="{page_url}">{page_title or page_url}</a></h3>\n'
 
@@ -1186,16 +1243,18 @@ class HTMLFormatter(BaseFormatter):
                 section += self._streaming_issue_row(v)
             section += '</tbody></table>\n'
 
-        if warnings:
+        if warnings_list:
             section += f'<h4>{self._t("warnings")}</h4>\n'
             section += f'<table><thead><tr><th>{self._t("code")}</th><th>{self._t("description")}</th><th>{self._t("impact")}</th><th>{self._t("wcag_criteria")}</th><th>{self._t("xpath")}</th></tr></thead><tbody>\n'
-            for w in warnings:
+            for w in warnings_list:
                 section += self._streaming_issue_row(w)
             section += '</tbody></table>\n'
 
         section += '</div>\n'
-        self._body_tempfile.write(section)
+        if self._body_tempfile is not None:
+            self._body_tempfile.write(section)
 
+    @override
     def finalize(self, output_file: str, summary: dict[str, Any]) -> None:
         """Assemble the final HTML document.
 
@@ -1245,6 +1304,7 @@ class HTMLFormatter(BaseFormatter):
             out.write(self._get_footer())
             out.write('\n</div>\n</body>\n</html>')
 
+    @override
     def cleanup(self) -> None:
         """Delete the temp body file."""
         if hasattr(self, '_body_tempfile') and self._body_tempfile:
@@ -1258,58 +1318,58 @@ class HTMLFormatter(BaseFormatter):
 
     def _streaming_issue_row(self, issue: Any) -> str:
         """Return an HTML <tr> for one issue."""
-        # Enrich with catalog data so descriptions are translated
-        if isinstance(issue, dict):
-            issue_dict = issue
-        elif hasattr(issue, 'to_dict'):
-            issue_dict = issue.to_dict()
-        else:
-            issue_dict = issue.__dict__.copy() if hasattr(issue, '__dict__') else {}
-        issue_dict = IssueCatalog.enrich_issue(issue_dict)
-        def _get(k: str, d: Any = '') -> Any:
-            return issue_dict.get(k, d)
+        issue_dict: dict[str, Any] = self.to_enriched_dict(issue)
 
-        impact = _get('impact', '')
-        if hasattr(impact, 'value'):
-            impact = impact.value
-        impact = self._translate_impact(str(impact))
+        impact_raw = issue_dict.get('impact', '')
+        if hasattr(impact_raw, 'value'):
+            impact_raw = impact_raw.value
+        impact_str = self._translate_impact(str(impact_raw))
 
-        wcag = _get('wcag_criteria', [])
-        if isinstance(wcag, list):
-            wcag = ', '.join(str(c) for c in wcag)
+        wcag_str: str = self._format_wcag(issue_dict)
 
-        code = _get('id', '')
+        code: str = str(issue_dict.get('id', ''))
         description = self._best_description(issue_dict)
-        xpath = _get('xpath', '')
+        xpath: str = str(issue_dict.get('xpath', ''))
 
-        return f'<tr><td>{code}</td><td>{description}</td><td>{impact}</td><td>{wcag}</td><td>{xpath}</td></tr>\n'
+        return f'<tr><td>{code}</td><td>{description}</td><td>{impact_str}</td><td>{wcag_str}</td><td>{xpath}</td></tr>\n'
+
 
 
 class JSONFormatter(BaseFormatter):
     """JSON report formatter"""
-    
+
+    _file: TextIO | None
+    _is_first_page: bool
+
     def __init__(self, config: dict[str, Any], language: str = 'en') -> None:
         super().__init__(config, language)
         self.extension = 'json'
-    
+        self._file = None
+        self._is_first_page = True
+
+    @override
     def format_page_report(self, data: dict[str, Any]) -> str:
         """Generate JSON report for a page"""
         return json.dumps(data, indent=2, default=str)
-    
+
+    @override
     def format_website_report(self, data: dict[str, Any]) -> str:
         """Generate JSON report for a website"""
         return json.dumps(data, indent=2, default=str)
-    
+
+    @override
     def format_project_report(self, data: dict[str, Any]) -> str:
         """Generate JSON report for a project"""
         return json.dumps(data, indent=2, default=str)
-    
+
+    @override
     def format_summary_report(self, data: dict[str, Any]) -> str:
         """Generate JSON summary report"""
         return json.dumps(data, indent=2, default=str)
 
     # --- Streaming interface ---
 
+    @override
     def begin(self, output_file: str, summary: dict[str, Any]) -> None:
         """Write the opening envelope: {"summary": ..., "pages": ["""
         self._file = open(output_file, 'w', encoding='utf-8')
@@ -1318,8 +1378,11 @@ class JSONFormatter(BaseFormatter):
         json.dump(summary, self._file, indent=2, default=str)
         self._file.write(', "pages": [\n')
 
+    @override
     def append_page(self, output_file: str, page_data: dict[str, Any]) -> None:
         """Write one page JSON object into the pages array."""
+        if self._file is None:
+            return
         if not self._is_first_page:
             self._file.write(',\n')
         self._is_first_page = False
@@ -1328,42 +1391,54 @@ class JSONFormatter(BaseFormatter):
         serialisable = self._make_serialisable(page_data)
         json.dump(serialisable, self._file, indent=2, default=str)
 
+    @override
     def finalize(self, output_file: str, summary: dict[str, Any]) -> None:
         """Close the pages array and the root object."""
-        if hasattr(self, '_file') and self._file and not self._file.closed:
+        if self._file is not None and not self._file.closed:
             self._file.write('\n]}')
             self._file.flush()
             self._file.close()
 
+    @override
     def cleanup(self) -> None:
         """Close the file handle if still open."""
-        if hasattr(self, '_file') and self._file and not self._file.closed:
+        if self._file is not None and not self._file.closed:
             self._file.close()
 
     # --- helpers ---
 
     @staticmethod
-    def _make_serialisable(obj: Any) -> Any:
+    def _make_serialisable(obj: object) -> object:
         """Recursively convert model objects (with __dict__) to plain dicts."""
-        if isinstance(obj, dict):
-            return {k: JSONFormatter._make_serialisable(v) for k, v in obj.items()}
-        if isinstance(obj, (list, tuple)):
-            return [JSONFormatter._make_serialisable(i) for i in obj]
+        if hasattr(obj, 'items') and hasattr(obj, 'keys'):
+            # dict-like -- extract items via attribute protocol
+            items: list[tuple[str, object]] = [(str(k), v) for k, v in getattr(obj, 'items')()]
+            return {k: JSONFormatter._make_serialisable(v) for k, v in items}
+        if hasattr(obj, '__iter__') and not isinstance(obj, (str, bytes)):
+            # list/tuple-like -- iterate via iter()
+            elems: list[object] = list(getattr(obj, '__iter__')())
+            return [JSONFormatter._make_serialisable(e) for e in elems]
         if hasattr(obj, '__dict__') and not isinstance(obj, type):
+            attrs: dict[str, object] = dict(vars(obj))
             return {k: JSONFormatter._make_serialisable(v)
-                    for k, v in obj.__dict__.items() if not k.startswith('_')}
+                    for k, v in attrs.items() if not k.startswith('_')}
         if hasattr(obj, 'value'):  # enum-like
-            return obj.value
+            return getattr(obj, 'value')
         return obj
 
 
 class CSVFormatter(BaseFormatter):
     """CSV report formatter"""
-    
+
+    _file: TextIO | None
+
     def __init__(self, config: dict[str, Any], language: str = 'en') -> None:
         super().__init__(config, language)
         self.extension = 'csv'
-    
+        self._file: TextIO | None = None
+        self._writer = csv.writer(StringIO())  # placeholder; replaced in begin()
+
+    @override
     def format_page_report(self, data: dict[str, Any]) -> str:
         """Generate CSV report for a page"""
         output = StringIO()
@@ -1398,6 +1473,7 @@ class CSVFormatter(BaseFormatter):
 
         return output.getvalue()
 
+    @override
     def format_website_report(self, data: dict[str, Any]) -> str:
         """Generate CSV report for a website"""
         output = StringIO()
@@ -1420,6 +1496,7 @@ class CSVFormatter(BaseFormatter):
         
         return output.getvalue()
     
+    @override
     def format_project_report(self, data: dict[str, Any]) -> str:
         """Generate CSV report for a project"""
         output = StringIO()
@@ -1446,6 +1523,7 @@ class CSVFormatter(BaseFormatter):
         
         return output.getvalue()
     
+    @override
     def format_summary_report(self, data: dict[str, Any]) -> str:
         """Generate CSV summary report"""
         output = StringIO()
@@ -1472,12 +1550,14 @@ class CSVFormatter(BaseFormatter):
         return [self._t('url'), self._t('page_title'), self._t('type'), self._t('code'), self._t('description'),
                 self._t('touchpoint'), self._t('impact'), self._t('xpath'), self._t('html'), self._t('wcag_criteria')]
 
+    @override
     def begin(self, output_file: str, summary: dict[str, Any]) -> None:
         """Open *output_file* and write the CSV header row."""
         self._file = open(output_file, 'w', newline='', encoding='utf-8')
         self._writer = csv.writer(self._file)
         self._writer.writerow(self._csv_header())
 
+    @override
     def append_page(self, output_file: str, page_data: dict[str, Any]) -> None:
         """Write rows for every violation and warning on one page."""
         page = page_data.get('page', {})
@@ -1485,68 +1565,53 @@ class CSVFormatter(BaseFormatter):
         if test_result is None:
             return
 
-        page_url = page.url if hasattr(page, 'url') else page.get('url', '')
-        page_title = page.title if hasattr(page, 'title') else page.get('title', '')
+        page_url: str = self.get_page_url(page)
+        page_title: str = self.get_page_title(page)
 
-        violations = (
-            test_result.violations if hasattr(test_result, 'violations')
-            else test_result.get('violations', [])
-        ) or []
-        warnings = (
-            test_result.warnings if hasattr(test_result, 'warnings')
-            else test_result.get('warnings', [])
-        ) or []
+        violations: list[Any] = self.get_issue_list(test_result, 'violations')
+        warnings_list: list[Any] = self.get_issue_list(test_result, 'warnings')
 
         for v in violations:
             self._write_issue_row('Violation', page_url, page_title, v)
-        for w in warnings:
+        for w in warnings_list:
             self._write_issue_row('Warning', page_url, page_title, w)
 
+    @override
     def finalize(self, output_file: str, summary: dict[str, Any]) -> None:
         """Flush and close the CSV file."""
-        if hasattr(self, '_file') and self._file and not self._file.closed:
+        if self._file is not None and not self._file.closed:
             self._file.flush()
             self._file.close()
 
+    @override
     def cleanup(self) -> None:
         """Close the file handle if still open."""
-        if hasattr(self, '_file') and self._file and not self._file.closed:
+        if self._file is not None and not self._file.closed:
             self._file.close()
 
     # --- helpers ---
 
     def _write_issue_row(self, issue_type: str, page_url: str, page_title: str, issue: Any) -> None:
         """Write a single CSV row for an issue (violation or warning)."""
-        # Enrich with catalog data so descriptions are translated
-        if isinstance(issue, dict):
-            issue_dict = issue
-        elif hasattr(issue, 'to_dict'):
-            issue_dict = issue.to_dict()
-        else:
-            issue_dict = issue.__dict__.copy() if hasattr(issue, '__dict__') else {}
-        issue_dict = IssueCatalog.enrich_issue(issue_dict)
-        def _get(k: str, d: Any = '') -> Any:
-            return issue_dict.get(k, d)
+        issue_dict: dict[str, Any] = self.to_enriched_dict(issue)
 
-        impact = _get('impact', '')
-        if hasattr(impact, 'value'):
-            impact = impact.value
+        impact_raw = issue_dict.get('impact', '')
+        if hasattr(impact_raw, 'value'):
+            impact_raw = impact_raw.value
 
-        wcag = _get('wcag_criteria', [])
-        if isinstance(wcag, list):
-            wcag = ', '.join(str(c) for c in wcag)
+        wcag_str: str = self._format_wcag(issue_dict)
 
         self._writer.writerow([
             page_url,
             page_title,
             issue_type,
-            _get('id', ''),
+            str(issue_dict.get('id', '')),
             self._best_description(issue_dict),
-            _get('touchpoint', ''),
-            self._translate_impact(str(impact)),
-            _get('xpath', ''),
-            _get('html', ''),
-            wcag,
+            str(issue_dict.get('touchpoint', '')),
+            self._translate_impact(str(impact_raw)),
+            issue_dict.get('xpath', ''),
+            issue_dict.get('html', ''),
+            wcag_str,
         ])
 
 
@@ -1556,6 +1621,11 @@ class ExcelFormatter(BaseFormatter):
     def __init__(self, config: dict[str, Any], language: str = 'en') -> None:
         super().__init__(config, language)
         self.extension = 'xlsx'
+        # Streaming state
+        self._output_file: str = ''
+        self._wb: Any = None  # openpyxl Workbook
+        self._ws_violations: Any = None  # openpyxl Worksheet
+        self._ws_warnings: Any = None  # openpyxl Worksheet
         try:
             from openpyxl import Workbook
             from openpyxl.styles import Font, Fill, PatternFill, Alignment, Border, Side
@@ -1624,14 +1694,15 @@ class ExcelFormatter(BaseFormatter):
             }
         }
     
+    @override
     def format_page_report(self, data: dict[str, Any]) -> bytes:
         """Generate Excel report for a page"""
         if not self.has_openpyxl:
             return json.dumps(data, indent=2, default=str).encode('utf-8')
-        
+
         wb = self.Workbook()
         styles = self._get_styles()
-        
+
         # Summary Sheet
         ws_summary = wb.active
         assert ws_summary is not None
@@ -1685,6 +1756,7 @@ class ExcelFormatter(BaseFormatter):
         output.seek(0)
         return output.getvalue()
     
+    @override
     def format_website_report(self, data: dict[str, Any]) -> bytes:
         """Generate Excel report for a website"""
         if not self.has_openpyxl:
@@ -1716,6 +1788,7 @@ class ExcelFormatter(BaseFormatter):
         output.seek(0)
         return output.getvalue()
     
+    @override
     def format_project_report(self, data: dict[str, Any]) -> bytes:
         """Generate Excel report for a project"""
         if not self.has_openpyxl:
@@ -1785,11 +1858,12 @@ class ExcelFormatter(BaseFormatter):
         output.seek(0)
         return output.getvalue()
     
+    @override
     def format_summary_report(self, data: dict[str, Any]) -> bytes:
         """Generate Excel summary report"""
         if not self.has_openpyxl:
             return json.dumps(data, indent=2, default=str).encode('utf-8')
-        
+
         wb = self.Workbook()
         styles = self._get_styles()
         
@@ -1831,7 +1905,7 @@ class ExcelFormatter(BaseFormatter):
         output.seek(0)
         return output.getvalue()
     
-    def _create_summary_sheet(self, ws: Any, data: Any, styles: dict[str, Any]) -> None:
+    def _create_summary_sheet(self, ws: Any, data: dict[str, Any], styles: dict[str, Any]) -> None:
         """Create page summary sheet"""
         # Title
         ws.merge_cells('A1:E1')
@@ -2074,7 +2148,7 @@ class ExcelFormatter(BaseFormatter):
         
         self._auto_adjust_columns(ws)
 
-    def _create_all_issues_sheet(self, ws: Any, data: Any, styles: dict[str, Any]) -> None:
+    def _create_all_issues_sheet(self, ws: Any, data: dict[str, Any], styles: dict[str, Any]) -> None:
         """Create a combined sheet with all issues (violations, warnings, info, discovery)"""
         headers = [self._t('type'), self._t('impact'), self._t('rule_id'), self._t('touchpoint'), self._t('what'), self._t('why_important'), self._t('who_affected'), self._t('how_to_remediate'), self._t('wcag_criteria'), self._t('location_xpath'), self._t('element'), self._t('page_url'), self._t('breakpoint_px'), self._t('pseudoclass'), self._t('page_state'), self._t('test_user'), self._t('user_roles')]
 
@@ -2085,15 +2159,12 @@ class ExcelFormatter(BaseFormatter):
         row = 2
 
         # Get page state description from test result if available
-        page_state_desc = ''
+        page_state_desc: str = ''
         test_result = data.get('test_result', {})
         if test_result:
             page_state = test_result.get('page_state')
             if page_state:
-                if isinstance(page_state, dict):
-                    page_state_desc = page_state.get('description', '')
-                elif hasattr(page_state, 'description'):
-                    page_state_desc = page_state.description
+                page_state_desc = str(getattr(page_state, 'description', '') if hasattr(page_state, 'description') else (page_state.get('description', '') if hasattr(page_state, 'get') else ''))
 
         # Add all violations
         for v in data.get('violations', []):
@@ -2267,7 +2338,7 @@ class ExcelFormatter(BaseFormatter):
 
         self._auto_adjust_columns(ws)
 
-    def _create_project_all_issues_sheet(self, ws: Any, data: Any, styles: dict[str, Any]) -> None:
+    def _create_project_all_issues_sheet(self, ws: Any, data: dict[str, Any], styles: dict[str, Any]) -> None:
         """Create a combined sheet with all issues from all pages across all websites"""
         headers = [self._t('type'), self._t('impact'), self._t('rule_id'), self._t('touchpoint'), self._t('what'), self._t('why_important'), self._t('who_affected'), self._t('how_to_remediate'), self._t('wcag_criteria'), self._t('location_xpath'), self._t('element'), self._t('page_url'), self._t('website'), self._t('breakpoint_px'), self._t('pseudoclass'), self._t('page_state'), self._t('test_user'), self._t('user_roles')]
 
@@ -2280,37 +2351,27 @@ class ExcelFormatter(BaseFormatter):
         # Iterate through all websites and their pages
         for website_data in data.get('websites', []):
             website = website_data.get('website', {})
-            website_name = website.get('name', '') if isinstance(website, dict) else getattr(website, 'name', '')
+            website_name: str = str(getattr(website, 'name', '') if hasattr(website, 'name') else (website.get('name', '') if hasattr(website, 'get') else ''))
 
             for page_result in website_data.get('pages', []):
                 page = page_result.get('page', {})
-                page_url = page.get('url', '') if isinstance(page, dict) else getattr(page, 'url', '')
+                page_url: str = self.get_page_url(page)
 
                 test_result = page_result.get('test_result')
                 if not test_result:
                     continue
 
                 # Get page state description from test result if available
-                page_state_desc = ''
+                page_state_desc: str = ''
                 if test_result:
                     page_state = getattr(test_result, 'page_state', None) if hasattr(test_result, 'page_state') else test_result.get('page_state')
                     if page_state:
-                        if isinstance(page_state, dict):
-                            page_state_desc = page_state.get('description', '')
-                        elif hasattr(page_state, 'description'):
-                            page_state_desc = page_state.description
+                        page_state_desc = str(getattr(page_state, 'description', '') if hasattr(page_state, 'description') else (page_state.get('description', '') if hasattr(page_state, 'get') else ''))
 
                 # Add violations (from list attributes) - enrich with catalog data
                 violations = getattr(test_result, 'violations', []) if hasattr(test_result, 'violations') else []
                 for v in violations:
-                    # Handle both Violation objects and dicts
-                    if hasattr(v, 'to_dict'):
-                        v_dict = v.to_dict()
-                    else:
-                        v_dict = v if isinstance(v, dict) else {}
-
-                    # Enrich with catalog information
-                    v_dict = IssueCatalog.enrich_issue(v_dict)
+                    v_dict: dict[str, Any] = self.to_enriched_dict(v)
 
                     ws.cell(row=row, column=1, value=self._t('violation'))
                     ws.cell(row=row, column=2, value=self._translate_impact(str(v_dict.get('impact', 'Unknown'))))
@@ -2348,13 +2409,7 @@ class ExcelFormatter(BaseFormatter):
                 # Add warnings - enrich with catalog data
                 warnings = getattr(test_result, 'warnings', []) if hasattr(test_result, 'warnings') else []
                 for w in warnings:
-                    if hasattr(w, 'to_dict'):
-                        w_dict = w.to_dict()
-                    else:
-                        w_dict = w if isinstance(w, dict) else {}
-
-                    # Enrich with catalog information
-                    w_dict = IssueCatalog.enrich_issue(w_dict)
+                    w_dict: dict[str, Any] = self.to_enriched_dict(w)
 
                     ws.cell(row=row, column=1, value=self._t('warning'))
                     ws.cell(row=row, column=2, value=self._translate_impact(str(w_dict.get('impact', 'Moderate'))))
@@ -2392,13 +2447,7 @@ class ExcelFormatter(BaseFormatter):
                 # Add info items - enrich with catalog data
                 info_items = getattr(test_result, 'info', []) if hasattr(test_result, 'info') else []
                 for i in info_items:
-                    if hasattr(i, 'to_dict'):
-                        i_dict = i.to_dict()
-                    else:
-                        i_dict = i if isinstance(i, dict) else {}
-
-                    # Enrich with catalog information
-                    i_dict = IssueCatalog.enrich_issue(i_dict)
+                    i_dict: dict[str, Any] = self.to_enriched_dict(i)
 
                     ws.cell(row=row, column=1, value=self._t('info'))
                     ws.cell(row=row, column=2, value='INFO')
@@ -2436,13 +2485,7 @@ class ExcelFormatter(BaseFormatter):
                 # Add discovery items - enrich with catalog data
                 discovery_items = getattr(test_result, 'discovery', []) if hasattr(test_result, 'discovery') else []
                 for d in discovery_items:
-                    if hasattr(d, 'to_dict'):
-                        d_dict = d.to_dict()
-                    else:
-                        d_dict = d if isinstance(d, dict) else {}
-
-                    # Enrich with catalog information
-                    d_dict = IssueCatalog.enrich_issue(d_dict)
+                    d_dict: dict[str, Any] = self.to_enriched_dict(d)
 
                     ws.cell(row=row, column=1, value=self._t('discovery'))
                     ws.cell(row=row, column=2, value='DISCOVERY')
@@ -2479,20 +2522,17 @@ class ExcelFormatter(BaseFormatter):
 
                 # Add AI findings if available
                 ai_findings = getattr(test_result, 'ai_findings', []) if hasattr(test_result, 'ai_findings') else []
-                for f in ai_findings:
-                    if hasattr(f, 'to_dict'):
-                        f_dict = f.to_dict()
-                    else:
-                        f_dict = f if isinstance(f, dict) else {}
+                for f_item in ai_findings:
+                    f_dict: dict[str, Any] = self.to_enriched_dict(f_item)
 
                     ws.cell(row=row, column=1, value='AI Finding')
                     ws.cell(row=row, column=2, value=str(f_dict.get('severity', 'Unknown')).upper())
-                    ws.cell(row=row, column=3, value=f_dict.get('type', ''))
+                    ws.cell(row=row, column=3, value=str(f_dict.get('type', '')))
                     ws.cell(row=row, column=4, value='')  # AI findings don't have touchpoint
-                    ws.cell(row=row, column=5, value=f_dict.get('description', ''))
+                    ws.cell(row=row, column=5, value=str(f_dict.get('description', '')))
                     ws.cell(row=row, column=6, value='')
                     ws.cell(row=row, column=7, value='')
-                    ws.cell(row=row, column=8, value=f_dict.get('suggested_fix', ''))
+                    ws.cell(row=row, column=8, value=str(f_dict.get('suggested_fix', '')))
                     ws.cell(row=row, column=9, value='')
                     ws.cell(row=row, column=10, value='')
                     ws.cell(row=row, column=11, value='')
@@ -2542,77 +2582,71 @@ class ExcelFormatter(BaseFormatter):
         Returns:
             Dictionary mapping signature -> component info with xpaths per page
         """
-        common_components = {}
+        common_components: dict[str, dict[str, Any]] = {}
 
         # Iterate through all websites and pages
         for website_data in data.get('websites', []):
-            website = website_data.get('website', {})
-            website_name = website.get('name', '') if isinstance(website, dict) else getattr(website, 'name', '')
-
             for page_result in website_data.get('pages', []):
                 page = page_result.get('page', {})
-                page_url = page.get('url', '') if isinstance(page, dict) else getattr(page, 'url', '')
+                page_url: str = self.get_page_url(page)
 
                 test_result = page_result.get('test_result')
                 if not test_result:
                     continue
 
                 # Get discovery items
-                discovery_items = getattr(test_result, 'discovery', []) if hasattr(test_result, 'discovery') else []
+                discovery_items: list[Any] = list(getattr(test_result, 'discovery', []) if hasattr(test_result, 'discovery') else [])
 
                 for d in discovery_items:
-                    if hasattr(d, 'to_dict'):
-                        d_dict = d.to_dict()
-                    else:
-                        d_dict = d if isinstance(d, dict) else {}
+                    d_dict: dict[str, Any] = self.to_enriched_dict(d)
 
-                    issue_id = d_dict.get('id', '')
-                    metadata = d_dict.get('metadata', {})
+                    issue_id: str = str(d_dict.get('id', ''))
+                    metadata: dict[str, Any] = d_dict.get('metadata') or {}
 
                     # Extract signature and xpath for different component types
-                    signature = None
-                    component_type = None
-                    label = None
+                    sig: str | None = None
+                    component_type: str | None = None
+                    label: str | None = None
 
                     if issue_id in ['DiscoFormOnPage', 'forms_DiscoFormOnPage']:
-                        signature = metadata.get('formSignature')
+                        sig = str(metadata.get('formSignature', ''))
                         component_type = 'Form'
                         field_count = metadata.get('fieldCount', 0)
                         label = f"Form ({field_count} fields)"
                     elif issue_id in ['DiscoNavFound', 'landmarks_DiscoNavFound']:
-                        signature = metadata.get('navSignature')
+                        sig = str(metadata.get('navSignature', ''))
                         component_type = 'Navigation'
-                        label = metadata.get('navLabel', 'Navigation')
+                        label = str(metadata.get('navLabel', 'Navigation'))
                     elif issue_id in ['DiscoAsideFound', 'landmarks_DiscoAsideFound']:
-                        signature = metadata.get('asideSignature')
+                        sig = str(metadata.get('asideSignature', ''))
                         component_type = 'Aside'
-                        label = metadata.get('asideLabel', 'Aside')
+                        label = str(metadata.get('asideLabel', 'Aside'))
                     elif issue_id in ['DiscoSectionFound', 'landmarks_DiscoSectionFound']:
-                        signature = metadata.get('sectionSignature')
+                        sig = str(metadata.get('sectionSignature', ''))
                         component_type = 'Section'
-                        label = metadata.get('sectionLabel', 'Section')
+                        label = str(metadata.get('sectionLabel', 'Section'))
                     elif issue_id in ['DiscoHeaderFound', 'landmarks_DiscoHeaderFound']:
-                        signature = metadata.get('headerSignature')
+                        sig = str(metadata.get('headerSignature', ''))
                         component_type = 'Header'
-                        label = metadata.get('headerLabel', 'Header')
+                        label = str(metadata.get('headerLabel', 'Header'))
 
-                    if signature and signature != 'unknown':
-                        if signature not in common_components:
-                            common_components[signature] = {
+                    if sig and sig != 'unknown':
+                        if sig not in common_components:
+                            common_components[sig] = {
                                 'type': component_type,
                                 'label': label,
-                                'signature': signature,  # Store signature for display
+                                'signature': sig,  # Store signature for display
                                 'xpaths_by_page': {},  # page_url -> xpath
                                 'pages': set()
                             }
 
-                        xpath = d_dict.get('xpath', '') or metadata.get('xpath', '')
-                        common_components[signature]['xpaths_by_page'][page_url] = xpath
-                        common_components[signature]['pages'].add(page_url)
+                        xpath_val: str = str(d_dict.get('xpath', '') or metadata.get('xpath', ''))
+                        common_components[sig]['xpaths_by_page'][page_url] = xpath_val
+                        common_components[sig]['pages'].add(page_url)
 
         return common_components
 
-    def _create_project_deduped_issues_sheet(self, ws: Any, data: Any, styles: dict[str, Any]) -> None:
+    def _create_project_deduped_issues_sheet(self, ws: Any, data: dict[str, Any], styles: dict[str, Any]) -> None:
         """Create a deduplicated issues sheet that groups issues by common components"""
         headers = [self._t('type'), self._t('impact'), self._t('rule_id'), self._t('touchpoint'), self._t('what'), self._t('why_important'), self._t('who_affected'),
                    self._t('how_to_remediate'), self._t('wcag_criteria'), self._t('location_xpath'), self._t('element'),
@@ -2628,69 +2662,58 @@ class ExcelFormatter(BaseFormatter):
         common_components = self._extract_common_components(data)
 
         # Track unique issues: (rule_id, xpath_or_component) -> issue data
-        unique_issues: dict[tuple[Any, ...], dict[str, Any]] = {}
+        unique_issues: dict[tuple[str, str | tuple[str, ...]], dict[str, Any]] = {}
 
         # Iterate through all websites and their pages
         for website_data in data.get('websites', []):
-            website = website_data.get('website', {})
-            website_name = website.get('name', '') if isinstance(website, dict) else getattr(website, 'name', '')
-
             for page_result in website_data.get('pages', []):
                 page = page_result.get('page', {})
-                page_url = page.get('url', '') if isinstance(page, dict) else getattr(page, 'url', '')
+                page_url: str = str(page.get('url', '')) if hasattr(page, 'get') else str(getattr(page, 'url', ''))
 
                 test_result = page_result.get('test_result')
                 if not test_result:
                     continue
 
                 # Get page state description from test result if available
-                page_state_desc = ''
+                page_state_desc: str = ''
                 if test_result:
-                    page_state = getattr(test_result, 'page_state', None) if hasattr(test_result, 'page_state') else test_result.get('page_state')
-                    if page_state:
-                        if isinstance(page_state, dict):
-                            page_state_desc = page_state.get('description', '')
-                        elif hasattr(page_state, 'description'):
-                            page_state_desc = page_state.description
+                    page_state_raw = getattr(test_result, 'page_state', None) if hasattr(test_result, 'page_state') else test_result.get('page_state')
+                    if page_state_raw:
+                        page_state_desc = str(getattr(page_state_raw, 'description', '') if hasattr(page_state_raw, 'description') else (page_state_raw.get('description', '') if hasattr(page_state_raw, 'get') else ''))
 
                 # Process all issue types
                 for issue_type, issue_list_attr in [('violation', 'violations'), ('warning', 'warnings'),
                                                       ('info', 'info'), ('discovery', 'discovery')]:
-                    issues = getattr(test_result, issue_list_attr, []) if hasattr(test_result, issue_list_attr) else []
+                    issues: list[Any] = list(getattr(test_result, issue_list_attr, []) if hasattr(test_result, issue_list_attr) else [])
 
                     for issue in issues:
-                        if hasattr(issue, 'to_dict'):
-                            issue_dict = issue.to_dict()
-                        else:
-                            issue_dict = issue if isinstance(issue, dict) else {}
+                        issue_dict: dict[str, Any] = self.to_enriched_dict(issue)
 
-                        # Enrich with catalog information
-                        issue_dict = IssueCatalog.enrich_issue(issue_dict)
-
-                        rule_id = issue_dict.get('id', '')
-                        issue_xpath = issue_dict.get('xpath', '')
+                        rule_id_val: str = str(issue_dict.get('id', ''))
+                        issue_xpath: str = str(issue_dict.get('xpath', ''))
 
                         # Get metadata (breakpoint, pseudoclass)
-                        metadata = issue_dict.get('metadata', {})
-                        breakpoint = metadata.get('breakpoint', '')
-                        pseudoclass = metadata.get('pseudoclass', '')
+                        issue_metadata: dict[str, Any] = issue_dict.get('metadata') or {}
+                        breakpoint_val: str = str(issue_metadata.get('breakpoint', ''))
+                        pseudoclass_val: str = str(issue_metadata.get('pseudoclass', ''))
 
                         # Find which common components contain this issue
-                        containing_components = []
-                        for signature, comp_data in common_components.items():
+                        containing_components: list[str] = []
+                        for _comp_sig, comp_data in common_components.items():
                             # Check if this issue is within this component on this page
                             comp_xpath = comp_data['xpaths_by_page'].get(page_url)
-                            if comp_xpath and self._xpath_is_within(issue_xpath, comp_xpath):
+                            if comp_xpath and self._xpath_is_within(issue_xpath, str(comp_xpath)):
                                 # Format like Discovery Report: "Type signature"
                                 containing_components.append(f"{comp_data['type']} {comp_data['signature']}")
 
                         # Create deduplication key
+                        dedup_key: tuple[str, str | tuple[str, ...]]
                         if containing_components:
                             # Dedupe by rule_id + component(s)
-                            dedup_key = (rule_id, tuple(sorted(containing_components)))
+                            dedup_key = (rule_id_val, tuple(sorted(containing_components)))
                         else:
                             # Dedupe by rule_id + exact xpath for non-component issues
-                            dedup_key = (rule_id, issue_xpath)
+                            dedup_key = (rule_id_val, issue_xpath)
 
                         if dedup_key not in unique_issues:
                             unique_issues[dedup_key] = {
@@ -2710,31 +2733,31 @@ class ExcelFormatter(BaseFormatter):
                         unique_issues[dedup_key]['page_xpaths'][page_url] = issue_xpath
 
                         # Add metadata to tracking sets
-                        if breakpoint:
-                            unique_issues[dedup_key]['breakpoints'].add(breakpoint)
-                        if pseudoclass:
-                            unique_issues[dedup_key]['pseudoclasses'].add(pseudoclass)
+                        if breakpoint_val:
+                            unique_issues[dedup_key]['breakpoints'].add(breakpoint_val)
+                        if pseudoclass_val:
+                            unique_issues[dedup_key]['pseudoclasses'].add(pseudoclass_val)
                         if page_state_desc:
                             unique_issues[dedup_key]['page_states'].add(page_state_desc)
 
                         # Track authenticated user info
-                        auth_user = metadata.get('authenticated_user', {})
+                        auth_user = issue_metadata.get('authenticated_user', {})
                         if auth_user:
                             user_name = auth_user.get('display_name', '')
-                            user_roles = auth_user.get('roles', [])
+                            user_roles_list = auth_user.get('roles', [])
 
                             if user_name:
                                 unique_issues[dedup_key]['test_users'].add(user_name)
 
-                            if user_roles:
-                                for role in user_roles:
+                            if user_roles_list:
+                                for role in user_roles_list:
                                     unique_issues[dedup_key]['user_roles'].add(role)
                         else:
                             unique_issues[dedup_key]['test_users'].add('Guest')
                             unique_issues[dedup_key]['user_roles'].add('no login')
 
         # Write deduplicated issues to sheet
-        for (rule_id, dedup_value), issue_data in sorted(unique_issues.items(),
+        for (rule_id_key, _dedup_value), issue_data in sorted(unique_issues.items(),
                                                           key=lambda x: (x[1]['type'], x[0][0])):
             v_dict = issue_data['data']
             issue_type = issue_data['type']
@@ -2755,7 +2778,7 @@ class ExcelFormatter(BaseFormatter):
 
             ws.cell(row=row, column=1, value=type_label)
             ws.cell(row=row, column=2, value=str(v_dict.get('impact', 'Unknown')).upper())
-            ws.cell(row=row, column=3, value=rule_id)
+            ws.cell(row=row, column=3, value=rule_id_key)
             ws.cell(row=row, column=4, value=v_dict.get('touchpoint', v_dict.get('category', '')))
             ws.cell(row=row, column=5, value=v_dict.get('description_full', v_dict.get('what', v_dict.get('description', ''))))
             ws.cell(row=row, column=6, value=v_dict.get('why_it_matters', ''))
@@ -2803,7 +2826,7 @@ class ExcelFormatter(BaseFormatter):
 
         self._auto_adjust_columns(ws)
 
-    def _create_common_components_sheet(self, ws: Any, data: Any, styles: dict[str, Any]) -> None:
+    def _create_common_components_sheet(self, ws: Any, data: dict[str, Any], styles: dict[str, Any]) -> None:
         """Create a sheet listing all common components identified during deduplication"""
         headers = [self._t('component_type'), self._t('signature'), self._t('label'), self._t('page_count'), self._t('pages_found'), self._t('example_xpath')]
 
@@ -2822,7 +2845,7 @@ class ExcelFormatter(BaseFormatter):
             key=lambda x: (x[1]['type'], -len(x[1]['pages']))
         )
 
-        for signature, comp_data in sorted_components:
+        for _comp_signature, comp_data in sorted_components:
             # Component type (Navigation, Header, Footer)
             ws.cell(row=row, column=1, value=comp_data['type'])
 
@@ -2871,7 +2894,7 @@ class ExcelFormatter(BaseFormatter):
 
         self._auto_adjust_columns(ws)
 
-    def _create_website_summary_sheet(self, ws: Any, data: Any, styles: dict[str, Any]) -> None:
+    def _create_website_summary_sheet(self, ws: Any, data: dict[str, Any], styles: dict[str, Any]) -> None:
         """Create website summary sheet"""
         # Title
         ws.merge_cells('A1:D1')
@@ -2918,30 +2941,38 @@ class ExcelFormatter(BaseFormatter):
 
             ws.cell(row=row, column=1, value=page.get('url', ''))
 
-            violations_cell = ws.cell(row=row, column=2, value=test.get('violation_count', 0) if isinstance(test, dict) else getattr(test, 'violation_count', 0))
-            if (test.get('violation_count', 0) if isinstance(test, dict) else getattr(test, 'violation_count', 0)) > 0:
+            def _test_val(key: str, default: Any = '') -> Any:
+                """Get value from test result dict or object."""
+                return test.get(key, default) if hasattr(test, 'get') else getattr(test, key, default)
+
+            violation_count: int = int(_test_val('violation_count', 0))
+            violations_cell = ws.cell(row=row, column=2, value=violation_count)
+            if violation_count > 0:
                 violations_cell.fill = styles['violation']['fill']
 
-            warnings_cell = ws.cell(row=row, column=3, value=test.get('warning_count', 0) if isinstance(test, dict) else getattr(test, 'warning_count', 0))
-            if (test.get('warning_count', 0) if isinstance(test, dict) else getattr(test, 'warning_count', 0)) > 0:
+            warning_count: int = int(_test_val('warning_count', 0))
+            warnings_cell = ws.cell(row=row, column=3, value=warning_count)
+            if warning_count > 0:
                 warnings_cell.fill = styles['warning']['fill']
 
-            ws.cell(row=row, column=4, value=test.get('pass_count', 0) if isinstance(test, dict) else getattr(test, 'pass_count', 0))
-            ws.cell(row=row, column=5, value=str(test.get('test_date', '') if isinstance(test, dict) else getattr(test, 'test_date', '')))
+            pass_count: int = int(_test_val('pass_count', 0))
+            ws.cell(row=row, column=4, value=pass_count)
+            test_date: str = str(_test_val('test_date', ''))
+            ws.cell(row=row, column=5, value=test_date)
 
             # Add multi-state information
-            page_state = test.get('page_state') if isinstance(test, dict) else getattr(test, 'page_state', None)
-            if page_state:
-                state_desc = page_state.get('description', '') if isinstance(page_state, dict) else getattr(page_state, 'description', '')
-                ws.cell(row=row, column=6, value=state_desc)
+            page_state_raw = _test_val('page_state', None)
+            if page_state_raw:
+                state_desc_val: str = str(getattr(page_state_raw, 'description', '') if hasattr(page_state_raw, 'description') else (page_state_raw.get('description', '') if hasattr(page_state_raw, 'get') else ''))
+                ws.cell(row=row, column=6, value=state_desc_val)
             else:
                 ws.cell(row=row, column=6, value='')
 
-            state_seq = test.get('state_sequence', '') if isinstance(test, dict) else getattr(test, 'state_sequence', '')
-            ws.cell(row=row, column=7, value=state_seq if state_seq != 0 else '')
+            state_seq_val: str = str(_test_val('state_sequence', ''))
+            ws.cell(row=row, column=7, value=state_seq_val if state_seq_val != '0' else '')
 
-            session_id = test.get('session_id', '') if isinstance(test, dict) else getattr(test, 'session_id', '')
-            ws.cell(row=row, column=8, value=session_id or '')
+            session_id_val: str = str(_test_val('session_id', ''))
+            ws.cell(row=row, column=8, value=session_id_val or '')
 
             row += 1
 
@@ -2967,7 +2998,7 @@ class ExcelFormatter(BaseFormatter):
         
         self._auto_adjust_columns(ws)
     
-    def _create_project_summary_sheet(self, ws: Any, data: Any, styles: dict[str, Any]) -> None:
+    def _create_project_summary_sheet(self, ws: Any, data: dict[str, Any], styles: dict[str, Any]) -> None:
         """Create project summary sheet"""
         # Title
         ws.merge_cells('A1:D1')
@@ -3012,29 +3043,29 @@ class ExcelFormatter(BaseFormatter):
             pages = wd.get('pages', [])
             
             # Handle test_result as object or dict
-            total_violations = 0
-            total_warnings = 0
+            total_violations: int = 0
+            total_warnings: int = 0
             for p in pages:
                 test_result = p.get('test_result')
                 if test_result:
                     if hasattr(test_result, 'violation_count'):
                         # It's an object
-                        total_violations += test_result.violation_count
-                        total_warnings += test_result.warning_count
-                    elif isinstance(test_result, dict):
+                        total_violations += int(test_result.violation_count)
+                        total_warnings += int(test_result.warning_count)
+                    elif hasattr(test_result, 'get'):
                         # It's a dictionary
-                        total_violations += test_result.get('violation_count', 0)
-                        total_warnings += test_result.get('warning_count', 0)
+                        total_violations += int(test_result.get('violation_count', 0))
+                        total_warnings += int(test_result.get('warning_count', 0))
             
             # Handle website as object or dict
             if hasattr(website, 'name'):
                 # It's an object
                 ws.cell(row=row, column=1, value=website.name or '')
                 ws.cell(row=row, column=2, value=getattr(website, 'url', None) or getattr(website, 'base_url', ''))
-            else:
+            elif hasattr(website, 'get'):
                 # It's a dictionary
-                ws.cell(row=row, column=1, value=website.get('name', ''))
-                ws.cell(row=row, column=2, value=website.get('url', website.get('base_url', '')))
+                ws.cell(row=row, column=1, value=str(website.get('name', '')))
+                ws.cell(row=row, column=2, value=str(website.get('url', website.get('base_url', ''))))
             ws.cell(row=row, column=3, value=len(pages))
             
             violations_cell = ws.cell(row=row, column=4, value=total_violations)
@@ -3049,7 +3080,7 @@ class ExcelFormatter(BaseFormatter):
         
         self._auto_adjust_columns(ws)
     
-    def _create_all_projects_summary_sheet(self, ws: Any, data: Any, styles: dict[str, Any]) -> None:
+    def _create_all_projects_summary_sheet(self, ws: Any, data: dict[str, Any], styles: dict[str, Any]) -> None:
         """Create all projects summary sheet"""
         # Title
         ws.merge_cells('A1:F1')
@@ -3131,7 +3162,7 @@ class ExcelFormatter(BaseFormatter):
         for attr, value in style.items():
             setattr(cell, attr, value)
     
-    def _create_page_states_sheet(self, ws: Any, data: Any, styles: dict[str, Any]) -> None:
+    def _create_page_states_sheet(self, ws: Any, data: dict[str, Any], styles: dict[str, Any]) -> None:
         """Create sheet showing multi-state test results summary"""
         # Title
         ws.merge_cells('A1:G1')
@@ -3157,14 +3188,10 @@ class ExcelFormatter(BaseFormatter):
         state_sequence = test_result.get('state_sequence', 0)
         page_state = test_result.get('page_state', {})
 
-        if isinstance(page_state, dict):
-            state_desc = page_state.get('description', f'State {state_sequence}')
-            scripts_executed = page_state.get('scripts_executed', [])
-            elements_clicked = page_state.get('elements_clicked', [])
-        else:
-            state_desc = f'State {state_sequence}'
-            scripts_executed = []
-            elements_clicked = []
+        page_state_dict: dict[str, Any] = page_state if hasattr(page_state, 'get') else {}
+        state_desc: str = str(page_state_dict.get('description', f'State {state_sequence}'))
+        scripts_executed: list[Any] = list(page_state_dict.get('scripts_executed', []) or [])
+        elements_clicked: list[Any] = list(page_state_dict.get('elements_clicked', []) or [])
 
         ws.cell(row=row, column=1, value=state_sequence)
         ws.cell(row=row, column=2, value=state_desc)
@@ -3186,13 +3213,13 @@ class ExcelFormatter(BaseFormatter):
 
         if scripts_executed:
             ws.cell(row=row, column=1, value=f"{self._t('scripts_executed')}:").font = self.Font(bold=True)
-            ws.cell(row=row, column=2, value=', '.join(scripts_executed) if isinstance(scripts_executed, list) else str(scripts_executed))
+            ws.cell(row=row, column=2, value=', '.join(str(s) for s in scripts_executed))
             row += 1
 
         if elements_clicked:
             ws.cell(row=row, column=1, value=f"{self._t('elements_clicked')}:").font = self.Font(bold=True)
-            if isinstance(elements_clicked, list) and len(elements_clicked) > 0:
-                click_desc = ', '.join([str(el.get('description', el.get('selector', str(el)))) if isinstance(el, dict) else str(el) for el in elements_clicked])
+            if len(elements_clicked) > 0:
+                click_desc = ', '.join(str(el_item.get('description', el_item.get('selector', str(el_item)))) if hasattr(el_item, 'get') else str(el_item) for el_item in elements_clicked)
                 ws.cell(row=row, column=2, value=click_desc)
             row += 1
 
@@ -3234,6 +3261,7 @@ class ExcelFormatter(BaseFormatter):
         return [self._t('page_url'), self._t('page_title'), self._t('code'), self._t('description'),
                 self._t('touchpoint'), self._t('impact'), self._t('xpath'), self._t('html'), self._t('wcag_criteria')]
 
+    @override
     def begin(self, output_file: str, summary: dict[str, Any]) -> None:
         """Create a Workbook with Summary, Violations, and Warnings sheets."""
         if not self.has_openpyxl:
@@ -3272,6 +3300,7 @@ class ExcelFormatter(BaseFormatter):
             for attr in ('font', 'fill', 'alignment'):
                 setattr(cell, attr, styles['header'][attr])
 
+    @override
     def append_page(self, output_file: str, page_data: dict[str, Any]) -> None:
         """Append rows for one page to the Violations and Warnings sheets."""
         if not self.has_openpyxl or not hasattr(self, '_wb'):
@@ -3282,23 +3311,18 @@ class ExcelFormatter(BaseFormatter):
         if test_result is None:
             return
 
-        page_url = page.url if hasattr(page, 'url') else (page.get('url', '') if isinstance(page, dict) else '')
-        page_title = page.title if hasattr(page, 'title') else (page.get('title', '') if isinstance(page, dict) else '')
+        page_url: str = self.get_page_url(page)
+        page_title: str = self.get_page_title(page)
 
-        violations = (
-            test_result.violations if hasattr(test_result, 'violations')
-            else test_result.get('violations', []) if isinstance(test_result, dict) else []
-        ) or []
-        warnings = (
-            test_result.warnings if hasattr(test_result, 'warnings')
-            else test_result.get('warnings', []) if isinstance(test_result, dict) else []
-        ) or []
+        violations: list[Any] = self.get_issue_list(test_result, 'violations')
+        warnings_list: list[Any] = self.get_issue_list(test_result, 'warnings')
 
         for v in violations:
             self._append_issue_row(self._ws_violations, page_url, page_title, v)
-        for w in warnings:
+        for w in warnings_list:
             self._append_issue_row(self._ws_warnings, page_url, page_title, w)
 
+    @override
     def finalize(self, output_file: str, summary: dict[str, Any]) -> None:
         """Auto-size columns and save the workbook to *output_file*."""
         if not self.has_openpyxl or not hasattr(self, '_wb'):
@@ -3309,6 +3333,7 @@ class ExcelFormatter(BaseFormatter):
 
         self._wb.save(output_file)
 
+    @override
     def cleanup(self) -> None:
         """Close the workbook if still open."""
         if hasattr(self, '_wb') and self._wb:
@@ -3321,46 +3346,39 @@ class ExcelFormatter(BaseFormatter):
 
     def _append_issue_row(self, ws: Any, page_url: str, page_title: str, issue: Any) -> None:
         """Append a single data row to a worksheet."""
-        # Enrich with catalog data so descriptions are translated
-        if isinstance(issue, dict):
-            issue_dict = issue
-        elif hasattr(issue, 'to_dict'):
-            issue_dict = issue.to_dict()
-        else:
-            issue_dict = issue.__dict__.copy() if hasattr(issue, '__dict__') else {}
-        issue_dict = IssueCatalog.enrich_issue(issue_dict)
-        def _get(k: str, d: Any = '') -> Any:
-            return issue_dict.get(k, d)
+        issue_dict: dict[str, Any] = self.to_enriched_dict(issue)
 
-        impact = _get('impact', '')
-        if hasattr(impact, 'value'):
-            impact = impact.value
+        impact_raw = issue_dict.get('impact', '')
+        if hasattr(impact_raw, 'value'):
+            impact_raw = impact_raw.value
 
-        wcag = _get('wcag_criteria', [])
-        if isinstance(wcag, list):
-            wcag = ', '.join(str(c) for c in wcag)
+        wcag_str: str = self._format_wcag(issue_dict)
 
         ws.append([
             page_url,
             page_title,
-            _get('id', ''),
+            str(issue_dict.get('id', '')),
             self._best_description(issue_dict),
-            _get('touchpoint', ''),
-            self._translate_impact(str(impact)),
-            _get('xpath', ''),
-            _get('html', ''),
-            wcag,
+            str(issue_dict.get('touchpoint', '')),
+            self._translate_impact(str(impact_raw)),
+            issue_dict.get('xpath', ''),
+            issue_dict.get('html', ''),
+            wcag_str,
         ])
 
 
 class PDFFormatter(BaseFormatter):
     """PDF report formatter (uses HTML + conversion)"""
-    
-    def __init__(self, config: dict[str, Any], language: str = 'en'):
+
+    def __init__(self, config: dict[str, Any], language: str = 'en') -> None:
         super().__init__(config, language)
         self.extension = 'pdf'
         self.html_formatter = HTMLFormatter(config, language)
-        
+        # Streaming state
+        self._pdf_output_file: str = ''
+        self._internal_html: HTMLFormatter | None = None
+        self._temp_html_path: str = ''
+
         # Try to import weasyprint
         try:
             from weasyprint import HTML, CSS
@@ -3371,16 +3389,19 @@ class PDFFormatter(BaseFormatter):
             logger.warning("weasyprint not installed - PDF generation will fall back to HTML")
             self.has_weasyprint = False
     
+    @override
     def format_page_report(self, data: dict[str, Any]) -> bytes:
         """Generate PDF for page report"""
         html_content = self.html_formatter.format_page_report(data)
         return self._convert_to_pdf(html_content)
-    
+
+    @override
     def format_website_report(self, data: dict[str, Any]) -> bytes:
         """Generate PDF for website report"""
         html_content = self.html_formatter.format_website_report(data)
         return self._convert_to_pdf(html_content)
-    
+
+    @override
     def format_project_report(self, data: dict[str, Any]) -> bytes:
         """Generate PDF for project report"""
         html_content = self.html_formatter.format_project_report(data)
@@ -3396,6 +3417,7 @@ class PDFFormatter(BaseFormatter):
         html_content = self.html_formatter.format_all_projects_report(data)
         return self._convert_to_pdf(html_content)
     
+    @override
     def format_summary_report(self, data: dict[str, Any]) -> bytes:
         """Generate PDF for summary report"""
         html_content = self.html_formatter.format_summary_report(data)
@@ -3427,8 +3449,9 @@ class PDFFormatter(BaseFormatter):
                 ''')
                 
                 # Create PDF from HTML
-                pdf_document: Any = self.HTML(string=html_content).render(stylesheets=[pdf_css])
-                pdf_bytes: bytes = pdf_document.write_pdf()
+                pdf_document = self.HTML(string=html_content).render(stylesheets=[pdf_css])
+                write_fn = getattr(pdf_document, 'write_pdf')
+                pdf_bytes: bytes = write_fn()
 
                 return pdf_bytes
             except Exception as e:
@@ -3452,6 +3475,7 @@ class PDFFormatter(BaseFormatter):
 
     # --- Streaming interface ---
 
+    @override
     def begin(self, output_file: str, summary: dict[str, Any]) -> None:
         """Create an internal HTMLFormatter and a temp HTML file, then delegate."""
         self._pdf_output_file = output_file
@@ -3461,11 +3485,13 @@ class PDFFormatter(BaseFormatter):
         os.close(fd)
         self._internal_html.begin(self._temp_html_path, summary)
 
+    @override
     def append_page(self, output_file: str, page_data: dict[str, Any]) -> None:
         """Delegate to internal HTMLFormatter."""
         if hasattr(self, '_internal_html') and self._internal_html:
             self._internal_html.append_page(self._temp_html_path, page_data)
 
+    @override
     def finalize(self, output_file: str, summary: dict[str, Any]) -> None:
         """Finalize the internal HTML, then convert to PDF via weasyprint."""
         if not hasattr(self, '_internal_html') or not self._internal_html:
@@ -3486,6 +3512,7 @@ class PDFFormatter(BaseFormatter):
             import shutil
             shutil.copy2(self._temp_html_path, output_file)
 
+    @override
     def cleanup(self) -> None:
         """Clean up internal HTMLFormatter temps and own temp HTML file."""
         if hasattr(self, '_internal_html') and self._internal_html:

@@ -646,6 +646,7 @@ async def test_buttons(page: Page) -> dict[str, Any]:
                     # Determine which background to check based on outline-offset
                     # If offset > 0, outline sits outside button against parent background
                     # If offset <= 0, outline sits on/inside button against button background
+                    check_solid_contrast = False
 
                     if outline_offset > 0:
                         # First check z-index - button may float over varying content

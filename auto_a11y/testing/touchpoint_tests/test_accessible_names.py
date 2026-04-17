@@ -5,7 +5,6 @@ Analyzes all interactive elements for proper accessible names using the W3C acce
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any
 import logging
 

@@ -1,11 +1,6 @@
 #!/usr/bin/env python3
-"""
+"""Quick test for AI heading detection."""
 from __future__ import annotations
-
-from typing import Any
-
-Quick test for AI heading detection
-"""
 
 import asyncio
 import sys
@@ -17,10 +12,11 @@ from auto_a11y.core.browser_manager import BrowserManager
 from auto_a11y.ai import ClaudeAnalyzer
 from config import config
 
-api_key = getattr(config, 'CLAUDE_API_KEY', None)
-if not api_key:
+_api_key_raw: str | None = getattr(config, 'CLAUDE_API_KEY', None)
+if not _api_key_raw:
     print("SKIP: No CLAUDE_API_KEY configured")
     sys.exit(0)
+api_key: str = _api_key_raw
 
 # Simple test HTML with obvious heading issues
 test_html = """
@@ -42,8 +38,8 @@ async def test() -> None:
     
     try:
         async with browser_manager.get_page() as page:
-            await page.setContent(test_html)
-            screenshot = await page.screenshot({'fullPage': True})
+            await page.set_content(test_html)
+            screenshot = await page.screenshot(full_page=True)
             
             analyzer = ClaudeAnalyzer(api_key)
             

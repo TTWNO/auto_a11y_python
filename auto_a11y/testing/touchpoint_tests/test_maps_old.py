@@ -5,7 +5,6 @@ Evaluates embedded digital maps for proper accessibility attributes and alternat
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any
 import logging
 
@@ -46,7 +45,7 @@ TEST_DOCUMENTATION = {
             "name": "Map Provider Identification",
             "description": "Identifies the map providers used on the page for informational purposes.",
             "impact": "informational",
-            "wcagCriteria": [],
+            "wcagCriteria": list[str](),
         }
     ]
 }
@@ -63,7 +62,7 @@ async def test_maps(page: Page) -> dict[str, Any]:
     """
     try:
         # Execute JavaScript to analyze maps
-        results: dict[str, Any] = await page.evaluate('''
+        results: dict[str, Any] = await page.evaluate(r'''
             () => {
                 const results = {
                     applicable: true,

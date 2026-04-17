@@ -3,20 +3,20 @@ Recording management routes for manual audits
 """
 from __future__ import annotations
 
+from typing import Any
+
 from flask import (
     Blueprint, Response, render_template, request, redirect,
-    url_for, flash, jsonify, g, session
+    url_for, flash, jsonify, session
 )
 from auto_a11y.web.fluent import ftl
 from auto_a11y.web.typed_app import get_db
-from werkzeug.utils import secure_filename
 from werkzeug.wrappers import Response as WerkzeugResponse
 import logging
 import json
 from pathlib import Path
-from datetime import datetime
 
-from auto_a11y.models import Recording, RecordingIssue, RecordingType
+from auto_a11y.models import RecordingIssue, RecordingType
 from auto_a11y.importers import DictaphoneImporter
 
 logger = logging.getLogger(__name__)
@@ -129,7 +129,7 @@ def view_recording(recording_id: str) -> str | Response | WerkzeugResponse:
             project = get_db().get_project(recording.project_id)
 
         # Get discovered pages for this recording
-        discovered_pages = []
+        discovered_pages: list[Any] = []
         if recording.discovered_page_ids:
             from bson import ObjectId
             from auto_a11y.models import DiscoveredPage
@@ -179,7 +179,7 @@ def view_combined_recordings(project_id: str) -> str | Response | WerkzeugRespon
             return redirect(url_for('projects.view_project', project_id=project_id))
 
         # Collect all issues from all recordings
-        all_issues = []
+        all_issues: list[RecordingIssue] = []
         for recording in recordings:
             issues = get_db().get_recording_issues_for_recording(recording.recording_id)
             # Add recording reference to each issue for display
@@ -299,9 +299,9 @@ def upload_recording() -> str | Response | WerkzeugResponse:
         )
 
         # Store content by language: {'en': [...], 'fr': [...]}
-        key_takeaways_data = {}
-        user_painpoints_data = {}
-        user_assertions_data = {}
+        key_takeaways_data: dict[str, list[dict[str, Any]]] = {}
+        user_painpoints_data: dict[str, list[dict[str, Any]]] = {}
+        user_assertions_data: dict[str, list[dict[str, Any]]] = {}
 
         # Process English content files
         for lang_suffix, lang_code in [('_en', 'en'), ('_fr', 'fr')]:
@@ -392,7 +392,7 @@ def upload_recording() -> str | Response | WerkzeugResponse:
                         break
 
         # Prepare auditor info
-        auditor_info = {
+        auditor_info: dict[str, Any] = {
             'title': title or f"Recording {recording_id_value}",
             'description': description,
             'auditor_name': auditor_name,
@@ -438,6 +438,7 @@ def upload_recording() -> str | Response | WerkzeugResponse:
             all_issues = issues_en
 
             # Process French issues if provided
+            issues_fr: list[RecordingIssue] = []
             if has_french:
                 assert content_fr is not None
                 tmp_file_fr = None
@@ -467,7 +468,7 @@ def upload_recording() -> str | Response | WerkzeugResponse:
 
             # Save to database
             recording_id = get_db().create_recording(recording)
-            issue_ids = get_db().create_recording_issues_bulk(all_issues)
+            _issue_ids = get_db().create_recording_issues_bulk(all_issues)
 
             # Update project's recording_ids
             project = get_db().get_project(project_id)
@@ -517,11 +518,9 @@ def edit_recording(recording_id: str) -> Response | WerkzeugResponse | tuple[Res
         discovered_page_ids: str | list[str] = data.get('discovered_page_ids', [])
         if isinstance(discovered_page_ids, str):
             # Handle comma-separated string
-            recording.discovered_page_ids = [id.strip() for id in discovered_page_ids.split(',') if id.strip()]
-        elif isinstance(discovered_page_ids, list):
-            recording.discovered_page_ids = discovered_page_ids
+            recording.discovered_page_ids = [dpid.strip() for dpid in discovered_page_ids.split(',') if dpid.strip()]
         else:
-            recording.discovered_page_ids = []
+            recording.discovered_page_ids = discovered_page_ids
 
         # Update timestamp
         from datetime import datetime

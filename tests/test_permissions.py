@@ -4,9 +4,6 @@ from __future__ import annotations
 import os
 os.environ.setdefault('RUN_AI_ANALYSIS', 'false')
 
-from typing import Any
-
-import pytest
 from auto_a11y.models.project_member import ProjectMember
 from auto_a11y.models.app_user import UserRole
 from auto_a11y.models.project import Project

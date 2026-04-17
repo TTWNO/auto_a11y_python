@@ -87,6 +87,16 @@ class RecordingIssue:
         return str(self._id) if self._id else None
 
     @property
+    def mongo_id(self) -> ObjectId | None:
+        """Get the raw MongoDB _id value."""
+        return self._id
+
+    @mongo_id.setter
+    def mongo_id(self, value: ObjectId | None) -> None:
+        """Set the raw MongoDB _id value."""
+        self._id = value
+
+    @property
     def wcag_criteria(self) -> list[str]:
         """Get list of WCAG criteria strings for compatibility"""
         return [w.criteria for w in self.wcag]

@@ -9,7 +9,6 @@ import warnings
 from typing import Any, Callable, Iterator
 from datetime import datetime
 from pathlib import Path
-import json
 import re
 
 from auto_a11y.web.fluent import ftl
@@ -413,18 +412,23 @@ class ReportGenerator:
     
     def _enrich_issues_with_catalog(self, issues: list[Any]) -> list[dict[str, Any]]:
         """Enrich issues with detailed information from the catalog"""
-        enriched_issues = []
+        enriched_issues: list[dict[str, Any]] = []
         for issue in issues:
             # Convert to dict if needed
+            issue_dict: dict[str, Any]
             if hasattr(issue, 'to_dict'):
                 issue_dict = issue.to_dict()
+            elif hasattr(issue, 'get'):
+                issue_dict = {str(k): v for k, v in issue.items()}
+            elif hasattr(issue, '__dict__'):
+                issue_dict = dict(issue.__dict__)
             else:
-                issue_dict = issue if isinstance(issue, dict) else issue.__dict__
-            
+                issue_dict = {}
+
             # Enrich with catalog data
             enriched = IssueCatalog.enrich_issue(issue_dict)
             enriched_issues.append(enriched)
-        
+
         return enriched_issues
     
     def _prepare_page_report_data(
@@ -482,7 +486,7 @@ class ReportGenerator:
         total_passes = sum(pr['test_result'].pass_count for pr in page_results)
         
         # Group violations by type and enrich with catalog data
-        violation_types = {}
+        violation_types: dict[str, dict[str, Any]] = {}
         for pr in page_results:
             for v in pr['test_result'].violations:
                 vtype = v.id if hasattr(v, 'id') else 'unknown'
@@ -501,7 +505,9 @@ class ReportGenerator:
                         'impact': catalog_info['impact']
                     }
                 violation_types[vtype]['count'] += 1
-                violation_types[vtype]['pages'].append(pr['page'].get('url', 'Unknown') if isinstance(pr['page'], dict) else pr['page'].url)
+                page_obj = pr['page']
+                page_url_str: str = str(page_obj.get('url', 'Unknown') if hasattr(page_obj, 'get') else getattr(page_obj, 'url', 'Unknown'))
+                violation_types[vtype]['pages'].append(page_url_str)
         
         # Sort pages by violation count
         page_results.sort(
@@ -524,14 +530,14 @@ class ReportGenerator:
             'generated_at': datetime.now().isoformat()
         }
     
-    def _prepare_project_report_data(
+    def prepare_project_report_data(
         self,
         project: Project,
         website_data: list[dict[str, Any]]
     ) -> dict[str, Any]:
         """Prepare data for project report"""
         warnings.warn(
-            "_prepare_project_report_data() is deprecated, use begin/append_page/finalize streaming interface",
+            "prepare_project_report_data() is deprecated, use begin/append_page/finalize streaming interface",
             DeprecationWarning,
             stacklevel=2
         )
@@ -715,7 +721,8 @@ class ReportGenerator:
         content = formatter.format_summary_report(summary_data)
 
         if format == 'pdf' and hasattr(formatter, 'save_pdf'):
-            formatter.save_pdf(content, filepath)
+            save_fn = getattr(formatter, 'save_pdf')
+            save_fn(str(content), filepath)
         elif format in ['xlsx', 'excel']:
             # Excel returns bytes, write in binary mode
             with open(filepath, 'wb') as bf:
@@ -826,7 +833,7 @@ class ReportGenerator:
 
     def _collect_recordings_data(self, project_id: str) -> list[dict[str, Any]]:
         """Load recordings + issues for a project (small bounded dataset)."""
-        recordings_data = []
+        recordings_data: list[dict[str, Any]] = []
         recordings = self.db.get_recordings(project_id=project_id)
         for recording in recordings:
             recording_issues = self.db.get_recording_issues(recording_id=recording.recording_id)

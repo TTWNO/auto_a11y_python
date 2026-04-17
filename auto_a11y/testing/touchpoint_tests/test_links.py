@@ -235,8 +235,10 @@ async def test_links(page: Page) -> dict[str, Any]:
     css_focus_rules = css_capture.to_dict() if css_capture else None
     
     if css_focus_rules:
-        logger.debug(f"Using pre-captured CSS focus rules: {css_focus_rules.get('stylesheet_count', 0)} stylesheets, "
-                    f"{len(css_focus_rules.get('selectors', []))} selectors")
+        logger.debug(
+            f"Using pre-captured CSS focus rules: {css_focus_rules.get('stylesheet_count', 0)} stylesheets, "
+            + f"{len(css_focus_rules.get('selectors', []))} selectors"
+        )
 
     try:
         await asyncio.wait_for(page.evaluate('() => true'), timeout=2.0)
@@ -593,16 +595,16 @@ async def test_links(page: Page) -> dict[str, Any]:
                     violation_reason = 'Link has outline:none with only color change (violates WCAG 1.4.1 Use of Color - must have underline or outline)'
 
         elif link.get('focusOutlineColor') and link.get('focusOutlineWidth'):
-            outline_width = parse_px(link.get('focusOutlineWidth'), font_size, root_font_size)
-            outline_offset = parse_px(link.get('focusOutlineOffset', '0px'), font_size, root_font_size)
+            outline_width = parse_px(str(link.get('focusOutlineWidth', '0px')), font_size, root_font_size)
+            outline_offset = parse_px(str(link.get('focusOutlineOffset', '0px')), font_size, root_font_size)
 
             if outline_width > 0 and outline_width < 2.0 and not has_underline:
                 error_code = 'ErrLinkOutlineWidthInsufficient'
                 violation_reason = f'Link focus outline is too thin ({outline_width:.2f}px, needs ≥2px) and has no underline'
 
             elif not has_gradient:
-                outline_color = parse_color(link.get('focusOutlineColor'))
-                bg_color = parse_color(link.get('backgroundColor'))
+                outline_color = parse_color(str(link.get('focusOutlineColor', '')))
+                bg_color = parse_color(str(link.get('backgroundColor', '')))
 
                 if outline_color['a'] < 0.5:
                     error_code = 'WarnLinkTransparentOutline'
@@ -639,7 +641,7 @@ async def test_links(page: Page) -> dict[str, Any]:
             results['elements_passed'] += 1
 
         looks_like_button = False
-        button_indicators = []
+        button_indicators: list[str] = []
 
         padding = link.get('padding', '')
         border_radius = link.get('borderRadius', '0px')

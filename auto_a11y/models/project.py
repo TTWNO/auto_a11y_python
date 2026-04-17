@@ -43,6 +43,16 @@ class LivedExperienceTester:
         """Get tester ID"""
         return self._id
 
+    @property
+    def mongo_id(self) -> str | None:
+        """Get the raw MongoDB _id value."""
+        return self._id
+
+    @mongo_id.setter
+    def mongo_id(self, value: str | None) -> None:
+        """Set the raw MongoDB _id value."""
+        self._id = value
+
     def ensure_id(self) -> None:
         """Assign a UUID if no ID is set."""
         if not self._id:
@@ -87,6 +97,16 @@ class TestSupervisor:
     def id(self) -> str | None:
         """Get supervisor ID"""
         return self._id
+
+    @property
+    def mongo_id(self) -> str | None:
+        """Get the raw MongoDB _id value."""
+        return self._id
+
+    @mongo_id.setter
+    def mongo_id(self, value: str | None) -> None:
+        """Set the raw MongoDB _id value."""
+        self._id = value
 
     def ensure_id(self) -> None:
         """Assign a UUID if no ID is set."""
@@ -169,6 +189,16 @@ class Project:
     def id(self) -> str | None:
         """Get project ID as string"""
         return str(self._id) if self._id else None
+
+    @property
+    def mongo_id(self) -> ObjectId | None:
+        """Get the raw MongoDB _id value."""
+        return self._id
+
+    @mongo_id.setter
+    def mongo_id(self, value: ObjectId | None) -> None:
+        """Set the raw MongoDB _id value."""
+        self._id = value
 
     @property
     def is_website_project(self) -> bool:

@@ -106,6 +106,16 @@ class PermissionGroup:
     def id(self) -> str | None:
         return str(self._id) if self._id else None
 
+    @property
+    def mongo_id(self) -> ObjectId | None:
+        """Get the raw MongoDB _id value."""
+        return self._id
+
+    @mongo_id.setter
+    def mongo_id(self, value: ObjectId | None) -> None:
+        """Set the raw MongoDB _id value."""
+        self._id = value
+
     def get_level(self, resource: str) -> int:
         """Return numeric permission level for a resource."""
         return PERMISSION_LEVELS.get(self.permissions.get(resource, 'none'), 0)

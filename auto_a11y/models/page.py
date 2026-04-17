@@ -75,6 +75,16 @@ class Page:
         return str(self._id) if self._id else None
 
     @property
+    def mongo_id(self) -> ObjectId | None:
+        """Get the raw MongoDB _id value."""
+        return self._id
+
+    @mongo_id.setter
+    def mongo_id(self, value: ObjectId | None) -> None:
+        """Set the raw MongoDB _id value."""
+        self._id = value
+
+    @property
     def needs_testing(self) -> bool:
         """Check if page needs testing"""
         return self.status in [PageStatus.DISCOVERED, PageStatus.QUEUED, PageStatus.ERROR]

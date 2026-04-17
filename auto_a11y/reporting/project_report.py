@@ -57,7 +57,7 @@ class ProjectReport:
         total_violations = 0
         total_warnings = 0
 
-        website_summaries = []
+        website_summaries: list[dict[str, Any]] = []
 
         for website in self.websites:
             if progress_callback:
@@ -353,17 +353,17 @@ class ProjectReport:
             resolved_dir = Path(reports_dir)
         else:
             # Try getting from Flask current_app if available
-            resolved_dir_found = False
+            resolved_dir = Path('reports')  # default
             try:
                 from flask import current_app
                 if current_app and hasattr(current_app, 'app_config'):
-                    resolved_dir = Path(current_app.app_config.REPORTS_DIR)
-                    resolved_dir_found = True
+                    app_cfg = getattr(current_app, 'app_config')
+                    resolved_dir = Path(str(getattr(app_cfg, 'REPORTS_DIR')))
             except Exception:
                 pass
 
             # Fall back to environment variable or default
-            if not resolved_dir_found:
+            if str(resolved_dir) == 'reports':
                 import os
                 reports_dir_str = os.environ.get('REPORTS_DIR', 'reports')
                 resolved_dir = Path(reports_dir_str)

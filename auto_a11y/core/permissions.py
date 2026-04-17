@@ -153,6 +153,10 @@ def _resolve_project_id(**kwargs: Any) -> str | None:
     return None
 
 
+# Public alias for use by auth.py
+resolve_project_id = _resolve_project_id
+
+
 def permission_required(resource: str, level: str) -> Callable[..., Any]:
     """Decorator: require permission on a resource at a given level.
 

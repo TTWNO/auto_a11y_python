@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
-"""
-from __future__ import annotations
-
-from typing import Any
-
-Check all HTML GET endpoints for Flask error pages.
+"""Check all HTML GET endpoints for Flask error pages.
 
 Reads CI_USERNAME / CI_PASSWORD from .env (or environment), fetches real
 entity IDs from MongoDB, then visits every GET endpoint and checks for
 error indicators.
 """
+from __future__ import annotations
+
+from typing import Any
 
 import os
 import re
@@ -48,10 +46,10 @@ def get_ids_from_db() -> dict[str, str | None]:
     """Fetch real entity IDs from MongoDB so parameterised routes can be tested."""
     mongo_uri = os.getenv('MONGODB_URI', 'mongodb://127.0.0.1:27017/')
     db_name = os.getenv('DATABASE_NAME', os.getenv('MONGODB_DATABASE', 'auto_a11y'))
-    client: MongoClient = MongoClient(mongo_uri)
+    client: MongoClient[Any] = MongoClient(mongo_uri)
     db = client[db_name]
 
-    ids = {}
+    ids: dict[str, str | None] = {}
 
     # Project
     proj = db.projects.find_one()
@@ -298,7 +296,7 @@ def check_for_errors(text: str, status_code: int) -> list[str]:
     """Return list of matched error patterns in response text."""
     if status_code == 500:
         return ["HTTP 500"]
-    found = []
+    found: list[str] = []
     for pat in ERROR_PATTERNS:
         if re.search(pat, text, re.IGNORECASE):
             found.append(pat)
@@ -338,7 +336,7 @@ def main() -> None:
     print("Login successful\n")
 
     # Check each endpoint
-    failures = []
+    failures: list[tuple[str, str, int, list[str], str]] = []
     for label, url in endpoints:
         full_url = f"{BASE_URL}{url}"
         try:
@@ -364,8 +362,8 @@ def main() -> None:
         print(f"\nFAILED ENDPOINTS ({len(failures)}):")
         for label, url, status, errors, text in failures:
             print(f"\n  [{status}] {url}  ({label})")
-            for e in errors:
-                print(f"    -> {e}")
+            for err in errors:
+                print(f"    -> {err}")
             # Print a snippet of the error for diagnosis
             for line in text.split("\n"):
                 line = line.strip()

@@ -2,10 +2,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
-from typing import TYPE_CHECKING
-
-from bson import ObjectId
+from typing import Any, TYPE_CHECKING
 
 from auto_a11y.models.permission_group import PermissionGroup, DEFAULT_GROUPS
 
@@ -68,11 +65,11 @@ def _migrate_project_members(db: Database) -> None:
     (admin -> Admin, auditor -> Auditor, client -> Client) and
     writes the group ObjectId into group_ids.
     """
-    role_to_group = {}
+    role_to_group: dict[str, str] = {}
     for name in DEFAULT_GROUPS:
         group = db.get_group_by_name(name)
         if group:
-            role_to_group[name.lower()] = str(group._id)
+            role_to_group[name.lower()] = str(group.mongo_id)
 
     if not role_to_group:
         logger.warning("No default groups found, skipping member migration")
@@ -83,12 +80,12 @@ def _migrate_project_members(db: Database) -> None:
 
     migrated = 0
     for project_doc in projects:
-        members = project_doc.get('members', [])
+        members: list[dict[str, Any]] = project_doc.get('members', [])
         updated = False
         for member in members:
             if 'role' in member and 'group_ids' not in member:
-                role = member['role']
-                group_id = role_to_group.get(role)
+                role: str = member['role']
+                group_id: str | None = role_to_group.get(role)
                 if group_id:
                     member['group_ids'] = [group_id]
                 else:

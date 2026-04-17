@@ -934,7 +934,8 @@ class PageStructureReport:
         try:
             from flask import current_app
             if current_app and hasattr(current_app, 'app_config'):
-                reports_dir = Path(current_app.app_config.REPORTS_DIR)
+                app_cfg = getattr(current_app, 'app_config')
+                reports_dir = Path(str(getattr(app_cfg, 'REPORTS_DIR')))
         except:
             pass
         

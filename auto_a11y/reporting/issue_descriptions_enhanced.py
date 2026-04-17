@@ -36,26 +36,21 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
     # Handle AI_ prefixed codes specially
     if issue_code.startswith('AI_'):
         error_type = issue_code  # Use full code for AI issues
-        category = 'AI'
     elif '_' in issue_code:
         # Find the actual error code (starts with Err, Warn, Info, Disco, or AI)
         parts = issue_code.split('_')
         error_type = issue_code  # Default to full code
-        category = 'unknown'
-        
+
         for i, part in enumerate(parts):
             if part.startswith(('Err', 'Warn', 'Info', 'Disco')):
                 # Found the error code, join from here to end
                 error_type = '_'.join(parts[i:])
-                # Everything before is the category
-                category = '_'.join(parts[:i]) if i > 0 else 'unknown'
                 break
     else:
-        category = 'unknown'
         error_type = issue_code
     
     # Generated descriptions from template
-    descriptions = {
+    descriptions: dict[str, dict[str, str | list[str]]] = {
         'ErrAccordionWithoutARIA': {
             'title': "Accordion element \"{element_text}\" lacks proper ARIA markup",
             'what': "Accordion element \"{element_text}\" lacks proper ARIA markup",
@@ -3796,7 +3791,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
     
     # Get the specific description for this error type
     if error_type in descriptions:
-        desc = descriptions[error_type].copy()
+        desc: dict[str, str | list[str]] = descriptions[error_type].copy()
         
         # Replace metadata placeholders in the description
         for key in ['title', 'what', 'what_generic', 'why', 'who', 'remediation']:
@@ -3810,13 +3805,13 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             # Special handling for font size list
             if '{fontSizes_list}' in val and 'fontSizes' in metadata:
                 sizes = metadata.get('fontSizes', [])
-                val = val.replace('{fontSizes_list}', ', '.join(sizes) if isinstance(sizes, list) else str(sizes))
+                val = val.replace('{fontSizes_list}', ', '.join(str(s) for s in sizes) if hasattr(sizes, '__iter__') and not isinstance(sizes, str) else str(sizes))
 
             # Special handling for field types summary
             if '{fieldTypes_summary}' in val and 'fieldTypes' in metadata:
                 field_types = metadata.get('fieldTypes', {})
-                if isinstance(field_types, dict):
-                    summary = ', '.join([f"{count} {ftype}" for ftype, count in field_types.items()])
+                if hasattr(field_types, 'items'):
+                    summary = ', '.join([f"{v} {k}" for k, v in field_types.items()])
                     val = val.replace('{fieldTypes_summary}', summary or 'unknown fields')
                 else:
                     val = val.replace('{fieldTypes_summary}', str(field_types))
@@ -3895,14 +3890,19 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
                 parts = path.split('.')
 
                 # Navigate through nested dict/objects
-                value: Any = metadata
-                for part in parts:
-                    if isinstance(value, dict) and part in value:
-                        value = value[part]
-                    else:
-                        return match.group(0)  # Return original if path not found
+                nav: dict[str, Any] = dict(metadata)
+                for part_idx, part in enumerate(parts):
+                    if part not in nav:
+                        return match.group(0)
+                    step = nav[part]
+                    if part_idx == len(parts) - 1:
+                        # Last part - return the value
+                        return str(step) if step is not None else match.group(0)
+                    if not hasattr(step, 'get'):
+                        return match.group(0)
+                    nav = {str(k): v for k, v in step.items()}
 
-                return str(value) if value is not None else match.group(0)
+                return match.group(0)
 
             desc[key] = re.sub(nested_pattern, replace_nested, val)
         

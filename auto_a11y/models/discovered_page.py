@@ -71,6 +71,16 @@ class DiscoveredPage:
         return str(self._id) if self._id else None
 
     @property
+    def mongo_id(self) -> ObjectId | None:
+        """Get the raw MongoDB _id value."""
+        return self._id
+
+    @mongo_id.setter
+    def mongo_id(self, value: ObjectId | None) -> None:
+        """Set the raw MongoDB _id value."""
+        self._id = value
+
+    @property
     def is_synced(self) -> bool:
         """Check if page is synced with Drupal"""
         return self.drupal_sync_status == DrupalSyncStatus.SYNCED and self.drupal_uuid is not None

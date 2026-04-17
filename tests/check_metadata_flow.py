@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""
+"""Test script to verify metadata replacement is working properly."""
 from __future__ import annotations
 
-Test script to verify metadata replacement is working properly
-"""
+from typing import Any
 
 import sys
 import types
@@ -27,7 +26,7 @@ print("Testing Metadata Replacement in Enhanced Descriptions")
 print("=" * 60)
 
 # Test 1: Color contrast with metadata
-test_cases = [
+test_cases: list[dict[str, Any]] = [
     {
         'name': 'Color Contrast',
         'issue_id': 'color_ErrTextContrast',

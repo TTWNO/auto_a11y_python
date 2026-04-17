@@ -8,7 +8,7 @@ from typing import Any
 from datetime import datetime
 import json
 
-from auto_a11y.ai.claude_client import ClaudeClient, ClaudeConfig
+from auto_a11y.ai.claude_client import ClaudeClient
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +72,7 @@ class AIExecutiveSummaryGenerator:
             # Extract text from response
             if hasattr(message, 'content') and len(message.content) > 0:
                 block = message.content[0]
-                response_text: str = block.text if hasattr(block, 'text') else str(block)
+                response_text: str = str(getattr(block, 'text', '')) if hasattr(block, 'text') else str(block)
                 logger.info(f"Claude response length: {len(response_text)} chars")
                 logger.debug(f"Claude response preview: {response_text[:200]}...")
                 return response_text
@@ -96,23 +96,23 @@ class AIExecutiveSummaryGenerator:
             language_instruction = "\n\nIMPORTANT: Please provide your entire response in English."
         
         # Collect all issues for analysis
-        all_violations = []
-        all_warnings = []
-        critical_issues = []
+        all_violations: list[dict[str, Any]] = []
+        all_warnings: list[dict[str, Any]] = []
+        critical_issues: list[dict[str, Any]] = []
         
         for website_data in report_data.get('websites', []):
             for page_data in website_data.get('pages', []):
                 test_result = page_data.get('test_result')
                 if test_result and hasattr(test_result, 'violations'):
                     for v in test_result.violations:
-                        violation_info = {
-                            'description': v.description if hasattr(v, 'description') else '',
-                            'impact': v.impact.value if hasattr(v, 'impact') and hasattr(v.impact, 'value') else 'unknown',
-                            'wcag': v.wcag_criteria if hasattr(v, 'wcag_criteria') else [],
-                            'category': v.category if hasattr(v, 'category') else 'general'
+                        violation_info: dict[str, Any] = {
+                            'description': str(getattr(v, 'description', '')),
+                            'impact': str(v.impact.value) if hasattr(v, 'impact') and hasattr(v.impact, 'value') else 'unknown',
+                            'wcag': getattr(v, 'wcag_criteria', []),
+                            'category': str(getattr(v, 'category', 'general'))
                         }
                         all_violations.append(violation_info)
-                        
+
                         if violation_info['impact'] == 'high':
                             critical_issues.append(violation_info)
                 
@@ -126,7 +126,7 @@ class AIExecutiveSummaryGenerator:
                         all_warnings.append(warning_info)
         
         # Check if any pages were tested with multi-state or responsive breakpoints
-        testing_notes = []
+        testing_notes: list[str] = []
         for website_data in report_data.get('websites', []):
             for page_data in website_data.get('pages', []):
                 test_result = page_data.get('test_result')
@@ -145,8 +145,8 @@ class AIExecutiveSummaryGenerator:
             total_recording_issues = sum(len(r.get('issues', [])) for r in recordings)
 
             # Sample key painpoints and takeaways
-            sample_painpoints = []
-            sample_takeaways = []
+            sample_painpoints: list[dict[str, Any]] = []
+            sample_takeaways: list[Any] = []
             for recording_data in recordings[:3]:  # Sample first 3 recordings
                 painpoints = recording_data.get('user_painpoints', [])
                 takeaways = recording_data.get('key_takeaways', [])
@@ -270,7 +270,7 @@ class AIExecutiveSummaryGenerator:
         sorted_categories = sorted(category_counts.items(), key=lambda x: x[1], reverse=True)
         
         # Format top patterns
-        patterns = []
+        patterns: list[str] = []
         for category, count in sorted_categories[:5]:
             patterns.append(f"- {category}: {count} issues")
         

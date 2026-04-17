@@ -21,7 +21,6 @@ logger = logging.getLogger(__name__)
 from auto_a11y.reporting.issue_descriptions_enhanced import (
     get_detailed_issue_description as _get_original_description,
     ImpactScale,
-    format_issue_for_display as _format_issue_for_display
 )
 
 _TRANSLATIONS_CACHE: dict[str, dict[str, dict[str, str]]] = {}
@@ -50,8 +49,10 @@ def _load_translations(lang: str) -> dict[str, dict[str, str]]:
 def _get_current_locale() -> str:
     """Get the current locale from Fluent integration."""
     try:
-        from auto_a11y.web.fluent import _get_current_locale as get_locale
-        return get_locale()
+        from auto_a11y.web import fluent as _fluent_mod
+        get_locale = getattr(_fluent_mod, '_get_current_locale')
+        result: str = get_locale()
+        return result
     except Exception:
         return 'en'
 
@@ -159,8 +160,8 @@ def _apply_metadata(desc: dict[str, Any], metadata: dict[str, Any] | None) -> di
 
             # Handle font sizes list
             if ('{fontSizes_list}' in text or '%(fontSizes_list)s' in text) and 'fontSizes' in metadata:
-                sizes = metadata.get('fontSizes', [])
-                sizes_list = ', '.join(sizes) if isinstance(sizes, list) else str(sizes)
+                sizes_raw = metadata.get('fontSizes', [])
+                sizes_list: str = ', '.join(str(s) for s in sizes_raw) if hasattr(sizes_raw, '__iter__') and not isinstance(sizes_raw, str) else str(sizes_raw)
                 text = text.replace('{fontSizes_list}', sizes_list)
                 text = text.replace('%(fontSizes_list)s', sizes_list)
             
@@ -184,23 +185,23 @@ def _apply_metadata(desc: dict[str, Any], metadata: dict[str, Any] | None) -> di
 
             # Handle field types summary - generate from fieldTypes dict
             if '{fieldTypes_summary}' in text or '%(fieldTypes_summary)s' in text:
-                field_types_dict = metadata.get('fieldTypes', {})
-                if isinstance(field_types_dict, dict) and field_types_dict:
+                field_types_raw = metadata.get('fieldTypes', {})
+                if hasattr(field_types_raw, 'items') and field_types_raw:
                     # Generate summary like "2 text, 1 email"
-                    field_parts = [f"{count} {ftype}" for ftype, count in field_types_dict.items()]
+                    field_parts = [f"{v} {k}" for k, v in field_types_raw.items()]
                     field_summary = ', '.join(field_parts)
                 else:
-                    field_summary = metadata.get('fieldTypes_summary', '')
+                    field_summary = str(metadata.get('fieldTypes_summary', ''))
                 text = text.replace('{fieldTypes_summary}', str(field_summary))
                 text = text.replace('%(fieldTypes_summary)s', str(field_summary))
-            
+
             # Handle label descriptions
             for label_key in ['asideLabel_description', 'footerLabel_description', 'headerLabel_description']:
                 if '{' + label_key + '}' in text:
                     base_key = label_key.replace('_description', '')
                     label_data = metadata.get(base_key, {})
-                    if isinstance(label_data, dict):
-                        text = text.replace('{' + label_key + '}', label_data.get('description', ''))
+                    if hasattr(label_data, 'get'):
+                        text = text.replace('{' + label_key + '}', str(label_data.get('description', '')))
             
             # Handle link count plural
             if '{linkCount_plural}' in text and 'linkCount' in metadata:

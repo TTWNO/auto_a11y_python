@@ -11,7 +11,7 @@ from unittest.mock import MagicMock, patch
 from bson import ObjectId
 from datetime import datetime
 
-from auto_a11y.models.page import Page, PageStatus
+from auto_a11y.models.page import Page
 from auto_a11y.models.website import Website
 
 

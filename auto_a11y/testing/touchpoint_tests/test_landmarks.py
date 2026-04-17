@@ -5,7 +5,6 @@ Evaluates webpage landmark structure to ensure proper semantic organization and 
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any
 import logging
 
@@ -70,7 +69,7 @@ async def test_landmarks(page: Page) -> dict[str, Any]:
     """
     try:
         # Execute JavaScript to analyze landmarks
-        results: dict[str, Any] = await page.evaluate('''
+        results: dict[str, Any] = await page.evaluate(r'''
             () => {
                 const results = {
                     applicable: true,

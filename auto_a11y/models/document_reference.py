@@ -73,6 +73,16 @@ class DocumentReference:
         return str(self._id) if self._id else None
 
     @property
+    def mongo_id(self) -> ObjectId | None:
+        """Get the raw MongoDB _id value."""
+        return self._id
+
+    @mongo_id.setter
+    def mongo_id(self, value: ObjectId | None) -> None:
+        """Set the raw MongoDB _id value."""
+        self._id = value
+
+    @property
     def document_type_display(self) -> str:
         """Get human-friendly document type"""
         type_map: dict[str, str] = {

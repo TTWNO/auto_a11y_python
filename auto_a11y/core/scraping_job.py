@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import Any
 from auto_a11y.core.job_manager import JobManager, JobType, JobStatus
 from auto_a11y.core.database import Database
+from auto_a11y.models.page import Page
 
 logger = logging.getLogger(__name__)
 
@@ -217,7 +218,7 @@ class ScrapingJob:
 
         scraper = None
         login_automation = LoginAutomation(database)
-        all_pages_by_url = {}  # Track unique pages and which users can see them
+        all_pages_by_url: dict[str, Page] = {}  # Track unique pages and which users can see them
 
         try:
             # Mark as running

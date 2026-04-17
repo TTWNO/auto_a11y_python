@@ -206,7 +206,7 @@ class ScriptSessionManager:
             if script.id is not None and self.has_executed(script.id):
                 logger.warning(
                     f"Condition violation detected: {script.condition_selector} "
-                    f"found on page {page_id} after script execution"
+                    + f"found on page {page_id} after script execution"
                 )
 
                 # Update condition check to mark violation reported
@@ -221,8 +221,10 @@ class ScriptSessionManager:
                     description=script.violation_message or
                             f'Condition persists after script execution: {script.condition_selector}',
                     element=script.condition_selector,
-                    failure_summary=f'Script "{script.name}" was executed to handle this condition, '
-                            f'but the element reappeared on page {page_id}',
+                    failure_summary=(
+                        f'Script "{script.name}" was executed to handle this condition, '
+                        + f'but the element reappeared on page {page_id}'
+                    ),
                     help_url='',
                     wcag_criteria=[]
                 )

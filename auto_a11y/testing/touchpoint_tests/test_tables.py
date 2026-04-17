@@ -5,7 +5,6 @@ Evaluates HTML tables for proper semantic structure and accessibility features.
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any
 import logging
 

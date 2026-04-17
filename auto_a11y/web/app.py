@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from flask import Flask, Response, render_template, jsonify, request, session, g, url_for
+from flask import Flask, Response, render_template, jsonify, request, session, url_for
 from flask_cors import CORS
 from flask_login import LoginManager, current_user, login_required
 from flask_wtf.csrf import CSRFProtect
@@ -102,8 +102,7 @@ def create_app(config: Any) -> Flask:
         ]})
         if empty_count > 0:
             logger.warning(
-                f"{empty_count} project(s) have no members. "
-                "Run 'python migrate_add_project_members.py' to populate membership."
+                f"{empty_count} project(s) have no members. Run 'python migrate_add_project_members.py' to populate membership."
             )
     except Exception:
         pass  # Don't block startup
@@ -129,7 +128,7 @@ def create_app(config: Any) -> Flask:
         return db.get_app_user(user_id)
 
     # Make get_locale, config, and current_user available to all templates
-    from auto_a11y.web.fluent import _get_current_locale as get_locale
+    from auto_a11y.web.fluent import get_current_locale as get_locale
 
     @app.context_processor
     def inject_globals() -> dict[str, Any]:
@@ -250,6 +249,7 @@ def create_app(config: Any) -> Flask:
                     desktop_user = db.get_app_user_by_email('desktop@auto-a11y.local')
                 if desktop_user:
                     login_user(desktop_user)
+        _ = desktop_auto_login  # registered by @app.before_request
 
     # Global login requirement - protect all routes except auth, static, demo, and health
     @app.before_request
@@ -337,8 +337,8 @@ def create_app(config: Any) -> Flask:
             # Extract name (everything after the number, before the level)
             # e.g., "2.4.8 Location (Level AAA)" -> parts[1] = "Location"
             # e.g., "5.2.4 Accessibility Supported" -> parts[1:] = ["Accessibility", "Supported"]
-            name_parts = []
-            for i, part in enumerate(parts[1:], 1):
+            name_parts: list[str] = []
+            for _idx, part in enumerate(parts[1:], 1):
                 if part.startswith('('):  # Stop at "(Level"
                     break
                 name_parts.append(part)
@@ -399,7 +399,7 @@ def create_app(config: Any) -> Flask:
             tested_pages = db.pages.count_documents({'status': 'tested'})
         else:
             # Get website IDs for user's projects
-            website_ids = []
+            website_ids: list[str | None] = []
             for pid in project_ids:
                 for w in db.get_websites(pid):
                     website_ids.append(w.id)
@@ -531,5 +531,17 @@ def create_app(config: Any) -> Flask:
         if exception:
             logger.error(f"Request teardown with exception: {exception}")
     
+    # Ensure pyright recognises framework-registered callbacks as referenced.
+    _framework_callbacks = (
+        load_user, inject_globals, set_language,
+        inject_user_has_projects, require_login,
+        add_security_headers,
+        error_code_only, wcag_understanding_url, wcag_quickref_url,
+        wcag_name, translate_issue,
+        index, dashboard, health, help, serve_screenshot,
+        forbidden, not_found, internal_error, cleanup,
+    )
+    del _framework_callbacks
+
     logger.info("Flask application created")
     return app

@@ -1,28 +1,24 @@
 #!/usr/bin/env python3
-"""
+"""Test script to verify all AI tests are running and reporting correctly."""
 from __future__ import annotations
 
 from typing import Any
 
-Test script to verify all AI tests are running and reporting correctly
-"""
-
 import asyncio
-import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from auto_a11y.core.database import Database
 from auto_a11y.core.browser_manager import BrowserManager
 from auto_a11y.ai import ClaudeAnalyzer
 from config import config
 
-api_key = getattr(config, 'CLAUDE_API_KEY', None)
-if not api_key:
+_api_key_raw: str | None = getattr(config, 'CLAUDE_API_KEY', None)
+if not _api_key_raw:
     print("SKIP: No CLAUDE_API_KEY configured")
     sys.exit(0)
+api_key: str = _api_key_raw
 
 print("AI Testing Comprehensive Check")
 print("=" * 50)
@@ -110,11 +106,11 @@ async def test_ai_analysis() -> None:
     try:
         async with browser_manager.get_page() as page:
             # Load test HTML
-            await page.setContent(test_html)
-            await page.waitForSelector('body')
-            
+            await page.set_content(test_html)
+            await page.wait_for_selector('body')
+
             # Take screenshot
-            screenshot = await page.screenshot({'fullPage': True})
+            screenshot = await page.screenshot(full_page=True)
             print(f"2. Screenshot captured: {len(screenshot)} bytes")
             
             # Initialize analyzer

@@ -5,7 +5,6 @@ Tests for proper ARIA attribute usage and accessibility.
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any
 import logging
 

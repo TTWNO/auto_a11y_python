@@ -2726,7 +2726,12 @@ class IssueCatalog:
         """
         issue_id = issue_dict.get('id', issue_dict.get('err', ''))
         # Build metadata for placeholder substitution - include root-level fields
-        metadata = issue_dict.get('metadata', {}).copy() if issue_dict.get('metadata') else {}
+        metadata: dict[str, Any]
+        _meta_val = issue_dict.get('metadata')
+        if _meta_val and hasattr(_meta_val, 'items'):
+            metadata = {str(k): v for k, v in _meta_val.items()}
+        else:
+            metadata = {}
         # Copy all root-level fields that could be used in description placeholders
         # (e.g. foundLevel, headingText, current_level, animationName, etc.)
         _skip = {'id', 'err', 'metadata'}

@@ -13,7 +13,7 @@ from flask_login import current_user
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from auto_a11y.models import (
-    TestSchedule, ScheduleType, AITestMode, ScheduleRunStatus,
+    TestSchedule, ScheduleType, AITestMode,
     ScheduleTestConfig, PresetConfig
 )
 from auto_a11y.models.app_user import UserRole
@@ -206,7 +206,7 @@ def create_schedule(website_id: str) -> str | Response:
             if scheduler and schedule.enabled:
                 refreshed_schedule = get_db().get_test_schedule(schedule_id)
                 if refreshed_schedule:
-                    scheduler._register_schedule_with_apscheduler(refreshed_schedule)
+                    scheduler.register_schedule_with_apscheduler(refreshed_schedule)
 
             flash(ftl('schedules-schedule-name-created-successfully', name=schedule.name), 'success')
             return redirect(url_for('schedules.list_schedules', website_id=website_id))
@@ -354,7 +354,7 @@ def edit_schedule(website_id: str, schedule_id: str) -> str | Response:
             scheduler = get_scheduler_service()
             if scheduler:
                 if schedule.enabled:
-                    scheduler._register_schedule_with_apscheduler(schedule)
+                    scheduler.register_schedule_with_apscheduler(schedule)
                 else:
                     scheduler.remove_from_apscheduler(schedule_id)
 
@@ -431,7 +431,7 @@ def toggle_schedule(website_id: str, schedule_id: str) -> Response | tuple[Respo
         if new_state:
             refreshed = get_db().get_test_schedule(schedule_id)
             if refreshed:
-                scheduler._register_schedule_with_apscheduler(refreshed)
+                scheduler.register_schedule_with_apscheduler(refreshed)
         else:
             scheduler.remove_from_apscheduler(schedule_id)
 

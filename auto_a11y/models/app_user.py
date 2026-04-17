@@ -55,6 +55,16 @@ class AppUser:
         return str(self._id) if self._id else None
 
     @property
+    def mongo_id(self) -> ObjectId | None:
+        """Get the raw MongoDB _id value."""
+        return self._id
+
+    @mongo_id.setter
+    def mongo_id(self, value: ObjectId | None) -> None:
+        """Set the raw MongoDB _id value."""
+        self._id = value
+
+    @property
     def name_display(self) -> str:
         """Get display name or email"""
         return self.display_name or self.email.split('@')[0]

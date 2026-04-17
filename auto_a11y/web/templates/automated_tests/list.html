@@ -207,7 +207,7 @@
     // i18n strings for JavaScript
     const i18n = {
         filteredResults: '{{ ftl('testing-filtered-results') }}',
-        pagesWithIssues: '{{ ftl('testing-num_pages-pages-with-num_issues-issues') }}',
+        pagesWithIssues: '{{ ftl('testing-num_pages-pages-with-num_issues-issues', num_pages='%(num_pages)s', num_issues='%(num_issues)s') }}',
         errorFiltering: '{{ ftl('testing-error-filtering-results-please-try-again') }}',
         noResultsMatch: '{{ ftl('testing-no-results-match-the-current-filters') }}',
         viewDetails: '{{ ftl('common-view-details') }}',

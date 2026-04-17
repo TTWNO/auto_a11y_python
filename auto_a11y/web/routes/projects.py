@@ -6,16 +6,16 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 from typing import Any
 
-from flask import Blueprint, Flask, render_template, request, redirect, url_for, flash, jsonify, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
 from werkzeug.wrappers import Response
-from auto_a11y.web.fluent import ftl, lazy_ftl, _get_current_locale as get_locale
+from auto_a11y.web.fluent import ftl, lazy_ftl, get_current_locale as get_locale
 from auto_a11y.web.typed_app import get_db, get_app_config, get_test_config
 from flask_login import login_required
 from flask import g
 from auto_a11y.models import Project, ProjectStatus, ProjectType
 from auto_a11y.models.page import PageStatus
 from auto_a11y.models.app_user import UserRole
-from auto_a11y.web.routes.auth import auditor_required, project_role_required, get_effective_role
+from auto_a11y.web.routes.auth import auditor_required, project_role_required
 from auto_a11y.core.job_manager import JobManager, JobType, JobStatus
 from auto_a11y.core.task_runner import task_runner
 from auto_a11y.core.report_job import ReportJob
@@ -305,7 +305,7 @@ def create_project() -> str | Response:
         
         # Get AI testing configuration
         enable_ai_testing = request.form.get('enable_ai_testing') == 'on'
-        ai_tests = []
+        ai_tests: list[str] = []
         if enable_ai_testing:
             # Collect selected AI tests
             for test_name in ['headings', 'reading_order', 'modals', 'language', 'animations', 'interactive']:
@@ -352,8 +352,8 @@ def create_project() -> str | Response:
         return redirect(url_for('projects.view_project', project_id=project_id))
     
     # Get fixture test status for all tests
-    test_statuses = {}
-    passing_tests = set()
+    test_statuses: dict[str, Any] = {}
+    passing_tests: set[str] = set()
 
     if hasattr(current_app, 'test_config') and get_test_config():
         test_statuses = get_test_config().get_all_test_statuses()
@@ -365,7 +365,7 @@ def create_project() -> str | Response:
 
     # Group tests by touchpoint dynamically
     from collections import defaultdict
-    tests_by_touchpoint = defaultdict(list)
+    tests_by_touchpoint: defaultdict[str, list[str]] = defaultdict(list)
 
     # Map fixture directory names to UI touchpoint names
     touchpoint_mapping = {
@@ -450,21 +450,21 @@ def create_project() -> str | Response:
     }
 
     # Group all tests by touchpoint
-    for error_code, status in test_statuses.items():
+    for err_code, status_val in test_statuses.items():
         # Try to determine touchpoint from fixture paths
-        fixture_paths = status.get('fixture_paths', [])
+        fixture_paths: list[str] = status_val.get('fixture_paths', [])
         if fixture_paths:
             # Get directory from first fixture path
-            first_path = fixture_paths[0]
+            first_path: str = fixture_paths[0]
             if '/' in first_path:
-                directory = first_path.split('/')[0]
+                directory: str = first_path.split('/')[0]
                 touchpoint = touchpoint_mapping.get(directory, 'other')
             else:
                 touchpoint = 'other'
         else:
             touchpoint = 'other'
 
-        tests_by_touchpoint[touchpoint].append(error_code)
+        tests_by_touchpoint[touchpoint].append(err_code)
 
     # Sort tests within each touchpoint
     for touchpoint in tests_by_touchpoint:
@@ -688,7 +688,7 @@ def edit_project(project_id: str) -> str | Response:
         enable_ai_testing = request.form.get('enable_ai_testing') == 'on'
         project.config['enable_ai_testing'] = enable_ai_testing
 
-        ai_tests = []
+        ai_tests: list[str] = []
         if enable_ai_testing:
             # Collect selected AI tests
             for test_name in ['headings', 'reading_order', 'modals', 'language', 'animations', 'interactive']:
@@ -963,7 +963,7 @@ def api_get_discovered_pages(project_id: str) -> Response | tuple[Response, int]
         discovered_pages_docs = db.discovered_pages.find({'project_id': project_id})
 
         # Convert to list of dicts
-        pages = []
+        pages: list[dict[str, Any]] = []
         for doc in discovered_pages_docs:
             pages.append({
                 '_id': str(doc['_id']),

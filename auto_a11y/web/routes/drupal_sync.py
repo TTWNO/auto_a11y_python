@@ -201,18 +201,20 @@ def sync_status(project_id: str) -> Response | tuple[Response, int]:
         recordings_failed = sum(1 for r in recordings if r.get('drupal_sync_status') == 'sync_failed')
 
         # Get last sync time
-        last_sync_times = []
+        last_sync_times: list[datetime] = []
         for p in discovered_pages:
-            if p.get('drupal_last_synced'):
-                last_sync_times.append(p['drupal_last_synced'])
+            synced_at = p.get('drupal_last_synced')
+            if synced_at and isinstance(synced_at, datetime):
+                last_sync_times.append(synced_at)
         for r in recordings:
-            if r.get('drupal_last_synced'):
-                last_sync_times.append(r['drupal_last_synced'])
+            r_synced_at = r.get('drupal_last_synced')
+            if r_synced_at and isinstance(r_synced_at, datetime):
+                last_sync_times.append(r_synced_at)
 
-        last_sync_time = max(last_sync_times) if last_sync_times else None
+        last_sync_time: datetime | None = max(last_sync_times) if last_sync_times else None
 
         # Get sync errors
-        sync_errors = []
+        sync_errors: list[str] = []
         for p in discovered_pages:
             if p.get('drupal_error_message'):
                 sync_errors.append(f"Page '{p.get('title')}': {p['drupal_error_message']}")
@@ -430,7 +432,7 @@ def upload_to_drupal(project_id: str) -> Response:
                     }) + '\n'
 
                     # Fetch discovered page UUIDs if recording has discovered pages
-                    discovered_page_uuids = []
+                    discovered_page_uuids: list[str] = []
                     if recording.discovered_page_ids:
                         for page_id in recording.discovered_page_ids:
                             try:
@@ -571,8 +573,8 @@ def upload_to_drupal(project_id: str) -> Response:
                 current_item += 1
 
                 try:
-                    issue_doc = db.issues.find_one({'_id': ObjectId(issue_id)})
-                    if not issue_doc:
+                    found_issue_doc = db.issues.find_one({'_id': ObjectId(issue_id)})
+                    if not found_issue_doc:
                         yield json.dumps({
                             'type': 'error',
                             'current': current_item,
@@ -583,7 +585,7 @@ def upload_to_drupal(project_id: str) -> Response:
                         failure_count += 1
                         continue
 
-                    issue = Issue.from_dict(issue_doc)
+                    issue = Issue.from_dict(found_issue_doc)
 
                     yield json.dumps({
                         'type': 'progress',
@@ -681,12 +683,12 @@ def upload_to_drupal(project_id: str) -> Response:
                     websites = db.get_websites(project_id)
 
                     # Prepare website data with test results
-                    website_data = []
+                    website_data: list[dict[str, Any]] = []
                     for website in websites:
                         if not website.id:
                             continue
                         website_pages = db.get_pages(website.id)
-                        page_results = []
+                        page_results: list[dict[str, Any]] = []
 
                         for ws_page in website_pages:
                             if not ws_page.id:
@@ -745,7 +747,7 @@ def upload_to_drupal(project_id: str) -> Response:
                             })
 
                     # Prepare full project report data
-                    report_data = report_gen._prepare_project_report_data(project, website_data)
+                    report_data = report_gen.prepare_project_report_data(project, website_data)
 
                     # Step 2: Process automated test results with deduplication
                     yield json.dumps({
@@ -855,7 +857,7 @@ def upload_to_drupal(project_id: str) -> Response:
                         Deduplicate violations by component and issue type.
                         Returns dict of unique violations with affected pages list.
                         """
-                        deduped_violations = {}
+                        deduped_violations: dict[tuple[Any, ...], dict[str, Any]] = {}
 
                         for website_data_item in report_data.get('websites', []):
                             for page_result in website_data_item.get('pages', []):
@@ -915,7 +917,7 @@ def upload_to_drupal(project_id: str) -> Response:
                     }) + '\n'
 
                     # Process deduplicated violations and upload as issues
-                    for dedup_key, entry in deduped_violations.items():
+                    for _dedup_key, entry in deduped_violations.items():
                         # Extract the representative violation and affected pages from dedup entry
                         violation = entry['violation']
                         affected_pages = entry['affected_pages']
@@ -951,16 +953,16 @@ def upload_to_drupal(project_id: str) -> Response:
 
                             # Try to build enhanced description from catalog
                             description = violation.description
+                            import html as html_module
                             try:
                                 from auto_a11y.reporting.issue_descriptions_translated import get_detailed_issue_description
-                                import html as html_module
 
                                 # Build issue_code from touchpoint and id
                                 # Format: "{touchpoint}_{id}" (e.g., "headings_ErrEmptyHeading")
                                 issue_code = f"{violation.touchpoint}_{violation.id}"
 
                                 # Build metadata for contextual substitution
-                                metadata = {}
+                                metadata: dict[str, str] = {}
                                 if violation.element:
                                     metadata['element_text'] = violation.element
                                 if violation.html:
@@ -974,7 +976,7 @@ def upload_to_drupal(project_id: str) -> Response:
 
                                 if enhanced:
                                     # Build enhanced description HTML
-                                    description_parts = []
+                                    description_parts: list[str] = []
                                     if enhanced.get('what'):
                                         description_parts.append(f"<h3>What the issue is</h3>\n<p>{html_module.escape(enhanced['what'])}</p>")
                                     if enhanced.get('why'):
@@ -1082,7 +1084,7 @@ def list_discovered_pages(project_id: str) -> Response | tuple[Response, int]:
         pages = list(db.discovered_pages.find({'project_id': project_id}))
 
         # Convert to dict
-        result = []
+        result: list[dict[str, Any]] = []
         for page_doc in pages:
             page = DiscoveredPage.from_dict(page_doc)
             result.append({
@@ -1115,7 +1117,7 @@ def list_recordings(project_id: str) -> Response | tuple[Response, int]:
         recordings = list(db.recordings.find({'project_id': project_id}))
 
         # Convert to dict
-        result = []
+        result: list[dict[str, Any]] = []
         for recording_doc in recordings:
             recording = Recording.from_dict(recording_doc)
             result.append({
@@ -1294,7 +1296,7 @@ def list_issues(project_id: str) -> Response | tuple[Response, int]:
         issues = list(db.issues.find({'project_id': project_id}))
 
         # Convert to dict
-        result = []
+        result: list[dict[str, Any]] = []
         for issue_doc in issues:
             issue = Issue.from_dict(issue_doc)
             result.append({
@@ -1485,10 +1487,10 @@ def upload_automated_results_to_drupal(project_id: str) -> Response:
             project = Project.from_dict(project_doc)
 
             # Get options from request
-            data = request.get_json() or {}
-            options = data.get('options', {})
-            min_component_pages = options.get('min_component_pages', 2)
-            mark_pages_for_inspection = options.get('mark_pages_for_inspection', False)
+            data: dict[str, Any] = request.get_json() or {}
+            options: dict[str, Any] = data.get('options', {})
+            min_component_pages: int = options.get('min_component_pages', 2)
+            mark_pages_for_inspection: bool = options.get('mark_pages_for_inspection', False)
 
             yield json.dumps({
                 'type': 'info',
@@ -1507,30 +1509,30 @@ def upload_automated_results_to_drupal(project_id: str) -> Response:
                 websites = db.get_websites(project_id)
 
                 # Prepare website data with test results
-                website_data = []
+                website_data_list: list[dict[str, Any]] = []
                 for website in websites:
                     if not website.id:
                         continue
                     pages = db.get_pages(website.id)
-                    page_results = []
+                    page_results_list: list[dict[str, Any]] = []
 
                     for page in pages:
                         if not page.id:
                             continue
                         test_result = db.get_latest_test_result(page.id)
                         if test_result:
-                            page_results.append({
+                            page_results_list.append({
                                 'page': page,
                                 'test_result': test_result
                             })
 
-                    website_data.append({
+                    website_data_list.append({
                         'website': website,
-                        'pages': page_results
+                        'pages': page_results_list
                     })
 
                 # Prepare full project report data
-                report_data = report_gen._prepare_project_report_data(project, website_data)
+                report_data = report_gen.prepare_project_report_data(project, website_data_list)
 
             except Exception as e:
                 logger.error(f"Failed to generate report data: {e}")
@@ -1684,7 +1686,7 @@ def upload_automated_results_to_drupal(project_id: str) -> Response:
                             'type': 'error',
                             'current': current_item,
                             'total': total_discovered_pages,
-                            'item': page.title,
+                            'item': disc_export_page.title,
                             'error': result.get('error')
                         }) + '\n'
                         failure_count += 1

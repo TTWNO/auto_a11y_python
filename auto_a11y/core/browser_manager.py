@@ -438,7 +438,7 @@ class BrowserManager:
                     self._default_context_page_count >= self._default_context_max_pages):
                 logger.info(
                     f"Recycling default context after {self._default_context_page_count} pages "
-                    f"to free accumulated browser memory"
+                    + f"to free accumulated browser memory"
                 )
                 await self.close_context(self._default_context)
                 self._default_context = None

@@ -318,12 +318,12 @@ class TestingJob:
                 self.set_user_label("Guest")
             
             # Get pages to test
+            testable_pages: list[Page] = []
             if self.test_all:
                 pages = database.get_pages(self.website_id)
                 # Filter out pages that are currently being tested
                 testable_pages = [p for p in pages if p.status != PageStatus.TESTING]
             elif self.page_ids:
-                testable_pages = []
                 for page_id in self.page_ids:
                     page = database.get_page(page_id)
                     if page and page.status != PageStatus.TESTING:

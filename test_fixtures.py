@@ -19,7 +19,6 @@ from typing import Any
 from datetime import datetime, timedelta
 import uuid
 import time
-import concurrent.futures
 
 # Add the project root to the path
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
@@ -31,6 +30,7 @@ logger = logging.getLogger(__name__)
 from auto_a11y.core import Database
 from config import Config
 from auto_a11y.models import Website, Page, PageStatus, Project, ProjectStatus
+from auto_a11y.models.test_result import Violation
 from auto_a11y.core.website_manager import WebsiteManager
 from auto_a11y.testing.test_runner import TestRunner
 
@@ -68,7 +68,7 @@ class FixtureTestRunner:
             type_filter: Only include fixtures of this type (Err, Warn, Info, Disco, AI)
             code_filter: Only include fixtures for this specific error code
         """
-        fixtures = []
+        fixtures: list[tuple[Path, str]] = []
 
         for html_file in self.fixtures_dir.rglob("*.html"):
             # Apply category filter
@@ -93,8 +93,8 @@ class FixtureTestRunner:
             #   AI_ErrAccordionWithoutARIA_002_correct_with_aria.html -> AI_ErrAccordionWithoutARIA
             #   forms_ErrInputMissingLabel_001_violations_basic.html -> forms_ErrInputMissingLabel
             parts = filename.split('_')
-            error_code_parts = []
-            for i, part in enumerate(parts):
+            error_code_parts: list[str] = []
+            for part in parts:
                 # Stop when we hit a numeric part (sequence number like 001, 002)
                 if part.isdigit():
                     break
@@ -153,7 +153,8 @@ class FixtureTestRunner:
 
             if match:
                 metadata_str = match.group(1)
-                return json.loads(metadata_str)
+                parsed: dict[str, Any] = json.loads(metadata_str)
+                return parsed
         except Exception as e:
             logger.debug(f"Could not extract metadata from {fixture_path}: {e}")
 
@@ -176,12 +177,14 @@ class FixtureTestRunner:
         if is_negative_test:
             print(f"   (Negative test: expecting code NOT to be found)")
 
-        result = {
+        found_codes: list[str] = []
+        notes: list[str] = []
+        result: dict[str, Any] = {
             "fixture": str(fixture_path.relative_to(self.fixtures_dir)),
             "expected_code": expected_code,
-            "found_codes": [],
+            "found_codes": found_codes,
             "success": False,
-            "notes": [],
+            "notes": notes,
             "is_negative_test": is_negative_test,
             "expected_violation_count": expected_violation_count
         }
@@ -257,7 +260,7 @@ class FixtureTestRunner:
             is_ai_test = expected_code.startswith("AI_")
             if is_ai_test and not self.ai_available:
                 print("   ⚠️  Skipping AI_ test (CLAUDE_API_KEY not set)")
-                result["notes"].append("Skipped: AI analysis requires CLAUDE_API_KEY environment variable")
+                notes.append("Skipped: AI analysis requires CLAUDE_API_KEY environment variable")
                 result["success"] = False
                 # Still save to DB to track that it was intentionally skipped
                 db_id = self.save_fixture_result_to_db(result)
@@ -267,6 +270,9 @@ class FixtureTestRunner:
 
             # Get the page object
             page_obj = self.db.get_page(page_id)
+            if page_obj is None:
+                notes.append("Page object not found in database")
+                return result
 
             try:
                 # Determine if AI analysis should run
@@ -287,67 +293,35 @@ class FixtureTestRunner:
                 )
             except asyncio.TimeoutError:
                 print("   ⏱️  Test timed out after 30 seconds")
-                result["notes"].append("Test timed out after 30 seconds")
+                notes.append("Test timed out after 30 seconds")
                 test_result = None
             
             if test_result:
                 # Collect all violation/warning/info IDs
-                all_issues = []
+                all_issues: list[str] = []
 
-                violations = test_result.get('violations', []) if isinstance(test_result, dict) else (test_result.violations if hasattr(test_result, 'violations') else [])
-                for violation in violations:
-                        # Extract the error code from the ID (JavaScript returns 'err' field in dicts)
-                        issue_id = violation.get('err', '') if isinstance(violation, dict) else (violation.id if hasattr(violation, 'id') else '')
+                # Extract issue codes from each violation list
+                violation_lists: list[list[Violation]] = [
+                    test_result.violations,
+                    test_result.warnings,
+                    test_result.info,
+                    test_result.discovery,
+                ]
+                for violation_list in violation_lists:
+                    for item in violation_list:
+                        issue_id: str = item.id
                         if '_' in issue_id:
-                            parts = issue_id.split('_')
-                            for i, part in enumerate(parts):
+                            id_parts: list[str] = issue_id.split('_')
+                            for idx, part in enumerate(id_parts):
                                 if part.startswith(('Err', 'Warn', 'Info', 'Disco', 'AI')):
-                                    code = '_'.join(parts[i:])
+                                    code = '_'.join(id_parts[idx:])
                                     all_issues.append(code)
                                     break
                         else:
                             all_issues.append(issue_id)
-                
-                warnings = test_result.get('warnings', []) if isinstance(test_result, dict) else (test_result.warnings if hasattr(test_result, 'warnings') else [])
-                for warning in warnings:
-                        issue_id = warning.get('err', '') if isinstance(warning, dict) else (warning.id if hasattr(warning, 'id') else '')
-                        if '_' in issue_id:
-                            parts = issue_id.split('_')
-                            for i, part in enumerate(parts):
-                                if part.startswith(('Err', 'Warn', 'Info', 'Disco', 'AI')):
-                                    code = '_'.join(parts[i:])
-                                    all_issues.append(code)
-                                    break
-                        else:
-                            all_issues.append(issue_id)
-                
-                info_items = test_result.get('info', []) if isinstance(test_result, dict) else (test_result.info if hasattr(test_result, 'info') else [])
-                for info_item in info_items:
-                        issue_id = info_item.get('err', '') if isinstance(info_item, dict) else (info_item.id if hasattr(info_item, 'id') else '')
-                        if '_' in issue_id:
-                            parts = issue_id.split('_')
-                            for i, part in enumerate(parts):
-                                if part.startswith(('Err', 'Warn', 'Info', 'Disco', 'AI')):
-                                    code = '_'.join(parts[i:])
-                                    all_issues.append(code)
-                                    break
-                        else:
-                            all_issues.append(issue_id)
-                
-                discoveries = test_result.get('discovery', []) if isinstance(test_result, dict) else (test_result.discovery if hasattr(test_result, 'discovery') else [])
-                for discovery in discoveries:
-                        issue_id = discovery.get('err', '') if isinstance(discovery, dict) else (discovery.id if hasattr(discovery, 'id') else '')
-                        if '_' in issue_id:
-                            parts = issue_id.split('_')
-                            for i, part in enumerate(parts):
-                                if part.startswith(('Err', 'Warn', 'Info', 'Disco', 'AI')):
-                                    code = '_'.join(parts[i:])
-                                    all_issues.append(code)
-                                    break
-                        else:
-                            all_issues.append(issue_id)
-                
-                result["found_codes"] = list(set(all_issues))  # Remove duplicates
+
+                found_codes[:] = list(set(all_issues))  # Remove duplicates
+                result["found_codes"] = found_codes
 
                 # Check success based on whether this is a negative test
                 code_found = expected_code in result["found_codes"]
@@ -359,7 +333,7 @@ class FixtureTestRunner:
                         print(f"   ✅ Success! Code correctly NOT found: {expected_code}")
                     else:
                         print(f"   ❌ Failed! Code should NOT be found but was: {expected_code}")
-                        result["notes"].append(f"Negative test failure: {expected_code} should not be present")
+                        notes.append(f"Negative test failure: {expected_code} should not be present")
                 else:
                     # Positive test: success if code IS found
                     if code_found:
@@ -372,18 +346,18 @@ class FixtureTestRunner:
                 # Note any additional issues found (excluding the expected code)
                 extra_codes = [code for code in result["found_codes"] if code != expected_code]
                 if extra_codes:
-                    result["notes"].append(f"Additional issues found: {', '.join(extra_codes)}")
+                    notes.append(f"Additional issues found: {', '.join(extra_codes)}")
                     
             else:
                 print("   ❌ Failed to run tests on fixture")
-                result["notes"].append("Test execution failed")
+                notes.append("Test execution failed")
                 
             # Clean up test data
             self.db.delete_project(project_id)
             
         except Exception as e:
             print(f"   ❌ Error testing fixture: {e}")
-            result["notes"].append(f"Error: {str(e)}")
+            notes.append(f"Error: {str(e)}")
         
         # Save result to database
         db_id = self.save_fixture_result_to_db(result)
@@ -470,7 +444,7 @@ class FixtureTestRunner:
         print("=" * 80)
 
         # Display filters if any
-        filters_active = []
+        filters_active: list[str] = []
         if category_filter:
             filters_active.append(f"Category: {category_filter}")
         if type_filter:
@@ -482,8 +456,8 @@ class FixtureTestRunner:
 
         if filters_active:
             print("\n🔍 ACTIVE FILTERS:")
-            for f in filters_active:
-                print(f"   • {f}")
+            for filt in filters_active:
+                print(f"   • {filt}")
 
         # Display AI analysis status
         if self.ai_available:
@@ -515,22 +489,22 @@ class FixtureTestRunner:
         # Run all fixtures in parallel (browser semaphore controls concurrency)
         fixture_num = 0
         async with asyncio.TaskGroup() as tg:
-            futs = []
+            futs: list[asyncio.Task[dict[str, Any]]] = []
             for fixture_path, expected_code in fixtures:
                 fixture_num += 1
                 fut = tg.create_task(self.test_fixture(fixture_path, expected_code, fixture_num, len(fixtures)))
                 futs.append(fut)
 
-        for fut in futs:
-            result = fut.result()
-            if result["success"]:
+        for completed_fut in futs:
+            fut_result: dict[str, Any] = completed_fut.result()
+            if fut_result["success"]:
                 success_count += 1
             else:
                 failure_count += 1
-            self.results.append(result)
+            self.results.append(fut_result)
         # Calculate per-error-code success
         # An error code is only considered passing if ALL its fixtures pass
-        error_code_status = {}
+        error_code_status: dict[str, dict[str, Any]] = {}
         for expected_code, fixture_paths in fixtures_by_code.items():
             # Get results for all fixtures of this error code
             code_results = [r for r in self.results if r["expected_code"] == expected_code]
@@ -553,10 +527,11 @@ class FixtureTestRunner:
         actual_failure_count = failure_count - skipped_ai_count
 
         # Count AI codes that were skipped
-        skipped_ai_codes = set()
+        skipped_ai_codes: set[str] = set()
         for r in self.results:
-            if 'AI_' in r['expected_code'] and any('Skipped: AI analysis requires' in str(note) for note in r.get('notes', [])):
-                skipped_ai_codes.add(r['expected_code'])
+            expected_code_str: str = str(r['expected_code'])
+            if 'AI_' in expected_code_str and any('Skipped: AI analysis requires' in str(note) for note in r.get('notes', [])):
+                skipped_ai_codes.add(expected_code_str)
 
         # Print summary
         print("\n" + "=" * 80)

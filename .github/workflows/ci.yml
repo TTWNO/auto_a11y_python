@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12"]
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
     env:
       # Pin the pyright Node binary to the wrapper's version so CI and local
       # resolve identical tools.
@@ -47,7 +47,6 @@ jobs:
 
       - name: Run mypy
         run: python -m mypy --python-version ${{ matrix.python-version }}
-        continue-on-error: true
 
       - name: Run pyright
         run: python -m pyright --pythonversion ${{ matrix.python-version }}
@@ -108,7 +107,7 @@ jobs:
         cat > .env << EOF
         # CI Configuration
         SECRET_KEY=ci-test-secret-key
-        DEBUG=False
+        DEBUG=True
         HOST=127.0.0.1
         PORT=5001
 
@@ -195,7 +194,7 @@ jobs:
     - name: Test Flask app and endpoints
       run: |
         # Start Flask app in background
-        python run.py &
+        python run.py --no-reloader &
         APP_PID=$!
 
         # Wait for app to start (max 30 seconds)

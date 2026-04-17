@@ -12,6 +12,7 @@ from datetime import datetime
 from typing import Any, Callable
 from collections import defaultdict
 from auto_a11y.web.fluent import ftl, force_locale
+from auto_a11y.models.recording_issue import RecordingIssue
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 logger = logging.getLogger(__name__)
@@ -246,10 +247,10 @@ class RecordingsReportGenerator:
 
         # Collect all issues from recordings
         # For bilingual reports, we'll get ALL issues but separate them by language
-        all_issues_en = []
-        all_issues_fr = []
-        issues_by_recording_en = {}
-        issues_by_recording_fr = {}
+        all_issues_en: list[RecordingIssue] = []
+        all_issues_fr: list[RecordingIssue] = []
+        issues_by_recording_en: dict[str, list[RecordingIssue]] = {}
+        issues_by_recording_fr: dict[str, list[RecordingIssue]] = {}
 
         for i, recording in enumerate(recordings):
             if progress_callback:
@@ -367,9 +368,9 @@ class RecordingsReportGenerator:
             'touchpoints': sorted(touchpoints) if touchpoints else []
         }
 
-    def _group_by_touchpoint(self, issues: list[Any]) -> dict[str, list[Any]]:
+    def _group_by_touchpoint(self, issues: list[RecordingIssue]) -> dict[str, list[RecordingIssue]]:
         """Group issues by touchpoint"""
-        grouped = defaultdict(list)
+        grouped: defaultdict[str, list[RecordingIssue]] = defaultdict(list)
         for issue in issues:
             touchpoint = issue.touchpoint or "General"
             grouped[touchpoint].append(issue)
@@ -410,7 +411,8 @@ class RecordingsReportGenerator:
         )
 
         # Register Fluent translation functions so templates can use {{ ftl(...) }}
-        env.globals['ftl'] = ftl
+        # Jinja2's globals dict type is too narrow for arbitrary callables; use dict API
+        getattr(env, 'globals')['ftl'] = ftl
 
         # Load the standalone template (fully self-contained with embedded assets)
         template = env.get_template('static_report/recordings_report_standalone.html')
@@ -502,7 +504,7 @@ class RecordingsReportGenerator:
         """Generate Excel report with translations"""
         try:
             import openpyxl
-            from openpyxl.styles import Font, PatternFill, Alignment
+            from openpyxl.styles import Font, PatternFill
 
             all_translations = self._get_translations()
             t = all_translations.get(language, all_translations['en'])

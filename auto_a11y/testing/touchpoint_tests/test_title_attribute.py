@@ -256,7 +256,7 @@ async def test_title_attribute(page: Page) -> dict[str, Any]:
 
             # ErrImproperTitleAttribute: Specific problematic patterns (educational error)
             # These are particularly egregious examples that help developers understand the problems
-            improper_patterns = []
+            improper_patterns: list[str] = []
 
             # Pattern 1: Title on non-focusable/non-interactive elements (div, span, p, etc.)
             if element.get('isNonInteractiveContainer', False) and not element.get('isFocusable', False):

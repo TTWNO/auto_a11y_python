@@ -286,7 +286,7 @@ async def test_language(page: Page) -> dict[str, Any]:
             results['elements_failed'] += 1
         else:
             # Validate HTML lang code
-            is_valid_format, is_correctly_formatted, is_recognized_lang, is_recognized_region, primary_lang, region_code = validate_language_code(lang_data['htmlLang'])
+            is_valid_format, is_correctly_formatted, is_recognized_lang, is_recognized_region, _primary_lang, _region_code = validate_language_code(lang_data['htmlLang'])
 
             if not is_valid_format:
                 # Invalid format (completely unrecognizable)
@@ -384,7 +384,7 @@ async def test_language(page: Page) -> dict[str, Any]:
                     results['elements_failed'] += 1
                 else:
                     # Validate element lang code
-                    is_valid_format, is_correctly_formatted, is_recognized_lang, is_recognized_region, primary_lang, region_code = validate_language_code(lang)
+                    is_valid_format, is_correctly_formatted, is_recognized_lang, is_recognized_region, _primary_lang, _region_code = validate_language_code(lang)
 
                     if not is_valid_format:
                         # Invalid format (completely unrecognizable)
@@ -444,7 +444,7 @@ async def test_language(page: Page) -> dict[str, Any]:
                         results['elements_failed'] += 1
                     elif element['hasXmlLang'] and element['xmlLang'] and element['xmlLang'].strip():
                         # Element has both lang and xml:lang - validate xml:lang first
-                        xml_is_valid_format, xml_is_correctly_formatted, xml_is_recognized_lang, xml_is_recognized_region, xml_primary_lang, xml_region_code = validate_language_code(element['xmlLang'])
+                        xml_is_valid_format, _xml_is_correctly_formatted, xml_is_recognized_lang, xml_is_recognized_region, _xml_primary_lang, _xml_region_code = validate_language_code(element['xmlLang'])
 
                         if not xml_is_valid_format or not xml_is_recognized_lang:
                             # xml:lang is invalid or unrecognized - report that error first
@@ -539,7 +539,7 @@ async def test_language(page: Page) -> dict[str, Any]:
                 results['elements_failed'] += 1
             else:
                 # Validate xml:lang code
-                is_valid_format, is_correctly_formatted, is_recognized_lang, is_recognized_region, primary_lang, region_code = validate_language_code(lang_data['htmlXmlLang'])
+                is_valid_format, is_correctly_formatted, is_recognized_lang, is_recognized_region, _primary_lang, _region_code = validate_language_code(lang_data['htmlXmlLang'])
 
                 if not is_valid_format:
                     # Invalid format - completely unrecognizable
@@ -664,7 +664,7 @@ async def test_language(page: Page) -> dict[str, Any]:
                     results['elements_failed'] += 1
                 else:
                     # Validate hreflang language code
-                    is_valid_format, is_correctly_formatted, is_recognized_lang, is_recognized_region, primary_lang, region_code = validate_language_code(hreflang)
+                    is_valid_format, is_correctly_formatted, is_recognized_lang, is_recognized_region, _primary_lang, _region_code = validate_language_code(hreflang)
 
                     if not is_valid_format:
                         # Invalid format - completely unrecognizable

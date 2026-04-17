@@ -164,6 +164,16 @@ class TestSchedule:
         return str(self._id) if self._id else None
 
     @property
+    def mongo_id(self) -> ObjectId | None:
+        """Get the raw MongoDB _id value."""
+        return self._id
+
+    @mongo_id.setter
+    def mongo_id(self, value: ObjectId | None) -> None:
+        """Set the raw MongoDB _id value."""
+        self._id = value
+
+    @property
     def type_display(self) -> str:
         """Get human-readable schedule type"""
         type_names: dict[ScheduleType, str] = {

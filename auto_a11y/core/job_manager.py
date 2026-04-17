@@ -154,7 +154,7 @@ class JobManager:
         Returns:
             Created job document
         """
-        job_doc = {
+        job_doc: dict[str, Any] = {
             'job_id': job_id,
             'job_type': job_type.value,
             'status': JobStatus.PENDING.value,
@@ -221,11 +221,12 @@ class JobManager:
         Returns:
             True if updated successfully
         """
+        set_fields: dict[str, Any] = {
+            'status': status.value,
+            'updated_at': datetime.now()
+        }
         update_doc: dict[str, Any] = {
-            '$set': {
-                'status': status.value,
-                'updated_at': datetime.now()
-            }
+            '$set': set_fields
         }
         
         if status == JobStatus.RUNNING and not progress:

@@ -3,7 +3,7 @@ Database connection and repository management
 """
 from __future__ import annotations
 
-from typing import Any, Iterator
+from typing import Any
 from collections.abc import Generator
 from pymongo import MongoClient
 from pymongo.database import Database as MongoDatabase
@@ -16,13 +16,13 @@ import certifi
 
 from auto_a11y.models import (
     Project, Website, Page, TestResult,
-    ProjectStatus, ProjectType, PageStatus,
+    ProjectStatus, PageStatus,
     Recording, RecordingIssue, RecordingType,
     DocumentReference, DiscoveryRun,
     PageSetupScript, ScriptExecutionSession,
     WebsiteUser, ProjectUser, DiscoveredPage,
     TestStateMatrix, AppUser, UserRole,
-    TestSchedule, ScheduleType, ScheduleRunStatus,
+    TestSchedule, ScheduleRunStatus,
     ShareToken, TokenScope
 )
 from auto_a11y.models.permission_group import PermissionGroup
@@ -240,7 +240,7 @@ class Database:
     def create_project(self, project: Project) -> str:
         """Create new project"""
         result = self.projects.insert_one(project.to_dict())
-        project._id = result.inserted_id
+        project.mongo_id = result.inserted_id
         project_id = str(result.inserted_id)
         logger.info(f"Created project: {project.name} ({project_id})")
         return project_id
@@ -308,7 +308,7 @@ class Database:
         """Update existing project"""
         project.update_timestamp()
         result = self.projects.replace_one(
-            {"_id": project._id},
+            {"_id": project.mongo_id},
             project.to_dict()
         )
         return result.modified_count > 0
@@ -331,7 +331,7 @@ class Database:
     def create_website(self, website: Website) -> str:
         """Create new website"""
         result = self.websites.insert_one(website.to_dict())
-        website._id = result.inserted_id
+        website.mongo_id = result.inserted_id
         
         # Add to project's website list
         self.projects.update_one(
@@ -370,7 +370,7 @@ class Database:
     def update_website(self, website: Website) -> bool:
         """Update existing website"""
         result = self.websites.replace_one(
-            {"_id": website._id},
+            {"_id": website.mongo_id},
             website.to_dict()
         )
         return result.modified_count > 0
@@ -460,9 +460,7 @@ class Database:
 
         pages_reset = reset_result.modified_count
         logger.info(
-            f"Cleared test results for website {website_id}: "
-            f"{test_results_deleted} test_results deleted, "
-            f"{pages_reset} pages reset"
+            f"Cleared test results for website {website_id}: {test_results_deleted} test_results deleted, {pages_reset} pages reset"
         )
         return {
             'test_results_deleted': test_results_deleted,
@@ -480,11 +478,11 @@ class Database:
         })
         
         if existing:
-            page._id = existing["_id"]
+            page.mongo_id = existing["_id"]
             return str(existing["_id"])
         
         result = self.pages.insert_one(page.to_dict())
-        page._id = result.inserted_id
+        page.mongo_id = result.inserted_id
         
         # Update website page count
         self.websites.update_one(
@@ -544,7 +542,7 @@ class Database:
     def update_page(self, page: Page) -> bool:
         """Update existing page"""
         result = self.pages.replace_one(
-            {"_id": page._id},
+            {"_id": page.mongo_id},
             page.to_dict()
         )
         return result.modified_count > 0
@@ -572,7 +570,7 @@ class Database:
             return 0
         
         # Filter out existing pages
-        new_pages = []
+        new_pages: list[dict[str, Any]] = []
         for page in pages:
             existing = self.pages.find_one({
                 "website_id": page.website_id,
@@ -611,7 +609,7 @@ class Database:
         Returns:
             Number of items inserted
         """
-        items = []
+        items: list[dict[str, Any]] = []
 
         # Convert violations to items
         for violation in test_result.violations:
@@ -762,7 +760,7 @@ class Database:
         try:
             # Insert summary document
             result = self.test_results.insert_one(summary)
-            test_result._id = result.inserted_id
+            test_result.mongo_id = result.inserted_id
             test_result_id = result.inserted_id
 
             logger.info(f"Created test result summary for page: {test_result.page_id}")
@@ -803,7 +801,7 @@ class Database:
             }
 
             result = self.test_results.insert_one(error_result)
-            test_result._id = result.inserted_id
+            test_result.mongo_id = result.inserted_id
 
         # Update page with latest test info
         page = self.get_page(test_result.page_id)
@@ -819,7 +817,7 @@ class Database:
             self.update_page(page)
 
         logger.info(f"Created test result for page: {test_result.page_id}")
-        return str(test_result._id) if test_result._id else ""
+        return str(test_result.mongo_id) if test_result.mongo_id else ""
 
     def _get_test_result_items(self, test_result_id: ObjectId, item_type: str | None = None) -> list[dict[str, Any]]:
         """
@@ -869,14 +867,14 @@ class Database:
             items = self._get_test_result_items(test_result_id)
 
             # Group items by type
-            violations = []
-            warnings = []
-            info = []
-            discovery = []
-            passes = []
+            violations: list[dict[str, Any]] = []
+            warnings: list[dict[str, Any]] = []
+            info: list[dict[str, Any]] = []
+            discovery: list[dict[str, Any]] = []
+            passes: list[dict[str, Any]] = []
 
             for item in items:
-                item_data = {
+                item_data: dict[str, Any] = {
                     'id': item.get('issue_id'),
                     'impact': item.get('impact'),
                     'touchpoint': item.get('touchpoint'),
@@ -935,14 +933,14 @@ class Database:
             items = self._get_test_result_items(test_result_id)
 
             # Group items by type
-            violations = []
-            warnings = []
-            info = []
-            discovery = []
-            passes = []
+            violations: list[dict[str, Any]] = []
+            warnings: list[dict[str, Any]] = []
+            info: list[dict[str, Any]] = []
+            discovery: list[dict[str, Any]] = []
+            passes: list[dict[str, Any]] = []
 
             for item in items:
-                item_data = {
+                item_data: dict[str, Any] = {
                     'id': item.get('issue_id'),
                     'impact': item.get('impact'),
                     'touchpoint': item.get('touchpoint'),
@@ -1037,7 +1035,7 @@ class Database:
                 query["test_date"]["$lte"] = end_date
 
         docs = self.test_results.find(query).limit(limit).skip(skip).sort("test_date", -1)
-        results = []
+        results: list[TestResult] = []
         for doc in docs:
             # Check if this uses the new schema (split items)
             # Skip loading detailed items if summary_only=True (for trend analysis)
@@ -1047,14 +1045,14 @@ class Database:
                 items = self._get_test_result_items(test_result_id)
 
                 # Group items by type
-                violations = []
-                warnings = []
-                info = []
-                discovery = []
-                passes = []
+                violations: list[dict[str, Any]] = []
+                warnings: list[dict[str, Any]] = []
+                info: list[dict[str, Any]] = []
+                discovery: list[dict[str, Any]] = []
+                passes: list[dict[str, Any]] = []
 
                 for item in items:
-                    item_data = {
+                    item_data: dict[str, Any] = {
                         'id': item.get('issue_id'),
                         'impact': item.get('impact'),
                         'touchpoint': item.get('touchpoint'),
@@ -1113,7 +1111,7 @@ class Database:
             List of test results ordered by state_sequence
         """
         docs = self.test_results.find({"session_id": session_id}).sort("state_sequence", 1)
-        results = []
+        results: list[TestResult] = []
         for doc in docs:
             # Check if this uses the new schema (split items)
             if doc.get('_has_detailed_items'):
@@ -1122,14 +1120,14 @@ class Database:
                 items = self._get_test_result_items(test_result_id)
 
                 # Group items by type
-                violations = []
-                warnings = []
-                info = []
-                discovery = []
-                passes = []
+                violations_l: list[dict[str, Any]] = []
+                warnings_l: list[dict[str, Any]] = []
+                info_l: list[dict[str, Any]] = []
+                discovery_l: list[dict[str, Any]] = []
+                passes_l: list[dict[str, Any]] = []
 
                 for item in items:
-                    item_data = {
+                    item_data: dict[str, Any] = {
                         'id': item.get('issue_id'),
                         'impact': item.get('impact'),
                         'touchpoint': item.get('touchpoint'),
@@ -1145,25 +1143,25 @@ class Database:
                         item_data['failure_summary'] = item.get('failure_summary')
                         item_data['wcag_criteria'] = item.get('wcag_criteria', [])
                         item_data['help_url'] = item.get('help_url')
-                        violations.append(item_data)
+                        violations_l.append(item_data)
                     elif item_type == 'warning':
                         item_data['failure_summary'] = item.get('failure_summary')
                         item_data['wcag_criteria'] = item.get('wcag_criteria', [])
                         item_data['help_url'] = item.get('help_url')
-                        warnings.append(item_data)
+                        warnings_l.append(item_data)
                     elif item_type == 'info':
-                        info.append(item_data)
+                        info_l.append(item_data)
                     elif item_type == 'discovery':
-                        discovery.append(item_data)
+                        discovery_l.append(item_data)
                     elif item_type == 'pass':
-                        passes.append(item_data)
+                        passes_l.append(item_data)
 
                 # Add arrays back to doc for TestResult.from_dict()
-                doc['violations'] = violations
-                doc['warnings'] = warnings
-                doc['info'] = info
-                doc['discovery'] = discovery
-                doc['passes'] = passes
+                doc['violations'] = violations_l
+                doc['warnings'] = warnings_l
+                doc['info'] = info_l
+                doc['discovery'] = discovery_l
+                doc['passes'] = passes_l
 
             # Old schema already has arrays, or we just added them
             result = TestResult.from_dict(doc)
@@ -1351,7 +1349,7 @@ class Database:
 
         total_pages = 0
         tested_pages = 0
-        tested_page_ids = []
+        tested_page_ids: list[str | None] = []
 
         for website in websites:
             if not website.id:
@@ -1394,8 +1392,6 @@ class Database:
     # Document Reference methods
     def add_document_reference(self, doc_ref: DocumentReference) -> str:
         """Add or update a document reference"""
-        from auto_a11y.models import DocumentReference
-        
         # Check if this document already exists for this website
         existing = self.document_references.find_one({
             'website_id': doc_ref.website_id,
@@ -1425,7 +1421,7 @@ class Database:
     
     def get_document_references(self, website_id: str, internal_only: bool | None = None) -> list[DocumentReference]:
         """Get document references for a website"""
-        from auto_a11y.models import DocumentReference
+
         
         query: dict[str, Any] = {'website_id': website_id}
         if internal_only is not None:
@@ -1436,7 +1432,7 @@ class Database:
     
     def get_all_document_references(self, project_id: str | None = None) -> list[DocumentReference]:
         """Get all document references, optionally filtered by project"""
-        from auto_a11y.models import DocumentReference
+
         
         if project_id:
             # Get all websites for the project first
@@ -1456,7 +1452,7 @@ class Database:
     # Discovery Run methods
     def create_discovery_run(self, discovery_run: DiscoveryRun) -> str:
         """Create a new discovery run"""
-        from auto_a11y.models import DiscoveryRun
+
         
         # Mark all previous runs for this website as not latest
         self.discovery_runs.update_many(
@@ -1466,21 +1462,21 @@ class Database:
         
         # Insert new discovery run
         result = self.discovery_runs.insert_one(discovery_run.to_dict())
-        discovery_run._id = result.inserted_id
+        discovery_run.mongo_id = result.inserted_id
         discovery_run_id = str(result.inserted_id)
         logger.info(f"Created discovery run {discovery_run_id} for website {discovery_run.website_id}")
         return discovery_run_id
     
     def get_discovery_run(self, discovery_run_id: str) -> DiscoveryRun | None:
         """Get a discovery run by ID"""
-        from auto_a11y.models import DiscoveryRun
+
         
         doc = self.discovery_runs.find_one({'_id': ObjectId(discovery_run_id)})
         return DiscoveryRun.from_dict(doc) if doc else None
     
     def get_latest_discovery_run(self, website_id: str) -> DiscoveryRun | None:
         """Get the latest discovery run for a website"""
-        from auto_a11y.models import DiscoveryRun
+
         
         doc = self.discovery_runs.find_one({
             'website_id': website_id,
@@ -1490,7 +1486,7 @@ class Database:
     
     def get_discovery_runs(self, website_id: str) -> list[DiscoveryRun]:
         """Get all discovery runs for a website, ordered by date descending"""
-        from auto_a11y.models import DiscoveryRun
+
         
         docs = self.discovery_runs.find({'website_id': website_id}).sort('started_at', -1)
         return [DiscoveryRun.from_dict(doc) for doc in docs]
@@ -1498,7 +1494,7 @@ class Database:
     def update_discovery_run(self, discovery_run: DiscoveryRun) -> bool:
         """Update a discovery run"""
         result = self.discovery_runs.update_one(
-            {'_id': discovery_run._id},
+            {'_id': discovery_run.mongo_id},
             {'$set': discovery_run.to_dict()}
         )
         return result.modified_count > 0
@@ -1510,9 +1506,10 @@ class Database:
 
         # Get existing pages for this website
         website_id = pages[0].website_id
-        existing_urls = set()
+        existing_urls: set[str] = set()
         for doc in self.pages.find({'website_id': website_id}, {'url': 1}):
-            existing_urls.add(doc['url'])
+            url_val: str = doc['url']
+            existing_urls.add(url_val)
 
         # Mark all existing pages as not in latest discovery
         self.pages.update_many(
@@ -1521,7 +1518,7 @@ class Database:
         )
 
         # Process new and existing pages
-        new_pages = []
+        new_pages: list[dict[str, Any]] = []
         updated_count = 0
 
         for page in pages:
@@ -1613,12 +1610,12 @@ class Database:
                     'error_reason': page.error_reason
                 }}
             )
-            page._id = existing['_id']
+            page.mongo_id = existing['_id']
             return str(existing['_id'])
         else:
             # Insert new page
             result = self.pages.insert_one(page.to_dict())
-            page._id = result.inserted_id
+            page.mongo_id = result.inserted_id
             # Update website page count
             self.websites.update_one(
                 {"_id": ObjectId(page.website_id)},
@@ -1643,20 +1640,22 @@ class Database:
         """Compare two discovery runs to find added/removed pages"""
         
         # Get pages from old discovery
-        old_pages = set()
+        old_pages: set[str] = set()
         for doc in self.pages.find({'website_id': website_id, 'discovery_run_id': old_run_id}, {'url': 1}):
-            old_pages.add(doc['url'])
-        
+            old_url: str = doc['url']
+            old_pages.add(old_url)
+
         # Get pages from new discovery
-        new_pages = set()
+        new_pages_set: set[str] = set()
         for doc in self.pages.find({'website_id': website_id, 'discovery_run_id': new_run_id}, {'url': 1}):
-            new_pages.add(doc['url'])
+            new_url: str = doc['url']
+            new_pages_set.add(new_url)
         
         # Calculate differences
-        pages_added = new_pages - old_pages
-        pages_removed = old_pages - new_pages
-        pages_unchanged = old_pages & new_pages
-        
+        pages_added = new_pages_set - old_pages
+        pages_removed = old_pages - new_pages_set
+        pages_unchanged = old_pages & new_pages_set
+
         return {
             'pages_added': list(pages_added),
             'pages_removed': list(pages_removed),
@@ -1696,9 +1695,10 @@ class Database:
 
     def get_all_issue_documentation_statuses(self) -> dict[str, bool]:
         """Get all issue documentation statuses as a dict of issue_code -> production_ready"""
-        statuses = {}
+        statuses: dict[str, bool] = {}
         for doc in self.issue_documentation_status.find():
-            statuses[doc['issue_code']] = doc.get('production_ready', False)
+            code: str = doc['issue_code']
+            statuses[code] = bool(doc.get('production_ready', False))
         return statuses
 
     def get_production_ready_issues(self) -> list[str]:
@@ -1723,10 +1723,10 @@ class Database:
         Returns:
             Script ID as string
         """
-        from auto_a11y.models import PageSetupScript
+
 
         result = self.page_setup_scripts.insert_one(script.to_dict())
-        script._id = result.inserted_id
+        script.mongo_id = result.inserted_id
         script_id = str(result.inserted_id)
         logger.info(f"Created page setup script: {script.name} ({script_id}) for page {script.page_id}")
         return script_id
@@ -1741,7 +1741,7 @@ class Database:
         Returns:
             PageSetupScript object or None
         """
-        from auto_a11y.models import PageSetupScript
+
 
         doc = self.page_setup_scripts.find_one({"_id": ObjectId(script_id)})
         return PageSetupScript.from_dict(doc) if doc else None
@@ -1757,7 +1757,7 @@ class Database:
         Returns:
             List of PageSetupScript objects
         """
-        from auto_a11y.models import PageSetupScript
+
 
         query: dict[str, Any] = {"page_id": page_id}
         if enabled_only:
@@ -1776,7 +1776,7 @@ class Database:
         Returns:
             PageSetupScript object or None
         """
-        from auto_a11y.models import PageSetupScript
+
 
         doc = self.page_setup_scripts.find_one(
             {"page_id": page_id, "enabled": True},
@@ -1794,7 +1794,7 @@ class Database:
         Returns:
             True if updated successfully
         """
-        if not script._id:
+        if not script.mongo_id:
             logger.error("Cannot update script without _id")
             return False
 
@@ -1805,16 +1805,16 @@ class Database:
         if '_id' in update_data:
             del update_data['_id']
 
-        logger.debug(f"Updating script {script._id} with data keys: {list(update_data.keys())}")
+        logger.debug(f"Updating script {script.mongo_id} with data keys: {list(update_data.keys())}")
 
         try:
             result = self.page_setup_scripts.update_one(
-                {"_id": script._id},
+                {"_id": script.mongo_id},
                 {"$set": update_data}
             )
         except Exception as e:
             logger.error(f"MongoDB update error: {e}")
-            logger.error(f"Script ID: {script._id}, type: {type(script._id)}")
+            logger.error(f"Script ID: {script.mongo_id}, type: {type(script.mongo_id)}")
             import traceback
             logger.error(traceback.format_exc())
             raise
@@ -1930,7 +1930,7 @@ class Database:
         Returns:
             List of PageSetupScript objects
         """
-        from auto_a11y.models import PageSetupScript
+
 
         query: dict[str, Any] = {"website_id": website_id}
         if scope:
@@ -1958,7 +1958,7 @@ class Database:
         Returns:
             List of PageSetupScript objects (website-level + page-level)
         """
-        from auto_a11y.models import PageSetupScript, ScriptScope
+        from auto_a11y.models import ScriptScope
 
         query_filter = {"enabled": True} if enabled_only else {}
 
@@ -1994,10 +1994,10 @@ class Database:
         Returns:
             Session ID as string
         """
-        from auto_a11y.models import ScriptExecutionSession
+
 
         result = self.script_execution_sessions.insert_one(session.to_dict())
-        session._id = result.inserted_id
+        session.mongo_id = result.inserted_id
         logger.info(f"Created script execution session: {session.session_id} for website {session.website_id}")
         return session.session_id
 
@@ -2011,7 +2011,7 @@ class Database:
         Returns:
             ScriptExecutionSession object or None
         """
-        from auto_a11y.models import ScriptExecutionSession
+
 
         doc = self.script_execution_sessions.find_one({"session_id": session_id})
         return ScriptExecutionSession.from_dict(doc) if doc else None
@@ -2026,12 +2026,12 @@ class Database:
         Returns:
             True if updated successfully
         """
-        if not session._id:
+        if not session.mongo_id:
             logger.error("Cannot update session without _id")
             return False
 
         result = self.script_execution_sessions.update_one(
-            {"_id": session._id},
+            {"_id": session.mongo_id},
             {"$set": session.to_dict()}
         )
 
@@ -2050,7 +2050,7 @@ class Database:
         Returns:
             ScriptExecutionSession object or None
         """
-        from auto_a11y.models import ScriptExecutionSession
+
 
         doc = self.script_execution_sessions.find_one(
             {"website_id": website_id},
@@ -2070,10 +2070,10 @@ class Database:
         Returns:
             User ID as string
         """
-        from auto_a11y.models import WebsiteUser
+
 
         result = self.website_users.insert_one(user.to_dict())
-        user._id = result.inserted_id
+        user.mongo_id = result.inserted_id
         logger.info(f"Created website user: {user.username} for website {user.website_id}")
         return str(result.inserted_id)
 
@@ -2087,7 +2087,7 @@ class Database:
         Returns:
             WebsiteUser object or None
         """
-        from auto_a11y.models import WebsiteUser
+
 
         doc = self.website_users.find_one({"_id": ObjectId(user_id)})
         return WebsiteUser.from_dict(doc) if doc else None
@@ -2104,7 +2104,7 @@ class Database:
         Returns:
             List of WebsiteUser objects
         """
-        from auto_a11y.models import WebsiteUser
+
 
         query: dict[str, Any] = {"website_id": website_id}
         if enabled_only:
@@ -2126,7 +2126,7 @@ class Database:
         Returns:
             WebsiteUser object or None
         """
-        from auto_a11y.models import WebsiteUser
+
 
         doc = self.website_users.find_one({
             "website_id": website_id,
@@ -2144,7 +2144,7 @@ class Database:
         Returns:
             True if updated successfully
         """
-        if not user._id:
+        if not user.mongo_id:
             logger.error("Cannot update user without _id")
             return False
 
@@ -2156,7 +2156,7 @@ class Database:
             del update_data['_id']
 
         result = self.website_users.update_one(
-            {"_id": user._id},
+            {"_id": user.mongo_id},
             {"$set": update_data}
         )
 
@@ -2206,7 +2206,7 @@ class Database:
     def create_project_user(self, user: ProjectUser) -> str:
         """Create a new project user for authenticated testing"""
         result = self.project_users.insert_one(user.to_dict())
-        user._id = result.inserted_id
+        user.mongo_id = result.inserted_id
         logger.info(f"Created project user: {user.username} for project {user.project_id}")
         return str(result.inserted_id)
 
@@ -2235,14 +2235,14 @@ class Database:
 
     def update_project_user(self, user: ProjectUser) -> bool:
         """Update a project user"""
-        if not user._id:
+        if not user.mongo_id:
             logger.error("Cannot update user without _id")
             return False
         user.update_timestamp()
         update_data = user.to_dict()
         if '_id' in update_data:
             del update_data['_id']
-        result = self.project_users.update_one({"_id": user._id}, {"$set": update_data})
+        result = self.project_users.update_one({"_id": user.mongo_id}, {"$set": update_data})
         if result.modified_count > 0:
             logger.info(f"Updated project user: {user.username}")
             return True
@@ -2272,7 +2272,7 @@ class Database:
     def create_recording(self, recording: Recording) -> str:
         """Create new recording"""
         result = self.recordings.insert_one(recording.to_dict())
-        recording._id = result.inserted_id
+        recording.mongo_id = result.inserted_id
         rec_id = str(result.inserted_id)
         logger.info(f"Created recording: {recording.recording_id} ({rec_id})")
         return rec_id
@@ -2313,7 +2313,7 @@ class Database:
         """Update existing recording"""
         recording.updated_at = datetime.now()
         result = self.recordings.replace_one(
-            {"_id": recording._id},
+            {"_id": recording.mongo_id},
             recording.to_dict()
         )
         return result.modified_count > 0
@@ -2333,7 +2333,7 @@ class Database:
 
     def get_recording_count(self, project_id: str | None = None) -> int:
         """Get total count of recordings"""
-        query = {}
+        query: dict[str, str] = {}
         if project_id:
             query["project_id"] = project_id
         return self.recordings.count_documents(query)
@@ -2343,7 +2343,7 @@ class Database:
     def create_recording_issue(self, issue: RecordingIssue) -> str:
         """Create new recording issue"""
         result = self.recording_issues.insert_one(issue.to_dict())
-        issue._id = result.inserted_id
+        issue.mongo_id = result.inserted_id
         return str(result.inserted_id)
 
     def create_recording_issues_bulk(self, issues: list[RecordingIssue]) -> list[str]:
@@ -2356,7 +2356,7 @@ class Database:
 
         # Update issue objects with their new IDs
         for issue, inserted_id in zip(issues, result.inserted_ids):
-            issue._id = inserted_id
+            issue.mongo_id = inserted_id
 
         logger.info(f"Created {len(issues)} recording issues")
         return [str(id) for id in result.inserted_ids]
@@ -2395,7 +2395,7 @@ class Database:
         """Update existing recording issue"""
         issue.updated_at = datetime.now()
         result = self.recording_issues.replace_one(
-            {"_id": issue._id},
+            {"_id": issue.mongo_id},
             issue.to_dict()
         )
         return result.modified_count > 0
@@ -2449,7 +2449,7 @@ class Database:
 
         try:
             result = self.discovered_pages.insert_one(discovered_page.to_dict())
-            discovered_page._id = result.inserted_id
+            discovered_page.mongo_id = result.inserted_id
             return str(result.inserted_id)
         except Exception as e:
             # If duplicate key error, find and return existing
@@ -2517,7 +2517,7 @@ class Database:
         """Update existing discovered page"""
         discovered_page.updated_at = datetime.now()
         result = self.discovered_pages.replace_one(
-            {"_id": discovered_page._id},
+            {"_id": discovered_page.mongo_id},
             discovered_page.to_dict()
         )
         return result.modified_count > 0
@@ -2597,14 +2597,14 @@ class Database:
         Args:
             matrix: TestStateMatrix instance with updated data
         """
-        if not matrix._id:
+        if not matrix.mongo_id:
             raise ValueError("Matrix must have an ID to update")
 
         matrix.update_timestamp()
         matrix_dict = matrix.to_dict()
 
         self.test_state_matrices.update_one(
-            {"_id": matrix._id},
+            {"_id": matrix.mongo_id},
             {"$set": matrix_dict}
         )
         logger.info(f"Updated test state matrix {matrix.id}")
@@ -2652,7 +2652,7 @@ class Database:
         """
         try:
             result = self.app_users.insert_one(user.to_dict())
-            user._id = result.inserted_id
+            user.mongo_id = result.inserted_id
             logger.info(f"Created app user: {user.email}")
             return str(result.inserted_id)
         except Exception as e:
@@ -2673,7 +2673,7 @@ class Database:
 
     def update_app_user(self, user: AppUser) -> bool:
         """Update existing app user"""
-        if not user._id:
+        if not user.mongo_id:
             logger.error("Cannot update user without _id")
             return False
 
@@ -2683,7 +2683,7 @@ class Database:
             del update_data['_id']
 
         result = self.app_users.update_one(
-            {"_id": user._id},
+            {"_id": user.mongo_id},
             {"$set": update_data}
         )
 
@@ -2740,7 +2740,7 @@ class Database:
         mongo_query: dict[str, Any] = {"is_active": True}
 
         # Each term must match email OR display_name
-        and_conditions = []
+        and_conditions: list[dict[str, Any]] = []
         for term in terms:
             escaped = re.escape(term)
             pattern = {"$regex": escaped, "$options": "i"}
@@ -2762,7 +2762,7 @@ class Database:
 
     def count_app_users(self, role: UserRole | None = None) -> int:
         """Count app users"""
-        query = {}
+        query: dict[str, str] = {}
         if role:
             query["role"] = role.value
         return self.app_users.count_documents(query)
@@ -2802,7 +2802,7 @@ class Database:
         from auto_a11y.models.permission_group import PermissionGroup
         if not group_ids:
             return []
-        oids = []
+        oids: list[ObjectId] = []
         for gid in group_ids:
             try:
                 oids.append(ObjectId(gid))
@@ -2816,7 +2816,7 @@ class Database:
         from datetime import datetime
         group.updated_at = datetime.now()
         result = self.groups.replace_one(
-            {"_id": group._id},
+            {"_id": group.mongo_id},
             group.to_dict()
         )
         return result.modified_count > 0
@@ -2850,7 +2850,7 @@ class Database:
             Schedule ID (string)
         """
         result = self.test_schedules.insert_one(schedule.to_dict())
-        schedule._id = result.inserted_id
+        schedule.mongo_id = result.inserted_id
         logger.info(f"Created test schedule: {schedule.name} for website {schedule.website_id}")
         return str(result.inserted_id)
 
@@ -2950,7 +2950,7 @@ class Database:
         Returns:
             True if updated successfully
         """
-        if not schedule._id:
+        if not schedule.mongo_id:
             logger.error("Cannot update schedule without _id")
             return False
 
@@ -2960,7 +2960,7 @@ class Database:
             del update_data['_id']
 
         result = self.test_schedules.update_one(
-            {"_id": schedule._id},
+            {"_id": schedule.mongo_id},
             {"$set": update_data}
         )
 
@@ -3032,7 +3032,7 @@ class Database:
         """
         update_fields = {
             "last_run_job_id": job_id,
-            "last_run_status": status.value if isinstance(status, ScheduleRunStatus) else status,
+            "last_run_status": status.value,
             "updated_at": datetime.now()
         }
 
@@ -3109,7 +3109,7 @@ class Database:
     def create_share_token(self, token: ShareToken) -> str:
         """Create a new share token"""
         result = self.share_tokens.insert_one(token.to_dict())
-        token._id = result.inserted_id
+        token.mongo_id = result.inserted_id
         logger.info(f"Created share token: {token.label} ({token.scope.value}:{token.scope_id})")
         return str(result.inserted_id)
 

@@ -5,8 +5,6 @@ Evaluates JavaScript timers for proper user control mechanisms.
 
 from __future__ import annotations
 
-import asyncio
-from datetime import datetime
 from typing import Any
 import logging
 
@@ -40,7 +38,7 @@ TEST_DOCUMENTATION = {
             "name": "JavaScript Timer Detection",
             "description": "Identifies JavaScript timers used on the page for informational purposes.",
             "impact": "informational",
-            "wcagCriteria": [],
+            "wcagCriteria": list[str](),
         }
     ]
 }

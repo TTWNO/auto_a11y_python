@@ -4,7 +4,7 @@ Serves the static demo site with intentional accessibility issues
 """
 from __future__ import annotations
 
-from flask import Blueprint, Response, send_from_directory, request, redirect, url_for, session, render_template_string
+from flask import Blueprint, Response, send_from_directory, request, redirect, url_for, session
 from werkzeug.wrappers import Response as WerkzeugResponse
 from pathlib import Path
 import logging

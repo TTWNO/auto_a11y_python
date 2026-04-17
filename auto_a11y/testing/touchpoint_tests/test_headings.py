@@ -55,7 +55,7 @@ async def test_headings(page: Page) -> dict[str, Any]:
     """
     try:
         # Execute JavaScript to analyze headings
-        results: dict[str, Any] = await page.evaluate('''
+        results: dict[str, Any] = await page.evaluate(r'''
             () => {
                 const results = {
                     applicable: true,
@@ -566,7 +566,7 @@ async def test_headings(page: Page) -> dict[str, Any]:
         # Log skipped heading errors for debugging
         if 'errors' in results:
             # Validation of heading errors
-            skipped_errors = [e for e in results['errors'] if e.get('err') == 'ErrSkippedHeadingLevel']
+            _skipped_errors = [e for e in results['errors'] if e.get('err') == 'ErrSkippedHeadingLevel']
 
         return results
         

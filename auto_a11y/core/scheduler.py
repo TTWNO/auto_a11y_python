@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import logging
 import asyncio
-import uuid
 from datetime import datetime
 from typing import Any, TYPE_CHECKING
 from zoneinfo import ZoneInfo
@@ -15,7 +14,6 @@ from apscheduler.jobstores.mongodb import MongoDBJobStore
 from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.triggers.date import DateTrigger
 from apscheduler.triggers.cron import CronTrigger
-from apscheduler.job import Job
 
 from auto_a11y.models import (
     TestSchedule, ScheduleType, ScheduleRunStatus, AITestMode
@@ -57,6 +55,14 @@ class SchedulerService:
         self.config = config
         self.scheduler: BackgroundScheduler | None = None
         self._initialized = True
+
+    @classmethod
+    def get_initialized_instance(cls) -> SchedulerService | None:
+        """Return the singleton instance if it has been initialized, else None."""
+        inst = cls._instance
+        if inst is not None and inst._initialized:
+            return inst
+        return None
 
     def start(self) -> None:
         """Start the scheduler"""
@@ -132,14 +138,14 @@ class SchedulerService:
 
             for schedule in schedules:
                 try:
-                    self._register_schedule_with_apscheduler(schedule)
+                    self.register_schedule_with_apscheduler(schedule)
                 except Exception as e:
                     logger.error(f"Failed to register schedule {schedule.id}: {e}")
 
         except Exception as e:
             logger.error(f"Failed to load schedules from database: {e}")
 
-    def _register_schedule_with_apscheduler(self, schedule: TestSchedule) -> None:
+    def register_schedule_with_apscheduler(self, schedule: TestSchedule) -> None:
         """
         Register a schedule with APScheduler
 
@@ -185,7 +191,7 @@ class SchedulerService:
 
         if job.next_run_time:
             self.database.test_schedules.update_one(
-                {"_id": schedule._id},
+                {"_id": schedule.mongo_id},
                 {"$set": {"next_run_at": job.next_run_time}}
             )
 
@@ -279,14 +285,14 @@ class SchedulerService:
         assert self.database is not None
         try:
             # Save to database
-            schedule_id = self.database.create_test_schedule(schedule)
-            doc = self.database.test_schedules.find_one({"_id": schedule._id})
+            _schedule_id = self.database.create_test_schedule(schedule)
+            doc = self.database.test_schedules.find_one({"_id": schedule.mongo_id})
             if doc:
-                schedule._id = doc["_id"]
+                schedule.mongo_id = doc["_id"]
 
             # Register with APScheduler if enabled
             if schedule.enabled and self.scheduler and self.scheduler.running:
-                self._register_schedule_with_apscheduler(schedule)
+                self.register_schedule_with_apscheduler(schedule)
 
             return True
 
@@ -312,7 +318,7 @@ class SchedulerService:
             # Re-register with APScheduler
             if self.scheduler and self.scheduler.running:
                 if schedule.enabled:
-                    self._register_schedule_with_apscheduler(schedule)
+                    self.register_schedule_with_apscheduler(schedule)
                 else:
                     # Remove from APScheduler if disabled
                     if schedule.id:
@@ -388,7 +394,7 @@ class SchedulerService:
                 if enabled:
                     schedule = self.database.get_test_schedule(schedule_id)
                     if schedule:
-                        self._register_schedule_with_apscheduler(schedule)
+                        self.register_schedule_with_apscheduler(schedule)
                 else:
                     self.remove_from_apscheduler(schedule_id)
 
@@ -444,7 +450,7 @@ class SchedulerService:
             return []
 
         # Calculate next run times
-        run_times = []
+        run_times: list[datetime] = []
         next_time = datetime.now(ZoneInfo(schedule.preset_config.timezone))
 
         for _ in range(count):
@@ -513,6 +519,7 @@ def execute_scheduled_test(schedule_id: str) -> str | None:
         logger.error("Scheduler service has no database or config")
         return None
 
+    job_id = "unknown"
     try:
         # Get schedule
         schedule = database.get_test_schedule(schedule_id)
@@ -559,7 +566,7 @@ def execute_scheduled_test(schedule_id: str) -> str | None:
             return job_id
 
         # Determine AI page configuration
-        ai_page_ids = set()
+        ai_page_ids: set[str] = set()
         test_config = schedule.test_config
         if test_config.run_ai_tests:
             if test_config.ai_pages_mode == AITestMode.ALL:
@@ -637,7 +644,7 @@ def execute_scheduled_test(schedule_id: str) -> str | None:
         try:
             database.update_test_schedule_run_status(
                 schedule_id=schedule_id,
-                job_id=job_id if 'job_id' in locals() else 'unknown',
+                job_id=job_id if job_id else 'unknown',
                 status=ScheduleRunStatus.FAILED
             )
         except Exception:
@@ -649,6 +656,4 @@ def execute_scheduled_test(schedule_id: str) -> str | None:
 # Singleton instance getter
 def get_scheduler_service() -> SchedulerService | None:
     """Get the scheduler service singleton instance"""
-    if SchedulerService._instance and SchedulerService._instance._initialized:
-        return SchedulerService._instance
-    return None
+    return SchedulerService.get_initialized_instance()

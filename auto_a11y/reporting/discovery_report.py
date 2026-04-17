@@ -12,20 +12,35 @@ Identifies pages with forms, videos, questionable typography, and elements
 with poor or no accessible names that need manual accessibility inspection.
 """
 
-import logging
-import html
+import html as html_mod
 import json
-from typing import Any
+import logging
+from collections import defaultdict
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from collections import defaultdict
-from auto_a11y.web.fluent import ftl, force_locale
+from typing import IO, Any
 
-from auto_a11y.models import TestResult, Page, Website, Project
 from auto_a11y.core.database import Database
+from auto_a11y.models import DocumentReference, Page, Project, TestResult, Violation, Website
 from auto_a11y.reporting.issue_catalog import IssueCatalog
+from auto_a11y.web.fluent import force_locale, ftl
 
 logger = logging.getLogger(__name__)
+
+# Type alias for progress callbacks used throughout the module
+_ProgressCallback = Callable[[int, int, str], object]
+
+
+def _issue_to_dict(issue: dict[str, Any] | Violation) -> dict[str, Any]:
+    """Convert a Violation or dict issue to a plain dict.
+
+    This helper eliminates the ``dict[str, Any] | Violation`` union that
+    would otherwise require narrowing at every call site.
+    """
+    if isinstance(issue, Violation):
+        return issue.to_dict()
+    return issue
 
 
 class DiscoveryReportGenerator:
@@ -43,12 +58,13 @@ class DiscoveryReportGenerator:
         self.db = database
         self.config = config
         self.language = language
-        self.report_dir = Path(config.get('REPORTS_DIR', 'reports'))
+        self.report_dir = Path(str(config.get('REPORTS_DIR', 'reports')))
         self.report_dir.mkdir(exist_ok=True, parents=True)
+        self._cached_translations_json: str = '{}'
 
     def _get_translations(self) -> dict[str, str]:
         """Get translations for the current language"""
-        translations = {
+        translations: dict[str, dict[str, str]] = {
             'en': {
                 'discovery_report': 'Discovery Report',
                 'content_manual_review': 'Content Requiring Manual Accessibility Review',
@@ -164,117 +180,117 @@ class DiscoveryReportGenerator:
                 'textarea': 'textarea',
             },
             'fr': {
-                'discovery_report': 'Rapport de découverte',
-                'content_manual_review': 'Contenu nécessitant une révision manuelle d\'accessibilité',
+                'discovery_report': 'Rapport de d\u00e9couverte',
+                'content_manual_review': 'Contenu n\u00e9cessitant une r\u00e9vision manuelle d\'accessibilit\u00e9',
                 'website': 'Site Web',
                 'url': 'URL',
                 'project': 'Projet',
                 'websites': 'Sites Web',
-                'generated': 'Généré',
-                'executive_summary': 'Résumé',
-                'exec_summary_text': 'Ce rapport identifie les pages contenant du contenu nécessitant une inspection manuelle d\'accessibilité. Il se concentre sur les problèmes de découverte (contenu nécessitant une révision), les avis informatifs et les problèmes de noms accessibles qui peuvent indiquer des formulaires, des vidéos, une typographie discutable ou des éléments avec des noms accessibles médiocres ou manquants.',
-                'pages_needing_inspection': 'Pages nécessitant une inspection',
+                'generated': 'G\u00e9n\u00e9r\u00e9',
+                'executive_summary': 'R\u00e9sum\u00e9',
+                'exec_summary_text': 'Ce rapport identifie les pages contenant du contenu n\u00e9cessitant une inspection manuelle d\'accessibilit\u00e9. Il se concentre sur les probl\u00e8mes de d\u00e9couverte (contenu n\u00e9cessitant une r\u00e9vision), les avis informatifs et les probl\u00e8mes de noms accessibles qui peuvent indiquer des formulaires, des vid\u00e9os, une typographie discutable ou des \u00e9l\u00e9ments avec des noms accessibles m\u00e9diocres ou manquants.',
+                'pages_needing_inspection': 'Pages n\u00e9cessitant une inspection',
                 'of': 'sur',
-                'tested': 'testées',
-                'discovery_issues': 'Problèmes de découverte',
-                'require_manual_review': 'Nécessitent une révision manuelle',
-                'info_items': 'Éléments informatifs',
-                'worth_noting': 'À noter',
-                'accessible_name_issues': 'Problèmes de noms accessibles',
+                'tested': 'test\u00e9es',
+                'discovery_issues': 'Probl\u00e8mes de d\u00e9couverte',
+                'require_manual_review': 'N\u00e9cessitent une r\u00e9vision manuelle',
+                'info_items': '\u00c9l\u00e9ments informatifs',
+                'worth_noting': '\u00c0 noter',
+                'accessible_name_issues': 'Probl\u00e8mes de noms accessibles',
                 'forms_links_buttons': 'Formulaires, liens, boutons',
-                'issue_breakdown_by_type': 'Répartition des problèmes par type',
-                'pages_with_unique_issues': 'Pages avec problèmes uniques',
-                'pages_section_intro': 'Les pages suivantes contiennent des problèmes nécessitant une révision manuelle. Les pages sont listées par ordre de priorité en fonction du nombre total de problèmes. Cliquez sur une page pour développer et voir les détails.',
-                'expand_all': 'Tout développer',
-                'collapse_all': 'Tout réduire',
-                'no_issues': 'Aucune page découverte nécessitant une inspection manuelle.',
-                'generated_by': 'Généré par Auto A11y Python - Rapport de découverte',
-                'report_generated_on': 'Rapport généré le',
+                'issue_breakdown_by_type': 'R\u00e9partition des probl\u00e8mes par type',
+                'pages_with_unique_issues': 'Pages avec probl\u00e8mes uniques',
+                'pages_section_intro': 'Les pages suivantes contiennent des probl\u00e8mes n\u00e9cessitant une r\u00e9vision manuelle. Les pages sont list\u00e9es par ordre de priorit\u00e9 en fonction du nombre total de probl\u00e8mes. Cliquez sur une page pour d\u00e9velopper et voir les d\u00e9tails.',
+                'expand_all': 'Tout d\u00e9velopper',
+                'collapse_all': 'Tout r\u00e9duire',
+                'no_issues': 'Aucune page d\u00e9couverte n\u00e9cessitant une inspection manuelle.',
+                'generated_by': 'G\u00e9n\u00e9r\u00e9 par Auto A11y Python - Rapport de d\u00e9couverte',
+                'report_generated_on': 'Rapport g\u00e9n\u00e9r\u00e9 le',
                 'language': 'Langue',
-                'discovery': 'Découverte',
+                'discovery': 'D\u00e9couverte',
                 'informational': 'Informatif',
                 'accessible_names': 'Noms accessibles',
-                'total_issues': 'Total des problèmes',
-                'issues': 'problèmes',
+                'total_issues': 'Total des probl\u00e8mes',
+                'issues': 'probl\u00e8mes',
                 'pages': 'pages',
-                'site_wide_issues': 'Problèmes à l\'échelle du site',
-                'site_wide_intro': 'Les problèmes suivants apparaissent sur la plupart des pages du site. Adressez-les globalement plutôt que page par page.',
-                'common_discovery_issues': 'Problèmes de découverte courants',
-                'common_informational_items': 'Éléments informatifs courants',
-                'common_accessible_name_issues': 'Problèmes de noms accessibles courants',
-                'common_issues_intro': 'Ces problèmes apparaissent sur plus de 70% des pages et ont été filtrés des listes de pages individuelles :',
-                'appears_on': 'Apparaît sur',
-                'fonts_used_across_site': 'Polices utilisées sur le site',
-                'fonts_intro': 'Les polices suivantes ont été détectées parmi %(count)s familles de polices uniques. Examinez-les pour la lisibilité et les bonnes pratiques d\'accessibilité. Envisagez d\'utiliser des polices avec une distinction claire des caractères et une bonne lisibilité à différentes tailles.',
+                'site_wide_issues': 'Probl\u00e8mes \u00e0 l\'\u00e9chelle du site',
+                'site_wide_intro': 'Les probl\u00e8mes suivants apparaissent sur la plupart des pages du site. Adressez-les globalement plut\u00f4t que page par page.',
+                'common_discovery_issues': 'Probl\u00e8mes de d\u00e9couverte courants',
+                'common_informational_items': '\u00c9l\u00e9ments informatifs courants',
+                'common_accessible_name_issues': 'Probl\u00e8mes de noms accessibles courants',
+                'common_issues_intro': 'Ces probl\u00e8mes apparaissent sur plus de 70% des pages et ont \u00e9t\u00e9 filtr\u00e9s des listes de pages individuelles :',
+                'appears_on': 'Appara\u00eet sur',
+                'fonts_used_across_site': 'Polices utilis\u00e9es sur le site',
+                'fonts_intro': 'Les polices suivantes ont \u00e9t\u00e9 d\u00e9tect\u00e9es parmi %(count)s familles de polices uniques. Examinez-les pour la lisibilit\u00e9 et les bonnes pratiques d\'accessibilit\u00e9. Envisagez d\'utiliser des polices avec une distinction claire des caract\u00e8res et une bonne lisibilit\u00e9 \u00e0 diff\u00e9rentes tailles.',
                 'page': 'page',
                 'sizes': 'Tailles',
                 # Forms section
-                'forms_found_across_site': 'Formulaires trouvés sur le site',
-                'forms_intro': 'Les %(count)s formulaire%(plural)s unique%(plural)s suivant%(plural)s ont été détecté%(plural)s. Chaque formulaire a reçu une signature pour le suivi sur les pages. Les formulaires nécessitent des tests manuels complets, y compris la navigation au clavier, la compatibilité avec les lecteurs d\'écran, la validation des erreurs et l\'étiquetage des champs.',
-                'found_on': 'Trouvé sur',
+                'forms_found_across_site': 'Formulaires trouv\u00e9s sur le site',
+                'forms_intro': 'Les %(count)s formulaire%(plural)s unique%(plural)s suivant%(plural)s ont \u00e9t\u00e9 d\u00e9tect\u00e9%(plural)s. Chaque formulaire a re\u00e7u une signature pour le suivi sur les pages. Les formulaires n\u00e9cessitent des tests manuels complets, y compris la navigation au clavier, la compatibilit\u00e9 avec les lecteurs d\'\u00e9cran, la validation des erreurs et l\'\u00e9tiquetage des champs.',
+                'found_on': 'Trouv\u00e9 sur',
                 'example_page': 'Exemple de page',
                 'fields': 'Champs',
-                'submits_to': 'Soumet à',
+                'submits_to': 'Soumet \u00e0',
                 'xpath': 'XPath',
                 'search_form': 'Formulaire de recherche',
                 'unknown_fields': 'champs inconnus',
-                'were': 'ont été',
-                'was': 'a été',
+                'were': 'ont \u00e9t\u00e9',
+                'was': 'a \u00e9t\u00e9',
                 # Navigation section
-                'navigation_regions_found': 'Régions de navigation trouvées sur le site',
-                'navs_intro': 'Les %(count)s région%(plural)s de navigation unique%(plural)s suivante%(plural)s ont été détectée%(plural)s. Chaque navigation a reçu une signature pour le suivi sur les pages. Vérifiez que chaque navigation est accessible au clavier, correctement étiquetée (si plusieurs existent) et fournit une indication de la page actuelle.',
-                'label': 'Étiquette',
+                'navigation_regions_found': 'R\u00e9gions de navigation trouv\u00e9es sur le site',
+                'navs_intro': 'Les %(count)s r\u00e9gion%(plural)s de navigation unique%(plural)s suivante%(plural)s ont \u00e9t\u00e9 d\u00e9tect\u00e9e%(plural)s. Chaque navigation a re\u00e7u une signature pour le suivi sur les pages. V\u00e9rifiez que chaque navigation est accessible au clavier, correctement \u00e9tiquet\u00e9e (si plusieurs existent) et fournit une indication de la page actuelle.',
+                'label': '\u00c9tiquette',
                 'links': 'Liens',
-                'no_label': '(pas d\'étiquette)',
+                'no_label': '(pas d\'\u00e9tiquette)',
                 # Aside section
-                'complementary_regions_found': 'Régions complémentaires (Aside) trouvées sur le site',
-                'asides_intro': 'Les %(count)s région%(plural)s complémentaire%(plural)s unique%(plural)s suivante%(plural)s ont été détectée%(plural)s. Chaque aside a reçu une signature pour le suivi sur les pages. Vérifiez que chacune contient un contenu véritablement complémentaire et est correctement étiquetée lorsque plusieurs existent.',
+                'complementary_regions_found': 'R\u00e9gions compl\u00e9mentaires (Aside) trouv\u00e9es sur le site',
+                'asides_intro': 'Les %(count)s r\u00e9gion%(plural)s compl\u00e9mentaire%(plural)s unique%(plural)s suivante%(plural)s ont \u00e9t\u00e9 d\u00e9tect\u00e9e%(plural)s. Chaque aside a re\u00e7u une signature pour le suivi sur les pages. V\u00e9rifiez que chacune contient un contenu v\u00e9ritablement compl\u00e9mentaire et est correctement \u00e9tiquet\u00e9e lorsque plusieurs existent.',
                 # Section section
-                'section_regions_found': 'Régions de section trouvées sur le site',
-                'sections_intro': 'Les %(count)s région%(plural)s de section unique%(plural)s suivante%(plural)s ont été détectée%(plural)s. Chaque section a reçu une signature pour le suivi sur les pages. Vérifiez que chacune a un nom accessible significatif et unique et représente une région de contenu importante.',
+                'section_regions_found': 'R\u00e9gions de section trouv\u00e9es sur le site',
+                'sections_intro': 'Les %(count)s r\u00e9gion%(plural)s de section unique%(plural)s suivante%(plural)s ont \u00e9t\u00e9 d\u00e9tect\u00e9e%(plural)s. Chaque section a re\u00e7u une signature pour le suivi sur les pages. V\u00e9rifiez que chacune a un nom accessible significatif et unique et repr\u00e9sente une r\u00e9gion de contenu importante.',
                 # Header section
-                'banner_regions_found': 'Régions de bannière (Header) trouvées sur le site',
-                'headers_intro': 'Les %(count)s région%(plural)s de bannière unique%(plural)s suivante%(plural)s ont été détectée%(plural)s. Chaque en-tête a reçu une signature pour le suivi sur les pages. Vérifiez qu\'il n\'y a qu\'une seule bannière par page et qu\'elle contient du contenu au niveau du site.',
+                'banner_regions_found': 'R\u00e9gions de banni\u00e8re (Header) trouv\u00e9es sur le site',
+                'headers_intro': 'Les %(count)s r\u00e9gion%(plural)s de banni\u00e8re unique%(plural)s suivante%(plural)s ont \u00e9t\u00e9 d\u00e9tect\u00e9e%(plural)s. Chaque en-t\u00eate a re\u00e7u une signature pour le suivi sur les pages. V\u00e9rifiez qu\'il n\'y a qu\'une seule banni\u00e8re par page et qu\'elle contient du contenu au niveau du site.',
                 # Footer section
-                'contentinfo_regions_found': 'Régions d\'information de contenu (Footer) trouvées sur le site',
-                'footers_intro': 'Les %(count)s région%(plural)s d\'information de contenu unique%(plural)s suivante%(plural)s ont été détectée%(plural)s. Chaque pied de page a reçu une signature pour le suivi sur les pages. Vérifiez qu\'il n\'y a qu\'une seule région d\'information de contenu par page et qu\'elle contient des informations au niveau du site.',
+                'contentinfo_regions_found': 'R\u00e9gions d\'information de contenu (Footer) trouv\u00e9es sur le site',
+                'footers_intro': 'Les %(count)s r\u00e9gion%(plural)s d\'information de contenu unique%(plural)s suivante%(plural)s ont \u00e9t\u00e9 d\u00e9tect\u00e9e%(plural)s. Chaque pied de page a re\u00e7u une signature pour le suivi sur les pages. V\u00e9rifiez qu\'il n\'y a qu\'une seule r\u00e9gion d\'information de contenu par page et qu\'elle contient des informations au niveau du site.',
                 # Search section
-                'search_regions_found': 'Régions de recherche trouvées sur le site',
-                'searches_intro': 'Les %(count)s région%(plural)s de recherche unique%(plural)s suivante%(plural)s ont été détectée%(plural)s. Chaque région de recherche a reçu une signature pour le suivi sur les pages. Vérifiez que chacune contient une fonctionnalité de recherche réelle et est correctement étiquetée.',
+                'search_regions_found': 'R\u00e9gions de recherche trouv\u00e9es sur le site',
+                'searches_intro': 'Les %(count)s r\u00e9gion%(plural)s de recherche unique%(plural)s suivante%(plural)s ont \u00e9t\u00e9 d\u00e9tect\u00e9e%(plural)s. Chaque r\u00e9gion de recherche a re\u00e7u une signature pour le suivi sur les pages. V\u00e9rifiez que chacune contient une fonctionnalit\u00e9 de recherche r\u00e9elle et est correctement \u00e9tiquet\u00e9e.',
                 # Documents section
-                'electronic_documents_found': 'Documents électroniques trouvés (%(count)s au total)',
-                'documents_intro': 'Les documents électroniques suivants ont été découverts lors de l\'exploration du site Web. Chaque document doit être examiné pour la conformité à l\'accessibilité. Les documents électroniques tels que les PDF nécessitent des fonctionnalités d\'accessibilité spécifiques telles qu\'un balisage approprié, un ordre de lecture, un texte alternatif pour les images et une structure sémantique.',
+                'electronic_documents_found': 'Documents \u00e9lectroniques trouv\u00e9s (%(count)s au total)',
+                'documents_intro': 'Les documents \u00e9lectroniques suivants ont \u00e9t\u00e9 d\u00e9couverts lors de l\'exploration du site Web. Chaque document doit \u00eatre examin\u00e9 pour la conformit\u00e9 \u00e0 l\'accessibilit\u00e9. Les documents \u00e9lectroniques tels que les PDF n\u00e9cessitent des fonctionnalit\u00e9s d\'accessibilit\u00e9 sp\u00e9cifiques telles qu\'un balisage appropri\u00e9, un ordre de lecture, un texte alternatif pour les images et une structure s\u00e9mantique.',
                 'internal_documents': 'Documents internes',
                 'external_documents': 'Documents externes',
                 'language_unknown': 'Langue inconnue',
                 'document': 'document',
                 'documents': 'documents',
                 # Issue breakdown section
-                'discovery_issues_total': 'Problèmes de découverte (%(count)s au total)',
-                'informational_items_total': 'Éléments informatifs (%(count)s au total)',
-                'accessible_name_issues_total': 'Problèmes de noms accessibles (%(count)s au total)',
-                'no_issues_display': 'Aucun problème à afficher.',
+                'discovery_issues_total': 'Probl\u00e8mes de d\u00e9couverte (%(count)s au total)',
+                'informational_items_total': '\u00c9l\u00e9ments informatifs (%(count)s au total)',
+                'accessible_name_issues_total': 'Probl\u00e8mes de noms accessibles (%(count)s au total)',
+                'no_issues_display': 'Aucun probl\u00e8me \u00e0 afficher.',
                 'total': 'au total',
                 # Page summaries
-                'items_requiring_inspection': 'éléments nécessitant une inspection',
+                'items_requiring_inspection': '\u00e9l\u00e9ments n\u00e9cessitant une inspection',
                 'informational_notices': 'avis informatifs',
-                'accessible_name_issues_count': 'problèmes de noms accessibles',
+                'accessible_name_issues_count': 'probl\u00e8mes de noms accessibles',
                 'why_it_matters': 'Pourquoi c\'est important',
                 'how_to_fix': 'Comment corriger',
                 # Form field types
-                'hidden': 'caché',
+                'hidden': 'cach\u00e9',
                 'text': 'texte',
                 'search': 'recherche',
                 'email': 'courriel',
-                'tel': 'téléphone',
+                'tel': 't\u00e9l\u00e9phone',
                 'url': 'url',
                 'password': 'mot de passe',
                 'number': 'nombre',
-                'checkbox': 'case à cocher',
+                'checkbox': 'case \u00e0 cocher',
                 'radio': 'bouton radio',
                 'submit': 'soumettre',
                 'button': 'bouton',
-                'select': 'sélection',
+                'select': 's\u00e9lection',
                 'textarea': 'zone de texte',
             }
         }
@@ -284,7 +300,7 @@ class DiscoveryReportGenerator:
         self,
         website_id: str,
         format: str = 'html',
-        progress_callback: Any = None
+        progress_callback: _ProgressCallback | None = None
     ) -> str:
         """
         Generate discovery report for a website
@@ -302,7 +318,8 @@ class DiscoveryReportGenerator:
             raise ValueError(f"Website {website_id} not found")
 
         project = self.db.get_project(website.project_id)
-        pages = self.db.get_pages(website_id)
+        assert website.id is not None
+        pages = self.db.get_pages(website.id)
 
         if format == 'pdf':
             # PDF needs full in-memory approach (WeasyPrint requires complete HTML)
@@ -323,7 +340,7 @@ class DiscoveryReportGenerator:
         self,
         project_id: str,
         format: str = 'html',
-        progress_callback: Any = None
+        progress_callback: _ProgressCallback | None = None
     ) -> str:
         """
         Generate discovery report for entire project
@@ -343,8 +360,9 @@ class DiscoveryReportGenerator:
         websites = self.db.get_websites(project_id)
 
         # Collect data for all websites
-        all_pages = []
+        all_pages: list[Page] = []
         for website in websites:
+            assert website.id is not None
             pages = self.db.get_pages(website.id)
             all_pages.extend(pages)
 
@@ -367,8 +385,14 @@ class DiscoveryReportGenerator:
     #  Streaming report generation (bounded memory)                       #
     # ------------------------------------------------------------------ #
 
-    def _generate_streaming_discovery_report(self, pages: Any, website: Any, project: Any, websites: Any,
-                                             progress_callback: Any = None) -> str:
+    def _generate_streaming_discovery_report(
+        self,
+        pages: list[Page],
+        website: Website | None,
+        project: Project | None,
+        websites: list[Website] | None,
+        progress_callback: _ProgressCallback | None = None,
+    ) -> str:
         """Generate discovery report by streaming HTML to file -- bounded memory usage.
 
         Pass 1 scans every page once, collecting only aggregate counters and
@@ -392,12 +416,13 @@ class DiscoveryReportGenerator:
         common_disco, common_info, common_an = self._compute_common_issues(aggregate)
 
         # Get documents data (small -- only metadata)
-        documents_data: dict[str, Any] = {}
+        documents_data: dict[str, list[DocumentReference]] = {}
         if website:
-            documents = self.db.get_document_references(website.id)
-            docs_by_type: dict[str, list[Any]] = {}
+            assert website.id is not None
+            documents: list[DocumentReference] = self.db.get_document_references(website.id)
+            docs_by_type: dict[str, list[DocumentReference]] = {}
             for doc in documents:
-                doc_type = doc.document_type_display
+                doc_type: str = doc.document_type_display
                 if doc_type not in docs_by_type:
                     docs_by_type[doc_type] = []
                 docs_by_type[doc_type].append(doc)
@@ -406,7 +431,7 @@ class DiscoveryReportGenerator:
         # ------ Write HTML incrementally to reports directory ------
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         scope_name = self._sanitize_filename(
-            (website.name if website else project.name) or 'report'
+            (website.name if website else (project.name if project else '')) or 'report'
         )
         filename = f"discovery_{scope_name}_{timestamp}.html"
         filepath = self.report_dir / filename
@@ -419,7 +444,7 @@ class DiscoveryReportGenerator:
             )
 
             # ------ Pass 2: stream per-page sections ------
-            page_ids_with_issues = aggregate['page_ids_with_issues']
+            page_ids_with_issues: list[tuple[str, int, int, int]] = aggregate['page_ids_with_issues']
             t = self._get_translations()
 
             if page_ids_with_issues:
@@ -457,8 +482,12 @@ class DiscoveryReportGenerator:
 
     # ---------- Pass 1 helpers ----------
 
-    def _collect_aggregate_data(self, pages: Any, progress_callback: Any = None,
-                                progress_total: int | None = None) -> dict[str, Any]:
+    def _collect_aggregate_data(
+        self,
+        pages: list[Page],
+        progress_callback: _ProgressCallback | None = None,
+        progress_total: int | None = None,
+    ) -> dict[str, Any]:
         """Scan all pages, collecting only aggregate counters and component
         signatures.  Does NOT store per-page issue dicts -- only page IDs
         and issue counts are kept.
@@ -484,9 +513,9 @@ class DiscoveryReportGenerator:
         accessible_name_by_type: defaultdict[str, int] = defaultdict(int)
 
         # Page frequency (issue_id -> set of page_ids) -- for common issue detection
-        pages_with_disco_issue = defaultdict(set)
-        pages_with_info_issue = defaultdict(set)
-        pages_with_accessible_name_issue = defaultdict(set)
+        pages_with_disco_issue: defaultdict[str, set[str | None]] = defaultdict(set)
+        pages_with_info_issue: defaultdict[str, set[str | None]] = defaultdict(set)
+        pages_with_accessible_name_issue: defaultdict[str, set[str | None]] = defaultdict(set)
 
         # Component signatures (small aggregate data)
         fonts_data: dict[str, Any] = {}
@@ -499,7 +528,7 @@ class DiscoveryReportGenerator:
         searches_data: dict[str, Any] = {}
 
         # Track which pages have issues: (page_id, disco_count, info_count, an_count)
-        page_ids_with_issues = []
+        page_ids_with_issues: list[tuple[str, int, int, int]] = []
 
         for i, page in enumerate(pages):
             if progress_callback:
@@ -507,6 +536,7 @@ class DiscoveryReportGenerator:
                     i, progress_total,
                     f'Scanning page {i + 1} of {total_pages}...'
                 )
+            assert page.id is not None
             try:
                 test_result = self.db.get_latest_test_result(page.id)
             except Exception as e:
@@ -523,8 +553,8 @@ class DiscoveryReportGenerator:
             # --- Discovery issues ---
             if hasattr(test_result, 'discovery') and test_result.discovery:
                 for issue in test_result.discovery:
-                    issue_dict = issue.to_dict() if hasattr(issue, 'to_dict') else issue
-                    issue_id = issue_dict.get('id', 'Unknown')
+                    issue_dict = _issue_to_dict(issue)
+                    issue_id: str = str(issue_dict.get('id', 'Unknown'))
                     disco_by_type[issue_id] += 1
                     pages_with_disco_issue[issue_id].add(page.id)
                     total_disco_issues += 1
@@ -540,8 +570,8 @@ class DiscoveryReportGenerator:
             # --- Info issues ---
             if hasattr(test_result, 'info') and test_result.info:
                 for issue in test_result.info:
-                    issue_dict = issue.to_dict() if hasattr(issue, 'to_dict') else issue
-                    issue_id = issue_dict.get('id', 'Unknown')
+                    issue_dict = _issue_to_dict(issue)
+                    issue_id = str(issue_dict.get('id', 'Unknown'))
                     info_by_type[issue_id] += 1
                     pages_with_info_issue[issue_id].add(page.id)
                     total_info_issues += 1
@@ -550,22 +580,23 @@ class DiscoveryReportGenerator:
             # --- Violations/warnings (accessible names, styles, fonts, landmarks) ---
             for issue_list_name in ['violations', 'warnings']:
                 if hasattr(test_result, issue_list_name):
-                    for issue in getattr(test_result, issue_list_name):
-                        issue_dict = issue.to_dict() if hasattr(issue, 'to_dict') else issue
-                        metadata = issue_dict.get('metadata', {})
-                        category = (issue_dict.get('touchpoint') or
+                    vw_items: list[Violation] = list(getattr(test_result, issue_list_name))
+                    for vw_item in vw_items:
+                        issue_dict = _issue_to_dict(vw_item)
+                        metadata: dict[str, Any] = issue_dict.get('metadata', {})
+                        category: str = str(issue_dict.get('touchpoint') or
                                     metadata.get('cat') or
                                     issue_dict.get('cat') or '').lower()
 
                         if category in ['accessible names', 'accessible_names', 'accessiblenames']:
-                            iss_id = issue_dict.get('err', issue_dict.get('id', 'Unknown'))
+                            iss_id: str = str(issue_dict.get('err', issue_dict.get('id', 'Unknown')))
                             accessible_name_by_type[iss_id] += 1
                             pages_with_accessible_name_issue[iss_id].add(page.id)
                             total_accessible_name_issues += 1
                             page_an_count += 1
 
                         elif category in ['styles', 'fonts', 'landmarks']:
-                            iss_id = issue_dict.get('err', issue_dict.get('id', 'Unknown'))
+                            iss_id = str(issue_dict.get('err', issue_dict.get('id', 'Unknown')))
                             disco_by_type[iss_id] += 1
                             pages_with_disco_issue[iss_id].add(page.id)
                             total_disco_issues += 1
@@ -629,23 +660,24 @@ class DiscoveryReportGenerator:
                                     searches_data: dict[str, Any]) -> None:
         """Extract component signature data from a discovery issue dict.
         Mutates the component dicts in place."""
-        metadata = issue_dict.get('metadata', {})
+        metadata: dict[str, Any] = issue_dict.get('metadata', {})
 
         # Fonts
         if issue_id in ('fonts_DiscoFontFound', 'DiscoFontFound'):
-            font_name = metadata.get('fontName', issue_dict.get('fontName',
-                        issue_dict.get('found', 'Unknown')))
-            font_sizes = metadata.get('fontSizes', issue_dict.get('fontSizes', []))
+            font_name: str = str(metadata.get('fontName', issue_dict.get('fontName',
+                        issue_dict.get('found', 'Unknown'))))
+            font_sizes: list[str] = list(metadata.get('fontSizes', issue_dict.get('fontSizes', [])))
             if font_name and font_name != 'Unknown':
                 if font_name not in fonts_data:
                     fonts_data[font_name] = {'sizes': set(), 'pages': set()}
-                fonts_data[font_name]['pages'].add(page_url)
+                font_entry: dict[str, Any] = fonts_data[font_name]
+                font_entry['pages'].add(page_url)
                 if font_sizes:
-                    fonts_data[font_name]['sizes'].update(font_sizes)
+                    font_entry['sizes'].update(font_sizes)
 
         # Forms
         elif issue_id in ('forms_DiscoFormOnPage', 'DiscoFormOnPage'):
-            form_signature = metadata.get('formSignature', 'unknown')
+            form_signature: str = str(metadata.get('formSignature', 'unknown'))
             if form_signature and form_signature != 'unknown':
                 if form_signature not in forms_data:
                     forms_data[form_signature] = {
@@ -659,11 +691,12 @@ class DiscoveryReportGenerator:
                         'html': metadata.get('html', issue_dict.get('html', '')),
                         'pages': set()
                     }
-                forms_data[form_signature]['pages'].add(page_url)
+                form_entry: dict[str, Any] = forms_data[form_signature]
+                form_entry['pages'].add(page_url)
 
         # Navigations
         elif issue_id in ('landmarks_DiscoNavFound', 'DiscoNavFound'):
-            nav_signature = metadata.get('navSignature', 'unknown')
+            nav_signature: str = str(metadata.get('navSignature', 'unknown'))
             if nav_signature and nav_signature != 'unknown':
                 if nav_signature not in navs_data:
                     navs_data[nav_signature] = {
@@ -673,11 +706,12 @@ class DiscoveryReportGenerator:
                         'html': metadata.get('html', issue_dict.get('html', '')),
                         'pages': set()
                     }
-                navs_data[nav_signature]['pages'].add(page_url)
+                nav_entry: dict[str, Any] = navs_data[nav_signature]
+                nav_entry['pages'].add(page_url)
 
         # Asides
         elif issue_id in ('landmarks_DiscoAsideFound', 'DiscoAsideFound'):
-            aside_signature = metadata.get('asideSignature', 'unknown')
+            aside_signature: str = str(metadata.get('asideSignature', 'unknown'))
             if aside_signature and aside_signature != 'unknown':
                 if aside_signature not in asides_data:
                     asides_data[aside_signature] = {
@@ -686,11 +720,12 @@ class DiscoveryReportGenerator:
                         'html': metadata.get('html', issue_dict.get('html', '')),
                         'pages': set()
                     }
-                asides_data[aside_signature]['pages'].add(page_url)
+                aside_entry: dict[str, Any] = asides_data[aside_signature]
+                aside_entry['pages'].add(page_url)
 
         # Sections
         elif issue_id in ('landmarks_DiscoSectionFound', 'DiscoSectionFound'):
-            section_signature = metadata.get('sectionSignature', 'unknown')
+            section_signature: str = str(metadata.get('sectionSignature', 'unknown'))
             if section_signature and section_signature != 'unknown':
                 if section_signature not in sections_data:
                     sections_data[section_signature] = {
@@ -699,11 +734,12 @@ class DiscoveryReportGenerator:
                         'html': metadata.get('html', issue_dict.get('html', '')),
                         'pages': set()
                     }
-                sections_data[section_signature]['pages'].add(page_url)
+                section_entry: dict[str, Any] = sections_data[section_signature]
+                section_entry['pages'].add(page_url)
 
         # Headers
         elif issue_id in ('landmarks_DiscoHeaderFound', 'DiscoHeaderFound'):
-            header_signature = metadata.get('headerSignature', 'unknown')
+            header_signature: str = str(metadata.get('headerSignature', 'unknown'))
             if header_signature and header_signature != 'unknown':
                 if header_signature not in headers_data:
                     headers_data[header_signature] = {
@@ -712,11 +748,12 @@ class DiscoveryReportGenerator:
                         'html': metadata.get('html', issue_dict.get('html', '')),
                         'pages': set()
                     }
-                headers_data[header_signature]['pages'].add(page_url)
+                header_entry: dict[str, Any] = headers_data[header_signature]
+                header_entry['pages'].add(page_url)
 
         # Footers
         elif issue_id in ('landmarks_DiscoFooterFound', 'DiscoFooterFound'):
-            footer_signature = metadata.get('footerSignature', 'unknown')
+            footer_signature: str = str(metadata.get('footerSignature', 'unknown'))
             if footer_signature and footer_signature != 'unknown':
                 if footer_signature not in footers_data:
                     footers_data[footer_signature] = {
@@ -725,11 +762,12 @@ class DiscoveryReportGenerator:
                         'html': metadata.get('html', issue_dict.get('html', '')),
                         'pages': set()
                     }
-                footers_data[footer_signature]['pages'].add(page_url)
+                footer_entry: dict[str, Any] = footers_data[footer_signature]
+                footer_entry['pages'].add(page_url)
 
         # Searches
         elif issue_id in ('landmarks_DiscoSearchFound', 'DiscoSearchFound'):
-            search_signature = metadata.get('searchSignature', 'unknown')
+            search_signature: str = str(metadata.get('searchSignature', 'unknown'))
             if search_signature and search_signature != 'unknown':
                 if search_signature not in searches_data:
                     searches_data[search_signature] = {
@@ -738,18 +776,19 @@ class DiscoveryReportGenerator:
                         'html': metadata.get('html', issue_dict.get('html', '')),
                         'pages': set()
                     }
-                searches_data[search_signature]['pages'].add(page_url)
+                search_entry: dict[str, Any] = searches_data[search_signature]
+                search_entry['pages'].add(page_url)
 
     def _track_landmark_from_violation(self, issue_id: str, issue_dict: dict[str, Any], page_url: str,
                                        navs_data: dict[str, Any], asides_data: dict[str, Any], sections_data: dict[str, Any],
                                        headers_data: dict[str, Any], footers_data: dict[str, Any], searches_data: dict[str, Any]) -> None:
         """Track landmark component data from violations/warnings with
         category='landmarks'.  Mirrors the legacy code path."""
-        metadata = issue_dict.get('metadata', {})
+        metadata: dict[str, Any] = issue_dict.get('metadata', {})
 
         if issue_id == 'DiscoNavFound':
-            nav_signature = metadata.get('navSignature',
-                            issue_dict.get('navSignature', 'unknown'))
+            nav_signature: str = str(metadata.get('navSignature',
+                            issue_dict.get('navSignature', 'unknown')))
             if nav_signature and nav_signature != 'unknown':
                 if nav_signature not in navs_data:
                     navs_data[nav_signature] = {
@@ -761,11 +800,12 @@ class DiscoveryReportGenerator:
                         'html': metadata.get('html', issue_dict.get('html', '')),
                         'pages': set()
                     }
-                navs_data[nav_signature]['pages'].add(page_url)
+                nav_entry: dict[str, Any] = navs_data[nav_signature]
+                nav_entry['pages'].add(page_url)
 
         elif issue_id == 'DiscoAsideFound':
-            aside_signature = metadata.get('asideSignature',
-                              issue_dict.get('asideSignature', 'unknown'))
+            aside_signature: str = str(metadata.get('asideSignature',
+                              issue_dict.get('asideSignature', 'unknown')))
             if aside_signature and aside_signature != 'unknown':
                 if aside_signature not in asides_data:
                     asides_data[aside_signature] = {
@@ -775,11 +815,12 @@ class DiscoveryReportGenerator:
                         'html': metadata.get('html', issue_dict.get('html', '')),
                         'pages': set()
                     }
-                asides_data[aside_signature]['pages'].add(page_url)
+                aside_entry: dict[str, Any] = asides_data[aside_signature]
+                aside_entry['pages'].add(page_url)
 
         elif issue_id == 'DiscoSectionFound':
-            section_signature = metadata.get('sectionSignature',
-                                issue_dict.get('sectionSignature', 'unknown'))
+            section_signature: str = str(metadata.get('sectionSignature',
+                                issue_dict.get('sectionSignature', 'unknown')))
             if section_signature and section_signature != 'unknown':
                 if section_signature not in sections_data:
                     sections_data[section_signature] = {
@@ -789,11 +830,12 @@ class DiscoveryReportGenerator:
                         'html': metadata.get('html', issue_dict.get('html', '')),
                         'pages': set()
                     }
-                sections_data[section_signature]['pages'].add(page_url)
+                section_entry: dict[str, Any] = sections_data[section_signature]
+                section_entry['pages'].add(page_url)
 
         elif issue_id == 'DiscoHeaderFound':
-            header_signature = metadata.get('headerSignature',
-                               issue_dict.get('headerSignature', 'unknown'))
+            header_signature: str = str(metadata.get('headerSignature',
+                               issue_dict.get('headerSignature', 'unknown')))
             if header_signature and header_signature != 'unknown':
                 if header_signature not in headers_data:
                     headers_data[header_signature] = {
@@ -803,11 +845,12 @@ class DiscoveryReportGenerator:
                         'html': metadata.get('html', issue_dict.get('html', '')),
                         'pages': set()
                     }
-                headers_data[header_signature]['pages'].add(page_url)
+                header_entry: dict[str, Any] = headers_data[header_signature]
+                header_entry['pages'].add(page_url)
 
         elif issue_id == 'DiscoFooterFound':
-            footer_signature = metadata.get('footerSignature',
-                               issue_dict.get('footerSignature', 'unknown'))
+            footer_signature: str = str(metadata.get('footerSignature',
+                               issue_dict.get('footerSignature', 'unknown')))
             if footer_signature and footer_signature != 'unknown':
                 if footer_signature not in footers_data:
                     footers_data[footer_signature] = {
@@ -817,11 +860,12 @@ class DiscoveryReportGenerator:
                         'html': metadata.get('html', issue_dict.get('html', '')),
                         'pages': set()
                     }
-                footers_data[footer_signature]['pages'].add(page_url)
+                footer_entry: dict[str, Any] = footers_data[footer_signature]
+                footer_entry['pages'].add(page_url)
 
         elif issue_id == 'DiscoSearchFound':
-            search_signature = metadata.get('searchSignature',
-                               issue_dict.get('searchSignature', 'unknown'))
+            search_signature: str = str(metadata.get('searchSignature',
+                               issue_dict.get('searchSignature', 'unknown')))
             if search_signature and search_signature != 'unknown':
                 if search_signature not in searches_data:
                     searches_data[search_signature] = {
@@ -831,29 +875,34 @@ class DiscoveryReportGenerator:
                         'html': metadata.get('html', issue_dict.get('html', '')),
                         'pages': set()
                     }
-                searches_data[search_signature]['pages'].add(page_url)
+                search_entry: dict[str, Any] = searches_data[search_signature]
+                search_entry['pages'].add(page_url)
 
-    def _compute_common_issues(self, aggregate: dict[str, Any]) -> tuple[set[str], set[str], set[str]]:
+    def _compute_common_issues(self, aggregate: dict[str, Any]) -> tuple[dict[str, int], dict[str, int], dict[str, int]]:
         """Compute common issues (appearing on >70% of tested pages).
 
         Returns:
             Tuple of (common_disco, common_info, common_an) dicts
             mapping issue_id -> page_count.
         """
-        threshold = aggregate['total_pages_tested'] * 0.7
-        common_disco = {
+        total_tested: int = aggregate['total_pages_tested']
+        threshold = total_tested * 0.7
+        disco_issue_pages: dict[str, set[str | None]] = aggregate['pages_with_disco_issue']
+        common_disco: dict[str, int] = {
             issue_id: len(page_set)
-            for issue_id, page_set in aggregate['pages_with_disco_issue'].items()
+            for issue_id, page_set in disco_issue_pages.items()
             if len(page_set) > threshold
         }
-        common_info = {
+        info_issue_pages: dict[str, set[str | None]] = aggregate['pages_with_info_issue']
+        common_info: dict[str, int] = {
             issue_id: len(page_set)
-            for issue_id, page_set in aggregate['pages_with_info_issue'].items()
+            for issue_id, page_set in info_issue_pages.items()
             if len(page_set) > threshold
         }
-        common_an = {
+        an_issue_pages: dict[str, set[str | None]] = aggregate['pages_with_accessible_name_issue']
+        common_an: dict[str, int] = {
             issue_id: len(page_set)
-            for issue_id, page_set in aggregate['pages_with_accessible_name_issue'].items()
+            for issue_id, page_set in an_issue_pages.items()
             if len(page_set) > threshold
         }
         return common_disco, common_info, common_an
@@ -872,35 +921,36 @@ class DiscoveryReportGenerator:
         'landmarks_DiscoSearchFound', 'DiscoSearchFound',
     })
 
-    def _extract_page_issues(self, test_result: Any) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+    def _extract_page_issues(self, test_result: TestResult) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
         """Extract categorized issues from a single test result.
 
         Returns:
             Tuple of (disco_issues, info_issues, accessible_name_issues) lists.
         """
-        disco_issues = []
-        info_issues = []
-        an_issues = []
+        disco_issues: list[dict[str, Any]] = []
+        info_issues: list[dict[str, Any]] = []
+        an_issues: list[dict[str, Any]] = []
 
         # Discovery issues
         if hasattr(test_result, 'discovery') and test_result.discovery:
             for issue in test_result.discovery:
-                issue_dict = issue.to_dict() if hasattr(issue, 'to_dict') else issue
+                issue_dict: dict[str, Any] = _issue_to_dict(issue)
                 disco_issues.append(issue_dict)
 
         # Info issues
         if hasattr(test_result, 'info') and test_result.info:
             for issue in test_result.info:
-                issue_dict = issue.to_dict() if hasattr(issue, 'to_dict') else issue
+                issue_dict = _issue_to_dict(issue)
                 info_issues.append(issue_dict)
 
         # Accessible Names, Styles, Fonts, Landmarks from violations/warnings
         for issue_list_name in ['violations', 'warnings']:
             if hasattr(test_result, issue_list_name):
-                for issue in getattr(test_result, issue_list_name):
-                    issue_dict = issue.to_dict() if hasattr(issue, 'to_dict') else issue
-                    metadata = issue_dict.get('metadata', {})
-                    category = (issue_dict.get('touchpoint') or
+                vw_items: list[Violation] = list(getattr(test_result, issue_list_name))
+                for vw_item in vw_items:
+                    issue_dict = _issue_to_dict(vw_item)
+                    metadata: dict[str, Any] = issue_dict.get('metadata', {})
+                    category: str = str(issue_dict.get('touchpoint') or
                                 metadata.get('cat') or
                                 issue_dict.get('cat') or '').lower()
 
@@ -912,7 +962,7 @@ class DiscoveryReportGenerator:
         return disco_issues, info_issues, an_issues
 
     def _generate_page_html_from_db(self, page_id: str, index: int,
-                                    common_disco: set[str], common_info: set[str], common_an: set[str]) -> str | None:
+                                    common_disco: dict[str, int], common_info: dict[str, int], common_an: dict[str, int]) -> str | None:
         """Load one page's test result from DB, generate its accordion HTML,
         and return the string.  The test result is released after this call.
 
@@ -949,13 +999,10 @@ class DiscoveryReportGenerator:
             return None
 
         page_state_desc = ""
-        if hasattr(test_result, 'page_state') and test_result.page_state:
-            if isinstance(test_result.page_state, dict):
-                page_state_desc = test_result.page_state.get('description', '')
-            elif hasattr(test_result.page_state, 'description'):
-                page_state_desc = test_result.page_state.description
+        if test_result.page_state:
+            page_state_desc = str(test_result.page_state.get('description', ''))
 
-        page_data = {
+        page_data: dict[str, Any] = {
             'page': page,
             'url': page.url,
             'title': page.title or 'Untitled',
@@ -971,8 +1018,18 @@ class DiscoveryReportGenerator:
 
     # ---------- HTML streaming helpers ----------
 
-    def _write_html_header(self, f: Any, website: Any, project: Any, websites: Any, aggregate: dict[str, Any],
-                           common_disco: set[str], common_info: set[str], common_an: set[str], documents_data: dict[str, Any]) -> None:
+    def _write_html_header(
+        self,
+        f: IO[str],
+        website: Website | None,
+        project: Project | None,
+        websites: list[Website] | None,
+        aggregate: dict[str, Any],
+        common_disco: dict[str, int],
+        common_info: dict[str, int],
+        common_an: dict[str, int],
+        documents_data: dict[str, list[DocumentReference]],
+    ) -> None:
         """Write everything from <!DOCTYPE html> through the pages-section
         header (just before the accordion).  ``f`` is an open file handle."""
         t = self._get_translations()
@@ -981,29 +1038,29 @@ class DiscoveryReportGenerator:
         # Build scope HTML
         if website:
             scope_html = f"""
-                <p><strong><span data-i18n="website">{t['website']}</span>:</strong> {html.escape(website.name or '')}</p>
-                <p><strong><span data-i18n="url">{t['url']}</span>:</strong> <a href="{html.escape(website.url or '')}" target="_blank">{html.escape(website.url or '')}</a></p>
+                <p><strong><span data-i18n="website">{t['website']}</span>:</strong> {html_mod.escape(website.name or '')}</p>
+                <p><strong><span data-i18n="url">{t['url']}</span>:</strong> <a href="{html_mod.escape(website.url or '')}" target="_blank">{html_mod.escape(website.url or '')}</a></p>
             """
         else:
             scope_html = f"""
-                <p><strong><span data-i18n="project">{t['project']}</span>:</strong> {html.escape(project.name or '')}</p>
+                <p><strong><span data-i18n="project">{t['project']}</span>:</strong> {html_mod.escape((project.name if project else '') or '')}</p>
                 <p><strong><span data-i18n="websites">{t['websites']}</span>:</strong> {len(websites) if websites else 0}</p>
             """
 
-        total_pages_tested = aggregate['total_pages_tested']
-        total_pages_needing = aggregate['total_pages_needing_inspection']
+        total_pages_tested: int = aggregate['total_pages_tested']
+        total_pages_needing: int = aggregate['total_pages_needing_inspection']
         inspection_pct = (total_pages_needing / total_pages_tested * 100) if total_pages_tested > 0 else 0
-        pages_with_unique = len(aggregate['page_ids_with_issues'])
+        pages_with_unique: int = len(aggregate['page_ids_with_issues'])
 
         # Common issues structure expected by _generate_common_issues_html
-        common_issues = {
+        common_issues: dict[str, dict[str, int]] = {
             'disco': common_disco,
             'info': common_info,
             'accessible_names': common_an
         }
 
         # Issue breakdown structure expected by _generate_issue_breakdown_html
-        issue_breakdown = {
+        issue_breakdown: dict[str, dict[str, int]] = {
             'disco': aggregate['disco_by_type'],
             'info': aggregate['info_by_type'],
             'accessible_names': aggregate['accessible_name_by_type']
@@ -1017,7 +1074,7 @@ class DiscoveryReportGenerator:
         translations_fr = self._get_translations()
         self.language = original_lang
 
-        all_translations = {'en': translations_en, 'fr': translations_fr}
+        all_translations: dict[str, dict[str, str]] = {'en': translations_en, 'fr': translations_fr}
 
         # Generate aggregate section HTML strings (all small data)
         common_issues_html = self._generate_common_issues_html(common_issues, total_pages_tested, t)
@@ -1122,11 +1179,11 @@ class DiscoveryReportGenerator:
         # Store translations JSON for the footer JS
         self._cached_translations_json = json.dumps(all_translations)
 
-    def _write_html_footer(self, f: Any) -> None:
+    def _write_html_footer(self, f: IO[str]) -> None:
         """Write the closing pages-section tag, JS, footer, and HTML tags.
         ``f`` is an open file handle."""
         t = self._get_translations()
-        all_translations_json = getattr(self, '_cached_translations_json', '{}')
+        all_translations_json = self._cached_translations_json
         generated_time = datetime.now().strftime('%B %d, %Y at %I:%M %p')
 
         f.write(f"""
@@ -1205,8 +1262,14 @@ class DiscoveryReportGenerator:
 
     # ---------- PDF fallback (legacy in-memory) ----------
 
-    def _generate_pdf_discovery_report(self, website: Any, project: Any, pages: Any,
-                                       progress_callback: Any, websites: Any = None) -> str:
+    def _generate_pdf_discovery_report(
+        self,
+        website: Website | None,
+        project: Project | None,
+        pages: list[Page],
+        progress_callback: _ProgressCallback | None,
+        websites: list[Website] | None = None,
+    ) -> str:
         """Generate PDF discovery report using the legacy in-memory approach.
         WeasyPrint requires the complete HTML string so streaming is not
         feasible for PDF output."""
@@ -1231,7 +1294,7 @@ class DiscoveryReportGenerator:
         # Save report
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         scope_name = self._sanitize_filename(
-            (website.name if website else project.name) or 'report'
+            ((website.name if website else (project.name if project else '')) or 'report')
         )
         filename = f"discovery_{scope_name}_{timestamp}.pdf"
         filepath = self.report_dir / filename
@@ -1246,7 +1309,7 @@ class DiscoveryReportGenerator:
     #  Legacy methods (used by PDF path)                                  #
     # ------------------------------------------------------------------ #
 
-    def _collect_inspection_data_legacy(self, pages: list[Page], progress_callback: Any = None) -> dict[str, Any]:
+    def _collect_inspection_data_legacy(self, pages: list[Page], progress_callback: _ProgressCallback | None = None) -> dict[str, Any]:
         """
         Collect discovery data from pages (legacy in-memory approach).
         Used by PDF generation which needs the full dataset in memory.
@@ -1262,7 +1325,7 @@ class DiscoveryReportGenerator:
         logger.warning(f"Processing {len(pages)} pages for discovery report")
         logger.warning("=" * 80)
 
-        pages_needing_inspection = []
+        pages_needing_inspection: list[dict[str, Any]] = []
 
         # Issue type counters
         total_disco_issues = 0
@@ -1275,41 +1338,40 @@ class DiscoveryReportGenerator:
         accessible_name_by_type: defaultdict[str, int] = defaultdict(int)
 
         # Track which pages have which issues (for frequency analysis)
-        pages_with_disco_issue = defaultdict(set)
-        pages_with_info_issue = defaultdict(set)
-        pages_with_accessible_name_issue = defaultdict(set)
-        total_pages_with_issues = 0
+        pages_with_disco_issue: defaultdict[str, set[str | None]] = defaultdict(set)
+        pages_with_info_issue: defaultdict[str, set[str | None]] = defaultdict(set)
+        pages_with_accessible_name_issue: defaultdict[str, set[str | None]] = defaultdict(set)
 
         # Font tracking - aggregate fonts across all pages
         fonts_data: dict[str, Any] = {}  # font_name -> {'sizes': set(), 'pages': set()}
 
         # Forms tracking - aggregate forms across all pages using formSignature
-        forms_data = {}  # form_signature -> {'xpath': str, 'fieldCount': int, 'fieldTypes': dict,
+        forms_data: dict[str, Any] = {}  # form_signature -> {'xpath': str, 'fieldCount': int, 'fieldTypes': dict,
                         #                    'isSearchForm': bool, 'formAction': str, 'formMethod': str,
                         #                    'pages': set(), 'html': str}
 
         # Navigation tracking - aggregate navigations across all pages using navSignature
-        navs_data = {}  # nav_signature -> {'xpath': str, 'linkCount': int, 'navLabel': str,
+        navs_data: dict[str, Any] = {}  # nav_signature -> {'xpath': str, 'linkCount': int, 'navLabel': str,
                        #                    'pages': set(), 'html': str}
 
         # Aside tracking - aggregate asides across all pages using asideSignature
-        asides_data = {}  # aside_signature -> {'xpath': str, 'asideLabel': str,
+        asides_data: dict[str, Any] = {}  # aside_signature -> {'xpath': str, 'asideLabel': str,
                          #                      'pages': set(), 'html': str}
 
         # Section tracking - aggregate sections across all pages using sectionSignature
-        sections_data = {}  # section_signature -> {'xpath': str, 'sectionLabel': str,
+        sections_data: dict[str, Any] = {}  # section_signature -> {'xpath': str, 'sectionLabel': str,
                            #                        'pages': set(), 'html': str}
 
         # Header tracking - aggregate headers across all pages using headerSignature
-        headers_data = {}  # header_signature -> {'xpath': str, 'headerLabel': str,
+        headers_data: dict[str, Any] = {}  # header_signature -> {'xpath': str, 'headerLabel': str,
                           #                       'pages': set(), 'html': str}
 
         # Footer tracking - aggregate footers across all pages using footerSignature
-        footers_data = {}  # footer_signature -> {'xpath': str, 'footerLabel': str,
+        footers_data: dict[str, Any] = {}  # footer_signature -> {'xpath': str, 'footerLabel': str,
                           #                       'pages': set(), 'html': str}
 
         # Search tracking - aggregate search regions across all pages using searchSignature
-        searches_data = {}  # search_signature -> {'xpath': str, 'searchLabel': str,
+        searches_data: dict[str, Any] = {}  # search_signature -> {'xpath': str, 'searchLabel': str,
                            #                       'pages': set(), 'html': str}
 
         total_pages_tested = 0
@@ -1317,6 +1379,7 @@ class DiscoveryReportGenerator:
         for i, page in enumerate(pages):
             if progress_callback:
                 progress_callback(i, len(pages), f'Collecting data for page {i + 1} of {len(pages)}...')
+            assert page.id is not None
             try:
                 test_result = self.db.get_latest_test_result(page.id)
             except Exception as e:
@@ -1329,13 +1392,10 @@ class DiscoveryReportGenerator:
 
             # Initialize page inspection data
             page_state_desc = ""
-            if hasattr(test_result, 'page_state') and test_result.page_state:
-                if isinstance(test_result.page_state, dict):
-                    page_state_desc = test_result.page_state.get('description', '')
-                elif hasattr(test_result.page_state, 'description'):
-                    page_state_desc = test_result.page_state.description
+            if test_result.page_state:
+                page_state_desc = str(test_result.page_state.get('description', ''))
 
-            page_data = {
+            page_data: dict[str, Any] = {
                 'page': page,
                 'url': page.url,
                 'title': page.title or 'Untitled',
@@ -1346,15 +1406,19 @@ class DiscoveryReportGenerator:
                 'issue_summary': [],
                 'requires_inspection': False
             }
+            disco_issues_list: list[dict[str, Any]] = page_data['disco_issues']
+            info_issues_list: list[dict[str, Any]] = page_data['info_issues']
+            an_issues_list: list[dict[str, Any]] = page_data['accessible_name_issues']
+            summary_list: list[str] = page_data['issue_summary']
 
             # Collect Discovery issues
             if hasattr(test_result, 'discovery') and test_result.discovery:
                 for issue in test_result.discovery:
-                    issue_dict = issue.to_dict() if hasattr(issue, 'to_dict') else issue
-                    page_data['disco_issues'].append(issue_dict)
+                    issue_dict: dict[str, Any] = _issue_to_dict(issue)
+                    disco_issues_list.append(issue_dict)
 
                     # Track by type and page
-                    issue_id = issue_dict.get('id', 'Unknown')
+                    issue_id: str = str(issue_dict.get('id', 'Unknown'))
                     disco_by_type[issue_id] += 1
                     pages_with_disco_issue[issue_id].add(page.id)
                     total_disco_issues += 1
@@ -1362,22 +1426,23 @@ class DiscoveryReportGenerator:
                     # Track font data from DiscoFontFound discovery issues
                     # Font data is stored in metadata.fontName and metadata.fontSizes
                     if issue_id == 'fonts_DiscoFontFound' or issue_id == 'DiscoFontFound':
-                        metadata = issue_dict.get('metadata', {})
-                        font_name = metadata.get('fontName', issue_dict.get('fontName', issue_dict.get('found', 'Unknown')))
-                        font_sizes = metadata.get('fontSizes', issue_dict.get('fontSizes', []))
+                        metadata: dict[str, Any] = issue_dict.get('metadata', {})
+                        font_name: str = str(metadata.get('fontName', issue_dict.get('fontName', issue_dict.get('found', 'Unknown'))))
+                        font_sizes: list[str] = list(metadata.get('fontSizes', issue_dict.get('fontSizes', [])))
                         logger.warning(f"  >> [DISCOVERY] Found DiscoFontFound: font='{font_name}' with {len(font_sizes)} sizes")
                         if font_name and font_name != 'Unknown':
                             if font_name not in fonts_data:
                                 fonts_data[font_name] = {'sizes': set(), 'pages': set()}
-                            fonts_data[font_name]['pages'].add(page.url)
+                            font_entry: dict[str, Any] = fonts_data[font_name]
+                            font_entry['pages'].add(page.url)
                             if font_sizes:
-                                fonts_data[font_name]['sizes'].update(font_sizes)
+                                font_entry['sizes'].update(font_sizes)
 
                     # Track form data from DiscoFormOnPage discovery issues
                     # Form data is stored in metadata with formSignature, fieldCount, fieldTypes, etc.
                     if issue_id == 'forms_DiscoFormOnPage' or issue_id == 'DiscoFormOnPage':
                         metadata = issue_dict.get('metadata', {})
-                        form_signature = metadata.get('formSignature', 'unknown')
+                        form_signature: str = str(metadata.get('formSignature', 'unknown'))
                         logger.warning(f"  >> [DISCOVERY] Found DiscoFormOnPage: signature='{form_signature}'")
 
                         if form_signature and form_signature != 'unknown':
@@ -1393,13 +1458,14 @@ class DiscoveryReportGenerator:
                                     'html': metadata.get('html', issue_dict.get('html', '')),
                                     'pages': set()
                                 }
-                            forms_data[form_signature]['pages'].add(page.url)
+                            form_entry: dict[str, Any] = forms_data[form_signature]
+                            form_entry['pages'].add(page.url)
 
                     # Track navigation data from DiscoNavFound discovery issues
                     # Nav data is stored in metadata with navSignature, linkCount, navLabel, etc.
                     if issue_id == 'landmarks_DiscoNavFound' or issue_id == 'DiscoNavFound':
                         metadata = issue_dict.get('metadata', {})
-                        nav_signature = metadata.get('navSignature', 'unknown')
+                        nav_signature: str = str(metadata.get('navSignature', 'unknown'))
                         logger.warning(f"  >> [DISCOVERY] Found DiscoNavFound: signature='{nav_signature}'")
 
                         if nav_signature and nav_signature != 'unknown':
@@ -1411,12 +1477,13 @@ class DiscoveryReportGenerator:
                                     'html': metadata.get('html', issue_dict.get('html', '')),
                                     'pages': set()
                                 }
-                            navs_data[nav_signature]['pages'].add(page.url)
+                            nav_entry: dict[str, Any] = navs_data[nav_signature]
+                            nav_entry['pages'].add(page.url)
 
                     # Track aside data from DiscoAsideFound discovery issues
                     if issue_id == 'landmarks_DiscoAsideFound' or issue_id == 'DiscoAsideFound':
                         metadata = issue_dict.get('metadata', {})
-                        aside_signature = metadata.get('asideSignature', 'unknown')
+                        aside_signature: str = str(metadata.get('asideSignature', 'unknown'))
                         logger.warning(f"  >> [DISCOVERY] Found DiscoAsideFound: signature='{aside_signature}'")
 
                         if aside_signature and aside_signature != 'unknown':
@@ -1427,12 +1494,13 @@ class DiscoveryReportGenerator:
                                     'html': metadata.get('html', issue_dict.get('html', '')),
                                     'pages': set()
                                 }
-                            asides_data[aside_signature]['pages'].add(page.url)
+                            aside_entry: dict[str, Any] = asides_data[aside_signature]
+                            aside_entry['pages'].add(page.url)
 
                     # Track section data from DiscoSectionFound discovery issues
                     if issue_id == 'landmarks_DiscoSectionFound' or issue_id == 'DiscoSectionFound':
                         metadata = issue_dict.get('metadata', {})
-                        section_signature = metadata.get('sectionSignature', 'unknown')
+                        section_signature: str = str(metadata.get('sectionSignature', 'unknown'))
                         logger.warning(f"  >> [DISCOVERY] Found DiscoSectionFound: signature='{section_signature}'")
 
                         if section_signature and section_signature != 'unknown':
@@ -1443,12 +1511,13 @@ class DiscoveryReportGenerator:
                                     'html': metadata.get('html', issue_dict.get('html', '')),
                                     'pages': set()
                                 }
-                            sections_data[section_signature]['pages'].add(page.url)
+                            section_entry: dict[str, Any] = sections_data[section_signature]
+                            section_entry['pages'].add(page.url)
 
                     # Track header data from DiscoHeaderFound discovery issues
                     if issue_id == 'landmarks_DiscoHeaderFound' or issue_id == 'DiscoHeaderFound':
                         metadata = issue_dict.get('metadata', {})
-                        header_signature = metadata.get('headerSignature', 'unknown')
+                        header_signature: str = str(metadata.get('headerSignature', 'unknown'))
                         logger.warning(f"  >> [DISCOVERY] Found DiscoHeaderFound: signature='{header_signature}'")
 
                         if header_signature and header_signature != 'unknown':
@@ -1459,12 +1528,13 @@ class DiscoveryReportGenerator:
                                     'html': metadata.get('html', issue_dict.get('html', '')),
                                     'pages': set()
                                 }
-                            headers_data[header_signature]['pages'].add(page.url)
+                            header_entry: dict[str, Any] = headers_data[header_signature]
+                            header_entry['pages'].add(page.url)
 
                     # Track footer data from DiscoFooterFound discovery issues
                     if issue_id == 'landmarks_DiscoFooterFound' or issue_id == 'DiscoFooterFound':
                         metadata = issue_dict.get('metadata', {})
-                        footer_signature = metadata.get('footerSignature', 'unknown')
+                        footer_signature: str = str(metadata.get('footerSignature', 'unknown'))
                         logger.warning(f"  >> [DISCOVERY] Found DiscoFooterFound: signature='{footer_signature}'")
 
                         if footer_signature and footer_signature != 'unknown':
@@ -1475,12 +1545,13 @@ class DiscoveryReportGenerator:
                                     'html': metadata.get('html', issue_dict.get('html', '')),
                                     'pages': set()
                                 }
-                            footers_data[footer_signature]['pages'].add(page.url)
+                            footer_entry: dict[str, Any] = footers_data[footer_signature]
+                            footer_entry['pages'].add(page.url)
 
                     # Track search data from DiscoSearchFound discovery issues
                     if issue_id == 'landmarks_DiscoSearchFound' or issue_id == 'DiscoSearchFound':
                         metadata = issue_dict.get('metadata', {})
-                        search_signature = metadata.get('searchSignature', 'unknown')
+                        search_signature: str = str(metadata.get('searchSignature', 'unknown'))
                         logger.warning(f"  >> [DISCOVERY] Found DiscoSearchFound: signature='{search_signature}'")
 
                         if search_signature and search_signature != 'unknown':
@@ -1491,16 +1562,17 @@ class DiscoveryReportGenerator:
                                     'html': metadata.get('html', issue_dict.get('html', '')),
                                     'pages': set()
                                 }
-                            searches_data[search_signature]['pages'].add(page.url)
+                            search_entry: dict[str, Any] = searches_data[search_signature]
+                            search_entry['pages'].add(page.url)
 
             # Collect Info issues
             if hasattr(test_result, 'info') and test_result.info:
                 for issue in test_result.info:
-                    issue_dict = issue.to_dict() if hasattr(issue, 'to_dict') else issue
-                    page_data['info_issues'].append(issue_dict)
+                    issue_dict = _issue_to_dict(issue)
+                    info_issues_list.append(issue_dict)
 
                     # Track by type and page
-                    issue_id = issue_dict.get('id', 'Unknown')
+                    issue_id = str(issue_dict.get('id', 'Unknown'))
                     info_by_type[issue_id] += 1
                     pages_with_info_issue[issue_id].add(page.id)
                     total_info_issues += 1
@@ -1509,48 +1581,48 @@ class DiscoveryReportGenerator:
             # Also collect font size data from font-related issues
             for issue_list_name in ['violations', 'warnings']:
                 if hasattr(test_result, issue_list_name):
-                    issue_list = getattr(test_result, issue_list_name)
-                    logger.warning(f"Page {page.url}: Processing {issue_list_name} with {len(issue_list)} items")
-                    for issue in issue_list:
-                        issue_dict = issue.to_dict() if hasattr(issue, 'to_dict') else issue
+                    vw_list: list[Violation] = list(getattr(test_result, issue_list_name))
+                    logger.warning(f"Page {page.url}: Processing {issue_list_name} with {len(vw_list)} items")
+                    for vw_item in vw_list:
+                        issue_dict = _issue_to_dict(vw_item)
                         # Check for category in multiple places:
                         # 1. Top-level 'touchpoint' field (newer format)
                         # 2. metadata.cat field (stored format)
                         # 3. Top-level 'cat' field (older format)
                         metadata = issue_dict.get('metadata', {})
-                        category = (issue_dict.get('touchpoint') or
+                        category: str = str(issue_dict.get('touchpoint') or
                                    metadata.get('cat') or
                                    issue_dict.get('cat') or '').lower()
-                        issue_id = issue_dict.get('id', issue_dict.get('err', metadata.get('err', 'Unknown')))
+                        issue_id = str(issue_dict.get('id', issue_dict.get('err', metadata.get('err', 'Unknown'))))
                         if 'font' in issue_id.lower() or 'font' in category:
                             logger.warning(f"  Found font issue: id='{issue_id}', cat='{category}'")
 
                         # Check if it's an Accessible Names touchpoint issue
                         if category in ['accessible names', 'accessible_names', 'accessiblenames']:
-                            page_data['accessible_name_issues'].append(issue_dict)
+                            an_issues_list.append(issue_dict)
 
                             # Track by type and page (check 'err' field first, then 'id')
-                            issue_id = issue_dict.get('err', issue_dict.get('id', 'Unknown'))
+                            issue_id = str(issue_dict.get('err', issue_dict.get('id', 'Unknown')))
                             accessible_name_by_type[issue_id] += 1
                             pages_with_accessible_name_issue[issue_id].add(page.id)
                             total_accessible_name_issues += 1
 
                         # Check if it's a Styles touchpoint issue (inline styles or style tags)
                         elif category == 'styles':
-                            page_data['disco_issues'].append(issue_dict)
+                            disco_issues_list.append(issue_dict)
 
                             # Track by type and page (check 'err' field first, then 'id')
-                            issue_id = issue_dict.get('err', issue_dict.get('id', 'Unknown'))
+                            issue_id = str(issue_dict.get('err', issue_dict.get('id', 'Unknown')))
                             disco_by_type[issue_id] += 1
                             pages_with_disco_issue[issue_id].add(page.id)
                             total_disco_issues += 1
 
                         # Check if it's a Fonts touchpoint issue
                         elif category == 'fonts':
-                            page_data['disco_issues'].append(issue_dict)
+                            disco_issues_list.append(issue_dict)
 
                             # Track by type and page (check 'err' field first, then 'id')
-                            issue_id = issue_dict.get('err', issue_dict.get('id', 'Unknown'))
+                            issue_id = str(issue_dict.get('err', issue_dict.get('id', 'Unknown')))
                             disco_by_type[issue_id] += 1
                             pages_with_disco_issue[issue_id].add(page.id)
                             total_disco_issues += 1
@@ -1559,24 +1631,25 @@ class DiscoveryReportGenerator:
                             # Font data is stored in metadata.fontName and metadata.fontSizes
                             logger.warning(f"  >> Fonts category issue: issue_id='{issue_id}', checking for DiscoFontFound")
                             if issue_id == 'fonts_DiscoFontFound' or issue_id == 'DiscoFontFound':
-                                metadata_inner = issue_dict.get('metadata', {})
-                                font_name = metadata_inner.get('fontName', issue_dict.get('fontName', issue_dict.get('found', 'Unknown')))
-                                font_sizes = metadata_inner.get('fontSizes', issue_dict.get('fontSizes', []))
-                                logger.warning(f"  >> [DISCO COLLECTION] Font='{font_name}' with sizes={font_sizes} (type={type(font_sizes)})")
-                                if font_name and font_name != 'Unknown':
-                                    if font_name not in fonts_data:
-                                        fonts_data[font_name] = {'sizes': set(), 'pages': set()}
-                                    fonts_data[font_name]['pages'].add(page.url)
-                                    if font_sizes:
-                                        fonts_data[font_name]['sizes'].update(font_sizes)
-                                        logger.warning(f"  >> [DISCO COLLECTION] Added sizes. Font '{font_name}' now has {len(fonts_data[font_name]['sizes'])} sizes")
+                                metadata_inner: dict[str, Any] = issue_dict.get('metadata', {})
+                                font_name_inner: str = str(metadata_inner.get('fontName', issue_dict.get('fontName', issue_dict.get('found', 'Unknown'))))
+                                font_sizes_inner: list[str] = list(metadata_inner.get('fontSizes', issue_dict.get('fontSizes', [])))
+                                logger.warning(f"  >> [DISCO COLLECTION] Font='{font_name_inner}' with sizes={font_sizes_inner} (type={type(font_sizes_inner)})")
+                                if font_name_inner and font_name_inner != 'Unknown':
+                                    if font_name_inner not in fonts_data:
+                                        fonts_data[font_name_inner] = {'sizes': set(), 'pages': set()}
+                                    font_entry_inner: dict[str, Any] = fonts_data[font_name_inner]
+                                    font_entry_inner['pages'].add(page.url)
+                                    if font_sizes_inner:
+                                        font_entry_inner['sizes'].update(font_sizes_inner)
+                                        logger.warning(f"  >> [DISCO COLLECTION] Added sizes. Font '{font_name_inner}' now has {len(font_entry_inner['sizes'])} sizes")
 
                         # Check if it's a Landmarks touchpoint issue
                         elif category == 'landmarks':
-                            page_data['disco_issues'].append(issue_dict)
+                            disco_issues_list.append(issue_dict)
 
                             # Track by type and page (check 'err' field first, then 'id')
-                            issue_id = issue_dict.get('err', issue_dict.get('id', 'Unknown'))
+                            issue_id = str(issue_dict.get('err', issue_dict.get('id', 'Unknown')))
                             disco_by_type[issue_id] += 1
                             pages_with_disco_issue[issue_id].add(page.id)
                             total_disco_issues += 1
@@ -1586,117 +1659,123 @@ class DiscoveryReportGenerator:
 
                             # DiscoNavFound
                             if issue_id == 'DiscoNavFound':
-                                nav_signature = metadata_inner.get('navSignature', issue_dict.get('navSignature', 'unknown'))
-                                if nav_signature and nav_signature != 'unknown':
-                                    if nav_signature not in navs_data:
-                                        navs_data[nav_signature] = {
+                                lm_nav_sig: str = str(metadata_inner.get('navSignature', issue_dict.get('navSignature', 'unknown')))
+                                if lm_nav_sig and lm_nav_sig != 'unknown':
+                                    if lm_nav_sig not in navs_data:
+                                        navs_data[lm_nav_sig] = {
                                             'xpath': metadata_inner.get('xpath', issue_dict.get('xpath', '')),
                                             'linkCount': metadata_inner.get('linkCount', issue_dict.get('linkCount', 0)),
                                             'navLabel': metadata_inner.get('navLabel', issue_dict.get('navLabel', '')),
                                             'html': metadata_inner.get('html', issue_dict.get('html', '')),
                                             'pages': set()
                                         }
-                                    navs_data[nav_signature]['pages'].add(page.url)
+                                    lm_nav_e: dict[str, Any] = navs_data[lm_nav_sig]
+                                    lm_nav_e['pages'].add(page.url)
 
                             # DiscoAsideFound
                             elif issue_id == 'DiscoAsideFound':
-                                aside_signature = metadata_inner.get('asideSignature', issue_dict.get('asideSignature', 'unknown'))
-                                if aside_signature and aside_signature != 'unknown':
-                                    if aside_signature not in asides_data:
-                                        asides_data[aside_signature] = {
+                                lm_aside_sig: str = str(metadata_inner.get('asideSignature', issue_dict.get('asideSignature', 'unknown')))
+                                if lm_aside_sig and lm_aside_sig != 'unknown':
+                                    if lm_aside_sig not in asides_data:
+                                        asides_data[lm_aside_sig] = {
                                             'xpath': metadata_inner.get('xpath', issue_dict.get('xpath', '')),
                                             'asideLabel': metadata_inner.get('asideLabel', issue_dict.get('asideLabel', '')),
                                             'html': metadata_inner.get('html', issue_dict.get('html', '')),
                                             'pages': set()
                                         }
-                                    asides_data[aside_signature]['pages'].add(page.url)
+                                    lm_aside_e: dict[str, Any] = asides_data[lm_aside_sig]
+                                    lm_aside_e['pages'].add(page.url)
 
                             # DiscoSectionFound
                             elif issue_id == 'DiscoSectionFound':
-                                section_signature = metadata_inner.get('sectionSignature', issue_dict.get('sectionSignature', 'unknown'))
-                                if section_signature and section_signature != 'unknown':
-                                    if section_signature not in sections_data:
-                                        sections_data[section_signature] = {
+                                lm_sec_sig: str = str(metadata_inner.get('sectionSignature', issue_dict.get('sectionSignature', 'unknown')))
+                                if lm_sec_sig and lm_sec_sig != 'unknown':
+                                    if lm_sec_sig not in sections_data:
+                                        sections_data[lm_sec_sig] = {
                                             'xpath': metadata_inner.get('xpath', issue_dict.get('xpath', '')),
                                             'sectionLabel': metadata_inner.get('sectionLabel', issue_dict.get('sectionLabel', '')),
                                             'html': metadata_inner.get('html', issue_dict.get('html', '')),
                                             'pages': set()
                                         }
-                                    sections_data[section_signature]['pages'].add(page.url)
+                                    lm_sec_e: dict[str, Any] = sections_data[lm_sec_sig]
+                                    lm_sec_e['pages'].add(page.url)
 
                             # DiscoHeaderFound
                             elif issue_id == 'DiscoHeaderFound':
-                                header_signature = metadata_inner.get('headerSignature', issue_dict.get('headerSignature', 'unknown'))
-                                if header_signature and header_signature != 'unknown':
-                                    if header_signature not in headers_data:
-                                        headers_data[header_signature] = {
+                                lm_hdr_sig: str = str(metadata_inner.get('headerSignature', issue_dict.get('headerSignature', 'unknown')))
+                                if lm_hdr_sig and lm_hdr_sig != 'unknown':
+                                    if lm_hdr_sig not in headers_data:
+                                        headers_data[lm_hdr_sig] = {
                                             'xpath': metadata_inner.get('xpath', issue_dict.get('xpath', '')),
                                             'headerLabel': metadata_inner.get('headerLabel', issue_dict.get('headerLabel', '')),
                                             'html': metadata_inner.get('html', issue_dict.get('html', '')),
                                             'pages': set()
                                         }
-                                    headers_data[header_signature]['pages'].add(page.url)
+                                    lm_hdr_e: dict[str, Any] = headers_data[lm_hdr_sig]
+                                    lm_hdr_e['pages'].add(page.url)
 
                             # DiscoFooterFound
                             elif issue_id == 'DiscoFooterFound':
-                                footer_signature = metadata_inner.get('footerSignature', issue_dict.get('footerSignature', 'unknown'))
-                                if footer_signature and footer_signature != 'unknown':
-                                    if footer_signature not in footers_data:
-                                        footers_data[footer_signature] = {
+                                lm_ftr_sig: str = str(metadata_inner.get('footerSignature', issue_dict.get('footerSignature', 'unknown')))
+                                if lm_ftr_sig and lm_ftr_sig != 'unknown':
+                                    if lm_ftr_sig not in footers_data:
+                                        footers_data[lm_ftr_sig] = {
                                             'xpath': metadata_inner.get('xpath', issue_dict.get('xpath', '')),
                                             'footerLabel': metadata_inner.get('footerLabel', issue_dict.get('footerLabel', '')),
                                             'html': metadata_inner.get('html', issue_dict.get('html', '')),
                                             'pages': set()
                                         }
-                                    footers_data[footer_signature]['pages'].add(page.url)
+                                    lm_ftr_e: dict[str, Any] = footers_data[lm_ftr_sig]
+                                    lm_ftr_e['pages'].add(page.url)
 
                             # DiscoSearchFound
                             elif issue_id == 'DiscoSearchFound':
-                                search_signature = metadata_inner.get('searchSignature', issue_dict.get('searchSignature', 'unknown'))
-                                if search_signature and search_signature != 'unknown':
-                                    if search_signature not in searches_data:
-                                        searches_data[search_signature] = {
+                                lm_srch_sig: str = str(metadata_inner.get('searchSignature', issue_dict.get('searchSignature', 'unknown')))
+                                if lm_srch_sig and lm_srch_sig != 'unknown':
+                                    if lm_srch_sig not in searches_data:
+                                        searches_data[lm_srch_sig] = {
                                             'xpath': metadata_inner.get('xpath', issue_dict.get('xpath', '')),
                                             'searchLabel': metadata_inner.get('searchLabel', issue_dict.get('searchLabel', '')),
                                             'html': metadata_inner.get('html', issue_dict.get('html', '')),
                                             'pages': set()
                                         }
-                                    searches_data[search_signature]['pages'].add(page.url)
+                                    lm_srch_e: dict[str, Any] = searches_data[lm_srch_sig]
+                                    lm_srch_e['pages'].add(page.url)
 
             # Generate issue summary
-            if page_data['disco_issues']:
-                page_data['issue_summary'].append(
-                    f"{len(page_data['disco_issues'])} items requiring inspection"
+            if disco_issues_list:
+                summary_list.append(
+                    f"{len(disco_issues_list)} items requiring inspection"
                 )
-            if page_data['info_issues']:
-                page_data['issue_summary'].append(
-                    f"{len(page_data['info_issues'])} informational notices"
+            if info_issues_list:
+                summary_list.append(
+                    f"{len(info_issues_list)} informational notices"
                 )
-            if page_data['accessible_name_issues']:
-                page_data['issue_summary'].append(
-                    f"{len(page_data['accessible_name_issues'])} accessible name issues"
+            if an_issues_list:
+                summary_list.append(
+                    f"{len(an_issues_list)} accessible name issues"
                 )
 
             # Determine if page requires inspection
-            if (page_data['disco_issues'] or
-                page_data['info_issues'] or
-                page_data['accessible_name_issues']):
+            if (disco_issues_list or
+                info_issues_list or
+                an_issues_list):
                 page_data['requires_inspection'] = True
                 pages_needing_inspection.append(page_data)
 
         # Identify common issues (appearing on >70% of pages)
         threshold = total_pages_tested * 0.7
-        common_disco_issues = {
+        common_disco_issues: dict[str, int] = {
             issue_id: len(page_set)
             for issue_id, page_set in pages_with_disco_issue.items()
             if len(page_set) > threshold
         }
-        common_info_issues = {
+        common_info_issues: dict[str, int] = {
             issue_id: len(page_set)
             for issue_id, page_set in pages_with_info_issue.items()
             if len(page_set) > threshold
         }
-        common_accessible_name_issues = {
+        common_accessible_name_issues: dict[str, int] = {
             issue_id: len(page_set)
             for issue_id, page_set in pages_with_accessible_name_issue.items()
             if len(page_set) > threshold
@@ -1707,11 +1786,14 @@ class DiscoveryReportGenerator:
         logger.info(f"Found {len(common_accessible_name_issues)} common accessible name issues")
 
         # Filter out common issues and issues with dedicated sections from page data
-        filtered_pages = []
+        filtered_pages: list[dict[str, Any]] = []
         for page_data in pages_needing_inspection:
+            pg_disco: list[dict[str, Any]] = page_data['disco_issues']
+            pg_info: list[dict[str, Any]] = page_data['info_issues']
+            pg_an: list[dict[str, Any]] = page_data['accessible_name_issues']
             # Filter disco issues - remove common ones AND those with dedicated sections (fonts, forms, navs)
             page_data['disco_issues'] = [
-                issue for issue in page_data['disco_issues']
+                issue for issue in pg_disco
                 if (issue.get('id') not in common_disco_issues and
                     issue.get('id') not in ('fonts_DiscoFontFound', 'DiscoFontFound',
                                            'forms_DiscoFormOnPage', 'DiscoFormOnPage',
@@ -1724,34 +1806,38 @@ class DiscoveryReportGenerator:
             ]
             # Filter info issues
             page_data['info_issues'] = [
-                issue for issue in page_data['info_issues']
+                issue for issue in pg_info
                 if issue.get('id') not in common_info_issues
             ]
             # Filter accessible name issues
             page_data['accessible_name_issues'] = [
-                issue for issue in page_data['accessible_name_issues']
+                issue for issue in pg_an
                 if issue.get('id') not in common_accessible_name_issues
             ]
 
             # Regenerate issue summary
-            page_data['issue_summary'] = []
-            if page_data['disco_issues']:
-                page_data['issue_summary'].append(
-                    f"{len(page_data['disco_issues'])} items requiring inspection"
+            pg_disco_filtered: list[dict[str, Any]] = page_data['disco_issues']
+            pg_info_filtered: list[dict[str, Any]] = page_data['info_issues']
+            pg_an_filtered: list[dict[str, Any]] = page_data['accessible_name_issues']
+            new_summary: list[str] = []
+            if pg_disco_filtered:
+                new_summary.append(
+                    f"{len(pg_disco_filtered)} items requiring inspection"
                 )
-            if page_data['info_issues']:
-                page_data['issue_summary'].append(
-                    f"{len(page_data['info_issues'])} informational notices"
+            if pg_info_filtered:
+                new_summary.append(
+                    f"{len(pg_info_filtered)} informational notices"
                 )
-            if page_data['accessible_name_issues']:
-                page_data['issue_summary'].append(
-                    f"{len(page_data['accessible_name_issues'])} accessible name issues"
+            if pg_an_filtered:
+                new_summary.append(
+                    f"{len(pg_an_filtered)} accessible name issues"
                 )
+            page_data['issue_summary'] = new_summary
 
             # Only include pages that still have issues after filtering
-            if (page_data['disco_issues'] or
-                page_data['info_issues'] or
-                page_data['accessible_name_issues']):
+            if (pg_disco_filtered or
+                pg_info_filtered or
+                pg_an_filtered):
                 filtered_pages.append(page_data)
 
         # Sort pages by total issue count (descending)
@@ -1800,8 +1886,8 @@ class DiscoveryReportGenerator:
 
     def _prepare_report_data_legacy(
         self,
-        website: Website,
-        project: Project,
+        website: Website | None,
+        project: Project | None,
         pages: list[Page],
         inspection_data: dict[str, Any],
         websites: list[Website] | None = None
@@ -1821,20 +1907,21 @@ class DiscoveryReportGenerator:
             Report data dictionary
         """
         # Get documents for the website
-        documents_data: list[Any] | dict[str, list[Any]] = []
+        documents_data: list[DocumentReference] | dict[str, list[DocumentReference]] = []
         if website:
-            documents = self.db.get_document_references(website.id)
+            assert website.id is not None
+            documents: list[DocumentReference] = self.db.get_document_references(website.id)
             # Group by document type
-            docs_by_type: dict[str, list[Any]] = {}
+            docs_by_type: dict[str, list[DocumentReference]] = {}
             for doc in documents:
-                doc_type = doc.document_type_display
+                doc_type: str = doc.document_type_display
                 if doc_type not in docs_by_type:
                     docs_by_type[doc_type] = []
                 docs_by_type[doc_type].append(doc)
             documents_data = docs_by_type
             logger.warning(f"DOCUMENTS COLLECTED: {len(documents)} documents across {len(docs_by_type)} types")
 
-        report_data = {
+        report_data: dict[str, Any] = {
             'title': 'Discovery Report',
             'project': project.__dict__ if project else None,
             'website': website.__dict__ if website else None,
@@ -1903,7 +1990,7 @@ class DiscoveryReportGenerator:
         translations_fr = self._get_translations()
         self.language = original_lang
 
-        all_translations = {
+        all_translations: dict[str, dict[str, str]] = {
             'en': translations_en,
             'fr': translations_fr
         }
@@ -1912,20 +1999,21 @@ class DiscoveryReportGenerator:
         t = self._get_translations()
 
         # Generate pages list - ALL pages (use list + join for efficiency with large page counts)
-        pages_html_parts = []
-        total_pages = len(data['pages'])
+        pages_html_parts: list[str] = []
+        pages_list: list[dict[str, Any]] = data['pages']
+        total_pages = len(pages_list)
 
         # Log for debugging
         logger.info(f"Generating HTML for {total_pages} pages")
 
-        for idx, page_data in enumerate(data['pages']):
+        for idx, page_data in enumerate(pages_list):
             if idx % 50 == 0 and idx > 0:
                 logger.info(f"Processing page {idx + 1}/{total_pages}")
             try:
                 pages_html_parts.append(self._generate_page_section_html(page_data, idx, t))
             except Exception as e:
                 logger.error(f"Error generating HTML for page {idx + 1} ({page_data.get('url', 'unknown')}): {e}")
-                pages_html_parts.append(f'<div class="accordion-item"><p class="text-severity-high">Error rendering page: {html.escape(str(e))}</p></div>')
+                pages_html_parts.append(f'<div class="accordion-item"><p class="text-severity-high">Error rendering page: {html_mod.escape(str(e))}</p></div>')
 
         pages_html = ''.join(pages_html_parts)
         logger.info(f"Completed generating HTML for all {total_pages} pages")
@@ -1945,7 +2033,7 @@ class DiscoveryReportGenerator:
                 <p><strong><span data-i18n="websites">{t['websites']}</span>:</strong> {len(data['websites']) if data['websites'] else 0}</p>
             """
 
-        html = f"""<!DOCTYPE html>
+        report_html = f"""<!DOCTYPE html>
 <html lang="{self.language}" data-current-lang="{self.language}">
 <head>
     <meta charset="UTF-8">
@@ -1959,7 +2047,7 @@ class DiscoveryReportGenerator:
             <div style="position: absolute; top: 10px; right: 10px;">
                 <select id="languageSelector" onchange="switchLanguage(this.value)" style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; background: white; cursor: pointer;">
                     <option value="en" {'selected' if self.language == 'en' else ''}>English</option>
-                    <option value="fr" {'selected' if self.language == 'fr' else ''}>Français</option>
+                    <option value="fr" {'selected' if self.language == 'fr' else ''}>Fran\u00e7ais</option>
                 </select>
             </div>
             <h1 data-i18n="discovery_report">{t['discovery_report']}</h1>
@@ -2066,11 +2154,11 @@ class DiscoveryReportGenerator:
             if (element.style.display === 'none') {{
                 element.style.display = 'block';
                 button.classList.remove('collapsed');
-                icon.textContent = '▲';
+                icon.textContent = '\u25b2';
             }} else {{
                 element.style.display = 'none';
                 button.classList.add('collapsed');
-                icon.textContent = '▼';
+                icon.textContent = '\u25bc';
             }}
         }}
 
@@ -2081,7 +2169,7 @@ class DiscoveryReportGenerator:
 
             accordions.forEach(acc => acc.style.display = 'block');
             buttons.forEach(btn => btn.classList.remove('collapsed'));
-            icons.forEach(icon => icon.textContent = '▲');
+            icons.forEach(icon => icon.textContent = '\u25b2');
         }}
 
         function collapseAllAccordions() {{
@@ -2091,7 +2179,7 @@ class DiscoveryReportGenerator:
 
             accordions.forEach(acc => acc.style.display = 'none');
             buttons.forEach(btn => btn.classList.add('collapsed'));
-            icons.forEach(icon => icon.textContent = '▼');
+            icons.forEach(icon => icon.textContent = '\u25bc');
         }}
         </script>
 
@@ -2103,7 +2191,7 @@ class DiscoveryReportGenerator:
 </body>
 </html>"""
 
-        return html
+        return report_html
 
     def _generate_page_section_html(self, page_data: dict[str, Any], index: int, t: dict[str, str] | None = None) -> str:
         """Generate HTML for a single page section as accordion item
@@ -2116,34 +2204,33 @@ class DiscoveryReportGenerator:
         # Get translations if not provided
         if t is None:
             t = self._get_translations()
-        total_issues = (
-            len(page_data['disco_issues']) +
-            len(page_data['info_issues']) +
-            len(page_data['accessible_name_issues'])
-        )
+        disco_list: list[dict[str, Any]] = page_data['disco_issues']
+        info_list: list[dict[str, Any]] = page_data['info_issues']
+        an_list: list[dict[str, Any]] = page_data['accessible_name_issues']
+        total_issues = len(disco_list) + len(info_list) + len(an_list)
 
         # Generate unique ID for accordion using index
         accordion_id = f"page-{index}"
 
         # Build translated issue summary
-        issue_summary_parts = []
-        if page_data['disco_issues']:
-            issue_summary_parts.append(f"{len(page_data['disco_issues'])} {t['items_requiring_inspection']}")
-        if page_data['info_issues']:
-            issue_summary_parts.append(f"{len(page_data['info_issues'])} {t['informational_notices']}")
-        if page_data['accessible_name_issues']:
-            issue_summary_parts.append(f"{len(page_data['accessible_name_issues'])} {t['accessible_name_issues_count']}")
+        issue_summary_parts: list[str] = []
+        if disco_list:
+            issue_summary_parts.append(f"{len(disco_list)} {t['items_requiring_inspection']}")
+        if info_list:
+            issue_summary_parts.append(f"{len(info_list)} {t['informational_notices']}")
+        if an_list:
+            issue_summary_parts.append(f"{len(an_list)} {t['accessible_name_issues_count']}")
 
         # Escape HTML in user-generated content
-        title_escaped = html.escape(page_data['title'])
-        url_escaped = html.escape(page_data['url'])
-        summary_escaped = html.escape(' | '.join(issue_summary_parts))
+        title_escaped = html_mod.escape(str(page_data['title']))
+        url_escaped = html_mod.escape(str(page_data['url']))
+        summary_escaped = html_mod.escape(' | '.join(issue_summary_parts))
 
         # Generate issue lists
-        disco_html = self._generate_issue_list_html(page_data['disco_issues'], t['discovery'], t)
-        info_html = self._generate_issue_list_html(page_data['info_issues'], t['informational'], t)
+        disco_html = self._generate_issue_list_html(disco_list, t['discovery'], t)
+        info_html = self._generate_issue_list_html(info_list, t['informational'], t)
         accessible_name_html = self._generate_issue_list_html(
-            page_data['accessible_name_issues'], t['accessible_names'], t
+            an_list, t['accessible_names'], t
         )
 
         return f"""
@@ -2160,7 +2247,7 @@ class DiscoveryReportGenerator:
                             <span class="issue-breakdown-small">{summary_escaped}</span>
                         </div>
                     </div>
-                    <span class="accordion-icon">▼</span>
+                    <span class="accordion-icon">\u25bc</span>
                 </button>
             </h3>
             <div id="{accordion_id}" class="accordion-collapse" style="display: none;">
@@ -2187,25 +2274,25 @@ class DiscoveryReportGenerator:
 
         category_class = category.lower().replace(' ', '-')
 
-        issues_html_parts = []
+        issues_html_parts: list[str] = []
         for issue in issues:
-            issue_id = issue.get('id', 'Unknown')
+            issue_id: str = str(issue.get('id', 'Unknown'))
 
             # Get enriched info from catalog with language context
             with force_locale(self.language):
                 catalog_info = IssueCatalog.get_issue(issue_id)
-                description = catalog_info.get('description', issue.get('description', 'No description available'))
-                why_it_matters = catalog_info.get('why_it_matters', '')
-                how_to_fix = catalog_info.get('how_to_fix', '')
+                description: str = str(catalog_info.get('description', issue.get('description', 'No description available')))
+                why_it_matters: str = str(catalog_info.get('why_it_matters', ''))
+                how_to_fix: str = str(catalog_info.get('how_to_fix', ''))
 
             issues_html_parts.append(f"""
             <div class="issue-item">
                 <div class="issue-header">
                     <span class="issue-id">{issue_id}</span>
                 </div>
-                <div class="issue-description">{html.escape(description)}</div>
-                {f'<div class="issue-why"><strong data-i18n="why_it_matters">{t["why_it_matters"]}:</strong> {html.escape(why_it_matters)}</div>' if why_it_matters else ''}
-                {f'<div class="issue-fix"><strong data-i18n="how_to_fix">{t["how_to_fix"]}:</strong> {html.escape(how_to_fix)}</div>' if how_to_fix else ''}
+                <div class="issue-description">{html_mod.escape(description)}</div>
+                {f'<div class="issue-why"><strong data-i18n="why_it_matters">{t["why_it_matters"]}:</strong> {html_mod.escape(why_it_matters)}</div>' if why_it_matters else ''}
+                {f'<div class="issue-fix"><strong data-i18n="how_to_fix">{t["how_to_fix"]}:</strong> {html_mod.escape(how_to_fix)}</div>' if how_to_fix else ''}
             </div>
             """)
         issues_html = ''.join(issues_html_parts)
@@ -2235,18 +2322,20 @@ class DiscoveryReportGenerator:
 
         fonts_html = ""
         for font_name, font_info in sorted_fonts:
-            sizes = sorted(font_info['sizes'], key=lambda x: float(x.replace('px', '').replace('rem', '').replace('em', '')))
-            pages_count = len(font_info['pages'])
+            sizes_set: set[str] = font_info['sizes']
+            sizes_list = sorted(sizes_set, key=lambda x: float(x.replace('px', '').replace('rem', '').replace('em', '')))
+            pages_set: set[str] = font_info['pages']
+            pages_count = len(pages_set)
             page_text = t['page'] if pages_count == 1 else t['pages']
 
             fonts_html += f"""
             <div class="font-item">
                 <div class="font-header">
-                    <h3 class="font-name">{html.escape(font_name)}</h3>
+                    <h3 class="font-name">{html_mod.escape(font_name)}</h3>
                     <span class="font-pages-count">{pages_count} <span data-i18n="{page_text}">{page_text}</span></span>
                 </div>
                 <div class="font-sizes">
-                    <strong data-i18n="sizes">{t['sizes']}:</strong> {', '.join(html.escape(s) for s in sizes)}
+                    <strong data-i18n="sizes">{t['sizes']}:</strong> {', '.join(html_mod.escape(s) for s in sizes_list)}
                 </div>
             </div>
             """
@@ -2280,12 +2369,13 @@ class DiscoveryReportGenerator:
 
         forms_html = ""
         for form_signature, form_info in sorted_forms:
-            pages_count = len(form_info['pages'])
+            form_pages: set[str] = form_info['pages']
+            pages_count = len(form_pages)
             percentage = (pages_count / total_pages * 100) if total_pages > 0 else 0
 
             # Build field types summary with translations
-            field_types = form_info.get('fieldTypes', {})
-            translated_field_parts = []
+            field_types: dict[str, int] = form_info.get('fieldTypes', {})
+            translated_field_parts: list[str] = []
             for ftype, count in field_types.items():
                 # Translate field type if translation exists, otherwise use original
                 translated_type = t.get(ftype.lower(), ftype)
@@ -2296,9 +2386,9 @@ class DiscoveryReportGenerator:
 
             search_indicator = ""
             if form_info.get('isSearchForm'):
-                search_indicator = f'<span class="search-badge" data-i18n="search_form">🔍 {t["search_form"]}</span>'
+                search_indicator = f'<span class="search-badge" data-i18n="search_form">\U0001f50d {t["search_form"]}</span>'
 
-            action_display = form_info.get('formAction', 'unknown')
+            action_display: str = str(form_info.get('formAction', 'unknown'))
             if len(action_display) > 50:
                 action_display = action_display[:47] + '...'
 
@@ -2306,22 +2396,22 @@ class DiscoveryReportGenerator:
             pages_list_html = ""
             if pages_count <= 3:
                 # Show all pages
-                pages_list = '<br>'.join([f'• <a href="{html.escape(url)}" target="_blank">{html.escape(url)}</a>'
-                                          for url in sorted(form_info['pages'])])
+                pages_list_str = '<br>'.join([f'\u2022 <a href="{html_mod.escape(url)}" target="_blank">{html_mod.escape(url)}</a>'
+                                          for url in sorted(form_pages)])
                 pages_list_html = f"""
                     <div class="form-detail-row">
                         <strong data-i18n="found_on">{t['found_on']}:</strong><br>
-                        {pages_list}
+                        {pages_list_str}
                     </div>
                 """
             else:
                 # Show just first example page for common forms
                 # Prioritize home page (root URL) if available
-                sorted_pages = sorted(form_info['pages'])
-                example_url = sorted_pages[0]
+                sorted_page_urls = sorted(form_pages)
+                example_url = sorted_page_urls[0]
 
                 # Try to find home page / root URL
-                for url in sorted_pages:
+                for url in sorted_page_urls:
                     # Check if URL is a root/home page (ends with / or no path after domain)
                     if url.rstrip('/').count('/') == 2:  # http://domain.com or https://domain.com/
                         example_url = url
@@ -2329,28 +2419,30 @@ class DiscoveryReportGenerator:
 
                 pages_list_html = f"""
                     <div class="form-detail-row">
-                        <strong data-i18n="example_page">{t['example_page']}:</strong> <a href="{html.escape(example_url)}" target="_blank">{html.escape(example_url)}</a>
+                        <strong data-i18n="example_page">{t['example_page']}:</strong> <a href="{html_mod.escape(example_url)}" target="_blank">{html_mod.escape(example_url)}</a>
                     </div>
                 """
 
             page_label = t['page'] if pages_count == 1 else t['pages']
+            form_method_str: str = str(form_info.get('formMethod', 'unknown')).upper()
+            form_xpath_str: str = str(form_info.get('xpath', 'unknown'))
             forms_html += f"""
             <div class="form-item">
                 <div class="form-header">
-                    <h3 class="form-signature">Form {html.escape(form_signature)}</h3>
+                    <h3 class="form-signature">Form {html_mod.escape(form_signature)}</h3>
                     {search_indicator}
                     <span class="form-pages-count">{pages_count} <span data-i18n="page">{page_label}</span> ({percentage:.0f}%)</span>
                 </div>
                 <div class="form-details">
                     <div class="form-detail-row">
-                        <strong data-i18n="fields">{t['fields']}:</strong> {form_info.get('fieldCount', 0)} ({html.escape(field_summary)})
+                        <strong data-i18n="fields">{t['fields']}:</strong> {form_info.get('fieldCount', 0)} ({html_mod.escape(field_summary)})
                     </div>
                     <div class="form-detail-row">
-                        <strong data-i18n="submits_to">{t['submits_to']}:</strong> {html.escape(action_display)}
-                        <span class="form-method">({html.escape(form_info.get('formMethod', 'unknown').upper())})</span>
+                        <strong data-i18n="submits_to">{t['submits_to']}:</strong> {html_mod.escape(action_display)}
+                        <span class="form-method">({html_mod.escape(form_method_str)})</span>
                     </div>
                     <div class="form-detail-row">
-                        <strong data-i18n="xpath">{t['xpath']}:</strong> <code>{html.escape(form_info.get('xpath', 'unknown'))}</code>
+                        <strong data-i18n="xpath">{t['xpath']}:</strong> <code>{html_mod.escape(form_xpath_str)}</code>
                     </div>
                     {pages_list_html}
                 </div>
@@ -2389,55 +2481,57 @@ class DiscoveryReportGenerator:
 
         navs_html = ""
         for nav_signature, nav_info in sorted_navs:
-            pages_count = len(nav_info['pages'])
+            nav_pages: set[str] = nav_info['pages']
+            pages_count = len(nav_pages)
             percentage = (pages_count / total_pages * 100) if total_pages > 0 else 0
 
-            label_display = nav_info.get('navLabel', t['no_label'])
+            label_display: str = str(nav_info.get('navLabel', t['no_label']))
             if not label_display:
                 label_display = t['no_label']
 
             # Show page URLs: all pages if <= 3, or just first example if many
             pages_list_html = ""
             if pages_count <= 3:
-                pages_list = '<br>'.join([f'• <a href="{html.escape(url)}" target="_blank">{html.escape(url)}</a>'
-                                          for url in sorted(nav_info['pages'])])
+                pages_list_str = '<br>'.join([f'\u2022 <a href="{html_mod.escape(url)}" target="_blank">{html_mod.escape(url)}</a>'
+                                          for url in sorted(nav_pages)])
                 pages_list_html = f"""
                     <div class="nav-detail-row">
                         <strong data-i18n="found_on">{t['found_on']}:</strong><br>
-                        {pages_list}
+                        {pages_list_str}
                     </div>
                 """
             else:
                 # Prioritize home page
-                sorted_pages = sorted(nav_info['pages'])
-                example_url = sorted_pages[0]
-                for url in sorted_pages:
+                sorted_page_urls = sorted(nav_pages)
+                example_url = sorted_page_urls[0]
+                for url in sorted_page_urls:
                     if url.rstrip('/').count('/') == 2:
                         example_url = url
                         break
 
                 pages_list_html = f"""
                     <div class="nav-detail-row">
-                        <strong data-i18n="example_page">{t['example_page']}:</strong> <a href="{html.escape(example_url)}" target="_blank">{html.escape(example_url)}</a>
+                        <strong data-i18n="example_page">{t['example_page']}:</strong> <a href="{html_mod.escape(example_url)}" target="_blank">{html_mod.escape(example_url)}</a>
                     </div>
                 """
 
             page_label = t['page'] if pages_count == 1 else t['pages']
+            nav_xpath: str = str(nav_info.get('xpath', 'unknown'))
             navs_html += f"""
             <div class="nav-item">
                 <div class="nav-header">
-                    <h3 class="nav-signature">Nav {html.escape(nav_signature)}</h3>
+                    <h3 class="nav-signature">Nav {html_mod.escape(nav_signature)}</h3>
                     <span class="nav-pages-count">{pages_count} <span data-i18n="page">{page_label}</span> ({percentage:.0f}%)</span>
                 </div>
                 <div class="nav-details">
                     <div class="nav-detail-row">
-                        <strong data-i18n="label">{t['label']}:</strong> {html.escape(label_display)}
+                        <strong data-i18n="label">{t['label']}:</strong> {html_mod.escape(label_display)}
                     </div>
                     <div class="nav-detail-row">
                         <strong data-i18n="links">{t['links']}:</strong> {nav_info.get('linkCount', 0)}
                     </div>
                     <div class="nav-detail-row">
-                        <strong data-i18n="xpath">{t['xpath']}:</strong> <code>{html.escape(nav_info.get('xpath', 'unknown'))}</code>
+                        <strong data-i18n="xpath">{t['xpath']}:</strong> <code>{html_mod.escape(nav_xpath)}</code>
                     </div>
                     {pages_list_html}
                 </div>
@@ -2459,412 +2553,163 @@ class DiscoveryReportGenerator:
         </section>
         """
 
+    def _generate_landmark_section_html(
+        self,
+        landmark_data: dict[str, dict[str, Any]],
+        total_pages: int,
+        t: dict[str, str],
+        section_class: str,
+        title_key: str,
+        intro_key: str,
+        label_field: str,
+        name_prefix: str,
+    ) -> str:
+        """Generate HTML for a generic landmark section (asides, sections, headers, footers, searches)."""
+        if not landmark_data:
+            return ""
+
+        sorted_items = sorted(landmark_data.items(), key=lambda x: (len(x[1]['pages']), x[0]), reverse=True)
+
+        items_html = ""
+        for signature, info in sorted_items:
+            info_pages: set[str] = info['pages']
+            pages_count = len(info_pages)
+            percentage = (pages_count / total_pages * 100) if total_pages > 0 else 0
+
+            label_display: str = str(info.get(label_field, t['no_label']))
+            if not label_display:
+                label_display = t['no_label']
+
+            pages_list_html = ""
+            if pages_count <= 3:
+                pages_list_str = '<br>'.join([f'\u2022 <a href="{html_mod.escape(url)}" target="_blank">{html_mod.escape(url)}</a>'
+                                          for url in sorted(info_pages)])
+                pages_list_html = f"""
+                    <div class="{section_class}-detail-row">
+                        <strong data-i18n="found_on">{t['found_on']}:</strong><br>
+                        {pages_list_str}
+                    </div>
+                """
+            else:
+                sorted_page_urls = sorted(info_pages)
+                example_url = sorted_page_urls[0]
+                for url in sorted_page_urls:
+                    if url.rstrip('/').count('/') == 2:
+                        example_url = url
+                        break
+
+                pages_list_html = f"""
+                    <div class="{section_class}-detail-row">
+                        <strong data-i18n="example_page">{t['example_page']}:</strong> <a href="{html_mod.escape(example_url)}" target="_blank">{html_mod.escape(example_url)}</a>
+                    </div>
+                """
+
+            page_label = t['page'] if pages_count == 1 else t['pages']
+            xpath_str: str = str(info.get('xpath', 'unknown'))
+            items_html += f"""
+            <div class="{section_class}-item">
+                <div class="{section_class}-header">
+                    <h3 class="{section_class}-signature">{name_prefix} {html_mod.escape(signature)}</h3>
+                    <span class="{section_class}-pages-count">{pages_count} <span data-i18n="page">{page_label}</span> ({percentage:.0f}%)</span>
+                </div>
+                <div class="{section_class}-details">
+                    <div class="{section_class}-detail-row">
+                        <strong data-i18n="label">{t['label']}:</strong> {html_mod.escape(label_display)}
+                    </div>
+                    <div class="{section_class}-detail-row">
+                        <strong data-i18n="xpath">{t['xpath']}:</strong> <code>{html_mod.escape(xpath_str)}</code>
+                    </div>
+                    {pages_list_html}
+                </div>
+            </div>
+            """
+
+        plural_suffix = 's' if len(landmark_data) != 1 else ''
+        verb = t['were'] if len(landmark_data) != 1 else t['was']
+        intro_text = t[intro_key] % {'count': len(landmark_data), 'plural': plural_suffix}
+        intro_text = intro_text.replace('%(plural)s', plural_suffix).replace(' detected', f' {verb} detected')
+
+        return f"""
+        <section class="{section_class}s-section">
+            <h2 data-i18n="{title_key}">{t[title_key]}</h2>
+            <p class="section-intro" data-i18n="{intro_key}">{intro_text}</p>
+            <div class="{section_class}s-list">
+                {items_html}
+            </div>
+        </section>
+        """
+
     def _generate_asides_html(self, asides_data: dict[str, dict[str, Any]], total_pages: int, t: dict[str, str] | None = None) -> str:
         """Generate HTML section for aside/complementary regions found across the site"""
-
-        # Get translations if not provided
         if t is None:
             t = self._get_translations()
-
         logger.warning(f"_generate_asides_html called with {len(asides_data) if asides_data else 0} asides")
         if not asides_data:
             logger.warning("No asides data - returning empty string")
             return ""
-
-        sorted_asides = sorted(asides_data.items(), key=lambda x: (len(x[1]['pages']), x[0]), reverse=True)
-
-        asides_html = ""
-        for aside_signature, aside_info in sorted_asides:
-            pages_count = len(aside_info['pages'])
-            percentage = (pages_count / total_pages * 100) if total_pages > 0 else 0
-
-            label_display = aside_info.get('asideLabel', t['no_label'])
-            if not label_display:
-                label_display = t['no_label']
-
-            pages_list_html = ""
-            if pages_count <= 3:
-                pages_list = '<br>'.join([f'• <a href="{html.escape(url)}" target="_blank">{html.escape(url)}</a>'
-                                          for url in sorted(aside_info['pages'])])
-                pages_list_html = f"""
-                    <div class="aside-detail-row">
-                        <strong data-i18n="found_on">{t['found_on']}:</strong><br>
-                        {pages_list}
-                    </div>
-                """
-            else:
-                sorted_pages = sorted(aside_info['pages'])
-                example_url = sorted_pages[0]
-                for url in sorted_pages:
-                    if url.rstrip('/').count('/') == 2:
-                        example_url = url
-                        break
-
-                pages_list_html = f"""
-                    <div class="aside-detail-row">
-                        <strong data-i18n="example_page">{t['example_page']}:</strong> <a href="{html.escape(example_url)}" target="_blank">{html.escape(example_url)}</a>
-                    </div>
-                """
-
-            page_label = t['page'] if pages_count == 1 else t['pages']
-            asides_html += f"""
-            <div class="aside-item">
-                <div class="aside-header">
-                    <h3 class="aside-signature">Aside {html.escape(aside_signature)}</h3>
-                    <span class="aside-pages-count">{pages_count} <span data-i18n="page">{page_label}</span> ({percentage:.0f}%)</span>
-                </div>
-                <div class="aside-details">
-                    <div class="aside-detail-row">
-                        <strong data-i18n="label">{t['label']}:</strong> {html.escape(label_display)}
-                    </div>
-                    <div class="aside-detail-row">
-                        <strong data-i18n="xpath">{t['xpath']}:</strong> <code>{html.escape(aside_info.get('xpath', 'unknown'))}</code>
-                    </div>
-                    {pages_list_html}
-                </div>
-            </div>
-            """
-
-        plural_suffix = 's' if len(asides_data) != 1 else ''
-        verb = t['were'] if len(asides_data) != 1 else t['was']
-        asides_intro_text = t['asides_intro'] % {'count': len(asides_data), 'plural': plural_suffix}
-        asides_intro_text = asides_intro_text.replace('%(plural)s', plural_suffix).replace(' detected', f' {verb} detected')
-
-        return f"""
-        <section class="asides-section">
-            <h2 data-i18n="complementary_regions_found">{t['complementary_regions_found']}</h2>
-            <p class="section-intro" data-i18n="asides_intro">{asides_intro_text}</p>
-            <div class="asides-list">
-                {asides_html}
-            </div>
-        </section>
-        """
+        return self._generate_landmark_section_html(
+            asides_data, total_pages, t,
+            section_class='aside', title_key='complementary_regions_found',
+            intro_key='asides_intro', label_field='asideLabel', name_prefix='Aside',
+        )
 
     def _generate_sections_html(self, sections_data: dict[str, dict[str, Any]], total_pages: int, t: dict[str, str] | None = None) -> str:
         """Generate HTML section for section/region landmarks found across the site"""
-
-        # Get translations if not provided
         if t is None:
             t = self._get_translations()
-
         logger.warning(f"_generate_sections_html called with {len(sections_data) if sections_data else 0} sections")
         if not sections_data:
             logger.warning("No sections data - returning empty string")
             return ""
-
-        sorted_sections = sorted(sections_data.items(), key=lambda x: (len(x[1]['pages']), x[0]), reverse=True)
-
-        sections_html = ""
-        for section_signature, section_info in sorted_sections:
-            pages_count = len(section_info['pages'])
-            percentage = (pages_count / total_pages * 100) if total_pages > 0 else 0
-
-            label_display = section_info.get('sectionLabel', t['no_label'])
-            if not label_display:
-                label_display = t['no_label']
-
-            pages_list_html = ""
-            if pages_count <= 3:
-                pages_list = '<br>'.join([f'• <a href="{html.escape(url)}" target="_blank">{html.escape(url)}</a>'
-                                          for url in sorted(section_info['pages'])])
-                pages_list_html = f"""
-                    <div class="section-detail-row">
-                        <strong data-i18n="found_on">{t['found_on']}:</strong><br>
-                        {pages_list}
-                    </div>
-                """
-            else:
-                sorted_pages = sorted(section_info['pages'])
-                example_url = sorted_pages[0]
-                for url in sorted_pages:
-                    if url.rstrip('/').count('/') == 2:
-                        example_url = url
-                        break
-
-                pages_list_html = f"""
-                    <div class="section-detail-row">
-                        <strong data-i18n="example_page">{t['example_page']}:</strong> <a href="{html.escape(example_url)}" target="_blank">{html.escape(example_url)}</a>
-                    </div>
-                """
-
-            page_label = t['page'] if pages_count == 1 else t['pages']
-            sections_html += f"""
-            <div class="section-item">
-                <div class="section-header">
-                    <h3 class="section-signature">Section {html.escape(section_signature)}</h3>
-                    <span class="section-pages-count">{pages_count} <span data-i18n="page">{page_label}</span> ({percentage:.0f}%)</span>
-                </div>
-                <div class="section-details">
-                    <div class="section-detail-row">
-                        <strong data-i18n="label">{t['label']}:</strong> {html.escape(label_display)}
-                    </div>
-                    <div class="section-detail-row">
-                        <strong data-i18n="xpath">{t['xpath']}:</strong> <code>{html.escape(section_info.get('xpath', 'unknown'))}</code>
-                    </div>
-                    {pages_list_html}
-                </div>
-            </div>
-            """
-
-        plural_suffix = 's' if len(sections_data) != 1 else ''
-        verb = t['were'] if len(sections_data) != 1 else t['was']
-        sections_intro_text = t['sections_intro'] % {'count': len(sections_data), 'plural': plural_suffix}
-        sections_intro_text = sections_intro_text.replace('%(plural)s', plural_suffix).replace(' detected', f' {verb} detected')
-
-        return f"""
-        <section class="sections-section">
-            <h2 data-i18n="section_regions_found">{t['section_regions_found']}</h2>
-            <p class="section-intro" data-i18n="sections_intro">{sections_intro_text}</p>
-            <div class="sections-list">
-                {sections_html}
-            </div>
-        </section>
-        """
+        return self._generate_landmark_section_html(
+            sections_data, total_pages, t,
+            section_class='section', title_key='section_regions_found',
+            intro_key='sections_intro', label_field='sectionLabel', name_prefix='Section',
+        )
 
     def _generate_headers_html(self, headers_data: dict[str, dict[str, Any]], total_pages: int, t: dict[str, str] | None = None) -> str:
         """Generate HTML section for header/banner landmarks found across the site"""
-
-        # Get translations if not provided
         if t is None:
             t = self._get_translations()
-
         logger.warning(f"_generate_headers_html called with {len(headers_data) if headers_data else 0} headers")
         if not headers_data:
             logger.warning("No headers data - returning empty string")
             return ""
-
-        sorted_headers = sorted(headers_data.items(), key=lambda x: (len(x[1]['pages']), x[0]), reverse=True)
-
-        headers_html = ""
-        for header_signature, header_info in sorted_headers:
-            pages_count = len(header_info['pages'])
-            percentage = (pages_count / total_pages * 100) if total_pages > 0 else 0
-
-            label_display = header_info.get('headerLabel', t['no_label'])
-            if not label_display:
-                label_display = t['no_label']
-
-            pages_list_html = ""
-            if pages_count <= 3:
-                pages_list = '<br>'.join([f'• <a href="{html.escape(url)}" target="_blank">{html.escape(url)}</a>'
-                                          for url in sorted(header_info['pages'])])
-                pages_list_html = f"""
-                    <div class="header-detail-row">
-                        <strong data-i18n="found_on">{t['found_on']}:</strong><br>
-                        {pages_list}
-                    </div>
-                """
-            else:
-                sorted_pages = sorted(header_info['pages'])
-                example_url = sorted_pages[0]
-                for url in sorted_pages:
-                    if url.rstrip('/').count('/') == 2:
-                        example_url = url
-                        break
-
-                pages_list_html = f"""
-                    <div class="header-detail-row">
-                        <strong data-i18n="example_page">{t['example_page']}:</strong> <a href="{html.escape(example_url)}" target="_blank">{html.escape(example_url)}</a>
-                    </div>
-                """
-
-            page_label = t['page'] if pages_count == 1 else t['pages']
-            headers_html += f"""
-            <div class="header-item">
-                <div class="header-header">
-                    <h3 class="header-signature">Header {html.escape(header_signature)}</h3>
-                    <span class="header-pages-count">{pages_count} <span data-i18n="page">{page_label}</span> ({percentage:.0f}%)</span>
-                </div>
-                <div class="header-details">
-                    <div class="header-detail-row">
-                        <strong data-i18n="label">{t['label']}:</strong> {html.escape(label_display)}
-                    </div>
-                    <div class="header-detail-row">
-                        <strong data-i18n="xpath">{t['xpath']}:</strong> <code>{html.escape(header_info.get('xpath', 'unknown'))}</code>
-                    </div>
-                    {pages_list_html}
-                </div>
-            </div>
-            """
-
-        plural_suffix = 's' if len(headers_data) != 1 else ''
-        verb = t['were'] if len(headers_data) != 1 else t['was']
-        headers_intro_text = t['headers_intro'] % {'count': len(headers_data), 'plural': plural_suffix}
-        headers_intro_text = headers_intro_text.replace('%(plural)s', plural_suffix).replace(' detected', f' {verb} detected')
-
-        return f"""
-        <section class="headers-section">
-            <h2 data-i18n="banner_regions_found">{t['banner_regions_found']}</h2>
-            <p class="section-intro" data-i18n="headers_intro">{headers_intro_text}</p>
-            <div class="headers-list">
-                {headers_html}
-            </div>
-        </section>
-        """
+        return self._generate_landmark_section_html(
+            headers_data, total_pages, t,
+            section_class='header', title_key='banner_regions_found',
+            intro_key='headers_intro', label_field='headerLabel', name_prefix='Header',
+        )
 
     def _generate_footers_html(self, footers_data: dict[str, dict[str, Any]], total_pages: int, t: dict[str, str] | None = None) -> str:
         """Generate HTML section for footer/contentinfo landmarks found across the site"""
-
-        # Get translations if not provided
         if t is None:
             t = self._get_translations()
-
         logger.warning(f"_generate_footers_html called with {len(footers_data) if footers_data else 0} footers")
         if not footers_data:
             logger.warning("No footers data - returning empty string")
             return ""
-
-        sorted_footers = sorted(footers_data.items(), key=lambda x: (len(x[1]['pages']), x[0]), reverse=True)
-
-        footers_html = ""
-        for footer_signature, footer_info in sorted_footers:
-            pages_count = len(footer_info['pages'])
-            percentage = (pages_count / total_pages * 100) if total_pages > 0 else 0
-
-            label_display = footer_info.get('footerLabel', t['no_label'])
-            if not label_display:
-                label_display = t['no_label']
-
-            pages_list_html = ""
-            if pages_count <= 3:
-                pages_list = '<br>'.join([f'• <a href="{html.escape(url)}" target="_blank">{html.escape(url)}</a>'
-                                          for url in sorted(footer_info['pages'])])
-                pages_list_html = f"""
-                    <div class="footer-detail-row">
-                        <strong data-i18n="found_on">{t['found_on']}:</strong><br>
-                        {pages_list}
-                    </div>
-                """
-            else:
-                sorted_pages = sorted(footer_info['pages'])
-                example_url = sorted_pages[0]
-                for url in sorted_pages:
-                    if url.rstrip('/').count('/') == 2:
-                        example_url = url
-                        break
-
-                pages_list_html = f"""
-                    <div class="footer-detail-row">
-                        <strong data-i18n="example_page">{t['example_page']}:</strong> <a href="{html.escape(example_url)}" target="_blank">{html.escape(example_url)}</a>
-                    </div>
-                """
-
-            page_label = t['page'] if pages_count == 1 else t['pages']
-            footers_html += f"""
-            <div class="footer-item">
-                <div class="footer-header">
-                    <h3 class="footer-signature">Footer {html.escape(footer_signature)}</h3>
-                    <span class="footer-pages-count">{pages_count} <span data-i18n="page">{page_label}</span> ({percentage:.0f}%)</span>
-                </div>
-                <div class="footer-details">
-                    <div class="footer-detail-row">
-                        <strong data-i18n="label">{t['label']}:</strong> {html.escape(label_display)}
-                    </div>
-                    <div class="footer-detail-row">
-                        <strong data-i18n="xpath">{t['xpath']}:</strong> <code>{html.escape(footer_info.get('xpath', 'unknown'))}</code>
-                    </div>
-                    {pages_list_html}
-                </div>
-            </div>
-            """
-
-        plural_suffix = 's' if len(footers_data) != 1 else ''
-        verb = t['were'] if len(footers_data) != 1 else t['was']
-        footers_intro_text = t['footers_intro'] % {'count': len(footers_data), 'plural': plural_suffix}
-        footers_intro_text = footers_intro_text.replace('%(plural)s', plural_suffix).replace(' detected', f' {verb} detected')
-
-        return f"""
-        <section class="footers-section">
-            <h2 data-i18n="contentinfo_regions_found">{t['contentinfo_regions_found']}</h2>
-            <p class="section-intro" data-i18n="footers_intro">{footers_intro_text}</p>
-            <div class="footers-list">
-                {footers_html}
-            </div>
-        </section>
-        """
+        return self._generate_landmark_section_html(
+            footers_data, total_pages, t,
+            section_class='footer', title_key='contentinfo_regions_found',
+            intro_key='footers_intro', label_field='footerLabel', name_prefix='Footer',
+        )
 
     def _generate_searches_html(self, searches_data: dict[str, dict[str, Any]], total_pages: int, t: dict[str, str] | None = None) -> str:
         """Generate HTML section for search landmarks found across the site"""
-
-        # Get translations if not provided
         if t is None:
             t = self._get_translations()
-
         logger.warning(f"_generate_searches_html called with {len(searches_data) if searches_data else 0} searches")
         if not searches_data:
             logger.warning("No searches data - returning empty string")
             return ""
+        return self._generate_landmark_section_html(
+            searches_data, total_pages, t,
+            section_class='search', title_key='search_regions_found',
+            intro_key='searches_intro', label_field='searchLabel', name_prefix='Search',
+        )
 
-        sorted_searches = sorted(searches_data.items(), key=lambda x: (len(x[1]['pages']), x[0]), reverse=True)
-
-        searches_html = ""
-        for search_signature, search_info in sorted_searches:
-            pages_count = len(search_info['pages'])
-            percentage = (pages_count / total_pages * 100) if total_pages > 0 else 0
-
-            label_display = search_info.get('searchLabel', t['no_label'])
-            if not label_display:
-                label_display = t['no_label']
-
-            pages_list_html = ""
-            if pages_count <= 3:
-                pages_list = '<br>'.join([f'• <a href="{html.escape(url)}" target="_blank">{html.escape(url)}</a>'
-                                          for url in sorted(search_info['pages'])])
-                pages_list_html = f"""
-                    <div class="search-detail-row">
-                        <strong data-i18n="found_on">{t['found_on']}:</strong><br>
-                        {pages_list}
-                    </div>
-                """
-            else:
-                sorted_pages = sorted(search_info['pages'])
-                example_url = sorted_pages[0]
-                for url in sorted_pages:
-                    if url.rstrip('/').count('/') == 2:
-                        example_url = url
-                        break
-
-                pages_list_html = f"""
-                    <div class="search-detail-row">
-                        <strong data-i18n="example_page">{t['example_page']}:</strong> <a href="{html.escape(example_url)}" target="_blank">{html.escape(example_url)}</a>
-                    </div>
-                """
-
-            page_label = t['page'] if pages_count == 1 else t['pages']
-            searches_html += f"""
-            <div class="search-item">
-                <div class="search-header">
-                    <h3 class="search-signature">Search {html.escape(search_signature)}</h3>
-                    <span class="search-pages-count">{pages_count} <span data-i18n="page">{page_label}</span> ({percentage:.0f}%)</span>
-                </div>
-                <div class="search-details">
-                    <div class="search-detail-row">
-                        <strong data-i18n="label">{t['label']}:</strong> {html.escape(label_display)}
-                    </div>
-                    <div class="search-detail-row">
-                        <strong data-i18n="xpath">{t['xpath']}:</strong> <code>{html.escape(search_info.get('xpath', 'unknown'))}</code>
-                    </div>
-                    {pages_list_html}
-                </div>
-            </div>
-            """
-
-        plural_suffix = 's' if len(searches_data) != 1 else ''
-        verb = t['were'] if len(searches_data) != 1 else t['was']
-        searches_intro_text = t['searches_intro'] % {'count': len(searches_data), 'plural': plural_suffix}
-        searches_intro_text = searches_intro_text.replace('%(plural)s', plural_suffix).replace(' detected', f' {verb} detected')
-
-        return f"""
-        <section class="searches-section">
-            <h2 data-i18n="search_regions_found">{t['search_regions_found']}</h2>
-            <p class="section-intro" data-i18n="searches_intro">{searches_intro_text}</p>
-            <div class="searches-list">
-                {searches_html}
-            </div>
-        </section>
-        """
-
-    def _generate_documents_html(self, documents_by_type: dict[str, list[Any]], t: dict[str, str] | None = None) -> str:
+    def _generate_documents_html(self, documents_by_type: dict[str, list[DocumentReference]], t: dict[str, str] | None = None) -> str:
         """Generate HTML section for electronic documents found during scraping"""
 
         # Get translations if not provided
@@ -2880,33 +2725,39 @@ class DiscoveryReportGenerator:
         documents_html = ""
         for doc_type, docs in sorted(documents_by_type.items()):
             # Group by internal vs external
-            internal_docs = [d for d in docs if d.is_internal]
-            external_docs = [d for d in docs if not d.is_internal]
+            internal_docs: list[DocumentReference] = [d for d in docs if d.is_internal]
+            external_docs: list[DocumentReference] = [d for d in docs if not d.is_internal]
 
             docs_html = ""
             if internal_docs:
                 docs_html += f"<h4 data-i18n='internal_documents'>{t['internal_documents']}</h4><ul class='documents-list'>"
                 for doc in sorted(internal_docs, key=lambda x: (x.language or 'zzz', x.document_url)):
-                    link_text_display = html.escape(doc.link_text) if doc.link_text else html.escape(doc.document_url.split('/')[-1])
+                    doc_link_text: str = doc.link_text or ''
+                    doc_url: str = doc.document_url
+                    doc_ref_url: str = doc.referring_page_url
+                    link_text_display = html_mod.escape(doc_link_text) if doc_link_text else html_mod.escape(doc_url.split('/')[-1])
 
                     # Language badge and info
                     language_info = ""
-                    if doc.language:
-                        confidence_pct = f" ({int(doc.language_confidence * 100)}%)" if doc.language_confidence else ""
-                        language_info = f'<span class="lang-badge">{html.escape(doc.language_display)}{confidence_pct}</span>'
+                    doc_lang: str | None = doc.language
+                    if doc_lang:
+                        doc_lang_conf: float | None = doc.language_confidence
+                        confidence_pct = f" ({int(doc_lang_conf * 100)}%)" if doc_lang_conf else ""
+                        doc_lang_display: str = doc.language_display
+                        language_info = f'<span class="lang-badge">{html_mod.escape(doc_lang_display)}{confidence_pct}</span>'
                     else:
                         language_info = f'<span class="lang-badge lang-unknown" data-i18n="language_unknown">{t["language_unknown"]}</span>'
 
                     docs_html += f"""
                     <li class="document-item">
                         <div class="document-header">
-                            <a href="{html.escape(doc.document_url)}" target="_blank" class="document-link">
+                            <a href="{html_mod.escape(doc_url)}" target="_blank" class="document-link">
                                 {link_text_display}
                             </a>
                             {language_info}
                         </div>
                         <div class="document-meta">
-                            <span class="document-referring" data-i18n="found_on">{t['found_on']}: <a href="{html.escape(doc.referring_page_url)}" target="_blank">{html.escape(doc.referring_page_url)}</a></span>
+                            <span class="document-referring" data-i18n="found_on">{t['found_on']}: <a href="{html_mod.escape(doc_ref_url)}" target="_blank">{html_mod.escape(doc_ref_url)}</a></span>
                         </div>
                     </li>
                     """
@@ -2915,26 +2766,32 @@ class DiscoveryReportGenerator:
             if external_docs:
                 docs_html += f"<h4 data-i18n='external_documents'>{t['external_documents']}</h4><ul class='documents-list'>"
                 for doc in sorted(external_docs, key=lambda x: (x.language or 'zzz', x.document_url)):
-                    link_text_display = html.escape(doc.link_text) if doc.link_text else html.escape(doc.document_url.split('/')[-1])
+                    doc_link_text = doc.link_text or ''
+                    doc_url = doc.document_url
+                    doc_ref_url = doc.referring_page_url
+                    link_text_display = html_mod.escape(doc_link_text) if doc_link_text else html_mod.escape(doc_url.split('/')[-1])
 
                     # Language badge and info
                     language_info = ""
-                    if doc.language:
-                        confidence_pct = f" ({int(doc.language_confidence * 100)}%)" if doc.language_confidence else ""
-                        language_info = f'<span class="lang-badge">{html.escape(doc.language_display)}{confidence_pct}</span>'
+                    doc_lang = doc.language
+                    if doc_lang:
+                        doc_lang_conf = doc.language_confidence
+                        confidence_pct = f" ({int(doc_lang_conf * 100)}%)" if doc_lang_conf else ""
+                        doc_lang_display = doc.language_display
+                        language_info = f'<span class="lang-badge">{html_mod.escape(doc_lang_display)}{confidence_pct}</span>'
                     else:
                         language_info = f'<span class="lang-badge lang-unknown" data-i18n="language_unknown">{t["language_unknown"]}</span>'
 
                     docs_html += f"""
                     <li class="document-item">
                         <div class="document-header">
-                            <a href="{html.escape(doc.document_url)}" target="_blank" class="document-link">
+                            <a href="{html_mod.escape(doc_url)}" target="_blank" class="document-link">
                                 {link_text_display}
                             </a>
                             {language_info}
                         </div>
                         <div class="document-meta">
-                            <span class="document-referring" data-i18n="found_on">{t['found_on']}: <a href="{html.escape(doc.referring_page_url)}" target="_blank">{html.escape(doc.referring_page_url)}</a></span>
+                            <span class="document-referring" data-i18n="found_on">{t['found_on']}: <a href="{html_mod.escape(doc_ref_url)}" target="_blank">{html_mod.escape(doc_ref_url)}</a></span>
                         </div>
                     </li>
                     """
@@ -2944,7 +2801,7 @@ class DiscoveryReportGenerator:
             documents_html += f"""
             <div class="document-type-section">
                 <h3 class="document-type-title">
-                    {html.escape(doc_type)}
+                    {html_mod.escape(doc_type)}
                     <span class="document-count">({len(docs)} <span data-i18n="document">{doc_label}</span>)</span>
                 </h3>
                 {docs_html}
@@ -2962,7 +2819,7 @@ class DiscoveryReportGenerator:
         </section>
         """
 
-    def _generate_common_issues_html(self, common_issues: dict[str, dict[str, Any]], total_pages: int, t: dict[str, str] | None = None) -> str:
+    def _generate_common_issues_html(self, common_issues: dict[str, dict[str, int]], total_pages: int, t: dict[str, str] | None = None) -> str:
         """Generate HTML section for common issues appearing on >70% of pages"""
 
         # Get translations if not provided
@@ -2996,12 +2853,12 @@ class DiscoveryReportGenerator:
                 has_other_issues = True
                 with force_locale(self.language):
                     catalog_info = IssueCatalog.get_issue(issue_id)
-                    description = catalog_info.get('description', issue_id)
+                    description: str = str(catalog_info.get('description', issue_id))
                 percentage = (page_count / total_pages * 100) if total_pages > 0 else 0
                 disco_html += f"""
                 <li>
-                    <strong>{html.escape(issue_id)}</strong> - <span data-i18n="appears_on">{t['appears_on']}</span> {page_count} <span data-i18n="pages">{t['pages']}</span> ({percentage:.0f}%)
-                    <div class="common-issue-desc">{html.escape(description)}</div>
+                    <strong>{html_mod.escape(issue_id)}</strong> - <span data-i18n="appears_on">{t['appears_on']}</span> {page_count} <span data-i18n="pages">{t['pages']}</span> ({percentage:.0f}%)
+                    <div class="common-issue-desc">{html_mod.escape(description)}</div>
                 </li>
                 """
             disco_html += "</ul>"
@@ -3022,12 +2879,12 @@ class DiscoveryReportGenerator:
             for issue_id, page_count in sorted(common_issues['info'].items(), key=lambda x: x[1], reverse=True):
                 with force_locale(self.language):
                     catalog_info = IssueCatalog.get_issue(issue_id)
-                    description = catalog_info.get('description', issue_id)
+                    description = str(catalog_info.get('description', issue_id))
                 percentage = (page_count / total_pages * 100) if total_pages > 0 else 0
                 info_html += f"""
                 <li>
-                    <strong>{html.escape(issue_id)}</strong> - <span data-i18n="appears_on">{t['appears_on']}</span> {page_count} <span data-i18n="pages">{t['pages']}</span> ({percentage:.0f}%)
-                    <div class="common-issue-desc">{html.escape(description)}</div>
+                    <strong>{html_mod.escape(issue_id)}</strong> - <span data-i18n="appears_on">{t['appears_on']}</span> {page_count} <span data-i18n="pages">{t['pages']}</span> ({percentage:.0f}%)
+                    <div class="common-issue-desc">{html_mod.escape(description)}</div>
                 </li>
                 """
             info_html += "</ul>"
@@ -3045,12 +2902,12 @@ class DiscoveryReportGenerator:
             for issue_id, page_count in sorted(common_issues['accessible_names'].items(), key=lambda x: x[1], reverse=True):
                 with force_locale(self.language):
                     catalog_info = IssueCatalog.get_issue(issue_id)
-                    description = catalog_info.get('description', issue_id)
+                    description = str(catalog_info.get('description', issue_id))
                 percentage = (page_count / total_pages * 100) if total_pages > 0 else 0
                 an_html += f"""
                 <li>
-                    <strong>{html.escape(issue_id)}</strong> - <span data-i18n="appears_on">{t['appears_on']}</span> {page_count} <span data-i18n="pages">{t['pages']}</span> ({percentage:.0f}%)
-                    <div class="common-issue-desc">{html.escape(description)}</div>
+                    <strong>{html_mod.escape(issue_id)}</strong> - <span data-i18n="appears_on">{t['appears_on']}</span> {page_count} <span data-i18n="pages">{t['pages']}</span> ({percentage:.0f}%)
+                    <div class="common-issue-desc">{html_mod.escape(description)}</div>
                 </li>
                 """
             an_html += "</ul>"
@@ -3070,7 +2927,7 @@ class DiscoveryReportGenerator:
         </section>
         """
 
-    def _generate_issue_breakdown_html(self, breakdown: dict[str, dict[str, Any]], t: dict[str, str] | None = None) -> str:
+    def _generate_issue_breakdown_html(self, breakdown: dict[str, dict[str, int]], t: dict[str, str] | None = None) -> str:
         """Generate HTML for issue breakdown by type"""
 
         # Get translations if not provided
@@ -3096,14 +2953,14 @@ class DiscoveryReportGenerator:
                     continue
                 with force_locale(self.language):
                     catalog_info = IssueCatalog.get_issue(issue_id)
-                    description = catalog_info.get('description', issue_id)
+                    description: str = str(catalog_info.get('description', issue_id))
                 disco_html += f"<li><strong>{issue_id}</strong> ({count}): {description}</li>"
             disco_html += "</ul>"
 
             # Only show this section if there are other disco issues besides fonts/forms/navs
             if disco_html != "<ul></ul>":
-                total_disco = sum(count for id, count in breakdown['disco'].items()
-                                 if id not in ('fonts_DiscoFontFound', 'DiscoFontFound',
+                total_disco = sum(count for bid, count in breakdown['disco'].items()
+                                 if bid not in ('fonts_DiscoFontFound', 'DiscoFontFound',
                                               'forms_DiscoFormOnPage', 'DiscoFormOnPage',
                                               'landmarks_DiscoNavFound', 'DiscoNavFound',
                                               'landmarks_DiscoAsideFound', 'DiscoAsideFound',
@@ -3126,7 +2983,7 @@ class DiscoveryReportGenerator:
             for issue_id, count in info_items[:10]:  # Top 10
                 with force_locale(self.language):
                     catalog_info = IssueCatalog.get_issue(issue_id)
-                    description = catalog_info.get('description', issue_id)
+                    description = str(catalog_info.get('description', issue_id))
                 info_html += f"<li><strong>{issue_id}</strong> ({count}): {description}</li>"
             info_html += "</ul>"
 
@@ -3146,7 +3003,7 @@ class DiscoveryReportGenerator:
             for issue_id, count in an_items[:10]:  # Top 10
                 with force_locale(self.language):
                     catalog_info = IssueCatalog.get_issue(issue_id)
-                    description = catalog_info.get('description', issue_id)
+                    description = str(catalog_info.get('description', issue_id))
                 an_html += f"<li><strong>{issue_id}</strong> ({count}): {description}</li>"
             an_html += "</ul>"
 
@@ -3172,22 +3029,20 @@ class DiscoveryReportGenerator:
             PDF content as bytes
         """
         try:
-            from weasyprint import HTML, CSS
-            from io import BytesIO
+            from weasyprint import HTML as WeasyprintHTML  # noqa: N811
 
             # Generate HTML first (uses legacy in-memory approach)
             html_content = self._generate_html_report_legacy(data)
 
             # Convert to PDF
-            pdf_bytes = HTML(string=html_content).write_pdf()
+            pdf_bytes = WeasyprintHTML(string=html_content).write_pdf()
 
             return pdf_bytes or b''
 
         except ImportError:
             logger.error("WeasyPrint not installed. Cannot generate PDF.")
             raise ImportError(
-                "WeasyPrint is required for PDF generation. "
-                "Install with: pip install weasyprint"
+                "WeasyPrint is required for PDF generation. Install with: pip install weasyprint"
             )
 
     def _get_html_css(self) -> str:
@@ -3297,1045 +3152,201 @@ class DiscoveryReportGenerator:
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
-        .stat-card.disco {
-            border-left-color: #9b59b6;
-        }
-
-        .stat-card.info {
-            border-left-color: #3498db;
-        }
-
-        .stat-card.warning {
-            border-left-color: #f39c12;
-        }
-
-        .stat-number {
-            font-size: 2.5em;
-            font-weight: bold;
-            color: #2c3e50;
-            margin-bottom: 5px;
-        }
-
-        .stat-label {
-            font-size: 1em;
-            color: #555;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-
-        .stat-detail {
-            font-size: 0.85em;
-            color: #7f8c8d;
-        }
-
-        .issue-breakdown {
-            margin-top: 30px;
-        }
-
-        .breakdown-section {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border-left: 4px solid #3498db;
-        }
-
-        .breakdown-section.disco {
-            border-left-color: #9b59b6;
-        }
-
-        .breakdown-section.info {
-            border-left-color: #3498db;
-        }
-
-        .breakdown-section.accessible-names {
-            border-left-color: #f39c12;
-        }
-
-        .breakdown-section h3 {
-            margin-top: 0;
-            color: #2c3e50;
-        }
-
-        .breakdown-section ul {
-            margin-left: 20px;
-            margin-top: 15px;
-        }
-
-        .breakdown-section li {
-            margin-bottom: 10px;
-            line-height: 1.6;
-        }
-
-        .common-issues-section {
-            margin-top: 30px;
-            background: #fff8dc;
-            padding: 25px;
-            border-radius: 8px;
-            border: 2px solid #f39c12;
-        }
-
-        .common-issues-section h2 {
-            color: #856404;
-            margin-top: 0;
-        }
-
-        .common-section {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border-left: 4px solid #3498db;
-        }
-
-        .common-section.disco {
-            border-left-color: #9b59b6;
-        }
-
-        .common-section.info {
-            border-left-color: #3498db;
-        }
-
-        .common-section.accessible-names {
-            border-left-color: #f39c12;
-        }
-
-        .common-section h3 {
-            margin-top: 0;
-            color: #2c3e50;
-        }
-
-        .common-intro {
-            color: #666;
-            font-style: italic;
-            margin-bottom: 15px;
-        }
-
-        .common-issue-list {
-            list-style: none;
-            padding-left: 0;
-        }
-
-        .common-issue-list li {
-            background: #f8f9fa;
-            padding: 12px 15px;
-            margin-bottom: 10px;
-            border-radius: 4px;
-            border-left: 3px solid #dee2e6;
-        }
-
-        .common-issue-desc {
-            margin-top: 5px;
-            color: #666;
-            font-size: 0.9em;
-        }
-
-        .pages-section {
-            margin-top: 30px;
-        }
-
-        .section-intro {
-            color: #666;
-            font-size: 1.05em;
-            margin-bottom: 15px;
-            line-height: 1.7;
-        }
-
-        .accordion-controls {
-            margin-bottom: 20px;
-            display: flex;
-            gap: 10px;
-        }
-
-        .btn-control {
-            background: #0366d6;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 0.9em;
-            font-weight: 600;
-            transition: background 0.2s;
-        }
-
-        .btn-control:hover {
-            background: #0256c7;
-        }
-
-        .btn-control:focus {
-            outline: 2px solid #0366d6;
-            outline-offset: 2px;
-        }
-
-        .accordion {
-            border: 1px solid #e1e4e8;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        .accordion-item {
-            border-bottom: 1px solid #e1e4e8;
-        }
-
-        .accordion-item:last-child {
-            border-bottom: none;
-        }
-
-        .accordion-header {
-            margin: 0;
-        }
-
-        .accordion-button {
-            width: 100%;
-            background: #f6f8fa;
-            border: none;
-            padding: 15px 20px;
-            text-align: left;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: background 0.2s;
-            font-size: 1em;
-        }
-
-        .accordion-button:hover {
-            background: #e9ecef;
-        }
-
-        .accordion-button:focus {
-            outline: 2px solid #0366d6;
-            outline-offset: -2px;
-        }
-
-        .accordion-button.collapsed {
-            background: #f6f8fa;
-        }
-
-        .accordion-title {
-            flex: 1;
-        }
-
-        .page-title {
-            font-size: 1.1em;
-            font-weight: 600;
-            color: #24292e;
-            margin-bottom: 5px;
-        }
-
-        .page-url-small {
-            font-size: 0.85em;
-            color: #0366d6;
-            margin-bottom: 5px;
-            word-break: break-all;
-        }
-
-        .page-summary-small {
-            font-size: 0.85em;
-            color: #586069;
-        }
-
-        .issue-badge {
-            background: #e1e4e8;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-weight: 600;
-            color: #24292e;
-            margin-right: 8px;
-        }
-
-        .issue-breakdown-small {
-            color: #586069;
-        }
-
-        .accordion-icon {
-            font-size: 0.8em;
-            color: #586069;
-            margin-left: 15px;
-            transition: transform 0.2s;
-        }
-
-        .accordion-collapse {
-            background: white;
-        }
-
-        .accordion-body {
-            padding: 20px;
-            border-top: 1px solid #e1e4e8;
-        }
-
-        .page-url-full {
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #e1e4e8;
-        }
-
-        .page-url-full a {
-            color: #0366d6;
-            text-decoration: none;
-            word-break: break-all;
-        }
-
-        .page-url-full a:hover {
-            text-decoration: underline;
-        }
-
-        .issue-category {
-            margin-bottom: 25px;
-        }
-
-        .issue-category.discovery h4 {
-            color: #9b59b6;
-        }
-
-        .issue-category.informational h4 {
-            color: #3498db;
-        }
-
-        .issue-category.accessible-names h4 {
-            color: #f39c12;
-        }
-
-        .issue-list {
-            margin-top: 10px;
-        }
-
-        .issue-item {
-            background: #f8f9fa;
-            border-left: 3px solid #dee2e6;
-            padding: 15px;
-            margin-bottom: 15px;
-            border-radius: 4px;
-        }
-
-        .issue-header {
-            margin-bottom: 8px;
-        }
-
-        .issue-id {
-            font-family: 'Courier New', monospace;
-            background: #e1e4e8;
-            padding: 3px 8px;
-            border-radius: 3px;
-            font-size: 0.9em;
-            font-weight: 600;
-            color: #24292e;
-        }
-
-        .issue-description {
-            color: #24292e;
-            margin-bottom: 10px;
-            line-height: 1.6;
-        }
-
-        .issue-why, .issue-fix {
-            font-size: 0.9em;
-            color: #586069;
-            margin-top: 8px;
-            padding: 10px;
-            background: white;
-            border-radius: 4px;
-            line-height: 1.6;
-        }
-
-        .issue-why strong, .issue-fix strong {
-            color: #24292e;
-        }
-
-        .no-issues {
-            text-align: center;
-            padding: 40px 20px;
-            color: #666;
-            font-size: 1.1em;
-            background: #f8f9fa;
-            border-radius: 8px;
-        }
-
-        .truncation-notice {
-            background: #fff3cd;
-            border: 2px solid #ffc107;
-            border-radius: 8px;
-            padding: 25px;
-            margin-top: 30px;
-            margin-bottom: 20px;
-        }
-
-        .truncation-notice h3 {
-            color: #856404;
-            margin-bottom: 15px;
-            font-size: 1.3em;
-        }
-
-        .truncation-notice p {
-            color: #856404;
-            margin-bottom: 10px;
-            line-height: 1.6;
-        }
-
-        .truncation-notice p:last-child {
-            margin-bottom: 0;
-        }
-
-        footer {
-            margin-top: 50px;
-            padding-top: 20px;
-            border-top: 2px solid #ecf0f1;
-            text-align: center;
-            color: #7f8c8d;
-            font-size: 0.9em;
-        }
-
-        footer p {
-            margin: 5px 0;
-        }
-
-        @media print {
-            .container {
-                box-shadow: none;
-                max-width: none;
-            }
-
-            .page-card {
-                page-break-inside: avoid;
-            }
-        }
+        .stat-card.disco { border-left-color: #9b59b6; }
+        .stat-card.info { border-left-color: #3498db; }
+        .stat-card.warning { border-left-color: #f39c12; }
+
+        .stat-number { font-size: 2.5em; font-weight: bold; color: #2c3e50; margin-bottom: 5px; }
+        .stat-label { font-size: 1em; color: #555; font-weight: 600; margin-bottom: 5px; }
+        .stat-detail { font-size: 0.85em; color: #7f8c8d; }
+
+        .issue-breakdown { margin-top: 30px; }
+
+        .breakdown-section { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #3498db; }
+        .breakdown-section.disco { border-left-color: #9b59b6; }
+        .breakdown-section.info { border-left-color: #3498db; }
+        .breakdown-section.accessible-names { border-left-color: #f39c12; }
+        .breakdown-section h3 { margin-top: 0; color: #2c3e50; }
+        .breakdown-section ul { margin-left: 20px; margin-top: 15px; }
+        .breakdown-section li { margin-bottom: 10px; line-height: 1.6; }
+
+        .common-issues-section { margin-top: 30px; background: #fff8dc; padding: 25px; border-radius: 8px; border: 2px solid #f39c12; }
+        .common-issues-section h2 { color: #856404; margin-top: 0; }
+
+        .common-section { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #3498db; }
+        .common-section.disco { border-left-color: #9b59b6; }
+        .common-section.info { border-left-color: #3498db; }
+        .common-section.accessible-names { border-left-color: #f39c12; }
+        .common-section h3 { margin-top: 0; color: #2c3e50; }
+        .common-intro { color: #666; font-style: italic; margin-bottom: 15px; }
+        .common-issue-list { list-style: none; padding-left: 0; }
+        .common-issue-list li { background: #f8f9fa; padding: 12px 15px; margin-bottom: 10px; border-radius: 4px; border-left: 3px solid #dee2e6; }
+        .common-issue-desc { margin-top: 5px; color: #666; font-size: 0.9em; }
+
+        .pages-section { margin-top: 30px; }
+        .section-intro { color: #666; font-size: 1.05em; margin-bottom: 15px; line-height: 1.7; }
+
+        .accordion-controls { margin-bottom: 20px; display: flex; gap: 10px; }
+        .btn-control { background: #0366d6; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; font-size: 0.9em; font-weight: 600; transition: background 0.2s; }
+        .btn-control:hover { background: #0256c7; }
+        .btn-control:focus { outline: 2px solid #0366d6; outline-offset: 2px; }
+
+        .accordion { border: 1px solid #e1e4e8; border-radius: 8px; overflow: hidden; }
+        .accordion-item { border-bottom: 1px solid #e1e4e8; }
+        .accordion-item:last-child { border-bottom: none; }
+        .accordion-header { margin: 0; }
+        .accordion-button { width: 100%; background: #f6f8fa; border: none; padding: 15px 20px; text-align: left; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; font-size: 1em; }
+        .accordion-button:hover { background: #e9ecef; }
+        .accordion-button:focus { outline: 2px solid #0366d6; outline-offset: -2px; }
+        .accordion-button.collapsed { background: #f6f8fa; }
+        .accordion-title { flex: 1; }
+        .page-title { font-size: 1.1em; font-weight: 600; color: #24292e; margin-bottom: 5px; }
+        .page-url-small { font-size: 0.85em; color: #0366d6; margin-bottom: 5px; word-break: break-all; }
+        .page-summary-small { font-size: 0.85em; color: #586069; }
+        .issue-badge { background: #e1e4e8; padding: 2px 8px; border-radius: 12px; font-weight: 600; color: #24292e; margin-right: 8px; }
+        .issue-breakdown-small { color: #586069; }
+        .accordion-icon { font-size: 0.8em; color: #586069; margin-left: 15px; transition: transform 0.2s; }
+        .accordion-collapse { background: white; }
+        .accordion-body { padding: 20px; border-top: 1px solid #e1e4e8; }
+        .page-url-full { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #e1e4e8; }
+        .page-url-full a { color: #0366d6; text-decoration: none; word-break: break-all; }
+        .page-url-full a:hover { text-decoration: underline; }
+
+        .issue-category { margin-bottom: 25px; }
+        .issue-category.discovery h4 { color: #9b59b6; }
+        .issue-category.informational h4 { color: #3498db; }
+        .issue-category.accessible-names h4 { color: #f39c12; }
+
+        .issue-list { margin-top: 10px; }
+        .issue-item { background: #f8f9fa; border-left: 3px solid #dee2e6; padding: 15px; margin-bottom: 15px; border-radius: 4px; }
+        .issue-header { margin-bottom: 8px; }
+        .issue-id { font-family: 'Courier New', monospace; background: #e1e4e8; padding: 3px 8px; border-radius: 3px; font-size: 0.9em; font-weight: 600; color: #24292e; }
+        .issue-description { color: #24292e; margin-bottom: 10px; line-height: 1.6; }
+        .issue-why, .issue-fix { font-size: 0.9em; color: #586069; margin-top: 8px; padding: 10px; background: white; border-radius: 4px; line-height: 1.6; }
+        .issue-why strong, .issue-fix strong { color: #24292e; }
+
+        .no-issues { text-align: center; padding: 40px 20px; color: #666; font-size: 1.1em; background: #f8f9fa; border-radius: 8px; }
+        .truncation-notice { background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 25px; margin-top: 30px; margin-bottom: 20px; }
+        .truncation-notice h3 { color: #856404; margin-bottom: 15px; font-size: 1.3em; }
+        .truncation-notice p { color: #856404; margin-bottom: 10px; line-height: 1.6; }
+        .truncation-notice p:last-child { margin-bottom: 0; }
+
+        footer { margin-top: 50px; padding-top: 20px; border-top: 2px solid #ecf0f1; text-align: center; color: #7f8c8d; font-size: 0.9em; }
+        footer p { margin: 5px 0; }
+
+        @media print { .container { box-shadow: none; max-width: none; } .page-card { page-break-inside: avoid; } }
 
         /* Fonts section */
-        .fonts-section {
-            margin: 40px 0;
-        }
-
-        .fonts-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .font-item {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            border-left: 4px solid #3498db;
-        }
-
-        .font-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-
-        .font-name {
-            font-family: var(--font-family, inherit);
-            font-size: 1.3em;
-            color: #2c3e50;
-            margin: 0;
-        }
-
-        .font-pages-count {
-            background: #3498db;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 0.85em;
-            font-weight: 500;
-        }
-
-        .font-sizes {
-            color: #555;
-            font-size: 0.95em;
-            line-height: 1.6;
-        }
-
-        .font-sizes strong {
-            color: #34495e;
-        }
+        .fonts-section { margin: 40px 0; }
+        .fonts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-top: 20px; }
+        .font-item { background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #3498db; }
+        .font-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .font-name { font-family: var(--font-family, inherit); font-size: 1.3em; color: #2c3e50; margin: 0; }
+        .font-pages-count { background: #3498db; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.85em; font-weight: 500; }
+        .font-sizes { color: #555; font-size: 0.95em; line-height: 1.6; }
+        .font-sizes strong { color: #34495e; }
 
         /* Forms section */
-        .forms-section {
-            margin: 40px 0;
-        }
-
-        .forms-list {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .form-item {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            border-left: 4px solid #9b59b6;
-        }
-
-        .form-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-        }
-
-        .form-signature {
-            font-size: 1.2em;
-            color: #2c3e50;
-            margin: 0;
-            font-family: 'Courier New', monospace;
-        }
-
-        .search-badge {
-            background: #27ae60;
-            color: white;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 0.85em;
-            font-weight: 500;
-        }
-
-        .form-pages-count {
-            background: #9b59b6;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 0.85em;
-            font-weight: 500;
-            margin-left: auto;
-        }
-
-        .form-details {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .form-detail-row {
-            color: #555;
-            font-size: 0.95em;
-            line-height: 1.6;
-        }
-
-        .form-detail-row strong {
-            color: #34495e;
-            margin-right: 5px;
-        }
-
-        .form-detail-row code {
-            background: #e8e8e8;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-size: 0.9em;
-            color: #c7254e;
-        }
-
-        .form-method {
-            color: #777;
-            font-size: 0.9em;
-            margin-left: 5px;
-        }
+        .forms-section { margin: 40px 0; }
+        .forms-list { display: flex; flex-direction: column; gap: 20px; margin-top: 20px; }
+        .form-item { background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #9b59b6; }
+        .form-header { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; flex-wrap: wrap; }
+        .form-signature { font-size: 1.2em; color: #2c3e50; margin: 0; font-family: 'Courier New', monospace; }
+        .search-badge { background: #27ae60; color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.85em; font-weight: 500; }
+        .form-pages-count { background: #9b59b6; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.85em; font-weight: 500; margin-left: auto; }
+        .form-details { display: flex; flex-direction: column; gap: 8px; }
+        .form-detail-row { color: #555; font-size: 0.95em; line-height: 1.6; }
+        .form-detail-row strong { color: #34495e; margin-right: 5px; }
+        .form-detail-row code { background: #e8e8e8; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; color: #c7254e; }
+        .form-method { color: #777; font-size: 0.9em; margin-left: 5px; }
 
         /* Navigation section */
-        .navs-section {
-            margin: 40px 0;
-        }
-
-        .navs-list {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .nav-item {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            border-left: 4px solid #e67e22;
-        }
-
-        .nav-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-        }
-
-        .nav-signature {
-            font-size: 1.2em;
-            color: #2c3e50;
-            margin: 0;
-            font-family: 'Courier New', monospace;
-        }
-
-        .nav-pages-count {
-            background: #e67e22;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 0.85em;
-            font-weight: 500;
-            margin-left: auto;
-        }
-
-        .nav-details {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .nav-detail-row {
-            color: #555;
-            font-size: 0.95em;
-            line-height: 1.6;
-        }
-
-        .nav-detail-row strong {
-            color: #34495e;
-            margin-right: 5px;
-        }
-
-        .nav-detail-row code {
-            background: #e8e8e8;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-size: 0.9em;
-            color: #c7254e;
-        }
+        .navs-section { margin: 40px 0; }
+        .navs-list { display: flex; flex-direction: column; gap: 20px; margin-top: 20px; }
+        .nav-item { background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #e67e22; }
+        .nav-header { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; flex-wrap: wrap; }
+        .nav-signature { font-size: 1.2em; color: #2c3e50; margin: 0; font-family: 'Courier New', monospace; }
+        .nav-pages-count { background: #e67e22; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.85em; font-weight: 500; margin-left: auto; }
+        .nav-details { display: flex; flex-direction: column; gap: 8px; }
+        .nav-detail-row { color: #555; font-size: 0.95em; line-height: 1.6; }
+        .nav-detail-row strong { color: #34495e; margin-right: 5px; }
+        .nav-detail-row code { background: #e8e8e8; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; color: #c7254e; }
 
         /* Asides section styles */
-        .asides-section {
-            margin: 40px 0;
-        }
-
-        .asides-list {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .aside-item {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            border-left: 4px solid #3498db;
-        }
-
-        .aside-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-        }
-
-        .aside-signature {
-            font-size: 1.2em;
-            color: #2c3e50;
-            margin: 0;
-            font-family: 'Courier New', monospace;
-        }
-
-        .aside-pages-count {
-            background: #3498db;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 0.85em;
-            font-weight: 500;
-            margin-left: auto;
-        }
-
-        .aside-details {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .aside-detail-row {
-            color: #555;
-            font-size: 0.95em;
-            line-height: 1.6;
-        }
-
-        .aside-detail-row strong {
-            color: #34495e;
-            margin-right: 5px;
-        }
-
-        .aside-detail-row code {
-            background: #e8e8e8;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-size: 0.9em;
-            color: #c7254e;
-        }
+        .asides-section { margin: 40px 0; }
+        .asides-list { display: flex; flex-direction: column; gap: 20px; margin-top: 20px; }
+        .aside-item { background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #3498db; }
+        .aside-header { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; flex-wrap: wrap; }
+        .aside-signature { font-size: 1.2em; color: #2c3e50; margin: 0; font-family: 'Courier New', monospace; }
+        .aside-pages-count { background: #3498db; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.85em; font-weight: 500; margin-left: auto; }
+        .aside-details { display: flex; flex-direction: column; gap: 8px; }
+        .aside-detail-row { color: #555; font-size: 0.95em; line-height: 1.6; }
+        .aside-detail-row strong { color: #34495e; margin-right: 5px; }
+        .aside-detail-row code { background: #e8e8e8; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; color: #c7254e; }
 
         /* Sections section styles */
-        .sections-section {
-            margin: 40px 0;
-        }
-
-        .sections-list {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .section-item {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            border-left: 4px solid #16a085;
-        }
-
-        .section-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-        }
-
-        .section-signature {
-            font-size: 1.2em;
-            color: #2c3e50;
-            margin: 0;
-            font-family: 'Courier New', monospace;
-        }
-
-        .section-pages-count {
-            background: #16a085;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 0.85em;
-            font-weight: 500;
-            margin-left: auto;
-        }
-
-        .section-details {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .section-detail-row {
-            color: #555;
-            font-size: 0.95em;
-            line-height: 1.6;
-        }
-
-        .section-detail-row strong {
-            color: #34495e;
-            margin-right: 5px;
-        }
-
-        .section-detail-row code {
-            background: #e8e8e8;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-size: 0.9em;
-            color: #c7254e;
-        }
+        .sections-section { margin: 40px 0; }
+        .sections-list { display: flex; flex-direction: column; gap: 20px; margin-top: 20px; }
+        .section-item { background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #16a085; }
+        .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; flex-wrap: wrap; }
+        .section-signature { font-size: 1.2em; color: #2c3e50; margin: 0; font-family: 'Courier New', monospace; }
+        .section-pages-count { background: #16a085; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.85em; font-weight: 500; margin-left: auto; }
+        .section-details { display: flex; flex-direction: column; gap: 8px; }
+        .section-detail-row { color: #555; font-size: 0.95em; line-height: 1.6; }
+        .section-detail-row strong { color: #34495e; margin-right: 5px; }
+        .section-detail-row code { background: #e8e8e8; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; color: #c7254e; }
 
         /* Headers section styles */
-        .headers-section {
-            margin: 40px 0;
-        }
-
-        .headers-list {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .header-item {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            border-left: 4px solid #e74c3c;
-        }
-
-        .header-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-        }
-
-        .header-signature {
-            font-size: 1.2em;
-            color: #2c3e50;
-            margin: 0;
-            font-family: 'Courier New', monospace;
-        }
-
-        .header-pages-count {
-            background: #e74c3c;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 0.85em;
-            font-weight: 500;
-            margin-left: auto;
-        }
-
-        .header-details {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .header-detail-row {
-            color: #555;
-            font-size: 0.95em;
-            line-height: 1.6;
-        }
-
-        .header-detail-row strong {
-            color: #34495e;
-            margin-right: 5px;
-        }
-
-        .header-detail-row code {
-            background: #e8e8e8;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-size: 0.9em;
-            color: #c7254e;
-        }
+        .headers-section { margin: 40px 0; }
+        .headers-list { display: flex; flex-direction: column; gap: 20px; margin-top: 20px; }
+        .header-item { background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #e74c3c; }
+        .header-header { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; flex-wrap: wrap; }
+        .header-signature { font-size: 1.2em; color: #2c3e50; margin: 0; font-family: 'Courier New', monospace; }
+        .header-pages-count { background: #e74c3c; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.85em; font-weight: 500; margin-left: auto; }
+        .header-details { display: flex; flex-direction: column; gap: 8px; }
+        .header-detail-row { color: #555; font-size: 0.95em; line-height: 1.6; }
+        .header-detail-row strong { color: #34495e; margin-right: 5px; }
+        .header-detail-row code { background: #e8e8e8; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; color: #c7254e; }
 
         /* Footers section styles */
-        .footers-section {
-            margin: 40px 0;
-        }
-
-        .footers-list {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .footer-item {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            border-left: 4px solid #9b59b6;
-        }
-
-        .footer-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-        }
-
-        .footer-signature {
-            font-size: 1.2em;
-            color: #2c3e50;
-            margin: 0;
-            font-family: 'Courier New', monospace;
-        }
-
-        .footer-pages-count {
-            background: #9b59b6;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 0.85em;
-            font-weight: 500;
-            margin-left: auto;
-        }
-
-        .footer-details {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .footer-detail-row {
-            color: #555;
-            font-size: 0.95em;
-            line-height: 1.6;
-        }
-
-        .footer-detail-row strong {
-            color: #34495e;
-            margin-right: 5px;
-        }
-
-        .footer-detail-row code {
-            background: #e8e8e8;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-size: 0.9em;
-            color: #c7254e;
-        }
+        .footers-section { margin: 40px 0; }
+        .footers-list { display: flex; flex-direction: column; gap: 20px; margin-top: 20px; }
+        .footer-item { background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #9b59b6; }
+        .footer-header { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; flex-wrap: wrap; }
+        .footer-signature { font-size: 1.2em; color: #2c3e50; margin: 0; font-family: 'Courier New', monospace; }
+        .footer-pages-count { background: #9b59b6; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.85em; font-weight: 500; margin-left: auto; }
+        .footer-details { display: flex; flex-direction: column; gap: 8px; }
+        .footer-detail-row { color: #555; font-size: 0.95em; line-height: 1.6; }
+        .footer-detail-row strong { color: #34495e; margin-right: 5px; }
+        .footer-detail-row code { background: #e8e8e8; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; color: #c7254e; }
 
         /* Searches section styles */
-        .searches-section {
-            margin: 40px 0;
-        }
-
-        .searches-list {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .search-item {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            border-left: 4px solid #27ae60;
-        }
-
-        .search-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-        }
-
-        .search-signature {
-            font-size: 1.2em;
-            color: #2c3e50;
-            margin: 0;
-            font-family: 'Courier New', monospace;
-        }
-
-        .search-pages-count {
-            background: #27ae60;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 0.85em;
-            font-weight: 500;
-            margin-left: auto;
-        }
-
-        .search-details {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .search-detail-row {
-            color: #555;
-            font-size: 0.95em;
-            line-height: 1.6;
-        }
-
-        .search-detail-row strong {
-            color: #34495e;
-            margin-right: 5px;
-        }
-
-        .search-detail-row code {
-            background: #e8e8e8;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-size: 0.9em;
-            color: #c7254e;
-        }
+        .searches-section { margin: 40px 0; }
+        .searches-list { display: flex; flex-direction: column; gap: 20px; margin-top: 20px; }
+        .search-item { background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #27ae60; }
+        .search-header { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; flex-wrap: wrap; }
+        .search-signature { font-size: 1.2em; color: #2c3e50; margin: 0; font-family: 'Courier New', monospace; }
+        .search-pages-count { background: #27ae60; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.85em; font-weight: 500; margin-left: auto; }
+        .search-details { display: flex; flex-direction: column; gap: 8px; }
+        .search-detail-row { color: #555; font-size: 0.95em; line-height: 1.6; }
+        .search-detail-row strong { color: #34495e; margin-right: 5px; }
+        .search-detail-row code { background: #e8e8e8; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; color: #c7254e; }
 
         /* Documents section styles */
-        .documents-section {
-            margin: 40px 0;
-        }
-
-        .documents-container {
-            margin-top: 20px;
-        }
-
-        .document-type-section {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            border-left: 4px solid #f39c12;
-            margin-bottom: 20px;
-        }
-
-        .document-type-title {
-            color: #2c3e50;
-            margin: 0 0 15px 0;
-            font-size: 1.3em;
-        }
-
-        .document-count {
-            color: #7f8c8d;
-            font-size: 0.85em;
-            font-weight: normal;
-            margin-left: 8px;
-        }
-
-        .document-type-section h4 {
-            color: #34495e;
-            margin: 15px 0 10px 0;
-            font-size: 1.1em;
-        }
-
-        .documents-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .document-item {
-            padding: 12px;
-            margin-bottom: 8px;
-            background: white;
-            border-radius: 4px;
-            border-left: 3px solid #f39c12;
-        }
-
-        .document-link {
-            color: #3498db;
-            text-decoration: none;
-            font-weight: 500;
-        }
-
-        .document-link:hover {
-            text-decoration: underline;
-        }
-
-        .lang-badge {
-            display: inline-block;
-            background: #95a5a6;
-            color: white;
-            padding: 2px 8px;
-            border-radius: 3px;
-            font-size: 0.75em;
-            margin-left: 8px;
-        }
-
-        .document-meta {
-            margin-top: 5px;
-            font-size: 0.85em;
-            color: #7f8c8d;
-        }
-
-        .document-referring a {
-            color: #7f8c8d;
-            text-decoration: none;
-        }
-
-        .document-referring a:hover {
-            color: #3498db;
-            text-decoration: underline;
-        }
+        .documents-section { margin: 40px 0; }
+        .documents-container { margin-top: 20px; }
+        .document-type-section { background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #f39c12; margin-bottom: 20px; }
+        .document-type-title { color: #2c3e50; margin: 0 0 15px 0; font-size: 1.3em; }
+        .document-count { color: #7f8c8d; font-size: 0.85em; font-weight: normal; margin-left: 8px; }
+        .document-type-section h4 { color: #34495e; margin: 15px 0 10px 0; font-size: 1.1em; }
+        .documents-list { list-style: none; padding: 0; margin: 0; }
+        .document-item { padding: 12px; margin-bottom: 8px; background: white; border-radius: 4px; border-left: 3px solid #f39c12; }
+        .document-link { color: #3498db; text-decoration: none; font-weight: 500; }
+        .document-link:hover { text-decoration: underline; }
+        .lang-badge { display: inline-block; background: #95a5a6; color: white; padding: 2px 8px; border-radius: 3px; font-size: 0.75em; margin-left: 8px; }
+        .document-meta { margin-top: 5px; font-size: 0.85em; color: #7f8c8d; }
+        .document-referring a { color: #7f8c8d; text-decoration: none; }
+        .document-referring a:hover { color: #3498db; text-decoration: underline; }
     </style>
         """
 

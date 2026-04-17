@@ -6,10 +6,10 @@ from __future__ import annotations
 
 import hashlib
 
-from flask import Blueprint, Response, request, current_app, jsonify, url_for
+from flask import Blueprint, Response, request, jsonify, url_for
 from flask_login import current_user
 from auto_a11y.web.fluent import ftl
-from auto_a11y.web.typed_app import get_db
+from auto_a11y.web.typed_app import get_db, get_app_config
 from itsdangerous import URLSafeSerializer
 
 from auto_a11y.models import ShareToken, TokenScope
@@ -23,7 +23,7 @@ TOKEN_SALT = 'public-share-token'
 
 def _get_serializer() -> URLSafeSerializer:
     """Get the URL-safe serializer using the app's secret key"""
-    return URLSafeSerializer(current_app.config['SECRET_KEY'], salt=TOKEN_SALT)
+    return URLSafeSerializer(get_app_config().SECRET_KEY, salt=TOKEN_SALT)
 
 
 def _make_token_hash(token_string: str) -> str:

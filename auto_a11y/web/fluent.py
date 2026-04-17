@@ -78,7 +78,28 @@ def ftl(message_id: str, **kwargs: object) -> Markup | str:
     are safely escaped for HTML/JS contexts.  On complete miss the raw
     message ID string is returned (not Markup) so callers can distinguish
     missing translations.
+
+    In strict mode (Flask debug), raises ``MissingTranslationError`` if
+    the message ID is missing from any supported locale.
     """
+    # Strict-mode full-coverage check
+    if _is_strict():
+        missing = [
+            loc for loc in _SUPPORTED_LOCALES
+            if _resolve(loc, message_id, kwargs) is None
+        ]
+        if missing:
+            raise MissingTranslationError(
+                f"Fluent message {message_id!r} missing from locale(s): "
+                f"{', '.join(missing)}\n"
+                f"  Strict mode is active (Flask debug). Add this message ID to:\n"
+                + "\n".join(
+                    f"    auto_a11y/web/translations/{loc}/*.ftl"
+                    for loc in missing
+                )
+            )
+
+    # Non-strict path (also the post-strict-check path)
     locale = _get_current_locale()
     result = _resolve(locale, message_id, kwargs)
     if result is not None:

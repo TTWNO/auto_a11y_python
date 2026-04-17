@@ -312,3 +312,75 @@ class TestStrictModeFlag:
         app2.debug = False
         init_fluent(app2)
         assert fluent_mod._strict_mode is False
+
+
+# ---------------------------------------------------------------------------
+# Tests: strict mode — missing-locale raises
+# ---------------------------------------------------------------------------
+
+class TestStrictModeMissingLocales:
+
+    def test_missing_in_fr_raises(self, fluent_app, monkeypatch):
+        """When FR is missing a message ID, strict mode raises even if EN has it."""
+        import auto_a11y.web.fluent as fluent_mod
+        from auto_a11y.web.fluent import MissingTranslationError
+
+        monkeypatch.setattr(fluent_mod, "_strict_mode", True)
+
+        with fluent_app.test_request_context():
+            session["language"] = "en"
+            with pytest.raises(MissingTranslationError, match="only-in-english"):
+                ftl("only-in-english")
+
+    def test_missing_in_both_raises(self, fluent_app, monkeypatch):
+        """Missing in both locales raises."""
+        import auto_a11y.web.fluent as fluent_mod
+        from auto_a11y.web.fluent import MissingTranslationError
+
+        monkeypatch.setattr(fluent_mod, "_strict_mode", True)
+
+        with fluent_app.test_request_context():
+            session["language"] = "en"
+            with pytest.raises(MissingTranslationError, match="does-not-exist"):
+                ftl("does-not-exist")
+
+    def test_error_message_names_missing_locales(self, fluent_app, monkeypatch):
+        """The error message lists which locales are missing the ID."""
+        import auto_a11y.web.fluent as fluent_mod
+        from auto_a11y.web.fluent import MissingTranslationError
+
+        monkeypatch.setattr(fluent_mod, "_strict_mode", True)
+
+        with fluent_app.test_request_context():
+            session["language"] = "en"
+            with pytest.raises(MissingTranslationError) as exc_info:
+                ftl("only-in-english")
+            # Only FR is missing this one
+            assert "fr" in str(exc_info.value)
+            assert "only-in-english" in str(exc_info.value)
+
+    def test_non_strict_unchanged(self, fluent_app, monkeypatch):
+        """Non-strict mode (default): same inputs still log + fall back."""
+        import auto_a11y.web.fluent as fluent_mod
+
+        monkeypatch.setattr(fluent_mod, "_strict_mode", False)
+
+        with fluent_app.test_request_context():
+            session["language"] = "fr"
+            # only-in-english: FR missing, EN has it -> falls back to EN
+            result = ftl("only-in-english")
+            assert str(result) == "English only"
+
+            # does-not-exist: both missing -> returns raw ID
+            result2 = ftl("does-not-exist")
+            assert result2 == "does-not-exist"
+
+    def test_present_in_both_does_not_raise(self, fluent_app, monkeypatch):
+        """When the message exists in both locales, strict mode is silent."""
+        import auto_a11y.web.fluent as fluent_mod
+        monkeypatch.setattr(fluent_mod, "_strict_mode", True)
+
+        with fluent_app.test_request_context():
+            session["language"] = "fr"
+            # Should not raise
+            assert str(ftl("hello")) == "Bonjour"

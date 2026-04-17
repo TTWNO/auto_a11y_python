@@ -273,3 +273,42 @@ class TestMissingTranslationError:
         from auto_a11y.web.fluent import MissingTranslationError
         with pytest.raises(MissingTranslationError, match="test msg"):
             raise MissingTranslationError("test msg")
+
+
+# ---------------------------------------------------------------------------
+# Tests: strict-mode flag
+# ---------------------------------------------------------------------------
+
+class TestStrictModeFlag:
+
+    def test_is_strict_defaults_false(self, monkeypatch):
+        """_is_strict() returns False when _strict_mode is False (default)."""
+        import auto_a11y.web.fluent as fluent_mod
+        monkeypatch.setattr(fluent_mod, "_strict_mode", False)
+        assert fluent_mod._is_strict() is False
+
+    def test_is_strict_reflects_flag(self, monkeypatch):
+        """_is_strict() returns True when _strict_mode is True."""
+        import auto_a11y.web.fluent as fluent_mod
+        monkeypatch.setattr(fluent_mod, "_strict_mode", True)
+        assert fluent_mod._is_strict() is True
+
+    def test_init_fluent_sets_flag_from_app_debug(self, monkeypatch):
+        """init_fluent(app) sets _strict_mode from app.debug."""
+        import auto_a11y.web.fluent as fluent_mod
+        from auto_a11y.web.fluent import init_fluent
+
+        monkeypatch.setattr(fluent_mod, "_strict_mode", False)
+        monkeypatch.setattr(fluent_mod, "_bundles", dict(fluent_mod._bundles))
+
+        # app.debug=True -> strict
+        app = Flask(__name__)
+        app.debug = True
+        init_fluent(app)
+        assert fluent_mod._strict_mode is True
+
+        # app.debug=False -> non-strict
+        app2 = Flask(__name__)
+        app2.debug = False
+        init_fluent(app2)
+        assert fluent_mod._strict_mode is False

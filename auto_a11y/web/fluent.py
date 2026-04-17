@@ -50,6 +50,20 @@ _bundles: dict[str, FluentBundle] = {}
 _SUPPORTED_LOCALES: tuple[str, ...] = ('en', 'fr')
 _DEFAULT_LOCALE: str = 'en'
 
+# Module-level strict-mode flag. Set by init_fluent() from app.debug.
+# When True, ftl() raises MissingTranslationError on any miss or format
+# error in any supported locale, instead of logging + falling back.
+_strict_mode: bool = False
+
+
+def _is_strict() -> bool:
+    """Return True if strict translation checking is enabled.
+
+    Tests can monkey-patch this function (or the _strict_mode module
+    variable) to control strict behavior per-test.
+    """
+    return _strict_mode
+
 
 # ---------------------------------------------------------------------------
 # Public API
@@ -223,6 +237,9 @@ def init_fluent(app: Flask) -> None:
     * Registers ``ftl``, ``ftl_attr``, ``lazy_ftl`` as Jinja2 globals.
     * Registers the ``datetimeformat`` template filter.
     """
+    global _strict_mode
+    _strict_mode = bool(app.debug)
+
     translations_dir = os.path.join(os.path.dirname(__file__), 'translations')
     _load_bundles(translations_dir)
 
@@ -240,8 +257,9 @@ def init_fluent(app: Flask) -> None:
     app.jinja_env.filters['datetimeformat'] = _datetimeformat_filter
 
     logger.info(
-        "Fluent initialized -- locales loaded: %s",
+        "Fluent initialized — locales loaded: %s (strict_mode=%s)",
         ', '.join(sorted(_bundles.keys())) or '(none)',
+        _strict_mode,
     )
 
 

@@ -1,4 +1,4 @@
-FROM docker.io/library/python:3.11-slim
+FROM docker.io/library/python:3.14-slim
 
 # Install Playwright system dependencies and other required packages
 RUN apt-get update && apt-get install -y --no-install-recommends \

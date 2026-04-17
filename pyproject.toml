@@ -74,14 +74,36 @@ reportImplicitStringConcatenation = "error"
 # ── Environment ───────────────────────────────────────────────────────────────
 [tool.ty.environment]
 python-version = "3.11"
-# no ty equivalent: mypy `mypy_path` / pyright `stubPath` — ty resolves stubs
-# via the standard typeshed + extra-paths; no dedicated stub-path key at 0.0.31.
+extra-paths = ["stubs"]
 
 # ── Source / file selection ───────────────────────────────────────────────────
 [tool.ty.src]
-# include / exclude: ty uses the src.root heuristic; no per-file include list
-# equivalent to mypy `files` / pyright `include` at this release.
-# no ty equivalent: mypy `files` list / pyright `include` list
+# Exclude out-of-scope root-level scripts and directories
+exclude = [
+    "archive/",
+    "demo_site/",
+    "fixture_generation/",
+    "electron/",
+    "add_*.py",
+    "cleanup_*.py",
+    "migrate_*.py",
+    "translate_*.py",
+    "debug_*.py",
+    "diagnose_*.py",
+    "investigate_*.py",
+    "analyze_*.py",
+    "create_phase*.py",
+    "delete_*.py",
+    "clear_*.py",
+    "show_*.py",
+    "examine_*.py",
+    "revert_*.py",
+    "merge_*.py",
+    "generate_fixtures*.py",
+    "download_chromium.py",
+    "gunicorn.conf.py",
+    "scripts/",
+]
 
 # ── Analysis options ──────────────────────────────────────────────────────────
 [tool.ty.analysis]

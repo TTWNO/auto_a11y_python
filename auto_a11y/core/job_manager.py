@@ -39,17 +39,17 @@ class JobManager:
     across multiple users and sessions
     """
     
-    _instance = None  # Single global instance
-    
-    def __new__(cls, database):
+    _instance: 'JobManager | None' = None  # Single global instance
+
+    def __new__(cls, database: object) -> 'JobManager':
         """Singleton pattern - single global instance"""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            cls._instance._initialized = False
+            cls._instance._initialized = False  # type: ignore[attr-defined]
             logger.info("Created global JobManager singleton instance")
         return cls._instance
-    
-    def __init__(self, database):
+
+    def __init__(self, database: object) -> None:
         """
         Initialize job manager with database connection
         

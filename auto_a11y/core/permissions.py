@@ -1,10 +1,14 @@
 """Central permission resolution for the group-based access control system."""
-import logging
-from functools import wraps
+from __future__ import annotations
 
-from flask import current_app, request, g, abort, jsonify, flash, redirect, url_for
+import logging
+from collections.abc import Callable
+from functools import wraps
+from typing import Any
+
+from flask import Flask, current_app, request, abort, jsonify, flash, redirect, url_for
 from auto_a11y.web.fluent import ftl
-from flask_login import current_user
+from flask_login import current_user, CurrentUserProtocol
 
 from auto_a11y.models.permission_group import (
     PERMISSION_LEVELS, GLOBAL_RESOURCES, RESOURCE_NOUNS
@@ -13,11 +17,11 @@ from auto_a11y.models.permission_group import (
 logger = logging.getLogger(__name__)
 
 
-def _get_db():
-    return current_app.db
+def _get_db() -> Any:
+    return getattr(current_app, 'db')
 
 
-def _find_member(project, user_id):
+def _find_member(project: Any, user_id: str | None) -> Any | None:
     """Find a user's membership entry in a project."""
     uid = str(user_id)
     for m in getattr(project, 'members', []):
@@ -26,7 +30,9 @@ def _find_member(project, user_id):
     return None
 
 
-def user_has_permission(user, project_id, resource, required_level):
+def user_has_permission(
+    user: CurrentUserProtocol, project_id: str | None, resource: str, required_level: str
+) -> bool:
     """Check if user has at least `required_level` on `resource` in `project_id`.
 
     For global resources (users, groups, fixture_tests), pass project_id=None
@@ -51,14 +57,16 @@ def user_has_permission(user, project_id, resource, required_level):
     if not groups:
         return False
 
-    max_level = max(
+    max_level: int = max(
         (grp.get_level(resource) for grp in groups),
         default=0
     )
     return max_level >= PERMISSION_LEVELS.get(required_level, 0)
 
 
-def user_has_global_permission(user, resource, required_level):
+def user_has_global_permission(
+    user: CurrentUserProtocol, resource: str, required_level: str
+) -> bool:
     """Check permission across ALL projects the user belongs to.
 
     Used for global resources: users, groups, fixture_tests.
@@ -70,21 +78,23 @@ def user_has_global_permission(user, resource, required_level):
     user_id = str(user.get_id())
     projects = db.get_projects_for_user(user_id)
 
-    required = PERMISSION_LEVELS.get(required_level, 0)
+    required: int = PERMISSION_LEVELS.get(required_level, 0)
 
     for project in projects:
         member = _find_member(project, user_id)
         if not member:
             continue
         groups = db.get_groups_by_ids(member.group_ids)
-        level = max((grp.get_level(resource) for grp in groups), default=0)
+        level: int = max((grp.get_level(resource) for grp in groups), default=0)
         if level >= required:
             return True
 
     return False
 
 
-def get_effective_permissions(user, project_id):
+def get_effective_permissions(
+    user: CurrentUserProtocol, project_id: str
+) -> dict[str, str]:
     """Get the union of all permissions for a user in a project.
 
     Returns dict of {resource: level_name} representing the max level per resource.
@@ -104,27 +114,27 @@ def get_effective_permissions(user, project_id):
         return {r: 'none' for r in RESOURCE_NOUNS}
 
     groups = db.get_groups_by_ids(member.group_ids)
-    result = {}
+    result: dict[str, str] = {}
     for resource in RESOURCE_NOUNS:
-        max_level = max((grp.get_level(resource) for grp in groups), default=0)
+        max_level: int = max((grp.get_level(resource) for grp in groups), default=0)
         result[resource] = LEVEL_NAMES.get(max_level, 'none')
     return result
 
 
-def _resolve_project_id(**kwargs):
+def _resolve_project_id(**kwargs: Any) -> str | None:
     """Resolve project_id from route kwargs by following resource chains."""
     db = _get_db()
 
-    project_id = kwargs.get('project_id')
+    project_id: str | None = kwargs.get('project_id')
     if project_id:
         return project_id
 
-    website_id = kwargs.get('website_id')
+    website_id: str | None = kwargs.get('website_id')
     if website_id:
         website = db.get_website(website_id)
         return website.project_id if website else None
 
-    page_id = kwargs.get('page_id')
+    page_id: str | None = kwargs.get('page_id')
     if page_id:
         page = db.get_page(page_id)
         if page:
@@ -132,7 +142,7 @@ def _resolve_project_id(**kwargs):
             return website.project_id if website else None
         return None
 
-    recording_id = kwargs.get('recording_id')
+    recording_id: str | None = kwargs.get('recording_id')
     if recording_id:
         recording = db.get_recording(recording_id)
         return recording.project_id if recording else None
@@ -140,15 +150,15 @@ def _resolve_project_id(**kwargs):
     return None
 
 
-def permission_required(resource, level):
+def permission_required(resource: str, level: str) -> Callable[..., Any]:
     """Decorator: require permission on a resource at a given level.
 
     For project-scoped resources, resolves project_id from route kwargs.
     For global resources, checks across all user projects.
     """
-    def decorator(f):
+    def decorator(f: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(f)
-        def decorated_function(*args, **kwargs):
+        def decorated_function(*args: Any, **kwargs: Any) -> Any:
             if not current_user.is_authenticated:
                 if request.is_json:
                     return jsonify({'error': ftl('common-authentication-required')}), 401
@@ -174,10 +184,10 @@ def permission_required(resource, level):
     return decorator
 
 
-def superadmin_required(f):
+def superadmin_required(f: Callable[..., Any]) -> Callable[..., Any]:
     """Decorator: require superadmin status."""
     @wraps(f)
-    def decorated_function(*args, **kwargs):
+    def decorated_function(*args: Any, **kwargs: Any) -> Any:
         if not current_user.is_authenticated:
             if request.is_json:
                 return jsonify({'error': ftl('common-authentication-required')}), 401
@@ -194,11 +204,10 @@ def superadmin_required(f):
     return decorated_function
 
 
-def inject_permission_helpers(app):
+def inject_permission_helpers(app: Flask) -> None:
     """Register the user_can context processor on the Flask app."""
-    @app.context_processor
-    def _inject():
-        def user_can(resource, level, project_id=None):
+    def _permission_inject() -> dict[str, Any]:
+        def user_can(resource: str, level: str, project_id: str | None = None) -> bool:
             if not current_user.is_authenticated:
                 return False
             if getattr(current_user, 'is_superadmin', False):
@@ -213,3 +222,5 @@ def inject_permission_helpers(app):
             'user_can': user_can,
             'is_superadmin': getattr(current_user, 'is_superadmin', False) if current_user.is_authenticated else False,
         }
+
+    app.context_processor(_permission_inject)

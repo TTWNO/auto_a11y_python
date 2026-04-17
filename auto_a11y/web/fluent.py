@@ -9,14 +9,21 @@ Usage in templates:
     {{ ftl('greeting', name='World') }}
     {{ ftl_attr('search-input', 'placeholder') }}
 """
+from __future__ import annotations
 
 import logging
 import os
+import re
 from contextlib import contextmanager
 from contextvars import ContextVar
+from collections.abc import Generator
+from typing import Any, cast
+from typing_extensions import override
 
-from flask import request, session
+from flask import Flask, request, session
 from markupsafe import Markup, escape
+
+from fluent_compiler.bundle import FluentBundle
 
 logger = logging.getLogger(__name__)
 
@@ -27,18 +34,18 @@ logger = logging.getLogger(__name__)
 _locale_override: ContextVar[str | None] = ContextVar('_locale_override', default=None)
 
 # Module-level bundle registry: locale -> FluentBundle
-_bundles: dict = {}
+_bundles: dict[str, FluentBundle] = {}
 
 # Supported locales and default
-_SUPPORTED_LOCALES = ('en', 'fr')
-_DEFAULT_LOCALE = 'en'
+_SUPPORTED_LOCALES: tuple[str, ...] = ('en', 'fr')
+_DEFAULT_LOCALE: str = 'en'
 
 
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
-def ftl(message_id: str, **kwargs) -> Markup | str:
+def ftl(message_id: str, **kwargs: object) -> Markup | str:
     """Resolve a Fluent message for the current locale.
 
     Falls back: current locale -> English -> message ID as plain string.
@@ -59,18 +66,18 @@ def ftl(message_id: str, **kwargs) -> Markup | str:
         if value is not None:
             return Markup(escape(value))
 
-    # Complete miss — return the message ID as a plain string
+    # Complete miss -- return the message ID as a plain string
     logger.warning("Missing Fluent message: %s", message_id)
     return message_id
 
 
-def ftl_attr(message_id: str, attr: str, **kwargs) -> Markup | str:
+def ftl_attr(message_id: str, attr: str, **kwargs: object) -> Markup | str:
     """Resolve a Fluent message attribute via ``message_id.attr``."""
     return ftl(f"{message_id}.{attr}", **kwargs)
 
 
 @contextmanager
-def force_locale(locale: str):
+def force_locale(locale: str) -> Generator[None, None, None]:
     """Context manager that overrides the current locale.
 
     Works both inside and outside a Flask request context (it uses a
@@ -90,13 +97,13 @@ def force_locale(locale: str):
         _locale_override.reset(token)
 
 
-def lazy_ftl(message_id: str, **kwargs):
+def lazy_ftl(message_id: str, **kwargs: object) -> _LazyFtl:
     """Return a lazy proxy that resolves the Fluent message at ``str()`` time.
 
     Useful for module-level constants or anything evaluated before a request
     context exists (e.g. ``login_manager.login_message``).
     """
-    return _LazyFtl(message_id, kwargs)
+    return _LazyFtl(message_id, dict(kwargs))
 
 
 # ---------------------------------------------------------------------------
@@ -104,10 +111,10 @@ def lazy_ftl(message_id: str, **kwargs):
 # ---------------------------------------------------------------------------
 
 # Lazy-loaded map: English text -> FTL message ID (for inline issue translations)
-_inline_issue_ids: dict | None = None
+_inline_issue_ids: dict[str, str] | None = None
 
 
-def _load_inline_issue_ids() -> dict:
+def _load_inline_issue_ids() -> dict[str, str]:
     """Load the inline issue ID map from the JSON file (once)."""
     global _inline_issue_ids
     if _inline_issue_ids is None:
@@ -115,14 +122,15 @@ def _load_inline_issue_ids() -> dict:
         map_path = os.path.join(os.path.dirname(__file__), 'translations', 'inline_issue_ids.json')
         try:
             with open(map_path, 'r', encoding='utf-8') as f:
-                _inline_issue_ids = json.load(f)
+                loaded: dict[str, str] = json.load(f)
+                _inline_issue_ids = loaded
         except FileNotFoundError:
             logger.warning("inline_issue_ids.json not found at %s", map_path)
             _inline_issue_ids = {}
     return _inline_issue_ids
 
 
-def ftl_issue(code: str, field: str, **kwargs) -> Markup | str:
+def ftl_issue(code: str, field: str, **kwargs: object) -> Markup | str:
     """Get an issue description field via Fluent attribute.
 
     Usage::
@@ -139,7 +147,6 @@ def ftl_wcag(criterion_name: str) -> Markup | str:
     Converts a criterion name like ``'Non-text Content'`` to the FTL message
     ID ``wcag-non-text-content`` and resolves it.
     """
-    import re
     slug = criterion_name.lower().strip()
     slug = re.sub(r'[^a-z0-9]+', '-', slug)
     slug = slug.strip('-')
@@ -147,7 +154,7 @@ def ftl_wcag(criterion_name: str) -> Markup | str:
     return ftl(msg_id)
 
 
-def ftl_enum(value) -> Markup | str:
+def ftl_enum(value: object) -> Markup | str:
     """Translate an enum value string via Fluent.
 
     Converts 'discovery_failed' to 'enum-discovery-failed' and looks up
@@ -155,13 +162,13 @@ def ftl_enum(value) -> Markup | str:
     is found.
     """
     if not value:
-        return value or ''
+        return str(value) if value is not None else ''
     # Normalize: lowercase, replace underscores/spaces with hyphens
     normalized = str(value).lower().replace('_', '-').replace(' ', '-')
     msg_id = f'enum-{normalized}'
     result = ftl(msg_id)
     # If ftl() returned the message ID itself (not found), fall back to title case
-    if isinstance(result, str) and result == msg_id:
+    if str(result) == msg_id:
         return str(value).replace('_', ' ').title()
     return result
 
@@ -180,11 +187,11 @@ def ftl_translate_issue(text: str) -> str:
     id_map = _load_inline_issue_ids()
     ftl_id = id_map.get(text)
     if ftl_id is None:
-        # No mapping — return original text
+        # No mapping -- return original text
         return text
     result = ftl(ftl_id)
     # If ftl() returned the message ID (miss), fall back to original text
-    if isinstance(result, str) and result == ftl_id:
+    if str(result) == ftl_id:
         return text
     return str(result)
 
@@ -193,7 +200,7 @@ def ftl_translate_issue(text: str) -> str:
 # Initialization
 # ---------------------------------------------------------------------------
 
-def init_fluent(app):
+def init_fluent(app: Flask) -> None:
     """Initialize Fluent integration on *app*.
 
     * Loads ``.ftl`` files from the translations directory.
@@ -203,20 +210,21 @@ def init_fluent(app):
     translations_dir = os.path.join(os.path.dirname(__file__), 'translations')
     _load_bundles(translations_dir)
 
-    # Jinja2 globals
-    app.jinja_env.globals['ftl'] = ftl
-    app.jinja_env.globals['ftl_attr'] = ftl_attr
-    app.jinja_env.globals['lazy_ftl'] = lazy_ftl
-    app.jinja_env.globals['ftl_issue'] = ftl_issue
-    app.jinja_env.globals['ftl_wcag'] = ftl_wcag
-    app.jinja_env.globals['ftl_enum'] = ftl_enum
-    app.jinja_env.globals['ftl_translate_issue'] = ftl_translate_issue
+    # Jinja2 globals — cast to dict[str, Any] to bypass strict Jinja2 typing
+    globals_dict = cast(dict[str, Any], app.jinja_env.globals)
+    globals_dict['ftl'] = ftl
+    globals_dict['ftl_attr'] = ftl_attr
+    globals_dict['lazy_ftl'] = lazy_ftl
+    globals_dict['ftl_issue'] = ftl_issue
+    globals_dict['ftl_wcag'] = ftl_wcag
+    globals_dict['ftl_enum'] = ftl_enum
+    globals_dict['ftl_translate_issue'] = ftl_translate_issue
 
     # Template filters
     app.jinja_env.filters['datetimeformat'] = _datetimeformat_filter
 
     logger.info(
-        "Fluent initialized — locales loaded: %s",
+        "Fluent initialized -- locales loaded: %s",
         ', '.join(sorted(_bundles.keys())) or '(none)',
     )
 
@@ -241,14 +249,14 @@ def _get_current_locale() -> str:
 
     # 2 & 3 require a request context
     try:
-        lang = session.get('language')
+        lang: str | None = session.get('language')
         if lang and lang in _SUPPORTED_LOCALES:
             return lang
         best = request.accept_languages.best_match(_SUPPORTED_LOCALES)
         if best:
             return best
     except RuntimeError:
-        # Outside request context — fall through to default
+        # Outside request context -- fall through to default
         pass
 
     return _DEFAULT_LOCALE
@@ -266,8 +274,6 @@ def _load_bundles(translations_dir: str) -> None:
             fr/
                 messages.ftl
     """
-    from fluent_compiler.bundle import FluentBundle
-
     global _bundles
     _bundles = {}
 
@@ -295,7 +301,7 @@ def _load_bundles(translations_dir: str) -> None:
         logger.debug("Loaded Fluent bundle for '%s' from %d file(s)", locale, len(ftl_files))
 
 
-def _resolve(locale: str, message_id: str, args: dict) -> str | None:
+def _resolve(locale: str, message_id: str, args: dict[str, object]) -> str | None:
     """Try to format *message_id* in the given locale's bundle.
 
     Returns the formatted string or ``None`` if the message is not found.
@@ -311,18 +317,18 @@ def _resolve(locale: str, message_id: str, args: dict) -> str | None:
         value, errors = bundle.format(message_id, args or None)
         if errors:
             logger.warning("Fluent errors for '%s' [%s]: %s", message_id, locale, errors)
-        return value
+        return str(value)
     except (KeyError, Exception):
         return None
 
 
-def _datetimeformat_filter(value, format='medium'):
+def _datetimeformat_filter(value: Any, format: str = 'medium') -> str:
     """Jinja2 filter: format a datetime using Babel's locale-aware formatting."""
     if value is None:
         return ''
     from babel.dates import format_datetime
     locale = _get_current_locale()
-    return format_datetime(value, format, locale=locale)
+    return str(format_datetime(value, format, locale=locale))
 
 
 # ---------------------------------------------------------------------------
@@ -334,37 +340,41 @@ class _LazyFtl:
 
     __slots__ = ('_message_id', '_kwargs')
 
-    def __init__(self, message_id: str, kwargs: dict):
-        object.__setattr__(self, '_message_id', message_id)
-        object.__setattr__(self, '_kwargs', kwargs)
+    def __init__(self, message_id: str, kwargs: dict[str, object]) -> None:
+        self._message_id = message_id
+        self._kwargs = kwargs
 
+    @override
     def __str__(self) -> str:
         return str(ftl(self._message_id, **self._kwargs))
 
     def __html__(self) -> Markup:
-        """Called by Jinja2's auto-escaping — returns already-escaped Markup."""
+        """Called by Jinja2's auto-escaping -- returns already-escaped Markup."""
         return Markup(str(self))
 
+    @override
     def __repr__(self) -> str:
         return f"_LazyFtl({self._message_id!r})"
 
-    def __eq__(self, other):
+    @override
+    def __eq__(self, other: object) -> bool:
         return str(self) == str(other)
 
-    def __lt__(self, other):
+    def __lt__(self, other: object) -> bool:
         return str(self) < str(other)
 
-    def __le__(self, other):
+    def __le__(self, other: object) -> bool:
         return str(self) <= str(other)
 
-    def __gt__(self, other):
+    def __gt__(self, other: object) -> bool:
         return str(self) > str(other)
 
-    def __ge__(self, other):
+    def __ge__(self, other: object) -> bool:
         return str(self) >= str(other)
 
-    def __hash__(self):
+    @override
+    def __hash__(self) -> int:
         return hash(str(self))
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return bool(str(self))

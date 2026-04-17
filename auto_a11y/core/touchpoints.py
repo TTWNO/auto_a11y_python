@@ -1,14 +1,14 @@
 """
 Accessibility Touchpoints System
 
-This module defines the accessibility touchpoints that organize all tests 
+This module defines the accessibility touchpoints that organize all tests
 (both JavaScript DOM tests and AI visual analysis) into logical categories
 that represent different aspects of web accessibility.
 """
+from __future__ import annotations
 
 from enum import Enum
 from dataclasses import dataclass
-from typing import List, Dict, Any, Optional
 
 
 class TouchpointID(Enum):
@@ -48,10 +48,10 @@ class Touchpoint:
     id: TouchpointID
     name: str
     description: str
-    ai_tests: List[str]  # AI analysis types that belong to this touchpoint
-    wcag_criteria: List[str]  # Related WCAG success criteria
-    
-    def to_dict(self) -> Dict[str, Any]:
+    ai_tests: list[str]  # AI analysis types that belong to this touchpoint
+    wcag_criteria: list[str]  # Related WCAG success criteria
+
+    def to_dict(self) -> dict[str, object]:
         """Convert touchpoint to dictionary"""
         return {
             'id': self.id.value,
@@ -596,7 +596,7 @@ class TouchpointMapper:
     }
     
     @classmethod
-    def get_touchpoint_for_error_code(cls, error_code: str) -> Optional[TouchpointID]:
+    def get_touchpoint_for_error_code(cls, error_code: str) -> TouchpointID | None:
         """
         Get touchpoint ID for a specific error code
         
@@ -625,7 +625,7 @@ class TouchpointMapper:
         )
     
     @classmethod
-    def map_violation_to_touchpoint(cls, violation: Dict[str, Any]) -> Optional[TouchpointID]:
+    def map_violation_to_touchpoint(cls, violation: dict[str, object]) -> TouchpointID | None:
         """
         Map a violation to its appropriate touchpoint
         
@@ -636,12 +636,13 @@ class TouchpointMapper:
             TouchpointID for the violation, or None if not mapped
         """
         # Map by error code
-        if 'id' in violation:
-            return cls.get_touchpoint_for_error_code(violation['id'])
+        error_id = violation.get('id')
+        if isinstance(error_id, str):
+            return cls.get_touchpoint_for_error_code(error_id)
         return None
     
     @classmethod
-    def map_ai_finding_to_touchpoint(cls, ai_finding: Dict[str, Any]) -> TouchpointID:
+    def map_ai_finding_to_touchpoint(cls, ai_finding: dict[str, object]) -> TouchpointID:
         """
         Map an AI finding to its appropriate touchpoint
         
@@ -651,44 +652,44 @@ class TouchpointMapper:
         Returns:
             TouchpointID for the AI finding
         """
-        ai_type = ai_finding.get('type', '')
+        ai_type = str(ai_finding.get('type', ''))
         return cls.get_touchpoint_for_ai_type(ai_type)
 
 
-def get_touchpoint(touchpoint_id: TouchpointID) -> Touchpoint:
+def get_touchpoint(touchpoint_id: TouchpointID) -> Touchpoint | None:
     """
     Get a touchpoint by its ID
-    
+
     Args:
         touchpoint_id: TouchpointID enum value
-        
+
     Returns:
-        Touchpoint instance
+        Touchpoint instance, or None if not found
     """
     return TOUCHPOINTS.get(touchpoint_id)
 
 
-def get_all_touchpoints() -> List[Touchpoint]:
+def get_all_touchpoints() -> list[Touchpoint]:
     """
     Get all touchpoints
-    
+
     Returns:
         List of all touchpoint instances
     """
     return list(TOUCHPOINTS.values())
 
 
-def get_touchpoints_for_ai_test(ai_test_type: str) -> List[TouchpointID]:
+def get_touchpoints_for_ai_test(ai_test_type: str) -> list[TouchpointID]:
     """
     Get touchpoints that include a specific AI test type
-    
+
     Args:
         ai_test_type: AI test type identifier
-        
+
     Returns:
         List of TouchpointIDs that include this test
     """
-    touchpoints = []
+    touchpoints: list[TouchpointID] = []
     for touchpoint_id, touchpoint in TOUCHPOINTS.items():
         if ai_test_type in touchpoint.ai_tests:
             touchpoints.append(touchpoint_id)

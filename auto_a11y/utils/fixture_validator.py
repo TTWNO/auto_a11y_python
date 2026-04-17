@@ -2,11 +2,12 @@
 Fixture validation utilities
 Checks which tests have passing fixtures
 """
+from __future__ import annotations
 
 import logging
-from typing import Dict, Set, Optional
-from datetime import datetime, timedelta
-from pymongo import MongoClient
+from typing import Any, cast
+from datetime import datetime
+
 from auto_a11y.core.database import Database
 
 logger = logging.getLogger(__name__)
@@ -14,14 +15,15 @@ logger = logging.getLogger(__name__)
 
 class FixtureValidator:
     """Validates which tests have passing fixture tests"""
-    
-    def __init__(self, database: Database):
+
+    def __init__(self, database: Database) -> None:
         self.db = database
-        self._cache = None
-        self._cache_time = None
-        self._cache_duration = 300  # Cache for 5 minutes
-    
-    def get_passing_tests(self, force_refresh: bool = False) -> Set[str]:
+        self._mongo_db: Any = getattr(database, 'db')  # pymongo Database; avoid Unknown type
+        self._cache: set[str] | None = None
+        self._cache_time: datetime | None = None
+        self._cache_duration: int = 300  # Cache for 5 minutes
+
+    def get_passing_tests(self, force_refresh: bool = False) -> set[str]:
         """
         Get set of error codes that have passing fixture tests
 
@@ -38,7 +40,7 @@ class FixtureValidator:
         try:
             # Get the most recent test result for each fixture (not just from latest run)
             # This allows incremental updates when running with filters
-            pipeline = [
+            pipeline: list[dict[str, Any]] = [
                 # Sort by tested_at descending to get latest first
                 {"$sort": {"tested_at": -1}},
                 # Group by fixture_path + expected_code to get latest result for each
@@ -53,14 +55,14 @@ class FixtureValidator:
                 {"$replaceRoot": {"newRoot": "$latest_result"}}
             ]
 
-            all_tests = list(self.db.db.fixture_tests.aggregate(pipeline))
+            all_tests: list[dict[str, Any]] = cast(list[dict[str, Any]], list(self._mongo_db.fixture_tests.aggregate(pipeline)))
 
             if not all_tests:
                 logger.warning("No fixture test results found in database")
                 return set()
 
             # Group tests by error code
-            tests_by_code = {}
+            tests_by_code: dict[str, list[dict[str, Any]]] = {}
             for test in all_tests:
                 expected_code = test.get("expected_code", "")
                 if expected_code:
@@ -69,7 +71,7 @@ class FixtureValidator:
                     tests_by_code[expected_code].append(test)
 
             # Only include codes where ALL fixtures passed
-            passing_codes = set()
+            passing_codes: set[str] = set()
             for code, tests in tests_by_code.items():
                 if all(test.get("success", False) for test in tests):
                     passing_codes.add(code)
@@ -84,8 +86,8 @@ class FixtureValidator:
         except Exception as e:
             logger.error(f"Error getting passing tests: {e}")
             return set()
-    
-    def get_test_status(self, force_refresh: bool = False) -> Dict[str, Dict]:
+
+    def get_test_status(self, force_refresh: bool = False) -> dict[str, dict[str, Any]]:
         """
         Get detailed status for all tests
 
@@ -95,7 +97,7 @@ class FixtureValidator:
         try:
             # Get the most recent test result for each fixture (not just from latest run)
             # This allows incremental updates when running with filters
-            pipeline = [
+            pipeline: list[dict[str, Any]] = [
                 # Sort by tested_at descending to get latest first
                 {"$sort": {"tested_at": -1}},
                 # Group by fixture_path + expected_code to get latest result for each
@@ -110,22 +112,22 @@ class FixtureValidator:
                 {"$replaceRoot": {"newRoot": "$latest_result"}}
             ]
 
-            all_tests = list(self.db.db.fixture_tests.aggregate(pipeline))
+            all_tests: list[dict[str, Any]] = cast(list[dict[str, Any]], list(self._mongo_db.fixture_tests.aggregate(pipeline)))
 
             if not all_tests:
                 return {}
 
             # Group tests by error code
-            tests_by_code = {}
+            tests_by_code: dict[str, list[dict[str, Any]]] = {}
             for test in all_tests:
-                expected_code = test.get("expected_code", "")
+                expected_code: str = test.get("expected_code", "")
                 if expected_code:
                     if expected_code not in tests_by_code:
                         tests_by_code[expected_code] = []
                     tests_by_code[expected_code].append(test)
 
             # Create aggregated status for each error code
-            status_map = {}
+            status_map: dict[str, dict[str, Any]] = {}
             for expected_code, tests in tests_by_code.items():
                 # An error code succeeds only if ALL its fixtures pass
                 all_passed = all(t.get("success", False) for t in tests)
@@ -140,10 +142,10 @@ class FixtureValidator:
                     status_category = "all_fail"
 
                 # Aggregate fixture paths
-                fixture_paths = [t.get("fixture_path", "") for t in tests]
+                fixture_paths: list[str] = [t.get("fixture_path", "") for t in tests]
 
                 # Aggregate notes from failed fixtures
-                notes = []
+                notes: list[str] = []
                 if not all_passed:
                     notes.append(f"{passed_count}/{len(tests)} fixtures passed")
                     for test in tests:
@@ -152,7 +154,8 @@ class FixtureValidator:
                             notes.append(f"Failed: {fixture_name}")
 
                 # Get most recent test time
-                tested_at = max((t.get("tested_at") for t in tests if t.get("tested_at")), default=None)
+                test_times: list[Any] = [t["tested_at"] for t in tests if t.get("tested_at") is not None]
+                tested_at: Any = max(test_times) if test_times else None
 
                 status_map[expected_code] = {
                     "success": all_passed,
@@ -171,38 +174,41 @@ class FixtureValidator:
         except Exception as e:
             logger.error(f"Error getting test status: {e}")
             return {}
-    
+
     def is_test_available(self, error_code: str, debug_mode: bool = False) -> bool:
         """
         Check if a test should be available for use
-        
+
         Args:
             error_code: The error code to check
             debug_mode: If True, all tests are available
-            
+
         Returns:
             True if test should be available
         """
         if debug_mode:
             return True
-        
+
         passing_tests = self.get_passing_tests()
         return error_code in passing_tests
-    
-    def get_fixture_run_summary(self) -> Optional[Dict]:
+
+    def get_fixture_run_summary(self) -> dict[str, Any] | None:
         """
         Get summary of the latest fixture test run
-        
+
         Returns:
             Summary dict or None if no runs found
         """
         try:
-            latest_run = self.db.db.fixture_test_runs.find_one(
-                {},
-                sort=[("completed_at", -1)]
+            latest_run: dict[str, Any] | None = cast(
+                dict[str, Any] | None,
+                self._mongo_db.fixture_test_runs.find_one(
+                    {},
+                    sort=[("completed_at", -1)]
+                )
             )
-            
-            if latest_run:
+
+            if latest_run is not None:
                 return {
                     "run_id": latest_run["_id"],
                     "completed_at": latest_run.get("completed_at"),
@@ -211,9 +217,9 @@ class FixtureValidator:
                     "failed": latest_run.get("failed", 0),
                     "success_rate": latest_run.get("success_rate", 0)
                 }
-            
+
             return None
-            
+
         except Exception as e:
             logger.error(f"Error getting fixture run summary: {e}")
             return None

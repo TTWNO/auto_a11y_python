@@ -49,7 +49,7 @@ def get_ids_from_db() -> dict[str, str | None]:
     client: MongoClient[Any] = MongoClient(mongo_uri)
     db = client[db_name]
 
-    ids = {}
+    ids: dict[str, str | None] = {}
 
     # Project
     proj = db.projects.find_one()
@@ -296,7 +296,7 @@ def check_for_errors(text: str, status_code: int) -> list[str]:
     """Return list of matched error patterns in response text."""
     if status_code == 500:
         return ["HTTP 500"]
-    found = []
+    found: list[str] = []
     for pat in ERROR_PATTERNS:
         if re.search(pat, text, re.IGNORECASE):
             found.append(pat)
@@ -336,7 +336,7 @@ def main() -> None:
     print("Login successful\n")
 
     # Check each endpoint
-    failures = []
+    failures: list[tuple[str, str, int, list[str], str]] = []
     for label, url in endpoints:
         full_url = f"{BASE_URL}{url}"
         try:

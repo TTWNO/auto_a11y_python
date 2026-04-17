@@ -3,8 +3,9 @@ Accessibility Issue Catalog
 Generated from ISSUE_CATALOG_TEMPLATE.md
 Contains enriched descriptions for all accessibility issues
 """
+from __future__ import annotations
 
-from typing import Dict, List, Any
+from typing import Any
 from .issue_descriptions_translated import get_detailed_issue_description
 
 
@@ -12,7 +13,7 @@ class IssueCatalog:
     """Catalog of all accessibility issues with enriched descriptions"""
     
     # Issue data dictionary
-    ISSUES: Dict[str, Dict[str, Any]] = {
+    ISSUES: dict[str, dict[str, Any]] = {
         "ErrImageWithEmptyAlt": {
             "id": "ErrImageWithEmptyAlt",
             "type": "Error",
@@ -2600,7 +2601,7 @@ class IssueCatalog:
     }
     
     @classmethod
-    def get_issue(cls, issue_id: str, metadata: Dict[str, Any] = None) -> Dict[str, Any]:
+    def get_issue(cls, issue_id: str, metadata: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Get issue details by ID
         
@@ -2668,7 +2669,7 @@ class IssueCatalog:
         return cls._get_default_issue(issue_id)
     
     @classmethod
-    def _get_default_issue(cls, issue_id: str) -> Dict[str, Any]:
+    def _get_default_issue(cls, issue_id: str) -> dict[str, Any]:
         """Return default issue data when specific issue not found"""
         return {
             "id": issue_id,
@@ -2684,12 +2685,12 @@ class IssueCatalog:
         }
     
     @classmethod
-    def get_all_issues(cls) -> Dict[str, Dict[str, Any]]:
+    def get_all_issues(cls) -> dict[str, dict[str, Any]]:
         """Get all issues in the catalog"""
         return cls.ISSUES
     
     @classmethod
-    def get_issues_by_category(cls, category: str) -> List[Dict[str, Any]]:
+    def get_issues_by_category(cls, category: str) -> list[dict[str, Any]]:
         """Get all issues in a specific category"""
         return [
             issue for issue in cls.ISSUES.values()
@@ -2697,7 +2698,7 @@ class IssueCatalog:
         ]
     
     @classmethod
-    def get_issues_by_impact(cls, impact: str) -> List[Dict[str, Any]]:
+    def get_issues_by_impact(cls, impact: str) -> list[dict[str, Any]]:
         """Get all issues with a specific impact level"""
         return [
             issue for issue in cls.ISSUES.values()
@@ -2705,7 +2706,7 @@ class IssueCatalog:
         ]
     
     @classmethod
-    def get_issues_by_wcag(cls, wcag_criterion: str) -> List[Dict[str, Any]]:
+    def get_issues_by_wcag(cls, wcag_criterion: str) -> list[dict[str, Any]]:
         """Get all issues related to a specific WCAG criterion"""
         return [
             issue for issue in cls.ISSUES.values()

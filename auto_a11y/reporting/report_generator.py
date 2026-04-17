@@ -1,11 +1,12 @@
 """
 Main report generator for accessibility test results
 """
+from __future__ import annotations
 
 import logging
 import os
 import warnings
-from typing import Dict, Any, List, Optional
+from typing import Any, Callable, Iterator
 from datetime import datetime
 from pathlib import Path
 import json
@@ -20,7 +21,8 @@ from auto_a11y.reporting.formatters import (
     JSONFormatter,
     ExcelFormatter,
     CSVFormatter,
-    PDFFormatter
+    PDFFormatter,
+    BaseFormatter,
 )
 from auto_a11y.reporting.issue_catalog import IssueCatalog
 
@@ -51,7 +53,7 @@ class ReportGenerator:
     }
     
     @staticmethod
-    def get_issue_summary(issue_id: str) -> Dict[str, str]:
+    def get_issue_summary(issue_id: str) -> dict[str, str]:
         """
         Get a brief summary of an issue for display
         
@@ -70,7 +72,7 @@ class ReportGenerator:
             'wcag': ', '.join(issue['wcag']) if issue['wcag'] else 'N/A'
         }
     
-    def __init__(self, database: Database, config: Dict[str, Any], language: str = 'en'):
+    def __init__(self, database: Database, config: dict[str, Any], language: str = 'en') -> None:
         """
         Initialize report generator
         
@@ -129,7 +131,7 @@ class ReportGenerator:
         page_id: str,
         format: str = 'html',
         include_ai: bool = True,
-        progress_callback=None
+        progress_callback: Callable[..., None] | None = None
     ) -> str:
         """
         Generate report for a single page
@@ -202,7 +204,7 @@ class ReportGenerator:
         website_id: str,
         format: str = 'html',
         include_ai: bool = True,
-        progress_callback=None
+        progress_callback: Callable[..., None] | None = None
     ) -> str:
         """
         Generate report for entire website using two-pass streaming.
@@ -235,7 +237,7 @@ class ReportGenerator:
         output_file = str(filepath)
 
         # Page generator factory for two-pass streaming
-        def page_generator_fn():
+        def page_generator_fn() -> Iterator[Page]:
             return self.db.yield_pages(website_id)
 
         try:
@@ -261,7 +263,7 @@ class ReportGenerator:
         self,
         format: str = 'html',
         include_ai: bool = True,
-        progress_callback=None
+        progress_callback: Callable[..., None] | None = None
     ) -> str:
         """
         Generate report for all projects using two-pass streaming.
@@ -294,7 +296,7 @@ class ReportGenerator:
         output_file = str(filepath)
 
         # Triply-nested page generator across all projects and websites
-        def page_generator_fn():
+        def page_generator_fn() -> Iterator[Page]:
             for project in self.db.get_projects():
                 for website in self.db.yield_websites(project.id):
                     yield from self.db.yield_pages(website.id)
@@ -318,7 +320,7 @@ class ReportGenerator:
         logger.info(f"All projects report generated: {filepath}")
         return output_file
     
-    def _save_report(self, filepath: Path, content, format: str):
+    def _save_report(self, filepath: Path, content: str | bytes, format: str) -> None:
         """Save report content to file"""
         if format == 'json':
             filepath = filepath.with_suffix('.json')
@@ -346,7 +348,7 @@ class ReportGenerator:
         self,
         project_id: str,
         format: str = 'html',
-        progress_callback=None
+        progress_callback: Callable[..., None] | None = None
     ) -> str:
         """
         Generate report for entire project using two-pass streaming.
@@ -376,7 +378,7 @@ class ReportGenerator:
         output_file = str(filepath)
 
         # Flattened page generator across all websites
-        def page_generator_fn():
+        def page_generator_fn() -> Iterator[Page]:
             for website in self.db.yield_websites(project_id):
                 yield from self.db.yield_pages(website.id)
 
@@ -399,7 +401,7 @@ class ReportGenerator:
         logger.info(f"Generated {format} report: {filepath}")
         return output_file
     
-    def _enrich_issues_with_catalog(self, issues: List[Dict]) -> List[Dict]:
+    def _enrich_issues_with_catalog(self, issues: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Enrich issues with detailed information from the catalog"""
         enriched_issues = []
         for issue in issues:
@@ -422,7 +424,7 @@ class ReportGenerator:
         project: Project,
         test_result: TestResult,
         include_ai: bool
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Prepare data for page report"""
         
         # Calculate statistics
@@ -454,9 +456,9 @@ class ReportGenerator:
         self,
         website: Website,
         project: Project,
-        page_results: List[Dict],
+        page_results: list[dict[str, Any]],
         include_ai: bool
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Prepare data for website report"""
         warnings.warn(
             "_prepare_website_report_data() is deprecated, use begin/append_page/finalize streaming interface",
@@ -515,8 +517,8 @@ class ReportGenerator:
     def _prepare_project_report_data(
         self,
         project: Project,
-        website_data: List[Dict]
-    ) -> Dict[str, Any]:
+        website_data: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Prepare data for project report"""
         warnings.warn(
             "_prepare_project_report_data() is deprecated, use begin/append_page/finalize streaming interface",
@@ -592,7 +594,7 @@ class ReportGenerator:
         self,
         test_result: TestResult,
         include_ai: bool
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Calculate statistics for a page"""
         
         stats = {
@@ -617,10 +619,10 @@ class ReportGenerator:
         
         return stats
     
-    def _group_by_wcag_level(self, violations: List[Dict]) -> Dict[str, List]:
+    def _group_by_wcag_level(self, violations: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
         """Group violations by WCAG level"""
         
-        levels = {'A': [], 'AA': [], 'AAA': []}
+        levels: dict[str, list[dict[str, Any]]] = {'A': [], 'AA': [], 'AAA': []}
         
         for violation in violations:
             wcag_criteria = violation.get('wcag_criteria', [])
@@ -636,7 +638,7 @@ class ReportGenerator:
     
     def generate_summary_report(
         self,
-        project_id: Optional[str] = None,
+        project_id: str | None = None,
         format: str = 'html'
     ) -> str:
         """
@@ -709,7 +711,7 @@ class ReportGenerator:
 
     # ---- Two-pass streaming report methods ----
 
-    def _collect_summary(self, page_generator_fn, progress_callback):
+    def _collect_summary(self, page_generator_fn: Callable[[], Iterator[Page]], progress_callback: Callable[..., None] | None) -> dict[str, Any]:
         """
         Pass 1: Stream pages collecting only aggregate stats.
         Memory: one counter dict + one item at a time.
@@ -761,7 +763,7 @@ class ReportGenerator:
 
         return summary
 
-    def _write_details(self, page_generator_fn, summary, formatter, output_file, progress_callback):
+    def _write_details(self, page_generator_fn: Callable[[], Iterator[Page]], summary: dict[str, Any], formatter: BaseFormatter, output_file: str, progress_callback: Callable[..., None] | None) -> None:
         """
         Pass 2: Stream pages, writing detail chunks via formatter.
         Memory: summary dict + one page at a time.
@@ -786,14 +788,14 @@ class ReportGenerator:
 
         formatter.finalize(output_file, summary)
 
-    def _prepare_single_page_data(self, page, test_result, include_ai=False):
+    def _prepare_single_page_data(self, page: Page, test_result: TestResult, include_ai: bool = False) -> dict[str, Any]:
         """Prepare data dict for a single page's test result."""
         return {
             'page': page,
             'test_result': test_result,
         }
 
-    def _collect_recordings_data(self, project_id):
+    def _collect_recordings_data(self, project_id: str) -> list[dict[str, Any]]:
         """Load recordings + issues for a project (small bounded dataset)."""
         recordings_data = []
         recordings = self.db.get_recordings(project_id=project_id)

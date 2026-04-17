@@ -1,8 +1,9 @@
 """
 Comprehensive accessibility issue descriptions with detailed explanations
 """
+from __future__ import annotations
 
-from typing import Dict, Any
+from typing import Any
 from enum import Enum
 
 
@@ -23,7 +24,7 @@ class IssueDescription:
         why: str,
         who: str,
         impact: ImpactScale,
-        wcag: list,
+        wcag: list[str],
         remediation: str
     ):
         self.title = title
@@ -34,7 +35,7 @@ class IssueDescription:
         self.wcag = wcag
         self.remediation = remediation
     
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary"""
         return {
             'title': self.title,
@@ -542,7 +543,7 @@ ISSUE_DESCRIPTIONS = {
 }
 
 
-def get_issue_description(issue_code: str) -> IssueDescription:
+def get_issue_description(issue_code: str) -> IssueDescription | None:
     """
     Get detailed description for an issue code
     

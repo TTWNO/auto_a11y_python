@@ -10,10 +10,11 @@ This service handles:
 
 Used during Drupal sync to upload deduplicated automated test results.
 """
+from __future__ import annotations
 
 import logging
 import uuid
-from typing import Dict, List, Set, Tuple, Optional, Any
+from typing import Any
 from datetime import datetime
 
 from auto_a11y.models import DiscoveredPage
@@ -41,9 +42,9 @@ class AutomatedTestDeduplicationService:
 
     def extract_common_components(
         self,
-        project_data: Dict[str, Any],
+        project_data: dict[str, Any],
         min_pages: int = 2
-    ) -> Dict[str, Dict]:
+    ) -> dict[str, dict[str, Any]]:
         """
         Extract common components from automated test discovery results.
 
@@ -161,8 +162,8 @@ class AutomatedTestDeduplicationService:
 
     def collect_pages_with_issues(
         self,
-        project_data: Dict[str, Any]
-    ) -> Set[str]:
+        project_data: dict[str, Any]
+    ) -> set[str]:
         """
         Collect all unique page URLs that have automated test issues.
 
@@ -200,9 +201,9 @@ class AutomatedTestDeduplicationService:
     def create_discovered_pages_for_components(
         self,
         project_id: str,
-        common_components: Dict[str, Dict],
-        upload_id: Optional[str] = None
-    ) -> List[str]:
+        common_components: dict[str, dict[str, Any]],
+        upload_id: str | None = None
+    ) -> list[str]:
         """
         Create Discovered Pages for common components.
 
@@ -283,10 +284,10 @@ class AutomatedTestDeduplicationService:
     def create_discovered_pages_for_urls(
         self,
         project_id: str,
-        page_urls: Set[str],
-        upload_id: Optional[str] = None,
+        page_urls: set[str],
+        upload_id: str | None = None,
         mark_for_manual_inspection: bool = False
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Create Discovered Pages for individual page URLs with automated test issues.
 
@@ -349,11 +350,11 @@ class AutomatedTestDeduplicationService:
     def process_automated_test_results(
         self,
         project_id: str,
-        project_data: Dict[str, Any],
-        upload_id: Optional[str] = None,
+        project_data: dict[str, Any],
+        upload_id: str | None = None,
         min_component_pages: int = 2,
         mark_pages_for_inspection: bool = False
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Full processing pipeline for automated test results:
         1. Extract common components
@@ -418,8 +419,8 @@ class AutomatedTestDeduplicationService:
     def link_violations_to_discovered_pages(
         self,
         project_id: str,
-        project_data: Dict[str, Any],
-        common_components: Dict[str, Dict]
+        project_data: dict[str, Any],
+        common_components: dict[str, dict[str, Any]]
     ) -> int:
         """
         Link violations in test results to their corresponding Discovered Pages.

@@ -2,15 +2,17 @@
 Project-level Accessibility Report Generator
 Aggregates data from multiple websites in a project
 """
+from __future__ import annotations
 
 import logging
-from typing import Dict, List, Any, Optional
+from typing import Any, Callable
 from datetime import datetime
 import json
 from pathlib import Path
 
 from auto_a11y.web.fluent import ftl, force_locale
 from auto_a11y.models import Project, Website, Page, PageStatus
+from auto_a11y.core.database import Database
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +20,7 @@ logger = logging.getLogger(__name__)
 class ProjectReport:
     """Generates project-level accessibility reports"""
     
-    def __init__(self, database, project: Project, websites: List[Website], pages_by_website: Dict[str, List[Page]], language: str = 'en'):
+    def __init__(self, database: Database, project: Project, websites: list[Website], pages_by_website: dict[str, list[Page]], language: str = 'en') -> None:
         """
         Initialize project report
         
@@ -35,7 +37,7 @@ class ProjectReport:
         self.language = language
         self.report_data = None
     
-    def generate(self, progress_callback=None) -> Dict[str, Any]:
+    def generate(self, progress_callback: Callable[[int, int, str], None] | None = None) -> dict[str, Any]:
         """
         Generate the project-level report
 
@@ -333,7 +335,7 @@ class ProjectReport:
         
         return json.dumps(self.report_data, indent=2, default=str)
     
-    def save(self, format: str = 'html', reports_dir: str = None) -> str:
+    def save(self, format: str = 'html', reports_dir: str | None = None) -> str:
         """
         Save report to file
 

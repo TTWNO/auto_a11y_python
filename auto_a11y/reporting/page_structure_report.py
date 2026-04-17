@@ -2,9 +2,10 @@
 Site Structure Report Generator
 Generates a tree view of website pages based on URL hierarchy
 """
+from __future__ import annotations
 
 import logging
-from typing import Dict, List, Any
+from typing import Any, Callable, TYPE_CHECKING
 from urllib.parse import urlparse, unquote
 from datetime import datetime
 import json
@@ -14,18 +15,22 @@ from io import StringIO
 from auto_a11y.web.fluent import ftl, force_locale
 from auto_a11y.models import Page, PageStatus
 
+if TYPE_CHECKING:
+    from auto_a11y.core.database import Database
+    from auto_a11y.models import Website, Project
+
 logger = logging.getLogger(__name__)
 
 
 class PageNode:
     """Represents a node in the page tree structure"""
     
-    def __init__(self, name: str, url: str = None, is_directory: bool = False):
+    def __init__(self, name: str, url: str | None = None, is_directory: bool = False) -> None:
         self.name = name
         self.url = url
         self.is_directory = is_directory
-        self.children = []
-        self.page_data = None
+        self.children: list[PageNode] = []
+        self.page_data: Page | None = None
         self.stats = {
             'total_pages': 0,
             'tested_pages': 0,
@@ -34,11 +39,11 @@ class PageNode:
             'total_warnings': 0
         }
     
-    def add_child(self, child: 'PageNode'):
+    def add_child(self, child: PageNode) -> None:
         """Add a child node"""
         self.children.append(child)
-    
-    def find_or_create_child(self, name: str, is_directory: bool = False) -> 'PageNode':
+
+    def find_or_create_child(self, name: str, is_directory: bool = False) -> PageNode:
         """Find existing child or create new one"""
         for child in self.children:
             if child.name == name and child.is_directory == is_directory:
@@ -48,7 +53,7 @@ class PageNode:
         self.add_child(new_child)
         return new_child
     
-    def update_stats(self, page: Page):
+    def update_stats(self, page: Page) -> None:
         """Update statistics based on page data"""
         self.stats['total_pages'] += 1
         if page.status == PageStatus.TESTED:
@@ -58,7 +63,7 @@ class PageNode:
         self.stats['total_violations'] += page.violation_count
         self.stats['total_warnings'] += page.warning_count
     
-    def aggregate_stats(self):
+    def aggregate_stats(self) -> None:
         """Aggregate statistics from children"""
         for child in self.children:
             child.aggregate_stats()
@@ -68,7 +73,7 @@ class PageNode:
             self.stats['total_violations'] += child.stats['total_violations']
             self.stats['total_warnings'] += child.stats['total_warnings']
     
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert node to dictionary"""
         return {
             'name': self.name,
@@ -82,7 +87,7 @@ class PageNode:
 class PageStructureReport:
     """Generates site structure tree report"""
     
-    def __init__(self, database, website, pages: List[Page], project=None, language='en'):
+    def __init__(self, database: Database, website: Website, pages: list[Page], project: Project | None = None, language: str = 'en') -> None:
         """
         Initialize site structure report
 
@@ -101,7 +106,7 @@ class PageStructureReport:
         self.root = None
         self.tree_data = None
 
-    def _get_translations(self) -> Dict[str, str]:
+    def _get_translations(self) -> dict[str, str]:
         """Get translations for the current language"""
         translations = {
             'en': {
@@ -183,7 +188,7 @@ class PageStructureReport:
         }
         return translations.get(self.language, translations['en'])
 
-    def generate(self, progress_callback=None) -> Dict[str, Any]:
+    def generate(self, progress_callback: Callable[[int, int, str], None] | None = None) -> dict[str, Any]:
         """
         Generate the page structure report
 
@@ -225,7 +230,7 @@ class PageStructureReport:
         logger.info(f"Site structure report generated with {len(self.pages)} pages")
         return self.tree_data
     
-    def _build_tree(self, progress_callback=None) -> PageNode:
+    def _build_tree(self, progress_callback: Callable[[int, int, str], None] | None = None) -> PageNode:
         """
         Build tree structure from pages
 
@@ -250,7 +255,7 @@ class PageStructureReport:
 
         return root
     
-    def _add_page_to_tree(self, root: PageNode, page: Page):
+    def _add_page_to_tree(self, root: PageNode, page: Page) -> None:
         """
         Add a page to the tree structure
         
@@ -739,7 +744,7 @@ class PageStructureReport:
 """
         return html
     
-    def _generate_tree_html(self, node: PageNode, node_id: str = "root", depth: int = 0, t: Dict[str, str] = None) -> str:
+    def _generate_tree_html(self, node: PageNode, node_id: str = "root", depth: int = 0, t: dict[str, str] | None = None) -> str:
         """
         Generate HTML for a tree node using WAI-ARIA treeview pattern.
 
@@ -875,7 +880,7 @@ class PageStructureReport:
         
         return output.getvalue()
     
-    def _write_csv_node(self, writer, node: PageNode, path: str, level: int, t: Dict[str, str]):
+    def _write_csv_node(self, writer: Any, node: PageNode, path: str, level: int, t: dict[str, str]) -> None:
         """
         Write a node and its children to CSV
         

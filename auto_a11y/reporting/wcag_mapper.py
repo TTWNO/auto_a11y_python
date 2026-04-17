@@ -2,6 +2,8 @@
 WCAG Success Criteria Mapper
 Maps issue codes to specific WCAG success criteria
 """
+from __future__ import annotations
+
 from auto_a11y.web.fluent import ftl, lazy_ftl
 
 # WCAG 2.2 URL Slug Mapping - maps criterion numbers to Understanding page slugs
@@ -272,7 +274,7 @@ WCAG_MAPPINGS = {
     'ErrPositiveTabindex': ['2.4.3 Focus Order'],
 }
 
-def get_wcag_criteria(issue_code: str) -> list:
+def get_wcag_criteria(issue_code: str) -> list[str]:
     """
     Get WCAG success criteria for a given issue code
     
@@ -352,7 +354,7 @@ def format_wcag_link(criterion: str, link_type: str = 'understanding') -> str:
     # Fallback to generic quickref page
     return "https://www.w3.org/WAI/WCAG22/quickref/"
 
-def enrich_wcag_criteria(criteria_list: list) -> list:
+def enrich_wcag_criteria(criteria_list: list[str]) -> list[str]:
     """
     Enrich a list of WCAG criteria with full names and conformance levels
 

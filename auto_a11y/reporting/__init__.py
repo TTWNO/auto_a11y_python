@@ -1,6 +1,7 @@
 """
 Reporting module for generating accessibility reports
 """
+from __future__ import annotations
 
 from auto_a11y.reporting.report_generator import ReportGenerator
 from auto_a11y.reporting.formatters import (

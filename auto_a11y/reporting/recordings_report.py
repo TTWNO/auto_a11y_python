@@ -3,12 +3,13 @@ Recordings report generator for AutoA11y
 
 Generates reports from manual accessibility audit recordings and lived experience testing.
 """
+from __future__ import annotations
 
 import logging
 import json
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Any, Callable
 from collections import defaultdict
 from auto_a11y.web.fluent import ftl, force_locale
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -19,7 +20,7 @@ logger = logging.getLogger(__name__)
 class RecordingsReportGenerator:
     """Generate reports from accessibility recordings"""
 
-    def __init__(self, db, config: dict, language: str = 'en'):
+    def __init__(self, db: Any, config: dict[str, Any], language: str = 'en') -> None:
         """
         Initialize report generator
 
@@ -34,7 +35,7 @@ class RecordingsReportGenerator:
         self.reports_dir = Path(config.get('REPORTS_DIR', 'reports'))
         self.reports_dir.mkdir(exist_ok=True)
 
-    def _read_embedded_assets(self) -> dict:
+    def _read_embedded_assets(self) -> dict[str, str]:
         """Read Bootstrap CSS and JS files for embedding inline in standalone reports"""
         import re
         static_dir = Path(__file__).parent.parent / 'web' / 'static'
@@ -93,7 +94,7 @@ class RecordingsReportGenerator:
 
         return assets
 
-    def _get_translations(self) -> Dict[str, Dict[str, str]]:
+    def _get_translations(self) -> dict[str, dict[str, str]]:
         """Get translations for EN and FR languages for recordings reports"""
         translations = {
             'en': {
@@ -216,7 +217,7 @@ class RecordingsReportGenerator:
         include_wcag: bool = True,
         group_by_touchpoint: bool = True,
         language: str = 'en',
-        progress_callback=None
+        progress_callback: Callable[[int, int, str], None] | None = None
     ) -> str:
         """
         Generate a report for all recordings in a project
@@ -337,7 +338,7 @@ class RecordingsReportGenerator:
         logger.info(f"Generated recordings report: {report_path}")
         return str(report_path)
 
-    def _calculate_statistics(self, recordings, issues):
+    def _calculate_statistics(self, recordings: list[Any], issues: list[Any]) -> dict[str, Any]:
         """Calculate summary statistics"""
         total_recordings = len(recordings)
         total_issues = len(issues)
@@ -366,7 +367,7 @@ class RecordingsReportGenerator:
             'touchpoints': sorted(touchpoints) if touchpoints else []
         }
 
-    def _group_by_touchpoint(self, issues):
+    def _group_by_touchpoint(self, issues: list[Any]) -> dict[str, list[Any]]:
         """Group issues by touchpoint"""
         grouped = defaultdict(list)
         for issue in issues:
@@ -376,21 +377,21 @@ class RecordingsReportGenerator:
 
     def _generate_html_report(
         self,
-        output_path,
-        project,
-        recordings,
-        issues,
-        issues_by_touchpoint,
-        issues_by_recording,
-        issues_by_recording_en,
-        issues_by_recording_fr,
-        stats,
-        include_summary,
-        include_timecodes,
-        include_wcag,
-        group_by_touchpoint,
-        language='en'
-    ):
+        output_path: Path | str,
+        project: Any,
+        recordings: list[Any],
+        issues: list[Any],
+        issues_by_touchpoint: dict[str, list[Any]] | None,
+        issues_by_recording: dict[str, list[Any]],
+        issues_by_recording_en: dict[str, list[Any]],
+        issues_by_recording_fr: dict[str, list[Any]],
+        stats: dict[str, Any],
+        include_summary: bool,
+        include_timecodes: bool,
+        include_wcag: bool,
+        group_by_touchpoint: bool,
+        language: str = 'en'
+    ) -> None:
         """Generate HTML report using Jinja2 template with bilingual support"""
         # Get translations
         all_translations = self._get_translations()
@@ -451,7 +452,18 @@ class RecordingsReportGenerator:
 
         logger.info(f"Generated HTML recordings report: {output_path}")
 
-    def _generate_pdf_report(self, output_path, project, recordings, issues, issues_by_touchpoint, stats, include_summary, include_timecodes, include_wcag):
+    def _generate_pdf_report(
+        self,
+        output_path: Path | str,
+        project: Any,
+        recordings: list[Any],
+        issues: list[Any],
+        issues_by_touchpoint: dict[str, list[Any]] | None,
+        stats: dict[str, Any],
+        include_summary: bool,
+        include_timecodes: bool,
+        include_wcag: bool,
+    ) -> None:
         """Generate PDF report (placeholder - would use library like ReportLab or WeasyPrint)"""
         # For now, generate HTML and note that PDF conversion would be done here
         html_path = str(output_path).replace('.pdf', '.html')
@@ -461,17 +473,32 @@ class RecordingsReportGenerator:
             recordings,
             issues,
             issues_by_touchpoint,
+            {},  # issues_by_recording
+            {},  # issues_by_recording_en
+            {},  # issues_by_recording_fr
             stats,
             include_summary,
             include_timecodes,
-            include_wcag
+            include_wcag,
+            group_by_touchpoint=bool(issues_by_touchpoint),
         )
         # TODO: Convert HTML to PDF using WeasyPrint or similar
         logger.warning("PDF generation not fully implemented - HTML report generated instead")
         import shutil
         shutil.copy(html_path, output_path.replace('.pdf', '_temp.html'))
 
-    def _generate_xlsx_report(self, output_path, project, recordings, issues, issues_by_touchpoint, stats, include_timecodes, include_wcag, language='en'):
+    def _generate_xlsx_report(
+        self,
+        output_path: Path | str,
+        project: Any,
+        recordings: list[Any],
+        issues: list[Any],
+        issues_by_touchpoint: dict[str, list[Any]] | None,
+        stats: dict[str, Any],
+        include_timecodes: bool,
+        include_wcag: bool,
+        language: str = 'en',
+    ) -> None:
         """Generate Excel report with translations"""
         try:
             import openpyxl

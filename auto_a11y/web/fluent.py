@@ -56,17 +56,23 @@ def ftl(message_id: str, **kwargs: object) -> Markup | str:
     missing translations.
     """
     locale = _get_current_locale()
-    value = _resolve(locale, message_id, kwargs)
-    if value is not None:
+    result = _resolve(locale, message_id, kwargs)
+    if result is not None:
+        value, errors = result
+        if errors:
+            logger.warning("Fluent errors for '%s' [%s]: %s", message_id, locale, errors)
         return Markup(escape(value))
 
     # Fallback to English
     if locale != _DEFAULT_LOCALE:
-        value = _resolve(_DEFAULT_LOCALE, message_id, kwargs)
-        if value is not None:
+        result = _resolve(_DEFAULT_LOCALE, message_id, kwargs)
+        if result is not None:
+            value, errors = result
+            if errors:
+                logger.warning("Fluent errors for '%s' [%s]: %s", message_id, _DEFAULT_LOCALE, errors)
             return Markup(escape(value))
 
-    # Complete miss -- return the message ID as a plain string
+    # Complete miss — return the message ID as a plain string
     logger.warning("Missing Fluent message: %s", message_id)
     return message_id
 
@@ -301,23 +307,22 @@ def _load_bundles(translations_dir: str) -> None:
         logger.debug("Loaded Fluent bundle for '%s' from %d file(s)", locale, len(ftl_files))
 
 
-def _resolve(locale: str, message_id: str, args: dict[str, object]) -> str | None:
+def _resolve(locale: str, message_id: str, args: dict[str, object]) -> tuple[str, list[object]] | None:
     """Try to format *message_id* in the given locale's bundle.
 
-    Returns the formatted string or ``None`` if the message is not found.
+    Returns ``(value, errors)`` tuple where ``errors`` is the Fluent
+    error list (empty list if none). Returns ``None`` if the message
+    is not found at all in this bundle.
+
+    Note: this function no longer logs format errors — callers decide
+    whether to log or raise based on strict mode.
     """
     bundle = _bundles.get(locale)
     if bundle is None:
         return None
-    if not bundle.has_message(message_id):
-        # has_message returns False for attribute-style IDs like 'msg.attr',
-        # but format() still works for them.  Try format() and catch KeyError.
-        pass
     try:
         value, errors = bundle.format(message_id, args or None)
-        if errors:
-            logger.warning("Fluent errors for '%s' [%s]: %s", message_id, locale, errors)
-        return str(value)
+        return (value, errors or [])
     except (KeyError, Exception):
         return None
 

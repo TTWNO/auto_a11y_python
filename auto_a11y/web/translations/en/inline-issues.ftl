@@ -555,3 +555,43 @@ issue-hreflang-region-qualifier-not-recognized-5383b9 = hreflang region qualifie
 issue-lang-and-xml-lang-attributes-don-t-match-bc54cf = lang and xml:lang attributes don't match
 issue-xml-lang-attribute-is-empty-7b6c30 = xml:lang attribute is empty
 issue-xml-lang-language-code-not-recognized-cd9bfa = xml:lang language code not recognized
+issue-dialog-has-role-dialog-but-no-aria-label-or-aria-labelledby-f3972b = Dialog has role="dialog" but no aria-label or aria-labelledby
+issue-visible-modal-dialog-lacks-role-dialog-or-role-alertdialog-a22224 = Visible modal dialog lacks role="dialog" or role="alertdialog"
+issue-svg-element-with-role-img-detected-that-requires-manual-review-to-verify-appropr-894766 = SVG element with role="img" detected that requires manual review to verify appropriate text alternatives are provided
+issue-dialog-or-modal-element-is-missing-role-dialog-or-role-alertdialog-attribute-1ecd2f = Dialog or modal element is missing role="dialog" or role="alertdialog" attribute
+issue-element-non-html-has-a-lang-attribute-present-but-with-no-value-lang-preventing-89a80d = Element (non-HTML) has a lang attribute present but with no value (lang=""), preventing screen readers from determining language changes
+issue-aria-level-attribute-without-role-heading-595e13 = aria-level attribute without role="heading"
+issue-html-element-has-a-lang-attribute-present-but-with-no-value-lang-preventing-scre-6224d4 = HTML element has a lang attribute present but with no value (lang=""), preventing screen readers from determining the page language
+issue-alt-text-contains-image-filename-with-file-extension-e-g-photo-jpg-img-1234-png-328cc5 = Alt text contains image filename with file extension (e.g., "photo.jpg", "IMG_1234.png", "banner.gif"), providing no meaningful description of the image content
+issue-list-item-li-or-role-listitem-is-empty-or-contains-only-whitespace-d76d66 = List item (<li> or role="listitem") is empty or contains only whitespace
+issue-main-landmark-has-tabindex-0-which-is-inappropriate-ea222a = Main landmark has tabindex="0" which is inappropriate
+issue-interactive-map-with-aria-hidden-true-contains-focusable-elements-that-keyboard-d123b5 = Interactive map with aria-hidden="true" contains focusable elements that keyboard users can reach but screen reader users cannot perceive - creating a 'silent focus trap'.
+issue-map-has-generic-name-like-map-image-or-location-that-doesn-t-describe-its-purpos-ab543b = Map has generic name like "map", "image", or "location" that doesn't describe its purpose
+issue-interactive-map-has-role-presentation-which-removes-semantic-meaning-from-focusa-f9b13c = Interactive map has role="presentation" which removes semantic meaning from focusable elements
+issue-interactive-element-link-button-form-control-or-custom-interactive-element-has-t-52f1d3 = Interactive element (link, button, form control, or custom interactive element) has tabindex="-1", removing it from the natural keyboard tab order and making it only focusable programmatically via JavaScript
+issue-navigation-menu-lacks-aria-current-page-attribute-on-the-current-page-link-preve-6ac193 = Navigation menu lacks aria-current="page" attribute on the current page link, preventing screen readers from announcing the user's current location in the site navigation
+issue-this-page-does-not-contain-a-main-landmark-main-element-or-role-main-to-identify-493336 = This page does not contain a main landmark (<main> element or role="main") to identify the primary content area that is unique to this page
+issue-non-interactive-element-has-tabindex-0-making-it-keyboard-focusable-267ab5 = Non-interactive element has tabindex="0" making it keyboard focusable
+issue-alt-text-contains-redundant-words-like-image-of-or-picture-of-6c7bad = Alt text contains redundant words like "image of" or "picture of"
+issue-region-qualifier-in-primary-language-code-not-recognized-e-g-en-xy-73b904 = Region qualifier in primary language code not recognized (e.g., "en-XY")
+issue-role-heading-without-aria-level-c1a92d = role="heading" without aria-level
+issue-static-inline-svg-element-does-not-have-role-img-attribute-causing-screen-reader-9c9314 = Static inline SVG element does not have role="img" attribute, causing screen readers to either skip it entirely or attempt to navigate through its internal SVG structure rather than treating it as a single image
+issue-tabindex-0-on-non-interactive-element-6aa801 = tabindex="0" on non-interactive element
+issue-tooltip-element-is-missing-role-tooltip-and-proper-aria-associations-3fc2ca = Tooltip element is missing role="tooltip" and proper ARIA associations
+issue-banner-landmark-uses-generic-term-banner-in-label-be8142 = Banner landmark uses generic term "banner" in label
+issue-button-uses-generic-text-like-click-here-submit-or-ok-without-context-0d0038 = Button uses generic text like "Click here", "Submit", or "OK" without context
+issue-complementary-landmark-label-uses-generic-term-complementary-1b41cd = Complementary landmark label uses generic term "complementary"
+issue-contentinfo-landmark-uses-generic-term-contentinfo-in-label-a51f27 = Contentinfo landmark uses generic term "contentinfo" in label
+issue-document-link-uses-generic-text-like-pdf-without-describing-content-5b4eef = Document link uses generic text like "PDF" without describing content
+issue-iframe-has-a-title-attribute-but-it-s-generic-or-not-descriptive-e-g-iframe-fram-1610d3 = Iframe has a title attribute but it's generic or not descriptive (e.g., "iframe", "frame", "embedded content")
+issue-interactive-map-has-aria-hidden-or-role-presentation-which-may-hide-content-6a6cdb = Interactive map has aria-hidden or role="presentation" which may hide content
+issue-modal-dialog-missing-aria-modal-true-7886fa = Modal dialog missing aria-modal="true"
+issue-navigation-landmark-uses-generic-term-navigation-in-label-b5928f = Navigation landmark uses generic term "navigation" in label
+issue-this-page-does-not-contain-a-contentinfo-landmark-footer-element-at-page-level-o-a2d924 = This page does not contain a contentinfo landmark (<footer> element at page level or role="contentinfo") to identify the site footer area
+issue-this-page-contains-no-navigation-landmarks-nav-elements-or-elements-with-role-na-d0fa4f = This page contains no navigation landmarks (<nav> elements or elements with role="navigation") to identify navigation menu areas
+issue-region-landmark-incorrectly-uses-navigation-in-its-label-cd02b5 = Region landmark incorrectly uses "navigation" in its label
+issue-slider-control-may-be-missing-role-slider-and-required-aria-attributes-2b1b30 = Slider control may be missing role="slider" and required ARIA attributes
+issue-toggle-switch-control-may-be-missing-role-switch-and-aria-checked-attribute-6af6cc = Toggle switch control may be missing role="switch" and aria-checked attribute
+issue-tree-view-navigation-may-be-missing-role-tree-role-treeitem-and-aria-expanded-at-42c9f3 = Tree view navigation may be missing role="tree", role="treeitem", and aria-expanded attributes
+issue-element-has-role-menuitem-but-is-not-inside-a-parent-with-role-menu-db612a = Element has role="menuitem" but is not inside a parent with role="menu"
+issue-list-element-has-redundant-or-inappropriate-role-list-fef42a = List element has redundant or inappropriate role="list"

@@ -44,10 +44,10 @@
     --color-border-input-focus: #0a58ca;
     --color-border-table: #dee2e6;
 
-    /* Focus & Interaction */
-    --color-focus-ring: #0a58ca;
-    --color-focus-ring-shadow: rgba(10, 88, 202, 0.6);
-    --color-focus-ring-inverse: #ffffff;
+    /* Focus & Interaction — double-ring: outline + box-shadow contrast ring.
+       One ring is always visible regardless of background colour. */
+    --color-focus-ring: #000000;
+    --color-focus-ring-contrast: #ffffff;
     --color-button-primary-bg: #1a5276;
     --color-button-primary-text: #ffffff;
     --color-button-primary-hover: #0e2f44;
@@ -181,9 +181,8 @@
         --color-border-input-focus: #5da9e9;
         --color-border-table: #7a7a9c;
 
-        --color-focus-ring: #6db3f2;
-        --color-focus-ring-shadow: rgba(109, 179, 242, 0.6);
-        --color-focus-ring-inverse: #ffffff;
+        --color-focus-ring: #ffffff;
+        --color-focus-ring-contrast: #000000;
         --color-button-primary-bg: #5da9e9;
         --color-button-primary-text: #0e1525;
         --color-button-primary-hover: #6db3f2;
@@ -283,9 +282,8 @@
     --color-border-input-focus: #5da9e9;
     --color-border-table: #7a7a9c;
 
-    --color-focus-ring: #6db3f2;
-    --color-focus-ring-shadow: rgba(109, 179, 242, 0.6);
-    --color-focus-ring-inverse: #ffffff;
+    --color-focus-ring: #ffffff;
+    --color-focus-ring-contrast: #000000;
     --color-button-primary-bg: #5da9e9;
     --color-button-primary-text: #0e1525;
     --color-button-primary-hover: #6db3f2;
@@ -385,7 +383,8 @@
         --color-border-input-focus: #0a58ca;
         --color-border-table: #dee2e6;
 
-        --color-focus-ring: #0a58ca;
+        --color-focus-ring: #000000;
+        --color-focus-ring-contrast: #ffffff;
         --color-button-primary-bg: #1a5276;
         --color-button-primary-text: #ffffff;
         --color-button-primary-hover: #0e2f44;

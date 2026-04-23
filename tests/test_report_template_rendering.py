@@ -238,9 +238,8 @@ LOCALES = pytest.mark.parametrize("lang", ["en", "fr"])
 class TestStaticHTMLTemplates:
     """Smoke-test every template rendered by StaticHTMLReportGenerator."""
 
-    def __init__(self) -> None:
-        self.env = _build_static_html_env()
-        self.translations = _minimal_translations()
+    env = _build_static_html_env()
+    translations = _minimal_translations()
 
     @pytest.fixture(autouse=True)
     def setup_env(self) -> None:

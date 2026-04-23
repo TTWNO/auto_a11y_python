@@ -869,7 +869,7 @@ async def test_text_contrast(page: Page) -> dict[str, Any]:
                     continue
 
                 # Check contrast against the project's required level ONLY
-                if contrast < required_ratio:
+                if contrast is not None and contrast < required_ratio:
                     results['errors'].append({
                         'err': error_code,
                         'type': 'err',

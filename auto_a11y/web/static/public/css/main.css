@@ -18,10 +18,11 @@ body {
     min-height: 100vh;
 }
 
-/* Focus indicator (global) */
+/* Focus indicator (global) — double-ring for universal visibility */
 :focus-visible {
     outline: 2px solid var(--color-focus-ring);
     outline-offset: 2px;
+    box-shadow: 0 0 0 2px var(--color-focus-ring-contrast);
 }
 
 a {

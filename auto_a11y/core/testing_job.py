@@ -21,6 +21,8 @@ class TestingJob:
     """
     Represents a testing job backed by database storage
     """
+
+    __test__ = False  # Not a pytest test class
     
     def __init__(
         self,

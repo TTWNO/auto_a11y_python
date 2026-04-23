@@ -65,9 +65,9 @@ main {
 .dropdown-item:focus-visible,
 .navbar-toggler:focus,
 .navbar-toggler:focus-visible {
-    outline: 2px solid var(--color-focus-ring-inverse, #ffffff);
+    outline: 2px solid var(--color-focus-ring);
     outline-offset: 2px;
-    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 0 2px var(--color-focus-ring-contrast);
 }
 
 /* Current page indicators in navigation */
@@ -183,7 +183,7 @@ summary:focus,
 summary:focus-visible {
     outline: 2px solid var(--color-focus-ring);
     outline-offset: 2px;
-    box-shadow: 0 0 0 4px var(--color-focus-ring-shadow, rgba(10, 88, 202, 0.6));
+    box-shadow: 0 0 0 2px var(--color-focus-ring-contrast);
 }
 
 /* Note: We previously removed the outline for :focus:not(:focus-visible)
@@ -193,19 +193,18 @@ summary:focus-visible {
    Keeping outline on ALL focus states (mouse + keyboard) is also more
    accessible for power users who navigate via mouse. */
 
-/* Form controls: border changes on focus too (forms_WarnInputNoBorderOutline)
-   - 3px outline ensures sufficient non-text contrast (3:1) against the input's
-     own background AND the adjacent page background in both light and dark mode */
+/* Form controls: border changes on focus too (forms_WarnInputNoBorderOutline).
+   Double-ring (outline + contrast shadow) guarantees visibility on any bg. */
 .form-control:focus,
 .form-control:focus-visible,
 .form-select:focus,
 .form-select:focus-visible,
 .form-check-input:focus,
 .form-check-input:focus-visible {
-    outline: 3px solid var(--color-focus-ring);
+    outline: 2px solid var(--color-focus-ring);
     outline-offset: 2px;
     border-color: var(--color-focus-ring);
-    box-shadow: 0 0 0 4px var(--color-focus-ring-shadow, rgba(10, 88, 202, 0.6));
+    box-shadow: 0 0 0 2px var(--color-focus-ring-contrast);
 }
 
 /* Skip to main content link */
@@ -225,9 +224,9 @@ summary:focus-visible {
 .skip-link:focus-visible {
     top: 0;
     z-index: 1100;
-    outline: 3px solid var(--color-focus-ring-inverse, #ffffff);
+    outline: 2px solid var(--color-focus-ring);
     outline-offset: 2px;
-    box-shadow: 0 0 0 5px var(--color-focus-ring, #0a58ca);
+    box-shadow: 0 0 0 2px var(--color-focus-ring-contrast);
 }
 
 /* Responsive improvements */
@@ -2404,6 +2403,7 @@ a a {
 @media (prefers-contrast: more) {
     :root {
         --color-focus-ring: CanvasText;
+        --color-focus-ring-contrast: Canvas;
         --color-border-table: CanvasText;
         --color-text-muted: CanvasText;
     }
@@ -2419,7 +2419,8 @@ a a {
     textarea:focus,
     textarea:focus-visible {
         outline: 3px solid CanvasText;
-        outline-offset: 3px;
+        outline-offset: 2px;
+        box-shadow: 0 0 0 2px Canvas;
     }
 
     .btn,

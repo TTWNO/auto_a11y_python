@@ -18,7 +18,8 @@ import asyncio
 import os
 import subprocess
 import sys
-from typing import Any, Literal, AsyncIterator
+from collections.abc import AsyncGenerator
+from typing import Any, Literal
 from pathlib import Path
 import logging
 from contextlib import asynccontextmanager
@@ -369,7 +370,7 @@ class BrowserManager:
         await context.add_init_script(stealth_script)
 
     @asynccontextmanager
-    async def get_page(self, context: BrowserContext | None = None) -> AsyncIterator[Page]:
+    async def get_page(self, context: BrowserContext | None = None) -> AsyncGenerator[Page]:
         """
         Get a new page with resource management.
 

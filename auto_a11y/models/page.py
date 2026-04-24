@@ -20,6 +20,7 @@ class PageStatus(Enum):
     ERROR = "error"
     SKIPPED = "skipped"
     DISCOVERY_FAILED = "discovery_failed"  # Failed during discovery (timeout, redirect, etc)
+    IS_PDF = "is_pdf"  # Page URL serves a PDF; result is on linked PdfDocument
 
 
 class DrupalSyncStatus(Enum):
@@ -66,6 +67,9 @@ class Page:
     drupal_sync_status: DrupalSyncStatus = DrupalSyncStatus.NOT_SYNCED  # Sync status with Drupal
     drupal_last_synced: datetime | None = None  # Timestamp of last successful sync
     drupal_error_message: str | None = None  # Error message if sync failed
+
+    # PDF linking: when status is IS_PDF, points to the linked PdfDocument
+    linked_pdf_document_id: str | None = None
 
     _id: ObjectId | None = None
 
@@ -126,7 +130,8 @@ class Page:
             'drupal_discovered_page_uuid': self.drupal_discovered_page_uuid,
             'drupal_sync_status': self.drupal_sync_status.value,
             'drupal_last_synced': self.drupal_last_synced,
-            'drupal_error_message': self.drupal_error_message
+            'drupal_error_message': self.drupal_error_message,
+            'linked_pdf_document_id': self.linked_pdf_document_id,
         }
         if self._id:
             data['_id'] = self._id
@@ -166,5 +171,6 @@ class Page:
             drupal_sync_status=DrupalSyncStatus(data.get('drupal_sync_status', 'not_synced')),
             drupal_last_synced=data.get('drupal_last_synced'),
             drupal_error_message=data.get('drupal_error_message'),
+            linked_pdf_document_id=data.get('linked_pdf_document_id'),
             _id=data.get('_id')
         )

@@ -1,6 +1,8 @@
 services:
   app:
-    build: .
+    build:
+      context: .
+      target: prod
     container_name: auto-a11y-app
     command: python run.py --host 0.0.0.0
     ports:

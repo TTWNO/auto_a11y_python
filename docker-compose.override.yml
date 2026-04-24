@@ -7,12 +7,20 @@
 
 services:
   app:
+    build:
+      context: .
+      target: dev
     # Run Flask with the reloader. --debug flips config.DEBUG, which run.py
     # forwards into app.run() as use_reloader=True.
     command: python run.py --host 0.0.0.0 --debug
     volumes:
       # Mount the source tree so host edits land in the container.
       - .:/app
+      # Override the named volumes from docker-compose.yml so these
+      # directories are live on the host too (no shadowing).
+      - ./reports:/app/reports
+      - ./screenshots:/app/screenshots
+      - ./data:/app/data
       # Shadow the bind mount for paths that must stay container-owned:
       # the host's .venv (if any) targets the host's OS/Python, and
       # __pycache__ would pollute the host tree.

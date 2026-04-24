@@ -1,4 +1,4 @@
-FROM docker.io/library/python:3.14-slim
+FROM docker.io/library/python:3.14-slim AS base
 
 # Install Playwright system dependencies and other required packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -40,12 +40,16 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Install Playwright Chromium browser
 RUN python -m playwright install chromium chromium-headless-shell
 
-# Copy application code
-COPY . .
-
 # Create required directories
 RUN mkdir -p data reports screenshots logs temp
 
+# --- Dev target: no COPY, relies on bind mount ---
+FROM base AS dev
 EXPOSE 5001
-
 CMD ["python", "run.py", "--host", "0.0.0.0", "--debug"]
+
+# --- Prod target: bake source into image ---
+FROM base AS prod
+COPY . .
+EXPOSE 5001
+CMD ["python", "run.py", "--host", "0.0.0.0"]

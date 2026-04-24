@@ -120,3 +120,12 @@ wrapt==2.1.2
 xlsxwriter==3.2.9
 yarl==1.23.0
 zopfli==0.4.1
+
+# PDF audit engine (added for sub-project #1 of pdfMax integration)
+pikepdf==10.3.0
+pdfminer.six==20231228
+Pillow==12.1.1
+wcag-contrast-ratio==0.9
+PyYAML==6.0.2
+types-PyYAML==6.0.12.20240917
+markdown-it-py==3.0.0

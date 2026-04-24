@@ -7,6 +7,7 @@ from .website import Website, ScrapingConfig
 from .page import Page, PageStatus, DrupalSyncStatus
 from .test_result import TestResult, Violation, AIFinding, ImpactLevel
 from .document_reference import DocumentReference, DocumentType
+from .pdf_document import PdfDocument, PdfDocumentStatus
 from .discovery_run import DiscoveryRun, DiscoveryStatus
 from .page_setup_script import (
     PageSetupScript, ScriptStep, ScriptValidation, ExecutionStats,
@@ -38,6 +39,7 @@ __all__ = [
     'Page', 'PageStatus', 'DrupalSyncStatus',
     'TestResult', 'Violation', 'AIFinding', 'ImpactLevel',
     'DocumentReference', 'DocumentType',
+    'PdfDocument', 'PdfDocumentStatus',
     'DiscoveryRun', 'DiscoveryStatus',
     'PageSetupScript', 'ScriptStep', 'ScriptValidation', 'ExecutionStats',
     'ActionType', 'ScriptScope', 'ExecutionTrigger',

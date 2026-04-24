@@ -87,12 +87,44 @@ extra-paths = ["stubs"]
 
 # ── Source / file selection ───────────────────────────────────────────────────
 [tool.ty.src]
-# Exclude out-of-scope root-level scripts and directories
+# Exclude out-of-scope root-level scripts and directories.
+# fixture_generation/ and scripts/ are enumerated (rather than blanket-excluded)
+# so that fixture_generation/pdf/** and scripts/port_pdfmax_remediation_guide.py
+# can opt INTO strict typecheck when they land (see PDF audit engine port plan,
+# Phases 7 and 10).
 exclude = [
     "archive/",
     "demo_site/",
-    "fixture_generation/",
     "electron/",
+    # fixture_generation/ — enumerated subdirs (pdf/ will opt in when it lands)
+    "fixture_generation/by_touchpoint/",
+    # scripts/ — enumerated scripts (port_pdfmax_remediation_guide.py will opt in when it lands)
+    "scripts/apply_what_generic.py",
+    "scripts/apply_what_generic_v2.py",
+    "scripts/apply_what_generic_v3.py",
+    "scripts/apply_what_generic_v4.py",
+    "scripts/audit_generic_descriptions.py",
+    "scripts/audit_generic_descriptions_simple.py",
+    "scripts/create_phase1_template.py",
+    "scripts/extract_issue_descriptions.py",
+    "scripts/generate_issue_catalog.py",
+    "scripts/identify_phase1_issues.py",
+    "scripts/migrate_impact_levels.py",
+    "scripts/migrate_test_results.py",
+    "scripts/migrate_test_results_to_items.py",
+    "scripts/migrate_to_touchpoints.py",
+    "scripts/rename_category_to_touchpoint.py",
+    "scripts/translate_phase1_batch.py",
+    "scripts/translate_phase1_direct.py",
+    "scripts/translate_phase2.py",
+    "scripts/translate_phase3.py",
+    "scripts/translate_phase4.py",
+    "scripts/translate_phase5.py",
+    "scripts/translate_phase6.py",
+    "scripts/translate_with_anthropic.py",
+    "scripts/translate_with_anthropic_schema.py",
+    "scripts/update_page_counts.py",
+    "scripts/what_generic_additions.py",
     "add_*.py",
     "cleanup_*.py",
     "migrate_*.py",
@@ -111,7 +143,6 @@ exclude = [
     "generate_fixtures*.py",
     "download_chromium.py",
     "gunicorn.conf.py",
-    "scripts/",
 ]
 
 # ── Analysis options ──────────────────────────────────────────────────────────

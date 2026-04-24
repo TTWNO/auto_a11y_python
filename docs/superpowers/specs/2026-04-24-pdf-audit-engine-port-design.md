@@ -391,11 +391,12 @@ type: Err
 expected_result: The document has no /Title in its catalog
 pdf_version: "1.7"
 generator_version: 1
+manual: false         # true when the PDF is produced outside the pikepdf generator (e.g., from an .odt/.docx source)
 notes: |
   Catalog intentionally has no /Title entry.
 ```
 
-`expected_result` is either a description string (for `fail.pdf`) or the literal `"pass"` (for `pass.pdf`). `generator_version` is bumped when the generator changes in a regeneration-triggering way.
+`expected_result` is either a description string (for `fail.pdf`) or the literal `"pass"` (for `pass.pdf`). `generator_version` is bumped when the generator changes in a regeneration-triggering way. `manual: true` flags a fixture that falls under the escape hatch below.
 
 #### Generator
 
@@ -495,7 +496,7 @@ Dedicated `ThreadPoolExecutor` (configurable `PDF_AUDIT_MAX_PARALLEL`, default 2
 
 **Manual URL:**
 1. Receive URL + optional `WebsiteUser` selector.
-2. HEAD or streaming GET to verify `Content-Type` and size (reject non-PDF, reject > `PDF_MAX_SIZE_MB`).
+2. Streaming GET to verify `Content-Type` and size (reject non-PDF, reject > `PDF_MAX_SIZE_MB`). HEAD is avoided as the first step: some servers reject HEAD or return wrong `Content-Type` for HEAD requests.
 3. Authenticated fetch via `aiohttp` with cookies seeded from the `WebsiteUser`, if one was specified.
 4. Download to tempfile; magic-byte verify.
 5. SHA-256 + dedup + store + enqueue (same as upload from step 4 onwards).
@@ -504,7 +505,7 @@ Dedicated `ThreadPoolExecutor` (configurable `PDF_AUDIT_MAX_PARALLEL`, default 2
 **Opportunistic (from `test_page`):**
 1. After Playwright's `goto`, inspect `response.headers["content-type"]`.
 2. If `application/pdf` (or `application/octet-stream` with a `.pdf` URL path):
-   a. Fetch bytes via `aiohttp` seeded with Playwright's cookies (`browser_page.context.cookies()`).
+   a. Prefer reading bytes directly from the Playwright response (`response.body()`) to avoid a second round-trip, re-seeding cookie edge cases (one-time-use session tokens), and potentially-divergent redirect outcomes on a second fetch. If `response.body()` is unavailable or fails, fall back to an `aiohttp` fetch seeded with Playwright's cookies (`browser_page.context.cookies()`).
    b. Magic-byte verify.
    c. SHA-256 + dedup under `website_id`.
    d. Create `PdfDocument` with `source_type=opportunistic`, `discovered_from_page_id=page.id`.
@@ -844,7 +845,11 @@ Detailed implementation plan is produced by the `writing-plans` skill after this
 6. **Fixture generation** — migrate and extend pdfMax's generator; produce every check's fixture PDFs.
 7. **Fixture integration in `test_fixtures.py` + `/testing/fixture-status`.**
 8. **Migration** — non-destructive model additions, `PageStatus.IS_PDF`, scraper's language helper redirected.
-9. **Cleanup** — remove `pypdf2` if unused, update `README.md`/`README.fr.md`, `CLAUDE.md` if any new conventions introduced.
+9. **Cleanup** — remove `pypdf2` if unused; update `README.md`/`README.fr.md`; update CLAUDE.md to document the partial typecheck carve-out for `fixture_generation/pdf/**` (the rest of `fixture_generation/` stays excluded); document Ghostscript as a runtime system dependency.
+
+### Enumeration pass — a dedicated implementation task
+
+Because the `CHECK_CATALOGUE` enumeration (~200 rows) is the single longest-tailed piece of work in this spec — each row drives a fixture generator, six Fluent IDs per locale, and a translation-coverage assertion — the implementation plan should isolate it into its own sub-task (likely sitting between phases 2 and 3). Combing pdfMax's `pdf_accessibility_audit.py` to produce the catalogue is itself several hours of focused work, independent of any later row-by-row fixture/Fluent work.
 
 ## Open items surfaced to implementation phase
 

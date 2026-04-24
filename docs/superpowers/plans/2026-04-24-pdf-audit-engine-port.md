@@ -1055,10 +1055,12 @@ class PdfDocument:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> PdfDocument:
         source_type_raw: str = data['source_type']
-        if source_type_raw not in ("uploaded", "manual_url", "opportunistic"):
-            raise ValueError(f"Unknown source_type: {source_type_raw}")
-        # Narrowed after the membership check above
-        source_type: SourceType = source_type_raw  # type: ignore[assignment]  # unused-ignore triggers strict
+        # Use `match` to narrow to the Literal type without cast/ignore.
+        match source_type_raw:
+            case "uploaded" | "manual_url" | "opportunistic":
+                source_type: SourceType = source_type_raw
+            case _:
+                raise ValueError(f"Unknown source_type: {source_type_raw}")
         return cls(
             website_id=data['website_id'],
             project_id=data['project_id'],
@@ -1085,19 +1087,7 @@ class PdfDocument:
         )
 ```
 
-**Remove** the `# type: ignore` line — zero-escape-hatch rule. Replace with a runtime-narrowed variable:
-
-```python
-        valid_source_types: tuple[str, ...] = ("uploaded", "manual_url", "opportunistic")
-        if source_type_raw not in valid_source_types:
-            raise ValueError(f"Unknown source_type: {source_type_raw}")
-        # source_type_raw is narrowed by the explicit Literal-widening cast via match statement:
-        match source_type_raw:
-            case "uploaded" | "manual_url" | "opportunistic":
-                source_type: SourceType = source_type_raw
-```
-
-(The `match` exhaustively narrows to the Literal without cast/ignore.)
+The `match` statement exhaustively narrows `source_type_raw` to the `SourceType` Literal without any `cast` or `# type: ignore`.
 
 - [ ] **Step 1.6.4: Register in `auto_a11y/models/__init__.py`**
 
@@ -1323,6 +1313,11 @@ Add `__post_init__`:
     def __post_init__(self) -> None:
         if self.target_type is TargetType.PAGE and not self.target_id and self.page_id:
             self.target_id = self.page_id
+        # Explicit runtime guard: a PDF-targeted result must have an id.
+        if self.target_type is TargetType.PDF_DOCUMENT and not self.target_id:
+            raise ValueError(
+                "TestResult with target_type=PDF_DOCUMENT requires target_id"
+            )
 ```
 
 Update `to_dict` to include both new fields. Update `from_dict` to infer when missing:
@@ -2656,9 +2651,7 @@ Usage: `python -m scripts.port_pdfmax_remediation_guide ../pdfMax/python/checker
 
 - [ ] **Step 7.1.3: Create the French counterpart `auto_a11y/web/translations/fr/pdf-remediation.ftl`**
 
-This requires human translation. For the initial commit, populate with identical IDs and the French text produced by a human translator. The coverage test (Task 7.4) enforces parity; if French is missing, tests fail.
-
-**If the translator isn't available during implementation**, create the `fr/pdf-remediation.ftl` with English strings as placeholders, mark each with a trailing comment `# TODO: translate`, AND open a blocking ticket. The coverage test must still pass for non-TODO strings; the blocking ticket surfaces the gap.
+This requires human translation. Populate with the same IDs as the English file, each mapped to the translated French text. Do **not** commit placeholder English strings — the spec is explicit that machine-translation placeholders are not acceptable and the coverage test (Task 7.4) must fail if any French string is missing. If a human translator is not immediately available, block this phase — do not proceed to Task 7.4's coverage test until the French file is genuinely translated. Untranslated French is a release blocker, not a "fill in later" item.
 
 - [ ] **Step 7.1.4: Commit the script, generated files, and translations together**
 

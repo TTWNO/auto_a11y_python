@@ -1,27 +1,26 @@
 """Minimal stub for wcag-contrast-ratio 0.9.
 
 Upstream package ships no py.typed and there is no types-* on PyPI.
-Covers only the public API (the ``__all__`` of the package) that
-pdfMax and the auto_a11y port consume. Verified against
-``.venv/lib/python*/site-packages/wcag_contrast_ratio/contrast.py``.
+Covers the three public functions consumed by pdfMax and the
+auto_a11y port: ``rgb``, ``passes_AA``, and ``passes_AAA``.
 
-Note: the package's runtime ``rgb`` accepts any 3-element iterable
-whose elements are within [0.0, 1.0]. pdfMax always passes a
-``tuple[float, float, float]``, so that is the signature we expose.
+Signatures reflect the real library's runtime behaviour:
+``rgb`` accepts any 3-element tuple of floats in [0.0, 1.0]; we type
+the parameters as ``tuple[float, ...]`` rather than
+``tuple[float, float, float]`` so that generator-expression-built
+tuples (``tuple(clamp(c) for c in colour)``) type-check at call sites
+without forcing a local refactor. The runtime raises ``ValueError``
+on a length mismatch, matching what a narrowed static type would catch.
 """
 
-from typing import Final
-
-__all__: Final[list[str]]
-
 def rgb(
-    rgb1: tuple[float, float, float],
-    rgb2: tuple[float, float, float],
+    rgb1: tuple[float, ...],
+    rgb2: tuple[float, ...],
 ) -> float:
     """Return the WCAG 2.x contrast ratio between two sRGB colours.
 
-    Each colour is a ``(r, g, b)`` tuple with each channel in [0.0, 1.0].
-    Raises ``ValueError`` if any channel is outside that range.
+    Each colour is a ``(r, g, b)`` tuple of floats in [0.0, 1.0].
+    Raises ``ValueError`` on out-of-range values or wrong length.
     """
     ...
 

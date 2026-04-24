@@ -103,6 +103,7 @@ test_*.py
 !auto_a11y/testing/test_*.py
 !auto_a11y/testing/touchpoint_tests/test_*.py
 !tests/test_*.py
+!tests/pdf/test_*.py
 verify_*.py
 adapt_*.py
 

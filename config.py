@@ -131,6 +131,14 @@ class Config:
     GOOGLE_CLIENT_SECRET: str = os.getenv('GOOGLE_CLIENT_SECRET', '')
     GOOGLE_REDIRECT_PATH: str = '/auth/google/callback'
 
+    # PDF audit engine (see docs/superpowers/specs/2026-04-24-pdf-audit-engine-port-design.md)
+    PDF_STORAGE_DIR: str = os.getenv('PDF_STORAGE_DIR', 'data/pdfs')
+    PDF_MAX_SIZE_MB: int = int(os.getenv('PDF_MAX_SIZE_MB', 100))
+    PDF_DOWNLOAD_TIMEOUT_SECONDS: int = int(os.getenv('PDF_DOWNLOAD_TIMEOUT_SECONDS', 60))
+    PDF_AUDIT_MAX_PARALLEL: int = int(os.getenv('PDF_AUDIT_MAX_PARALLEL', 2))
+    # Ghostscript binary path — None means auto-detect on PATH; empty env var treated as unset
+    GHOSTSCRIPT_PATH: str | None = os.getenv('GHOSTSCRIPT_PATH') or None
+
     # Paths
     SCRIPTS_DIR: Path = SCRIPTS_DIR
     DATA_DIR: Path = DATA_DIR

@@ -609,9 +609,11 @@ class GhostscriptMissing(PdfError):
 
     def __init__(self, searched: list[str]) -> None:
         self.searched = searched
+        # Use explicit `+` concatenation instead of adjacent f-strings
+        # to satisfy pyright's reportImplicitStringConcatenation = error.
         super().__init__(
             f"Ghostscript not found on PATH (searched: {', '.join(searched)}). "
-            f"Install Ghostscript or set GHOSTSCRIPT_PATH in config."
+            + "Install Ghostscript or set GHOSTSCRIPT_PATH in config."
         )
 
 

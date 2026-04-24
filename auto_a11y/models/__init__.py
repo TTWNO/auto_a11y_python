@@ -5,7 +5,7 @@ Database models for Auto A11y Python
 from .project import Project, ProjectStatus, ProjectType, LivedExperienceTester, TestSupervisor
 from .website import Website, ScrapingConfig
 from .page import Page, PageStatus, DrupalSyncStatus
-from .test_result import TestResult, Violation, AIFinding, ImpactLevel
+from .test_result import TestResult, Violation, AIFinding, ImpactLevel, TargetType
 from .document_reference import DocumentReference, DocumentType
 from .pdf_document import PdfDocument, PdfDocumentStatus
 from .discovery_run import DiscoveryRun, DiscoveryStatus
@@ -37,7 +37,7 @@ __all__ = [
     'Project', 'ProjectStatus', 'ProjectType', 'LivedExperienceTester', 'TestSupervisor',
     'Website', 'ScrapingConfig',
     'Page', 'PageStatus', 'DrupalSyncStatus',
-    'TestResult', 'Violation', 'AIFinding', 'ImpactLevel',
+    'TestResult', 'Violation', 'AIFinding', 'ImpactLevel', 'TargetType',
     'DocumentReference', 'DocumentType',
     'PdfDocument', 'PdfDocumentStatus',
     'DiscoveryRun', 'DiscoveryStatus',

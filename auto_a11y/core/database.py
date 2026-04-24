@@ -803,8 +803,8 @@ class Database:
             result = self.test_results.insert_one(error_result)
             test_result.mongo_id = result.inserted_id
 
-        # Update page with latest test info
-        page = self.get_page(test_result.page_id)
+        # Update page with latest test info (only for page-targeted results)
+        page = self.get_page(test_result.page_id) if test_result.page_id else None
         if page:
             page.last_tested = test_result.test_date
             page.status = PageStatus.TESTED

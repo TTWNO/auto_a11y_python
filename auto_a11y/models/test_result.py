@@ -18,6 +18,18 @@ class ImpactLevel(Enum):
     HIGH = "high"
 
 
+class TargetType(Enum):
+    """What a TestResult is a result *of*.
+
+    A result is polymorphic: it can belong to either a Page (HTML page
+    tested in the browser) or a PdfDocument (PDF artefact audited by
+    the PDF engine). The `target_id` points at whichever collection
+    matches `target_type`.
+    """
+    PAGE = "page"
+    PDF_DOCUMENT = "pdf_document"
+
+
 @dataclass
 class Violation:
     """
@@ -198,9 +210,19 @@ class AIFinding:
 
 @dataclass
 class TestResult:
-    """Complete test result for a page"""
+    """Complete test result for a page or PDF document.
 
-    page_id: str
+    Polymorphic via `target_type` / `target_id`: a result belongs either to
+    a Page (target_type=PAGE) or a PdfDocument (target_type=PDF_DOCUMENT).
+    `page_id` is retained as the historical pointer for page-targeted
+    results; for PDF-targeted results it will be None. New callers should
+    set `target_type` and `target_id` explicitly; old records without those
+    fields are read as page-targeted and `target_id` is inferred from
+    `page_id`.
+    """
+
+    page_id: str | None = None
+    website_id: str | None = None
     test_date: datetime = field(default_factory=datetime.now)
     duration_ms: int = 0
     violations: list[Violation] = field(default_factory=lambda: [])  # Errors (_Err)
@@ -221,7 +243,21 @@ class TestResult:
     session_id: str | None = None  # Reference to script_execution_sessions
     related_result_ids: list[str] = field(default_factory=lambda: [])  # Other results for same page/session
 
+    # Polymorphic target (Page vs PdfDocument)
+    target_type: TargetType = TargetType.PAGE
+    target_id: str = ""  # filled by __post_init__ from page_id when page-targeted
+
     _id: ObjectId | None = None
+
+    def __post_init__(self) -> None:
+        """Back-fill target_id for page-targeted results, guard PDF target_id."""
+        if self.target_type is TargetType.PAGE and not self.target_id and self.page_id:
+            self.target_id = self.page_id
+        # Explicit runtime guard: a PDF-targeted result must have an id.
+        if self.target_type is TargetType.PDF_DOCUMENT and not self.target_id:
+            raise ValueError(
+                "TestResult with target_type=PDF_DOCUMENT requires target_id"
+            )
 
     @property
     def id(self) -> str | None:
@@ -282,6 +318,7 @@ class TestResult:
         """Convert to dictionary for MongoDB"""
         data: dict[str, Any] = {
             'page_id': self.page_id,
+            'website_id': self.website_id,
             'test_date': self.test_date,
             'duration_ms': self.duration_ms,
             'violations': [v.to_dict() for v in self.violations],
@@ -299,7 +336,10 @@ class TestResult:
             'page_state': self.page_state,
             'state_sequence': self.state_sequence,
             'session_id': self.session_id,
-            'related_result_ids': self.related_result_ids
+            'related_result_ids': self.related_result_ids,
+            # Polymorphic target fields
+            'target_type': self.target_type.value,
+            'target_id': self.target_id,
         }
         if self._id:
             data['_id'] = self._id
@@ -309,7 +349,8 @@ class TestResult:
     def from_dict(cls, data: dict[str, Any]) -> TestResult:
         """Create from MongoDB document"""
         return cls(
-            page_id=data['page_id'],
+            page_id=data.get('page_id'),
+            website_id=data.get('website_id'),
             test_date=data.get('test_date', datetime.now()),
             duration_ms=data.get('duration_ms', 0),
             violations=[Violation.from_dict(v) for v in data.get('violations', [])],
@@ -328,5 +369,8 @@ class TestResult:
             state_sequence=data.get('state_sequence', 0),
             session_id=data.get('session_id'),
             related_result_ids=data.get('related_result_ids', []),
+            # Polymorphic target fields (back-compat: infer from page_id)
+            target_type=TargetType(data['target_type']) if 'target_type' in data else TargetType.PAGE,
+            target_id=data.get('target_id', data.get('page_id', '')),
             _id=data.get('_id')
         )

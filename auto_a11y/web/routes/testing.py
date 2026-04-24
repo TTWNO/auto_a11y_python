@@ -101,6 +101,9 @@ def get_recent_results_with_context(db: Database, project_id: str | None = None,
     # Now filter results based on project_id/website_id if specified
     filtered_results: list[dict[str, Any]] = []
     for result in results:
+        if not result.page_id:
+            # PDF-targeted result (no linked Page); skip this page-centric listing.
+            continue
         r_page = pages_map.get(result.page_id)
         if not r_page:
             continue
@@ -1072,8 +1075,8 @@ def view_result(result_id: str) -> str | tuple[Response, int]:
     if not result:
         return jsonify({'error': 'Test result not found'}), 404
     
-    # Get related page and website info
-    page = get_db().get_page(result.page_id)
+    # Get related page and website info (page may be None for PDF-targeted results)
+    page = get_db().get_page(result.page_id) if result.page_id else None
     website = get_db().get_website(page.website_id) if page else None
     project = get_db().get_project(website.project_id) if website else None
     

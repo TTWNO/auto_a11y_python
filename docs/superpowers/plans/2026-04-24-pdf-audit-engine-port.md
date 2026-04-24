@@ -82,14 +82,8 @@
 | `auto_a11y/web/translations/fr/pdf-errors.ftl` | User-facing error messages |
 | `auto_a11y/web/translations/en/pdf-status.ftl` | `PdfDocumentStatus` + `PageStatus.IS_PDF` labels |
 | `auto_a11y/web/translations/fr/pdf-status.ftl` | Status labels |
-| `stubs/pdfminer/__init__.pyi` | Hand-written stubs |
-| `stubs/pdfminer/high_level.pyi` | Stubs for `extract_pages` |
-| `stubs/pdfminer/layout.pyi` | Stubs for `LTChar`, `LTPage`, `LTTextContainer`, `LAParams` |
-| `stubs/pdfminer/pdfparser.pyi` | Stubs for parser symbols actually imported |
-| `stubs/pdfminer/pdfpage.pyi` | Stubs for `PDFPage` symbols |
-| `stubs/pdfminer/pdftypes.pyi` | Stubs for `resolve1`, `PDFObjRef` |
-| `stubs/pdfminer/converter.pyi` | Stubs for converter symbols (if imported) |
 | `stubs/wcag_contrast_ratio/__init__.pyi` | Stubs |
+| *(no `stubs/pdfminer/`)* | pdfminer.six ships `py.typed` from 20231228+ — use upstream types directly. |
 | `fixture_generation/pdf/__init__.py` | Package marker |
 | `fixture_generation/pdf/generate_pdf_fixtures.py` | CLI entry + registry |
 | `fixture_generation/pdf/builders.py` | Shared PDF-construction helpers |
@@ -152,8 +146,8 @@
 
 | File | What Changes |
 |------|--------------|
-| `requirements.txt` | Add `pikepdf`, `pdfminer.six`, `Pillow`, `wcag-contrast-ratio`, `PyYAML`, `types-PyYAML`; remove `pypdf2` after verification |
-| `pyproject.toml` (`[tool.mypy]` `files`) | Add `stubs/pdfminer`, `stubs/wcag_contrast_ratio` already covered (stubs/ included); add `fixture_generation/pdf` and `scripts/port_pdfmax_remediation_guide.py` |
+| `requirements.txt` | Add `pikepdf`, `pdfminer.six`, `Pillow`, `wcag-contrast-ratio`, `PyYAML`, `types-PyYAML`, `markdown-it-py`; remove `pypdf2` after verification |
+| `pyproject.toml` (`[tool.mypy]` `files`) | `stubs/wcag_contrast_ratio/` covered via existing `stubs/` include; add `fixture_generation/pdf` and `scripts/port_pdfmax_remediation_guide.py` |
 | `pyproject.toml` (`[tool.pyright]` `include`) | Same additions |
 | `pyproject.toml` (`[tool.ty.src]` `exclude`) | Remove the blanket `fixture_generation/` exclude and the `scripts/` exclude, replace with narrower excludes preserving current behaviour while opting `fixture_generation/pdf/` and `scripts/port_pdfmax_remediation_guide.py` in |
 | `config.py` | Add `PDF_STORAGE_DIR`, `PDF_MAX_SIZE_MB`, `PDF_DOWNLOAD_TIMEOUT_SECONDS`, `PDF_AUDIT_MAX_PARALLEL`, `GHOSTSCRIPT_PATH` |
@@ -324,156 +318,25 @@ Expected: `ok`. If any fails: investigate before proceeding.
 
 The CLAUDE.md rule is: any new dep without `py.typed` must have its stubs committed *in the same commit*. Pooling deps + stubs into one commit requires Task 1.2 to complete first.
 
-## Task 1.2: Write stubs for `pdfminer.six` and `wcag-contrast-ratio`
+## Task 1.2: Write stubs for `wcag-contrast-ratio`
 
-**Rationale:** `pdfminer.six` and `wcag-contrast-ratio` have no `py.typed`, no `types-*` package. CLAUDE.md requires hand-written stubs for every symbol we import.
+**Rationale:** `wcag-contrast-ratio` has no `py.typed`, no `types-*` package. CLAUDE.md requires hand-written stubs for every symbol we import. `pdfminer.six` was *previously thought* to need stubs, but verification showed it ships `py.typed` from version 20231228 onwards — shadowing the upstream types would be strictly worse, so no pdfminer stubs are written.
 
 **Files:**
-- Create: `stubs/pdfminer/__init__.pyi`
-- Create: `stubs/pdfminer/high_level.pyi`
-- Create: `stubs/pdfminer/layout.pyi`
-- Create: `stubs/pdfminer/pdfparser.pyi`
-- Create: `stubs/pdfminer/pdfpage.pyi`
-- Create: `stubs/pdfminer/pdftypes.pyi`
-- Create: `stubs/pdfminer/converter.pyi`
 - Create: `stubs/wcag_contrast_ratio/__init__.pyi`
 
-- [ ] **Step 1.2.1: Identify the symbols pdfMax actually imports**
+> **Correction note:** the earlier draft of this plan called for hand stubs in `stubs/pdfminer/`. Verification during implementation showed pdfminer.six ships `py.typed` from version 20231228 onwards, so local stubs would shadow (and degrade) the upstream types. No pdfminer stubs are written. The steps below pertain to the wcag_contrast_ratio stub only.
 
-Before writing stubs, enumerate symbols. Run:
+- [ ] **Step 1.2.1: Identify the symbols pdfMax actually imports (wcag_contrast_ratio only)**
 
 ```bash
-grep -hE "^from pdfminer|^import pdfminer|from pdfminer\." \
-  ../pdfMax/python/checker/pdf_accessibility_audit.py | sort -u
 grep -hE "^from wcag_contrast_ratio|^import wcag_contrast" \
   ../pdfMax/python/checker/pdf_accessibility_audit.py | sort -u
 ```
 
-Record the full list. The stubs must expose every imported symbol (and every attribute accessed on those symbols) with precise types — no `Any`.
+The stubs must expose every imported symbol with precise types — no `Any`.
 
-- [ ] **Step 1.2.2: Create `stubs/pdfminer/__init__.pyi`**
-
-Empty-namespace package marker:
-
-```python
-# Hand-written stub — pdfminer.six does not ship py.typed.
-# This stub covers only the symbols imported by auto_a11y/pdf/.
-# New imports require extending this stub (no # type: ignore).
-```
-
-- [ ] **Step 1.2.3: Create `stubs/pdfminer/high_level.pyi`**
-
-Cover `extract_pages` and any other high-level function imported:
-
-```python
-from collections.abc import Iterator
-from pathlib import Path
-from typing import IO, Any
-
-from pdfminer.layout import LAParams, LTPage
-
-
-def extract_pages(
-    pdf_file: str | Path | IO[bytes],
-    password: str = ...,
-    page_numbers: list[int] | None = ...,
-    maxpages: int = ...,
-    caching: bool = ...,
-    laparams: LAParams | None = ...,
-) -> Iterator[LTPage]: ...
-```
-
-- [ ] **Step 1.2.4: Create `stubs/pdfminer/layout.pyi`**
-
-Cover the layout-class hierarchy. Because pdfMax uses `LTChar`, `LTTextContainer`, `LTPage`, `LTFigure`, etc., and inspects attributes (`.fontname`, `.size`, `.matrix`, `.x0`, `.y0`, `.x1`, `.y1`, `.bbox`, `.get_text()`), each attribute must be typed explicitly.
-
-Provide class definitions following this shape (exact members determined by pdfMax usage):
-
-```python
-from collections.abc import Iterator
-from typing import Protocol
-
-
-class LAParams:
-    def __init__(
-        self,
-        line_overlap: float = ...,
-        char_margin: float = ...,
-        line_margin: float = ...,
-        word_margin: float = ...,
-        boxes_flow: float | None = ...,
-        detect_vertical: bool = ...,
-        all_texts: bool = ...,
-    ) -> None: ...
-
-
-class LTItem:
-    x0: float
-    y0: float
-    x1: float
-    y1: float
-    width: float
-    height: float
-    bbox: tuple[float, float, float, float]
-
-
-class LTComponent(LTItem): ...
-
-
-class LTCurve(LTComponent): ...
-
-
-class LTLine(LTCurve): ...
-
-
-class LTRect(LTCurve): ...
-
-
-class LTChar(LTComponent):
-    fontname: str
-    size: float
-    matrix: tuple[float, float, float, float, float, float]
-    graphicstate: object  # opaque; not subscripted in pdfMax code
-    def get_text(self) -> str: ...
-
-
-class LTAnno(LTItem):
-    def get_text(self) -> str: ...
-
-
-class LTTextContainer(LTComponent):
-    def __iter__(self) -> Iterator[LTChar | LTAnno]: ...
-    def get_text(self) -> str: ...
-
-
-class LTTextLine(LTTextContainer): ...
-
-
-class LTTextBox(LTTextContainer): ...
-
-
-class LTFigure(LTComponent):
-    def __iter__(self) -> Iterator[LTComponent]: ...
-
-
-class LTImage(LTComponent):
-    name: str
-    stream: object
-
-
-class LTPage(LTComponent):
-    pageid: int
-    rotate: int
-    def __iter__(self) -> Iterator[LTComponent]: ...
-```
-
-(Exact signatures derived from pdfMax imports; add further members as Phase 3's code requires them.)
-
-- [ ] **Step 1.2.5: Create remaining `stubs/pdfminer/*.pyi`**
-
-Same pattern for `pdfparser.pyi`, `pdfpage.pyi`, `pdftypes.pyi`, `converter.pyi` — **one symbol per imported-via-grep hit, no more**. If Phase 3 discovers a missing symbol, it extends the stub in the same commit as the new `import`.
-
-- [ ] **Step 1.2.6: Create `stubs/wcag_contrast_ratio/__init__.pyi`**
+- [ ] **Step 1.2.2: Create `stubs/wcag_contrast_ratio/__init__.pyi`**
 
 Tiny library; full shape:
 

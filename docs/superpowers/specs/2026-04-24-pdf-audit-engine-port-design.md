@@ -131,8 +131,8 @@ auto_a11y/web/
     target.py                  # TestTargetView dataclass
 
 stubs/
-  pdfminer/                    # hand-written .pyi stubs (exhaustive, no Any)
   wcag_contrast_ratio/         # hand-written .pyi stub
+  # (pdfminer.six ships py.typed from 20231228+ — no local stubs needed)
 
 Fixtures/PDF/
   DocumentProperties/Err_<Code>/{fail.pdf, fail.meta.yaml, pass.pdf, pass.meta.yaml}
@@ -713,7 +713,7 @@ Added to `tests/validate_translations.py` (or an equivalent):
 
 ```
 pikepdf>=10.3.0            # PDF reading, structure tree
-pdfminer.six>=20260107     # text extraction, content streams, font analysis
+pdfminer.six>=20231228     # text extraction, content streams, font analysis (ships py.typed)
 Pillow>=12.1.1             # image extraction
 wcag-contrast-ratio>=0.9   # WCAG contrast
 PyYAML>=6.0                # fixture sidecar metadata (confirm already present)
@@ -727,7 +727,7 @@ Removed:
 | Package | `py.typed` | Stubs action |
 |---|---|---|
 | `pikepdf` | Yes | Use directly; local patch stub only if strict-mode walls appear |
-| `pdfminer.six` | No | **Hand-written `stubs/pdfminer/`**, exhaustive, no `Any` |
+| `pdfminer.six` | **Yes** (from 20231228 onwards) | Use directly; **do not** shadow the upstream types with local stubs. Stubs only if an upstream typing bug blocks progress. |
 | `Pillow` | Yes | Use directly |
 | `wcag-contrast-ratio` | No | **Hand-written `stubs/wcag_contrast_ratio/__init__.pyi`** |
 | `PyYAML` | No | Add `types-PyYAML` to dev deps |
@@ -756,7 +756,7 @@ Acceptance criterion: no `# type: ignore`, no `cast(Any, ...)`, no `-> Any`, no 
 `pyproject.toml` updated consistently in all three `[tool.mypy]`, `[tool.pyright]`, `[tool.ty]` sections:
 
 - Adds `auto_a11y/pdf/**`
-- Adds `stubs/pdfminer/**`, `stubs/wcag_contrast_ratio/**`
+- Adds `stubs/wcag_contrast_ratio/**` (pdfminer.six ships py.typed, so no pdfminer stubs)
 - Adds `fixture_generation/pdf/**` (the other `fixture_generation/` subtrees stay excluded)
 - Adds `scripts/port_pdfmax_remediation_guide.py`
 

@@ -83,7 +83,6 @@ pyflakes==3.4.0
 pygments==2.19.2
 pyjwt==2.12.1
 pymongo==4.16.0
-pypdf2==3.0.1
 pyphen==0.17.2
 pytest==9.0.2
 pytest-asyncio==1.3.0

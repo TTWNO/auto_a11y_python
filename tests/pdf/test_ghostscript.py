@@ -9,6 +9,7 @@ import pytest
 from auto_a11y.pdf.audit.ghostscript import (
     detect_ghostscript,
     invalidate_detection_cache,
+    render_page_to_png,
 )
 from auto_a11y.pdf.errors import GhostscriptMissing
 
@@ -40,3 +41,18 @@ def test_detect_ghostscript_honours_config_override(tmp_path: Path) -> None:
     fake_gs.chmod(0o755)
     path = detect_ghostscript(override=str(fake_gs))
     assert path == str(fake_gs)
+
+
+def test_render_logs_stderr_on_failure(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Ghostscript failures should log stderr for diagnosis."""
+    import logging
+    bad_pdf = tmp_path / "not.pdf"
+    bad_pdf.write_bytes(b"not a pdf")
+    with caplog.at_level(logging.WARNING, logger='auto_a11y.pdf.audit.ghostscript'):
+        result = render_page_to_png(bad_pdf, page_num=0, timeout_seconds=5)
+    assert result is None
+    # Either gs failed (rc != 0) or the input was rejected; in either case we expect a warning
+    assert any('Ghostscript failed' in rec.message or 'timed out' in rec.message
+               for rec in caplog.records)

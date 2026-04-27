@@ -5,13 +5,15 @@ that need a raster image of a page go through `render_page_to_png`.
 """
 from __future__ import annotations
 
+import logging
 import shutil
 import subprocess
-import sys
 import tempfile
 from pathlib import Path
 
 from auto_a11y.pdf.errors import GhostscriptMissing
+
+logger = logging.getLogger(__name__)
 
 _GS_SEARCH_NAMES = ['gs', 'gswin64c', 'gswin32c']
 _cached_path: str | None = None
@@ -112,13 +114,17 @@ def render_page_to_png(
             timeout=timeout_seconds,
         )
         if result.returncode != 0 or not tmp_path.exists():
+            stderr_excerpt = result.stderr.decode('utf-8', errors='replace')[:500]
+            logger.warning(
+                "Ghostscript failed (rc=%s) on %s p%d: %s",
+                result.returncode, pdf_path, page_num, stderr_excerpt,
+            )
             return None
         return tmp_path.read_bytes()
     except subprocess.TimeoutExpired:
-        print(f"Warning: Ghostscript timed out on page {page_num}", file=sys.stderr)
+        logger.warning("Ghostscript timed out on page %d", page_num)
         return None
     except FileNotFoundError:
         raise GhostscriptMissing(searched=[gs_path])
     finally:
-        if tmp_path.exists():
-            tmp_path.unlink()
+        tmp_path.unlink(missing_ok=True)

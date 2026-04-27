@@ -147,3 +147,31 @@ def test_from_dict_raises_on_unknown_source_type() -> None:
     data['source_type'] = 'crawled'
     with pytest.raises(ValueError, match="source_type"):
         PdfDocument.from_dict(data)
+
+
+def test_pdf_document_rejects_windows_relpath() -> None:
+    """storage_relpath must be POSIX-style."""
+    with pytest.raises(ValueError, match="POSIX"):
+        PdfDocument(
+            website_id='w1',
+            project_id='p1',
+            source_url=None,
+            source_type='uploaded',
+            discovered_from_page_id=None,
+            discovered_from_user_id='u1',
+            sha256='a' * 64,
+            file_size_bytes=1024,
+            storage_relpath='w1\\xxx\\pdf.pdf',  # Windows-style — must be rejected
+            images_relpath='w1/xxx/images/',
+            original_filename='x.pdf',
+            pdf_version=None,
+            page_count=None,
+            declared_lang=None,
+            detected_lang=None,
+            lang_confidence=None,
+            status=PdfDocumentStatus.PENDING,
+            error_reason=None,
+            last_audit_result_id=None,
+            discovered_at=datetime.now(),
+            last_audited_at=None,
+        )

@@ -55,6 +55,16 @@ class PdfDocument:
 
     _id: ObjectId | None = None
 
+    def __post_init__(self) -> None:
+        if '\\' in self.storage_relpath:
+            raise ValueError(
+                f"PdfDocument.storage_relpath must use POSIX '/' separators, got: {self.storage_relpath!r}"
+            )
+        if '\\' in self.images_relpath:
+            raise ValueError(
+                f"PdfDocument.images_relpath must use POSIX '/' separators, got: {self.images_relpath!r}"
+            )
+
     @property
     def id(self) -> str | None:
         """Get PDF document ID as string."""

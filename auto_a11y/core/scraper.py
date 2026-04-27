@@ -1090,50 +1090,35 @@ class ScrapingEngine:
         return self._detect_language_from_patterns(doc_url, link_text)
     
     async def _detect_pdf_language(self, content: bytes) -> dict[str, Any] | None:
+        """Detect language from PDF metadata via the shared helper.
+
+        Currently only inspects the catalog /Lang field. Word-frequency
+        fallback for PDFs without declared language ports during Phase 3
+        of the PDF audit engine port.
         """
-        Detect language from PDF metadata and content
-        
-        Args:
-            content: PDF file content as bytes
-            
-        Returns:
-            Dictionary with language info or None
-        """
+        from io import BytesIO
+
+        from auto_a11y.pdf.language import detect_pdf_language
+
         try:
-            import PyPDF2
-            
-            pdf_file = BytesIO(content)
-            pdf_reader = PyPDF2.PdfReader(pdf_file)
-            
-            # Check PDF metadata
-            if pdf_reader.metadata:
-                # Check for language in metadata
-                if '/Lang' in pdf_reader.metadata:
-                    lang_code_raw = pdf_reader.metadata['/Lang']
-                    if lang_code_raw:
-                        # Parse language code (e.g., "en-US" -> "en")
-                        lang_code = str(lang_code_raw).split('-')[0].lower()
-                        logger.debug(f"Detected language from PDF metadata: {lang_code}")
-                        return {'language': lang_code, 'confidence': 0.9}
-            
-            # Extract text from first few pages for analysis
-            text_sample = ""
-            max_pages = min(3, len(pdf_reader.pages))
-            for i in range(max_pages):
-                try:
-                    text_sample += pdf_reader.pages[i].extract_text()
-                    if len(text_sample) > 1000:  # Enough text for analysis
-                        break
-                except:
-                    continue
-            
-            if text_sample:
-                return self._analyze_text_language(text_sample)
-                
-        except Exception as e:
-            logger.debug(f"Error detecting PDF language: {e}")
-        
-        return None
+            result = detect_pdf_language(BytesIO(content))
+        except Exception as exc:
+            logger.warning(f"PDF language detection failed: {exc}")
+            return None
+
+        if result.declared_lang is None and result.detected_lang is None:
+            return None
+
+        raw_lang = result.declared_lang or result.detected_lang
+        # Match the existing "en-US" -> "en" normalisation pattern from the
+        # old PyPDF2 path; downstream consumers expect a 2-letter code.
+        lang_code = str(raw_lang).split('-')[0].lower() if raw_lang else None
+
+        return {
+            'language': lang_code,
+            'confidence': result.confidence if result.confidence is not None else (0.9 if result.declared_lang else None),
+            'method': result.method,
+        }
     
     async def _detect_docx_language(self, content: bytes) -> dict[str, Any] | None:
         """

@@ -944,3 +944,23 @@ def compare_test_results() -> tuple[Response, int] | Response:
     except Exception as e:
         logger.error(f"Error comparing test results: {e}")
         return jsonify({'error': f'Failed to compare test results: {str(e)}'}), 500
+
+
+@api_bp.route('/health/pdf', methods=['GET'])
+def pdf_health() -> tuple[Response, int]:
+    """Report PDF-audit subsystem health."""
+    from pathlib import Path
+    from auto_a11y.pdf.health import check_pdf_health
+    from auto_a11y.web.typed_app import get_app_config
+
+    cfg = get_app_config()
+    health = check_pdf_health(
+        gs_override=cfg.GHOSTSCRIPT_PATH,
+        storage_dir=Path(cfg.PDF_STORAGE_DIR),
+    )
+    payload = {
+        "ghostscript": {"found": health.ghostscript.found, "path": health.ghostscript.path},
+        "storage": {"dir": health.storage.dir, "writable": health.storage.writable},
+    }
+    status = 200 if health.ok else 503
+    return jsonify(payload), status

@@ -110,6 +110,13 @@ class PdfDocument:
                 source_type = source_type_raw
             case _:
                 raise ValueError(f"Unknown source_type: {source_type_raw}")
+        # `discovered_at` is a historical timestamp — silently substituting
+        # `datetime.now()` would misrepresent when the artefact was found.
+        discovered_at = data.get('discovered_at')
+        if discovered_at is None:
+            raise ValueError(
+                "PdfDocument record missing required 'discovered_at' field"
+            )
         return cls(
             website_id=data['website_id'],
             project_id=data['project_id'],
@@ -130,7 +137,7 @@ class PdfDocument:
             status=PdfDocumentStatus(data['status']),
             error_reason=data.get('error_reason'),
             last_audit_result_id=data.get('last_audit_result_id'),
-            discovered_at=data.get('discovered_at', datetime.now()),
+            discovered_at=discovered_at,
             last_audited_at=data.get('last_audited_at'),
             _id=data.get('_id'),
         )

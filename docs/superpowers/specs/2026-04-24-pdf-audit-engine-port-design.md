@@ -229,7 +229,8 @@ class TargetType(Enum):
 class TestResult:
     target_type: TargetType           # default PAGE for back-compat reads
     target_id: str                    # _id of the target
-    page_id: str | None               # retained; equals target_id iff target_type=PAGE
+    page_id: str | None               # None when target_type=PDF_DOCUMENT; equals target_id when target_type=PAGE
+    website_id: str | None            # denormalised website pointer used for PDF-targeted results that have no Page
     # ... all existing fields unchanged
 ```
 

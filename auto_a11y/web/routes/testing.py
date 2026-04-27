@@ -172,6 +172,9 @@ def get_trend_data(db: Database, project_id: str | None = None, website_id: str 
     date_to_index = {d['date']: i for i, d in enumerate(trend_data)}
 
     for result in results:
+        if not result.page_id:
+            # PDF-targeted result (no linked Page); skip this page-centric trend.
+            continue
         if result.test_date < start_date:
             continue
         if page_ids and result.page_id not in page_ids:

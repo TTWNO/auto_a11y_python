@@ -250,7 +250,11 @@ class TestResult:
     _id: ObjectId | None = None
 
     def __post_init__(self) -> None:
-        """Back-fill target_id for page-targeted results, guard PDF target_id."""
+        """Back-fill target_id for page-targeted results, guard target invariants."""
+        # PAGE-targeted results must carry a page_id. Enforce before the
+        # back-fill below so the invariant holds regardless of target_id.
+        if self.target_type is TargetType.PAGE and self.page_id is None:
+            raise ValueError("PAGE-targeted TestResult requires page_id")
         if self.target_type is TargetType.PAGE and not self.target_id and self.page_id:
             self.target_id = self.page_id
         # Explicit runtime guard: a PDF-targeted result must have an id.

@@ -102,3 +102,48 @@ def test_pdf_document_id_property_from_objectid() -> None:
 @pytest.mark.parametrize("status", list(PdfDocumentStatus))
 def test_status_enum_round_trips(status: PdfDocumentStatus) -> None:
     assert PdfDocumentStatus(status.value) is status
+
+
+def _minimal_dict() -> dict[str, object]:
+    """Return a minimum-viable dict that PdfDocument.from_dict accepts."""
+    return {
+        'website_id': 'w1',
+        'project_id': 'p1',
+        'source_url': None,
+        'source_type': 'uploaded',
+        'discovered_from_page_id': None,
+        'discovered_from_user_id': 'u1',
+        'sha256': 'd' * 64,
+        'file_size_bytes': 1,
+        'storage_relpath': 'w1/d1/pdf.pdf',
+        'images_relpath': 'w1/d1/images/',
+        'original_filename': 'x.pdf',
+        'pdf_version': None,
+        'page_count': None,
+        'declared_lang': None,
+        'detected_lang': None,
+        'lang_confidence': None,
+        'status': 'pending',
+        'error_reason': None,
+        'last_audit_result_id': None,
+        'discovered_at': datetime(2026, 4, 24, 12, 0, 0),
+        'last_audited_at': None,
+    }
+
+
+def test_from_dict_raises_on_missing_discovered_at() -> None:
+    """Silently substituting datetime.now() for a missing discovery timestamp
+    would misrepresent history; from_dict must refuse the record instead."""
+    data = _minimal_dict()
+    del data['discovered_at']
+    with pytest.raises(ValueError, match="discovered_at"):
+        PdfDocument.from_dict(data)
+
+
+def test_from_dict_raises_on_unknown_source_type() -> None:
+    """Unknown source_type must fail loudly so the SourceType Literal contract
+    cannot drift via stale records or typos."""
+    data = _minimal_dict()
+    data['source_type'] = 'crawled'
+    with pytest.raises(ValueError, match="source_type"):
+        PdfDocument.from_dict(data)

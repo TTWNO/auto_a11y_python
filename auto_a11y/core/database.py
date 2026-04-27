@@ -25,6 +25,7 @@ from auto_a11y.models import (
     TestSchedule, ScheduleRunStatus,
     ShareToken, TokenScope
 )
+from auto_a11y.models.pdf_document import PdfDocument, PdfDocumentStatus
 from auto_a11y.models.permission_group import PermissionGroup
 
 logger = logging.getLogger(__name__)
@@ -71,6 +72,7 @@ class Database:
         self.share_tokens: Collection[dict[str, Any]] = self.db.share_tokens  # Public share tokens
         self.groups: Collection[dict[str, Any]] = self.db['groups']  # Permission groups
         self.issues: Collection[dict[str, Any]] = self.db.issues  # Issues for Drupal sync
+        self.pdf_documents: Collection[dict[str, Any]] = self.db.pdf_documents  # Downloaded auditable PDFs
 
         # Create indexes
         self._create_indexes()
@@ -215,6 +217,16 @@ class Database:
         # Share tokens (public share links)
         self.share_tokens.create_index("token_hash", unique=True)
         self.share_tokens.create_index([("scope", 1), ("scope_id", 1)])
+
+        # PDF documents (downloaded auditable PDF artefacts)
+        self.pdf_documents.create_index(
+            [("website_id", 1), ("sha256", 1)],
+            unique=True,
+            name="pdf_documents_website_sha_unique",
+        )
+        self.pdf_documents.create_index([("project_id", 1), ("discovered_at", -1)])
+        self.pdf_documents.create_index([("website_id", 1), ("discovered_at", -1)])
+        self.pdf_documents.create_index("status")
 
     def test_connection(self) -> bool:
         """Test database connection"""
@@ -380,13 +392,18 @@ class Database:
         website = self.get_website(website_id)
         if not website:
             return False
-        
+
         # Delete related pages and test results
         pages = self.get_pages(website_id)
         for page in pages:
             if page.id:
                 self.delete_page(page.id)
-        
+
+        # Cascade: delete pdf_documents (and their test_results) for this website
+        for pdf in self.get_pdf_documents(website_id=website_id, limit=10000):
+            if pdf.id:
+                self.delete_pdf_document(pdf.id)
+
         # Remove from project's website list
         self.projects.update_one(
             {"_id": ObjectId(website.project_id)},
@@ -1448,7 +1465,82 @@ class Database:
         """Delete all document references for a website"""
         result = self.document_references.delete_many({'website_id': website_id})
         return result.deleted_count > 0
-    
+
+    # PDF document methods
+
+    def create_pdf_document(self, doc: PdfDocument) -> str:
+        """Insert a new PdfDocument and return its string id."""
+        data = doc.to_dict()
+        data.pop('_id', None)
+        result = self.pdf_documents.insert_one(data)
+        return str(result.inserted_id)
+
+    def get_pdf_document(self, pdf_document_id: str) -> PdfDocument | None:
+        """Get a PdfDocument by id, or None if not found / id invalid."""
+        try:
+            obj_id = ObjectId(pdf_document_id)
+        except Exception:
+            return None
+        doc = self.pdf_documents.find_one({"_id": obj_id})
+        return PdfDocument.from_dict(doc) if doc else None
+
+    def update_pdf_document(self, doc: PdfDocument) -> bool:
+        """Update an existing PdfDocument; raises ValueError if it has no _id."""
+        mongo_id = doc.mongo_id
+        if mongo_id is None:
+            raise ValueError("Cannot update a PdfDocument without _id")
+        data = doc.to_dict()
+        data.pop('_id', None)
+        result = self.pdf_documents.update_one({"_id": mongo_id}, {"$set": data})
+        return result.modified_count > 0
+
+    def delete_pdf_document(self, pdf_document_id: str) -> bool:
+        """Delete a PdfDocument and its associated test_results."""
+        try:
+            obj_id = ObjectId(pdf_document_id)
+        except Exception:
+            return False
+        # Cascade: delete associated test results first
+        self.test_results.delete_many(
+            {"target_type": "pdf_document", "target_id": pdf_document_id}
+        )
+        result = self.pdf_documents.delete_one({"_id": obj_id})
+        return result.deleted_count > 0
+
+    def find_pdf_document_by_sha256(
+        self, website_id: str, sha256: str
+    ) -> PdfDocument | None:
+        """Find a PdfDocument by (website_id, sha256), the dedup key."""
+        doc = self.pdf_documents.find_one(
+            {"website_id": website_id, "sha256": sha256}
+        )
+        return PdfDocument.from_dict(doc) if doc else None
+
+    def get_pdf_documents(
+        self,
+        *,
+        website_id: str | None = None,
+        project_id: str | None = None,
+        status: PdfDocumentStatus | None = None,
+        limit: int = 100,
+        skip: int = 0,
+    ) -> list[PdfDocument]:
+        """List PdfDocuments with optional filters, newest discovery first."""
+        query: dict[str, object] = {}
+        if website_id is not None:
+            query['website_id'] = website_id
+        if project_id is not None:
+            query['project_id'] = project_id
+        if status is not None:
+            query['status'] = status.value
+        docs = (
+            self.pdf_documents.find(query)
+            .sort("discovered_at", -1)
+            .skip(skip)
+            .limit(limit)
+        )
+        return [PdfDocument.from_dict(d) for d in docs]
+
     # Discovery Run methods
     def create_discovery_run(self, discovery_run: DiscoveryRun) -> str:
         """Create a new discovery run"""

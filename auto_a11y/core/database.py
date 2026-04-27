@@ -741,6 +741,13 @@ class Database:
         # Create summary document (counts only, no arrays)
         summary = {
             'page_id': test_result.page_id,
+            # Polymorphic target. Persisting both fields lets the cascade
+            # delete in :meth:`delete_pdf_document` find PDF-targeted
+            # results, and lets :meth:`TestResult.from_dict` reconstruct
+            # the polymorphism when reading the record back.
+            'target_type': test_result.target_type.value,
+            'target_id': test_result.target_id,
+            'website_id': test_result.website_id,
             'test_date': test_result.test_date,
             'duration_ms': test_result.duration_ms,
 
@@ -791,8 +798,11 @@ class Database:
             logger.error(f"Error creating test result for page {test_result.page_id}: {e}")
 
             # Create minimal error result
-            error_result = {
+            error_result: dict[str, Any] = {
                 'page_id': test_result.page_id,
+                'target_type': test_result.target_type.value,
+                'target_id': test_result.target_id,
+                'website_id': test_result.website_id,
                 'test_date': test_result.test_date,
                 'duration_ms': test_result.duration_ms,
                 'violation_count': 1,
@@ -1469,9 +1479,23 @@ class Database:
     # PDF document methods
 
     def create_pdf_document(self, doc: PdfDocument) -> str:
-        """Insert a new PdfDocument and return its string id."""
+        """Insert a new PdfDocument and return its string id.
+
+        Honors a pre-set ``doc._id`` (via :attr:`PdfDocument.mongo_id`) when
+        the caller has reserved an ``ObjectId`` ahead of insertion. This is
+        the path the :class:`~auto_a11y.testing.pdf_runner.PdfRunner` uses
+        so the on-disk storage layout (which embeds the document id in its
+        path) and the Mongo ``_id`` agree from the very first insert. When
+        no id is reserved, Mongo assigns one and we back-fill it onto the
+        passed-in ``PdfDocument`` so downstream code can read ``doc.id``.
+        """
         data = doc.to_dict()
-        data.pop('_id', None)
+        if doc.mongo_id is None:
+            # ``to_dict`` only adds '_id' when set, so it's already absent.
+            result = self.pdf_documents.insert_one(data)
+            doc.mongo_id = result.inserted_id
+            return str(result.inserted_id)
+        # Pre-allocated id: ``to_dict`` has already embedded it.
         result = self.pdf_documents.insert_one(data)
         return str(result.inserted_id)
 

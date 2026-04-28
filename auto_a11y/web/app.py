@@ -35,7 +35,8 @@ from auto_a11y.web.routes import (
     share_tokens_bp,
     public_bp,
     members_bp,
-    desktop_bp
+    desktop_bp,
+    pdf_bp,
 )
 from auto_a11y.web.routes.demo import demo_bp
 from auto_a11y.web.typed_app import redirect
@@ -155,6 +156,20 @@ def create_app(config: Any) -> Flask:
     from auto_a11y.core.task_runner import task_runner
     task_runner.start()
 
+    # Initialize PDF audit runner (Phase 8.1 / 9.3) — exposed via
+    # ``current_app.pdf_runner`` (see ``typed_app.get_pdf_runner``).
+    from pathlib import Path as _Path
+    from auto_a11y.pdf.storage import PdfStorage as _PdfStorage
+    from auto_a11y.testing.pdf_runner import PdfRunner as _PdfRunner
+    _pdf_storage = _PdfStorage(base_dir=_Path(config.PDF_STORAGE_DIR))
+    setattr(app, 'pdf_runner', _PdfRunner(
+        database=db,
+        storage=_pdf_storage,
+        max_parallel=config.PDF_AUDIT_MAX_PARALLEL,
+        max_size_mb=config.PDF_MAX_SIZE_MB,
+        ghostscript_path_override=config.GHOSTSCRIPT_PATH,
+    ))
+
     # Initialize scheduler for scheduled testing
     if config.SCHEDULER_ENABLED:
         from auto_a11y.core.scheduler import SchedulerService
@@ -177,6 +192,14 @@ def create_app(config: Any) -> Flask:
             task_runner.stop()
         except Exception as e:
             logger.warning(f"Task runner shutdown error: {e}")
+
+        _pdf_runner = getattr(app, 'pdf_runner', None)
+        if _pdf_runner is not None:
+            logger.info("Shutting down PDF runner...")
+            try:
+                _pdf_runner.shutdown()
+            except Exception as e:
+                logger.warning(f"PDF runner shutdown error: {e}")
 
         _scheduler = getattr(app, 'scheduler', None)
         if _scheduler:
@@ -214,6 +237,9 @@ def create_app(config: Any) -> Flask:
     app.register_blueprint(share_tokens_bp, url_prefix='/share-tokens')
     app.register_blueprint(public_bp, url_prefix='')
     app.register_blueprint(members_bp)
+    # PDF routes already include /projects/, /websites/, and /pdfs/
+    # prefixes in their rules — register at the root.
+    app.register_blueprint(pdf_bp, url_prefix='')
 
     from auto_a11y.web.routes.groups import groups_bp
     app.register_blueprint(groups_bp, url_prefix='/groups')

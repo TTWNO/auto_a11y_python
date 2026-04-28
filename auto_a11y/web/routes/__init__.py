@@ -22,6 +22,7 @@ from .share_tokens import share_tokens_bp
 from .public import public_bp
 from .members import members_bp
 from .desktop import desktop_bp
+from .pdf import pdf_bp
 
 __all__ = [
     'projects_bp',
@@ -49,5 +50,6 @@ __all__ = [
     'share_tokens_bp',
     'public_bp',
     'members_bp',
-    'desktop_bp'
+    'desktop_bp',
+    'pdf_bp',
 ]

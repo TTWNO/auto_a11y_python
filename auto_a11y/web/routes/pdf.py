@@ -32,6 +32,7 @@ from flask import (
 from flask_login import current_user, login_required
 from werkzeug.wrappers import Response
 
+from auto_a11y.core.job_manager import JobManager, JobStatus, JobType
 from auto_a11y.models.app_user import UserRole
 from auto_a11y.models.pdf_document import PdfDocument, PdfDocumentStatus
 from auto_a11y.pdf.errors import (
@@ -410,6 +411,78 @@ def audit(pdf_document_id: str) -> Response:
     job.start()
 
     flash(ftl('pdf-audit-queued'), 'success')
+    return redirect(url_for('pdf.detail', pdf_document_id=pdf_document_id))
+
+
+@pdf_bp.route('/pdfs/<pdf_document_id>/cancel', methods=['POST'])
+@login_required
+def cancel(pdf_document_id: str) -> Response:
+    """Cancel an in-progress (or stale) audit and reset the document status.
+
+    Looks up every PDF_AUDIT JobManager record for this document that is
+    still PENDING / RUNNING / CANCELLING and requests cancellation. Then
+    forcibly resets ``PdfDocument.status`` to AUDIT_FAILED with a "cancelled
+    by user" reason — this clears stale AUDITING states left over after a
+    process restart or worker crash, which the regular re-audit button
+    would otherwise refuse to overwrite.
+
+    If the worker thread is still alive, it may complete and overwrite
+    the status to AUDITED — that's fine; the audit succeeded. The point
+    of cancel is to unblock the user, not to forcibly stop a healthy run.
+    """
+    db = get_db()
+    pdf = db.get_pdf_document(pdf_document_id)
+    if pdf is None:
+        flash(
+            ftl('pdf-error-pdf-document-not-found', doc_id=pdf_document_id),
+            'error',
+        )
+        return redirect(url_for('projects.list_projects'))
+
+    denied = _require_pdf_role(pdf, *_WRITE_ROLES)
+    if denied is not None:
+        return denied
+
+    job_manager = JobManager.get_instance(db)
+    user_id_value = (
+        current_user.get_id() if current_user.is_authenticated else None
+    )
+    user_id_str = (
+        str(user_id_value) if user_id_value is not None else 'anonymous'
+    )
+
+    # Find every active PDF_AUDIT job for this document and request
+    # cancellation. JobManager.collection.find returns raw Mongo dicts.
+    active_statuses = [
+        JobStatus.PENDING.value,
+        JobStatus.RUNNING.value,
+        JobStatus.CANCELLING.value,
+    ]
+    cancelled_count = 0
+    for job_doc in job_manager.collection.find({
+        'job_type': JobType.PDF_AUDIT.value,
+        'metadata.pdf_document_id': pdf_document_id,
+        'status': {'$in': active_statuses},
+    }):
+        job_id_value = job_doc.get('job_id')
+        if not isinstance(job_id_value, str):
+            continue
+        if job_manager.request_cancellation(job_id_value, requested_by=user_id_str):
+            cancelled_count += 1
+
+    # Reset the doc itself so the user can re-trigger an audit. We mark
+    # AUDIT_FAILED rather than reverting to PENDING so the failure is
+    # visible in the list view and the operator knows nothing was saved.
+    pdf.status = PdfDocumentStatus.AUDIT_FAILED
+    pdf.error_reason = 'Audit cancelled by user'
+    db.update_pdf_document(pdf)
+
+    logger.info(
+        'PDF audit cancellation requested for doc %s by %s '
+        + '(%d active job record(s) flagged)',
+        pdf_document_id, user_id_str, cancelled_count,
+    )
+    flash(ftl('pdf-audit-cancelled'), 'success')
     return redirect(url_for('pdf.detail', pdf_document_id=pdf_document_id))
 
 

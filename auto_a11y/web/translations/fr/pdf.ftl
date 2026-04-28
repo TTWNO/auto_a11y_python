@@ -122,3 +122,8 @@ pdf-nav-audit-failed = { $count ->
     [one] { $count } failed
    *[other] { $count } failed
 }
+
+# Cancel a stuck or stale audit (TODO_FR)
+pdf-cancel-button = Cancel audit
+pdf-cancel-confirm = Cancel this audit? Any in-progress work will be discarded and the document marked as failed.
+pdf-audit-cancelled = Audit cancelled. You can re-trigger the audit when ready.

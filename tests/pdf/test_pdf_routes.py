@@ -688,6 +688,78 @@ def test_delete_removes_doc_and_redirects(
     mock_db.delete_pdf_document.assert_called_once_with(doc.id)
 
 
+# ---------------------------------------------------------------------------
+# POST /pdfs/<id>/cancel
+# ---------------------------------------------------------------------------
+
+
+def test_cancel_resets_doc_status_and_flags_active_jobs(
+    client: FlaskClient, mock_db: MagicMock
+) -> None:
+    """Cancel flips the doc to AUDIT_FAILED and calls JobManager.request_cancellation
+    for every active PDF_AUDIT job referencing this document."""
+    from auto_a11y.models.pdf_document import PdfDocumentStatus
+
+    doc = _make_doc()
+    doc.status = PdfDocumentStatus.AUDITING
+    mock_db.get_pdf_document.return_value = doc
+
+    job_manager = MagicMock()
+    job_manager.collection.find.return_value = [
+        {'job_id': 'pdf_audit_1'},
+        {'job_id': 'pdf_audit_2'},
+    ]
+    job_manager.request_cancellation.return_value = True
+
+    with patch(
+        'auto_a11y.web.routes.pdf.JobManager.get_instance',
+        return_value=job_manager,
+    ):
+        resp = client.post(f'/pdfs/{doc.id}/cancel')
+
+    assert resp.status_code == 302
+    assert job_manager.request_cancellation.call_count == 2
+    assert doc.status is PdfDocumentStatus.AUDIT_FAILED
+    assert doc.error_reason is not None
+    assert 'cancelled' in doc.error_reason.lower()
+    mock_db.update_pdf_document.assert_called()
+
+
+def test_cancel_redirects_when_pdf_missing(
+    client: FlaskClient, mock_db: MagicMock
+) -> None:
+    mock_db.get_pdf_document.return_value = None
+    resp = client.post('/pdfs/nope/cancel')
+    assert resp.status_code == 302
+    mock_db.update_pdf_document.assert_not_called()
+
+
+def test_cancel_skips_jobs_with_non_string_id(
+    client: FlaskClient, mock_db: MagicMock
+) -> None:
+    """A malformed job record without a string job_id is skipped silently."""
+    doc = _make_doc()
+    mock_db.get_pdf_document.return_value = doc
+
+    job_manager = MagicMock()
+    job_manager.collection.find.return_value = [
+        {'job_id': None},
+        {'job_id': 12345},
+    ]
+
+    with patch(
+        'auto_a11y.web.routes.pdf.JobManager.get_instance',
+        return_value=job_manager,
+    ):
+        resp = client.post(f'/pdfs/{doc.id}/cancel')
+
+    assert resp.status_code == 302
+    job_manager.request_cancellation.assert_not_called()
+    # The doc still gets reset even when there are no actionable job records,
+    # because the user may be clearing a stale AUDITING state.
+    mock_db.update_pdf_document.assert_called()
+
+
 def test_delete_redirects_when_pdf_missing(
     client: FlaskClient, mock_db: MagicMock
 ) -> None:

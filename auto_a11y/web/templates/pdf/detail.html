@@ -34,6 +34,18 @@
                 {% endif %}
             </button>
         </form>
+        {% if pdf.status.value == 'auditing' %}
+        <form method="POST"
+              action="{{ url_for('pdf.cancel', pdf_document_id=pdf.id) }}"
+              class="d-inline"
+              onsubmit="return confirm('{{ ftl('pdf-cancel-confirm') }}');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <button type="submit" class="btn btn-medium">
+                <i class="bi bi-x-octagon" aria-hidden="true"></i>
+                {{ ftl('pdf-cancel-button') }}
+            </button>
+        </form>
+        {% endif %}
         <form method="POST"
               action="{{ url_for('pdf.delete', pdf_document_id=pdf.id) }}"
               class="d-inline"

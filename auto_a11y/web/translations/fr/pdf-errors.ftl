@@ -24,3 +24,4 @@ pdf-error-url-fetch-not-implemented = Adding a PDF by URL is not yet implemented
 pdf-error-file-missing-on-disk = The stored PDF file is missing from disk.
 pdf-error-invalid-image-name = The requested image name is invalid.
 pdf-error-image-missing = The requested image is not available.
+pdf-error-source-required = Either upload a PDF file or provide a URL.

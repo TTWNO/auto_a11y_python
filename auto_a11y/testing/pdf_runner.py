@@ -47,6 +47,7 @@ from auto_a11y.pdf.audit.pipeline import run_audit
 from auto_a11y.pdf.errors import (
     CannotAuditFetchFailedDocument,
     CorruptPdf,
+    FetchFailed,
     GhostscriptMissing,
     NotAPdf,
     PdfDocumentNotFound,
@@ -105,6 +106,74 @@ class PdfRunner:
     def shutdown(self) -> None:
         """Shut down the executor. Idempotent."""
         self._executor.shutdown(wait=False)
+
+    async def fetch_pdf_from_url(
+        self,
+        url: str,
+        *,
+        website_user_id: str | None = None,
+    ) -> bytes:
+        """Fetch a PDF from a URL with size cap and magic-byte verification.
+
+        Streams the GET response chunk-by-chunk, aborting as soon as the
+        running total exceeds the configured ``max_size_mb``. After the
+        body is fully received, the first five bytes are verified against
+        the ``%PDF-`` magic header.
+
+        ``website_user_id`` is reserved for authenticated fetches against
+        sites the auditor has logged into via the existing
+        :class:`~auto_a11y.models.website_user.WebsiteUser` machinery.
+        The current :class:`WebsiteUser` model does not persist HTTP
+        cookies (Playwright drives login at runtime), so cookies are not
+        seeded today — see TODO inside the implementation.
+
+        Args:
+            url: PDF URL to download.
+            website_user_id: Optional :class:`WebsiteUser` id whose
+                stored cookies should be sent with the request.
+
+        Returns:
+            The raw PDF bytes.
+
+        Raises:
+            FetchFailed: network error or non-2xx HTTP response.
+            PdfTooLarge: streamed body exceeds the configured cap.
+            NotAPdf: response bytes don't start with ``%PDF-``.
+        """
+        import aiohttp
+
+        # TODO(pdfmax-integration): when WebsiteUser starts persisting
+        # captured cookies (currently login is driven at runtime via
+        # Playwright), pass them through here. For now we leave the
+        # cookie jar empty regardless of website_user_id.
+        _ = website_user_id
+        cookies: dict[str, str] = {}
+        timeout = aiohttp.ClientTimeout(total=60)
+
+        try:
+            async with aiohttp.ClientSession(cookies=cookies, timeout=timeout) as session:
+                async with session.get(url) as resp:
+                    if resp.status >= 400:
+                        raise FetchFailed(url, f"HTTP {resp.status}")
+                    chunks: list[bytes] = []
+                    total = 0
+                    async for chunk in resp.content.iter_chunked(8192):
+                        total += len(chunk)
+                        if total > self._max_size_bytes:
+                            raise PdfTooLarge(
+                                size_bytes=total,
+                                limit_bytes=self._max_size_bytes,
+                            )
+                        chunks.append(chunk)
+                    pdf_bytes = b"".join(chunks)
+        except aiohttp.ClientError as exc:
+            raise FetchFailed(url, f"Network error: {exc}") from exc
+
+        if not pdf_bytes.startswith(b"%PDF-"):
+            raise NotAPdf(
+                f"Response from {url} did not start with %PDF- magic bytes"
+            )
+        return pdf_bytes
 
     async def create_or_find_pdf_document(
         self,

@@ -6,12 +6,18 @@ Phase 9.3 of the pdfMax → auto_a11y integration. Nine routes per
 * GET  ``/projects/<project_id>/pdfs``                 — list scoped to a project
 * GET  ``/websites/<website_id>/pdfs``                 — list scoped to a website
 * GET  ``/projects/<project_id>/pdfs/add``             — upload form
-* POST ``/projects/<project_id>/pdfs``                 — create (upload; URL deferred)
+* POST ``/projects/<project_id>/pdfs``                 — create (upload or URL)
 * GET  ``/pdfs/<pdf_document_id>``                     — detail page
-* POST ``/pdfs/<pdf_document_id>/audit``               — re-audit
+* POST ``/pdfs/<pdf_document_id>/audit``               — re-audit (async)
 * GET  ``/pdfs/<pdf_document_id>/file``                — stream stored bytes
 * GET  ``/pdfs/<pdf_document_id>/images/<image_name>`` — stream extracted image
 * POST ``/pdfs/<pdf_document_id>/delete``              — cascade delete
+
+All routes require an authenticated user. Project- and website-keyed
+routes use :func:`project_role_required` for permission checks; routes
+keyed only by ``pdf_document_id`` resolve the project via the
+:class:`~auto_a11y.models.pdf_document.PdfDocument` and check the
+effective role via the local :func:`_require_pdf_role` helper.
 """
 from __future__ import annotations
 
@@ -20,24 +26,33 @@ import logging
 from pathlib import Path
 
 from flask import (
-    Blueprint, flash, redirect, render_template, request, send_file, url_for,
+    Blueprint, abort, flash, redirect, render_template, request, send_file,
+    url_for,
 )
+from flask_login import current_user, login_required
 from werkzeug.wrappers import Response
 
-from auto_a11y.models.pdf_document import PdfDocumentStatus
+from auto_a11y.models.app_user import UserRole
+from auto_a11y.models.pdf_document import PdfDocument, PdfDocumentStatus
 from auto_a11y.pdf.errors import (
-    CannotAuditFetchFailedDocument,
-    GhostscriptMissing,
+    FetchFailed,
     NotAPdf,
     PdfTooLarge,
 )
 from auto_a11y.pdf.storage import PdfStorage
 from auto_a11y.web.fluent import ftl
+from auto_a11y.web.routes.auth import get_effective_role, project_role_required
 from auto_a11y.web.typed_app import get_app_config, get_db, get_pdf_runner
 from auto_a11y.web.view_models.target import Crumb, target_view_from_pdf
 
 logger = logging.getLogger(__name__)
 pdf_bp = Blueprint('pdf', __name__)
+
+
+# Read-side roles allowed to view a PDF document.
+_READ_ROLES = (UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
+# Write-side roles allowed to mutate (create / audit / delete) a PDF.
+_WRITE_ROLES = (UserRole.ADMIN, UserRole.AUDITOR)
 
 
 def _get_storage() -> PdfStorage:
@@ -46,7 +61,47 @@ def _get_storage() -> PdfStorage:
     return PdfStorage(base_dir=Path(cfg.PDF_STORAGE_DIR))
 
 
+def _require_pdf_role(
+    pdf: PdfDocument, *roles: UserRole
+) -> Response | None:
+    """Authorise the current user against a PDF-keyed route.
+
+    The PDF-keyed routes (``detail``/``audit``/``file``/``image``/
+    ``delete``) take only ``pdf_document_id`` in their URL, so
+    :func:`project_role_required` (which derives the project from
+    ``project_id``/``website_id``/``page_id`` kwargs) cannot do the
+    check on its own. This helper fetches the effective role for the
+    PDF's project and either:
+
+    * returns ``None`` when access is granted, or
+    * returns a :class:`Response` (or aborts with 403 / redirects to
+      login) when access is denied.
+
+    Superadmins always pass. Anonymous users get a redirect to login;
+    authenticated users without a sufficient role get a 403.
+    """
+    if not current_user.is_authenticated:
+        flash(ftl('common-please-log-in-to-access-this-page'), 'warning')
+        return redirect(url_for('auth.login', next=request.url))
+
+    if getattr(current_user, 'is_superadmin', False):
+        return None
+
+    effective = get_effective_role(
+        current_user, request, pdf.project_id, pdf.website_id, None
+    )
+    if effective not in roles:
+        flash(
+            ftl('common-you-do-not-have-permission-to-access-this-resource'),
+            'danger',
+        )
+        abort(403)
+    return None
+
+
 @pdf_bp.route('/projects/<project_id>/pdfs', methods=['GET'])
+@login_required
+@project_role_required(*_READ_ROLES)
 def list_for_project(project_id: str) -> str | Response:
     """List PDF documents in a project (across all websites)."""
     db = get_db()
@@ -73,6 +128,8 @@ def list_for_project(project_id: str) -> str | Response:
 
 
 @pdf_bp.route('/websites/<website_id>/pdfs', methods=['GET'])
+@login_required
+@project_role_required(*_READ_ROLES)
 def list_for_website(website_id: str) -> str | Response:
     """List PDF documents for one website."""
     db = get_db()
@@ -94,6 +151,8 @@ def list_for_website(website_id: str) -> str | Response:
 
 
 @pdf_bp.route('/projects/<project_id>/pdfs/add', methods=['GET'])
+@login_required
+@project_role_required(*_WRITE_ROLES)
 def add_form(project_id: str) -> str | Response:
     """Show the upload/URL form."""
     db = get_db()
@@ -107,6 +166,8 @@ def add_form(project_id: str) -> str | Response:
 
 
 @pdf_bp.route('/projects/<project_id>/pdfs', methods=['POST'])
+@login_required
+@project_role_required(*_WRITE_ROLES)
 def create(project_id: str) -> Response:
     """Handle upload (multipart file) or manual-URL form submission."""
     db = get_db()
@@ -130,6 +191,11 @@ def create(project_id: str) -> Response:
         flash(ftl('pdf-error-pdf-runner-not-configured'), 'error')
         return redirect(url_for('pdf.add_form', project_id=project_id))
 
+    user_id_value = (
+        current_user.get_id() if current_user.is_authenticated else None
+    )
+    user_id_str = str(user_id_value) if user_id_value is not None else None
+
     # Path A: file upload
     uploaded = request.files.get('pdf_file')
     if uploaded is not None and uploaded.filename:
@@ -141,7 +207,7 @@ def create(project_id: str) -> Response:
                 project_id=project_id,
                 source_type='uploaded',
                 discovered_from_page_id=None,
-                discovered_from_user_id=None,
+                discovered_from_user_id=user_id_str,
                 original_filename=uploaded.filename or 'document.pdf',
                 source_url=None,
             ))
@@ -165,13 +231,73 @@ def create(project_id: str) -> Response:
             return redirect(url_for('pdf.list_for_project', project_id=project_id))
         return redirect(url_for('pdf.detail', pdf_document_id=doc.id))
 
-    # Path B: manual URL — deferred to a future task (the URL fetch
-    # pipeline is in the spec but not wired into the runner yet).
-    flash(ftl('pdf-error-url-fetch-not-implemented'), 'error')
+    # Path B: manual URL
+    url = (request.form.get('source_url') or '').strip()
+    if url:
+        website_user_id = request.form.get('website_user_id') or None
+        try:
+            pdf_bytes = asyncio.run(runner.fetch_pdf_from_url(
+                url, website_user_id=website_user_id
+            ))
+        except FetchFailed as exc:
+            flash(
+                ftl('pdf-error-fetch-failed', reason=exc.reason),
+                'error',
+            )
+            return redirect(url_for('pdf.add_form', project_id=project_id))
+        except PdfTooLarge as exc:
+            flash(
+                ftl(
+                    'pdf-error-pdf-too-large',
+                    size=exc.size_bytes,
+                    limit=exc.limit_bytes,
+                ),
+                'error',
+            )
+            return redirect(url_for('pdf.add_form', project_id=project_id))
+        except NotAPdf:
+            flash(ftl('pdf-error-not-a-pdf'), 'error')
+            return redirect(url_for('pdf.add_form', project_id=project_id))
+
+        try:
+            doc = asyncio.run(runner.create_or_find_pdf_document(
+                pdf_bytes,
+                website_id=website_id,
+                project_id=project_id,
+                source_type='manual_url',
+                discovered_from_page_id=None,
+                discovered_from_user_id=user_id_str,
+                original_filename=(
+                    url.rsplit('/', 1)[-1] or 'document.pdf'
+                ),
+                source_url=url,
+            ))
+        except NotAPdf:
+            flash(ftl('pdf-error-not-a-pdf'), 'error')
+            return redirect(url_for('pdf.add_form', project_id=project_id))
+        except PdfTooLarge as exc:
+            flash(
+                ftl(
+                    'pdf-error-pdf-too-large',
+                    size=exc.size_bytes,
+                    limit=exc.limit_bytes,
+                ),
+                'error',
+            )
+            return redirect(url_for('pdf.add_form', project_id=project_id))
+
+        flash(ftl('pdf-uploaded-success'), 'success')
+        if doc.id is None:
+            return redirect(url_for('pdf.list_for_project', project_id=project_id))
+        return redirect(url_for('pdf.detail', pdf_document_id=doc.id))
+
+    # Neither upload nor URL provided.
+    flash(ftl('pdf-error-source-required'), 'error')
     return redirect(url_for('pdf.add_form', project_id=project_id))
 
 
 @pdf_bp.route('/pdfs/<pdf_document_id>', methods=['GET'])
+@login_required
 def detail(pdf_document_id: str) -> str | Response:
     """Detail view: PDF iframe + latest TestResult."""
     db = get_db()
@@ -182,6 +308,10 @@ def detail(pdf_document_id: str) -> str | Response:
             'error',
         )
         return redirect(url_for('projects.list_projects'))
+
+    denied = _require_pdf_role(pdf, *_READ_ROLES)
+    if denied is not None:
+        return denied
 
     website = db.get_website(pdf.website_id)
     project = db.get_project(pdf.project_id) if pdf.project_id else None
@@ -232,8 +362,9 @@ def detail(pdf_document_id: str) -> str | Response:
 
 
 @pdf_bp.route('/pdfs/<pdf_document_id>/audit', methods=['POST'])
+@login_required
 def audit(pdf_document_id: str) -> Response:
-    """Re-audit an existing PDF document."""
+    """Enqueue a re-audit. Returns immediately — does not block on the audit."""
     db = get_db()
     pdf = db.get_pdf_document(pdf_document_id)
     if pdf is None:
@@ -242,6 +373,10 @@ def audit(pdf_document_id: str) -> Response:
             'error',
         )
         return redirect(url_for('projects.list_projects'))
+
+    denied = _require_pdf_role(pdf, *_WRITE_ROLES)
+    if denied is not None:
+        return denied
 
     if pdf.status == PdfDocumentStatus.AUDITING:
         flash(ftl('pdf-audit-already-running'), 'warning')
@@ -252,33 +387,34 @@ def audit(pdf_document_id: str) -> Response:
         flash(ftl('pdf-error-pdf-runner-not-configured'), 'error')
         return redirect(url_for('pdf.detail', pdf_document_id=pdf_document_id))
 
-    try:
-        asyncio.run(runner.audit_pdf_document(
-            pdf_document_id,
-            run_ai=False,
-            ai_api_key=None,
-            wcag_level='AA',
-            locale='en',
-        ))
-    except CannotAuditFetchFailedDocument:
-        flash(ftl('pdf-error-cannot-audit-fetch-failed-document'), 'error')
-        return redirect(url_for('pdf.detail', pdf_document_id=pdf_document_id))
-    except GhostscriptMissing as exc:
-        flash(
-            ftl('pdf-error-ghostscript-missing', searched=', '.join(exc.searched)),
-            'error',
-        )
-        return redirect(url_for('pdf.detail', pdf_document_id=pdf_document_id))
-    except Exception as exc:  # noqa: BLE001 — surface any other failure as a flash
-        logger.error(f"PDF audit failed: {exc}")
-        flash(ftl('pdf-error-generic', reason=str(exc)), 'error')
-        return redirect(url_for('pdf.detail', pdf_document_id=pdf_document_id))
+    # Local import — pulling in pdf_audit_job at module import time
+    # would form a cycle: pdf_audit_job → testing.pdf_runner → ... ↻.
+    from auto_a11y.core.pdf_audit_job import PdfAuditJob
+
+    user_id_value = (
+        current_user.get_id() if current_user.is_authenticated else None
+    )
+    user_id_str = (
+        str(user_id_value) if user_id_value is not None else 'anonymous'
+    )
+    job = PdfAuditJob(
+        runner=runner,
+        db=db,
+        pdf_document_id=pdf_document_id,
+        run_ai=False,
+        ai_api_key=None,
+        wcag_level='AA',
+        locale='en',
+        user_id=user_id_str,
+    )
+    job.start()
 
     flash(ftl('pdf-audit-queued'), 'success')
     return redirect(url_for('pdf.detail', pdf_document_id=pdf_document_id))
 
 
 @pdf_bp.route('/pdfs/<pdf_document_id>/file', methods=['GET'])
+@login_required
 def file(pdf_document_id: str) -> Response:
     """Stream the stored PDF bytes for inline iframe display."""
     db = get_db()
@@ -289,6 +425,10 @@ def file(pdf_document_id: str) -> Response:
             'error',
         )
         return redirect(url_for('projects.list_projects'))
+
+    denied = _require_pdf_role(pdf, *_READ_ROLES)
+    if denied is not None:
+        return denied
 
     storage = _get_storage()
     pdf_path = storage.local_path(pdf)
@@ -311,6 +451,7 @@ def file(pdf_document_id: str) -> Response:
 
 
 @pdf_bp.route('/pdfs/<pdf_document_id>/images/<image_name>', methods=['GET'])
+@login_required
 def image(pdf_document_id: str, image_name: str) -> Response:
     """Stream an extracted image for the detail view."""
     db = get_db()
@@ -321,6 +462,10 @@ def image(pdf_document_id: str, image_name: str) -> Response:
             'error',
         )
         return redirect(url_for('projects.list_projects'))
+
+    denied = _require_pdf_role(pdf, *_READ_ROLES)
+    if denied is not None:
+        return denied
 
     # Path safety: image_name must not escape the images directory.
     if '..' in image_name or '/' in image_name or '\\' in image_name:
@@ -337,6 +482,7 @@ def image(pdf_document_id: str, image_name: str) -> Response:
 
 
 @pdf_bp.route('/pdfs/<pdf_document_id>/delete', methods=['POST'])
+@login_required
 def delete(pdf_document_id: str) -> Response:
     """Cascade-delete a PdfDocument (DB record + filesystem artefacts)."""
     db = get_db()
@@ -347,6 +493,10 @@ def delete(pdf_document_id: str) -> Response:
             'error',
         )
         return redirect(url_for('projects.list_projects'))
+
+    denied = _require_pdf_role(pdf, *_WRITE_ROLES)
+    if denied is not None:
+        return denied
 
     storage = _get_storage()
     storage.delete(pdf)

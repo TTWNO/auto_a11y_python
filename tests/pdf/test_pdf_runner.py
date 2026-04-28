@@ -569,6 +569,134 @@ async def test_audit_propagates_ghostscript_override(
 
 
 # ---------------------------------------------------------------------------
+# fetch_pdf_from_url (Phase 9.3 continuation)
+# ---------------------------------------------------------------------------
+#
+# These tests stub out ``aiohttp.ClientSession`` with a small async
+# context-manager facade so the streaming-fetch logic can be exercised
+# without actual network I/O. The runner is built on a tiny tmp_path so
+# the real :class:`PdfStorage` doesn't fight us.
+
+
+class _FakeContent:
+    """Minimal stand-in for :class:`aiohttp.StreamReader.iter_chunked`."""
+
+    def __init__(self, chunks: list[bytes]) -> None:
+        self._chunks = chunks
+
+    def iter_chunked(self, _size: int) -> "_FakeContent":
+        return self
+
+    def __aiter__(self) -> "_FakeContent":
+        return self
+
+    async def __anext__(self) -> bytes:
+        if not self._chunks:
+            raise StopAsyncIteration
+        return self._chunks.pop(0)
+
+
+class _FakeResponse:
+    def __init__(self, *, status: int, chunks: list[bytes]) -> None:
+        self.status = status
+        self.content = _FakeContent(chunks)
+
+    async def __aenter__(self) -> "_FakeResponse":
+        return self
+
+    async def __aexit__(self, *_args: object) -> None:
+        pass
+
+
+class _FakeSession:
+    def __init__(self, response: _FakeResponse) -> None:
+        self._response = response
+
+    async def __aenter__(self) -> "_FakeSession":
+        return self
+
+    async def __aexit__(self, *_args: object) -> None:
+        pass
+
+    def get(self, _url: str) -> _FakeResponse:
+        return self._response
+
+
+def _patch_aiohttp(
+    monkeypatch: pytest.MonkeyPatch,
+    response: _FakeResponse,
+) -> None:
+    import aiohttp
+
+    def _factory(*_args: object, **_kwargs: object) -> _FakeSession:
+        return _FakeSession(response)
+
+    monkeypatch.setattr(aiohttp, "ClientSession", _factory)
+
+
+@pytest.mark.asyncio
+async def test_fetch_pdf_from_url_returns_bytes(
+    runner: PdfRunner, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Happy path: 200 + %PDF- magic returns the joined chunk bytes."""
+    body = b"%PDF-1.4 hello world"
+    _patch_aiohttp(
+        monkeypatch,
+        _FakeResponse(status=200, chunks=[body[:8], body[8:]]),
+    )
+
+    result = await runner.fetch_pdf_from_url("https://example.org/x.pdf")
+    assert result == body
+
+
+@pytest.mark.asyncio
+async def test_fetch_pdf_from_url_raises_fetch_failed_on_4xx(
+    runner: PdfRunner, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from auto_a11y.pdf.errors import FetchFailed
+    _patch_aiohttp(
+        monkeypatch,
+        _FakeResponse(status=503, chunks=[]),
+    )
+    with pytest.raises(FetchFailed) as excinfo:
+        await runner.fetch_pdf_from_url("https://example.org/x.pdf")
+    assert "503" in excinfo.value.reason
+
+
+@pytest.mark.asyncio
+async def test_fetch_pdf_from_url_raises_pdf_too_large_when_streamed_oversize(
+    mock_db: MagicMock, storage: PdfStorage, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Streaming size check trips before the body is fully buffered."""
+    # Tiny limit (1MB cap = the default but we go much smaller via mb=1
+    # then fake a >1MB response).
+    r = PdfRunner(mock_db, storage, max_parallel=1, max_size_mb=1)
+    try:
+        # Two chunks, the second of which pushes total over 1 MiB.
+        big = b"x" * (1024 * 1024 + 1)
+        _patch_aiohttp(
+            monkeypatch,
+            _FakeResponse(status=200, chunks=[b"%PDF-", big]),
+        )
+        with pytest.raises(PdfTooLarge):
+            await r.fetch_pdf_from_url("https://example.org/big.pdf")
+    finally:
+        r.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_fetch_pdf_from_url_raises_not_a_pdf_when_no_magic_bytes(
+    runner: PdfRunner, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _patch_aiohttp(
+        monkeypatch,
+        _FakeResponse(status=200, chunks=[b"GIF89a not a pdf"]),
+    )
+    with pytest.raises(NotAPdf):
+        await runner.fetch_pdf_from_url("https://example.org/fake.pdf")
+
+
+# ---------------------------------------------------------------------------
 # Lifecycle
 # ---------------------------------------------------------------------------
 

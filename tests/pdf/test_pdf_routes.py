@@ -10,6 +10,14 @@ crash.
 The :class:`Database` and :class:`PdfRunner` are mocked. The PDF
 storage layer is exercised against ``tmp_path`` because it's all
 filesystem operations and cheaper than mocking it.
+
+Authentication: every PDF route is protected by ``@login_required``
+plus either ``@project_role_required`` (for project/website-keyed
+routes) or the local :func:`_require_pdf_role` helper (for PDF-keyed
+routes). The session-scoped ``app`` fixture installs a Flask-Login
+``request_loader`` that authenticates each request as a synthetic
+``is_superadmin=True`` user — that lets the role check short-circuit
+without making the test handle group/permission setup.
 """
 from __future__ import annotations
 
@@ -18,12 +26,13 @@ from collections.abc import Iterator
 from datetime import datetime
 from pathlib import Path
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from bson import ObjectId
 from flask import Blueprint, Flask
 from flask.testing import FlaskClient
+from flask_login import LoginManager
 
 # ``auto_a11y.core`` must be imported before any module under
 # ``auto_a11y.testing`` (see ``test_pdf_runner.py`` for the rationale).
@@ -32,8 +41,6 @@ del _core_preload
 
 from auto_a11y.models.pdf_document import PdfDocument, PdfDocumentStatus
 from auto_a11y.pdf.errors import (
-    CannotAuditFetchFailedDocument,
-    GhostscriptMissing,
     NotAPdf,
     PdfTooLarge,
 )
@@ -135,6 +142,39 @@ def app(
     setattr(app, 'db', MagicMock())
     setattr(app, 'pdf_runner', AsyncMock())
 
+    # Auto-authenticate every request as a superadmin so the role
+    # decorators on the PDF routes pass without group setup.
+    login_manager = LoginManager()
+    login_manager.init_app(app)
+
+    @login_manager.request_loader
+    def _load_user_from_request(_req: Any) -> Any:
+        user = MagicMock()
+        user.is_authenticated = True
+        user.is_active = True
+        user.is_anonymous = False
+        user.is_superadmin = True
+        user.id = "test-user"
+        user.get_id = lambda: "test-user"
+        return user
+
+    # Reference the loader to silence reportUnusedFunction.
+    _ = _load_user_from_request
+
+    # Stub the auth.login endpoint that login_required redirects to
+    # when a request is unauthenticated — not strictly reachable in
+    # these tests (request_loader always succeeds) but url_for needs
+    # the endpoint to resolve from inside flask-login internals.
+    auth_stub = Blueprint('auth', __name__)
+
+    def _login_stub() -> str:
+        return ''
+
+    auth_stub.add_url_rule(
+        '/login', endpoint='login', view_func=_login_stub
+    )
+    app.register_blueprint(auth_stub)
+
     # Initialise Fluent so ``ftl(...)`` resolves messages.
     from auto_a11y.web.fluent import init_fluent
     init_fluent(app)
@@ -200,6 +240,7 @@ def mock_runner(app: Flask) -> Iterator[AsyncMock]:
     runner = AsyncMock()
     runner.create_or_find_pdf_document = AsyncMock()
     runner.audit_pdf_document = AsyncMock()
+    runner.fetch_pdf_from_url = AsyncMock()
     setattr(app, 'pdf_runner', runner)
     yield runner
 
@@ -383,18 +424,91 @@ def test_create_handles_pdf_too_large(
     assert '/pdfs/add' in resp.headers['Location']
 
 
-def test_create_url_path_flashes_not_implemented(
+def test_create_url_path_fetches_and_creates(
     client: FlaskClient, mock_runner: AsyncMock
 ) -> None:
-    """No file upload → URL-fetch path → flash and redirect (not implemented)."""
+    """No file upload → URL-fetch path: runner.fetch_pdf_from_url is awaited
+    and create_or_find_pdf_document is called with source_type='manual_url'."""
+    mock_runner.fetch_pdf_from_url.return_value = _TINY_PDF_BYTES
+    created = _make_doc()
+    mock_runner.create_or_find_pdf_document.return_value = created
     resp = client.post(
         '/projects/p-1/pdfs',
         data={'website_id': 'w-1', 'source_url': 'https://example.org/x.pdf'},
         content_type='multipart/form-data',
     )
     assert resp.status_code == 302
+    assert f'/pdfs/{created.id}' in resp.headers['Location']
+    mock_runner.fetch_pdf_from_url.assert_awaited_once()
+    fetch_kwargs: dict[str, Any] = (
+        mock_runner.fetch_pdf_from_url.await_args.kwargs
+    )
+    assert fetch_kwargs['website_user_id'] is None
+    create_kwargs: dict[str, Any] = (
+        mock_runner.create_or_find_pdf_document.await_args.kwargs
+    )
+    assert create_kwargs['source_type'] == 'manual_url'
+    assert create_kwargs['source_url'] == 'https://example.org/x.pdf'
+    assert create_kwargs['original_filename'] == 'x.pdf'
+
+
+def test_create_url_path_flashes_when_neither_provided(
+    client: FlaskClient, mock_runner: AsyncMock
+) -> None:
+    """Neither file nor URL → ``pdf-error-source-required`` flash."""
+    resp = client.post(
+        '/projects/p-1/pdfs',
+        data={'website_id': 'w-1'},
+        content_type='multipart/form-data',
+    )
+    assert resp.status_code == 302
     assert '/pdfs/add' in resp.headers['Location']
     mock_runner.create_or_find_pdf_document.assert_not_called()
+
+
+def test_create_url_path_handles_fetch_failed(
+    client: FlaskClient, mock_runner: AsyncMock
+) -> None:
+    from auto_a11y.pdf.errors import FetchFailed
+    mock_runner.fetch_pdf_from_url.side_effect = FetchFailed(
+        'https://x', 'HTTP 503'
+    )
+    resp = client.post(
+        '/projects/p-1/pdfs',
+        data={'website_id': 'w-1', 'source_url': 'https://x'},
+        content_type='multipart/form-data',
+    )
+    assert resp.status_code == 302
+    assert '/pdfs/add' in resp.headers['Location']
+    mock_runner.create_or_find_pdf_document.assert_not_called()
+
+
+def test_create_url_path_handles_pdf_too_large(
+    client: FlaskClient, mock_runner: AsyncMock
+) -> None:
+    mock_runner.fetch_pdf_from_url.side_effect = PdfTooLarge(
+        size_bytes=999, limit_bytes=100
+    )
+    resp = client.post(
+        '/projects/p-1/pdfs',
+        data={'website_id': 'w-1', 'source_url': 'https://x'},
+        content_type='multipart/form-data',
+    )
+    assert resp.status_code == 302
+    assert '/pdfs/add' in resp.headers['Location']
+
+
+def test_create_url_path_handles_not_a_pdf(
+    client: FlaskClient, mock_runner: AsyncMock
+) -> None:
+    mock_runner.fetch_pdf_from_url.side_effect = NotAPdf('no magic bytes')
+    resp = client.post(
+        '/projects/p-1/pdfs',
+        data={'website_id': 'w-1', 'source_url': 'https://x'},
+        content_type='multipart/form-data',
+    )
+    assert resp.status_code == 302
+    assert '/pdfs/add' in resp.headers['Location']
 
 
 def test_create_redirects_when_runner_unavailable(
@@ -439,50 +553,70 @@ def test_detail_redirects_when_pdf_missing(
 # ---------------------------------------------------------------------------
 # POST /pdfs/<id>/audit
 # ---------------------------------------------------------------------------
+#
+# audit() enqueues a :class:`PdfAuditJob` and returns immediately — the
+# job class is mocked so the audit pipeline doesn't run inside the
+# request thread.
 
 
-def test_audit_invokes_runner_and_redirects(
-    client: FlaskClient, mock_db: MagicMock, mock_runner: AsyncMock
+def test_audit_enqueues_job_and_redirects(
+    client: FlaskClient, mock_db: MagicMock
 ) -> None:
+    """Audit POST creates a PdfAuditJob and calls ``start()`` exactly once."""
     doc = _make_doc()
     mock_db.get_pdf_document.return_value = doc
-    resp = client.post(f'/pdfs/{doc.id}/audit')
+    with patch(
+        'auto_a11y.core.pdf_audit_job.PdfAuditJob'
+    ) as job_cls:
+        instance = job_cls.return_value
+        instance.start.return_value = 'pdf_audit_xyz'
+        resp = client.post(f'/pdfs/{doc.id}/audit')
     assert resp.status_code == 302
-    mock_runner.audit_pdf_document.assert_awaited_once()
+    job_cls.assert_called_once()
+    instance.start.assert_called_once_with()
 
 
 def test_audit_blocks_when_already_running(
-    client: FlaskClient, mock_db: MagicMock, mock_runner: AsyncMock
+    client: FlaskClient, mock_db: MagicMock
 ) -> None:
+    """A doc already in AUDITING flashes a warning and skips the job submit."""
     doc = _make_doc(status=PdfDocumentStatus.AUDITING)
     mock_db.get_pdf_document.return_value = doc
-    resp = client.post(f'/pdfs/{doc.id}/audit')
+    with patch(
+        'auto_a11y.core.pdf_audit_job.PdfAuditJob'
+    ) as job_cls:
+        resp = client.post(f'/pdfs/{doc.id}/audit')
     assert resp.status_code == 302
-    mock_runner.audit_pdf_document.assert_not_called()
+    job_cls.assert_not_called()
 
 
-def test_audit_handles_fetch_failed_exception(
-    client: FlaskClient, mock_db: MagicMock, mock_runner: AsyncMock
+def test_audit_redirects_when_runner_unavailable(
+    app: Flask, client: FlaskClient, mock_db: MagicMock
 ) -> None:
+    """``app.pdf_runner = None`` → friendly flash, no job submitted."""
     doc = _make_doc()
     mock_db.get_pdf_document.return_value = doc
-    mock_runner.audit_pdf_document.side_effect = CannotAuditFetchFailedDocument(
-        "fetch failed"
-    )
-    resp = client.post(f'/pdfs/{doc.id}/audit')
+    setattr(app, 'pdf_runner', None)
+    with patch(
+        'auto_a11y.core.pdf_audit_job.PdfAuditJob'
+    ) as job_cls:
+        resp = client.post(f'/pdfs/{doc.id}/audit')
     assert resp.status_code == 302
+    job_cls.assert_not_called()
+    # Restore so other tests don't see a missing runner.
+    setattr(app, 'pdf_runner', AsyncMock())
 
 
-def test_audit_handles_ghostscript_missing(
-    client: FlaskClient, mock_db: MagicMock, mock_runner: AsyncMock
+def test_audit_redirects_when_pdf_missing(
+    client: FlaskClient, mock_db: MagicMock
 ) -> None:
-    doc = _make_doc()
-    mock_db.get_pdf_document.return_value = doc
-    mock_runner.audit_pdf_document.side_effect = GhostscriptMissing(
-        ['/usr/bin/gs', '/usr/local/bin/gs']
-    )
-    resp = client.post(f'/pdfs/{doc.id}/audit')
+    mock_db.get_pdf_document.return_value = None
+    with patch(
+        'auto_a11y.core.pdf_audit_job.PdfAuditJob'
+    ) as job_cls:
+        resp = client.post('/pdfs/nope/audit')
     assert resp.status_code == 302
+    job_cls.assert_not_called()
 
 
 # ---------------------------------------------------------------------------

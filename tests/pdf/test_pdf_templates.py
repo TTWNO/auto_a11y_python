@@ -17,12 +17,14 @@ from __future__ import annotations
 from collections.abc import Iterator
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from bson import ObjectId
 from flask import Blueprint, Flask
 from flask.testing import FlaskClient
+from flask_login import LoginManager
 
 # Match test_pdf_routes.py: ensure ``auto_a11y.core`` is imported before
 # any module under ``auto_a11y.testing``.
@@ -120,6 +122,25 @@ def app(session_storage_dir: Path) -> Flask:
     setattr(app, 'app_config', cfg)
     setattr(app, 'db', MagicMock())
     setattr(app, 'pdf_runner', AsyncMock())
+
+    # Auto-auth as superadmin so the @login_required + @project_role_required
+    # decorators on the PDF routes pass without group setup.
+    login_manager = LoginManager()
+    login_manager.init_app(app)
+
+    @login_manager.request_loader
+    def _load_user_from_request(_req: Any) -> Any:
+        user = MagicMock()
+        user.is_authenticated = True
+        user.is_active = True
+        user.is_anonymous = False
+        user.is_superadmin = True
+        user.id = "test-user"
+        user.get_id = lambda: "test-user"
+        return user
+
+    # Reference the loader to silence reportUnusedFunction.
+    _ = _load_user_from_request
 
     # Globals templates may reference. Real values are filled by the
     # base template's authentication chrome — we stub them so the layout

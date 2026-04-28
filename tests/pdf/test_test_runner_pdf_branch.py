@@ -28,7 +28,12 @@ from bson import ObjectId
 from auto_a11y.models.page import Page, PageStatus
 from auto_a11y.pdf.errors import NotAPdf, PdfTooLarge
 from auto_a11y.testing import test_runner as test_runner_mod
-from auto_a11y.testing.test_runner import TestRunner, handle_opportunistic_pdf
+from auto_a11y.testing.test_runner import (
+    TestRunner,
+    handle_opportunistic_pdf,
+    handle_pdf_url_after_navigation_failed,
+    url_looks_like_pdf,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -395,3 +400,120 @@ async def test_handle_opportunistic_pdf_rejects_oversize(
     assert page.error_reason is not None
     assert "PDF rejected" in page.error_reason
     mock_pdf_runner.audit_pdf_document.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# url_looks_like_pdf heuristic
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("url,expected", [
+    ("https://example.com/doc.pdf", True),
+    ("https://example.com/doc.PDF", True),
+    ("https://example.com/path/to/file.pdf?download=1", True),
+    ("https://example.com/path/to/file.pdf#page=2", True),
+    ("https://example.com/index.html", False),
+    ("https://example.com/", False),
+    ("https://example.com/pdf-viewer", False),
+    ("https://example.com/document.pdfx", False),
+])
+def test_url_looks_like_pdf(url: str, expected: bool) -> None:
+    assert url_looks_like_pdf(url) is expected
+
+
+# ---------------------------------------------------------------------------
+# handle_pdf_url_after_navigation_failed (goto returned None)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_navigation_aborted_pdf_falls_back_to_direct_fetch(
+    mock_pdf_runner: AsyncMock, mock_db: MagicMock
+) -> None:
+    """When goto returns None on a .pdf URL, we re-fetch via PdfRunner and audit."""
+    page = _make_page()
+    mock_db.get_website.return_value = MagicMock(project_id="proj-1")
+
+    pdf_doc = MagicMock(id="doc-1")
+    mock_pdf_runner.fetch_pdf_from_url.return_value = b"%PDF-1.7\n...\n%%EOF\n"
+    mock_pdf_runner.create_or_find_pdf_document.return_value = pdf_doc
+    mock_pdf_runner.audit_pdf_document.return_value = MagicMock()
+
+    result = await handle_pdf_url_after_navigation_failed(
+        db=mock_db,
+        pdf_runner=mock_pdf_runner,
+        page=page,
+        run_ai_analysis=False,
+        ai_api_key=None,
+    )
+
+    mock_pdf_runner.fetch_pdf_from_url.assert_awaited_once_with(page.url)
+    mock_pdf_runner.create_or_find_pdf_document.assert_awaited_once()
+    mock_pdf_runner.audit_pdf_document.assert_awaited_once()
+    assert page.status == PageStatus.IS_PDF
+    assert page.linked_pdf_document_id == "doc-1"
+    assert result is mock_pdf_runner.audit_pdf_document.return_value
+
+
+@pytest.mark.asyncio
+async def test_navigation_aborted_pdf_marks_page_error_on_fetch_failure(
+    mock_pdf_runner: AsyncMock, mock_db: MagicMock
+) -> None:
+    """A non-NotAPdf/PdfTooLarge fetch error → page.status=ERROR with reason."""
+    page = _make_page()
+    mock_pdf_runner.fetch_pdf_from_url.side_effect = RuntimeError("connection refused")
+
+    with pytest.raises(RuntimeError, match="connection refused"):
+        await handle_pdf_url_after_navigation_failed(
+            db=mock_db,
+            pdf_runner=mock_pdf_runner,
+            page=page,
+            run_ai_analysis=False,
+            ai_api_key=None,
+        )
+
+    assert page.status == PageStatus.ERROR
+    assert page.error_reason is not None
+    assert "PDF download failed" in page.error_reason
+    mock_pdf_runner.create_or_find_pdf_document.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_navigation_aborted_pdf_no_runner_marks_page_error(
+    mock_db: MagicMock,
+) -> None:
+    """No PdfRunner → page.status=ERROR; never tries to fetch."""
+    page = _make_page()
+
+    with pytest.raises(RuntimeError, match="no PdfRunner"):
+        await handle_pdf_url_after_navigation_failed(
+            db=mock_db,
+            pdf_runner=None,
+            page=page,
+            run_ai_analysis=False,
+            ai_api_key=None,
+        )
+
+    assert page.status == PageStatus.ERROR
+
+
+@pytest.mark.asyncio
+async def test_navigation_aborted_pdf_rejects_not_a_pdf(
+    mock_pdf_runner: AsyncMock, mock_db: MagicMock
+) -> None:
+    """fetch_pdf_from_url raises NotAPdf → page.status=ERROR with 'PDF rejected'."""
+    page = _make_page()
+    mock_pdf_runner.fetch_pdf_from_url.side_effect = NotAPdf("no magic bytes")
+
+    with pytest.raises(NotAPdf):
+        await handle_pdf_url_after_navigation_failed(
+            db=mock_db,
+            pdf_runner=mock_pdf_runner,
+            page=page,
+            run_ai_analysis=False,
+            ai_api_key=None,
+        )
+
+    assert page.status == PageStatus.ERROR
+    assert page.error_reason is not None
+    assert "PDF rejected" in page.error_reason

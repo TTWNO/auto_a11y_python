@@ -59,6 +59,69 @@ async def fetch_pdf_with_playwright_cookies(
             return await resp.read()
 
 
+def url_looks_like_pdf(url: str) -> bool:
+    """Heuristic: does this URL likely serve a PDF?
+
+    Used as a fallback signal when Playwright's :meth:`goto` returns
+    ``None`` (Chromium aborts navigation when the response is a
+    download — the PDF case). True if the URL path ends in ``.pdf``,
+    optionally followed by a query or fragment.
+    """
+    from urllib.parse import urlparse
+    parsed = urlparse(url)
+    return parsed.path.lower().endswith(".pdf")
+
+
+async def _audit_pdf_bytes(
+    *,
+    db: Database,
+    pdf_runner: "PdfRunner",
+    page: Page,
+    pdf_bytes: bytes,
+    run_ai_analysis: bool,
+    ai_api_key: str | None,
+) -> TestResult:
+    """Common tail used by both the in-flight (`handle_opportunistic_pdf`)
+    and the navigation-aborted (`handle_pdf_url_after_navigation_failed`)
+    paths. Validates / dedups via the runner, marks the page IS_PDF,
+    and triggers the audit.
+    """
+    website = db.get_website(page.website_id)
+    if website is None:
+        page.status = PageStatus.ERROR
+        page.error_reason = f"Website {page.website_id} not found"
+        db.update_page(page)
+        raise RuntimeError(page.error_reason)
+
+    try:
+        pdf_doc = await pdf_runner.create_or_find_pdf_document(
+            pdf_bytes,
+            website_id=page.website_id,
+            project_id=website.project_id,
+            source_type="opportunistic",
+            discovered_from_page_id=page.id,
+            discovered_from_user_id=None,
+            original_filename=page.url.rsplit("/", 1)[-1] or "document.pdf",
+            source_url=page.url,
+        )
+    except (NotAPdf, PdfTooLarge) as exc:
+        page.status = PageStatus.ERROR
+        page.error_reason = f"PDF rejected: {exc}"
+        db.update_page(page)
+        raise
+
+    page.status = PageStatus.IS_PDF
+    page.linked_pdf_document_id = pdf_doc.id
+    db.update_page(page)
+
+    return await pdf_runner.audit_pdf_document(
+        pdf_doc.id or "",
+        run_ai=run_ai_analysis,
+        ai_api_key=ai_api_key,
+        wcag_level="AA",
+    )
+
+
 async def handle_opportunistic_pdf(
     *,
     db: Database,
@@ -112,42 +175,60 @@ async def handle_opportunistic_pdf(
         db.update_page(page)
         raise
 
-    # Look up the website's project_id (PdfDocument needs it).
-    website = db.get_website(page.website_id)
-    if website is None:
+    return await _audit_pdf_bytes(
+        db=db,
+        pdf_runner=pdf_runner,
+        page=page,
+        pdf_bytes=pdf_bytes,
+        run_ai_analysis=run_ai_analysis,
+        ai_api_key=ai_api_key,
+    )
+
+
+async def handle_pdf_url_after_navigation_failed(
+    *,
+    db: Database,
+    pdf_runner: "PdfRunner | None",
+    page: Page,
+    run_ai_analysis: bool,
+    ai_api_key: str | None,
+) -> TestResult:
+    """Fallback when Playwright's ``goto`` returns ``None`` on a PDF URL.
+
+    Chromium aborts navigation when the response is a download (the
+    default behaviour for ``application/pdf``), so the response object
+    we'd ordinarily inspect is unavailable. We re-fetch directly via
+    aiohttp through :meth:`PdfRunner.fetch_pdf_from_url`, then run the
+    same opportunistic-audit tail.
+    """
+    if pdf_runner is None:
         page.status = PageStatus.ERROR
-        page.error_reason = f"Website {page.website_id} not found"
+        page.error_reason = (
+            "PDF URL detected but no PdfRunner configured."
+        )
         db.update_page(page)
         raise RuntimeError(page.error_reason)
 
     try:
-        pdf_doc = await pdf_runner.create_or_find_pdf_document(
-            pdf_bytes,
-            website_id=page.website_id,
-            project_id=website.project_id,
-            source_type="opportunistic",
-            discovered_from_page_id=page.id,
-            discovered_from_user_id=None,
-            original_filename=page.url.rsplit("/", 1)[-1] or "document.pdf",
-            source_url=page.url,
-        )
+        pdf_bytes = await pdf_runner.fetch_pdf_from_url(page.url)
     except (NotAPdf, PdfTooLarge) as exc:
         page.status = PageStatus.ERROR
         page.error_reason = f"PDF rejected: {exc}"
         db.update_page(page)
         raise
+    except Exception as exc:
+        page.status = PageStatus.ERROR
+        page.error_reason = f"PDF download failed: {exc}"
+        db.update_page(page)
+        raise
 
-    # Mark the page as a PDF and link the doc.
-    page.status = PageStatus.IS_PDF
-    page.linked_pdf_document_id = pdf_doc.id
-    db.update_page(page)
-
-    # Audit (returns a TestResult attached to the PdfDocument, not the Page).
-    return await pdf_runner.audit_pdf_document(
-        pdf_doc.id or "",
-        run_ai=run_ai_analysis,
+    return await _audit_pdf_bytes(
+        db=db,
+        pdf_runner=pdf_runner,
+        page=page,
+        pdf_bytes=pdf_bytes,
+        run_ai_analysis=run_ai_analysis,
         ai_api_key=ai_api_key,
-        wcag_level="AA",
     )
 
 
@@ -287,6 +368,19 @@ class TestRunner:
                 )
 
                 if not response:
+                    # Playwright's goto() returns None on download responses
+                    # (Chromium's default behaviour for application/pdf is to
+                    # download, which aborts the navigation). If the URL
+                    # looks like a PDF, route through the opportunistic
+                    # audit flow via a direct fetch.
+                    if url_looks_like_pdf(page.url):
+                        return await handle_pdf_url_after_navigation_failed(
+                            db=self.db,
+                            pdf_runner=self._pdf_runner,
+                            page=page,
+                            run_ai_analysis=run_ai_analysis,
+                            ai_api_key=ai_api_key,
+                        )
                     raise RuntimeError(f"Failed to load page: {page.url}")
 
                 # Opportunistic PDF detection — must happen before wait_for_selector('body')

@@ -99,8 +99,11 @@ right severity for a particular row. Currently no rows override.
 """
 from __future__ import annotations
 
+import logging
 import re
 from typing import TypedDict
+
+logger = logging.getLogger(__name__)
 
 # Import a check-module submodule first so the
 # :mod:`auto_a11y.pdf.audit` package's ``__init__`` resolves before
@@ -824,6 +827,15 @@ CHECK_CATALOGUE: list[CatalogueRow] = [
         stable_id="PdfWarnLineHeightInsufficient",
         touchpoint=_TAG, standard="WCAG 1.4.12",
     ),
+    # FAIL variant emitted when >50% of measured line pairs fall below
+    # the minimum ratio. The result string in fonts.py is a runtime
+    # conditional ('FAIL' if pct_below > 50 else 'WARN') so the AST
+    # completeness scanner doesn't see it; this row plugs the gap.
+    _row(
+        name="Line height accessible", result="FAIL",
+        stable_id="PdfErrLineHeightInsufficient",
+        touchpoint=_TAG, standard="WCAG 1.4.12",
+    ),
     _row(
         name="Text alignment accessible", result="WARN",
         stable_id="PdfWarnTextAlignmentNonOptimal",
@@ -996,22 +1008,45 @@ def to_violation(
         return None
     row = _lookup_row(cr.name, cr.result)
     if row is None:
-        raise ValueError(
-            f"No CHECK_CATALOGUE row for ({cr.name!r}, {cr.result!r})"
+        # Fail-soft: a missing catalogue row used to raise ValueError,
+        # which crashed the entire audit at the point where any single
+        # check produced an unmapped (name, result) pair. The
+        # completeness regression test (`test_every_check_emitted_by_
+        # engine_has_catalogue_entry`) still catches missing rows during
+        # CI, so this branch only fires in production for runtime-
+        # conditional result strings the AST scanner can't see (e.g.,
+        # `result="FAIL" if cond else "WARN"`). Synthesise a stable ID
+        # from the result so the violation still surfaces to the user
+        # with a placeholder identifier; the audit completes.
+        logger.warning(
+            "No CHECK_CATALOGUE row for (%r, %r); using fallback id. "
+            + "Add the row to CHECK_CATALOGUE to fix the display IDs.",
+            cr.name, cr.result,
         )
-    impact = row["impact_override"] or default_impact(cr.result)
-    stable_id = row["stable_id"]
+        slug = re.sub(r"[^A-Za-z0-9]+", "", cr.name) or "Unknown"
+        prefix = {"FAIL": "Err", "WARN": "Warn", "INFO": "Info"}.get(
+            cr.result, "Unknown",
+        )
+        stable_id = f"Pdf{prefix}{slug}"
+        impact = default_impact(cr.result)
+        touchpoint_value = TouchpointID.PDF_TAGGING.value
+        wcag_criteria: list[str] = []
+    else:
+        impact = row["impact_override"] or default_impact(cr.result)
+        stable_id = row["stable_id"]
+        touchpoint_value = row["touchpoint"].value
+        wcag_criteria = list(row["wcag_criteria"])
     return Violation(
         id=stable_id,
         impact=impact,
-        touchpoint=row["touchpoint"].value,
+        touchpoint=touchpoint_value,
         description=f"pdf-check-{stable_id}-name",
         short_title=f"pdf-check-{stable_id}-short-title",
         what=f"pdf-check-{stable_id}-what",
         why=f"pdf-check-{stable_id}-why",
         who=f"pdf-check-{stable_id}-who",
         remediation=f"pdf-remediation-{stable_id}",
-        wcag_criteria=list(row["wcag_criteria"]),
+        wcag_criteria=wcag_criteria,
         metadata={
             "pdf_doc_id": pdf_doc_id,
             "pdfmax_original_details": cr.details,

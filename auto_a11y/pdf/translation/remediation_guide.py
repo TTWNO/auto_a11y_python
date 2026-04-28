@@ -48,6 +48,7 @@ STABLE_ID_TO_REMEDIATION_KEY: dict[str, str] = {
     'PdfErrIdentityCmapMissingToUnicode': 'pdf-remediation-PdfErrIdentityCmapMissingToUnicode',
     'PdfErrLabelInNameMismatch': 'pdf-remediation-PdfErrLabelInNameMismatch',
     'PdfErrLangValuesInvalidBcp47': 'pdf-remediation-PdfErrLangValuesInvalidBcp47',
+    'PdfErrLineHeightInsufficient': 'pdf-remediation-PdfErrLineHeightInsufficient',
     'PdfErrLinkAnnotationEmpty': 'pdf-remediation-PdfErrLinkAnnotationEmpty',
     'PdfErrLinkAnnotationMissingContents': 'pdf-remediation-PdfErrLinkAnnotationMissingContents',
     'PdfErrLinkAnnotationNotInLinkTag': 'pdf-remediation-PdfErrLinkAnnotationNotInLinkTag',

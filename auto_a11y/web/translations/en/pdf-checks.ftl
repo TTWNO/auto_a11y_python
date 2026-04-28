@@ -1548,6 +1548,21 @@ pdf-check-PdfWarnLineHeightInsufficient-why =
 pdf-check-PdfWarnLineHeightInsufficient-who =
     Users of assistive technology.
 
+pdf-check-PdfErrLineHeightInsufficient-name =
+    Line height accessible
+
+pdf-check-PdfErrLineHeightInsufficient-short-title =
+    Line height accessible
+
+pdf-check-PdfErrLineHeightInsufficient-what =
+    Tight line spacing (leading) causes text lines to appear crowded, making it difficult to track from one line to the next.
+
+pdf-check-PdfErrLineHeightInsufficient-why =
+    Users with visual processing disorders, dyslexia, and low vision are most affected. Unlike web content, PDF line spacing cannot be adjusted by the user — the authored value is final.
+
+pdf-check-PdfErrLineHeightInsufficient-who =
+    Users of assistive technology.
+
 pdf-check-PdfWarnTextAlignmentNonOptimal-name =
     Text alignment accessible (warning)
 

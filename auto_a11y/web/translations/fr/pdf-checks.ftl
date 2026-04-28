@@ -4,7 +4,7 @@
 ### file is considered complete. The Phase 7.4 coverage test (pending)
 ### will refuse to pass while any English placeholder remains.
 ###
-### Generated: 2026-04-28T16:19:06+00:00
+### Generated: 2026-04-28T20:53:01+00:00
 ###
 
 pdf-check-PdfErrDocumentTitleNotSet-name =
@@ -1550,6 +1550,21 @@ pdf-check-PdfWarnLineHeightInsufficient-why =
     Users with visual processing disorders, dyslexia, and low vision are most affected. Unlike web content, PDF line spacing cannot be adjusted by the user — the authored value is final.
 
 pdf-check-PdfWarnLineHeightInsufficient-who =
+    Users of assistive technology.
+
+pdf-check-PdfErrLineHeightInsufficient-name =
+    Line height accessible
+
+pdf-check-PdfErrLineHeightInsufficient-short-title =
+    Line height accessible
+
+pdf-check-PdfErrLineHeightInsufficient-what =
+    Tight line spacing (leading) causes text lines to appear crowded, making it difficult to track from one line to the next.
+
+pdf-check-PdfErrLineHeightInsufficient-why =
+    Users with visual processing disorders, dyslexia, and low vision are most affected. Unlike web content, PDF line spacing cannot be adjusted by the user — the authored value is final.
+
+pdf-check-PdfErrLineHeightInsufficient-who =
     Users of assistive technology.
 
 pdf-check-PdfWarnTextAlignmentNonOptimal-name =

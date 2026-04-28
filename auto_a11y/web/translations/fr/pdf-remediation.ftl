@@ -4,7 +4,7 @@
 ### file is considered complete. The Phase 7.4 coverage test (pending)
 ### will refuse to pass while any English placeholder remains.
 ###
-### Generated: 2026-04-28T16:18:59+00:00
+### Generated: 2026-04-28T20:52:54+00:00
 ###
 
 pdf-remediation-PdfErrDocumentTitleNotSet =
@@ -4334,6 +4334,56 @@ pdf-remediation-PdfWarnItalicTextOveruse =
     Learn more: https://www.w3.org/WAI/WCAG22/Understanding/text-spacing.html
 
 pdf-remediation-PdfWarnLineHeightInsufficient =
+    Why it matters
+    
+    Tight line spacing (leading) causes text lines to appear crowded, making it difficult to track from one line to the next. Users with visual processing disorders, dyslexia, and low vision are most affected. Unlike web content, PDF line spacing cannot be adjusted by the user — the authored value is final.
+    
+    Principle
+    
+    Line height (leading) should be at least 1.5 times the font size. For example, 12pt text should have at least 18pt line spacing. WCAG 1.4.12 specifies 1.5× as the minimum for comfortable reading.
+    
+    How to fix in Adobe Acrobat Pro
+    
+      1. Use Edit PDF to select text with tight line spacing.
+      2. In the Format panel, increase the Leading value.
+      3. For 12pt text, set leading to at least 18pt (1.5× the font size).
+      4. Note: Editing leading in Acrobat can cause text reflow — prefer fixing in the source document.
+    
+    How to fix in Microsoft Word
+    
+      1. Select the text with tight spacing.
+      2. Go to Home > Paragraph > Line Spacing (or Format > Paragraph).
+      3. Set Line spacing to 'Multiple' with a value of 1.5 (for 1.5× spacing).
+      4. Update your paragraph styles to enforce this minimum.
+    
+    How to fix in Adobe InDesign
+    
+      1. Select the text frame.
+      2. In the Character panel, set Leading to at least 1.5× the font size.
+      3. Example: for 12pt text, set leading to 18pt or use Auto leading at 150%.
+      4. Update paragraph styles to enforce the minimum leading.
+    
+    Before
+    
+    Tight line spacing
+    Font: 12pt, Leading: 13pt (1.08× ratio)
+    
+    Lines appear crowded; readers lose their place
+    when moving from one line to the next.
+    
+    After
+    
+    Comfortable line spacing
+    Font: 12pt, Leading: 18pt (1.5× ratio)
+    
+    Clear separation between lines; easy to track
+    from line to line.
+    
+    1.5× is the WCAG minimum. For optimal readability, 1.5×–2.0× is recommended. Going above 2.0× can make text feel disconnected.
+    
+    Learn more: https://www.w3.org/WAI/WCAG22/Understanding/text-spacing.html
+
+pdf-remediation-PdfErrLineHeightInsufficient =
     Why it matters
     
     Tight line spacing (leading) causes text lines to appear crowded, making it difficult to track from one line to the next. Users with visual processing disorders, dyslexia, and low vision are most affected. Unlike web content, PDF line spacing cannot be adjusted by the user — the authored value is final.

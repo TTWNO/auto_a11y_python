@@ -263,20 +263,30 @@ def test_to_violation_returns_violation_for_info() -> None:
     assert v.wcag_criteria == ["1.4.3"]
 
 
-def test_to_violation_unknown_check_raises() -> None:
-    """Unknown ``(name, result)`` pairs raise ValueError. The
-    completeness test ensures the audit engine never produces such a
-    pair, but :func:`to_violation` still has to fail loudly so any
-    skew is caught at runtime in tests / dev rather than silently
-    dropped."""
+def test_to_violation_unknown_check_falls_back_with_synthesised_id(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Unknown ``(name, result)`` pairs no longer raise — they used to
+    crash the entire audit when a runtime-conditional result string
+    (e.g. ``result="FAIL" if cond else "WARN"`` in a check function)
+    bypassed the AST completeness scanner. Now the function logs a
+    warning and synthesises a stable ID so the audit completes; the
+    completeness regression test still catches missing literals during
+    CI."""
+    import logging
+
     cr = CheckResult(
         name="Bogus check that doesn't exist",
         standard="--",
         result="FAIL",
         details=".",
     )
-    with pytest.raises(ValueError, match="No CHECK_CATALOGUE row"):
-        to_violation(cr, pdf_doc_id="doc-1")
+    with caplog.at_level(logging.WARNING, logger='auto_a11y.pdf.translation.check_mapper'):
+        v = to_violation(cr, pdf_doc_id="doc-1")
+    assert v is not None
+    assert v.id.startswith("PdfErr")
+    assert v.impact == ImpactLevel.HIGH  # default for FAIL
+    assert any('No CHECK_CATALOGUE row' in rec.message for rec in caplog.records)
 
 
 def test_to_violation_unknown_pass_returns_none_without_raising() -> None:

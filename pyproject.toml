@@ -24,6 +24,7 @@ files = [
     # PDF audit engine port — Phase 7. Other scripts/ entries remain
     # excluded (no per-tool exclude knob in mypy; we just don't list them).
     "scripts/port_pdfmax_remediation_guide.py",
+    "scripts/generate_pdf_checks_ftl.py",
 ]
 mypy_path = "stubs"
 namespace_packages = true
@@ -59,6 +60,7 @@ include = [
     "test_fixtures.py",
     # PDF audit engine port — Phase 7.
     "scripts/port_pdfmax_remediation_guide.py",
+    "scripts/generate_pdf_checks_ftl.py",
 ]
 stubPath = "stubs"
 typeCheckingMode = "strict"

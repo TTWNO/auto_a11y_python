@@ -1,0 +1,16 @@
+{# Empty-state partial: shown when a PDF list has zero rows. #}
+{# Required context: `project` (for the Upload CTA link). May be None when #}
+{# the caller is the website-scoped list — in that case the CTA is hidden. #}
+<div class="alert alert-info" role="status">
+    <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i>
+    {{ ftl('pdf-list-empty') }}
+    {% if project is not none and project.id %}
+    <p class="mt-2 mb-0">
+        <a class="btn btn-brand btn-sm"
+           href="{{ url_for('pdf.add_form', project_id=project.id) }}">
+            <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i>
+            {{ ftl('pdf-list-empty-cta') }}
+        </a>
+    </p>
+    {% endif %}
+</div>

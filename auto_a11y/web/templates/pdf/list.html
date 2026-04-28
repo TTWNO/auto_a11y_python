@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}{{ ftl('pdf-list-page-title') }} - {{ ftl('common-auto-a11y') }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    {# Breadcrumb: project (or website) — PDFs (active). #}
+    <nav aria-label="{{ ftl('common-breadcrumb') }}">
+        <ol class="breadcrumb">
+            {% if project is not none and project.id %}
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('projects.view_project', project_id=project.id) }}">
+                    {{ project.name }}
+                </a>
+            </li>
+            {% endif %}
+            {% if website is not none and website.id %}
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('websites.view_website', website_id=website.id) }}">
+                    {{ website.name or website.url }}
+                </a>
+            </li>
+            {% endif %}
+            <li class="breadcrumb-item active" aria-current="page">{{ ftl('pdf-breadcrumb') }}</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4 gap-2">
+        <h1 class="mb-0">
+            <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i>
+            {{ ftl('pdf-list-page-title') }}
+        </h1>
+        {% if project is not none and project.id %}
+        <a href="{{ url_for('pdf.add_form', project_id=project.id) }}"
+           class="btn btn-brand">
+            <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i>
+            {{ ftl('pdf-add-button') }}
+        </a>
+        {% endif %}
+    </div>
+
+    {# Filter form — only shown for the project-scoped list (the website-scoped
+       view shows every PDF for the website without status filtering). #}
+    {% if project is not none and project.id %}
+    <form method="GET"
+          action="{{ url_for('pdf.list_for_project', project_id=project.id) }}"
+          class="row g-2 align-items-end mb-3"
+          aria-label="{{ ftl('pdf-list-filter-aria-label') }}">
+        <div class="col-12 col-md-4">
+            <label for="pdf-filter-status" class="form-label">
+                {{ ftl('common-status-2') }}
+            </label>
+            <select id="pdf-filter-status" name="status" class="form-control">
+                <option value="">{{ ftl('common-all') }}</option>
+                {% for opt in ['pending', 'fetching', 'fetch_failed', 'auditing', 'audited', 'audit_failed'] %}
+                <option value="{{ opt }}" {% if status_filter == opt %}selected{% endif %}>
+                    {{ ftl('status-pdf-' ~ opt | replace('_', '-')) }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="form-check mt-2">
+                <input class="form-check-input"
+                       type="checkbox"
+                       id="pdf-filter-has-issues"
+                       name="has_issues"
+                       value="true"
+                       {% if has_issues_filter %}checked{% endif %}>
+                <label class="form-check-label" for="pdf-filter-has-issues">
+                    {{ ftl('pdf-list-filter-has-issues') }}
+                </label>
+            </div>
+        </div>
+        <div class="col-12 col-md-4 d-flex gap-2">
+            <button type="submit" class="btn btn-brand">
+                <i class="bi bi-funnel" aria-hidden="true"></i>
+                {{ ftl('common-apply-filters') }}
+            </button>
+            <a href="{{ url_for('pdf.list_for_project', project_id=project.id) }}"
+               class="btn btn-neutral">
+                {{ ftl('common-clear-filters') }}
+            </a>
+        </div>
+    </form>
+    {% endif %}
+
+    {% if pdfs %}
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <caption class="visually-hidden">{{ ftl('pdf-list-page-title') }}</caption>
+            <thead>
+                <tr>
+                    <th scope="col">{{ ftl('common-title') }}</th>
+                    {% if website is none %}
+                    <th scope="col">{{ ftl('common-website') }}</th>
+                    {% endif %}
+                    <th scope="col">{{ ftl('pdf-meta-source') }}</th>
+                    <th scope="col">{{ ftl('pdf-meta-page-count') }}</th>
+                    <th scope="col">{{ ftl('pdf-meta-last-audited-at') }}</th>
+                    <th scope="col">{{ ftl('common-status-2') }}</th>
+                    <th scope="col">{{ ftl('common-actions') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pdf in pdfs %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('pdf.detail', pdf_document_id=pdf.id) }}">
+                            {{ pdf.original_filename or pdf.source_url or pdf.id }}
+                        </a>
+                    </td>
+                    {% if website is none %}
+                    <td>
+                        <small class="text-muted">{{ pdf.website_id }}</small>
+                    </td>
+                    {% endif %}
+                    <td>
+                        {% if pdf.source_type == 'uploaded' %}
+                            <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i>
+                            <span class="visually-hidden">{{ ftl('pdf-source-uploaded') }}</span>
+                        {% elif pdf.source_type == 'manual_url' %}
+                            <i class="bi bi-link-45deg" aria-hidden="true"></i>
+                            <span class="visually-hidden">{{ ftl('pdf-source-manual-url') }}</span>
+                        {% else %}
+                            <i class="bi bi-search" aria-hidden="true"></i>
+                            <span class="visually-hidden">{{ ftl('pdf-source-opportunistic') }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if pdf.page_count is not none %}{{ pdf.page_count }}{% else %}<span class="text-muted">-</span>{% endif %}
+                    </td>
+                    <td>
+                        {% if pdf.last_audited_at %}
+                            <small>{{ pdf.last_audited_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                        {% else %}
+                            <span class="text-muted">{{ ftl('common-never') }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% set badge_class = {
+                            'pending': 'badge-neutral',
+                            'fetching': 'badge-info',
+                            'fetch_failed': 'badge-high',
+                            'auditing': 'badge-info',
+                            'audited': 'badge-pass',
+                            'audit_failed': 'badge-high'
+                        }.get(pdf.status.value, 'badge-neutral') %}
+                        <span class="badge {{ badge_class }}">
+                            {{ ftl('status-pdf-' ~ pdf.status.value | replace('_', '-')) }}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="btn-group" role="group" aria-label="{{ ftl('pdf-row-actions-aria-label') }}">
+                            <a href="{{ url_for('pdf.detail', pdf_document_id=pdf.id) }}"
+                               class="btn btn-sm btn-outline-brand">
+                                <i class="bi bi-eye" aria-hidden="true"></i>
+                                <span class="visually-hidden">{{ ftl('common-view') }}</span>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    {% include 'pdf/_empty_state.html' %}
+    {% endif %}
+</div>
+{% endblock %}

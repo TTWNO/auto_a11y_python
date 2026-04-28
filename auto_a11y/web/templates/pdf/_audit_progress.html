@@ -1,0 +1,36 @@
+{# Audit progress partial: rendered when pdf.status == AUDITING. #}
+{# Container is wired up by an SSE-driven script (Phase 9 backend); the #}
+{# template only emits the static skeleton with an aria-live polite region #}
+{# so screen-reader users get the stage updates as they stream in. #}
+{# Required context: `pdf` (PdfDocument). #}
+<section class="card mb-3"
+         id="pdf-audit-progress-{{ pdf.id }}"
+         data-pdf-audit-progress="{{ pdf.id }}"
+         aria-labelledby="pdf-audit-progress-heading-{{ pdf.id }}">
+    <div class="card-header card-header-info">
+        <h2 id="pdf-audit-progress-heading-{{ pdf.id }}" class="h6 mb-0">
+            <span class="spinner-border spinner-border-sm me-2"
+                  role="status" aria-hidden="true"></span>
+            {{ ftl('pdf-audit-in-progress') }}
+        </h2>
+    </div>
+    <div class="card-body">
+        <div class="progress" style="height: 1.25rem;">
+            <div class="progress-bar progress-pass"
+                 role="progressbar"
+                 data-pdf-progress-bar
+                 style="width: 0%;"
+                 aria-valuenow="0"
+                 aria-valuemin="0"
+                 aria-valuemax="100">
+                <span class="visually-hidden">0%</span>
+            </div>
+        </div>
+        <p class="mt-2 mb-0 small text-muted"
+           data-pdf-progress-stage
+           aria-live="polite"
+           aria-atomic="true">
+            {{ ftl('pdf-audit-progress-waiting') }}
+        </p>
+    </div>
+</section>

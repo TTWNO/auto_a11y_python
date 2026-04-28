@@ -64,3 +64,40 @@ pdf-meta-file-size-bytes = File size
 pdf-source-uploaded = Uploaded
 pdf-source-manual-url = Manual URL
 pdf-source-opportunistic = Discovered while testing a page
+
+# List view (Phase 9.4) — TODO_FR placeholder English
+pdf-list-filter-aria-label = Filter PDF documents
+pdf-list-filter-has-issues = Only show PDFs with issues
+pdf-row-actions-aria-label = Actions for this PDF
+
+# Add/upload form (Phase 9.4) — TODO_FR placeholder English
+pdf-add-select-website = Choose a website…
+pdf-add-website-help = The PDF will be linked to this website for tracking and reporting.
+pdf-add-source-legend = Source
+pdf-add-source-upload-radio = Upload a PDF from your computer
+pdf-add-source-url-radio = Add a PDF by URL
+pdf-upload-file-help = Choose a .pdf file (must contain the %PDF- magic bytes).
+
+# Audit progress (Phase 9.4) — TODO_FR placeholder English
+pdf-audit-in-progress = Audit in progress
+pdf-audit-progress-waiting = Waiting for the next audit stage…
+
+# Result summary (Phase 9.4) — TODO_FR placeholder English
+pdf-result-summary-not-audited = This PDF has not been audited yet.
+pdf-result-summary-aria-label = Audit summary
+pdf-result-summary-info = { $count ->
+    [one] { $count } informational note
+   *[other] { $count } informational notes
+}
+
+# Detail view (Phase 9.4) — TODO_FR placeholder English
+pdf-detail-actions-aria-label = PDF document actions
+pdf-detail-iframe-title = Embedded PDF viewer
+pdf-detail-no-inline-viewer = No inline viewer is available for this PDF.
+pdf-detail-metadata-heading = Document metadata
+pdf-detail-results-heading = Latest audit results
+pdf-detail-violations-aria-label = Violations from the latest audit
+pdf-detail-no-violations = No violations were found in the latest audit.
+pdf-detail-remediation-summary = How to fix this
+pdf-jump-to-page = Jump to page { $page }
+pdf-delete-confirm = Are you sure you want to delete this PDF? This cannot be undone.

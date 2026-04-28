@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}{{ pdf.original_filename or pdf.id }} - {{ ftl('pdf-detail-page-title') }} - {{ ftl('common-auto-a11y') }}{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/pdf_viewer.js') }}" defer></script>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    {# Breadcrumb + title via the shared partial. #}
+    {% include '_target_header.html' %}
+
+    {# Optional progress bar while an audit is mid-flight. #}
+    {% if pdf.status.value == 'auditing' %}
+        {% include 'pdf/_audit_progress.html' %}
+    {% endif %}
+
+    {# Top action bar: re-audit, delete. #}
+    <div class="d-flex flex-wrap gap-2 mb-3" role="group"
+         aria-label="{{ ftl('pdf-detail-actions-aria-label') }}">
+        <form method="POST"
+              action="{{ url_for('pdf.audit', pdf_document_id=pdf.id) }}"
+              class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <button type="submit"
+                    class="btn btn-brand"
+                    {% if pdf.status.value == 'auditing' %}disabled{% endif %}>
+                <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
+                {% if pdf.last_audited_at %}
+                    {{ ftl('pdf-reaudit-button') }}
+                {% else %}
+                    {{ ftl('pdf-audit-button') }}
+                {% endif %}
+            </button>
+        </form>
+        <form method="POST"
+              action="{{ url_for('pdf.delete', pdf_document_id=pdf.id) }}"
+              class="d-inline"
+              onsubmit="return confirm('{{ ftl('pdf-delete-confirm') }}');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <button type="submit" class="btn btn-high">
+                <i class="bi bi-trash" aria-hidden="true"></i>
+                {{ ftl('pdf-delete-button') }}
+            </button>
+        </form>
+    </div>
+
+    {# Two-pane layout — 55/45 on desktop, stacked on mobile. #}
+    <div class="row g-3" data-pdf-viewer-host>
+        <section class="col-12 col-lg-7"
+                 aria-labelledby="pdf-viewer-heading">
+            <h2 id="pdf-viewer-heading" class="visually-hidden">
+                {{ ftl('pdf-detail-iframe-title') }}
+            </h2>
+            {% if target.inline_viewer_url %}
+            <div class="ratio ratio-4x3 mb-3"
+                 style="min-height: 600px;">
+                <iframe src="{{ target.inline_viewer_url }}"
+                        title="{{ ftl('pdf-detail-iframe-title') }}"
+                        data-pdf-iframe
+                        data-pdf-base-src="{{ target.inline_viewer_url }}"
+                        loading="lazy">
+                </iframe>
+            </div>
+            {% else %}
+            <div class="alert alert-medium" role="alert">
+                <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+                {{ ftl('pdf-detail-no-inline-viewer') }}
+            </div>
+            {% endif %}
+
+            {# Metadata strip beneath the viewer. #}
+            <div class="card">
+                <div class="card-header bg-subtle">
+                    <h3 class="h6 mb-0">{{ ftl('pdf-detail-metadata-heading') }}</h3>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">{{ ftl('pdf-meta-page-count') }}</dt>
+                        <dd class="col-sm-8">{{ pdf.page_count if pdf.page_count is not none else '-' }}</dd>
+
+                        <dt class="col-sm-4">{{ ftl('pdf-meta-pdf-version') }}</dt>
+                        <dd class="col-sm-8">{{ pdf.pdf_version or '-' }}</dd>
+
+                        <dt class="col-sm-4">{{ ftl('pdf-meta-declared-language') }}</dt>
+                        <dd class="col-sm-8">{{ pdf.declared_lang or '-' }}</dd>
+
+                        <dt class="col-sm-4">{{ ftl('pdf-meta-detected-language') }}</dt>
+                        <dd class="col-sm-8">{{ pdf.detected_lang or '-' }}</dd>
+
+                        <dt class="col-sm-4">{{ ftl('pdf-meta-source') }}</dt>
+                        <dd class="col-sm-8">
+                            {% if pdf.source_type == 'uploaded' %}
+                                {{ ftl('pdf-source-uploaded') }}
+                            {% elif pdf.source_type == 'manual_url' %}
+                                {{ ftl('pdf-source-manual-url') }}
+                            {% else %}
+                                {{ ftl('pdf-source-opportunistic') }}
+                            {% endif %}
+                            {% if pdf.source_url %}
+                            <br>
+                            <a href="{{ pdf.source_url }}" target="_blank" rel="noopener">
+                                <small>{{ pdf.source_url }}</small>
+                                <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+                            </a>
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-sm-4">{{ ftl('pdf-meta-discovered-at') }}</dt>
+                        <dd class="col-sm-8">
+                            {% if pdf.discovered_at %}
+                                {{ pdf.discovered_at.strftime('%Y-%m-%d %H:%M') }}
+                            {% else %}-{% endif %}
+                        </dd>
+
+                        <dt class="col-sm-4">{{ ftl('pdf-meta-last-audited-at') }}</dt>
+                        <dd class="col-sm-8">
+                            {% if pdf.last_audited_at %}
+                                {{ pdf.last_audited_at.strftime('%Y-%m-%d %H:%M') }}
+                            {% else %}
+                                {{ ftl('common-never') }}
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-sm-4">{{ ftl('pdf-meta-file-size-bytes') }}</dt>
+                        <dd class="col-sm-8">{{ pdf.file_size_bytes }}</dd>
+
+                        <dt class="col-sm-4">{{ ftl('pdf-meta-sha256') }}</dt>
+                        <dd class="col-sm-8">
+                            <code class="small text-break">{{ pdf.sha256 }}</code>
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </section>
+
+        <section class="col-12 col-lg-5"
+                 aria-labelledby="pdf-results-heading">
+            <h2 id="pdf-results-heading" class="h5 mb-3">
+                {{ ftl('pdf-detail-results-heading') }}
+            </h2>
+
+            <div class="mb-3">
+                {% include '_target_result_summary.html' %}
+            </div>
+
+            {% if test_result is not none and test_result.violations %}
+            <ol class="list-unstyled" aria-label="{{ ftl('pdf-detail-violations-aria-label') }}">
+                {% for violation in test_result.violations %}
+                <li class="card mb-3 border-high">
+                    <div class="card-body">
+                        <div class="d-flex flex-wrap align-items-start gap-2 mb-2">
+                            {% set sev_class = {
+                                'high': 'badge-high',
+                                'medium': 'badge-medium',
+                                'low': 'badge-info'
+                            }.get(violation.impact.value, 'badge-neutral') %}
+                            <span class="badge {{ sev_class }}">
+                                {{ ftl_enum(violation.impact.value) }}
+                            </span>
+                            <span class="badge badge-subtle">
+                                {{ violation.touchpoint }}
+                            </span>
+                            {% if violation.metadata and violation.metadata.pdf_page %}
+                            <button type="button"
+                                    class="btn btn-outline-brand btn-sm ms-auto"
+                                    data-pdf-page="{{ violation.metadata.pdf_page }}">
+                                <i class="bi bi-arrow-up-right-circle" aria-hidden="true"></i>
+                                {{ ftl('pdf-jump-to-page', page=violation.metadata.pdf_page) }}
+                            </button>
+                            {% endif %}
+                        </div>
+                        <h3 class="h6 mb-1">
+                            {{ violation.short_title or violation.id }}
+                        </h3>
+                        <p class="mb-1">{{ violation.description }}</p>
+                        {% if violation.remediation %}
+                        <details class="mt-2">
+                            <summary class="small">{{ ftl('pdf-detail-remediation-summary') }}</summary>
+                            <p class="mb-0 mt-1 small">{{ violation.remediation }}</p>
+                        </details>
+                        {% endif %}
+                    </div>
+                </li>
+                {% endfor %}
+            </ol>
+            {% elif test_result is not none %}
+            <div class="alert alert-pass" role="status">
+                <i class="bi bi-check-circle" aria-hidden="true"></i>
+                {{ ftl('pdf-detail-no-violations') }}
+            </div>
+            {% endif %}
+        </section>
+    </div>
+</div>
+{% endblock %}

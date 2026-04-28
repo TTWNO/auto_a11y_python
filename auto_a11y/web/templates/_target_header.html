@@ -1,0 +1,44 @@
+{# Shared target header: renders breadcrumb + title for either a Page #}
+{# or a PdfDocument detail view. #}
+{# Required context: `target` (TestTargetView from view_models.target). #}
+{# Optional context: `pdf` (PdfDocument) — if `target.kind == 'pdf_document'` #}
+{# it is used to render the lifecycle status badge. #}
+{% if target.breadcrumb %}
+<nav aria-label="{{ ftl('common-breadcrumb') }}">
+    <ol class="breadcrumb">
+        {% for crumb in target.breadcrumb %}
+            {% if crumb.url and not loop.last %}
+            <li class="breadcrumb-item">
+                <a href="{{ crumb.url }}">{{ crumb.label }}</a>
+            </li>
+            {% else %}
+            <li class="breadcrumb-item active" aria-current="page">{{ crumb.label }}</li>
+            {% endif %}
+        {% endfor %}
+    </ol>
+</nav>
+{% endif %}
+
+<header class="d-flex flex-wrap align-items-center gap-2 mb-3">
+    <h1 class="mb-0 me-2">
+        {% if target.kind == 'pdf_document' %}
+            <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i>
+        {% else %}
+            <i class="bi bi-file-earmark-text" aria-hidden="true"></i>
+        {% endif %}
+        {{ target.title }}
+    </h1>
+    {% if target.kind == 'pdf_document' and pdf is defined and pdf is not none %}
+        {% set badge_class = {
+            'pending': 'badge-neutral',
+            'fetching': 'badge-info',
+            'fetch_failed': 'badge-high',
+            'auditing': 'badge-info',
+            'audited': 'badge-pass',
+            'audit_failed': 'badge-high'
+        }.get(pdf.status.value, 'badge-neutral') %}
+        <span class="badge {{ badge_class }}">
+            {{ ftl('status-pdf-' ~ pdf.status.value | replace('_', '-')) }}
+        </span>
+    {% endif %}
+</header>

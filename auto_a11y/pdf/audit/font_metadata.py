@@ -25,6 +25,7 @@ at line 2405).
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 
 import pikepdf
@@ -259,7 +260,11 @@ _FLAG_SYMBOLIC: int = 0x4
 # ---------------------------------------------------------------------------
 
 
-def extract_font_metadata(pdf: pikepdf.Pdf) -> FontMetadata:
+def extract_font_metadata(
+    pdf: pikepdf.Pdf,
+    *,
+    progress: Callable[[str, float], None] | None = None,
+) -> FontMetadata:
     """Walk every page's ``/Resources/Font`` and emit per-font metadata.
 
     De-duplicates fonts by their ``/BaseFont`` value: a font referenced
@@ -279,8 +284,14 @@ def extract_font_metadata(pdf: pikepdf.Pdf) -> FontMetadata:
         :class:`FontMetadata` with one entry per unique base font.
     """
     seen: dict[str, FontInfoDetail] = {}
+    total_pages = max(1, len(pdf.pages))
 
     for page_num, page in enumerate(pdf.pages, start=1):
+        if progress is not None:
+            progress(
+                f"Extracting font metadata: page {page_num} of {total_pages}",
+                (page_num - 1) / total_pages,
+            )
         resources = pikepdf_helpers.get_dict(page.obj, "/Resources")
         if resources is None:
             continue

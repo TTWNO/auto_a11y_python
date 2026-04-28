@@ -26,11 +26,13 @@ import logging
 from pathlib import Path
 
 from flask import (
-    Blueprint, abort, flash, redirect, render_template, request, send_file,
-    url_for,
+    Blueprint, abort, flash, jsonify, redirect, render_template, request,
+    send_file, url_for,
 )
 from flask_login import current_user, login_required
 from werkzeug.wrappers import Response
+
+from typing import Any
 
 from auto_a11y.core.job_manager import JobManager, JobStatus, JobType
 from auto_a11y.models.app_user import UserRole
@@ -412,6 +414,94 @@ def audit(pdf_document_id: str) -> Response:
 
     flash(ftl('pdf-audit-queued'), 'success')
     return redirect(url_for('pdf.detail', pdf_document_id=pdf_document_id))
+
+
+@pdf_bp.route('/pdfs/<pdf_document_id>/audit-status', methods=['GET'])
+@login_required
+def audit_status(pdf_document_id: str) -> Response | tuple[Response, int]:
+    """JSON poll endpoint for the in-progress audit's status + progress.
+
+    Polled by ``static/js/pdf_audit_progress.js`` every couple of seconds
+    while the detail page is open and the document is in AUDITING. The
+    response surfaces the most-recent ``progress.message`` and ``current``
+    pumped by :class:`PdfAuditJob._on_progress` so the UI can stream
+    intra-stage ticks like "Extracting colours: page 7 of 50" without
+    waiting for the page to refresh.
+
+    Schema (all fields nullable to keep the consumer simple):
+
+    .. code-block:: json
+
+       {
+         "doc_status": "auditing|audited|audit_failed|...",
+         "error_reason": null,
+         "last_audit_result_id": null,
+         "job": {
+           "job_id": "...",
+           "status": "running|pending|completed|failed|cancelled|cancelling",
+           "progress": {
+             "current": 42,
+             "total": 100,
+             "message": "Extracting colours: page 7 of 50",
+             "stage": "Extracting colours: page 7 of 50",
+             "fraction": 0.42
+           }
+         } | null
+       }
+    """
+    db = get_db()
+    pdf = db.get_pdf_document(pdf_document_id)
+    if pdf is None:
+        return jsonify({'error': 'pdf_not_found'}), 404
+
+    denied = _require_pdf_role(pdf, *_READ_ROLES)
+    if denied is not None:
+        # `_require_pdf_role` returns a redirect / abort Response on
+        # denial; re-emit as a JSON error so the polling JS doesn't have
+        # to follow redirects.
+        return jsonify({'error': 'forbidden'}), 403
+
+    job_manager = JobManager.get_instance(db)
+    # Most recent active job for this document, if any.
+    job_doc_raw = job_manager.collection.find_one(
+        {
+            'job_type': JobType.PDF_AUDIT.value,
+            'metadata.pdf_document_id': pdf_document_id,
+        },
+        sort=[('created_at', -1)],
+    )
+
+    job_payload: dict[str, Any] | None = None
+    if job_doc_raw is not None:
+        # JobManager.collection is Collection[dict[str, Any]] so
+        # find_one's value is dict[str, Any] and every .get() is Any.
+        # Read each leaf via Any-typed locals so pyright doesn't widen
+        # nested dict types via isinstance narrowing.
+        job_doc: Any = job_doc_raw
+        progress_obj: Any = job_doc.get('progress') if hasattr(job_doc, 'get') else None
+        details_obj: Any = (
+            progress_obj.get('details')
+            if hasattr(progress_obj, 'get')
+            else None
+        )
+        job_payload = {
+            'job_id': job_doc.get('job_id'),
+            'status': job_doc.get('status'),
+            'progress': {
+                'current': progress_obj.get('current') if hasattr(progress_obj, 'get') else None,
+                'total': progress_obj.get('total') if hasattr(progress_obj, 'get') else None,
+                'message': progress_obj.get('message') if hasattr(progress_obj, 'get') else None,
+                'stage': details_obj.get('stage') if hasattr(details_obj, 'get') else None,
+                'fraction': details_obj.get('fraction') if hasattr(details_obj, 'get') else None,
+            },
+        }
+
+    return jsonify({
+        'doc_status': pdf.status.value,
+        'error_reason': pdf.error_reason,
+        'last_audit_result_id': pdf.last_audit_result_id,
+        'job': job_payload,
+    })
 
 
 @pdf_bp.route('/pdfs/<pdf_document_id>/cancel', methods=['POST'])

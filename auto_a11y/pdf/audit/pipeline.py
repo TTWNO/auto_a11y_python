@@ -165,8 +165,13 @@ def _run_audit_with_pdf(
     font_analysis = fonts.extract_font_analysis(pdf_path)
 
     # ---- Step 4b: font-resource metadata --------------------------------
-    _emit(progress, "Extracting font metadata", 0.40)
-    font_metadata = font_metadata_collector.extract_font_metadata(pdf)
+    # Per-font ToUnicode/encoding/glyph-width walk. Per-page sub-progress
+    # so multi-page documents don't sit silent during the walk.
+    _emit(progress, "Extracting font metadata", 0.35)
+    sub_font_meta = _scale_progress(progress, 0.35, 0.45)
+    font_metadata = font_metadata_collector.extract_font_metadata(
+        pdf, progress=sub_font_meta,
+    )
 
     # ---- Step 5: colours (best-effort; Ghostscript-dependent) -----------
     # Colours rasterises every page via Ghostscript — easily the long pole

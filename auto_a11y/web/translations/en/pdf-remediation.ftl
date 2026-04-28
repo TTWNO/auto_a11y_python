@@ -4428,3 +4428,813 @@ pdf-remediation-PdfWarnTextAlignmentNonOptimal =
     Justified alignment is a holdover from print typography. For digital documents, left alignment provides the best readability, especially for screen reader and magnification users.
     
     Learn more: https://www.w3.org/WAI/WCAG22/Understanding/text-spacing.html
+
+pdf-remediation-PdfErrFontMissingToUnicode =
+    Why it matters
+    
+    The /ToUnicode CMap tells PDF readers how to convert internal character codes to Unicode text. Without it, text cannot be copied, searched, or read by screen readers — characters may appear as gibberish or empty strings. This is one of the most common causes of inaccessible PDFs.
+    
+    Principle
+    
+    Every font that uses non-standard encoding must include a /ToUnicode CMap stream. Standard 14 base fonts (Helvetica, Times-Roman, Courier, etc.) and fonts with standard named encodings (WinAnsiEncoding, MacRomanEncoding) are exempt because their mappings are predefined.
+    
+    How to fix in Adobe Acrobat Pro
+    
+      1. This issue usually requires re-creating the PDF from the source document.
+      2. In Acrobat Pro, use Edit > Preflight > Fix: Embed missing fonts, which sometimes adds ToUnicode.
+      3. For stubborn cases, use Edit > Preflight > Convert to PDF/A, which forces Unicode mappings.
+      4. If the source font lacks Unicode mappings entirely, substitute with a Unicode-capable font.
+    
+    How to fix in Microsoft Word
+    
+      1. Re-export the document to PDF, ensuring 'Embed fonts' is checked.
+      2. Word normally generates ToUnicode CMaps automatically.
+      3. If using specialty fonts (barcode, symbol), ensure they have proper Unicode mappings.
+    
+    How to fix in Adobe InDesign
+    
+      1. Re-export to PDF, ensuring font embedding is enabled (default).
+      2. InDesign generates ToUnicode CMaps for most fonts.
+      3. For OpenType CID fonts, check that the font has a valid cmap table.
+      4. If issues persist, try converting text to outlines (last resort — loses text accessibility).
+    
+    Before
+    
+    Font missing ToUnicode CMap
+    Font: /F1 /Type0
+      /BaseFont: /CustomFont
+      /ToUnicode: (missing)
+    
+    Copy-paste result: '□□□□□' or empty string.
+    Screen reader: skips text or reads character codes.
+    
+    After
+    
+    Font with ToUnicode CMap
+    Font: /F1 /Type0
+      /BaseFont: /CustomFont
+      /ToUnicode: stream (CMap)
+    
+    Copy-paste result: correct Unicode text.
+    Screen reader: reads text correctly.
+    
+    The ToUnicode CMap is a lookup table that translates internal font character codes to standard Unicode code points. It's the bridge between the PDF's internal encoding and the text that users and assistive technology actually see.
+    
+    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF7
+
+pdf-remediation-PdfInfoFontMetadataMissingToUnicode =
+    Why it matters
+    
+    The /ToUnicode CMap tells PDF readers how to convert internal character codes to Unicode text. Without it, text cannot be copied, searched, or read by screen readers — characters may appear as gibberish or empty strings. This is one of the most common causes of inaccessible PDFs.
+    
+    Principle
+    
+    Every font that uses non-standard encoding must include a /ToUnicode CMap stream. Standard 14 base fonts (Helvetica, Times-Roman, Courier, etc.) and fonts with standard named encodings (WinAnsiEncoding, MacRomanEncoding) are exempt because their mappings are predefined.
+    
+    How to fix in Adobe Acrobat Pro
+    
+      1. This issue usually requires re-creating the PDF from the source document.
+      2. In Acrobat Pro, use Edit > Preflight > Fix: Embed missing fonts, which sometimes adds ToUnicode.
+      3. For stubborn cases, use Edit > Preflight > Convert to PDF/A, which forces Unicode mappings.
+      4. If the source font lacks Unicode mappings entirely, substitute with a Unicode-capable font.
+    
+    How to fix in Microsoft Word
+    
+      1. Re-export the document to PDF, ensuring 'Embed fonts' is checked.
+      2. Word normally generates ToUnicode CMaps automatically.
+      3. If using specialty fonts (barcode, symbol), ensure they have proper Unicode mappings.
+    
+    How to fix in Adobe InDesign
+    
+      1. Re-export to PDF, ensuring font embedding is enabled (default).
+      2. InDesign generates ToUnicode CMaps for most fonts.
+      3. For OpenType CID fonts, check that the font has a valid cmap table.
+      4. If issues persist, try converting text to outlines (last resort — loses text accessibility).
+    
+    Before
+    
+    Font missing ToUnicode CMap
+    Font: /F1 /Type0
+      /BaseFont: /CustomFont
+      /ToUnicode: (missing)
+    
+    Copy-paste result: '□□□□□' or empty string.
+    Screen reader: skips text or reads character codes.
+    
+    After
+    
+    Font with ToUnicode CMap
+    Font: /F1 /Type0
+      /BaseFont: /CustomFont
+      /ToUnicode: stream (CMap)
+    
+    Copy-paste result: correct Unicode text.
+    Screen reader: reads text correctly.
+    
+    The ToUnicode CMap is a lookup table that translates internal font character codes to standard Unicode code points. It's the bridge between the PDF's internal encoding and the text that users and assistive technology actually see.
+    
+    Learn more: https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF7
+
+pdf-remediation-PdfErrCidFontGidMappingMissing =
+    Why it matters
+    
+    CIDFontType2 fonts (TrueType-based CID fonts) use a /CIDToGIDMap to translate character IDs to glyph IDs in the TrueType font program. Without this mapping, the PDF viewer cannot correctly select glyphs, potentially rendering wrong characters or blanks.
+    
+    Principle
+    
+    Every CIDFontType2 font with an embedded font program (/FontFile2) must include a /CIDToGIDMap entry, either as /Identity (1:1 mapping) or as a stream containing the explicit CID-to-GID mapping table.
+    
+    How to fix in Adobe Acrobat Pro
+    
+      1. This is typically a font embedding issue that requires re-generating the PDF.
+      2. Use Edit > Preflight > Fix: Embed missing fonts to re-embed with correct mappings.
+      3. If the font was subset-embedded incorrectly, re-export from the source application.
+    
+    How to fix in Microsoft Word
+    
+      1. Re-export the document to PDF — Word generates CIDToGIDMap automatically for CJK fonts.
+      2. Ensure the font is installed correctly on the system before exporting.
+    
+    How to fix in Adobe InDesign
+    
+      1. Re-export to PDF — InDesign handles CID font mappings automatically.
+      2. If using custom CJK fonts, verify they have valid cmap and hmtx tables.
+    
+    Before
+    
+    CIDFontType2 missing GID mapping
+    Font: /CIDFontType2
+      /FontFile2: (embedded TrueType)
+      /CIDToGIDMap: (missing)
+    
+    Result: viewer cannot map character IDs to glyphs.
+    
+    After
+    
+    CIDFontType2 with Identity GID mapping
+    Font: /CIDFontType2
+      /FontFile2: (embedded TrueType)
+      /CIDToGIDMap: /Identity
+    
+    Result: CID values map directly to glyph IDs.
+    
+    The /CIDToGIDMap bridges CID (Character ID) values used in the content stream to GID (Glyph ID) values in the TrueType font. /Identity means CID=GID, which is the most common and simplest mapping.
+    
+    Learn more: https://pdfa.org/resource/iso-32000-2/
+
+pdf-remediation-PdfInfoFontMetadataMissingCidGidMapping =
+    Why it matters
+    
+    CIDFontType2 fonts (TrueType-based CID fonts) use a /CIDToGIDMap to translate character IDs to glyph IDs in the TrueType font program. Without this mapping, the PDF viewer cannot correctly select glyphs, potentially rendering wrong characters or blanks.
+    
+    Principle
+    
+    Every CIDFontType2 font with an embedded font program (/FontFile2) must include a /CIDToGIDMap entry, either as /Identity (1:1 mapping) or as a stream containing the explicit CID-to-GID mapping table.
+    
+    How to fix in Adobe Acrobat Pro
+    
+      1. This is typically a font embedding issue that requires re-generating the PDF.
+      2. Use Edit > Preflight > Fix: Embed missing fonts to re-embed with correct mappings.
+      3. If the font was subset-embedded incorrectly, re-export from the source application.
+    
+    How to fix in Microsoft Word
+    
+      1. Re-export the document to PDF — Word generates CIDToGIDMap automatically for CJK fonts.
+      2. Ensure the font is installed correctly on the system before exporting.
+    
+    How to fix in Adobe InDesign
+    
+      1. Re-export to PDF — InDesign handles CID font mappings automatically.
+      2. If using custom CJK fonts, verify they have valid cmap and hmtx tables.
+    
+    Before
+    
+    CIDFontType2 missing GID mapping
+    Font: /CIDFontType2
+      /FontFile2: (embedded TrueType)
+      /CIDToGIDMap: (missing)
+    
+    Result: viewer cannot map character IDs to glyphs.
+    
+    After
+    
+    CIDFontType2 with Identity GID mapping
+    Font: /CIDFontType2
+      /FontFile2: (embedded TrueType)
+      /CIDToGIDMap: /Identity
+    
+    Result: CID values map directly to glyph IDs.
+    
+    The /CIDToGIDMap bridges CID (Character ID) values used in the content stream to GID (Glyph ID) values in the TrueType font. /Identity means CID=GID, which is the most common and simplest mapping.
+    
+    Learn more: https://pdfa.org/resource/iso-32000-2/
+
+pdf-remediation-PdfErrCmapResourcesInvalid =
+    Why it matters
+    
+    Type 0 (composite) fonts reference a CMap resource that defines how character codes map to CID values. If the CMap is a non-standard name that isn't embedded as a stream, the PDF viewer has no way to decode the text, resulting in garbled or missing content.
+    
+    Principle
+    
+    CMap references must either use a predefined standard name (Identity-H, Identity-V, or one of the standard CJK CMaps from ISO 32000) or be embedded directly as a stream object in the PDF. Custom CMap names without embedded data are invalid.
+    
+    How to fix in Adobe Acrobat Pro
+    
+      1. Re-generate the PDF from the source document to embed the CMap correctly.
+      2. Use Edit > Preflight > Convert to PDF/A, which ensures all resources are embedded.
+      3. If using a CJK font, verify the original font includes the referenced CMap.
+    
+    How to fix in Microsoft Word
+    
+      1. Re-export to PDF — Word embeds CMap resources automatically.
+      2. This issue is rare in Word-generated PDFs.
+    
+    How to fix in Adobe InDesign
+    
+      1. Re-export to PDF with all font data embedded.
+      2. For CJK fonts, ensure the Composite Font Manager settings are correct.
+      3. InDesign normally embeds CMap streams for non-standard encodings.
+    
+    Before
+    
+    Non-standard CMap not embedded
+    Font: /Type0
+      /Encoding: /CustomCMap-H  ← not predefined, not embedded
+    
+    Result: viewer cannot decode character codes.
+    
+    After
+    
+    CMap properly embedded
+    Font: /Type0
+      /Encoding: stream (embedded CMap)
+      — or —
+      /Encoding: /Identity-H  ← predefined standard name
+    
+    Result: character codes decode correctly.
+    
+    Predefined CMaps (like Identity-H) are built into every PDF viewer, so they don't need to be embedded. Custom CMaps must be embedded as stream objects so the viewer can use them to decode the font's character codes.
+    
+    Learn more: https://pdfa.org/resource/iso-32000-2/
+
+pdf-remediation-PdfInfoFontMetadataMissingCmapResources =
+    Why it matters
+    
+    Type 0 (composite) fonts reference a CMap resource that defines how character codes map to CID values. If the CMap is a non-standard name that isn't embedded as a stream, the PDF viewer has no way to decode the text, resulting in garbled or missing content.
+    
+    Principle
+    
+    CMap references must either use a predefined standard name (Identity-H, Identity-V, or one of the standard CJK CMaps from ISO 32000) or be embedded directly as a stream object in the PDF. Custom CMap names without embedded data are invalid.
+    
+    How to fix in Adobe Acrobat Pro
+    
+      1. Re-generate the PDF from the source document to embed the CMap correctly.
+      2. Use Edit > Preflight > Convert to PDF/A, which ensures all resources are embedded.
+      3. If using a CJK font, verify the original font includes the referenced CMap.
+    
+    How to fix in Microsoft Word
+    
+      1. Re-export to PDF — Word embeds CMap resources automatically.
+      2. This issue is rare in Word-generated PDFs.
+    
+    How to fix in Adobe InDesign
+    
+      1. Re-export to PDF with all font data embedded.
+      2. For CJK fonts, ensure the Composite Font Manager settings are correct.
+      3. InDesign normally embeds CMap streams for non-standard encodings.
+    
+    Before
+    
+    Non-standard CMap not embedded
+    Font: /Type0
+      /Encoding: /CustomCMap-H  ← not predefined, not embedded
+    
+    Result: viewer cannot decode character codes.
+    
+    After
+    
+    CMap properly embedded
+    Font: /Type0
+      /Encoding: stream (embedded CMap)
+      — or —
+      /Encoding: /Identity-H  ← predefined standard name
+    
+    Result: character codes decode correctly.
+    
+    Predefined CMaps (like Identity-H) are built into every PDF viewer, so they don't need to be embedded. Custom CMaps must be embedded as stream objects so the viewer can use them to decode the font's character codes.
+    
+    Learn more: https://pdfa.org/resource/iso-32000-2/
+
+pdf-remediation-PdfErrToUnicodeInvalidValues =
+    Why it matters
+    
+    ToUnicode CMaps that map characters to U+0000 (null), U+FEFF (byte order mark), or U+FFFE (non-character) produce invalid Unicode text. Screen readers may skip these characters, read them as blanks, or behave unpredictably. Search and copy-paste also fail.
+    
+    Principle
+    
+    Every character code in the ToUnicode CMap must map to a valid, meaningful Unicode code point. Null characters (U+0000), BOM markers (U+FEFF), and non-characters (U+FFFE) are never valid targets for text content.
+    
+    How to fix in Adobe Acrobat Pro
+    
+      1. Re-generate the PDF from the source document with correct font encoding.
+      2. Use Edit > Preflight > Convert to PDF/A to force valid Unicode mappings.
+      3. If specific characters are affected, check the source font's Unicode coverage.
+    
+    How to fix in Microsoft Word
+    
+      1. Re-export to PDF — Word generates valid ToUnicode mappings.
+      2. If using specialty fonts with incomplete Unicode tables, substitute with standard fonts.
+    
+    How to fix in Adobe InDesign
+    
+      1. Re-export to PDF with correct font settings.
+      2. Check the GLYPH panel to verify character mappings.
+      3. Replace any fonts with broken Unicode tables.
+    
+    Before
+    
+    ToUnicode maps to invalid values
+    beginbfchar
+    <0001> <0000>    ← maps to U+0000 (null)
+    <0002> <FFFE>    ← maps to U+FFFE (non-character)
+    endbfchar
+    
+    Result: text extraction produces null bytes or invalid characters.
+    
+    After
+    
+    ToUnicode maps to valid Unicode
+    beginbfchar
+    <0001> <0041>    ← maps to 'A' (U+0041)
+    <0002> <0042>    ← maps to 'B' (U+0042)
+    endbfchar
+    
+    Result: correct text extraction and screen reader output.
+    
+    U+0000, U+FEFF, and U+FFFE are control or non-character code points that have no valid use in text content. They usually indicate a font encoding error or incomplete ToUnicode CMap generation.
+    
+    Learn more: https://pdfa.org/resource/iso-32000-2/
+
+pdf-remediation-PdfInfoFontMetadataMissingValidUnicode =
+    Why it matters
+    
+    ToUnicode CMaps that map characters to U+0000 (null), U+FEFF (byte order mark), or U+FFFE (non-character) produce invalid Unicode text. Screen readers may skip these characters, read them as blanks, or behave unpredictably. Search and copy-paste also fail.
+    
+    Principle
+    
+    Every character code in the ToUnicode CMap must map to a valid, meaningful Unicode code point. Null characters (U+0000), BOM markers (U+FEFF), and non-characters (U+FFFE) are never valid targets for text content.
+    
+    How to fix in Adobe Acrobat Pro
+    
+      1. Re-generate the PDF from the source document with correct font encoding.
+      2. Use Edit > Preflight > Convert to PDF/A to force valid Unicode mappings.
+      3. If specific characters are affected, check the source font's Unicode coverage.
+    
+    How to fix in Microsoft Word
+    
+      1. Re-export to PDF — Word generates valid ToUnicode mappings.
+      2. If using specialty fonts with incomplete Unicode tables, substitute with standard fonts.
+    
+    How to fix in Adobe InDesign
+    
+      1. Re-export to PDF with correct font settings.
+      2. Check the GLYPH panel to verify character mappings.
+      3. Replace any fonts with broken Unicode tables.
+    
+    Before
+    
+    ToUnicode maps to invalid values
+    beginbfchar
+    <0001> <0000>    ← maps to U+0000 (null)
+    <0002> <FFFE>    ← maps to U+FFFE (non-character)
+    endbfchar
+    
+    Result: text extraction produces null bytes or invalid characters.
+    
+    After
+    
+    ToUnicode maps to valid Unicode
+    beginbfchar
+    <0001> <0041>    ← maps to 'A' (U+0041)
+    <0002> <0042>    ← maps to 'B' (U+0042)
+    endbfchar
+    
+    Result: correct text extraction and screen reader output.
+    
+    U+0000, U+FEFF, and U+FFFE are control or non-character code points that have no valid use in text content. They usually indicate a font encoding error or incomplete ToUnicode CMap generation.
+    
+    Learn more: https://pdfa.org/resource/iso-32000-2/
+
+pdf-remediation-PdfErrFontNotdefReferenced =
+    Why it matters
+    
+    When a font's encoding maps characters to .notdef, those characters render as blank or replacement symbols and cannot be extracted as text. Screen readers skip or misread these characters, losing document content.
+    
+    Principle
+    
+    All characters used in the document must map to actual glyphs, not .notdef.
+    
+    How to fix in Adobe Acrobat Pro
+    
+      1. Use Preflight to identify fonts with .notdef references. Re-embed fonts or re-export from source with correct font subsetting.
+    
+    How to fix in Microsoft Word
+    
+      1. Ensure all characters are available in the selected fonts. Avoid symbol fonts for text content.
+    
+    How to fix in Adobe InDesign
+    
+      1. Check font subsetting settings. Use Package to collect all fonts and re-export.
+    
+    Before
+    
+    Before: Character mapped to /.notdef
+    Character shows as blank box; cannot be read or searched.
+    
+    After
+    
+    After: Character mapped to correct glyph
+    Character displays and extracts correctly.
+    
+    Every character code must resolve to a valid glyph in the font.
+    
+    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+
+pdf-remediation-PdfInfoFontMetadataMissingNotdef =
+    Why it matters
+    
+    When a font's encoding maps characters to .notdef, those characters render as blank or replacement symbols and cannot be extracted as text. Screen readers skip or misread these characters, losing document content.
+    
+    Principle
+    
+    All characters used in the document must map to actual glyphs, not .notdef.
+    
+    How to fix in Adobe Acrobat Pro
+    
+      1. Use Preflight to identify fonts with .notdef references. Re-embed fonts or re-export from source with correct font subsetting.
+    
+    How to fix in Microsoft Word
+    
+      1. Ensure all characters are available in the selected fonts. Avoid symbol fonts for text content.
+    
+    How to fix in Adobe InDesign
+    
+      1. Check font subsetting settings. Use Package to collect all fonts and re-export.
+    
+    Before
+    
+    Before: Character mapped to /.notdef
+    Character shows as blank box; cannot be read or searched.
+    
+    After
+    
+    After: Character mapped to correct glyph
+    Character displays and extracts correctly.
+    
+    Every character code must resolve to a valid glyph in the font.
+    
+    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+
+pdf-remediation-PdfErrFontGlyphWidthsInconsistent =
+    Why it matters
+    
+    If a font's /Widths array length doesn't match the declared character range (LastChar - FirstChar + 1), or a CID font lacks width definitions, text extraction produces garbled spacing. Copy-paste and screen reader output become unreliable.
+    
+    Principle
+    
+    Font width arrays must match the declared character range. CID fonts need /W or /DW entries.
+    
+    How to fix in Adobe Acrobat Pro
+    
+      1. Re-embed the font using Preflight fixups or re-export from the source application.
+    
+    How to fix in Microsoft Word
+    
+      1. Re-save the document and re-export to PDF. Word's PDF export usually produces correct widths.
+    
+    How to fix in Adobe InDesign
+    
+      1. Re-export with 'Subset fonts when percent of characters used' at appropriate threshold.
+    
+    Before
+    
+    Before: Widths array has 90 entries for range 32–255 (224 expected)
+    Characters above index 121 have undefined widths; spacing is wrong.
+    
+    After
+    
+    After: Widths array has 224 entries matching FirstChar=32 to LastChar=255
+    All characters have correct width definitions.
+    
+    The Widths array must have exactly (LastChar - FirstChar + 1) entries.
+    
+    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+
+pdf-remediation-PdfInfoFontMetadataMissingGlyphWidths =
+    Why it matters
+    
+    If a font's /Widths array length doesn't match the declared character range (LastChar - FirstChar + 1), or a CID font lacks width definitions, text extraction produces garbled spacing. Copy-paste and screen reader output become unreliable.
+    
+    Principle
+    
+    Font width arrays must match the declared character range. CID fonts need /W or /DW entries.
+    
+    How to fix in Adobe Acrobat Pro
+    
+      1. Re-embed the font using Preflight fixups or re-export from the source application.
+    
+    How to fix in Microsoft Word
+    
+      1. Re-save the document and re-export to PDF. Word's PDF export usually produces correct widths.
+    
+    How to fix in Adobe InDesign
+    
+      1. Re-export with 'Subset fonts when percent of characters used' at appropriate threshold.
+    
+    Before
+    
+    Before: Widths array has 90 entries for range 32–255 (224 expected)
+    Characters above index 121 have undefined widths; spacing is wrong.
+    
+    After
+    
+    After: Widths array has 224 entries matching FirstChar=32 to LastChar=255
+    All characters have correct width definitions.
+    
+    The Widths array must have exactly (LastChar - FirstChar + 1) entries.
+    
+    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+
+pdf-remediation-PdfErrNotdefInDifferences =
+    Why it matters
+    
+    The .notdef glyph is a placeholder for missing characters (often displayed as a blank rectangle). If a font's /Differences array references .notdef, it means a character code is explicitly mapped to a missing glyph — text at that position will be blank or unreadable for both visual and assistive technology users.
+    
+    Principle
+    
+    The /Differences array in a font encoding must not reference the .notdef glyph name. Every character code in the /Differences array must map to an actual glyph. Matterhorn Protocol check 30-001.
+    
+    How to fix in Adobe Acrobat Pro
+    
+      1. This is a font-level issue from the source application.
+      2. Use Edit > Preflight to identify the font with .notdef references.
+      3. Replace the font with one that has complete glyph coverage for the characters used.
+      4. Re-embed fonts using Preflight > Fix: Embed missing fonts.
+    
+    How to fix in Microsoft Word
+    
+      1. Replace the problematic font with a font that supports all characters in the document.
+      2. Check for special characters that the current font may not support.
+      3. Use Insert > Symbol to verify character availability in the chosen font.
+      4. Re-export to PDF.
+    
+    How to fix in Adobe InDesign
+    
+      1. Use the Find Font dialog to identify and replace the problematic font.
+      2. Choose a font with complete glyph coverage for all characters used.
+      3. Check the Glyphs panel to verify character availability.
+      4. Re-export to PDF.
+    
+    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+
+pdf-remediation-PdfInfoFontMetadataMissingDifferencesNotdef =
+    Why it matters
+    
+    The .notdef glyph is a placeholder for missing characters (often displayed as a blank rectangle). If a font's /Differences array references .notdef, it means a character code is explicitly mapped to a missing glyph — text at that position will be blank or unreadable for both visual and assistive technology users.
+    
+    Principle
+    
+    The /Differences array in a font encoding must not reference the .notdef glyph name. Every character code in the /Differences array must map to an actual glyph. Matterhorn Protocol check 30-001.
+    
+    How to fix in Adobe Acrobat Pro
+    
+      1. This is a font-level issue from the source application.
+      2. Use Edit > Preflight to identify the font with .notdef references.
+      3. Replace the font with one that has complete glyph coverage for the characters used.
+      4. Re-embed fonts using Preflight > Fix: Embed missing fonts.
+    
+    How to fix in Microsoft Word
+    
+      1. Replace the problematic font with a font that supports all characters in the document.
+      2. Check for special characters that the current font may not support.
+      3. Use Insert > Symbol to verify character availability in the chosen font.
+      4. Re-export to PDF.
+    
+    How to fix in Adobe InDesign
+    
+      1. Use the Find Font dialog to identify and replace the problematic font.
+      2. Choose a font with complete glyph coverage for all characters used.
+      3. Check the Glyphs panel to verify character availability.
+      4. Re-export to PDF.
+    
+    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+
+pdf-remediation-PdfErrIdentityCmapMissingToUnicode =
+    Why it matters
+    
+    Identity-H and Identity-V CMaps use raw glyph IDs as character codes. Without a /ToUnicode map, there is no way to convert these glyph IDs to meaningful text. Screen readers will be silent or read meaningless values, and text cannot be searched or copied.
+    
+    Principle
+    
+    Any font using an Identity-H or Identity-V CMap must include a /ToUnicode CMap stream that maps glyph IDs to Unicode code points. This is critical for text extraction and is required by the Matterhorn Protocol.
+    
+    How to fix in Adobe Acrobat Pro
+    
+      1. Use Edit > Preflight > Fix: Embed missing fonts and add ToUnicode maps.
+      2. If Preflight cannot fix it, use Preflight > Convert to PDF/A which forces Unicode mappings.
+      3. For stubborn cases, re-create the PDF from the source document with a different font.
+    
+    How to fix in Microsoft Word
+    
+      1. This issue is rare in Word-generated PDFs.
+      2. If it occurs, ensure fonts are standard Unicode-capable fonts (Arial, Calibri, etc.).
+      3. Re-export to PDF with font embedding enabled.
+    
+    How to fix in Adobe InDesign
+    
+      1. Use OpenType fonts which include proper Unicode mappings.
+      2. Avoid legacy CID-keyed fonts without ToUnicode tables.
+      3. Re-export to PDF.
+    
+    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+
+pdf-remediation-PdfInfoFontMetadataMissingIdentityCmap =
+    Why it matters
+    
+    Identity-H and Identity-V CMaps use raw glyph IDs as character codes. Without a /ToUnicode map, there is no way to convert these glyph IDs to meaningful text. Screen readers will be silent or read meaningless values, and text cannot be searched or copied.
+    
+    Principle
+    
+    Any font using an Identity-H or Identity-V CMap must include a /ToUnicode CMap stream that maps glyph IDs to Unicode code points. This is critical for text extraction and is required by the Matterhorn Protocol.
+    
+    How to fix in Adobe Acrobat Pro
+    
+      1. Use Edit > Preflight > Fix: Embed missing fonts and add ToUnicode maps.
+      2. If Preflight cannot fix it, use Preflight > Convert to PDF/A which forces Unicode mappings.
+      3. For stubborn cases, re-create the PDF from the source document with a different font.
+    
+    How to fix in Microsoft Word
+    
+      1. This issue is rare in Word-generated PDFs.
+      2. If it occurs, ensure fonts are standard Unicode-capable fonts (Arial, Calibri, etc.).
+      3. Re-export to PDF with font embedding enabled.
+    
+    How to fix in Adobe InDesign
+    
+      1. Use OpenType fonts which include proper Unicode mappings.
+      2. Avoid legacy CID-keyed fonts without ToUnicode tables.
+      3. Re-export to PDF.
+    
+    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+
+pdf-remediation-PdfErrCmapWmodeInconsistent =
+    Why it matters
+    
+    The WMode (writing mode) value in a CMap determines whether text is laid out horizontally (0) or vertically (1). If the CMap's WMode does not match the font's actual writing direction, text extraction and screen reader output will be garbled or characters will appear in the wrong order.
+    
+    Principle
+    
+    The CMap's WMode must match the writing direction used by the font. Horizontal text must use WMode 0, vertical text (common in CJK) must use WMode 1. Matterhorn Protocol check 30-002.
+    
+    How to fix in Adobe Acrobat Pro
+    
+      1. This is a font-level issue that typically requires re-creating the PDF.
+      2. Identify the font with the WMode mismatch using Edit > Preflight.
+      3. Re-export from the source application with the correct font settings.
+      4. For CJK text, ensure the source application correctly specifies horizontal vs. vertical writing.
+    
+    How to fix in Microsoft Word
+    
+      1. For CJK text, ensure the correct text direction is set in the paragraph settings.
+      2. Use fonts designed for the intended writing direction.
+      3. Re-export to PDF.
+    
+    How to fix in Adobe InDesign
+    
+      1. For vertical CJK text, use a vertical text frame (Type > Type on a Path or vertical frame).
+      2. Ensure CJK fonts with the correct writing mode are selected.
+      3. Re-export to PDF.
+    
+    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+
+pdf-remediation-PdfInfoFontMetadataMissingCmapWmode =
+    Why it matters
+    
+    The WMode (writing mode) value in a CMap determines whether text is laid out horizontally (0) or vertically (1). If the CMap's WMode does not match the font's actual writing direction, text extraction and screen reader output will be garbled or characters will appear in the wrong order.
+    
+    Principle
+    
+    The CMap's WMode must match the writing direction used by the font. Horizontal text must use WMode 0, vertical text (common in CJK) must use WMode 1. Matterhorn Protocol check 30-002.
+    
+    How to fix in Adobe Acrobat Pro
+    
+      1. This is a font-level issue that typically requires re-creating the PDF.
+      2. Identify the font with the WMode mismatch using Edit > Preflight.
+      3. Re-export from the source application with the correct font settings.
+      4. For CJK text, ensure the source application correctly specifies horizontal vs. vertical writing.
+    
+    How to fix in Microsoft Word
+    
+      1. For CJK text, ensure the correct text direction is set in the paragraph settings.
+      2. Use fonts designed for the intended writing direction.
+      3. Re-export to PDF.
+    
+    How to fix in Adobe InDesign
+    
+      1. For vertical CJK text, use a vertical text frame (Type > Type on a Path or vertical frame).
+      2. Ensure CJK fonts with the correct writing mode are selected.
+      3. Re-export to PDF.
+    
+    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+
+pdf-remediation-PdfErrNonSymbolicTrueTypeLatinMapping =
+    Why it matters
+    
+    Non-symbolic TrueType fonts (standard text fonts like Arial, Calibri) must use standard encoding so that character codes map predictably to glyphs. Incorrect mapping causes text extraction to produce wrong characters, breaking screen reader output and copy-paste.
+    
+    Principle
+    
+    Non-symbolic TrueType fonts must use a /cmap subtable that maps character codes via a standard encoding (typically Microsoft Unicode or Macintosh Roman). The font must not use symbolic encoding for Latin text. Matterhorn Protocol check 30-001.
+    
+    How to fix in Adobe Acrobat Pro
+    
+      1. This issue originates from the source document's font choice.
+      2. Use Edit > Preflight to identify the problematic font.
+      3. Replace the font with a standard TrueType or OpenType font that has proper Unicode mappings.
+      4. Re-embed the font using Preflight > Fix: Embed missing fonts.
+    
+    How to fix in Microsoft Word
+    
+      1. Replace the problematic font with a standard system font (Arial, Calibri, Times New Roman).
+      2. Avoid using symbol or decorative fonts for body text.
+      3. Re-export to PDF with font embedding enabled.
+    
+    How to fix in Adobe InDesign
+    
+      1. Replace the problematic font with a standard OpenType font.
+      2. Use Find/Change > Find Font to locate and replace all instances.
+      3. Re-export to PDF.
+    
+    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+
+pdf-remediation-PdfInfoFontMetadataMissingNonSymbolicTrueType =
+    Why it matters
+    
+    Non-symbolic TrueType fonts (standard text fonts like Arial, Calibri) must use standard encoding so that character codes map predictably to glyphs. Incorrect mapping causes text extraction to produce wrong characters, breaking screen reader output and copy-paste.
+    
+    Principle
+    
+    Non-symbolic TrueType fonts must use a /cmap subtable that maps character codes via a standard encoding (typically Microsoft Unicode or Macintosh Roman). The font must not use symbolic encoding for Latin text. Matterhorn Protocol check 30-001.
+    
+    How to fix in Adobe Acrobat Pro
+    
+      1. This issue originates from the source document's font choice.
+      2. Use Edit > Preflight to identify the problematic font.
+      3. Replace the font with a standard TrueType or OpenType font that has proper Unicode mappings.
+      4. Re-embed the font using Preflight > Fix: Embed missing fonts.
+    
+    How to fix in Microsoft Word
+    
+      1. Replace the problematic font with a standard system font (Arial, Calibri, Times New Roman).
+      2. Avoid using symbol or decorative fonts for body text.
+      3. Re-export to PDF with font embedding enabled.
+    
+    How to fix in Adobe InDesign
+    
+      1. Replace the problematic font with a standard OpenType font.
+      2. Use Find/Change > Find Font to locate and replace all instances.
+      3. Re-export to PDF.
+    
+    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/
+
+pdf-remediation-PdfInfoFontMetadataMissingEncodingConsistency =
+    Why it matters
+    
+    When a font's declared encoding does not match the actual glyph mapping, text extraction produces wrong characters. Screen readers read gibberish, search fails, and copy-paste yields incorrect text — effectively making the content inaccessible.
+    
+    Principle
+    
+    The font's /Encoding entry must accurately reflect how character codes map to glyphs. For Type 1 and TrueType fonts, the encoding must match the font program's built-in encoding or override it consistently via /Differences. Matterhorn Protocol check 30-002.
+    
+    How to fix in Adobe Acrobat Pro
+    
+      1. This is typically a font embedding issue from the source application.
+      2. Use Edit > Preflight > Fix: Embed missing fonts and fix encoding issues.
+      3. If Preflight cannot fix it, re-create the PDF from the source document using a different font.
+      4. Alternatively, use Preflight > Convert to PDF/A which forces correct encodings.
+    
+    How to fix in Microsoft Word
+    
+      1. Ensure you are using standard system fonts (Arial, Calibri, Times New Roman, etc.).
+      2. Avoid specialty or custom-encoded fonts that may not embed correctly.
+      3. Go to File > Options > Save and check 'Embed fonts in the file'.
+      4. Re-export to PDF.
+    
+    How to fix in Adobe InDesign
+    
+      1. Use OpenType fonts which have consistent Unicode encoding.
+      2. Avoid PostScript Type 1 fonts with custom encodings.
+      3. If the issue persists, try converting the font to OpenType using a font manager.
+      4. Re-export to PDF.
+    
+    Learn more: https://pdfa.org/resource/the-matterhorn-protocol/

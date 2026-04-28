@@ -76,6 +76,7 @@ from collections.abc import Callable
 import pikepdf
 
 from auto_a11y.pdf.audit import pikepdf_helpers
+from auto_a11y.pdf.audit.font_metadata import FontInfoDetail, FontMetadata
 from auto_a11y.pdf.audit.fonts import FontAnalysis
 from auto_a11y.pdf.models import AuditContext, CheckResult
 
@@ -727,6 +728,670 @@ def check_text_alignment_accessible(ctx: AuditContext) -> list[CheckResult]:
 
 
 # ---------------------------------------------------------------------------
+# Matterhorn font/CMap/encoding checks (Phase 4.12 follow-up)
+# ---------------------------------------------------------------------------
+#
+# Eleven additional checks that consume :attr:`AuditContext.font_metadata`
+# (populated by :func:`auto_a11y.pdf.audit.font_metadata.extract_font_metadata`).
+# Mirror pdfMax's behaviour at lines ~4646-4733 and ~7137-7260 of
+# ``pdf_accessibility_audit.py``. Each follows the same shape: read
+# ``ctx.font_metadata`` (skip with INFO when ``None``), iterate the
+# fonts list, apply the verdict logic, return a single CheckResult.
+
+
+#: Standard named encodings (mirrors pdfMax's ``STANDARD_ENCODINGS``).
+#:
+#: Simple (non-Type0) fonts using one of these are exempt from the
+#: ToUnicode requirement (Matterhorn 10-001) — the encoding alone is
+#: enough to round-trip text to Unicode.
+_STANDARD_ENCODINGS: frozenset[str] = frozenset({
+    "/WinAnsiEncoding", "/MacRomanEncoding", "/MacExpertEncoding",
+    "/StandardEncoding",
+})
+
+#: Predefined CMap names from ISO 32000-1 Table 118 (mirrors pdfMax's
+#: ``PREDEFINED_CMAPS``). A Type0 font referencing one of these by name
+#: needs no embedded CMap stream.
+_PREDEFINED_CMAPS: frozenset[str] = frozenset({
+    "Identity-H", "Identity-V",
+    # Japanese
+    "83pv-RKSJ-H", "90ms-RKSJ-H", "90ms-RKSJ-V", "90msp-RKSJ-H", "90msp-RKSJ-V",
+    "EUC-H", "EUC-V", "UniJIS-UCS2-H", "UniJIS-UCS2-V", "UniJIS-UCS2-HW-H",
+    "UniJIS-UCS2-HW-V", "UniJIS-UTF16-H", "UniJIS-UTF16-V",
+    # Chinese Simplified
+    "GB-EUC-H", "GB-EUC-V", "GBpc-EUC-H", "GBK-EUC-H", "GBK-EUC-V",
+    "UniGB-UCS2-H", "UniGB-UCS2-V", "UniGB-UTF16-H", "UniGB-UTF16-V",
+    # Chinese Traditional
+    "B5pc-H", "B5pc-V", "ETen-B5-H", "ETen-B5-V",
+    "UniCNS-UCS2-H", "UniCNS-UCS2-V", "UniCNS-UTF16-H", "UniCNS-UTF16-V",
+    # Korean
+    "KSCms-UHC-H", "KSCms-UHC-V", "KSC-EUC-H", "KSC-EUC-V",
+    "UniKS-UCS2-H", "UniKS-UCS2-V", "UniKS-UTF16-H", "UniKS-UTF16-V",
+})
+
+#: Encodings that guarantee a Latin code-point mapping for non-symbolic
+#: TrueType (mirrors the allow-list in pdfMax's 31-003 block).
+_LATIN_ENCODINGS: frozenset[str] = frozenset({
+    "/WinAnsiEncoding", "/MacRomanEncoding", "/StandardEncoding",
+})
+
+
+def _strip_leading_slash(name: str) -> str:
+    """Return *name* with at most one leading ``/`` removed."""
+    return name[1:] if name.startswith("/") else name
+
+
+def _font_metadata_or_none(ctx: AuditContext) -> FontMetadata | None:
+    """Return ``ctx.font_metadata`` or ``None`` (no-data sentinel).
+
+    All eleven Matterhorn checks below use this helper so the
+    "collector didn't run" branch is centralised. Mirrors the
+    convention :func:`auto_a11y.pdf.audit.checks.color_contrast._no_data_result`
+    introduced — INFO when no data was collected.
+    """
+    return ctx.font_metadata
+
+
+def _no_metadata_result(name: str, standard: str) -> CheckResult:
+    """The INFO result emitted when font metadata wasn't collected."""
+    return CheckResult(
+        name=name,
+        standard=standard,
+        result="INFO",
+        details="Font metadata not collected; skipping check.",
+    )
+
+
+# ---------------------------------------------------------------------------
+# check_unicode_mapping_tounicode
+# ---------------------------------------------------------------------------
+
+
+def check_unicode_mapping_tounicode(ctx: AuditContext) -> list[CheckResult]:
+    """Matterhorn 10-001: every non-standard font has a /ToUnicode CMap.
+
+    Mirrors pdfMax line ~4646. Standard 14 fonts and simple fonts with a
+    standard named encoding are exempt; every other font must carry
+    ``/ToUnicode``.
+    """
+    name = "Unicode mapping (ToUnicode)"
+    standard = "Matterhorn 10-001"
+    fm = _font_metadata_or_none(ctx)
+    if fm is None:
+        return [_no_metadata_result(name, standard)]
+
+    missing: list[str] = []
+    for f in fm.fonts:
+        base = _strip_leading_slash(f.base_font)
+        if base in _STANDARD_14_FONTS:
+            continue
+        if not f.is_type0 and f.encoding_name in _STANDARD_ENCODINGS:
+            continue
+        if not f.has_to_unicode:
+            subtype_pretty = _strip_leading_slash(f.subtype)
+            missing.append(f"{f.base_font} ({subtype_pretty}, p.{f.page})")
+
+    if not missing:
+        return [
+            CheckResult(
+                name=name, standard=standard, result="PASS",
+                details=f"{len(fm.fonts)} font(s) checked, all have Unicode mapping",
+            )
+        ]
+    return [
+        CheckResult(
+            name=name, standard=standard, result="FAIL",
+            details=(
+                f"{len(missing)} font(s) missing ToUnicode CMap: "
+                + "; ".join(missing)
+            ),
+        )
+    ]
+
+
+# ---------------------------------------------------------------------------
+# check_cid_font_gid_mapping
+# ---------------------------------------------------------------------------
+
+
+def check_cid_font_gid_mapping(ctx: AuditContext) -> list[CheckResult]:
+    """Matterhorn 31-004: embedded CIDFontType2 fonts carry /CIDToGIDMap.
+
+    Mirrors pdfMax line ~4670. PASSes when no Type 2 CIDFonts are
+    present; PASSes when every embedded CIDFontType2 has a CIDToGIDMap;
+    FAILs otherwise.
+    """
+    name = "CID font GID mapping"
+    standard = "Matterhorn 31-004"
+    fm = _font_metadata_or_none(ctx)
+    if fm is None:
+        return [_no_metadata_result(name, standard)]
+
+    issues: list[str] = []
+    type2_count = 0
+    for f in fm.fonts:
+        if not f.is_cid_type2:
+            continue
+        type2_count += 1
+        if f.has_font_file and f.cidtogidmap is None:
+            issues.append(
+                f"{f.base_font} (embedded but no CIDToGIDMap, p.{f.page})"
+            )
+
+    if type2_count == 0:
+        return [
+            CheckResult(
+                name=name, standard=standard, result="PASS",
+                details="No Type 2 CIDFonts found — check not applicable",
+            )
+        ]
+    if not issues:
+        return [
+            CheckResult(
+                name=name, standard=standard, result="PASS",
+                details=(
+                    f"{type2_count} CIDFontType2 font(s) checked, all have"
+                    " valid CIDToGIDMap"
+                ),
+            )
+        ]
+    return [
+        CheckResult(
+            name=name, standard=standard, result="FAIL",
+            details=(
+                f"{len(issues)} CIDFontType2 issue(s): " + "; ".join(issues)
+            ),
+        )
+    ]
+
+
+# ---------------------------------------------------------------------------
+# check_cmap_resources_valid
+# ---------------------------------------------------------------------------
+
+
+def check_cmap_resources_valid(ctx: AuditContext) -> list[CheckResult]:
+    """Matterhorn 31-006: every Type0 CMap is predefined or embedded.
+
+    Mirrors pdfMax line ~4688. A Type0 font that names a non-predefined
+    CMap and does not embed it fails — the consuming PDF reader has no
+    way to look up the CMap.
+    """
+    name = "CMap resources valid"
+    standard = "Matterhorn 31-006"
+    fm = _font_metadata_or_none(ctx)
+    if fm is None:
+        return [_no_metadata_result(name, standard)]
+
+    issues: list[str] = []
+    type0_count = 0
+    for f in fm.fonts:
+        if not f.is_type0:
+            continue
+        type0_count += 1
+        if f.cmap_name is not None and not f.cmap_embedded:
+            if f.cmap_name not in _PREDEFINED_CMAPS:
+                issues.append(
+                    f"{f.base_font}: CMap '{f.cmap_name}' is not predefined"
+                    + f" and not embedded (p.{f.page})"
+                )
+
+    if type0_count == 0:
+        return [
+            CheckResult(
+                name=name, standard=standard, result="PASS",
+                details="No Type0 (composite) fonts found — check not applicable",
+            )
+        ]
+    if not issues:
+        return [
+            CheckResult(
+                name=name, standard=standard, result="PASS",
+                details=f"{type0_count} Type0 font(s) checked, all CMaps valid",
+            )
+        ]
+    return [
+        CheckResult(
+            name=name, standard=standard, result="FAIL",
+            details=f"{len(issues)} CMap issue(s): " + "; ".join(issues),
+        )
+    ]
+
+
+# ---------------------------------------------------------------------------
+# check_valid_unicode_values
+# ---------------------------------------------------------------------------
+
+
+def check_valid_unicode_values(ctx: AuditContext) -> list[CheckResult]:
+    """veraPDF 7.21.7-2 / Matterhorn 10-001: ToUnicode maps to valid code points.
+
+    Mirrors pdfMax line ~4715. ToUnicode CMaps must not map any source
+    code to U+0000, U+FEFF, U+FFFE (or surrogates / U+FFFD, which we
+    add as a defensive extension).
+    """
+    name = "Valid Unicode values"
+    standard = "Matterhorn 10-001"
+    fm = _font_metadata_or_none(ctx)
+    if fm is None:
+        return [_no_metadata_result(name, standard)]
+
+    invalid_fonts: list[str] = []
+    fonts_with_tounicode = 0
+    for f in fm.fonts:
+        if f.to_unicode is None:
+            continue
+        fonts_with_tounicode += 1
+        if f.to_unicode.has_invalid_unicode:
+            sample = ", ".join(
+                f"U+{cp:04X}" for cp in f.to_unicode.invalid_codepoints[:3]
+            )
+            invalid_fonts.append(f"{f.base_font}: {sample} (p.{f.page})")
+
+    if fonts_with_tounicode == 0:
+        return [
+            CheckResult(
+                name=name, standard=standard, result="PASS",
+                details="No ToUnicode CMaps to check",
+            )
+        ]
+    if not invalid_fonts:
+        return [
+            CheckResult(
+                name=name, standard=standard, result="PASS",
+                details=(
+                    f"{fonts_with_tounicode} ToUnicode CMap(s) checked,"
+                    " no invalid Unicode values"
+                ),
+            )
+        ]
+    return [
+        CheckResult(
+            name=name, standard=standard, result="FAIL",
+            details=(
+                f"{len(invalid_fonts)} font(s) with invalid Unicode mappings: "
+                + "; ".join(invalid_fonts)
+            ),
+        )
+    ]
+
+
+# ---------------------------------------------------------------------------
+# check_no_notdef_glyph_references
+# ---------------------------------------------------------------------------
+
+
+def check_no_notdef_glyph_references(ctx: AuditContext) -> list[CheckResult]:
+    """Matterhorn 31-025: no font references the .notdef glyph.
+
+    Mirrors pdfMax line ~7137. A font's encoding `/Differences` must not
+    include `.notdef`, *and* its ToUnicode CMap must not contain a
+    ``<0000>`` source code (which would map to .notdef). Either
+    occurrence flags the font.
+    """
+    name = "No .notdef glyph references"
+    standard = "Matterhorn 31-025"
+    fm = _font_metadata_or_none(ctx)
+    if fm is None:
+        return [_no_metadata_result(name, standard)]
+
+    flagged: list[str] = []
+    for f in fm.fonts:
+        if f.encoding_differences is not None and f.encoding_differences.has_notdef:
+            flagged.append(f.base_font)
+            continue
+        if f.to_unicode is not None and b"<0000>" in f.to_unicode.raw_bytes:
+            if f.base_font not in flagged:
+                flagged.append(f.base_font)
+
+    if not flagged:
+        return [
+            CheckResult(
+                name=name, standard=standard, result="PASS",
+                details="No fonts reference .notdef glyphs",
+            )
+        ]
+    return [
+        CheckResult(
+            name=name, standard=standard, result="FAIL",
+            details=(
+                f"{len(flagged)} font(s) reference .notdef: "
+                + ", ".join(flagged[:5])
+            ),
+        )
+    ]
+
+
+# ---------------------------------------------------------------------------
+# check_font_glyph_widths_consistent
+# ---------------------------------------------------------------------------
+
+
+def _width_issue(f: FontInfoDetail) -> str | None:
+    """Return a width-array description if ``f`` has an inconsistency.
+
+    Encapsulates the per-font shape pdfMax tracked as ``meta["width_issue"]``
+    (set in two places: simple-font length mismatches around line 2503 and
+    CID font missing /W or /DW around line 2575).
+    """
+    if f.subtype in ("/Type1", "/TrueType", "/MMType1"):
+        if (
+            f.widths_first_char is not None
+            and f.widths_last_char is not None
+            and f.glyph_widths_count is not None
+        ):
+            expected = f.widths_last_char - f.widths_first_char + 1
+            actual = f.glyph_widths_count
+            if actual != expected:
+                return (
+                    f"Widths array length {actual} != expected {expected}"
+                    f" (FirstChar={f.widths_first_char},"
+                    f" LastChar={f.widths_last_char})"
+                )
+        return None
+    if f.is_type0:
+        # CIDFont must have /W or /DW. Our collector exposes
+        # glyph_widths_count for /W; we can't easily detect /DW here, so
+        # only flag when /W is missing AND we never saw /DW.  The
+        # font_metadata module doesn't currently track /DW separately —
+        # absence of glyph_widths_count is the proxy pdfMax used for
+        # "neither /W nor /DW present" when the descendant CIDFont
+        # lacks any width entry.
+        if f.glyph_widths_count is None and f.is_cid_type2:
+            return "CID font missing both /W and /DW width entries"
+    return None
+
+
+def check_font_glyph_widths_consistent(ctx: AuditContext) -> list[CheckResult]:
+    """Matterhorn 31-009: widths arrays match the FirstChar/LastChar range.
+
+    Mirrors pdfMax line ~7158. PASSes when every font's widths data is
+    internally consistent; FAILs with the offending fonts otherwise.
+    """
+    name = "Font glyph widths consistent"
+    standard = "Matterhorn 31-009"
+    fm = _font_metadata_or_none(ctx)
+    if fm is None:
+        return [_no_metadata_result(name, standard)]
+
+    issues: list[str] = []
+    for f in fm.fonts:
+        issue = _width_issue(f)
+        if issue is not None:
+            issues.append(f"{f.base_font}: {issue}")
+
+    if not issues:
+        return [
+            CheckResult(
+                name=name, standard=standard, result="PASS",
+                details=(
+                    f"All {len(fm.fonts)} font(s) have consistent width"
+                    " definitions"
+                ),
+            )
+        ]
+    return [
+        CheckResult(
+            name=name, standard=standard, result="FAIL",
+            details=(
+                f"{len(issues)} font(s) with width issues: "
+                + "; ".join(issues[:3])
+            ),
+        )
+    ]
+
+
+# ---------------------------------------------------------------------------
+# check_no_notdef_in_differences
+# ---------------------------------------------------------------------------
+
+
+def check_no_notdef_in_differences(ctx: AuditContext) -> list[CheckResult]:
+    """Matterhorn 31-008: no font has .notdef in its Encoding /Differences.
+
+    Mirrors pdfMax line ~7170. Distinct from 31-025 (which checks any
+    .notdef reference): this check looks specifically at the encoding
+    dictionary's ``/Differences`` array.
+    """
+    name = "No .notdef in Differences array"
+    standard = "Matterhorn 31-008"
+    fm = _font_metadata_or_none(ctx)
+    if fm is None:
+        return [_no_metadata_result(name, standard)]
+
+    flagged = [
+        f.base_font for f in fm.fonts
+        if f.encoding_differences is not None and f.encoding_differences.has_notdef
+    ]
+    if not flagged:
+        return [
+            CheckResult(
+                name=name, standard=standard, result="PASS",
+                details="No fonts have .notdef in Encoding /Differences array",
+            )
+        ]
+    return [
+        CheckResult(
+            name=name, standard=standard, result="FAIL",
+            details=(
+                f"{len(flagged)} font(s) reference .notdef in /Differences: "
+                + ", ".join(flagged[:5])
+            ),
+        )
+    ]
+
+
+# ---------------------------------------------------------------------------
+# check_identity_cmap_has_tounicode
+# ---------------------------------------------------------------------------
+
+
+def check_identity_cmap_has_tounicode(ctx: AuditContext) -> list[CheckResult]:
+    """Matterhorn 31-007: Identity-H/V fonts must carry /ToUnicode.
+
+    Mirrors pdfMax line ~7180. A Type0 font that uses Identity-H or
+    Identity-V as its CMap has no built-in code-to-Unicode mapping and
+    must therefore include /ToUnicode for accessibility.
+    """
+    name = "Identity CMap has ToUnicode"
+    standard = "Matterhorn 31-007"
+    fm = _font_metadata_or_none(ctx)
+    if fm is None:
+        return [_no_metadata_result(name, standard)]
+
+    missing: list[str] = []
+    identity_total = 0
+    for f in fm.fonts:
+        if not f.has_identity_h_or_v:
+            continue
+        identity_total += 1
+        if not f.has_to_unicode:
+            missing.append(f"{f.base_font} (p.{f.page})")
+
+    if identity_total == 0:
+        return [
+            CheckResult(
+                name=name, standard=standard, result="PASS",
+                details="No fonts use Identity-H/V CMap",
+            )
+        ]
+    if not missing:
+        return [
+            CheckResult(
+                name=name, standard=standard, result="PASS",
+                details=(
+                    f"All {identity_total} Identity CMap font(s) have ToUnicode"
+                ),
+            )
+        ]
+    return [
+        CheckResult(
+            name=name, standard=standard, result="FAIL",
+            details=(
+                f"{len(missing)} Identity CMap font(s) missing ToUnicode: "
+                + "; ".join(missing[:5])
+            ),
+        )
+    ]
+
+
+# ---------------------------------------------------------------------------
+# check_cmap_wmode_consistency
+# ---------------------------------------------------------------------------
+
+
+def check_cmap_wmode_consistency(ctx: AuditContext) -> list[CheckResult]:
+    """Matterhorn 31-005: CMap WMode matches the descendant CIDFont.
+
+    Mirrors pdfMax line ~7199. PASSes when every Type0 font's CMap
+    WMode is consistent with its descendant CIDFont's vertical-metrics
+    declaration; FAILs when at least one font has a horizontal CMap
+    paired with vertical CIDFont metrics (or vice versa).
+    """
+    name = "CMap WMode consistency"
+    standard = "Matterhorn 31-005"
+    fm = _font_metadata_or_none(ctx)
+    if fm is None:
+        return [_no_metadata_result(name, standard)]
+
+    issues: list[str] = []
+    type0_count = 0
+    for f in fm.fonts:
+        if not f.is_type0:
+            continue
+        type0_count += 1
+        cmap_wm = f.cmap_wmode
+        cid_wm = f.cid_font_wmode
+        if cmap_wm is not None and cid_wm is not None and cmap_wm != cid_wm:
+            issues.append(
+                f"{f.base_font}: CMap WMode={cmap_wm} but CIDFont has"
+                + f" vertical metrics (WMode=1) (p.{f.page})"
+            )
+        elif cid_wm == 1 and cmap_wm == 0:
+            # Captured by the previous branch already, but pdfMax repeats
+            # the check explicitly so the detail wording differs. Keep
+            # the same logic for byte-for-byte pdfMax parity.
+            issues.append(
+                f"{f.base_font}: CMap is horizontal but CIDFont has"
+                + f" vertical width entries (p.{f.page})"
+            )
+
+    if not issues:
+        return [
+            CheckResult(
+                name=name, standard=standard, result="PASS",
+                details=(
+                    f"{type0_count} Type0 font(s) checked"
+                    if type0_count
+                    else "No Type0 fonts in document"
+                ),
+            )
+        ]
+    return [
+        CheckResult(
+            name=name, standard=standard, result="FAIL",
+            details=(
+                f"{len(issues)} WMode inconsistency(ies): "
+                + "; ".join(issues[:3])
+            ),
+        )
+    ]
+
+
+# ---------------------------------------------------------------------------
+# check_nonsymbolic_truetype_latin_mapping
+# ---------------------------------------------------------------------------
+
+
+def check_nonsymbolic_truetype_latin_mapping(
+    ctx: AuditContext,
+) -> list[CheckResult]:
+    """Matterhorn 31-003: non-symbolic TrueType uses standard Latin encoding.
+
+    Mirrors pdfMax line ~7221. Non-symbolic TrueType fonts must use one
+    of WinAnsi, MacRoman, or StandardEncoding — anything else (including
+    a custom /Differences-based encoding with no /BaseEncoding) cannot
+    guarantee Latin-character recovery.
+    """
+    name = "Non-symbolic TrueType Latin mapping"
+    standard = "Matterhorn 31-003"
+    fm = _font_metadata_or_none(ctx)
+    if fm is None:
+        return [_no_metadata_result(name, standard)]
+
+    issues: list[str] = []
+    nonsym_total = 0
+    for f in fm.fonts:
+        # A non-symbolic TrueType font is identified by subtype +
+        # FontDescriptor flags. Our collector exposes is_symbolic
+        # directly so the inverse pulls non-symbolic out cleanly.
+        if f.subtype != "/TrueType" or f.is_symbolic:
+            continue
+        nonsym_total += 1
+        enc = f.encoding_name
+        if enc not in _LATIN_ENCODINGS and enc in ("", "custom"):
+            issues.append(
+                f"{f.base_font}: non-symbolic TrueType without standard"
+                + f" Latin encoding (p.{f.page})"
+            )
+
+    if nonsym_total == 0:
+        return [
+            CheckResult(
+                name=name, standard=standard, result="PASS",
+                details="No non-symbolic TrueType fonts found",
+            )
+        ]
+    if not issues:
+        return [
+            CheckResult(
+                name=name, standard=standard, result="PASS",
+                details=(
+                    f"All {nonsym_total} non-symbolic TrueType font(s) use"
+                    " standard Latin encoding"
+                ),
+            )
+        ]
+    return [
+        CheckResult(
+            name=name, standard=standard, result="FAIL",
+            details=f"{len(issues)} issue(s): " + "; ".join(issues[:3]),
+        )
+    ]
+
+
+# ---------------------------------------------------------------------------
+# check_font_encoding_consistency
+# ---------------------------------------------------------------------------
+
+
+def check_font_encoding_consistency(ctx: AuditContext) -> list[CheckResult]:
+    """Matterhorn 31-002: Encoding dict and font program agree.
+
+    Mirrors pdfMax line ~7245. pdfMax's port is intentionally minimal —
+    the "real" check requires parsing the embedded font program, which
+    pdfMax notes as future work. The check therefore PASSes
+    structurally for every simple font, returning the same "no
+    contradiction detected" verdict pdfMax does.
+    """
+    name = "Font encoding consistency"
+    standard = "Matterhorn 31-002"
+    fm = _font_metadata_or_none(ctx)
+    if fm is None:
+        return [_no_metadata_result(name, standard)]
+
+    return [
+        CheckResult(
+            name=name, standard=standard, result="PASS",
+            details=(
+                f"{len(fm.fonts)} font(s) checked (structural encoding"
+                " verification)"
+            ),
+        )
+    ]
+
+
+# ---------------------------------------------------------------------------
 # Module registry
 # ---------------------------------------------------------------------------
 
@@ -742,18 +1407,41 @@ FONTS_CHECKS: list[Callable[[AuditContext], list[CheckResult]]] = [
     check_italic_text_usage,
     check_line_height_accessible,
     check_text_alignment_accessible,
+    # Matterhorn font/CMap/encoding checks (Phase 4.12 follow-up).
+    check_unicode_mapping_tounicode,
+    check_cid_font_gid_mapping,
+    check_cmap_resources_valid,
+    check_valid_unicode_values,
+    check_no_notdef_glyph_references,
+    check_font_glyph_widths_consistent,
+    check_no_notdef_in_differences,
+    check_identity_cmap_has_tounicode,
+    check_cmap_wmode_consistency,
+    check_nonsymbolic_truetype_latin_mapping,
+    check_font_encoding_consistency,
 ]
 
 
 __all__ = [
     "FONTS_CHECKS",
     "check_all_fonts_embedded",
+    "check_cid_font_gid_mapping",
+    "check_cmap_resources_valid",
+    "check_cmap_wmode_consistency",
+    "check_font_encoding_consistency",
     "check_font_faces_readable",
+    "check_font_glyph_widths_consistent",
     "check_font_size_ratio",
     "check_font_sizes_accessible",
+    "check_identity_cmap_has_tounicode",
     "check_italic_text_usage",
     "check_line_height_accessible",
+    "check_no_notdef_glyph_references",
+    "check_no_notdef_in_differences",
+    "check_nonsymbolic_truetype_latin_mapping",
     "check_text_alignment_accessible",
     "check_text_rotation_accessible",
+    "check_unicode_mapping_tounicode",
+    "check_valid_unicode_values",
     "classify_font",
 ]

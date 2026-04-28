@@ -45,6 +45,7 @@ from auto_a11y.pdf.audit.colors import (
     FormColorPairInfo,
     RgbColor,
 )
+from auto_a11y.pdf.audit.font_metadata import FontMetadata
 from auto_a11y.pdf.audit.fonts import FontAnalysis
 from auto_a11y.pdf.audit.images import ExtractedImage
 from auto_a11y.pdf.audit.reading_order import (
@@ -156,6 +157,13 @@ class AuditContext:
 
     Aggregate of fonts, rotations, italics, line-spacing, and alignment
     measurements across the document."""
+
+    font_metadata: FontMetadata | None = None
+    """Output of :func:`auto_a11y.pdf.audit.font_metadata.extract_font_metadata`.
+
+    Per-font resource metadata (ToUnicode, encoding /Differences, glyph
+    widths, CMap WMode, symbolic flag, descendant CIDFont, etc.) used by
+    the Phase 4 Matterhorn font/CMap/encoding checks."""
 
     color_pairs: dict[tuple[RgbColor, RgbColor], ColorPairInfo] | None = None
     """First half of

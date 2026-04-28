@@ -11,6 +11,7 @@ pdf-progress-stage-opening-pdf = Opening PDF
 pdf-progress-stage-walking-structure-tree = Walking structure tree
 pdf-progress-stage-parsing-content-streams = Parsing content streams
 pdf-progress-stage-analyzing-fonts = Analyzing fonts
+pdf-progress-stage-extracting-font-metadata = Extracting font metadata
 pdf-progress-stage-extracting-colors = Extracting colors
 pdf-progress-stage-extracting-images = Extracting images
 pdf-progress-stage-computing-visual-reading-order = Computing visual reading order

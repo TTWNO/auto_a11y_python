@@ -28,14 +28,31 @@ import pikepdf
 from auto_a11y.pdf.audit.checks.fonts import (
     FONTS_CHECKS,
     check_all_fonts_embedded,
+    check_cid_font_gid_mapping,
+    check_cmap_resources_valid,
+    check_cmap_wmode_consistency,
+    check_font_encoding_consistency,
     check_font_faces_readable,
+    check_font_glyph_widths_consistent,
     check_font_size_ratio,
     check_font_sizes_accessible,
+    check_identity_cmap_has_tounicode,
     check_italic_text_usage,
     check_line_height_accessible,
+    check_no_notdef_glyph_references,
+    check_no_notdef_in_differences,
+    check_nonsymbolic_truetype_latin_mapping,
     check_text_alignment_accessible,
     check_text_rotation_accessible,
+    check_unicode_mapping_tounicode,
+    check_valid_unicode_values,
     classify_font,
+)
+from auto_a11y.pdf.audit.font_metadata import (
+    FontEncodingDifferences,
+    FontInfoDetail,
+    FontMetadata,
+    FontUnicodeMapping,
 )
 from auto_a11y.pdf.audit.fonts import (
     AlignmentReport,
@@ -69,11 +86,13 @@ def _ctx(
     *,
     font_analysis: FontAnalysis | None = None,
     pdf: pikepdf.Pdf | None = None,
+    font_metadata: FontMetadata | None = None,
 ) -> AuditContext:
     """Build a minimal ``AuditContext``.
 
     ``font_analysis`` populates :attr:`AuditContext.font_analysis`;
-    ``pdf`` overrides the open-document field. Both are optional.
+    ``font_metadata`` populates :attr:`AuditContext.font_metadata`;
+    ``pdf`` overrides the open-document field. All three are optional.
     """
     return AuditContext(
         pdf=pdf if pdf is not None else pikepdf.Pdf.new(),
@@ -81,6 +100,63 @@ def _ctx(
         elements=[],
         role_map={},
         font_analysis=font_analysis,
+        font_metadata=font_metadata,
+    )
+
+
+def _detail(
+    *,
+    base_font: str = "/MyFont",
+    subtype: str = "/TrueType",
+    is_symbolic: bool = False,
+    has_to_unicode: bool = False,
+    to_unicode: FontUnicodeMapping | None = None,
+    encoding_differences: FontEncodingDifferences | None = None,
+    has_identity_h_or_v: bool = False,
+    cmap_wmode: int | None = None,
+    cid_font_wmode: int | None = None,
+    glyph_widths_count: int | None = None,
+    widths_first_char: int | None = None,
+    widths_last_char: int | None = None,
+    cidtogidmap: str | None = None,
+    has_cid_font_file: bool = False,
+    cmap_name: str | None = None,
+    cmap_embedded: bool = False,
+    encoding_kind: str = "name",
+    encoding_name: str = "/WinAnsiEncoding",
+    page: int = 1,
+    is_cid_type2: bool = False,
+    has_font_file: bool = False,
+    font_name: str = "/F1",
+) -> FontInfoDetail:
+    """Build a :class:`FontInfoDetail` with the given attributes.
+
+    Defaults give a non-symbolic TrueType with WinAnsiEncoding — the
+    "boring" font shape that should pass every Matterhorn check.
+    """
+    return FontInfoDetail(
+        font_name=font_name,
+        base_font=base_font,
+        subtype=subtype,
+        is_symbolic=is_symbolic,
+        has_to_unicode=has_to_unicode,
+        to_unicode=to_unicode,
+        encoding_differences=encoding_differences,
+        has_identity_h_or_v=has_identity_h_or_v,
+        cmap_wmode=cmap_wmode,
+        cid_font_wmode=cid_font_wmode,
+        glyph_widths_count=glyph_widths_count,
+        widths_first_char=widths_first_char,
+        widths_last_char=widths_last_char,
+        cidtogidmap=cidtogidmap,
+        has_cid_font_file=has_cid_font_file,
+        cmap_name=cmap_name,
+        cmap_embedded=cmap_embedded,
+        encoding_kind=encoding_kind,
+        encoding_name=encoding_name,
+        page=page,
+        is_cid_type2=is_cid_type2,
+        has_font_file=has_font_file,
     )
 
 
@@ -169,8 +245,13 @@ def _attach_font_resource(
 # ---------------------------------------------------------------------------
 
 
-def test_fonts_checks_registry_lists_all_eight_functions() -> None:
-    """``FONTS_CHECKS`` is the phase-5 entry point — must list everything."""
+def test_fonts_checks_registry_lists_all_functions() -> None:
+    """``FONTS_CHECKS`` is the phase-5 entry point — must list everything.
+
+    The original eight pdfminer-driven checks come first (preserving the
+    order from Phase 4.12), followed by the eleven Matterhorn
+    font/CMap/encoding checks added in the Phase 4.12 follow-up.
+    """
     assert FONTS_CHECKS == [
         check_all_fonts_embedded,
         check_font_sizes_accessible,
@@ -180,6 +261,17 @@ def test_fonts_checks_registry_lists_all_eight_functions() -> None:
         check_italic_text_usage,
         check_line_height_accessible,
         check_text_alignment_accessible,
+        check_unicode_mapping_tounicode,
+        check_cid_font_gid_mapping,
+        check_cmap_resources_valid,
+        check_valid_unicode_values,
+        check_no_notdef_glyph_references,
+        check_font_glyph_widths_consistent,
+        check_no_notdef_in_differences,
+        check_identity_cmap_has_tounicode,
+        check_cmap_wmode_consistency,
+        check_nonsymbolic_truetype_latin_mapping,
+        check_font_encoding_consistency,
     ]
 
 
@@ -628,3 +720,410 @@ def test_text_alignment_warns_on_centered_block() -> None:
     res = _only(check_text_alignment_accessible(_ctx(font_analysis=fa)))
     assert res.result == "WARN"
     assert "1 centered" in res.details
+
+
+# ---------------------------------------------------------------------------
+# check_unicode_mapping_tounicode (Matterhorn 10-001)
+# ---------------------------------------------------------------------------
+
+
+def test_unicode_mapping_skips_when_metadata_missing() -> None:
+    res = _only(check_unicode_mapping_tounicode(_ctx()))
+    assert res.result == "INFO"
+
+
+def test_unicode_mapping_passes_for_standard_14_font() -> None:
+    fm = FontMetadata(fonts=[
+        _detail(base_font="/Helvetica", subtype="/Type1", encoding_name=""),
+    ])
+    res = _only(check_unicode_mapping_tounicode(_ctx(font_metadata=fm)))
+    assert res.result == "PASS"
+
+
+def test_unicode_mapping_passes_for_standard_encoding() -> None:
+    fm = FontMetadata(fonts=[
+        _detail(
+            base_font="/CustomFont", subtype="/TrueType",
+            encoding_kind="name", encoding_name="/WinAnsiEncoding",
+        ),
+    ])
+    res = _only(check_unicode_mapping_tounicode(_ctx(font_metadata=fm)))
+    assert res.result == "PASS"
+
+
+def test_unicode_mapping_fails_when_no_tounicode() -> None:
+    fm = FontMetadata(fonts=[
+        _detail(
+            base_font="/CustomFont", subtype="/Type0",
+            encoding_kind="name", encoding_name="/Identity-H",
+            has_to_unicode=False,
+        ),
+    ])
+    res = _only(check_unicode_mapping_tounicode(_ctx(font_metadata=fm)))
+    assert res.result == "FAIL"
+    assert "/CustomFont" in res.details
+
+
+# ---------------------------------------------------------------------------
+# check_cid_font_gid_mapping (Matterhorn 31-004)
+# ---------------------------------------------------------------------------
+
+
+def test_cid_gid_passes_when_no_type2_fonts() -> None:
+    fm = FontMetadata(fonts=[
+        _detail(base_font="/Helvetica", subtype="/Type1"),
+    ])
+    res = _only(check_cid_font_gid_mapping(_ctx(font_metadata=fm)))
+    assert res.result == "PASS"
+    assert "not applicable" in res.details
+
+
+def test_cid_gid_passes_when_mapping_present() -> None:
+    fm = FontMetadata(fonts=[
+        _detail(
+            base_font="/CJKFont", subtype="/Type0",
+            is_cid_type2=True, has_cid_font_file=True, has_font_file=True,
+            cidtogidmap="Identity",
+        ),
+    ])
+    res = _only(check_cid_font_gid_mapping(_ctx(font_metadata=fm)))
+    assert res.result == "PASS"
+
+
+def test_cid_gid_fails_when_embedded_without_mapping() -> None:
+    fm = FontMetadata(fonts=[
+        _detail(
+            base_font="/CJKFont", subtype="/Type0",
+            is_cid_type2=True, has_cid_font_file=True, has_font_file=True,
+            cidtogidmap=None,
+        ),
+    ])
+    res = _only(check_cid_font_gid_mapping(_ctx(font_metadata=fm)))
+    assert res.result == "FAIL"
+    assert "/CJKFont" in res.details
+
+
+# ---------------------------------------------------------------------------
+# check_cmap_resources_valid (Matterhorn 31-006)
+# ---------------------------------------------------------------------------
+
+
+def test_cmap_resources_passes_with_no_type0() -> None:
+    fm = FontMetadata(fonts=[
+        _detail(base_font="/Helvetica", subtype="/Type1"),
+    ])
+    res = _only(check_cmap_resources_valid(_ctx(font_metadata=fm)))
+    assert res.result == "PASS"
+
+
+def test_cmap_resources_passes_with_predefined_cmap() -> None:
+    fm = FontMetadata(fonts=[
+        _detail(
+            base_font="/CJKFont", subtype="/Type0",
+            cmap_name="Identity-H", cmap_embedded=False,
+        ),
+    ])
+    res = _only(check_cmap_resources_valid(_ctx(font_metadata=fm)))
+    assert res.result == "PASS"
+
+
+def test_cmap_resources_fails_with_unknown_cmap() -> None:
+    fm = FontMetadata(fonts=[
+        _detail(
+            base_font="/CJKFont", subtype="/Type0",
+            cmap_name="MyCustomCMap", cmap_embedded=False,
+        ),
+    ])
+    res = _only(check_cmap_resources_valid(_ctx(font_metadata=fm)))
+    assert res.result == "FAIL"
+    assert "MyCustomCMap" in res.details
+
+
+# ---------------------------------------------------------------------------
+# check_valid_unicode_values (veraPDF 7.21.7-2)
+# ---------------------------------------------------------------------------
+
+
+def test_valid_unicode_passes_when_no_tounicode() -> None:
+    fm = FontMetadata(fonts=[
+        _detail(base_font="/Helvetica", to_unicode=None),
+    ])
+    res = _only(check_valid_unicode_values(_ctx(font_metadata=fm)))
+    assert res.result == "PASS"
+    assert "No ToUnicode" in res.details
+
+
+def test_valid_unicode_passes_with_clean_mapping() -> None:
+    tu = FontUnicodeMapping(
+        mapping={1: "A", 2: "B"},
+        byte_width=1, raw_bytes=b"",
+        has_invalid_unicode=False, invalid_codepoints=[],
+    )
+    fm = FontMetadata(fonts=[
+        _detail(base_font="/CleanFont", to_unicode=tu, has_to_unicode=True),
+    ])
+    res = _only(check_valid_unicode_values(_ctx(font_metadata=fm)))
+    assert res.result == "PASS"
+
+
+def test_valid_unicode_fails_with_null_codepoint() -> None:
+    tu = FontUnicodeMapping(
+        mapping={1: "\x00"},
+        byte_width=1, raw_bytes=b"",
+        has_invalid_unicode=True, invalid_codepoints=[0x0000],
+    )
+    fm = FontMetadata(fonts=[
+        _detail(base_font="/BadFont", to_unicode=tu, has_to_unicode=True),
+    ])
+    res = _only(check_valid_unicode_values(_ctx(font_metadata=fm)))
+    assert res.result == "FAIL"
+    assert "U+0000" in res.details
+
+
+# ---------------------------------------------------------------------------
+# check_no_notdef_glyph_references (Matterhorn 31-025)
+# ---------------------------------------------------------------------------
+
+
+def test_no_notdef_passes_on_clean_fonts() -> None:
+    fm = FontMetadata(fonts=[
+        _detail(base_font="/Helvetica"),
+    ])
+    res = _only(check_no_notdef_glyph_references(_ctx(font_metadata=fm)))
+    assert res.result == "PASS"
+
+
+def test_no_notdef_fails_when_in_differences() -> None:
+    enc = FontEncodingDifferences(
+        base_encoding="/WinAnsiEncoding",
+        differences=[(32, ".notdef")],
+        has_notdef=True,
+    )
+    fm = FontMetadata(fonts=[
+        _detail(base_font="/BadFont", encoding_differences=enc),
+    ])
+    res = _only(check_no_notdef_glyph_references(_ctx(font_metadata=fm)))
+    assert res.result == "FAIL"
+    assert "/BadFont" in res.details
+
+
+def test_no_notdef_fails_when_tounicode_maps_zero() -> None:
+    tu = FontUnicodeMapping(
+        mapping={0: "A"},
+        byte_width=1,
+        raw_bytes=b"beginbfchar <0000> <0041> endbfchar",
+        has_invalid_unicode=False, invalid_codepoints=[],
+    )
+    fm = FontMetadata(fonts=[
+        _detail(base_font="/BadFont", to_unicode=tu, has_to_unicode=True),
+    ])
+    res = _only(check_no_notdef_glyph_references(_ctx(font_metadata=fm)))
+    assert res.result == "FAIL"
+
+
+# ---------------------------------------------------------------------------
+# check_font_glyph_widths_consistent (Matterhorn 31-009)
+# ---------------------------------------------------------------------------
+
+
+def test_glyph_widths_passes_for_consistent_simple_font() -> None:
+    fm = FontMetadata(fonts=[
+        _detail(
+            base_font="/MyFont", subtype="/TrueType",
+            widths_first_char=32, widths_last_char=126,
+            glyph_widths_count=126 - 32 + 1,
+        ),
+    ])
+    res = _only(check_font_glyph_widths_consistent(_ctx(font_metadata=fm)))
+    assert res.result == "PASS"
+
+
+def test_glyph_widths_fails_when_array_too_short() -> None:
+    fm = FontMetadata(fonts=[
+        _detail(
+            base_font="/MyFont", subtype="/TrueType",
+            widths_first_char=32, widths_last_char=126,
+            glyph_widths_count=10,
+        ),
+    ])
+    res = _only(check_font_glyph_widths_consistent(_ctx(font_metadata=fm)))
+    assert res.result == "FAIL"
+    assert "/MyFont" in res.details
+
+
+def test_glyph_widths_fails_for_cid_font_missing_w() -> None:
+    fm = FontMetadata(fonts=[
+        _detail(
+            base_font="/CJKFont", subtype="/Type0",
+            is_cid_type2=True, glyph_widths_count=None,
+        ),
+    ])
+    res = _only(check_font_glyph_widths_consistent(_ctx(font_metadata=fm)))
+    assert res.result == "FAIL"
+    assert "missing both /W and /DW" in res.details
+
+
+# ---------------------------------------------------------------------------
+# check_no_notdef_in_differences (Matterhorn 31-008)
+# ---------------------------------------------------------------------------
+
+
+def test_differences_notdef_passes_on_clean_diffs() -> None:
+    enc = FontEncodingDifferences(
+        base_encoding="/WinAnsiEncoding",
+        differences=[(32, "space"), (33, "exclam")],
+        has_notdef=False,
+    )
+    fm = FontMetadata(fonts=[
+        _detail(base_font="/CleanFont", encoding_differences=enc),
+    ])
+    res = _only(check_no_notdef_in_differences(_ctx(font_metadata=fm)))
+    assert res.result == "PASS"
+
+
+def test_differences_notdef_fails_when_present() -> None:
+    enc = FontEncodingDifferences(
+        base_encoding="/WinAnsiEncoding",
+        differences=[(32, ".notdef")],
+        has_notdef=True,
+    )
+    fm = FontMetadata(fonts=[
+        _detail(base_font="/BadFont", encoding_differences=enc),
+    ])
+    res = _only(check_no_notdef_in_differences(_ctx(font_metadata=fm)))
+    assert res.result == "FAIL"
+    assert "/BadFont" in res.details
+
+
+# ---------------------------------------------------------------------------
+# check_identity_cmap_has_tounicode (Matterhorn 31-007)
+# ---------------------------------------------------------------------------
+
+
+def test_identity_cmap_passes_when_no_identity_fonts() -> None:
+    fm = FontMetadata(fonts=[
+        _detail(base_font="/Helvetica", has_identity_h_or_v=False),
+    ])
+    res = _only(check_identity_cmap_has_tounicode(_ctx(font_metadata=fm)))
+    assert res.result == "PASS"
+
+
+def test_identity_cmap_passes_with_tounicode() -> None:
+    fm = FontMetadata(fonts=[
+        _detail(
+            base_font="/CJKFont", subtype="/Type0",
+            has_identity_h_or_v=True, has_to_unicode=True,
+        ),
+    ])
+    res = _only(check_identity_cmap_has_tounicode(_ctx(font_metadata=fm)))
+    assert res.result == "PASS"
+
+
+def test_identity_cmap_fails_without_tounicode() -> None:
+    fm = FontMetadata(fonts=[
+        _detail(
+            base_font="/CJKFont", subtype="/Type0",
+            has_identity_h_or_v=True, has_to_unicode=False,
+        ),
+    ])
+    res = _only(check_identity_cmap_has_tounicode(_ctx(font_metadata=fm)))
+    assert res.result == "FAIL"
+    assert "/CJKFont" in res.details
+
+
+# ---------------------------------------------------------------------------
+# check_cmap_wmode_consistency (Matterhorn 31-005)
+# ---------------------------------------------------------------------------
+
+
+def test_wmode_passes_when_no_type0_fonts() -> None:
+    fm = FontMetadata(fonts=[
+        _detail(base_font="/Helvetica", subtype="/Type1"),
+    ])
+    res = _only(check_cmap_wmode_consistency(_ctx(font_metadata=fm)))
+    assert res.result == "PASS"
+
+
+def test_wmode_passes_when_consistent() -> None:
+    fm = FontMetadata(fonts=[
+        _detail(
+            base_font="/CJKFont", subtype="/Type0",
+            cmap_wmode=0, cid_font_wmode=None,
+        ),
+    ])
+    res = _only(check_cmap_wmode_consistency(_ctx(font_metadata=fm)))
+    assert res.result == "PASS"
+
+
+def test_wmode_fails_on_horizontal_cmap_with_vertical_cidfont() -> None:
+    fm = FontMetadata(fonts=[
+        _detail(
+            base_font="/CJKFont", subtype="/Type0",
+            cmap_wmode=0, cid_font_wmode=1,
+        ),
+    ])
+    res = _only(check_cmap_wmode_consistency(_ctx(font_metadata=fm)))
+    assert res.result == "FAIL"
+    assert "/CJKFont" in res.details
+
+
+# ---------------------------------------------------------------------------
+# check_nonsymbolic_truetype_latin_mapping (Matterhorn 31-003)
+# ---------------------------------------------------------------------------
+
+
+def test_nonsymbolic_tt_passes_when_no_such_fonts() -> None:
+    fm = FontMetadata(fonts=[
+        _detail(base_font="/Helvetica", subtype="/Type1"),
+    ])
+    res = _only(check_nonsymbolic_truetype_latin_mapping(
+        _ctx(font_metadata=fm)
+    ))
+    assert res.result == "PASS"
+
+
+def test_nonsymbolic_tt_passes_with_winansi() -> None:
+    fm = FontMetadata(fonts=[
+        _detail(
+            base_font="/MyFont", subtype="/TrueType", is_symbolic=False,
+            encoding_kind="name", encoding_name="/WinAnsiEncoding",
+        ),
+    ])
+    res = _only(check_nonsymbolic_truetype_latin_mapping(
+        _ctx(font_metadata=fm)
+    ))
+    assert res.result == "PASS"
+
+
+def test_nonsymbolic_tt_fails_with_custom_encoding() -> None:
+    fm = FontMetadata(fonts=[
+        _detail(
+            base_font="/MyFont", subtype="/TrueType", is_symbolic=False,
+            encoding_kind="dict", encoding_name="custom",
+        ),
+    ])
+    res = _only(check_nonsymbolic_truetype_latin_mapping(
+        _ctx(font_metadata=fm)
+    ))
+    assert res.result == "FAIL"
+    assert "/MyFont" in res.details
+
+
+# ---------------------------------------------------------------------------
+# check_font_encoding_consistency (Matterhorn 31-002)
+# ---------------------------------------------------------------------------
+
+
+def test_encoding_consistency_skips_without_metadata() -> None:
+    res = _only(check_font_encoding_consistency(_ctx()))
+    assert res.result == "INFO"
+
+
+def test_encoding_consistency_passes_structurally() -> None:
+    fm = FontMetadata(fonts=[
+        _detail(base_font="/Helvetica"),
+        _detail(base_font="/Times"),
+    ])
+    res = _only(check_font_encoding_consistency(_ctx(font_metadata=fm)))
+    assert res.result == "PASS"
+    assert "2 font(s) checked" in res.details

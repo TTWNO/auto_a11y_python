@@ -829,6 +829,113 @@ CHECK_CATALOGUE: list[CatalogueRow] = [
         stable_id="PdfWarnTextAlignmentNonOptimal",
         touchpoint=_TAG, standard="WCAG 1.4 (best practice)",
     ),
+
+    # ---- Matterhorn font/CMap/encoding checks (Phase 4.12 follow-up) ----
+    _row(
+        name="Unicode mapping (ToUnicode)", result="FAIL",
+        stable_id="PdfErrFontMissingToUnicode",
+        touchpoint=_TAG, standard="Matterhorn 10-001",
+    ),
+    _row(
+        name="Unicode mapping (ToUnicode)", result="INFO",
+        stable_id="PdfInfoFontMetadataMissingToUnicode",
+        touchpoint=_TAG, standard="Matterhorn 10-001",
+    ),
+    _row(
+        name="CID font GID mapping", result="FAIL",
+        stable_id="PdfErrCidFontGidMappingMissing",
+        touchpoint=_TAG, standard="Matterhorn 31-004",
+    ),
+    _row(
+        name="CID font GID mapping", result="INFO",
+        stable_id="PdfInfoFontMetadataMissingCidGidMapping",
+        touchpoint=_TAG, standard="Matterhorn 31-004",
+    ),
+    _row(
+        name="CMap resources valid", result="FAIL",
+        stable_id="PdfErrCmapResourcesInvalid",
+        touchpoint=_TAG, standard="Matterhorn 31-006",
+    ),
+    _row(
+        name="CMap resources valid", result="INFO",
+        stable_id="PdfInfoFontMetadataMissingCmapResources",
+        touchpoint=_TAG, standard="Matterhorn 31-006",
+    ),
+    _row(
+        name="Valid Unicode values", result="FAIL",
+        stable_id="PdfErrToUnicodeInvalidValues",
+        touchpoint=_TAG, standard="Matterhorn 10-001",
+    ),
+    _row(
+        name="Valid Unicode values", result="INFO",
+        stable_id="PdfInfoFontMetadataMissingValidUnicode",
+        touchpoint=_TAG, standard="Matterhorn 10-001",
+    ),
+    _row(
+        name="No .notdef glyph references", result="FAIL",
+        stable_id="PdfErrFontNotdefReferenced",
+        touchpoint=_TAG, standard="Matterhorn 31-025",
+    ),
+    _row(
+        name="No .notdef glyph references", result="INFO",
+        stable_id="PdfInfoFontMetadataMissingNotdef",
+        touchpoint=_TAG, standard="Matterhorn 31-025",
+    ),
+    _row(
+        name="Font glyph widths consistent", result="FAIL",
+        stable_id="PdfErrFontGlyphWidthsInconsistent",
+        touchpoint=_TAG, standard="Matterhorn 31-009",
+    ),
+    _row(
+        name="Font glyph widths consistent", result="INFO",
+        stable_id="PdfInfoFontMetadataMissingGlyphWidths",
+        touchpoint=_TAG, standard="Matterhorn 31-009",
+    ),
+    _row(
+        name="No .notdef in Differences array", result="FAIL",
+        stable_id="PdfErrNotdefInDifferences",
+        touchpoint=_TAG, standard="Matterhorn 31-008",
+    ),
+    _row(
+        name="No .notdef in Differences array", result="INFO",
+        stable_id="PdfInfoFontMetadataMissingDifferencesNotdef",
+        touchpoint=_TAG, standard="Matterhorn 31-008",
+    ),
+    _row(
+        name="Identity CMap has ToUnicode", result="FAIL",
+        stable_id="PdfErrIdentityCmapMissingToUnicode",
+        touchpoint=_TAG, standard="Matterhorn 31-007",
+    ),
+    _row(
+        name="Identity CMap has ToUnicode", result="INFO",
+        stable_id="PdfInfoFontMetadataMissingIdentityCmap",
+        touchpoint=_TAG, standard="Matterhorn 31-007",
+    ),
+    _row(
+        name="CMap WMode consistency", result="FAIL",
+        stable_id="PdfErrCmapWmodeInconsistent",
+        touchpoint=_TAG, standard="Matterhorn 31-005",
+    ),
+    _row(
+        name="CMap WMode consistency", result="INFO",
+        stable_id="PdfInfoFontMetadataMissingCmapWmode",
+        touchpoint=_TAG, standard="Matterhorn 31-005",
+    ),
+    _row(
+        name="Non-symbolic TrueType Latin mapping", result="FAIL",
+        stable_id="PdfErrNonSymbolicTrueTypeLatinMapping",
+        touchpoint=_TAG, standard="Matterhorn 31-003",
+    ),
+    _row(
+        name="Non-symbolic TrueType Latin mapping", result="INFO",
+        stable_id="PdfInfoFontMetadataMissingNonSymbolicTrueType",
+        touchpoint=_TAG, standard="Matterhorn 31-003",
+    ),
+    _row(
+        name="Font encoding consistency", result="INFO",
+        stable_id="PdfInfoFontMetadataMissingEncodingConsistency",
+        touchpoint=_TAG, standard="Matterhorn 31-002",
+    ),
 ]
 
 

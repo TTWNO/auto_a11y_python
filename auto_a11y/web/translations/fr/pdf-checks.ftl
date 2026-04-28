@@ -4,7 +4,7 @@
 ### file is considered complete. The Phase 7.4 coverage test (pending)
 ### will refuse to pass while any English placeholder remains.
 ###
-### Generated: 2026-04-28T12:54:54+00:00
+### Generated: 2026-04-28T16:19:06+00:00
 ###
 
 pdf-check-PdfErrDocumentTitleNotSet-name =
@@ -1565,4 +1565,319 @@ pdf-check-PdfWarnTextAlignmentNonOptimal-why =
     Centered text makes the left edge unpredictable, so magnification users lose their position at the start of each line. Left-aligned text provides a consistent left edge that readers can anchor to.
 
 pdf-check-PdfWarnTextAlignmentNonOptimal-who =
+    Users of assistive technology.
+
+pdf-check-PdfErrFontMissingToUnicode-name =
+    Unicode mapping (ToUnicode)
+
+pdf-check-PdfErrFontMissingToUnicode-short-title =
+    Unicode mapping (ToUnicode)
+
+pdf-check-PdfErrFontMissingToUnicode-what =
+    The /ToUnicode CMap tells PDF readers how to convert internal character codes to Unicode text.
+
+pdf-check-PdfErrFontMissingToUnicode-why =
+    Without it, text cannot be copied, searched, or read by screen readers — characters may appear as gibberish or empty strings. This is one of the most common causes of inaccessible PDFs.
+
+pdf-check-PdfErrFontMissingToUnicode-who =
+    Users of assistive technology.
+
+pdf-check-PdfInfoFontMetadataMissingToUnicode-name =
+    Unicode mapping (ToUnicode) (no data)
+
+pdf-check-PdfInfoFontMetadataMissingToUnicode-short-title =
+    Unicode mapping (ToUnicode)
+
+pdf-check-PdfInfoFontMetadataMissingToUnicode-what =
+    The /ToUnicode CMap tells PDF readers how to convert internal character codes to Unicode text.
+
+pdf-check-PdfInfoFontMetadataMissingToUnicode-why =
+    Without it, text cannot be copied, searched, or read by screen readers — characters may appear as gibberish or empty strings. This is one of the most common causes of inaccessible PDFs.
+
+pdf-check-PdfInfoFontMetadataMissingToUnicode-who =
+    Users of assistive technology.
+
+pdf-check-PdfErrCidFontGidMappingMissing-name =
+    CID font GID mapping
+
+pdf-check-PdfErrCidFontGidMappingMissing-short-title =
+    CID font GID mapping
+
+pdf-check-PdfErrCidFontGidMappingMissing-what =
+    CIDFontType2 fonts (TrueType-based CID fonts) use a /CIDToGIDMap to translate character IDs to glyph IDs in the TrueType font program.
+
+pdf-check-PdfErrCidFontGidMappingMissing-why =
+    Without this mapping, the PDF viewer cannot correctly select glyphs, potentially rendering wrong characters or blanks.
+
+pdf-check-PdfErrCidFontGidMappingMissing-who =
+    Users of assistive technology.
+
+pdf-check-PdfInfoFontMetadataMissingCidGidMapping-name =
+    CID font GID mapping (no data)
+
+pdf-check-PdfInfoFontMetadataMissingCidGidMapping-short-title =
+    CID font GID mapping
+
+pdf-check-PdfInfoFontMetadataMissingCidGidMapping-what =
+    CIDFontType2 fonts (TrueType-based CID fonts) use a /CIDToGIDMap to translate character IDs to glyph IDs in the TrueType font program.
+
+pdf-check-PdfInfoFontMetadataMissingCidGidMapping-why =
+    Without this mapping, the PDF viewer cannot correctly select glyphs, potentially rendering wrong characters or blanks.
+
+pdf-check-PdfInfoFontMetadataMissingCidGidMapping-who =
+    Users of assistive technology.
+
+pdf-check-PdfErrCmapResourcesInvalid-name =
+    CMap resources valid
+
+pdf-check-PdfErrCmapResourcesInvalid-short-title =
+    CMap resources valid
+
+pdf-check-PdfErrCmapResourcesInvalid-what =
+    Type 0 (composite) fonts reference a CMap resource that defines how character codes map to CID values.
+
+pdf-check-PdfErrCmapResourcesInvalid-why =
+    If the CMap is a non-standard name that isn't embedded as a stream, the PDF viewer has no way to decode the text, resulting in garbled or missing content.
+
+pdf-check-PdfErrCmapResourcesInvalid-who =
+    Users of assistive technology.
+
+pdf-check-PdfInfoFontMetadataMissingCmapResources-name =
+    CMap resources valid (no data)
+
+pdf-check-PdfInfoFontMetadataMissingCmapResources-short-title =
+    CMap resources valid
+
+pdf-check-PdfInfoFontMetadataMissingCmapResources-what =
+    Type 0 (composite) fonts reference a CMap resource that defines how character codes map to CID values.
+
+pdf-check-PdfInfoFontMetadataMissingCmapResources-why =
+    If the CMap is a non-standard name that isn't embedded as a stream, the PDF viewer has no way to decode the text, resulting in garbled or missing content.
+
+pdf-check-PdfInfoFontMetadataMissingCmapResources-who =
+    Users of assistive technology.
+
+pdf-check-PdfErrToUnicodeInvalidValues-name =
+    Valid Unicode values
+
+pdf-check-PdfErrToUnicodeInvalidValues-short-title =
+    Valid Unicode values
+
+pdf-check-PdfErrToUnicodeInvalidValues-what =
+    ToUnicode CMaps that map characters to U+0000 (null), U+FEFF (byte order mark), or U+FFFE (non-character) produce invalid Unicode text.
+
+pdf-check-PdfErrToUnicodeInvalidValues-why =
+    Screen readers may skip these characters, read them as blanks, or behave unpredictably. Search and copy-paste also fail.
+
+pdf-check-PdfErrToUnicodeInvalidValues-who =
+    Users of assistive technology.
+
+pdf-check-PdfInfoFontMetadataMissingValidUnicode-name =
+    Valid Unicode values (no data)
+
+pdf-check-PdfInfoFontMetadataMissingValidUnicode-short-title =
+    Valid Unicode values
+
+pdf-check-PdfInfoFontMetadataMissingValidUnicode-what =
+    ToUnicode CMaps that map characters to U+0000 (null), U+FEFF (byte order mark), or U+FFFE (non-character) produce invalid Unicode text.
+
+pdf-check-PdfInfoFontMetadataMissingValidUnicode-why =
+    Screen readers may skip these characters, read them as blanks, or behave unpredictably. Search and copy-paste also fail.
+
+pdf-check-PdfInfoFontMetadataMissingValidUnicode-who =
+    Users of assistive technology.
+
+pdf-check-PdfErrFontNotdefReferenced-name =
+    No .notdef glyph references
+
+pdf-check-PdfErrFontNotdefReferenced-short-title =
+    No .notdef glyph references
+
+pdf-check-PdfErrFontNotdefReferenced-what =
+    When a font's encoding maps characters to .notdef, those characters render as blank or replacement symbols and cannot be extracted as text.
+
+pdf-check-PdfErrFontNotdefReferenced-why =
+    Screen readers skip or misread these characters, losing document content.
+
+pdf-check-PdfErrFontNotdefReferenced-who =
+    Users of assistive technology.
+
+pdf-check-PdfInfoFontMetadataMissingNotdef-name =
+    No .notdef glyph references (no data)
+
+pdf-check-PdfInfoFontMetadataMissingNotdef-short-title =
+    No .notdef glyph references
+
+pdf-check-PdfInfoFontMetadataMissingNotdef-what =
+    When a font's encoding maps characters to .notdef, those characters render as blank or replacement symbols and cannot be extracted as text.
+
+pdf-check-PdfInfoFontMetadataMissingNotdef-why =
+    Screen readers skip or misread these characters, losing document content.
+
+pdf-check-PdfInfoFontMetadataMissingNotdef-who =
+    Users of assistive technology.
+
+pdf-check-PdfErrFontGlyphWidthsInconsistent-name =
+    Font glyph widths consistent
+
+pdf-check-PdfErrFontGlyphWidthsInconsistent-short-title =
+    Font glyph widths consistent
+
+pdf-check-PdfErrFontGlyphWidthsInconsistent-what =
+    If a font's /Widths array length doesn't match the declared character range (LastChar - FirstChar + 1), or a CID font lacks width definitions, text extraction produces garbled spacing.
+
+pdf-check-PdfErrFontGlyphWidthsInconsistent-why =
+    Copy-paste and screen reader output become unreliable.
+
+pdf-check-PdfErrFontGlyphWidthsInconsistent-who =
+    Users of assistive technology.
+
+pdf-check-PdfInfoFontMetadataMissingGlyphWidths-name =
+    Font glyph widths consistent (no data)
+
+pdf-check-PdfInfoFontMetadataMissingGlyphWidths-short-title =
+    Font glyph widths consistent
+
+pdf-check-PdfInfoFontMetadataMissingGlyphWidths-what =
+    If a font's /Widths array length doesn't match the declared character range (LastChar - FirstChar + 1), or a CID font lacks width definitions, text extraction produces garbled spacing.
+
+pdf-check-PdfInfoFontMetadataMissingGlyphWidths-why =
+    Copy-paste and screen reader output become unreliable.
+
+pdf-check-PdfInfoFontMetadataMissingGlyphWidths-who =
+    Users of assistive technology.
+
+pdf-check-PdfErrNotdefInDifferences-name =
+    No .notdef in Differences array
+
+pdf-check-PdfErrNotdefInDifferences-short-title =
+    No .notdef in Differences array
+
+pdf-check-PdfErrNotdefInDifferences-what =
+    The .notdef glyph is a placeholder for missing characters (often displayed as a blank rectangle).
+
+pdf-check-PdfErrNotdefInDifferences-why =
+    If a font's /Differences array references .notdef, it means a character code is explicitly mapped to a missing glyph — text at that position will be blank or unreadable for both visual and assistive technology users.
+
+pdf-check-PdfErrNotdefInDifferences-who =
+    Users of assistive technology.
+
+pdf-check-PdfInfoFontMetadataMissingDifferencesNotdef-name =
+    No .notdef in Differences array (no data)
+
+pdf-check-PdfInfoFontMetadataMissingDifferencesNotdef-short-title =
+    No .notdef in Differences array
+
+pdf-check-PdfInfoFontMetadataMissingDifferencesNotdef-what =
+    The .notdef glyph is a placeholder for missing characters (often displayed as a blank rectangle).
+
+pdf-check-PdfInfoFontMetadataMissingDifferencesNotdef-why =
+    If a font's /Differences array references .notdef, it means a character code is explicitly mapped to a missing glyph — text at that position will be blank or unreadable for both visual and assistive technology users.
+
+pdf-check-PdfInfoFontMetadataMissingDifferencesNotdef-who =
+    Users of assistive technology.
+
+pdf-check-PdfErrIdentityCmapMissingToUnicode-name =
+    Identity CMap has ToUnicode
+
+pdf-check-PdfErrIdentityCmapMissingToUnicode-short-title =
+    Identity CMap has ToUnicode
+
+pdf-check-PdfErrIdentityCmapMissingToUnicode-what =
+    Identity-H and Identity-V CMaps use raw glyph IDs as character codes.
+
+pdf-check-PdfErrIdentityCmapMissingToUnicode-why =
+    Without a /ToUnicode map, there is no way to convert these glyph IDs to meaningful text. Screen readers will be silent or read meaningless values, and text cannot be searched or copied.
+
+pdf-check-PdfErrIdentityCmapMissingToUnicode-who =
+    Users of assistive technology.
+
+pdf-check-PdfInfoFontMetadataMissingIdentityCmap-name =
+    Identity CMap has ToUnicode (no data)
+
+pdf-check-PdfInfoFontMetadataMissingIdentityCmap-short-title =
+    Identity CMap has ToUnicode
+
+pdf-check-PdfInfoFontMetadataMissingIdentityCmap-what =
+    Identity-H and Identity-V CMaps use raw glyph IDs as character codes.
+
+pdf-check-PdfInfoFontMetadataMissingIdentityCmap-why =
+    Without a /ToUnicode map, there is no way to convert these glyph IDs to meaningful text. Screen readers will be silent or read meaningless values, and text cannot be searched or copied.
+
+pdf-check-PdfInfoFontMetadataMissingIdentityCmap-who =
+    Users of assistive technology.
+
+pdf-check-PdfErrCmapWmodeInconsistent-name =
+    CMap WMode consistency
+
+pdf-check-PdfErrCmapWmodeInconsistent-short-title =
+    CMap WMode consistency
+
+pdf-check-PdfErrCmapWmodeInconsistent-what =
+    The WMode (writing mode) value in a CMap determines whether text is laid out horizontally (0) or vertically (1).
+
+pdf-check-PdfErrCmapWmodeInconsistent-why =
+    If the CMap's WMode does not match the font's actual writing direction, text extraction and screen reader output will be garbled or characters will appear in the wrong order.
+
+pdf-check-PdfErrCmapWmodeInconsistent-who =
+    Users of assistive technology.
+
+pdf-check-PdfInfoFontMetadataMissingCmapWmode-name =
+    CMap WMode consistency (no data)
+
+pdf-check-PdfInfoFontMetadataMissingCmapWmode-short-title =
+    CMap WMode consistency
+
+pdf-check-PdfInfoFontMetadataMissingCmapWmode-what =
+    The WMode (writing mode) value in a CMap determines whether text is laid out horizontally (0) or vertically (1).
+
+pdf-check-PdfInfoFontMetadataMissingCmapWmode-why =
+    If the CMap's WMode does not match the font's actual writing direction, text extraction and screen reader output will be garbled or characters will appear in the wrong order.
+
+pdf-check-PdfInfoFontMetadataMissingCmapWmode-who =
+    Users of assistive technology.
+
+pdf-check-PdfErrNonSymbolicTrueTypeLatinMapping-name =
+    Non-symbolic TrueType Latin mapping
+
+pdf-check-PdfErrNonSymbolicTrueTypeLatinMapping-short-title =
+    Non-symbolic TrueType Latin mapping
+
+pdf-check-PdfErrNonSymbolicTrueTypeLatinMapping-what =
+    Non-symbolic TrueType fonts (standard text fonts like Arial, Calibri) must use standard encoding so that character codes map predictably to glyphs.
+
+pdf-check-PdfErrNonSymbolicTrueTypeLatinMapping-why =
+    Incorrect mapping causes text extraction to produce wrong characters, breaking screen reader output and copy-paste.
+
+pdf-check-PdfErrNonSymbolicTrueTypeLatinMapping-who =
+    Users of assistive technology.
+
+pdf-check-PdfInfoFontMetadataMissingNonSymbolicTrueType-name =
+    Non-symbolic TrueType Latin mapping (no data)
+
+pdf-check-PdfInfoFontMetadataMissingNonSymbolicTrueType-short-title =
+    Non-symbolic TrueType Latin mapping
+
+pdf-check-PdfInfoFontMetadataMissingNonSymbolicTrueType-what =
+    Non-symbolic TrueType fonts (standard text fonts like Arial, Calibri) must use standard encoding so that character codes map predictably to glyphs.
+
+pdf-check-PdfInfoFontMetadataMissingNonSymbolicTrueType-why =
+    Incorrect mapping causes text extraction to produce wrong characters, breaking screen reader output and copy-paste.
+
+pdf-check-PdfInfoFontMetadataMissingNonSymbolicTrueType-who =
+    Users of assistive technology.
+
+pdf-check-PdfInfoFontMetadataMissingEncodingConsistency-name =
+    Font encoding consistency (no data)
+
+pdf-check-PdfInfoFontMetadataMissingEncodingConsistency-short-title =
+    Font encoding consistency
+
+pdf-check-PdfInfoFontMetadataMissingEncodingConsistency-what =
+    When a font's declared encoding does not match the actual glyph mapping, text extraction produces wrong characters.
+
+pdf-check-PdfInfoFontMetadataMissingEncodingConsistency-why =
+    Screen readers read gibberish, search fails, and copy-paste yields incorrect text — effectively making the content inaccessible.
+
+pdf-check-PdfInfoFontMetadataMissingEncodingConsistency-who =
     Users of assistive technology.

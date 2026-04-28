@@ -37,6 +37,7 @@ import pikepdf
 from auto_a11y.pdf.audit import (
     colors,
     content_streams,
+    font_metadata as font_metadata_collector,
     fonts,
     images,
     reading_order,
@@ -163,6 +164,10 @@ def _run_audit_with_pdf(
     _emit(progress, "Analyzing fonts", 0.30)
     font_analysis = fonts.extract_font_analysis(pdf_path)
 
+    # ---- Step 4b: font-resource metadata --------------------------------
+    _emit(progress, "Extracting font metadata", 0.40)
+    font_metadata = font_metadata_collector.extract_font_metadata(pdf)
+
     # ---- Step 5: colours (best-effort; Ghostscript-dependent) -----------
     _emit(progress, "Extracting colors", 0.45)
     color_pairs, fg_only = colors.extract_text_colors(
@@ -218,6 +223,7 @@ def _run_audit_with_pdf(
         locale=locale,
         mcid_text_map=mcid_text_map,
         font_analysis=font_analysis,
+        font_metadata=font_metadata,
         color_pairs=color_pairs,
         fg_only_colors=fg_only,
         form_color_pairs=form_pairs,

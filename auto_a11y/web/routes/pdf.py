@@ -444,6 +444,11 @@ def file(pdf_document_id: str) -> Response:
         download_name=download_name,
     )
     response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+    # Explicit CSP so the global after_request hook leaves it alone and
+    # the same-origin iframe embed is unambiguous to every browser.
+    response.headers['Content-Security-Policy'] = (
+        "default-src 'self'; frame-ancestors 'self'"
+    )
     response.headers['Content-Disposition'] = (
         f'inline; filename="{download_name}"'
     )

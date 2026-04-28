@@ -511,16 +511,23 @@ def create_app(config: Any) -> Flask:
     # Security headers
     @app.after_request
     def add_security_headers(response: Response) -> Response:
-        response.headers['X-Frame-Options'] = 'DENY'
+        # Only set the global DENY if the route hasn't already set its own
+        # X-Frame-Options (the PDF /pdfs/<id>/file route uses SAMEORIGIN so
+        # the inline viewer iframe on the detail page can render).
+        if 'X-Frame-Options' not in response.headers:
+            response.headers['X-Frame-Options'] = 'DENY'
         response.headers['X-Content-Type-Options'] = 'nosniff'
         response.headers['X-XSS-Protection'] = '0'
-        response.headers['Content-Security-Policy'] = (
-            "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://code.jquery.com; "
-            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
-            "img-src 'self' data:; "
-            "font-src 'self' https://cdn.jsdelivr.net"
-        )
+        # Same logic for CSP — routes that need a permissive frame-ancestors
+        # directive (e.g. the PDF inline viewer) set their own CSP first.
+        if 'Content-Security-Policy' not in response.headers:
+            response.headers['Content-Security-Policy'] = (
+                "default-src 'self'; "
+                "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://code.jquery.com; "
+                "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+                "img-src 'self' data:; "
+                "font-src 'self' https://cdn.jsdelivr.net"
+            )
         if not config.DEBUG:
             response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
         return response

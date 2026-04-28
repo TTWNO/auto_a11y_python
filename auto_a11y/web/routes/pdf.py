@@ -462,14 +462,34 @@ def audit_status(pdf_document_id: str) -> Response | tuple[Response, int]:
         return jsonify({'error': 'forbidden'}), 403
 
     job_manager = JobManager.get_instance(db)
-    # Most recent active job for this document, if any.
+    # Prefer the most recent ACTIVE job (PENDING / RUNNING / CANCELLING)
+    # for this document. Falling back to the absolute-most-recent record
+    # would surface a stale completed job from a prior run, which the
+    # polling JS would mis-read as "the current audit just finished" and
+    # trigger an immediate reload-loop.
+    active_statuses = [
+        JobStatus.PENDING.value,
+        JobStatus.RUNNING.value,
+        JobStatus.CANCELLING.value,
+    ]
     job_doc_raw = job_manager.collection.find_one(
         {
             'job_type': JobType.PDF_AUDIT.value,
             'metadata.pdf_document_id': pdf_document_id,
+            'status': {'$in': active_statuses},
         },
         sort=[('created_at', -1)],
     )
+    if job_doc_raw is None:
+        # No active job — fall back to the most recent record so the
+        # operator can still see what the last run looked like.
+        job_doc_raw = job_manager.collection.find_one(
+            {
+                'job_type': JobType.PDF_AUDIT.value,
+                'metadata.pdf_document_id': pdf_document_id,
+            },
+            sort=[('created_at', -1)],
+        )
 
     job_payload: dict[str, Any] | None = None
     if job_doc_raw is not None:

@@ -215,9 +215,11 @@ def _run_audit_with_pdf(
     page_width = page_dims[0].width if page_dims else 612.0
     detected_columns = reading_order.detect_columns(visual_blocks, page_width)
     # match_elements_to_positions is O(elements × blocks) — easily a
-    # minute on big tagged PDFs. Tick per element through [0.79, 0.795].
+    # minute on big tagged PDFs. Give it the band [0.79, 0.86] so the
+    # per-element ticks visibly move the bar (a 0.5% band would be
+    # imperceptible).
     _emit(progress, "Reading order matching elements", 0.79)
-    sub_match = _scale_progress(progress, 0.79, 0.795)
+    sub_match = _scale_progress(progress, 0.79, 0.86)
     element_positions = reading_order.match_elements_to_positions(
         elements, visual_blocks, progress=sub_match,
     )
@@ -261,8 +263,9 @@ def _run_audit_with_pdf(
     # ~108 pure-function checks read off the populated AuditContext.
     # Each one is sub-millisecond on a typical doc but the long tail
     # (font_metadata checks iterating per font) can be a couple seconds
-    # — emit per-check ticks scaled onto [0.80, 0.95] so the bar moves.
-    _emit(progress, "Running checks", 0.80)
+    # — emit per-check ticks scaled onto [0.87, 0.97] so the bar moves
+    # past matching's [0.79, 0.86] band cleanly.
+    _emit(progress, "Running checks", 0.87)
     check_results: list[CheckResult] = []
     total_checks = max(1, len(ALL_CHECKS))
     for idx, check_fn in enumerate(ALL_CHECKS):
@@ -272,7 +275,7 @@ def _run_audit_with_pdf(
             _emit(
                 progress,
                 f"Running check {idx + 1} of {total_checks}: {check_name}",
-                0.80 + (idx / total_checks) * 0.15,
+                0.87 + (idx / total_checks) * 0.10,
             )
         try:
             check_results.extend(check_fn(ctx))
@@ -292,7 +295,7 @@ def _run_audit_with_pdf(
     # ---- Step 10: optional AI (stubbed pending Task 5.1) ----------------
     ai_analysis: AIAnalysisResult | None = None
     if run_ai:
-        _emit(progress, "Running AI analysis", 0.96)
+        _emit(progress, "Running AI analysis", 0.98)
         # TODO(Task 5.1): replace with real call into
         # ``auto_a11y.pdf.audit.ai.semantic.analyze``.
         ai_analysis = AIAnalysisResult(

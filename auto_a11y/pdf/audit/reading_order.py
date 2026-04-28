@@ -66,6 +66,7 @@ from __future__ import annotations
 
 import logging
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -175,6 +176,8 @@ class ReadingOrderMismatch:
 
 def extract_visual_positions(
     pdf_path: Path,
+    *,
+    progress: Callable[[str, float], None] | None = None,
 ) -> tuple[list[VisualBlock], list[PageDimensions]]:
     """Extract pdfminer-derived text-block positions for every page.
 
@@ -204,6 +207,16 @@ def extract_visual_positions(
         for page_idx, page_layout in enumerate(
             extract_pages(pdf_path, laparams=laparams)
         ):
+            if progress is not None:
+                # We can't know the page count up front (pdfminer streams
+                # pages one at a time). Use a fading-asymptote fraction
+                # so the bar still moves on every page without claiming
+                # we're done; the caller's outer band caps it cleanly.
+                approx_fraction = 1.0 - (1.0 / (1 + 0.05 * (page_idx + 1)))
+                progress(
+                    f"Reading order: parsing page {page_idx + 1}",
+                    approx_fraction,
+                )
             page_height = float(page_layout.height)
             page_width = float(page_layout.width)
             page_dims.append(PageDimensions(width=page_width, height=page_height))

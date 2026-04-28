@@ -203,10 +203,18 @@ def _run_audit_with_pdf(
             images_list = []
 
     # ---- Step 7: visual reading order -----------------------------------
-    _emit(progress, "Computing visual reading order", 0.70)
-    visual_blocks, page_dims = reading_order.extract_visual_positions(pdf_path)
+    # The pdfminer parse here is the second-largest cost after colours;
+    # tick per page through the band [0.66, 0.78] so the user doesn't see
+    # 25% of the bar held still on a multi-minute pdfminer run.
+    _emit(progress, "Computing visual reading order", 0.66)
+    sub_reading = _scale_progress(progress, 0.66, 0.78)
+    visual_blocks, page_dims = reading_order.extract_visual_positions(
+        pdf_path, progress=sub_reading,
+    )
+    _emit(progress, "Reading order: detecting columns", 0.78)
     page_width = page_dims[0].width if page_dims else 612.0
     detected_columns = reading_order.detect_columns(visual_blocks, page_width)
+    _emit(progress, "Reading order: matching elements", 0.79)
     element_positions = reading_order.match_elements_to_positions(
         elements, visual_blocks
     )
@@ -247,9 +255,22 @@ def _run_audit_with_pdf(
     )
 
     # ---- Step 9: run all checks -----------------------------------------
+    # ~108 pure-function checks read off the populated AuditContext.
+    # Each one is sub-millisecond on a typical doc but the long tail
+    # (font_metadata checks iterating per font) can be a couple seconds
+    # — emit per-check ticks scaled onto [0.80, 0.95] so the bar moves.
     _emit(progress, "Running checks", 0.80)
     check_results: list[CheckResult] = []
-    for check_fn in ALL_CHECKS:
+    total_checks = max(1, len(ALL_CHECKS))
+    for idx, check_fn in enumerate(ALL_CHECKS):
+        # Tick every ~5% of checks so we don't flood JobManager writes.
+        if progress is not None and (idx % max(1, total_checks // 20) == 0):
+            check_name = _callable_name(check_fn)
+            _emit(
+                progress,
+                f"Running check {idx + 1} of {total_checks}: {check_name}",
+                0.80 + (idx / total_checks) * 0.15,
+            )
         try:
             check_results.extend(check_fn(ctx))
         # Catching ``Exception`` is deliberate: a single check crashing
@@ -268,7 +289,7 @@ def _run_audit_with_pdf(
     # ---- Step 10: optional AI (stubbed pending Task 5.1) ----------------
     ai_analysis: AIAnalysisResult | None = None
     if run_ai:
-        _emit(progress, "Running AI analysis", 0.90)
+        _emit(progress, "Running AI analysis", 0.96)
         # TODO(Task 5.1): replace with real call into
         # ``auto_a11y.pdf.audit.ai.semantic.analyze``.
         ai_analysis = AIAnalysisResult(

@@ -359,8 +359,37 @@ def _normalize_ws(s: str) -> str:
     return _WHITESPACE_RE.sub(" ", s).strip()
 
 
+@dataclass(frozen=True)
+class _PreparedBlock:
+    """Normalised view of a :class:`VisualBlock` cached across the
+    inner ``_match_element_to_block`` loop.
+
+    The matcher previously called ``_normalize_ws(block.text)[:80].lower()``
+    and ``set(...split())`` for every (element, block) pair — quadratic
+    in (elements × blocks) with the per-block normalisation repeated
+    every iteration. Hoisting it into a single pre-pass before the outer
+    elements loop is a strict win on big documents.
+    """
+    block: VisualBlock
+    text_clean: str
+    words: frozenset[str]
+
+
+def _prepare_blocks(visual_blocks: list[VisualBlock]) -> list[_PreparedBlock]:
+    """Normalise every block once."""
+    out: list[_PreparedBlock] = []
+    for block in visual_blocks:
+        text_clean = _normalize_ws(block.text)[:80].lower()
+        out.append(_PreparedBlock(
+            block=block,
+            text_clean=text_clean,
+            words=frozenset(text_clean.split()),
+        ))
+    return out
+
+
 def _match_element_to_block(
-    elem: StructElement, visual_blocks: list[VisualBlock]
+    elem: StructElement, prepared_blocks: list[_PreparedBlock]
 ) -> VisualBlock | None:
     """Find the best matching visual block for one structure element.
 
@@ -379,29 +408,32 @@ def _match_element_to_block(
         return None
 
     text_clean = _normalize_ws(text)[:40].lower()
-    text_words = set(text_clean.split())
+    text_words = frozenset(text_clean.split())
+    text_prefix = text_clean[:15]
+    text_word_count = len(text_words)
+    word_threshold = max(2, int(text_word_count * 0.5)) if text_word_count >= 2 else 0
 
     best_match: VisualBlock | None = None
     best_score = 0
 
-    for block in visual_blocks:
-        block_text = _normalize_ws(block.text)[:80].lower()
-        block_words = set(block_text.split())
+    for prepared in prepared_blocks:
+        block_text = prepared.text_clean
+        block_words = prepared.words
 
         # Strategy 1: prefix substring match.
-        matched = text_clean[:15] in block_text or block_text[:15] in text_clean
+        matched = text_prefix in block_text or block_text[:15] in text_clean
 
         # Strategy 2: word overlap (≥ 2 words, ≥ 50% covered).
-        if not matched and len(text_words) >= 2:
+        if not matched and text_word_count >= 2:
             common = text_words & block_words
-            if len(common) >= max(2, int(len(text_words) * 0.5)):
+            if len(common) >= word_threshold:
                 matched = True
 
         if matched:
             overlap = len(text_words & block_words)
             if overlap > best_score:
                 best_score = overlap
-                best_match = block
+                best_match = prepared.block
 
     if best_match is not None and best_score >= 1:
         return best_match
@@ -423,6 +455,8 @@ def _block_to_position(block: VisualBlock) -> ElementPosition:
 def match_elements_to_positions(
     elements: list[StructElement],
     visual_blocks: list[VisualBlock],
+    *,
+    progress: Callable[[str, float], None] | None = None,
 ) -> dict[int, ElementPosition]:
     """Match each structure element to a visual block's position.
 
@@ -436,29 +470,49 @@ def match_elements_to_positions(
     Document/Part/Sect elements are never matched — their text spans the
     whole page or document and is too broad for visual location.
 
+    Inner cost is O(elements × visual_blocks); the per-block text
+    normalisation is hoisted outside via :func:`_prepare_blocks` so it
+    runs once instead of per-pair. ``progress`` is invoked roughly every
+    1% of work so the SSE bar moves on multi-thousand-element trees.
+
     Returns a ``{element.index: ElementPosition}`` map; elements with no
     match are absent from the result.
     """
     positions: dict[int, ElementPosition] = {}
     containers: list[StructElement] = []
+    prepared = _prepare_blocks(visual_blocks)
+    total_elements = max(1, len(elements))
+    tick_every = max(1, total_elements // 100)
 
     # Pass 1: leaf elements + elements with direct MCIDs.
-    for elem in elements:
+    for idx, elem in enumerate(elements):
+        if progress is not None and idx % tick_every == 0:
+            progress(
+                f"Matching element {idx + 1} of {total_elements}",
+                idx / total_elements * 0.5,
+            )
         if elem.resolved_tag in _SKIP_MATCHING_TAGS:
             continue
         if not elem.mcids and elem.children_indices:
             containers.append(elem)
             continue
 
-        match = _match_element_to_block(elem, visual_blocks)
+        match = _match_element_to_block(elem, prepared)
         if match is not None:
             positions[elem.index] = _block_to_position(match)
 
     # Pass 2: containers not yet positioned.
-    for elem in containers:
+    total_containers = max(1, len(containers))
+    container_tick = max(1, total_containers // 50)
+    for idx, elem in enumerate(containers):
+        if progress is not None and idx % container_tick == 0:
+            progress(
+                f"Matching container {idx + 1} of {total_containers}",
+                0.5 + idx / total_containers * 0.5,
+            )
         if elem.index in positions:
             continue
-        match = _match_element_to_block(elem, visual_blocks)
+        match = _match_element_to_block(elem, prepared)
         if match is not None:
             positions[elem.index] = _block_to_position(match)
 

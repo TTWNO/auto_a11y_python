@@ -214,9 +214,12 @@ def _run_audit_with_pdf(
     _emit(progress, "Reading order detecting columns", 0.78)
     page_width = page_dims[0].width if page_dims else 612.0
     detected_columns = reading_order.detect_columns(visual_blocks, page_width)
+    # match_elements_to_positions is O(elements × blocks) — easily a
+    # minute on big tagged PDFs. Tick per element through [0.79, 0.795].
     _emit(progress, "Reading order matching elements", 0.79)
+    sub_match = _scale_progress(progress, 0.79, 0.795)
     element_positions = reading_order.match_elements_to_positions(
-        elements, visual_blocks
+        elements, visual_blocks, progress=sub_match,
     )
     structure_order = [
         e.index

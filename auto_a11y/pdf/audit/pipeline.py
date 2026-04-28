@@ -211,10 +211,10 @@ def _run_audit_with_pdf(
     visual_blocks, page_dims = reading_order.extract_visual_positions(
         pdf_path, progress=sub_reading,
     )
-    _emit(progress, "Reading order: detecting columns", 0.78)
+    _emit(progress, "Reading order detecting columns", 0.78)
     page_width = page_dims[0].width if page_dims else 612.0
     detected_columns = reading_order.detect_columns(visual_blocks, page_width)
-    _emit(progress, "Reading order: matching elements", 0.79)
+    _emit(progress, "Reading order matching elements", 0.79)
     element_positions = reading_order.match_elements_to_positions(
         elements, visual_blocks
     )

@@ -551,6 +551,9 @@ def view_project(project_id: str) -> str | Response:
 
     all_groups = get_db().get_all_groups()
 
+    # PDF nav badge count (Phase 9.7 — additive)
+    pdf_count = len(get_db().get_pdf_documents(project_id=project_id, limit=10000))
+
     return render_template('projects/view.html',
                          project=project,
                          websites=websites,
@@ -560,7 +563,8 @@ def view_project(project_id: str) -> str | Response:
                          recordings=recordings,
                          discovered_pages=discovered_pages,
                          is_project_admin=is_project_admin,
-                         all_groups=all_groups)
+                         all_groups=all_groups,
+                         pdf_count=pdf_count)
 
 
 @projects_bp.route('/<project_id>/edit', methods=['GET', 'POST'])

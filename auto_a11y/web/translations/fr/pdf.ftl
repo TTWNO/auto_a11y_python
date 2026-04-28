@@ -101,3 +101,12 @@ pdf-detail-no-violations = No violations were found in the latest audit.
 pdf-detail-remediation-summary = How to fix this
 pdf-jump-to-page = Jump to page { $page }
 pdf-delete-confirm = Are you sure you want to delete this PDF? This cannot be undone.
+
+# Navigation integration (Phase 9.7) — TODO_FR placeholder English
+pdf-nav-link = PDFs
+pdf-nav-link-count-aria = { $count ->
+    [one] { $count } PDF
+   *[other] { $count } PDFs
+}
+pdf-page-is-pdf-badge = → PDF
+pdf-page-is-pdf-badge-aria = This page served a PDF; view the PDF document instead

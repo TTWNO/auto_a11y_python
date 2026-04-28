@@ -183,6 +183,16 @@
         </div>
     </section>
 
+    <!-- PDFs (additive nav link, Phase 9.7) -->
+    <div class="card mb-3">
+        <div class="card-body py-2">
+            <a href="{{ url_for('pdf.list_for_website', website_id=website.id) }}" class="text-decoration-none d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-file-earmark-pdf" aria-hidden="true"></i> {{ ftl('pdf-nav-link') }}</span>
+                <span class="badge badge-info" aria-label="{{ ftl('pdf-nav-link-count-aria', count=pdf_count or 0) }}">{{ pdf_count or 0 }}</span>
+            </a>
+        </div>
+    </div>
+
     <!-- Discovery Summary (if there are failed pages) -->
     {% set failed_pages = pages | selectattr('status.value', 'equalto', 'discovery_failed') | list %}
     {% if failed_pages %}
@@ -362,6 +372,9 @@
                                     {{ page.url }}
                                     <span class="visually-hidden"> ({{ ftl('common-opens-in-new-tab') }})</span>
                                 </a>
+                                {% if page.status.value == 'is_pdf' and page.linked_pdf_document_id %}
+                                <a href="{{ url_for('pdf.detail', pdf_document_id=page.linked_pdf_document_id) }}" class="badge badge-info ms-1 text-decoration-none" aria-label="{{ ftl('pdf-page-is-pdf-badge-aria') }}">{{ ftl('pdf-page-is-pdf-badge') }}</a>
+                                {% endif %}
                             </div>
                         </div>
                         <span class="badge badge-{{ {
@@ -371,7 +384,8 @@
                             'tested': 'pass',
                             'error': 'high',
                             'skipped': 'neutral',
-                            'discovery_failed': 'neutral'
+                            'discovery_failed': 'neutral',
+                            'is_pdf': 'info'
                         }[page.status.value] }} page-status flex-shrink-0" data-page-id="{{ page.id }}">
                             {% if page.status.value in ['queued', 'testing'] %}
                             <span class="spinner-border spinner-border-sm me-1" role="status" style="width: 10px; height: 10px;"><span class="visually-hidden">{{ ftl('common-loading') }}</span></span>

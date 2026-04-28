@@ -115,12 +115,16 @@ def view_website(website_id: str) -> str | Response:
     # Get available test users for this project
     project_users = get_db().get_project_users(website.project_id, enabled_only=True)
 
+    # PDF nav badge count (Phase 9.7 — additive)
+    pdf_count = len(get_db().get_pdf_documents(website_id=website_id, limit=10000))
+
     return render_template('websites/view.html',
                          website=website,
                          project=project,
                          pages=pages,
                          stats=stats,
                          website_users=project_users,
+                         pdf_count=pdf_count,
                          pagination={
                              'page': page_num,
                              'per_page': per_page,

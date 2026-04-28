@@ -106,3 +106,14 @@ pdf-nav-link-count-aria = { $count ->
 }
 pdf-page-is-pdf-badge = → PDF
 pdf-page-is-pdf-badge-aria = This page served a PDF; view the PDF document instead
+
+# PDF audit progress counter (project + website detail nav cards)
+pdf-nav-audit-progress = { $audited } of { $total } audited
+pdf-nav-audit-running = { $count ->
+    [one] { $count } running
+   *[other] { $count } running
+}
+pdf-nav-audit-failed = { $count ->
+    [one] { $count } failed
+   *[other] { $count } failed
+}

@@ -14,7 +14,24 @@ from flask_login import login_required
 from flask import g
 from auto_a11y.models import Project, ProjectStatus, ProjectType
 from auto_a11y.models.page import PageStatus
+from auto_a11y.models.pdf_document import PdfDocument, PdfDocumentStatus
 from auto_a11y.models.app_user import UserRole
+
+
+def summarise_pdf_status(pdfs: list[PdfDocument]) -> dict[str, int]:
+    """Bucket a list of PdfDocuments by audit status for the nav-card counter.
+
+    Returns a dict with the keys ``total`` (== ``len(pdfs)``) and one entry
+    per :class:`PdfDocumentStatus` value (snake-cased). Templates render
+    "X of Y audited" by reading ``audited`` and ``total``; the per-status
+    breakdown is available for richer summaries.
+    """
+    counts: dict[str, int] = {"total": len(pdfs)}
+    for status in PdfDocumentStatus:
+        counts[status.value] = 0
+    for pdf in pdfs:
+        counts[pdf.status.value] = counts.get(pdf.status.value, 0) + 1
+    return counts
 from auto_a11y.web.routes.auth import auditor_required, project_role_required
 from auto_a11y.core.job_manager import JobManager, JobType, JobStatus
 from auto_a11y.core.task_runner import task_runner
@@ -552,7 +569,9 @@ def view_project(project_id: str) -> str | Response:
     all_groups = get_db().get_all_groups()
 
     # PDF nav badge count (Phase 9.7 — additive)
-    pdf_count = len(get_db().get_pdf_documents(project_id=project_id, limit=10000))
+    project_pdfs = get_db().get_pdf_documents(project_id=project_id, limit=10000)
+    pdf_count = len(project_pdfs)
+    pdf_status_counts = summarise_pdf_status(project_pdfs)
 
     return render_template('projects/view.html',
                          project=project,
@@ -564,7 +583,8 @@ def view_project(project_id: str) -> str | Response:
                          discovered_pages=discovered_pages,
                          is_project_admin=is_project_admin,
                          all_groups=all_groups,
-                         pdf_count=pdf_count)
+                         pdf_count=pdf_count,
+                         pdf_status_counts=pdf_status_counts)
 
 
 @projects_bp.route('/<project_id>/edit', methods=['GET', 'POST'])

@@ -116,7 +116,10 @@ def view_website(website_id: str) -> str | Response:
     project_users = get_db().get_project_users(website.project_id, enabled_only=True)
 
     # PDF nav badge count (Phase 9.7 — additive)
-    pdf_count = len(get_db().get_pdf_documents(website_id=website_id, limit=10000))
+    website_pdfs = get_db().get_pdf_documents(website_id=website_id, limit=10000)
+    pdf_count = len(website_pdfs)
+    from auto_a11y.web.routes.projects import summarise_pdf_status
+    pdf_status_counts = summarise_pdf_status(website_pdfs)
 
     return render_template('websites/view.html',
                          website=website,
@@ -125,6 +128,7 @@ def view_website(website_id: str) -> str | Response:
                          stats=stats,
                          website_users=project_users,
                          pdf_count=pdf_count,
+                         pdf_status_counts=pdf_status_counts,
                          pagination={
                              'page': page_num,
                              'per_page': per_page,

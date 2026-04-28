@@ -132,7 +132,13 @@ class Config:
     GOOGLE_REDIRECT_PATH: str = '/auth/google/callback'
 
     # PDF audit engine (see docs/superpowers/specs/2026-04-24-pdf-audit-engine-port-design.md)
-    PDF_STORAGE_DIR: str = os.getenv('PDF_STORAGE_DIR', 'data/pdfs')
+    # Relative env values are anchored to BASE_DIR (the project root) so the path
+    # is deterministic regardless of the process cwd. Absolute env values pass through.
+    PDF_STORAGE_DIR: str = (
+        str(Path(os.environ['PDF_STORAGE_DIR']))
+        if os.environ.get('PDF_STORAGE_DIR') and Path(os.environ['PDF_STORAGE_DIR']).is_absolute()
+        else str(BASE_DIR / (os.environ.get('PDF_STORAGE_DIR') or 'data/pdfs'))
+    )
     PDF_MAX_SIZE_MB: int = int(os.getenv('PDF_MAX_SIZE_MB', 100))
     PDF_DOWNLOAD_TIMEOUT_SECONDS: int = int(os.getenv('PDF_DOWNLOAD_TIMEOUT_SECONDS', 60))
     PDF_AUDIT_MAX_PARALLEL: int = int(os.getenv('PDF_AUDIT_MAX_PARALLEL', 2))

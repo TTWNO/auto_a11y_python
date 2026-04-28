@@ -169,9 +169,14 @@ def _run_audit_with_pdf(
     font_metadata = font_metadata_collector.extract_font_metadata(pdf)
 
     # ---- Step 5: colours (best-effort; Ghostscript-dependent) -----------
+    # Colours rasterises every page via Ghostscript — easily the long pole
+    # on multi-page PDFs. We hand the collector a scaled sub-progress
+    # callback that maps its 0.0-1.0 fraction onto the band 0.45-0.65 of
+    # the overall pipeline so the SSE consumer sees per-page ticks.
     _emit(progress, "Extracting colors", 0.45)
+    sub_colors = _scale_progress(progress, 0.45, 0.65)
     color_pairs, fg_only = colors.extract_text_colors(
-        pdf_path, gs_path_override=gs_path_override
+        pdf_path, gs_path_override=gs_path_override, progress=sub_colors,
     )
     # ``extract_form_field_colors`` doesn't have its own broad swallow.
     # We absorb the same family of failures here so a missing or
@@ -339,3 +344,28 @@ def _emit(
     """
     if progress is not None:
         progress(stage, fraction)
+
+
+def _scale_progress(
+    parent: ProgressCallback | None,
+    start: float,
+    end: float,
+) -> ProgressCallback | None:
+    """Build a sub-progress callback whose ``[0.0, 1.0]`` range maps onto
+    ``[start, end]`` of the parent.
+
+    Long-running collectors (colour extraction, font metadata, visual
+    reading order) accept their own progress callback and tick per page.
+    The pipeline owns the overall fraction, so it scales the sub-stage's
+    fraction onto a band of its own progression. Returns ``None`` when
+    no parent is set so collectors can still be called cheaply.
+    """
+    if parent is None:
+        return None
+    span = max(0.0, end - start)
+
+    def _sub(stage: str, fraction: float) -> None:
+        bounded = max(0.0, min(1.0, fraction))
+        parent(stage, start + bounded * span)
+
+    return _sub

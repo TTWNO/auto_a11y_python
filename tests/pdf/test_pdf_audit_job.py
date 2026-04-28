@@ -38,7 +38,13 @@ from auto_a11y.models.pdf_document import PdfDocument, PdfDocumentStatus
 
 
 def _set_jm(job: PdfAuditJob, fake_jm: MagicMock) -> None:
-    """Inject a stub :class:`JobManager` onto a :class:`PdfAuditJob`."""
+    """Inject a stub :class:`JobManager` onto a :class:`PdfAuditJob`.
+
+    Default ``is_cancellation_requested`` to ``False`` so progress-tick
+    tests don't accidentally trip the cancellation short-circuit added
+    when the cancel route was integrated with the existing job system.
+    """
+    fake_jm.is_cancellation_requested.return_value = False
     setattr(job, '_job_manager', fake_jm)
 
 

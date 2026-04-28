@@ -43,7 +43,7 @@ Type narrowing rationale:
 from __future__ import annotations
 
 import logging
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from decimal import Decimal
 from io import BytesIO
@@ -395,6 +395,7 @@ def extract_text_colors(
     pdf_path: Path,
     *,
     gs_path_override: str | None = None,
+    progress: Callable[[str, float], None] | None = None,
 ) -> tuple[
     dict[tuple[RgbColor, RgbColor], ColorPairInfo],
     dict[RgbColor, FgOnlyColorInfo],
@@ -446,15 +447,26 @@ def extract_text_colors(
     if not page_chars:
         return {}, fg_only
 
-    # Phase 2: render each page that has at least one char.
+    # Phase 2: render each page that has at least one char. This is the
+    # long pole on multi-page PDFs (one Ghostscript subprocess per page),
+    # so we tick the progress callback per page.
+    pages_with_chars = [
+        (pn, ph, ch) for (pn, ph, ch) in page_chars if ch
+    ]
+    total_renders = max(1, len(pages_with_chars))
     page_images: dict[int, Image.Image | None] = {}
-    for page_num, _page_height, chars in page_chars:
-        if not chars:
-            continue
+    for idx, (page_num, _page_height, _chars) in enumerate(pages_with_chars):
+        if progress is not None:
+            progress(
+                f"Extracting colours: page {idx + 1} of {total_renders}",
+                idx / total_renders,
+            )
         if page_num not in page_images:
             page_images[page_num] = _render_page_image(
                 pdf_path, page_num, gs_path_override=gs_path_override
             )
+    if progress is not None:
+        progress("Sampling backgrounds", 1.0)
 
     # Phase 3: pair each character with its sampled background.
     color_pairs: dict[tuple[RgbColor, RgbColor], ColorPairInfo] = {}

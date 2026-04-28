@@ -127,6 +127,24 @@ class PdfAuditJob:
                     progress_cb=self._on_progress,
                 )
             )
+        except _AuditCancelled:
+            # _on_progress raised after detecting a cancellation flip on
+            # either the JobManager record or the in-memory task. Treat as
+            # a clean cancellation rather than a failure.
+            logger.info(
+                "PDF audit job %s cancelled mid-run", self._job_id,
+            )
+            self._job_manager.update_job_status(
+                job_id=self._job_id,
+                status=JobStatus.CANCELLED,
+                progress={
+                    'current': 0,
+                    'total': 100,
+                    'message': 'Audit cancelled',
+                    'details': {'pdf_document_id': self._pdf_document_id},
+                },
+            )
+            return
         except Exception as exc:  # noqa: BLE001 — surface any failure
             logger.error(
                 f"PDF audit job {self._job_id} failed: {exc}",
@@ -168,13 +186,28 @@ class PdfAuditJob:
     def _on_progress(self, stage_name: str, fraction: float) -> None:
         """Bridge :class:`PdfRunner` progress callbacks to :class:`JobManager`.
 
-        :data:`auto_a11y.pdf.models.ProgressCallback` is invoked with
-        ``(stage_name, fraction)`` where ``fraction`` is in
-        ``[0.0, 1.0]``. We project that onto a percentage-friendly
-        ``current``/``total`` pair so the existing SSE consumer (which
-        reads ``progress.current`` / ``progress.total`` /
-        ``progress.percentage``) sees a normal-looking job.
+        Invoked between every Phase 3 collector and the Phase 4 check
+        registry — also serves as the cancellation poll. The audit
+        pipeline itself is sync (uninterruptible mid-step), so we check
+        for a cancellation request on each progress tick and raise
+        :class:`_AuditCancelled` to unwind cleanly.
+
+        Cancellation comes from two places, mirroring the existing
+        ``pages.cancel_test`` and ``websites.cancel-discovery`` patterns:
+
+        * :meth:`JobManager.is_cancellation_requested` — set by the
+          ``/pdfs/<id>/cancel`` route via
+          :meth:`JobManager.request_cancellation`.
+        * In-memory ``task_runner.tasks[task_id]._cancelled`` — set by
+          :meth:`TaskRunner.cancel_task`.
         """
+        if self._job_manager.is_cancellation_requested(self._job_id):
+            raise _AuditCancelled()
+
+        task = task_runner.tasks.get(self._job_id)
+        if task is not None and task.status == 'cancelled':
+            raise _AuditCancelled()
+
         bounded = max(0.0, min(1.0, fraction))
         current = int(round(bounded * 100))
         self._job_manager.update_job_progress(
@@ -188,6 +221,12 @@ class PdfAuditJob:
                 'fraction': bounded,
             },
         )
+
+
+class _AuditCancelled(Exception):
+    """Internal sentinel — raised from the progress callback to unwind a
+    cancelled audit cleanly. Caught in :meth:`_run_audit_in_thread`.
+    """
 
 
 __all__ = ["PdfAuditJob"]

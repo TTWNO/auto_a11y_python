@@ -100,13 +100,15 @@
             </div>
             {% endif %}
             <button class="btn btn-brand" id="testAllBtn">
-                <i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('common-test-all-pages') }}
+                <i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('common-test-all-documents') }}
+                {% if documents.total > 0 %}
+                <span class="badge badge-subtle">{{ documents.total }}</span>
+                {% endif %}
             </button>
             <button class="btn btn-outline-brand" id="testUntestedBtn">
-                <i class="bi bi-play" aria-hidden="true"></i> {{ ftl('websites-test-untested-pages') }}
-                {% set untested_count = stats.total_pages - stats.tested_pages %}
-                {% if untested_count > 0 %}
-                <span class="badge badge-subtle">{{ untested_count }}</span>
+                <i class="bi bi-play" aria-hidden="true"></i> {{ ftl('websites-test-untested-documents') }}
+                {% if documents.untested > 0 %}
+                <span class="badge badge-subtle">{{ documents.untested }}</span>
                 {% endif %}
             </button>
             <button class="btn btn-medium" id="cancelTestingBtn" style="display: none;">
@@ -158,14 +160,14 @@
         <div class="d-flex flex-wrap gap-3 mb-4">
             <div class="card text-center flex-fill" style="min-width: 140px;">
                 <div class="card-body py-3">
-                    <h3 class="card-title text-muted mb-1">{{ ftl('common-total-pages') }}</h3>
-                    <p class="display-6 mb-0" id="totalPagesCount">{{ stats.total_pages }}</p>
+                    <h3 class="card-title text-muted mb-1">{{ ftl('common-total-documents') }}</h3>
+                    <p class="display-6 mb-0" id="totalPagesCount">{{ documents.total }}</p>
                 </div>
             </div>
             <div class="card text-center flex-fill" style="min-width: 140px;">
                 <div class="card-body py-3">
                     <h3 class="card-title text-muted mb-1">{{ ftl('common-tested') }}</h3>
-                    <p class="display-6 mb-0">{{ stats.tested_pages }}</p>
+                    <p class="display-6 mb-0">{{ documents.tested }}</p>
                 </div>
             </div>
             <div class="card text-center flex-fill" style="min-width: 140px;">
@@ -552,12 +554,12 @@
     </div>
 </dialog>
 
-<!-- Test All Pages Modal -->
+<!-- Test All Documents Modal -->
 <dialog class="modal" id="testAllModal" role="dialog" aria-labelledby="testAllModalLabel" aria-modal="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title" id="testAllModalLabel">{{ ftl('websites-test-all-pages-options') }}</h2>
+                <h2 class="modal-title" id="testAllModalLabel">{{ ftl('websites-test-all-documents-options') }}</h2>
                 <button type="button" class="btn-close" aria-label="{{ ftl('common-close') }}" data-close-modal></button>
             </div>
             <form id="testAllForm" aria-labelledby="testAllModalLabel">
@@ -577,27 +579,26 @@
     </div>
 </dialog>
 
-<!-- Test Untested Pages Modal -->
+<!-- Test Untested Documents Modal -->
 <dialog class="modal" id="testUntestedModal" role="dialog" aria-labelledby="testUntestedModalLabel" aria-modal="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title" id="testUntestedModalLabel">{{ ftl('websites-test-untested-pages') }}</h2>
+                <h2 class="modal-title" id="testUntestedModalLabel">{{ ftl('websites-test-untested-documents') }}</h2>
                 <button type="button" class="btn-close" aria-label="{{ ftl('common-close') }}" data-close-modal></button>
             </div>
             <form id="testUntestedForm" aria-labelledby="testUntestedModalLabel">
                 <div class="modal-body">
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle" aria-hidden="true"></i>
-                        {% set untested_count = stats.total_pages - stats.tested_pages %}
-                        {{ ftl('websites-there-are-count-untested-pages', count=untested_count) }}
+                        {{ ftl('websites-there-are-count-untested-documents', count=documents.untested) }}
                     </div>
                     <div class="mb-3">
-                        <label for="maxUntestedPages" class="form-label">{{ ftl('websites-number-of-pages-to-test') }}</label>
+                        <label for="maxUntestedPages" class="form-label">{{ ftl('websites-number-of-documents-to-test') }}</label>
                         <input type="number" class="form-control" id="maxUntestedPages" name="max_pages"
-                               min="1" max="{{ stats.total_pages - stats.tested_pages }}"
-                               placeholder="{{ ftl('websites-leave-blank-to-test-all-untested-pages') }}">
-                        <div class="form-text">{{ ftl('websites-leave-blank-to-queue-all-untested-pages-for') }}</div>
+                               min="1" max="{{ documents.untested }}"
+                               placeholder="{{ ftl('websites-leave-blank-to-test-all-untested-documents') }}">
+                        <div class="form-text">{{ ftl('websites-leave-blank-to-queue-all-untested-documents-for') }}</div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -848,7 +849,7 @@ function stopWebsiteStatusPolling() {
     const testBtn = document.getElementById('testAllBtn');
     if (testBtn) {
         testBtn.disabled = false;
-        testBtn.innerHTML = '<i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('common-test-all-pages') }}';
+        testBtn.innerHTML = '<i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('common-test-all-documents') }}';
     }
     const testUntestedBtn = document.getElementById('testUntestedBtn');
     if (testUntestedBtn) {
@@ -1091,7 +1092,7 @@ $(document).ready(function() {
                     }
 
                     if (window.showNotification) {
-                        showNotification('{{ ftl('websites-testing-started') }}', `{{ ftl('common-queued') }} ${data.pages_queued} {{ ftl('websites-untested-pages-for-testing') }}`, 'info');
+                        showNotification('{{ ftl('websites-testing-started') }}', `{{ ftl('common-queued') }} ${data.pages_queued} {{ ftl('websites-untested-documents-for-testing') }}`, 'info');
                     } else {
                         alert(data.message);
                     }
@@ -1101,13 +1102,13 @@ $(document).ready(function() {
                 } else {
                     alert(data.message || '{{ ftl('websites-failed-to-queue-tests') }}');
                     btn.prop('disabled', false);
-                    testAllBtn.prop('disabled', false).html('<i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('common-test-all-pages') }}');
+                    testAllBtn.prop('disabled', false).html('<i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('common-test-all-documents') }}');
                 }
             }
         }).fail(function() {
             alert('{{ ftl('websites-failed-to-start-testing') }}');
             btn.prop('disabled', false);
-            testAllBtn.prop('disabled', false).html('<i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('common-test-all-pages') }}');
+            testAllBtn.prop('disabled', false).html('<i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('common-test-all-documents') }}');
         });
     });
 
@@ -1186,13 +1187,13 @@ $(document).ready(function() {
 
                 } else {
                     alert(data.message || '{{ ftl('websites-failed-to-queue-tests') }}');
-                    btn.prop('disabled', false).html('<i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('common-test-all-pages') }}');
+                    btn.prop('disabled', false).html('<i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('common-test-all-documents') }}');
                 }
             }
         }).fail(function(error) {
             console.error('Failed to start testing:', error);
             alert('{{ ftl('websites-failed-to-start-testing') }}');
-            btn.prop('disabled', false).html('<i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('common-test-all-pages') }}');
+            btn.prop('disabled', false).html('<i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('common-test-all-documents') }}');
         });
     });
     
@@ -1602,7 +1603,7 @@ function startTestingStatusPolling() {
 
                 // Reset button after delay
                 setTimeout(() => {
-                    btn.html('<i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('common-test-all-pages') }}');
+                    btn.html('<i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('common-test-all-documents') }}');
                 }, 3000);
             } else if (data.status === 'failed') {
                 stopTestingStatusPolling();
@@ -1621,7 +1622,7 @@ function startTestingStatusPolling() {
 
                 // Reset button after delay
                 setTimeout(() => {
-                    btn.html('<i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('common-test-all-pages') }}');
+                    btn.html('<i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('common-test-all-documents') }}');
                 }, 3000);
             }
         }).fail(function() {
@@ -1670,7 +1671,7 @@ function cancelTesting() {
                 
                 // Hide cancel button and reset test button
                 cancelBtn.hide().prop('disabled', false);
-                btn.prop('disabled', false).html('<i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('common-test-all-pages') }}');
+                btn.prop('disabled', false).html('<i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('common-test-all-documents') }}');
 
                 // Remove from global tracking
                 if (typeof TestTracker !== 'undefined') {

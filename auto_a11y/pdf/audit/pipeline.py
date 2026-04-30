@@ -29,10 +29,13 @@ AI analysis hook:
 """
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import Literal
 
 import pikepdf
+
+logger = logging.getLogger(__name__)
 
 from auto_a11y.pdf.audit import (
     colors,
@@ -314,6 +317,27 @@ def _run_audit_with_pdf(
     page_count = len(pdf.pages)
     declared_lang = _read_catalog_lang(pdf)
 
+    # ---- Step 11b: build document-wide report sections -----------------
+    # Sections 2-13 of pdfMax's _generate_report_inner. Built from the
+    # already-populated AuditContext so we don't re-open the PDF.
+    # Local import — keeps the report_sections module out of the
+    # pipeline import graph until an audit actually runs.
+    from auto_a11y.pdf.audit.report_sections import build_report_sections
+    _emit(progress, "Building report sections", 0.99)
+    try:
+        report_sections = build_report_sections(
+            ctx, check_results=check_results,
+        )
+    except Exception as exc:  # noqa: BLE001
+        # A bug in any one section builder must not abort the audit —
+        # the per-check verdicts are the primary deliverable.
+        logger.warning(
+            "Failed to build report sections: %s. "
+            + "Per-check verdicts still persisted.",
+            exc,
+        )
+        report_sections = {}
+
     _emit(progress, "Done", 1.0)
     return AuditResult.from_checks(
         pdf_path=pdf_path,
@@ -326,6 +350,7 @@ def _run_audit_with_pdf(
         detected_lang=None,
         check_results=check_results,
         ai_analysis=ai_analysis,
+        report_sections=report_sections,
     )
 
 

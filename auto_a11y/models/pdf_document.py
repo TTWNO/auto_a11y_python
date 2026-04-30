@@ -20,7 +20,7 @@ class PdfDocumentStatus(Enum):
     AUDIT_FAILED = "audit_failed"  # last audit raised before completion
 
 
-SourceType = Literal["uploaded", "manual_url", "opportunistic"]
+SourceType = Literal["uploaded", "manual_url", "opportunistic", "discovered"]
 
 
 @dataclass
@@ -116,7 +116,7 @@ class PdfDocument:
         # Use `match` to narrow to the Literal type without cast/ignore.
         source_type: SourceType
         match source_type_raw:
-            case "uploaded" | "manual_url" | "opportunistic":
+            case "uploaded" | "manual_url" | "opportunistic" | "discovered":
                 source_type = source_type_raw
             case _:
                 raise ValueError(f"Unknown source_type: {source_type_raw}")

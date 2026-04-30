@@ -33,7 +33,7 @@ the pipeline; check modules and the orchestrator import from here.
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal, TypeAlias
 
@@ -77,12 +77,27 @@ class CheckResult:
         result: ``"PASS" | "FAIL" | "WARN" | "INFO"``.
         details: human-readable explanation of *why* this verdict was
             reached. Surfaced verbatim in reports.
+        extras: optional structured side-data the report renderer can
+            display alongside ``details``. Today this is only the
+            per-font inventory (key ``"font_table"``) used by
+            :func:`check_font_sizes_accessible`; future check
+            implementations should keep keys narrow and document them
+            here when added. Forwarded into ``Violation.metadata`` by
+            :func:`to_violation`.
     """
 
     name: str
     standard: str
     result: CheckOutcome
     details: str
+    # ``extras`` is excluded from hash + equality so adding structured
+    # side-data (which is mutable / unhashable) doesn't make
+    # CheckResult unhashable. Equality stays semantic — two checks
+    # are "the same" iff their (name, standard, result, details)
+    # match — which is the contract the existing tests rely on.
+    extras: dict[str, object] = field(
+        default_factory=lambda: {}, compare=False, hash=False,
+    )
 
 
 # pdfMax used a separate ``StructElement`` class; we reuse the one from
@@ -307,6 +322,15 @@ class AuditResult:
     warn_count: int
     pass_count: int
     info_count: int
+    report_sections: dict[str, object] = field(default_factory=lambda: {})
+    """Document-wide inventory data populated by Phase A of the
+    pdfMax-report port (Sections 2–13 of pdfMax's
+    ``_generate_report_inner``). Keyed by stable section ID
+    (``tag_tree``, ``image_inventory``, ``heading_map``,
+    ``full_alt_text``, ``color_contrast``, ``language_analysis``,
+    ``font_analysis``, ``reading_order``). Surfaced verbatim through
+    ``TestResult.metadata['report_sections']`` and rendered by
+    ``pdf/_report_sections.html``."""
 
     @classmethod
     def from_checks(
@@ -319,6 +343,7 @@ class AuditResult:
         detected_lang: str | None,
         check_results: list[CheckResult],
         ai_analysis: AIAnalysisResult | None,
+        report_sections: dict[str, object] | None = None,
     ) -> AuditResult:
         """Construct an :class:`AuditResult`, computing the count fields.
 
@@ -342,6 +367,7 @@ class AuditResult:
             warn_count=warn,
             pass_count=passed,
             info_count=info,
+            report_sections=report_sections if report_sections is not None else {},
         )
 
 

@@ -107,6 +107,11 @@ class PdfRunner:
         """Shut down the executor. Idempotent."""
         self._executor.shutdown(wait=False)
 
+    @property
+    def max_size_bytes(self) -> int:
+        """Configured maximum PDF size in bytes (read-only)."""
+        return self._max_size_bytes
+
     async def fetch_pdf_from_url(
         self,
         url: str,
@@ -408,6 +413,9 @@ class PdfRunner:
             'pass_count': audit_result.pass_count,
             'wcag_level': wcag_level,
             'locale': locale,
+            # pdfMax §2-13 inventory data, JSON-friendly. Read back by
+            # the detail template via test_result.metadata.report_sections.
+            'report_sections': audit_result.report_sections,
         }
 
         return TestResult(

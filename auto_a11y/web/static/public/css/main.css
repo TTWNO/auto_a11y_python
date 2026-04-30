@@ -572,6 +572,480 @@ details pre {
     font-size: var(--font-size-lg);
 }
 
+/* ---------- PDF audit issue cards ---------- */
+.pdf-violation-list {
+    margin: 0;
+    padding: 0;
+}
+
+.pdf-violation-card[hidden] {
+    display: none;
+}
+
+/* Document inventory master section (pdfMax §2-13). One <details>
+   per pdfMax section, all collapsed by default to keep the detail
+   page scannable. */
+.pdf-inventory-master {
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-md);
+}
+
+.pdf-inventory-section {
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    background: var(--color-bg-elevated);
+    margin-bottom: var(--space-sm);
+    padding: var(--space-sm);
+}
+
+.pdf-inventory-section > summary {
+    cursor: pointer;
+    font-weight: 600;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.pdf-inventory-section > summary::-webkit-details-marker {
+    display: none;
+}
+
+.pdf-inventory-section > summary::before {
+    content: '\25B8';
+    transition: transform 0.15s ease;
+    color: var(--color-text-muted);
+}
+
+.pdf-inventory-section[open] > summary::before {
+    transform: rotate(90deg);
+}
+
+/* Tag-tree / heading-map indentation marker. */
+.pdf-inventory-tag-tree-table th[scope="row"] code,
+.pdf-inventory-section table code {
+    font-size: 0.85em;
+}
+
+/* Colour swatch chip used in the contrast inventory. */
+.pdf-color-swatch {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.2rem;
+    vertical-align: middle;
+    margin-right: 0.25rem;
+}
+
+/* Executive summary panel (Phase C front matter). */
+.pdf-inventory-exec-summary {
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    background: var(--color-bg-subtle);
+    padding: var(--space-md);
+}
+
+.pdf-inventory-exec-summary-issues {
+    margin: 0;
+    padding-left: 1.25rem;
+}
+
+.pdf-inventory-exec-summary-issues li {
+    margin-bottom: 0.25rem;
+}
+
+/* §9 exported images grid + §14 visual reading order pairs. */
+.pdf-inventory-exported-images-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+    gap: var(--space-sm);
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.pdf-inventory-exported-image figure {
+    margin: 0;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    background: var(--color-bg-elevated);
+}
+
+.pdf-inventory-exported-image img {
+    display: block;
+    width: 100%;
+    height: auto;
+    background:
+        repeating-conic-gradient(
+            var(--color-bg-subtle) 0% 25%,
+            var(--color-bg-elevated) 0% 50%
+        ) 50% / 1rem 1rem;
+}
+
+.pdf-inventory-exported-image figcaption {
+    padding: 0.4rem 0.6rem;
+    font-size: var(--font-size-sm);
+}
+
+.pdf-inventory-visual-reading-order-pair {
+    margin: 0;
+    padding-left: 1.25rem;
+    list-style: decimal;
+}
+
+/* Programmatic-focus outline for cards arrow-key-navigated to from
+   another card. tabindex=-1 is set by pdf_report_navigation.js so
+   the keyboard nav can move focus without putting cards in tab
+   order. */
+.pdf-violation-card:focus-visible {
+    outline: 3px solid var(--color-link);
+    outline-offset: 2px;
+}
+
+/* Brief flash applied to a violation card when it's the target of a
+   #issue-N deep link. Mirrors pdfMax's checker-detail-highlight. The
+   ``forwards`` fill-mode keeps the card visually in its post-fade
+   state so the animation can be retriggered by JS removing and
+   re-adding the class. */
+.pdf-violation-card-highlight {
+    animation: pdf-violation-card-flash 2s ease-out forwards;
+}
+
+@keyframes pdf-violation-card-flash {
+    0% { background: var(--color-link-flash, rgba(5, 80, 160, 0.18)); }
+    100% { background: transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pdf-violation-card-highlight {
+        animation: none;
+    }
+}
+
+.pdf-violation-section {
+    margin-top: var(--space-sm);
+}
+
+.pdf-violation-section-heading {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+    margin: 0 0 0.25rem 0;
+}
+
+.pdf-violation-wcag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    list-style: none;
+    padding: 0;
+}
+
+.pdf-violation-pre {
+    background: var(--color-bg-subtle);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    padding: var(--space-sm);
+    margin-top: var(--space-sm);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+    white-space: pre-wrap;
+    overflow-x: auto;
+}
+
+/* ---------- PDF audit filter chips ---------- */
+.pdf-violation-filters {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    padding: var(--space-sm);
+    background: var(--color-bg-subtle);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+}
+
+.pdf-violation-filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.pdf-violation-filter-heading {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-text-muted);
+    margin-right: 0.25rem;
+}
+
+.pdf-violation-chip {
+    appearance: none;
+    background: var(--color-bg-elevated);
+    color: var(--color-text-muted);
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    padding: 0.25rem 0.75rem;
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.pdf-violation-chip:hover,
+.pdf-violation-chip:focus-visible {
+    border-color: var(--color-border-strong);
+    color: var(--color-link);
+}
+
+.pdf-violation-chip.is-active {
+    background: var(--color-link);
+    color: var(--color-text-inverse);
+    border-color: var(--color-link);
+}
+
+.pdf-violation-chip.is-active:hover,
+.pdf-violation-chip.is-active:focus-visible {
+    background: var(--color-link-hover);
+    border-color: var(--color-link-hover);
+    color: var(--color-text-inverse);
+}
+
+.pdf-violation-search {
+    flex: 1 1 14rem;
+    min-width: 12rem;
+    padding: 0.35rem 0.6rem;
+    border: 1px solid var(--color-border-input);
+    border-radius: var(--border-radius);
+    background: var(--color-bg-elevated);
+    color: var(--color-text);
+    font-size: var(--font-size-sm);
+}
+
+.pdf-violation-search:focus {
+    outline: 2px solid var(--color-border-input-focus);
+    outline-offset: 1px;
+    border-color: var(--color-border-input-focus);
+}
+
+/* ---------- PDF report layout (TOC, overview, groups, appendices) ---------- */
+.pdf-report-pane {
+    /* Establish a positioning context so the sticky TOC pins to this
+       column rather than the viewport — keeps it visible while
+       scrolling through the long findings list. */
+    position: relative;
+}
+
+.pdf-report-section {
+    margin-bottom: var(--space-lg);
+}
+
+.pdf-report-nav {
+    position: sticky;
+    top: var(--space-sm);
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    padding: var(--space-sm);
+    z-index: 1;
+}
+
+.pdf-report-nav-heading {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+    margin: 0 0 0.25rem 0;
+}
+
+.pdf-report-nav-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.pdf-report-nav-link {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: var(--font-size-sm);
+    color: var(--color-link);
+    text-decoration: none;
+    border: 1px solid transparent;
+}
+
+.pdf-report-nav-link:hover,
+.pdf-report-nav-link:focus-visible {
+    text-decoration: underline;
+}
+
+.pdf-report-nav-link.is-active {
+    background: var(--color-link);
+    color: var(--color-text-inverse);
+    border-color: var(--color-link);
+}
+
+.pdf-report-overview-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+    gap: var(--space-sm);
+    margin-bottom: var(--space-md);
+}
+
+.pdf-report-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--space-sm);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    background: var(--color-bg-elevated);
+}
+
+.pdf-report-stat-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.pdf-report-stat-label {
+    margin-top: 0.25rem;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.pdf-report-stat-high {
+    border-color: var(--color-severity-high-badge);
+}
+
+.pdf-report-stat-medium {
+    border-color: var(--color-severity-medium-badge);
+}
+
+.pdf-report-stat-info,
+.pdf-report-stat-pass {
+    border-color: var(--color-severity-low-badge);
+}
+
+.pdf-report-conformance {
+    margin-bottom: var(--space-md);
+}
+
+.pdf-report-overview-meta {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.25rem var(--space-sm);
+    margin: 0;
+}
+
+.pdf-report-overview-meta dt {
+    font-weight: 600;
+    color: var(--color-text-muted);
+}
+
+.pdf-report-overview-meta dd {
+    margin: 0;
+}
+
+.pdf-report-group {
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    background: var(--color-bg-elevated);
+    margin-bottom: var(--space-md);
+    padding: var(--space-sm);
+}
+
+.pdf-report-group[hidden] {
+    display: none;
+}
+
+.pdf-report-group-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    cursor: pointer;
+    font-weight: 600;
+    list-style: none;
+}
+
+.pdf-report-group-summary::-webkit-details-marker {
+    display: none;
+}
+
+.pdf-report-group-summary::before {
+    content: '\25B8'; /* right-pointing triangle */
+    display: inline-block;
+    margin-right: 0.4rem;
+    transition: transform 0.15s ease;
+    color: var(--color-text-muted);
+}
+
+.pdf-report-group[open] > .pdf-report-group-summary::before {
+    transform: rotate(90deg);
+}
+
+.pdf-report-group-title {
+    flex: 1;
+}
+
+.pdf-report-group-empty {
+    margin: var(--space-sm) 0 0 0;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    font-style: italic;
+}
+
+.pdf-report-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: var(--space-sm);
+}
+
+.pdf-report-table th,
+.pdf-report-table td {
+    padding: 0.4rem var(--space-sm);
+    border-bottom: 1px solid var(--color-border-table);
+    text-align: left;
+    vertical-align: top;
+}
+
+.pdf-report-table thead th {
+    background: var(--color-bg-subtle);
+    font-size: var(--font-size-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+}
+
+.pdf-report-issue-link-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.6rem;
+}
+
+.pdf-report-issue-link-list li::after {
+    content: '\00B7';
+    margin-left: 0.6rem;
+    color: var(--color-text-muted);
+}
+
+.pdf-report-issue-link-list li:last-child::after {
+    content: '';
+    margin: 0;
+}
+
 /* ---------- Responsive ---------- */
 @media (max-width: 40rem) {
     .stats {
@@ -594,3 +1068,4 @@ details pre {
         grid-template-columns: 1fr;
     }
 }
+

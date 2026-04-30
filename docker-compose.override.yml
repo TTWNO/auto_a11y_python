@@ -10,6 +10,12 @@ services:
     build:
       context: .
       target: dev
+      # See docker-compose.yml for the production stage. The dev
+      # stage doesn't COPY pdfMax in (we bind-mount it instead, see
+      # ``volumes`` below), but Docker still requires the named
+      # context to exist whenever the Dockerfile references it.
+      additional_contexts:
+        pdfmax_checker: ../pdfMax/python/checker
     # Run Flask with the reloader. --debug flips config.DEBUG, which run.py
     # forwards into app.run() as use_reloader=True.
     command: python run.py --host 0.0.0.0 --debug
@@ -26,3 +32,9 @@ services:
       # __pycache__ would pollute the host tree.
       - /app/.venv
       - /app/__pycache__
+      # pdfMax verbatim audit tool, bind-mounted read-only so live
+      # edits to the host checkout (and ``git pull``) flow into the
+      # container without a rebuild. Path resolves relative to the
+      # compose file: assumes pdfMax is checked out as a sibling
+      # directory next to auto_a11y_python.
+      - ../pdfMax/python/checker:/opt/pdfmax/checker:ro

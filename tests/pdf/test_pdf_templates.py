@@ -344,7 +344,7 @@ def test_add_form_renders_multipart_form(
 # ---------------------------------------------------------------------------
 
 
-def test_detail_renders_iframe_pointing_at_file_route(
+def test_detail_renders_pdfjs_viewer_pointing_at_file_route(
     client: FlaskClient, mock_db: MagicMock
 ) -> None:
     doc = _make_doc()
@@ -353,12 +353,20 @@ def test_detail_renders_iframe_pointing_at_file_route(
     resp = client.get(f'/pdfs/{doc.id}')
     assert resp.status_code == 200
     body = resp.get_data(as_text=True)
-    assert '<iframe' in body
-    # iframe src includes the file route for this document.
-    assert f'/pdfs/{doc.id}/file' in body
-    # Viewer host is wired up so pdf_viewer.js can find the iframe.
+    # pdf_viewer_app.js bootstraps from data-pdf-* attributes on the
+    # host element. The PDF URL is the same /file route the iframe
+    # used previously — the rendering technology changed (PDF.js
+    # inside our shell vs. a Chromium iframe) but the data source did
+    # not.
     assert 'data-pdf-viewer-host' in body
-    assert 'data-pdf-iframe' in body
+    assert f'data-pdf-url="/pdfs/{doc.id}/file"' in body
+    assert 'data-pdf-viewer-canvas' in body
+    assert 'data-pdf-viewer-overlay-layer' in body
+    assert 'data-pdf-viewer-semantic-layer' in body
+    assert 'data-pdf-viewer-connector-layer' in body
+    # No leftover Chromium iframe markup.
+    assert '<iframe' not in body
+    assert 'data-pdf-iframe' not in body
 
 
 def test_detail_renders_violations_with_jump_button(
@@ -431,12 +439,77 @@ def test_detail_status_badge_uses_severity_token_class(
 
 
 def test_pdf_viewer_js_is_served_as_static_asset(client: FlaskClient) -> None:
-    """The page-jump handler is reachable as a standalone JS file."""
-    resp = client.get('/static/js/pdf_viewer.js')
+    """The PDF.js viewer module is reachable as a standalone static asset."""
+    resp = client.get('/static/js/pdf_viewer_app.js')
     assert resp.status_code == 200
     body = resp.get_data(as_text=True)
-    assert 'data-pdf-page' in body
+    # Spot-check the module's distinguishing identifiers.
     assert 'data-pdf-viewer-host' in body
+    assert 'PdfViewerApp' in body
+
+
+def test_pdfjs_runtime_is_served_locally(client: FlaskClient) -> None:
+    """pdfjs-dist is vendored under /static/vendor so we don't depend on a CDN."""
+    main = client.get('/static/vendor/pdfjs/pdf.min.mjs')
+    worker = client.get('/static/vendor/pdfjs/pdf.worker.min.mjs')
+    assert main.status_code == 200
+    assert worker.status_code == 200
+
+
+def test_pdf_report_navigation_js_is_served_as_static_asset(
+    client: FlaskClient,
+) -> None:
+    """The arrow-key + hash-link nav handler is reachable as JS."""
+    resp = client.get('/static/js/pdf_report_navigation.js')
+    assert resp.status_code == 200
+    body = resp.get_data(as_text=True)
+    # Spot-check the script's distinguishing identifiers are present.
+    assert 'pdf-violation-card-highlight' in body
+    assert 'data-pdf-violation-card' in body
+
+
+def test_detail_includes_export_buttons_when_audited(
+    client: FlaskClient, mock_db: MagicMock
+) -> None:
+    """Save-as-HTML / Save-as-Markdown links surface only after an audit ran."""
+    doc = _make_doc(last_audit_result_id="r-1")
+    assert doc.id is not None
+    mock_db.get_pdf_document.return_value = doc
+    resp = client.get(f'/pdfs/{doc.id}')
+    assert resp.status_code == 200
+    body = resp.get_data(as_text=True)
+    assert f'/pdfs/{doc.id}/export.html' in body
+    assert f'/pdfs/{doc.id}/export.md' in body
+    # Both anchors carry the ``download`` attribute so the browser
+    # offers a "Save As" dialog instead of navigating in-place.
+    assert 'download' in body
+
+
+def test_detail_omits_export_buttons_before_first_audit(
+    client: FlaskClient, mock_db: MagicMock
+) -> None:
+    """No audit result yet → no export links (nothing to export)."""
+    doc = _make_doc(last_audit_result_id=None)
+    assert doc.id is not None
+    mock_db.get_pdf_document.return_value = doc
+    resp = client.get(f'/pdfs/{doc.id}')
+    assert resp.status_code == 200
+    body = resp.get_data(as_text=True)
+    assert '/export.html' not in body
+    assert '/export.md' not in body
+
+
+def test_detail_includes_report_navigation_script(
+    client: FlaskClient, mock_db: MagicMock
+) -> None:
+    """The detail template loads pdf_report_navigation.js so arrow-key
+    nav and hash-link auto-expand are wired up client-side."""
+    doc = _make_doc(last_audit_result_id="r-1")
+    assert doc.id is not None
+    mock_db.get_pdf_document.return_value = doc
+    resp = client.get(f'/pdfs/{doc.id}')
+    body = resp.get_data(as_text=True)
+    assert 'pdf_report_navigation.js' in body
 
 
 def test_create_post_uses_uploaded_file_path(

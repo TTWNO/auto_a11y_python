@@ -1540,6 +1540,20 @@ class Database:
         )
         return PdfDocument.from_dict(doc) if doc else None
 
+    def find_pdf_document_by_url(
+        self, website_id: str, source_url: str
+    ) -> PdfDocument | None:
+        """Find any PdfDocument fetched from ``source_url`` for a website.
+
+        Used by discovery's auto-fetch step to skip re-downloading URLs
+        that have already been ingested. SHA-256 dedup still applies for
+        documents that arrive via a different URL.
+        """
+        doc = self.pdf_documents.find_one(
+            {"website_id": website_id, "source_url": source_url}
+        )
+        return PdfDocument.from_dict(doc) if doc else None
+
     def get_pdf_documents(
         self,
         *,

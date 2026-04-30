@@ -122,3 +122,326 @@ pdf-nav-audit-failed = { $count ->
 pdf-cancel-button = Cancel audit
 pdf-cancel-confirm = Cancel this audit? Any in-progress work will be discarded and the document marked as failed.
 pdf-audit-cancelled = Audit cancelled. You can re-trigger the audit when ready.
+
+# Full issue card (pdfMax-style)
+pdf-violation-section-what = What this checks
+pdf-violation-section-why = Why it matters
+pdf-violation-section-who = Who is affected
+pdf-violation-section-remediation = How to fix
+pdf-violation-section-technical = Technical details
+pdf-violation-section-wcag = WCAG criteria
+pdf-violation-result-fail = Error
+pdf-violation-result-warn = Warning
+pdf-violation-result-info = Info
+
+# Filter chips on the audit results pane
+pdf-violation-filters-aria-label = Filter audit findings
+pdf-violation-filter-level-heading = Severity
+pdf-violation-filter-impact-heading = Impact
+pdf-violation-filter-touchpoint-heading = Touchpoint
+pdf-violation-filter-search-label = Search findings
+pdf-violation-filter-search-placeholder = Search by title, description, or rationale…
+pdf-violation-filter-all = All
+pdf-violation-filter-errors = Errors ({ $count })
+pdf-violation-filter-warnings = Warnings ({ $count })
+pdf-violation-filter-info = Info ({ $count })
+pdf-violation-filter-impact-high = High
+pdf-violation-filter-impact-medium = Medium
+pdf-violation-filter-impact-low = Low
+pdf-violation-filter-empty = No findings match the active filters.
+
+# Audit report — overview header
+pdf-report-overview-heading = Audit overview
+pdf-report-overview-aria-label = Audit overview
+pdf-report-overview-errors = Errors
+pdf-report-overview-warnings = Warnings
+pdf-report-overview-info = Info
+pdf-report-overview-passes = Passes
+pdf-report-overview-conformance-heading = Conformance verdict
+pdf-report-overview-conformance-fail = Document does not conform to PDF/UA. { $count ->
+    [one] { $count } error
+   *[other] { $count } errors
+} must be resolved before this PDF can be considered accessible.
+pdf-report-overview-conformance-warn = Document has no errors but { $count ->
+    [one] { $count } warning
+   *[other] { $count } warnings
+} should be reviewed before publishing.
+pdf-report-overview-conformance-pass = No errors or warnings detected. The PDF appears to conform to the audited checks.
+pdf-report-overview-audited-at = Last audited
+pdf-report-overview-page-count = Pages
+pdf-report-overview-pdf-version = PDF version
+pdf-report-overview-language = Language
+
+# Section navigation (TOC)
+pdf-report-nav-aria-label = Audit report sections
+pdf-report-nav-heading = On this page
+pdf-report-nav-overview = Overview
+pdf-report-nav-issues = Findings
+pdf-report-nav-appendix-wcag = WCAG mapping
+pdf-report-nav-appendix-touchpoints = Touchpoint summary
+
+# Touchpoint groups
+pdf-report-issues-heading = Findings by touchpoint
+pdf-report-issues-aria-label = Audit findings grouped by touchpoint
+pdf-report-issues-empty = No findings — all checks passed.
+pdf-report-group-count = { $count ->
+    [one] { $count } finding
+   *[other] { $count } findings
+}
+pdf-report-group-empty = No findings in this group match the active filters.
+
+# Appendix — WCAG mapping
+pdf-report-appendix-wcag-heading = WCAG criteria mapping
+pdf-report-appendix-wcag-empty = No WCAG criteria are referenced by the current findings.
+pdf-report-appendix-wcag-col-criterion = Criterion
+pdf-report-appendix-wcag-col-count = Findings
+pdf-report-appendix-wcag-col-issues = Issues
+
+# Appendix — Touchpoint summary
+pdf-report-appendix-touchpoints-heading = Touchpoint summary
+pdf-report-appendix-touchpoints-col-name = Touchpoint
+pdf-report-appendix-touchpoints-col-errors = Errors
+pdf-report-appendix-touchpoints-col-warnings = Warnings
+pdf-report-appendix-touchpoints-col-info = Info
+pdf-report-appendix-touchpoints-col-total = Total
+
+# Per-card jump anchor label
+pdf-report-jump-to-issue = Jump to finding
+
+# Font inventory table (per-font size analysis on the
+# "Font sizes accessible" check)
+pdf-violation-font-table-heading = Font inventory
+pdf-violation-font-table-thresholds = Recommended minimum body text: { $body }pt. Absolute minimum: { $minimum }pt.
+pdf-violation-font-table-col-name = Font face
+pdf-violation-font-table-col-size = Smallest size
+pdf-violation-font-table-col-chars = Characters
+pdf-violation-font-table-col-pct = % of document
+pdf-violation-font-table-col-verdict = Verdict
+pdf-violation-font-table-verdict-fail = Below minimum
+pdf-violation-font-table-verdict-warn = Below recommended
+pdf-violation-font-table-verdict-ok = OK
+pdf-violation-font-table-total = Total characters
+
+# Document inventory sections (pdfMax §2-13)
+pdf-inventory-master-heading = Document inventory
+pdf-inventory-master-intro = Per-section data the audit collected from the PDF, intended for human review alongside the automated check results above.
+pdf-inventory-empty = No data collected for this section.
+pdf-inventory-stale-banner = This audit ran before the document inventory feature shipped. Click "Re-audit" above to populate the new sections (tag tree, heading map, font analysis, WCAG mapping, and the rest).
+
+pdf-inventory-tag-tree-heading = Tag tree
+pdf-inventory-tag-tree-intro = The structure tree as read by assistive technology. Every content element should appear here with an appropriate tag.
+pdf-inventory-tag-tree-total = { $count ->
+    [one] { $count } structure element
+   *[other] { $count } structure elements
+}
+pdf-inventory-tag-tree-col-tag = Tag
+pdf-inventory-tag-tree-col-text = Text preview
+pdf-inventory-tag-tree-col-alt = Alt
+pdf-inventory-tag-tree-col-lang = Lang
+
+pdf-inventory-reading-order-heading = Reading order
+pdf-inventory-reading-order-intro = Sequential text in tag-tree order. Compare this against the visual PDF to verify content flows logically.
+pdf-inventory-reading-order-col-num = #
+pdf-inventory-reading-order-col-tag = Tag
+pdf-inventory-reading-order-col-text = Text
+
+pdf-inventory-image-inventory-heading = Image inventory
+pdf-inventory-image-inventory-intro = Every Figure and Formula element with its alt text. Look for missing alt text, placeholder text, or alt text that does not match the image.
+pdf-inventory-image-inventory-col-tag = Tag
+pdf-inventory-image-inventory-col-alt = Alt text
+pdf-inventory-image-inventory-col-actual = Actual text
+pdf-inventory-image-inventory-col-lang = Lang
+pdf-inventory-image-inventory-extracted-heading = Extracted images
+pdf-inventory-image-inventory-extracted-col-num = #
+pdf-inventory-image-inventory-extracted-col-name = Filename
+pdf-inventory-image-inventory-extracted-col-size = Size
+
+pdf-inventory-heading-map-heading = Heading map
+pdf-inventory-heading-map-intro = The H1-H6 outline. Screen reader users rely on this skeleton to navigate the document.
+pdf-inventory-heading-map-col-level = Level
+pdf-inventory-heading-map-col-text = Heading
+pdf-inventory-heading-map-gaps-heading = Hierarchy gaps
+pdf-inventory-heading-map-gap = Skipped from H{ $from } to H{ $to } at "{ $text }"
+
+pdf-inventory-full-alt-text-heading = Full alt text
+pdf-inventory-full-alt-text-intro = Complete alt text for every image element, without truncation. Verify each entry conveys what the image communicates.
+pdf-inventory-full-alt-text-col-tag = Tag
+pdf-inventory-full-alt-text-col-alt = Alt text
+pdf-inventory-full-alt-text-col-actual = Actual text
+pdf-inventory-full-alt-text-missing = (no alt text set)
+
+pdf-inventory-color-contrast-heading = Color and contrast
+pdf-inventory-color-contrast-intro = Foreground / background color pairs detected in the PDF. WCAG 1.4.3 AA requires 4.5:1 for normal text and 3:1 for large text (≥18pt or ≥14pt bold).
+pdf-inventory-color-contrast-col-fg = Foreground
+pdf-inventory-color-contrast-col-bg = Background
+pdf-inventory-color-contrast-col-ratio = Ratio
+pdf-inventory-color-contrast-col-sizes = Sizes (pt)
+pdf-inventory-color-contrast-col-count = Chars
+pdf-inventory-color-contrast-col-pages = Pages
+pdf-inventory-color-contrast-col-sample = Sample
+
+pdf-inventory-language-analysis-heading = Language of parts
+pdf-inventory-language-analysis-intro = When a document mixes languages, each foreign-language passage needs a /Lang attribute so screen readers switch pronunciation.
+pdf-inventory-language-analysis-declared = Document language: { $lang }
+pdf-inventory-language-analysis-declared-missing = Document language: NOT SET
+pdf-inventory-language-analysis-spans-heading = Language spans
+pdf-inventory-language-analysis-col-lang = Lang
+pdf-inventory-language-analysis-col-tag = Tag
+pdf-inventory-language-analysis-col-text = Text
+pdf-inventory-language-analysis-no-spans = No language-tagged spans found.
+
+pdf-inventory-font-analysis-heading = Font analysis
+pdf-inventory-font-analysis-intro = Font choices affect readability for everyone. Look for text below 9pt, insufficient line spacing, and decorative or italic-heavy fonts.
+pdf-inventory-font-analysis-inventory-heading = Font inventory
+pdf-inventory-font-analysis-col-name = Font face
+pdf-inventory-font-analysis-col-size = Size range
+pdf-inventory-font-analysis-col-chars = Chars
+pdf-inventory-font-analysis-col-pct = % of doc
+pdf-inventory-font-analysis-col-pages = Pages
+pdf-inventory-font-analysis-col-style = Style
+pdf-inventory-font-analysis-col-category = Category
+pdf-inventory-font-analysis-style-italic = Italic
+pdf-inventory-font-analysis-style-bold = Bold
+pdf-inventory-font-analysis-rotations-heading = Text rotation
+pdf-inventory-font-analysis-rotations-col-angle = Angle
+pdf-inventory-font-analysis-rotations-col-page = Page
+pdf-inventory-font-analysis-rotations-col-sample = Sample
+pdf-inventory-font-analysis-italic-runs-heading = Italic text usage
+pdf-inventory-font-analysis-italic-runs-col-words = Words
+pdf-inventory-font-analysis-italic-runs-col-page = Page
+pdf-inventory-font-analysis-italic-runs-col-text = Text
+pdf-inventory-font-analysis-line-spacings-heading = Line spacing (leading)
+pdf-inventory-font-analysis-line-spacings-col-size = Size
+pdf-inventory-font-analysis-line-spacings-col-leading = Leading
+pdf-inventory-font-analysis-line-spacings-col-ratio = Ratio
+pdf-inventory-font-analysis-alignments-heading = Text alignment
+pdf-inventory-font-analysis-alignments-col-page = Page
+pdf-inventory-font-analysis-alignments-col-alignment = Alignment
+pdf-inventory-font-analysis-alignments-col-lines = Lines
+
+# §5 Link inventory
+pdf-inventory-link-inventory-heading = Link inventory
+pdf-inventory-link-inventory-intro = Links must have meaningful accessible names that indicate their destination — not generic text like "click here" or bare URLs. Each link should make sense out of context.
+pdf-inventory-link-inventory-tagged-heading = Tagged links (Link struct elements)
+pdf-inventory-link-inventory-annotation-heading = Link annotations
+pdf-inventory-link-inventory-col-text = Link text / alt
+pdf-inventory-link-inventory-col-url = URL
+pdf-inventory-link-inventory-col-lang = Lang
+pdf-inventory-link-inventory-col-page = Page
+pdf-inventory-link-inventory-col-contents = /Contents
+pdf-inventory-link-inventory-no-url = (URL not extracted)
+
+# §6 Form field inventory
+pdf-inventory-form-inventory-heading = Form field inventory
+pdf-inventory-form-inventory-intro = Interactive form fields must be accessible to keyboard and screen reader users. Every field needs an accessible name (/TU tooltip) so screen readers can announce what the field is for.
+pdf-inventory-form-inventory-summary = { $total } field(s) total, { $labeled } with accessible names, { $required } marked required.
+pdf-inventory-form-inventory-col-name = Field name (/T)
+pdf-inventory-form-inventory-col-type = Type (/FT)
+pdf-inventory-form-inventory-col-accessible-name = Accessible name (/TU)
+pdf-inventory-form-inventory-col-required = Required
+pdf-inventory-form-inventory-col-readonly = Read-only
+pdf-inventory-form-inventory-col-value = Value / default
+pdf-inventory-form-inventory-missing-tu = Missing
+pdf-inventory-form-inventory-yes = Yes
+pdf-inventory-form-inventory-no-fields = No interactive form fields found in this document.
+
+# §12 WCAG mapping
+pdf-inventory-wcag-mapping-heading = WCAG 2.2 compliance mapping
+pdf-inventory-wcag-mapping-intro = Maps the automated check results to specific WCAG 2.2 success criteria. Use this to understand compliance at the standard level and identify which WCAG requirements need remediation.
+pdf-inventory-wcag-mapping-col-criterion = Criterion
+pdf-inventory-wcag-mapping-col-level = Level
+pdf-inventory-wcag-mapping-col-result = Result
+pdf-inventory-wcag-mapping-col-checks = Related checks
+pdf-inventory-wcag-mapping-verdict-pass = Pass
+pdf-inventory-wcag-mapping-verdict-warn = Warning
+pdf-inventory-wcag-mapping-verdict-fail = Fail
+pdf-inventory-wcag-mapping-verdict-info = Info
+pdf-inventory-wcag-mapping-verdict-manual = Manual review
+pdf-inventory-wcag-mapping-verdict-not-tested = Not tested
+
+# §16 PDF version & structure recommendations
+pdf-inventory-version-recommendations-heading = PDF version and structural recommendations
+pdf-inventory-version-recommendations-intro = Different PDF versions support different accessibility features. PDF 2.0 introduced improved structure tags and better support for accessibility metadata.
+pdf-inventory-version-recommendations-pdf2 = This document uses PDF { $version }, which supports enhanced accessibility tags (Em, Strong, Aside, Title, FENote, Sub).
+pdf-inventory-version-recommendations-pdf2-used = PDF 2.0 tags in use: { $tags }.
+pdf-inventory-version-recommendations-pdf2-unused = No PDF 2.0-specific tags are being used. Consider using Em, Strong, and Aside where the document has emphasis, bold text, or sidebar content.
+pdf-inventory-version-recommendations-pdf17 = This document uses PDF { $version }.
+pdf-inventory-version-recommendations-upgrade = PDF 2.0 (ISO 32000-2) provides significant accessibility improvements over earlier versions, including dedicated tags for emphasis, sidebars, footnotes, and section labels.
+pdf-inventory-version-recommendations-sect-heading = Using Sect for document structure
+pdf-inventory-version-recommendations-sect-current = Current usage: { $count ->
+    [0] No Sect elements found. The document relies entirely on headings for structural navigation.
+    [one] { $count } Sect element found.
+   *[other] { $count } Sect elements found.
+}
+pdf-inventory-version-recommendations-sect-suggested = Based on the document's content regions, the following top-level Sect structure is recommended (each Sect should carry a /Title attribute):
+
+# Executive summary (Phase C front matter)
+pdf-inventory-exec-summary-heading = At a glance
+pdf-inventory-exec-summary-verdict-pass = This PDF appears to conform to the audited checks ({ $total } total).
+pdf-inventory-exec-summary-verdict-warn = No errors detected, but { $warn } warning(s) and { $fail } error(s) should be reviewed.
+pdf-inventory-exec-summary-verdict-fail = This PDF does not conform: { $fail } error(s) and { $warn } warning(s) need attention.
+pdf-inventory-exec-summary-verdict-not-tested = No automated checks ran for this audit.
+pdf-inventory-exec-summary-top-issues = Top issues
+pdf-inventory-exec-summary-fail-count = { $count } fail
+pdf-inventory-exec-summary-warn-count = { $count } warn
+
+# §14 Visual reading order
+pdf-inventory-visual-reading-order-heading = Visual reading order analysis
+pdf-inventory-visual-reading-order-intro = Compares the tag-tree reading sequence against text positions on each page. When the structure order differs from the visual order, screen-reader users hear content in a different sequence than sighted readers see.
+pdf-inventory-visual-reading-order-col-struct = Tag tree order
+pdf-inventory-visual-reading-order-col-visual = Visual order
+pdf-inventory-visual-reading-order-no-mismatches = No mismatches
+pdf-inventory-visual-reading-order-clean = Tag-tree order matches visual layout for every nearby element pair tested.
+
+# §9 Exported images gallery
+pdf-inventory-exported-images-heading = Exported images
+pdf-inventory-exported-images-intro = Bitmaps extracted from the PDF, paired with the alt text from their matching Figure or Formula element. Verify each alt text accurately describes what the image communicates.
+pdf-inventory-exported-images-no-alt = (no alt text on the matching tag)
+pdf-inventory-exported-images-empty = No image XObjects were extracted from this PDF.
+
+# §15 Images of text
+pdf-inventory-images-of-text-heading = Images of text analysis
+pdf-inventory-images-of-text-intro = WCAG 1.4.5 requires real text instead of images of text wherever possible. Detecting embedded text inside an image requires OCR or AI analysis.
+pdf-inventory-images-of-text-ai-required = AI required
+pdf-inventory-images-of-text-not-configured = This analysis is not yet configured for this deployment. When AI analysis is enabled, each extracted image will be checked for embedded text content.
+
+# Verbatim pdfMax report viewer (calls pdf_accessibility_audit.py via subprocess)
+pdfmax-report-link = View pdfMax report
+pdfmax-report-link-aria = Open the verbatim pdfMax accessibility report for this document
+pdfmax-report-breadcrumb-aria-label = Navigation
+pdfmax-report-back-to-detail = Back to PDF detail
+pdfmax-report-subtitle = This page renders the unmodified Markdown report produced by pdfMax's pdf_accessibility_audit.py. The HTML matches what you would see in the pdfMax desktop app.
+pdfmax-report-loading = Rendering report…
+pdfmax-report-error-heading = pdfMax run failed
+
+# Save / export the report
+pdf-report-export-aria-label = Save the audit report
+pdf-report-export-html = Save as HTML
+pdf-report-export-markdown = Save as Markdown
+pdf-report-export-saved-html = Report saved as HTML
+pdf-report-export-saved-markdown = Report saved as Markdown
+pdf-report-export-failed = Failed to save the report
+pdf-report-export-footer = Generated by Auto A11y. Automated checks are machine-verifiable; detailed sections provide data for human review.
+
+# In-page PDF viewer (pdf_viewer_app.js + detail.html)
+# Replaces the previous Chromium-iframe view; renders with PDF.js,
+# overlays issue bboxes from the cached pdfMax issue_map.json, draws
+# SVG connector lines between page overlays and issue cards, and emits
+# a visually-hidden semantic HTML tree for screen-reader navigation.
+pdf-viewer-loading = Loading PDF…
+pdf-viewer-error-load = Failed to load the PDF.
+pdf-viewer-toolbar-aria-label = PDF viewer controls
+pdf-viewer-prev-page = Previous page
+pdf-viewer-next-page = Next page
+pdf-viewer-page-input-label = Page number
+pdf-viewer-zoom-in = Zoom in
+pdf-viewer-zoom-out = Zoom out
+pdf-viewer-zoom-reset = Reset zoom
+pdf-viewer-overlay-layer-aria-label = Issue locations on this page
+pdf-viewer-issues-heading = Issues found by the visual audit
+pdf-viewer-issue-list-empty = The visual audit produced no locatable issues. Run an audit if none has been run yet.
+# {"{page}"} / {"{count}"} — literal placeholders that pdf_viewer_app.js
+# substitutes at runtime; do not translate the placeholder.
+pdf-viewer-jump-to-page-template = Page {"{page}"}
+pdf-viewer-overlay-cluster-aria-template = {"{count}"} issues at this location
+pdf-viewer-semantic-layer-aria-template = Page {"{page}"} content

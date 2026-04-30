@@ -354,6 +354,27 @@ def detail(pdf_document_id: str) -> str | Response:
     if pdf.last_audit_result_id:
         test_result = db.get_test_result(pdf.last_audit_result_id)
 
+    # pdfMax §2-13 inventory data, populated by Phase A of the
+    # report port. Falls back to an empty dict so the template's
+    # ``{% if report_sections %}`` guard skips the master section
+    # cleanly for audits that pre-date the feature.
+    # The report_sections payload was emitted by the audit pipeline as
+    # ``dict[str, object]``; round-tripping through Mongo + the
+    # untyped ``TestResult.metadata`` mapping erases that, so we
+    # narrow conservatively here. The cast is justified by the
+    # pipeline's contract — see ``build_report_sections``.
+    report_sections: dict[str, object]
+    if test_result is not None and isinstance(
+        test_result.metadata.get('report_sections'), dict
+    ):
+        from typing import cast
+        report_sections = cast(
+            'dict[str, object]',
+            test_result.metadata['report_sections'],
+        )
+    else:
+        report_sections = {}
+
     return render_template(
         'pdf/detail.html',
         pdf=pdf,
@@ -361,6 +382,7 @@ def detail(pdf_document_id: str) -> str | Response:
         test_result=test_result,
         project=project,
         website=website,
+        report_sections=report_sections,
     )
 
 
@@ -667,6 +689,250 @@ def image(pdf_document_id: str, image_name: str) -> Response:
         return redirect(url_for('pdf.detail', pdf_document_id=pdf_document_id))
 
     return send_file(image_path, mimetype='image/png')
+
+
+# Locale codes accepted by the export route's ``?locale=`` query string.
+# Any other value falls back to the default at view-fn time.
+_EXPORT_LOCALES = frozenset({'en', 'fr'})
+
+
+@pdf_bp.route('/pdfs/<pdf_document_id>/export.<fmt>', methods=['GET'])
+@login_required
+def export(pdf_document_id: str, fmt: str) -> Response:
+    """Stream a self-contained Markdown or HTML audit report.
+
+    Mirrors the ``Save as Markdown`` / ``Save as HTML`` buttons in the
+    pdfMax ``CheckerReport.tsx``. The generated file is fully
+    standalone — no JS, no external CSS, and (for Markdown) no inline
+    HTML except ``<span id="...">`` anchors used to make in-document
+    links keep working when the file is opened in a browser or
+    rendered by GitHub.
+
+    The audit data is built straight from the latest persisted
+    :class:`~auto_a11y.models.test_result.TestResult`, so an
+    in-progress audit will export the previous result, not the
+    partial state.
+
+    ``fmt``: ``"md"`` or ``"html"``. Anything else returns 404.
+    """
+    if fmt not in ('md', 'html'):
+        abort(404)
+
+    db = get_db()
+    pdf = db.get_pdf_document(pdf_document_id)
+    if pdf is None:
+        flash(
+            ftl('pdf-error-pdf-document-not-found', doc_id=pdf_document_id),
+            'error',
+        )
+        return redirect(url_for('projects.list_projects'))
+
+    denied = _require_pdf_role(pdf, *_READ_ROLES)
+    if denied is not None:
+        return denied
+
+    test_result = None
+    if pdf.last_audit_result_id:
+        test_result = db.get_test_result(pdf.last_audit_result_id)
+
+    locale = request.args.get('locale', 'en')
+    if locale not in _EXPORT_LOCALES:
+        locale = 'en'
+
+    # Local import — keeps ``report_export`` out of the route module's
+    # import graph until an export is actually requested. Avoids
+    # paying the Fluent-aware import cost on every PDF list/detail
+    # view.
+    from auto_a11y.pdf.report_export import (
+        build_html_report,
+        build_markdown_report,
+    )
+
+    base_name = (
+        pdf.original_filename.removesuffix('.pdf')
+        if pdf.original_filename and pdf.original_filename.lower().endswith('.pdf')
+        else (pdf.original_filename or 'audit-report')
+    )
+
+    if fmt == 'md':
+        body = build_markdown_report(pdf, test_result, locale=locale)
+        mimetype = 'text/markdown; charset=utf-8'
+        filename = f'{base_name}_accessibility_report.md'
+    else:
+        body = build_html_report(pdf, test_result, locale=locale)
+        mimetype = 'text/html; charset=utf-8'
+        filename = f'{base_name}_accessibility_report.html'
+
+    response = Response(body.encode('utf-8'), mimetype=mimetype)
+    response.headers['Content-Disposition'] = (
+        f'attachment; filename="{filename}"'
+    )
+    # The export bytes are derived purely from the persisted audit
+    # data; they don't depend on cookies or the current user. Marking
+    # them ``private`` lets browsers cache locally without leaking the
+    # bytes through a shared proxy.
+    response.headers['Cache-Control'] = 'private, no-cache'
+    return response
+
+
+@pdf_bp.route('/pdfs/<pdf_document_id>/issue-map', methods=['GET'])
+@login_required
+def issue_map(pdf_document_id: str) -> Response:
+    """Stream the cached pdfMax ``*_issue_map.json`` for the viewer overlays.
+
+    pdfMax's audit subprocess writes one issue-map JSON per run alongside
+    the Markdown report (see :meth:`PdfAuditJob._build_pdfmax_report_cache`).
+    The Viewer JS fetches this to position issue overlays on each PDF
+    page and to know which sidebar card to highlight on click.
+
+    Returns ``404`` (not a flash + redirect) so the viewer JS can fall
+    back to a "no overlays available — re-audit to enable" notice without
+    crashing the page.
+    """
+    db = get_db()
+    pdf = db.get_pdf_document(pdf_document_id)
+    if pdf is None:
+        abort(404)
+
+    denied = _require_pdf_role(pdf, *_READ_ROLES)
+    if denied is not None:
+        return denied
+
+    storage = _get_storage()
+    pdf_path = storage.local_path(pdf)
+    cache_dir = pdf_path.parent / 'pdfmax-report'
+
+    if not cache_dir.is_dir():
+        abort(404)
+
+    candidates = sorted(cache_dir.glob('*_issue_map.json'))
+    if not candidates:
+        abort(404)
+
+    response = send_file(candidates[0], mimetype='application/json')
+    # The issue-map mirrors the audit's persisted state — safe to cache
+    # in the user's browser within a session.
+    response.headers['Cache-Control'] = 'private, max-age=60'
+    return response
+
+
+@pdf_bp.route('/pdfs/<pdf_document_id>/pdfmax-report', methods=['GET'])
+@login_required
+def pdfmax_report(pdf_document_id: str) -> Response | str:
+    """Render the cached verbatim pdfMax Markdown audit report.
+
+    The pdfMax subprocess is *not* run here. The audit job
+    (:class:`PdfAuditJob`) writes a ``*_accessibility_report.md``
+    file to disk as part of the normal Audit / Re-audit flow; this
+    route is a pure cache lookup against that file.
+
+    If no cached report exists (the PDF has never been audited, or
+    was audited before this feature shipped), the page tells the
+    user to click Re-audit. The route never blocks the request
+    thread on a 10-30s audit.
+    """
+    db = get_db()
+    pdf = db.get_pdf_document(pdf_document_id)
+    if pdf is None:
+        flash(
+            ftl('pdf-error-pdf-document-not-found', doc_id=pdf_document_id),
+            'error',
+        )
+        return redirect(url_for('projects.list_projects'))
+
+    denied = _require_pdf_role(pdf, *_READ_ROLES)
+    if denied is not None:
+        return denied
+
+    storage = _get_storage()
+    pdf_path = storage.local_path(pdf)
+    cache_dir = pdf_path.parent / 'pdfmax-report'
+
+    cached_md: str | None = None
+    error: str | None = None
+    if cache_dir.is_dir():
+        candidates = sorted(cache_dir.glob('*_accessibility_report.md'))
+        if candidates:
+            try:
+                cached_md = candidates[0].read_text(encoding='utf-8')
+            except OSError as exc:
+                error = f"Failed to read cached pdfMax report: {exc}"
+        else:
+            error = (
+                "No pdfMax report has been generated for this document yet. "
+                "Click 'Re-audit' on the detail page to produce one."
+            )
+    else:
+        error = (
+            "No pdfMax report has been generated for this document yet. "
+            "Click 'Re-audit' on the detail page to produce one."
+        )
+
+    return render_template(
+        'pdf/pdfmax_report.html',
+        pdf=pdf,
+        target=target_view_from_pdf(pdf, breadcrumb=[]),
+        report_markdown=cached_md,
+        error=error,
+    )
+
+
+@pdf_bp.route(
+    '/pdfs/<pdf_document_id>/pdfmax-report/images/<path:image_name>',
+    methods=['GET'],
+)
+@login_required
+def pdfmax_report_image(pdf_document_id: str, image_name: str) -> Response:
+    """Stream an image referenced by pdfMax's verbatim Markdown report.
+
+    The pdfMax audit writes ``image_*.png`` files alongside the .md
+    and the markdown links to them with ``![](image_3.png)`` style
+    relative paths. The viewer page's marked-rendered ``<img src>``
+    attributes are rewritten client-side to point at this route so
+    every image resolves to a real HTTP URL.
+    """
+    db = get_db()
+    pdf = db.get_pdf_document(pdf_document_id)
+    if pdf is None:
+        abort(404)
+
+    denied = _require_pdf_role(pdf, *_READ_ROLES)
+    if denied is not None:
+        return denied
+
+    # Path safety: refuse anything that could traverse out of the
+    # cache dir. ``image_name`` is a Werkzeug ``path`` converter so
+    # subdirectories are possible; we strip any '..' component
+    # entirely.
+    if '..' in image_name.split('/') or '..' in image_name.split('\\'):
+        abort(404)
+
+    storage = _get_storage()
+    pdf_path = storage.local_path(pdf)
+    cache_dir = pdf_path.parent / 'pdfmax-report'
+    image_path = (cache_dir / image_name).resolve()
+
+    # Resolved path must remain inside cache_dir.
+    try:
+        image_path.relative_to(cache_dir.resolve())
+    except ValueError:
+        abort(404)
+
+    if not image_path.is_file():
+        abort(404)
+
+    # Pick a mimetype from the suffix; default to octet-stream so a
+    # malformed filename can't be interpreted as anything dangerous.
+    suffix = image_path.suffix.lower()
+    mimetype = {
+        '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.gif': 'image/gif',
+        '.svg': 'image/svg+xml',
+        '.webp': 'image/webp',
+    }.get(suffix, 'application/octet-stream')
+    return send_file(image_path, mimetype=mimetype)
 
 
 @pdf_bp.route('/pdfs/<pdf_document_id>/delete', methods=['POST'])

@@ -1036,6 +1036,16 @@ def to_violation(
         stable_id = row["stable_id"]
         touchpoint_value = row["touchpoint"].value
         wcag_criteria = list(row["wcag_criteria"])
+    metadata: dict[str, object] = {
+        "pdf_doc_id": pdf_doc_id,
+        "pdfmax_original_details": cr.details,
+        "pdfmax_original_standard": cr.standard,
+    }
+    # Forward any structured side-data the check populated (e.g., the
+    # font-size check's per-font inventory). Preserve the namespace so
+    # template renderers can pick up the right key.
+    for key, value in cr.extras.items():
+        metadata[key] = value
     return Violation(
         id=stable_id,
         impact=impact,
@@ -1047,11 +1057,7 @@ def to_violation(
         who=f"pdf-check-{stable_id}-who",
         remediation=f"pdf-remediation-{stable_id}",
         wcag_criteria=wcag_criteria,
-        metadata={
-            "pdf_doc_id": pdf_doc_id,
-            "pdfmax_original_details": cr.details,
-            "pdfmax_original_standard": cr.standard,
-        },
+        metadata=metadata,
         source_type="automated",
         detection_method="pdf_audit",
     )

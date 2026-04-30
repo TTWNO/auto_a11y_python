@@ -9,7 +9,7 @@ from typing import Any
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session
 from werkzeug.wrappers import Response
 from auto_a11y.web.fluent import ftl
-from auto_a11y.web.typed_app import get_db, get_app_config
+from auto_a11y.web.typed_app import get_db, get_app_config, get_pdf_runner
 from auto_a11y.models import Page, PageStatus
 import logging
 
@@ -121,6 +121,21 @@ def view_website(website_id: str) -> str | Response:
     from auto_a11y.web.routes.projects import summarise_pdf_status
     pdf_status_counts = summarise_pdf_status(website_pdfs)
 
+    # Combined "documents" counts (HTML pages + PDFs). The "Test All
+    # Documents" / "Test Untested Documents" buttons act on both. A PDF
+    # is "untested" when ``queue_audits_for_website`` would queue it —
+    # i.e. anything other than AUDITED, AUDITING, or FETCH_FAILED.
+    pdf_audited = pdf_status_counts.get('audited', 0)
+    pdf_in_flight = pdf_status_counts.get('auditing', 0)
+    pdf_unfetchable = pdf_status_counts.get('fetch_failed', 0)
+    pdf_untested_eligible = pdf_count - pdf_audited - pdf_in_flight - pdf_unfetchable
+    pages_untested = stats['total_pages'] - stats['tested_pages']
+    documents = {
+        'total': stats['total_pages'] + pdf_count,
+        'tested': stats['tested_pages'] + pdf_audited,
+        'untested': max(pages_untested, 0) + max(pdf_untested_eligible, 0),
+    }
+
     return render_template('websites/view.html',
                          website=website,
                          project=project,
@@ -129,6 +144,7 @@ def view_website(website_id: str) -> str | Response:
                          website_users=project_users,
                          pdf_count=pdf_count,
                          pdf_status_counts=pdf_status_counts,
+                         documents=documents,
                          pagination={
                              'page': page_num,
                              'per_page': per_page,
@@ -276,8 +292,11 @@ def discover_pages(website_id: str) -> Response | tuple[Response, int]:
         else:
             browser_config['stealth_mode'] = False
 
-        # Create website manager
-        website_manager = WebsiteManager(get_db(), browser_config)
+        # Create website manager (with pdf_runner so PDFs found during the
+        # crawl are auto-fetched and surfaced in the PDFs UI)
+        website_manager = WebsiteManager(
+            get_db(), browser_config, pdf_runner=get_pdf_runner()
+        )
 
         # Get user info from session if available
         session_user_id = session.get('user_id') if session else None
@@ -633,6 +652,17 @@ def test_all_pages(website_id: str) -> Response | tuple[Response, int]:
         session_user_id = session.get('user_id') if session else None
         session_id_value = session.get('session_id') if session else None
 
+        # PDF audits are queued AFTER the HTML page-test loop completes
+        # (see the testing_wrapper below). Running them concurrently with
+        # Playwright fails with "Timeout should be used inside a task"
+        # because ``nest_asyncio.apply()`` (called by the testing wrapper)
+        # interferes with the per-request timeout context manager that
+        # both Playwright and aiohttp use deep in their stacks. The
+        # PdfRunner reference is captured here (Flask app context is
+        # required to read it) and consumed inside the wrapper.
+        pdf_runner = get_pdf_runner()
+        db_for_audits = get_db()
+
         # Submit a SINGLE testing job that processes all users SEQUENTIALLY
         # This prevents browser session corruption from concurrent user testing
         total_tests = len(website_user_ids) * len(testable_pages)
@@ -675,10 +705,9 @@ def test_all_pages(website_id: str) -> Response | tuple[Response, int]:
                     # We'll update progress messages to show which user is being tested
                     current_job_id = job_id
 
-                    # For multi-user, we need to prevent the job from being marked complete
-                    # after the first user. We'll pass a flag to indicate more users remain.
-                    is_last_user = (idx == num_users - 1)
-
+                    # Hold off completing the testing job until PDF audits
+                    # finish too — combined HTML-page + PDF progress is
+                    # what the button shows.
                     try:
                         result = loop.run_until_complete(
                             website_manager.test_website(
@@ -692,7 +721,7 @@ def test_all_pages(website_id: str) -> Response | tuple[Response, int]:
                                 run_ai_analysis=None,
                                 ai_api_key=ai_key,
                                 website_user_id=user_id_to_pass,
-                                skip_completion=(not is_last_user)
+                                skip_completion=True,
                             )
                         )
                         last_result = result
@@ -702,6 +731,135 @@ def test_all_pages(website_id: str) -> Response | tuple[Response, int]:
                         # Continue with next user even if one fails
 
                 logger.info(f"Testing wrapper completed for all {num_users} users")
+
+                # Now that the HTML page tests are done, queue PDF audits.
+                # Running them earlier (concurrent with Playwright on this
+                # same nest_asyncio'd loop) crashes the page tests.
+                pdf_audit_job_ids: list[str] = []
+                if pdf_runner is not None:
+                    from auto_a11y.core.pdf_audit_job import (
+                        queue_audits_for_website,
+                    )
+
+                    try:
+                        pdf_audit_job_ids = queue_audits_for_website(
+                            runner=pdf_runner,
+                            db=db_for_audits,
+                            website_id=website_id,
+                            user_id=str(session_user_id)
+                            if session_user_id
+                            else 'anonymous',
+                            session_id=str(session_id_value)
+                            if session_id_value
+                            else None,
+                        )
+                    except Exception as audit_err:
+                        logger.warning(
+                            "Failed to queue PDF audits for website %s: %s",
+                            website_id,
+                            audit_err,
+                        )
+
+                # Read the post-page-test progress so we can fold PDF
+                # progress on top of it.
+                from auto_a11y.core.job_manager import JobStatus as _JobStatus
+                jm = website_manager.job_manager
+
+                from typing import cast as _cast
+
+                def _read_int(record: dict[str, Any] | None, key: str, default: int) -> int:
+                    if record is None:
+                        return default
+                    progress_obj = record.get('progress')
+                    if not isinstance(progress_obj, dict):
+                        return default
+                    progress_typed = _cast("dict[str, object]", progress_obj)
+                    details_obj = progress_typed.get('details')
+                    if not isinstance(details_obj, dict):
+                        return default
+                    details_typed = _cast("dict[str, object]", details_obj)
+                    value = details_typed.get(key, default)
+                    if isinstance(value, int):
+                        return value
+                    if isinstance(value, str):
+                        try:
+                            return int(value)
+                        except ValueError:
+                            return default
+                    return default
+
+                page_record = jm.get_job(job_id)
+                pages_tested_final: int = _read_int(
+                    page_record, 'pages_tested', len(page_ids)
+                )
+                pages_total_final: int = _read_int(
+                    page_record, 'total_pages', len(page_ids)
+                )
+                page_details: dict[str, Any] = {
+                    'pages_tested': pages_tested_final,
+                    'total_pages': pages_total_final,
+                }
+                pdf_total: int = len(pdf_audit_job_ids)
+                combined_total: int = pages_total_final + pdf_total
+                terminal_states = {'completed', 'failed', 'cancelled'}
+
+                # Poll until all PDF audit jobs reach a terminal state,
+                # streaming combined progress into the testing job's
+                # record so the button's existing poller picks it up.
+                if pdf_audit_job_ids:
+                    import time
+
+                    while True:
+                        done = 0
+                        for aid in pdf_audit_job_ids:
+                            rec = jm.get_job(aid)
+                            if rec and rec.get('status') in terminal_states:
+                                done += 1
+                        combined_done = pages_tested_final + done
+                        jm.update_job_status(
+                            job_id=job_id,
+                            status=_JobStatus.RUNNING,
+                            progress={
+                                'current': combined_done,
+                                'total': combined_total,
+                                'message': (
+                                    f'Auditing PDFs: {done}/{pdf_total}'
+                                ),
+                                'details': {
+                                    **page_details,
+                                    'pages_tested': combined_done,
+                                    'total_pages': combined_total,
+                                    'pdf_audits_done': done,
+                                    'pdf_audits_total': pdf_total,
+                                },
+                            },
+                        )
+                        if done >= pdf_total:
+                            break
+                        time.sleep(2)
+
+                # Mark the testing job complete with combined counts so
+                # the UI's "Testing complete" message reflects everything.
+                jm.update_job_status(
+                    job_id=job_id,
+                    status=_JobStatus.COMPLETED,
+                    progress={
+                        'current': combined_total,
+                        'total': combined_total,
+                        'message': (
+                            f'Testing complete: {pages_total_final} '
+                            f'page(s), {pdf_total} PDF(s)'
+                        ),
+                        'details': {
+                            **page_details,
+                            'pages_tested': combined_total,
+                            'total_pages': combined_total,
+                            'pdf_audits_done': pdf_total,
+                            'pdf_audits_total': pdf_total,
+                        },
+                    },
+                )
+
                 return last_result
             except Exception as e:
                 logger.error(f"Error in testing wrapper: {e}")

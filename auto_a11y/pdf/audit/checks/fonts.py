@@ -321,23 +321,58 @@ def check_font_sizes_accessible(ctx: AuditContext) -> list[CheckResult]:
     small_fonts: list[str] = []  # below recommended minimum (WARN)
     tiny_chars = 0
     small_chars = 0
+    # Per-font rows the report renderer turns into the Font Inventory
+    # table (mirrors pdfMax's ``### Font Inventory`` section). Each row
+    # is the smallest in-use size for the font; the renderer joins
+    # them into a single table.
+    table_rows: list[dict[str, object]] = []
 
     for info in fa.fonts.values():
         if not info.sizes:
             continue
         smallest = min(info.sizes)
+        pct = (info.char_count / total_chars) * 100
         if smallest < _MIN_READABLE_SIZE:
+            verdict = "FAIL"
             tiny_chars += info.char_count
             tiny_fonts.append(
                 f"{info.name} at {smallest}pt ({info.char_count} chars):"
                 + f" below {_MIN_READABLE_SIZE}pt minimum"
             )
         elif smallest < _MIN_BODY_SIZE:
+            verdict = "WARN"
             small_chars += info.char_count
             small_fonts.append(
                 f"{info.name} at {smallest}pt ({info.char_count} chars):"
                 + f" below {_MIN_BODY_SIZE}pt recommended"
             )
+        else:
+            verdict = "OK"
+        table_rows.append({
+            "font_name": info.name,
+            "size_pt": smallest,
+            "char_count": info.char_count,
+            "char_pct": round(pct, 1),
+            "verdict": verdict,
+        })
+
+    # Sort the table by smallest-size ascending so problems land at
+    # the top — the user sees the worst offenders first.
+    table_rows.sort(
+        key=lambda row: (
+            float(row["size_pt"]) if isinstance(row["size_pt"], (int, float)) else 0.0,
+            str(row["font_name"]),
+        )
+    )
+
+    extras: dict[str, object] = {
+        "font_table": {
+            "rows": table_rows,
+            "total_chars": total_chars,
+            "min_body_size_pt": _MIN_BODY_SIZE,
+            "min_readable_size_pt": _MIN_READABLE_SIZE,
+        }
+    }
 
     if tiny_fonts:
         tiny_pct = tiny_chars / total_chars * 100
@@ -352,6 +387,7 @@ def check_font_sizes_accessible(ctx: AuditContext) -> list[CheckResult]:
                     f" minimum ({tiny_chars} chars, {tiny_pct:.0f}% of"
                     f" document): {font_names}"
                 ),
+                extras=extras,
             )
         ]
     if small_fonts:
@@ -366,6 +402,7 @@ def check_font_sizes_accessible(ctx: AuditContext) -> list[CheckResult]:
                     f" minimum ({small_chars} chars, {small_pct:.0f}% of"
                     " document)"
                 ),
+                extras=extras,
             )
         ]
     return [
@@ -377,6 +414,7 @@ def check_font_sizes_accessible(ctx: AuditContext) -> list[CheckResult]:
                 f"All text at or above {_MIN_BODY_SIZE}pt"
                 f" ({len(fa.fonts)} fonts, {total_chars} chars)"
             ),
+            extras=extras,
         )
     ]
 

@@ -674,6 +674,65 @@ def test_image_redirects_when_not_found(
 
 
 # ---------------------------------------------------------------------------
+# GET /pdfs/<id>/issue-map
+# ---------------------------------------------------------------------------
+
+
+def test_issue_map_streams_cached_json(
+    app: Flask, client: FlaskClient, mock_db: MagicMock, tmp_path: Path
+) -> None:
+    """``/issue-map`` streams the cached pdfMax issue_map.json."""
+    doc = _make_doc()
+    mock_db.get_pdf_document.return_value = doc
+
+    storage_root = Path(getattr(app, 'app_config').PDF_STORAGE_DIR)
+    pdf_path = storage_root / doc.storage_relpath
+    pdf_path.parent.mkdir(parents=True, exist_ok=True)
+    pdf_path.write_bytes(_TINY_PDF_BYTES)
+    cache_dir = pdf_path.parent / 'pdfmax-report'
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    json_path = cache_dir / 'document_issue_map.json'
+    json_path.write_text(
+        '{"version": 1, "page_dimensions": {"1": [612, 792]}, '
+        + '"issues": [{"id": "issue-0", "check_name": "Test",'
+        + ' "check_result": "FAIL", "page": 1, "bbox": [10, 20, 110, 60]}]}',
+        encoding='utf-8',
+    )
+
+    resp = client.get(f'/pdfs/{doc.id}/issue-map')
+    assert resp.status_code == 200
+    assert resp.mimetype == 'application/json'
+    payload = resp.get_json()
+    assert payload['version'] == 1
+    assert payload['issues'][0]['id'] == 'issue-0'
+
+
+def test_issue_map_returns_404_when_no_audit_run(
+    app: Flask, client: FlaskClient, mock_db: MagicMock
+) -> None:
+    """No audit ever ran → 404, not a redirect (so JS can fail soft)."""
+    doc = _make_doc()
+    mock_db.get_pdf_document.return_value = doc
+    storage_root = Path(getattr(app, 'app_config').PDF_STORAGE_DIR)
+    pdf_path = storage_root / doc.storage_relpath
+    pdf_path.parent.mkdir(parents=True, exist_ok=True)
+    pdf_path.write_bytes(_TINY_PDF_BYTES)
+    # Note: no pdfmax-report/ cache dir is created.
+
+    resp = client.get(f'/pdfs/{doc.id}/issue-map')
+    assert resp.status_code == 404
+
+
+def test_issue_map_returns_404_when_pdf_missing(
+    client: FlaskClient, mock_db: MagicMock
+) -> None:
+    """Unknown pdf_document_id → 404."""
+    mock_db.get_pdf_document.return_value = None
+    resp = client.get('/pdfs/nope/issue-map')
+    assert resp.status_code == 404
+
+
+# ---------------------------------------------------------------------------
 # POST /pdfs/<id>/delete
 # ---------------------------------------------------------------------------
 
@@ -767,3 +826,93 @@ def test_delete_redirects_when_pdf_missing(
     resp = client.post('/pdfs/nope/delete')
     assert resp.status_code == 302
     mock_db.delete_pdf_document.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# GET /pdfs/<id>/export.<fmt>
+# ---------------------------------------------------------------------------
+#
+# The Save-as-HTML / Save-as-Markdown buttons on the detail page link
+# to this route. The route delegates to ``auto_a11y.pdf.report_export``
+# (which has its own pure-function tests) and is responsible for:
+#
+#  * Auth check (read role on the project owning the PDF)
+#  * Format dispatch (md vs html → 404 for anything else)
+#  * Locale negotiation (?locale=fr falls back to en for unknown values)
+#  * Content-Disposition: attachment; filename="..._accessibility_report.{ext}"
+
+
+def test_export_html_returns_attachment(
+    client: FlaskClient, mock_db: MagicMock
+) -> None:
+    doc = _make_doc()
+    mock_db.get_pdf_document.return_value = doc
+    resp = client.get(f'/pdfs/{doc.id}/export.html')
+    assert resp.status_code == 200
+    assert resp.mimetype == 'text/html'
+    assert 'attachment' in resp.headers['Content-Disposition']
+    assert '_accessibility_report.html' in resp.headers['Content-Disposition']
+
+
+def test_export_markdown_returns_attachment(
+    client: FlaskClient, mock_db: MagicMock
+) -> None:
+    doc = _make_doc()
+    mock_db.get_pdf_document.return_value = doc
+    resp = client.get(f'/pdfs/{doc.id}/export.md')
+    assert resp.status_code == 200
+    assert resp.mimetype == 'text/markdown'
+    assert 'attachment' in resp.headers['Content-Disposition']
+    assert '_accessibility_report.md' in resp.headers['Content-Disposition']
+
+
+def test_export_unknown_format_returns_404(
+    client: FlaskClient, mock_db: MagicMock
+) -> None:
+    doc = _make_doc()
+    mock_db.get_pdf_document.return_value = doc
+    resp = client.get(f'/pdfs/{doc.id}/export.txt')
+    assert resp.status_code == 404
+
+
+def test_export_redirects_when_pdf_missing(
+    client: FlaskClient, mock_db: MagicMock
+) -> None:
+    mock_db.get_pdf_document.return_value = None
+    resp = client.get('/pdfs/nope/export.html')
+    assert resp.status_code == 302
+
+
+def test_export_unknown_locale_falls_back_silently(
+    client: FlaskClient, mock_db: MagicMock
+) -> None:
+    """``?locale=ja`` is not supported but must not break the export."""
+    doc = _make_doc()
+    mock_db.get_pdf_document.return_value = doc
+    resp = client.get(f'/pdfs/{doc.id}/export.html?locale=ja')
+    assert resp.status_code == 200
+
+
+def test_export_filename_strips_pdf_extension(
+    client: FlaskClient, mock_db: MagicMock
+) -> None:
+    """``original_filename='annual.pdf'`` → ``annual_accessibility_report.html``."""
+    doc = _make_doc()
+    doc.original_filename = 'annual.pdf'
+    mock_db.get_pdf_document.return_value = doc
+    resp = client.get(f'/pdfs/{doc.id}/export.html')
+    assert resp.status_code == 200
+    assert 'annual_accessibility_report.html' in resp.headers['Content-Disposition']
+
+
+def test_export_works_when_no_test_result_yet(
+    client: FlaskClient, mock_db: MagicMock
+) -> None:
+    """The export still renders for a never-audited PDF — it just
+    contains the not-yet-audited banner."""
+    doc = _make_doc()
+    doc.last_audit_result_id = None
+    mock_db.get_pdf_document.return_value = doc
+    mock_db.get_test_result.return_value = None
+    resp = client.get(f'/pdfs/{doc.id}/export.md')
+    assert resp.status_code == 200

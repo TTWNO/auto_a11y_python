@@ -1024,7 +1024,7 @@ Expected: 1 fail.
 
 - [ ] **Step 3: Edit `pdfmax_report.html`**
 
-Inside the existing inline render IIFE (the one that calls `marked.parse` + `DOMPurify.sanitize`), inside the `render` function, after the line `target.hidden = false;` (around line 196), insert the hash-handler before the IIFE close:
+Inside the existing inline render IIFE (the one that calls `marked.parse` + `DOMPurify.sanitize`), inside the `render` function, after the line `target.hidden = false;` (around line 196), call `applyCheckHash()` and add the two new helper functions at IIFE scope (sibling level to `render`, NOT nested inside it). JavaScript hoists function declarations within their enclosing function scope, so calling `applyCheckHash` from inside `render` works as long as the declaration sits at IIFE scope. Place the helper declarations right after the `render` function's closing `}`. The block looks like:
 
 ```html
                 if (loading !== null) {
@@ -1042,6 +1042,12 @@ Inside the existing inline render IIFE (the one that calls `marked.parse` + `DOM
                 applyCheckHash();
             }
 
+            // applyCheckHash and announceJump are siblings of render,
+            // declared at IIFE scope so render() can call them via
+            // function-declaration hoisting. Do NOT nest them inside
+            // render — the existing if (document.readyState ...)
+            // block at the bottom of the IIFE only registers `render`,
+            // and these helpers must be reachable from there.
             function applyCheckHash() {
                 var hash = (window.location.hash || "").replace(/^#/, "");
                 if (!hash) return;
@@ -1653,13 +1659,17 @@ Expected: the two `_imports_helper` tests fail (modules don't import the helper 
 
 - [ ] **Step 3: Edit `auto_a11y/web/routes/websites.py`**
 
-Add an import near the top (after the existing PdfDocument-related imports):
+The existing import block at the top of the file does NOT have `Path`, `PdfStorage`, `PdfDocument`, or `PdfDocumentStatus`. Add the four new imports below the existing imports (after line 14, after `import logging`):
 
 ```python
+from pathlib import Path
+
+from auto_a11y.models.pdf_document import PdfDocument, PdfDocumentStatus
 from auto_a11y.pdf.issue_map_counts import PdfIssueCounts, count_issues
+from auto_a11y.pdf.storage import PdfStorage
 ```
 
-Find an existing import that looks like a similar shape (e.g., `from auto_a11y.web.routes.projects import summarise_pdf_status`); place the new import in the same neighbourhood.
+(`PdfDocument` is unused at function scope but ergonomic for typing if a future change adds an annotation; if mypy/pyright/ty flag the import as unused, drop it. The current rollup loop only references `PdfDocumentStatus` and `count_issues`.)
 
 Then locate the handler block at lines 102-137 and modify it. The current shape is:
 
@@ -1767,14 +1777,14 @@ Expected: `test_projects_route_imports_helper` fails; everything else passes.
 
 - [ ] **Step 2: Edit `auto_a11y/web/routes/projects.py`**
 
-Add the import near the existing PDF-related imports:
+`projects.py` already imports `PdfDocument`, `PdfDocumentStatus`, and `get_app_config`. It does NOT have `Path`, `PdfStorage`, or the rollup helper. Add three new imports near the existing PDF-related imports (after line 17 `from auto_a11y.models.pdf_document import …`):
 
 ```python
+from pathlib import Path
+
 from auto_a11y.pdf.issue_map_counts import PdfIssueCounts, count_issues
 from auto_a11y.pdf.storage import PdfStorage
 ```
-
-(Verify `Path` and `get_app_config` are already imported; add if missing.)
 
 In `view_project` at lines 520-553, the per-website loop already produces `website_stats[website.id] = {'violations': ..., 'warnings': ...}` from the test_results aggregation. We extend it to add audited PDFs for each website.
 

@@ -384,34 +384,34 @@
     };
 
     /**
-     * Render the right-pane issue list from issue_map.json. Each card
-     * carries data-issue-id matching the overlay rect on the canvas, so
-     * connector lines can resolve both ends. We don't try to merge with
-     * the existing auto_a11y violation list below — the two come from
-     * different audit engines and can disagree; users want to see both
-     * and triangulate.
+     * Render the right-pane issue list from issue_map.json. Cards mirror
+     * pdfMax's ViewerSidebar 1:1 — single-element groups render as flat
+     * cards with element-tag/index lines; multi-element groups collapse
+     * into an accordion summary. Cards keep data-issue-id matching the
+     * overlay rect on the canvas so the connector-line code resolves
+     * both ends.
+     *
+     * The auto_a11y rich-report violation list below this panel comes
+     * from a different audit engine and can disagree; we deliberately
+     * don't merge.
      */
     PdfViewer.prototype._renderIssueList = function () {
         if (!this.issueListEl) return;
         this.issueListEl.innerHTML = "";
 
-        var totalIssues = 0;
-        this.issuesByPage.forEach(function (arr) { totalIssues += arr.length; });
-
-        if (totalIssues === 0) {
+        if (this.allIssues.length === 0) {
             if (this.issueListEmptyEl) this.issueListEmptyEl.hidden = false;
             return;
         }
         if (this.issueListEmptyEl) this.issueListEmptyEl.hidden = true;
 
-        // Flatten + group by page for predictable visual order.
-        var pages = Array.from(this.issuesByPage.keys()).sort(function (a, b) { return a - b; });
-        for (var p = 0; p < pages.length; p++) {
-            var pageNum = pages[p];
-            var arr = this.issuesByPage.get(pageNum);
-            for (var i = 0; i < arr.length; i++) {
-                this.issueListEl.appendChild(this._buildIssueCard(arr[i]));
-            }
+        var groups = groupIssues(this.allIssues);
+        for (var g = 0; g < groups.length; g++) {
+            var grp = groups[g];
+            var node = grp.isMulti
+                ? this._buildIssueGroupCard(grp)
+                : this._buildIssueCard(grp.issues[0]);
+            this.issueListEl.appendChild(node);
         }
     };
 

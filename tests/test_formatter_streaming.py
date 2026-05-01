@@ -23,8 +23,7 @@ from auto_a11y.reporting.formatters import (
 class TestBaseFormatterStreaming:
     """Verify the abstract streaming methods on BaseFormatter."""
 
-    def __init__(self) -> None:
-        self.formatter = BaseFormatter(config={})
+    formatter = BaseFormatter(config={})
 
     def setup_method(self) -> None:
         self.formatter = BaseFormatter(config={})
@@ -82,10 +81,9 @@ class _FakeTestResult:
 class TestCSVFormatterStreaming:
     """CSVFormatter.begin / append_page / finalize / cleanup."""
 
-    def __init__(self) -> None:
-        self.tmpdir = ''
-        self.outfile = ''
-        self.formatter = CSVFormatter(config={})
+    tmpdir = ""
+    outfile = ""
+    formatter = CSVFormatter(config={})
 
     def setup_method(self) -> None:
         self.tmpdir = tempfile.mkdtemp()
@@ -180,10 +178,9 @@ class TestCSVFormatterStreaming:
 class TestJSONFormatterStreaming:
     """JSONFormatter.begin / append_page / finalize / cleanup."""
 
-    def __init__(self) -> None:
-        self.tmpdir = ''
-        self.outfile = ''
-        self.formatter = JSONFormatter(config={})
+    tmpdir = ""
+    outfile = ""
+    formatter = JSONFormatter(config={})
 
     def setup_method(self) -> None:
         self.tmpdir = tempfile.mkdtemp()
@@ -271,10 +268,9 @@ class TestJSONFormatterStreaming:
 class TestHTMLFormatterStreaming:
     """HTMLFormatter.begin / append_page / finalize / cleanup."""
 
-    def __init__(self) -> None:
-        self.tmpdir = ''
-        self.outfile = ''
-        self.formatter = HTMLFormatter(config={})
+    tmpdir = ""
+    outfile = ""
+    formatter = HTMLFormatter(config={})
 
     def setup_method(self) -> None:
         self.tmpdir = tempfile.mkdtemp()
@@ -340,10 +336,9 @@ class TestHTMLFormatterStreaming:
 class TestExcelFormatterStreaming:
     """ExcelFormatter.begin / append_page / finalize / cleanup."""
 
-    def __init__(self) -> None:
-        self.tmpdir = ''
-        self.outfile = ''
-        self.formatter = ExcelFormatter(config={})
+    tmpdir = ""
+    outfile = ""
+    formatter = ExcelFormatter(config={})
 
     def setup_method(self) -> None:
         self.tmpdir = tempfile.mkdtemp()
@@ -419,10 +414,9 @@ def _has_weasyprint() -> bool:
 class TestPDFFormatterStreaming:
     """PDFFormatter.begin / append_page / finalize / cleanup."""
 
-    def __init__(self) -> None:
-        self.tmpdir = ''
-        self.outfile = ''
-        self.formatter = PDFFormatter(config={})
+    tmpdir = ""
+    outfile = ""
+    formatter = PDFFormatter(config={})
 
     def setup_method(self) -> None:
         self.tmpdir = tempfile.mkdtemp()

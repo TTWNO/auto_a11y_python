@@ -70,6 +70,27 @@
         </div>
     </div>
 
+    <!-- PDFs (additive nav link, Phase 9.7) -->
+    <div class="card mb-3">
+        <div class="card-body py-2">
+            <a href="{{ url_for('pdf.list_for_project', project_id=project.id) }}" class="text-decoration-none d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-file-earmark-pdf" aria-hidden="true"></i> {{ ftl('pdf-nav-link') }}</span>
+                <span class="badge badge-info" aria-label="{{ ftl('pdf-nav-link-count-aria', count=pdf_count or 0) }}">{{ pdf_count or 0 }}</span>
+            </a>
+            {% if pdf_status_counts and pdf_status_counts.total > 0 %}
+            <p class="small text-muted mb-0 mt-1" aria-live="polite">
+                {{ ftl('pdf-nav-audit-progress', audited=pdf_status_counts.audited or 0, total=pdf_status_counts.total) }}
+                {% if pdf_status_counts.auditing and pdf_status_counts.auditing > 0 %}
+                · <span class="text-info-custom">{{ ftl('pdf-nav-audit-running', count=pdf_status_counts.auditing) }}</span>
+                {% endif %}
+                {% if pdf_status_counts.audit_failed and pdf_status_counts.audit_failed > 0 %}
+                · <span class="text-severity-high">{{ ftl('pdf-nav-audit-failed', count=pdf_status_counts.audit_failed) }}</span>
+                {% endif %}
+            </p>
+            {% endif %}
+        </div>
+    </div>
+
     <!-- Websites -->
     <section class="card mb-4" aria-labelledby="websites-heading">
         <div class="card-header d-flex justify-content-between align-items-center">

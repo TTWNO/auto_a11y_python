@@ -4,6 +4,8 @@
 - [ ] Check modals manually
 - [ ] Focus indicator
 - [ ] Integrate dictiphone
+- [ ] Fix report gen (might be MacOS)
+- [ ] Check multiple pages and test them together
 
     Yes, absolutely. Claude Code sessions persist — you can close the terminal
     or press Ctrl+C and come back later. When you resume, the conversation      

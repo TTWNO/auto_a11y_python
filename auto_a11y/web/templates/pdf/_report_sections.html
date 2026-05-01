@@ -1,0 +1,919 @@
+{# Document inventory sections (pdfMax §2-13).
+#
+# Reads `report_sections` (a dict[str, object]) from the latest
+# TestResult.metadata. Each section is a `<details>` block, all
+# collapsed by default so the detail page stays scannable. Empty
+# sections still render a heading + "no data" copy so the user knows
+# the audit checked.
+#
+# Required context:
+#   report_sections — dict the audit pipeline emitted.
+#   pdf — PdfDocument (used for the image-inventory thumbnail URL).
+#}
+
+{% if report_sections %}
+<section class="pdf-inventory-master mt-4"
+         aria-labelledby="pdf-inventory-master-heading">
+    <h3 id="pdf-inventory-master-heading" class="h5 mb-2">
+        {{ ftl('pdf-inventory-master-heading') }}
+    </h3>
+    <p class="text-muted small">
+        {{ ftl('pdf-inventory-master-intro') }}
+    </p>
+
+    {# ----- Executive summary (Phase C front matter) ----- #}
+    {% set es = report_sections.get('executive_summary') %}
+    {% if es is mapping %}
+    <section class="pdf-inventory-exec-summary mb-3"
+             aria-labelledby="pdf-inventory-exec-summary-heading">
+        <h4 id="pdf-inventory-exec-summary-heading" class="h6">
+            {{ ftl('pdf-inventory-exec-summary-heading') }}
+        </h4>
+        <p>
+            {% if es.get('verdict') == 'PASS' %}
+                {{ ftl('pdf-inventory-exec-summary-verdict-pass',
+                       total=es.get('total_checks', 0)) }}
+            {% elif es.get('verdict') == 'WARN' %}
+                {{ ftl('pdf-inventory-exec-summary-verdict-warn',
+                       fail=es.get('fail_count', 0),
+                       warn=es.get('warn_count', 0)) }}
+            {% elif es.get('verdict') == 'FAIL' %}
+                {{ ftl('pdf-inventory-exec-summary-verdict-fail',
+                       fail=es.get('fail_count', 0),
+                       warn=es.get('warn_count', 0)) }}
+            {% else %}
+                {{ ftl('pdf-inventory-exec-summary-verdict-not-tested') }}
+            {% endif %}
+        </p>
+        {% if es.get('top_issues') %}
+        <h5 class="h6">{{ ftl('pdf-inventory-exec-summary-top-issues') }}</h5>
+        <ol class="pdf-inventory-exec-summary-issues">
+            {% for issue in es.get('top_issues', []) %}
+            <li>
+                <strong>{{ issue.get('name') }}</strong>
+                <small class="text-muted">
+                    {% if issue.get('fail') %}
+                    <span class="badge badge-high">
+                        {{ ftl('pdf-inventory-exec-summary-fail-count',
+                               count=issue.get('fail', 0)) }}
+                    </span>
+                    {% endif %}
+                    {% if issue.get('warn') %}
+                    <span class="badge badge-medium">
+                        {{ ftl('pdf-inventory-exec-summary-warn-count',
+                               count=issue.get('warn', 0)) }}
+                    </span>
+                    {% endif %}
+                </small>
+            </li>
+            {% endfor %}
+        </ol>
+        {% endif %}
+    </section>
+    {% endif %}
+
+    {# ----- §2 Tag Tree ----- #}
+    {% set tt = report_sections.get('tag_tree') %}
+    {% if tt is mapping %}
+    <details class="pdf-inventory-section">
+        <summary>
+            {{ ftl('pdf-inventory-tag-tree-heading') }}
+            <span class="badge badge-subtle">
+                {{ ftl('pdf-inventory-tag-tree-total',
+                       count=tt.get('total_elements', 0)) }}
+            </span>
+        </summary>
+        <p class="text-muted small">{{ ftl('pdf-inventory-tag-tree-intro') }}</p>
+        {% if tt.get('rows') %}
+        <table class="pdf-report-table pdf-inventory-tag-tree-table">
+            <thead>
+                <tr>
+                    <th scope="col">{{ ftl('pdf-inventory-tag-tree-col-tag') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-tag-tree-col-text') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-tag-tree-col-alt') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-tag-tree-col-lang') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in tt.get('rows', []) %}
+                <tr>
+                    <th scope="row">
+                        <span style="display:inline-block; width: {{ row.get('depth', 0) }}rem;"></span>
+                        <code>{{ row.get('tag', '') }}</code>
+                        {% if row.get('custom_tag') and row.get('custom_tag') != row.get('tag') %}
+                        <small class="text-muted">({{ row.get('custom_tag') }})</small>
+                        {% endif %}
+                    </th>
+                    <td>{{ row.get('text_preview', '') }}</td>
+                    <td>{% if row.get('alt_text') %}{{ row.get('alt_text') }}{% endif %}</td>
+                    <td>{% if row.get('lang') %}<code>{{ row.get('lang') }}</code>{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted">{{ ftl('pdf-inventory-empty') }}</p>
+        {% endif %}
+    </details>
+    {% endif %}
+
+    {# ----- §3 Reading Order ----- #}
+    {% set ro = report_sections.get('reading_order') %}
+    {% if ro is mapping %}
+    <details class="pdf-inventory-section">
+        <summary>
+            {{ ftl('pdf-inventory-reading-order-heading') }}
+            <span class="badge badge-subtle">{{ ro.get('items', [])|length }}</span>
+        </summary>
+        <p class="text-muted small">{{ ftl('pdf-inventory-reading-order-intro') }}</p>
+        {% if ro.get('items') %}
+        <table class="pdf-report-table pdf-inventory-reading-order-table">
+            <thead>
+                <tr>
+                    <th scope="col">{{ ftl('pdf-inventory-reading-order-col-num') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-reading-order-col-tag') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-reading-order-col-text') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in ro.get('items', []) %}
+                <tr>
+                    <th scope="row">{{ loop.index }}</th>
+                    <td><code>{{ item.get('tag', '') }}</code></td>
+                    <td>{{ item.get('text_preview', '') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted">{{ ftl('pdf-inventory-empty') }}</p>
+        {% endif %}
+    </details>
+    {% endif %}
+
+    {# ----- §4 Image Inventory ----- #}
+    {% set ii = report_sections.get('image_inventory') %}
+    {% if ii is mapping %}
+    {% set figures = ii.get('figures', []) %}
+    {% set extracted = ii.get('extracted', []) %}
+    <details class="pdf-inventory-section">
+        <summary>
+            {{ ftl('pdf-inventory-image-inventory-heading') }}
+            <span class="badge badge-subtle">{{ figures|length }}</span>
+        </summary>
+        <p class="text-muted small">{{ ftl('pdf-inventory-image-inventory-intro') }}</p>
+        {% if figures %}
+        <table class="pdf-report-table">
+            <thead>
+                <tr>
+                    <th scope="col">{{ ftl('pdf-inventory-image-inventory-col-tag') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-image-inventory-col-alt') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-image-inventory-col-actual') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-image-inventory-col-lang') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fig in figures %}
+                <tr>
+                    <th scope="row"><code>{{ fig.get('tag', '') }}</code></th>
+                    <td>
+                        {% if fig.get('has_alt') %}
+                        {{ fig.get('alt_text') }}
+                        {% else %}
+                        <span class="badge badge-high">
+                            {{ ftl('pdf-inventory-full-alt-text-missing') }}
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>{{ fig.get('actual_text') or '' }}</td>
+                    <td>{% if fig.get('lang') %}<code>{{ fig.get('lang') }}</code>{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted">{{ ftl('pdf-inventory-empty') }}</p>
+        {% endif %}
+
+        {% if extracted %}
+        <h6 class="mt-3">{{ ftl('pdf-inventory-image-inventory-extracted-heading') }}</h6>
+        <table class="pdf-report-table">
+            <thead>
+                <tr>
+                    <th scope="col">{{ ftl('pdf-inventory-image-inventory-extracted-col-num') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-image-inventory-extracted-col-name') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-image-inventory-extracted-col-size') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ex in extracted %}
+                <tr>
+                    <th scope="row">{{ ex.get('index') }}</th>
+                    <td>
+                        <a href="{{ url_for('pdf.image', pdf_document_id=pdf.id, image_name=ex.get('filename')) }}"
+                           target="_blank"
+                           rel="noopener">
+                            <code>{{ ex.get('filename') }}</code>
+                        </a>
+                    </td>
+                    <td>{{ ex.get('width') }} × {{ ex.get('height') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </details>
+    {% endif %}
+
+    {# ----- §7 Heading Map ----- #}
+    {% set hm = report_sections.get('heading_map') %}
+    {% if hm is mapping %}
+    <details class="pdf-inventory-section">
+        <summary>
+            {{ ftl('pdf-inventory-heading-map-heading') }}
+            <span class="badge badge-subtle">{{ hm.get('headings', [])|length }}</span>
+            {% if hm.get('gaps') %}
+            <span class="badge badge-medium">
+                {{ hm.get('gaps')|length }}
+            </span>
+            {% endif %}
+        </summary>
+        <p class="text-muted small">{{ ftl('pdf-inventory-heading-map-intro') }}</p>
+        {% if hm.get('gaps') %}
+        <h6>{{ ftl('pdf-inventory-heading-map-gaps-heading') }}</h6>
+        <ul>
+            {% for gap in hm.get('gaps', []) %}
+            <li>
+                {{ ftl('pdf-inventory-heading-map-gap',
+                       **{'from': gap.get('from_level'),
+                          'to': gap.get('to_level'),
+                          'text': gap.get('at_text', '')}) }}
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% if hm.get('headings') %}
+        <table class="pdf-report-table">
+            <thead>
+                <tr>
+                    <th scope="col">{{ ftl('pdf-inventory-heading-map-col-level') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-heading-map-col-text') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for h in hm.get('headings', []) %}
+                <tr>
+                    <th scope="row">
+                        <span style="display:inline-block; width: {{ ((h.get('level', 1) - 1) * 1) }}rem;"></span>
+                        <code>{{ h.get('tag', '') }}</code>
+                    </th>
+                    <td>{{ h.get('text_preview', '') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted">{{ ftl('pdf-inventory-empty') }}</p>
+        {% endif %}
+    </details>
+    {% endif %}
+
+    {# ----- §8 Full Alt Text ----- #}
+    {% set fa = report_sections.get('full_alt_text') %}
+    {% if fa is mapping %}
+    <details class="pdf-inventory-section">
+        <summary>
+            {{ ftl('pdf-inventory-full-alt-text-heading') }}
+            <span class="badge badge-subtle">{{ fa.get('items', [])|length }}</span>
+        </summary>
+        <p class="text-muted small">{{ ftl('pdf-inventory-full-alt-text-intro') }}</p>
+        {% if fa.get('items') %}
+        <table class="pdf-report-table">
+            <thead>
+                <tr>
+                    <th scope="col">{{ ftl('pdf-inventory-full-alt-text-col-tag') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-full-alt-text-col-alt') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-full-alt-text-col-actual') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in fa.get('items', []) %}
+                <tr>
+                    <th scope="row"><code>{{ item.get('tag', '') }}</code></th>
+                    <td>
+                        {% if item.get('has_alt') %}
+                        {{ item.get('alt_text') }}
+                        {% else %}
+                        <em>{{ ftl('pdf-inventory-full-alt-text-missing') }}</em>
+                        {% endif %}
+                    </td>
+                    <td>{{ item.get('actual_text') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted">{{ ftl('pdf-inventory-empty') }}</p>
+        {% endif %}
+    </details>
+    {% endif %}
+
+    {# ----- §10 Color and Contrast ----- #}
+    {% set cc = report_sections.get('color_contrast') %}
+    {% if cc is mapping %}
+    <details class="pdf-inventory-section">
+        <summary>
+            {{ ftl('pdf-inventory-color-contrast-heading') }}
+            <span class="badge badge-subtle">{{ cc.get('rows', [])|length }}</span>
+        </summary>
+        <p class="text-muted small">{{ ftl('pdf-inventory-color-contrast-intro') }}</p>
+        {% if cc.get('rows') %}
+        <table class="pdf-report-table">
+            <thead>
+                <tr>
+                    <th scope="col">{{ ftl('pdf-inventory-color-contrast-col-fg') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-color-contrast-col-bg') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-color-contrast-col-ratio') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-color-contrast-col-sizes') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-color-contrast-col-count') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-color-contrast-col-pages') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-color-contrast-col-sample') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in cc.get('rows', []) %}
+                {% set ratio_class = 'badge-pass' if row.get('passes_aa_normal') else ('badge-medium' if row.get('passes_aa_large') else 'badge-high') %}
+                <tr>
+                    <th scope="row">
+                        <span class="pdf-color-swatch"
+                              style="background: {{ row.get('fg_hex') }};"
+                              aria-hidden="true"></span>
+                        <code>{{ row.get('fg_hex') }}</code>
+                    </th>
+                    <td>
+                        <span class="pdf-color-swatch"
+                              style="background: {{ row.get('bg_hex') }};"
+                              aria-hidden="true"></span>
+                        <code>{{ row.get('bg_hex') }}</code>
+                    </td>
+                    <td>
+                        <span class="badge {{ ratio_class }}">
+                            {{ row.get('contrast_ratio') }}:1
+                        </span>
+                    </td>
+                    <td>{{ '%.0f' | format(row.get('size_min', 0)) }}–{{ '%.0f' | format(row.get('size_max', 0)) }}</td>
+                    <td>{{ row.get('count') }}</td>
+                    <td>{{ row.get('page_count') }}</td>
+                    <td>{{ row.get('sample') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted">{{ ftl('pdf-inventory-empty') }}</p>
+        {% endif %}
+    </details>
+    {% endif %}
+
+    {# ----- §11 Language of Parts ----- #}
+    {% set la = report_sections.get('language_analysis') %}
+    {% if la is mapping %}
+    <details class="pdf-inventory-section">
+        <summary>
+            {{ ftl('pdf-inventory-language-analysis-heading') }}
+            {% if la.get('declared_lang') %}
+            <span class="badge badge-subtle">
+                <code>{{ la.get('declared_lang') }}</code>
+            </span>
+            {% endif %}
+            {% if la.get('spans') %}
+            <span class="badge badge-info">{{ la.get('spans')|length }}</span>
+            {% endif %}
+        </summary>
+        <p class="text-muted small">{{ ftl('pdf-inventory-language-analysis-intro') }}</p>
+        <p>
+            {% if la.get('declared_lang') %}
+                {{ ftl('pdf-inventory-language-analysis-declared',
+                       lang=la.get('declared_lang')) }}
+            {% else %}
+                {{ ftl('pdf-inventory-language-analysis-declared-missing') }}
+            {% endif %}
+        </p>
+        {% if la.get('spans') %}
+        <h6>{{ ftl('pdf-inventory-language-analysis-spans-heading') }}</h6>
+        <table class="pdf-report-table">
+            <thead>
+                <tr>
+                    <th scope="col">{{ ftl('pdf-inventory-language-analysis-col-lang') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-language-analysis-col-tag') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-language-analysis-col-text') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for span in la.get('spans', []) %}
+                <tr>
+                    <th scope="row"><code>{{ span.get('lang') }}</code></th>
+                    <td><code>{{ span.get('tag') }}</code></td>
+                    <td>{{ span.get('text_preview') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted">{{ ftl('pdf-inventory-language-analysis-no-spans') }}</p>
+        {% endif %}
+    </details>
+    {% endif %}
+
+    {# ----- §5 Link Inventory ----- #}
+    {% set li = report_sections.get('link_inventory') %}
+    {% if li is mapping %}
+    {% set tagged_links = li.get('tagged_links', []) %}
+    {% set annotation_links = li.get('annotation_links', []) %}
+    <details class="pdf-inventory-section">
+        <summary>
+            {{ ftl('pdf-inventory-link-inventory-heading') }}
+            <span class="badge badge-subtle">{{ tagged_links|length }}</span>
+        </summary>
+        <p class="text-muted small">{{ ftl('pdf-inventory-link-inventory-intro') }}</p>
+        {% if tagged_links %}
+        <h6>{{ ftl('pdf-inventory-link-inventory-tagged-heading') }}</h6>
+        <table class="pdf-report-table">
+            <thead>
+                <tr>
+                    <th scope="col">{{ ftl('pdf-inventory-link-inventory-col-text') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-link-inventory-col-url') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-link-inventory-col-lang') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for link in tagged_links %}
+                <tr>
+                    <th scope="row">
+                        {% if link.get('has_alt') %}
+                        {{ link.get('text_preview') }}
+                        {% else %}
+                        <em>{{ link.get('text_preview') }}</em>
+                        {% endif %}
+                    </th>
+                    <td>
+                        {% if link.get('url') %}
+                        <code>{{ link.get('url') }}</code>
+                        {% else %}
+                        <span class="text-muted">{{ ftl('pdf-inventory-link-inventory-no-url') }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{% if link.get('lang') %}<code>{{ link.get('lang') }}</code>{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+        {% if annotation_links %}
+        <h6 class="mt-3">{{ ftl('pdf-inventory-link-inventory-annotation-heading') }}</h6>
+        <table class="pdf-report-table">
+            <thead>
+                <tr>
+                    <th scope="col">{{ ftl('pdf-inventory-link-inventory-col-page') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-link-inventory-col-url') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-link-inventory-col-contents') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ann in annotation_links %}
+                <tr>
+                    <th scope="row">{{ ann.get('page') }}</th>
+                    <td><code>{{ ann.get('uri') }}</code></td>
+                    <td>{{ ann.get('contents') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+        {% if not tagged_links and not annotation_links %}
+        <p class="text-muted">{{ ftl('pdf-inventory-empty') }}</p>
+        {% endif %}
+    </details>
+    {% endif %}
+
+    {# ----- §6 Form Field Inventory ----- #}
+    {% set form = report_sections.get('form_inventory') %}
+    {% if form is mapping %}
+    <details class="pdf-inventory-section">
+        <summary>
+            {{ ftl('pdf-inventory-form-inventory-heading') }}
+            <span class="badge badge-subtle">{{ form.get('total', 0) }}</span>
+            {% if form.get('missing_tu', 0) %}
+            <span class="badge badge-medium">{{ form.get('missing_tu') }}</span>
+            {% endif %}
+        </summary>
+        <p class="text-muted small">{{ ftl('pdf-inventory-form-inventory-intro') }}</p>
+        {% if form.get('total', 0) > 0 %}
+        <p>
+            {{ ftl('pdf-inventory-form-inventory-summary',
+                   total=form.get('total', 0),
+                   labeled=form.get('labeled', 0),
+                   required=form.get('required_count', 0)) }}
+        </p>
+        <table class="pdf-report-table">
+            <thead>
+                <tr>
+                    <th scope="col">{{ ftl('pdf-inventory-form-inventory-col-name') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-form-inventory-col-type') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-form-inventory-col-accessible-name') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-form-inventory-col-required') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-form-inventory-col-readonly') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-form-inventory-col-value') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for field in form.get('fields', []) %}
+                <tr>
+                    <th scope="row"><code>{{ field.get('name') or '—' }}</code></th>
+                    <td>{{ field.get('type_label') }}</td>
+                    <td>
+                        {% if field.get('has_accessible_name') %}
+                        {{ field.get('accessible_name') }}
+                        {% else %}
+                        <span class="badge badge-high">
+                            {{ ftl('pdf-inventory-form-inventory-missing-tu') }}
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>{% if field.get('is_required') %}{{ ftl('pdf-inventory-form-inventory-yes') }}{% endif %}</td>
+                    <td>{% if field.get('is_read_only') %}{{ ftl('pdf-inventory-form-inventory-yes') }}{% endif %}</td>
+                    <td>{{ field.get('value_preview') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted">{{ ftl('pdf-inventory-form-inventory-no-fields') }}</p>
+        {% endif %}
+    </details>
+    {% endif %}
+
+    {# ----- §12 WCAG 2.2 Mapping (full) ----- #}
+    {% set wm = report_sections.get('wcag_mapping') %}
+    {% if wm is mapping %}
+    <details class="pdf-inventory-section">
+        <summary>
+            {{ ftl('pdf-inventory-wcag-mapping-heading') }}
+            <span class="badge badge-subtle">{{ wm.get('rows', [])|length }}</span>
+        </summary>
+        <p class="text-muted small">{{ ftl('pdf-inventory-wcag-mapping-intro') }}</p>
+        {% if wm.get('rows') %}
+        <table class="pdf-report-table">
+            <thead>
+                <tr>
+                    <th scope="col">{{ ftl('pdf-inventory-wcag-mapping-col-criterion') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-wcag-mapping-col-level') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-wcag-mapping-col-result') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-wcag-mapping-col-checks') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in wm.get('rows', []) %}
+                {% set verdict_class = {
+                    'PASS': 'badge-pass',
+                    'WARN': 'badge-medium',
+                    'FAIL': 'badge-high',
+                    'INFO': 'badge-info',
+                    'MANUAL': 'badge-subtle',
+                    'NOT_TESTED': 'badge-subtle'
+                }.get(row.get('verdict', ''), 'badge-subtle') %}
+                {% set verdict_label = {
+                    'PASS': ftl('pdf-inventory-wcag-mapping-verdict-pass'),
+                    'WARN': ftl('pdf-inventory-wcag-mapping-verdict-warn'),
+                    'FAIL': ftl('pdf-inventory-wcag-mapping-verdict-fail'),
+                    'INFO': ftl('pdf-inventory-wcag-mapping-verdict-info'),
+                    'MANUAL': ftl('pdf-inventory-wcag-mapping-verdict-manual'),
+                    'NOT_TESTED': ftl('pdf-inventory-wcag-mapping-verdict-not-tested')
+                }.get(row.get('verdict', ''), row.get('verdict', '')) %}
+                <tr>
+                    <th scope="row">{{ row.get('criterion') }}</th>
+                    <td><span class="badge badge-subtle">{{ row.get('level') }}</span></td>
+                    <td><span class="badge {{ verdict_class }}">{{ verdict_label }}</span></td>
+                    <td>
+                        {% if row.get('checks') %}
+                        <small>{{ row.get('checks')|join(', ') }}</small>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted">{{ ftl('pdf-inventory-empty') }}</p>
+        {% endif %}
+    </details>
+    {% endif %}
+
+    {# ----- §14 Visual Reading Order ----- #}
+    {% set vro = report_sections.get('visual_reading_order') %}
+    {% if vro is mapping %}
+    <details class="pdf-inventory-section">
+        <summary>
+            {{ ftl('pdf-inventory-visual-reading-order-heading') }}
+            {% if vro.get('total', 0) %}
+            <span class="badge badge-medium">{{ vro.get('total') }}</span>
+            {% else %}
+            <span class="badge badge-pass">
+                {{ ftl('pdf-inventory-visual-reading-order-no-mismatches') }}
+            </span>
+            {% endif %}
+        </summary>
+        <p class="text-muted small">{{ ftl('pdf-inventory-visual-reading-order-intro') }}</p>
+        {% if vro.get('rows') %}
+        <table class="pdf-report-table">
+            <thead>
+                <tr>
+                    <th scope="col">{{ ftl('pdf-inventory-visual-reading-order-col-struct') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-visual-reading-order-col-visual') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in vro.get('rows', []) %}
+                <tr>
+                    <th scope="row">
+                        <ol class="pdf-inventory-visual-reading-order-pair">
+                            <li>{{ row.get('struct_first_text') }}</li>
+                            <li>{{ row.get('struct_second_text') }}</li>
+                        </ol>
+                    </th>
+                    <td>
+                        <ol class="pdf-inventory-visual-reading-order-pair">
+                            <li>{{ row.get('visual_first_text') }}</li>
+                            <li>{{ row.get('visual_second_text') }}</li>
+                        </ol>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted">
+            {{ ftl('pdf-inventory-visual-reading-order-clean') }}
+        </p>
+        {% endif %}
+    </details>
+    {% endif %}
+
+    {# ----- §9 Exported Images gallery ----- #}
+    {% set ei = report_sections.get('exported_images') %}
+    {% if ei is mapping %}
+    <details class="pdf-inventory-section">
+        <summary>
+            {{ ftl('pdf-inventory-exported-images-heading') }}
+            <span class="badge badge-subtle">{{ ei.get('total', 0) }}</span>
+        </summary>
+        <p class="text-muted small">{{ ftl('pdf-inventory-exported-images-intro') }}</p>
+        {% if ei.get('rows') %}
+        <ul class="pdf-inventory-exported-images-grid">
+            {% for row in ei.get('rows', []) %}
+            <li class="pdf-inventory-exported-image">
+                <figure>
+                    <img src="{{ url_for('pdf.image', pdf_document_id=pdf.id, image_name=row.get('filename')) }}"
+                         alt="{{ row.get('alt_text') or '' }}"
+                         loading="lazy"
+                         width="{{ row.get('width', 0) }}"
+                         height="{{ row.get('height', 0) }}"/>
+                    <figcaption>
+                        <span class="text-muted small">
+                            #{{ row.get('index') }} — {{ row.get('width') }}×{{ row.get('height') }}
+                        </span>
+                        {% if row.get('has_alt') %}
+                        <span class="d-block">{{ row.get('alt_text') }}</span>
+                        {% else %}
+                        <span class="d-block">
+                            <em class="text-muted">
+                                {{ ftl('pdf-inventory-exported-images-no-alt') }}
+                            </em>
+                        </span>
+                        {% endif %}
+                    </figcaption>
+                </figure>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted">{{ ftl('pdf-inventory-exported-images-empty') }}</p>
+        {% endif %}
+    </details>
+    {% endif %}
+
+    {# ----- §15 Images of Text (AI placeholder) ----- #}
+    {% set iot = report_sections.get('images_of_text') %}
+    {% if iot is mapping %}
+    <details class="pdf-inventory-section">
+        <summary>
+            {{ ftl('pdf-inventory-images-of-text-heading') }}
+            {% if not iot.get('available') %}
+            <span class="badge badge-info">
+                {{ ftl('pdf-inventory-images-of-text-ai-required') }}
+            </span>
+            {% endif %}
+        </summary>
+        <p class="text-muted small">{{ ftl('pdf-inventory-images-of-text-intro') }}</p>
+        {% if not iot.get('available') %}
+        <div class="alert alert-info" role="status">
+            {{ ftl('pdf-inventory-images-of-text-not-configured') }}
+        </div>
+        {% endif %}
+    </details>
+    {% endif %}
+
+    {# ----- §16 PDF Version & Structure Recommendations ----- #}
+    {% set vr = report_sections.get('version_recommendations') %}
+    {% if vr is mapping %}
+    <details class="pdf-inventory-section">
+        <summary>
+            {{ ftl('pdf-inventory-version-recommendations-heading') }}
+            {% if vr.get('pdf_version') %}
+            <span class="badge badge-subtle">PDF {{ vr.get('pdf_version') }}</span>
+            {% endif %}
+        </summary>
+        <p class="text-muted small">{{ ftl('pdf-inventory-version-recommendations-intro') }}</p>
+        {% if vr.get('is_pdf2') %}
+        <p>{{ ftl('pdf-inventory-version-recommendations-pdf2',
+                  version=vr.get('pdf_version', '')) }}</p>
+        {% if vr.get('used_pdf2_tags') %}
+        <p>
+            {{ ftl('pdf-inventory-version-recommendations-pdf2-used',
+                   tags=vr.get('used_pdf2_tags')|join(', ')) }}
+        </p>
+        {% else %}
+        <p class="text-muted">
+            {{ ftl('pdf-inventory-version-recommendations-pdf2-unused') }}
+        </p>
+        {% endif %}
+        {% else %}
+        <p>{{ ftl('pdf-inventory-version-recommendations-pdf17',
+                  version=vr.get('pdf_version', '?')) }}</p>
+        <p>{{ ftl('pdf-inventory-version-recommendations-upgrade') }}</p>
+        {% endif %}
+        <h6 class="mt-3">{{ ftl('pdf-inventory-version-recommendations-sect-heading') }}</h6>
+        <p>
+            {{ ftl('pdf-inventory-version-recommendations-sect-current',
+                   count=vr.get('sect_count', 0)) }}
+        </p>
+        {% if vr.get('section_recommendations') %}
+        <p>{{ ftl('pdf-inventory-version-recommendations-sect-suggested') }}</p>
+        <ul>
+            {% for s in vr.get('section_recommendations', []) %}
+            <li>
+                <code>&lt;Sect Title="{{ s.get('heading') }}"&gt;</code>
+                <small class="text-muted">
+                    ({{ s.get('tag') }} + {{ s.get('child_count') }} elements)
+                </small>
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </details>
+    {% endif %}
+
+    {# ----- §13 Font Analysis (full) ----- #}
+    {% set fnt = report_sections.get('font_analysis') %}
+    {% if fnt is mapping %}
+    <details class="pdf-inventory-section">
+        <summary>
+            {{ ftl('pdf-inventory-font-analysis-heading') }}
+            <span class="badge badge-subtle">{{ fnt.get('inventory', [])|length }}</span>
+        </summary>
+        <p class="text-muted small">{{ ftl('pdf-inventory-font-analysis-intro') }}</p>
+
+        {% if fnt.get('inventory') %}
+        <h6>{{ ftl('pdf-inventory-font-analysis-inventory-heading') }}</h6>
+        <table class="pdf-report-table">
+            <thead>
+                <tr>
+                    <th scope="col">{{ ftl('pdf-inventory-font-analysis-col-name') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-font-analysis-col-size') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-font-analysis-col-chars') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-font-analysis-col-pct') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-font-analysis-col-pages') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-font-analysis-col-style') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-font-analysis-col-category') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in fnt.get('inventory', []) %}
+                <tr>
+                    <th scope="row"><code>{{ f.get('name') }}</code></th>
+                    <td>
+                        {{ '%.0f' | format(f.get('size_min', 0)) }}–{{ '%.0f' | format(f.get('size_max', 0)) }}pt
+                    </td>
+                    <td>{{ f.get('char_count') }}</td>
+                    <td>{{ '%.1f' | format(f.get('char_pct', 0)) }}%</td>
+                    <td>{{ f.get('page_count') }}</td>
+                    <td>
+                        {% if f.get('is_italic') %}
+                        <span class="badge badge-subtle">{{ ftl('pdf-inventory-font-analysis-style-italic') }}</span>
+                        {% endif %}
+                        {% if f.get('is_bold') %}
+                        <span class="badge badge-subtle">{{ ftl('pdf-inventory-font-analysis-style-bold') }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if f.get('category') %}
+                        <span class="badge badge-medium">{{ f.get('category') }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if fnt.get('rotations') %}
+        <h6 class="mt-3">{{ ftl('pdf-inventory-font-analysis-rotations-heading') }}</h6>
+        <table class="pdf-report-table">
+            <thead>
+                <tr>
+                    <th scope="col">{{ ftl('pdf-inventory-font-analysis-rotations-col-angle') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-font-analysis-rotations-col-page') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-font-analysis-rotations-col-sample') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in fnt.get('rotations', []) %}
+                <tr>
+                    <th scope="row">{{ r.get('angle') }}°</th>
+                    <td>{{ r.get('page') }}</td>
+                    <td>{{ r.get('sample') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if fnt.get('italic_runs') %}
+        <h6 class="mt-3">{{ ftl('pdf-inventory-font-analysis-italic-runs-heading') }}</h6>
+        <table class="pdf-report-table">
+            <thead>
+                <tr>
+                    <th scope="col">{{ ftl('pdf-inventory-font-analysis-italic-runs-col-words') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-font-analysis-italic-runs-col-page') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-font-analysis-italic-runs-col-text') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for it in fnt.get('italic_runs', []) %}
+                <tr>
+                    <th scope="row">{{ it.get('word_count') }}</th>
+                    <td>{{ it.get('page') }}</td>
+                    <td><em>{{ it.get('text') }}</em></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if fnt.get('line_spacings') %}
+        <h6 class="mt-3">{{ ftl('pdf-inventory-font-analysis-line-spacings-heading') }}</h6>
+        <table class="pdf-report-table">
+            <thead>
+                <tr>
+                    <th scope="col">{{ ftl('pdf-inventory-font-analysis-line-spacings-col-size') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-font-analysis-line-spacings-col-leading') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-font-analysis-line-spacings-col-ratio') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ls in fnt.get('line_spacings', []) %}
+                <tr>
+                    <th scope="row">{{ ls.get('font_size') }}pt</th>
+                    <td>{{ ls.get('leading') }}pt</td>
+                    <td>{{ ls.get('ratio') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if fnt.get('alignments') %}
+        <h6 class="mt-3">{{ ftl('pdf-inventory-font-analysis-alignments-heading') }}</h6>
+        <table class="pdf-report-table">
+            <thead>
+                <tr>
+                    <th scope="col">{{ ftl('pdf-inventory-font-analysis-alignments-col-page') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-font-analysis-alignments-col-alignment') }}</th>
+                    <th scope="col">{{ ftl('pdf-inventory-font-analysis-alignments-col-lines') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in fnt.get('alignments', []) %}
+                <tr>
+                    <th scope="row">{{ a.get('page') }}</th>
+                    <td>{{ a.get('alignment') }}</td>
+                    <td>{{ a.get('line_count') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </details>
+    {% endif %}
+</section>
+{% endif %}

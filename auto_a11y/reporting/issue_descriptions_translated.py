@@ -110,6 +110,38 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
     return _apply_metadata(translated_desc, metadata)
 
 
+def _resolve_dotted_path(data: dict[str, Any], keys: list[str]) -> str | None:
+    """Walk a dotted key path (e.g. ``["currentElement", "tag"]``) through
+    nested dicts and return the stringified leaf value, or ``None``.
+
+    Uses ``dict.get`` exclusively (no ``isinstance`` narrowing) so
+    pyright strict mode does not produce ``Unknown`` from dict type
+    parameter narrowing.
+    """
+    if not keys:
+        return None
+    first: Any = data.get(keys[0])
+    if first is None:
+        return None
+    if len(keys) == 1:
+        return str(first)
+    # Second level
+    if not hasattr(first, 'get'):
+        return None
+    second: Any = first.get(keys[1])
+    if second is None:
+        return None
+    if len(keys) == 2:
+        return str(second)
+    # Third level (deepest used in practice)
+    if not hasattr(second, 'get'):
+        return None
+    third: Any = second.get(keys[2])
+    if third is None:
+        return None
+    return str(third)
+
+
 def _apply_metadata(desc: dict[str, Any], metadata: dict[str, Any] | None) -> dict[str, Any]:
     """Apply metadata substitution to description fields using {placeholder} syntax."""
     if not metadata:
@@ -224,15 +256,8 @@ def _apply_metadata(desc: dict[str, Any], metadata: dict[str, Any] | None) -> di
                 
                 parts = path.split('.')
                 
-                # Navigate through nested dict/objects
-                value = metadata
-                for part in parts:
-                    if isinstance(value, dict) and part in value:
-                        value = value[part]
-                    else:
-                        return match.group(0)  # Return original if path not found
-                
-                return str(value) if value is not None else match.group(0)
+                result = _resolve_dotted_path(metadata, parts)
+                return result if result is not None else match.group(0)
             
             text = re.sub(nested_pattern, replace_nested, text)
 

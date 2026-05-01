@@ -18,6 +18,8 @@ from dataclasses import dataclass, field
 
 from playwright.async_api import Page, Response
 
+from auto_a11y.core.async_compat import wait_for
+
 logger = logging.getLogger(__name__)
 
 
@@ -91,7 +93,7 @@ class CSSFocusCapture:
         for response in self._pending_responses:
             try:
                 url = response.url
-                css_text = await asyncio.wait_for(response.text(), timeout=2.0)
+                css_text = await wait_for(response.text(), timeout=2.0)
                 self._parse_focus_rules(css_text, url)
                 self.cache.captured_urls.add(url)
             except asyncio.TimeoutError:
@@ -116,7 +118,7 @@ class CSSFocusCapture:
             page: Playwright Page object
         """
         try:
-            inline_styles = await asyncio.wait_for(
+            inline_styles = await wait_for(
                 page.evaluate('''
                     () => {
                         const styles = [];

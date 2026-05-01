@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from auto_a11y.core.database import Database
     from auto_a11y.core.job_manager import JobManager
     from auto_a11y.core.scheduler import SchedulerService
+    from auto_a11y.testing.pdf_runner import PdfRunner
     from config import Config
 
 
@@ -49,6 +50,15 @@ def get_job_manager() -> JobManager:
 def get_scheduler() -> SchedulerService | None:
     """Return ``current_app.scheduler`` (may be ``None``)."""
     return cast("SchedulerService | None", getattr(current_app, "scheduler", None))
+
+
+def get_pdf_runner() -> PdfRunner | None:
+    """Return ``current_app.pdf_runner`` (a :class:`PdfRunner` instance, or ``None``).
+
+    The runner is set during :func:`auto_a11y.web.app.create_app`. May be
+    ``None`` in test contexts where the runner has not been wired up.
+    """
+    return cast("PdfRunner | None", getattr(current_app, "pdf_runner", None))
 
 
 def get_flask_app() -> Flask:

@@ -438,20 +438,27 @@ class TestStrictModeFormatErrors:
 # ---------------------------------------------------------------------------
 
 class TestStrictModeTranslateIssue:
+    """ftl_translate_issue never raises — it logs and falls back.
 
-    def test_unmapped_text_raises_in_strict(self, fluent_app: Any, monkeypatch: pytest.MonkeyPatch) -> None:
-        """In strict mode, inline text not in the JSON map raises."""
+    Translation coverage for inline issue descriptions is enforced by
+    the ``TestInlineIssueIdsCoverage`` tests below, not at runtime.
+    """
+
+    def test_unmapped_text_returns_original_in_strict(
+        self, fluent_app: Any, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """In strict mode, unmapped text logs a warning and returns the
+        original English text (no crash)."""
         import auto_a11y.web.fluent as fluent_mod
-        from auto_a11y.web.fluent import MissingTranslationError, ftl_translate_issue
+        from auto_a11y.web.fluent import ftl_translate_issue
 
         monkeypatch.setattr(fluent_mod, "_strict_mode", True)
-        # Force the JSON map to an empty dict so "any text" is unmapped
         monkeypatch.setattr(fluent_mod, "_inline_issue_ids", {})
 
         with fluent_app.test_request_context():
             session["language"] = "en"
-            with pytest.raises(MissingTranslationError, match="inline_issue_ids.json"):
-                ftl_translate_issue("Some untracked inline text")
+            result = ftl_translate_issue("Some untracked inline text")
+            assert result == "Some untracked inline text"
 
     def test_unmapped_text_non_strict_returns_original(self, fluent_app: Any, monkeypatch: pytest.MonkeyPatch) -> None:
         """Non-strict: unmapped text silently falls back (unchanged behavior)."""
@@ -475,6 +482,225 @@ class TestStrictModeTranslateIssue:
         monkeypatch.setattr(fluent_mod, "_strict_mode", True)
 
         assert ftl_translate_issue("") == ""
+
+    @pytest.mark.parametrize("text", [
+        # Dynamically interpolated (instance-specific counts/values)
+        "Heading is 56 characters, approaching recommended limit of 60",
+        (
+            "Element contains 5 list-like items using icon font bullets "
+            "(Font Awesome, Material Icons, etc.), but does not use proper "
+            "<ul>/<ol> and <li> markup"
+        ),
+        # Auto-generated catalog fallbacks
+        "Accessibility issue: lists_WarnListRoleOnList",
+        "An accessibility issue of type 'WarnFoo' was detected.",
+        "Issue ErrNewCode needs documentation",
+    ])
+    def test_dynamic_text_never_raises(
+        self, fluent_app: Any, monkeypatch: pytest.MonkeyPatch,
+        text: str,
+    ) -> None:
+        """Dynamic, interpolated, and fallback descriptions must never
+        crash the page — they return the original English text."""
+        import auto_a11y.web.fluent as fluent_mod
+        from auto_a11y.web.fluent import ftl_translate_issue
+
+        monkeypatch.setattr(fluent_mod, "_strict_mode", True)
+        monkeypatch.setattr(fluent_mod, "_inline_issue_ids", {})
+
+        with fluent_app.test_request_context():
+            session["language"] = "en"
+            result = ftl_translate_issue(text)
+            assert result == text
+
+    def test_unmapped_text_logs_warning_in_strict(
+        self, fluent_app: Any, monkeypatch: pytest.MonkeyPatch,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        """Strict mode logs a warning for unmapped text (for dev awareness)."""
+        import logging
+        import auto_a11y.web.fluent as fluent_mod
+        from auto_a11y.web.fluent import ftl_translate_issue
+
+        monkeypatch.setattr(fluent_mod, "_strict_mode", True)
+        monkeypatch.setattr(fluent_mod, "_inline_issue_ids", {})
+
+        with caplog.at_level(logging.WARNING, logger="auto_a11y.web.fluent"):
+            with fluent_app.test_request_context():
+                session["language"] = "en"
+                ftl_translate_issue("Unmapped text for logging test")
+
+        assert any("inline_issue_ids.json" in r.message for r in caplog.records)
+
+
+# ---------------------------------------------------------------------------
+# Tests: inline_issue_ids.json ↔ FTL coverage
+# ---------------------------------------------------------------------------
+
+class TestInlineIssueIdsCoverage:
+    """Validate that every key in inline_issue_ids.json maps to a real
+    FTL message in both EN and FR locale files, and that every static
+    issue description from the catalog has an entry in the JSON map."""
+
+    @staticmethod
+    def _load_ftl_ids(path: str) -> set[str]:
+        """Extract all top-level message IDs from an FTL file."""
+        import re
+        ids: set[str] = set()
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                # FTL message definition: id = value (at start of line)
+                m = re.match(r'^([a-z][a-z0-9-]*)\s*=', line)
+                if m:
+                    ids.add(m.group(1))
+        return ids
+
+    @staticmethod
+    def _load_json_map() -> dict[str, str]:
+        import json, os
+        path = os.path.join(
+            os.path.dirname(__file__), os.pardir,
+            "auto_a11y", "web", "translations", "inline_issue_ids.json",
+        )
+        with open(path, encoding="utf-8") as f:
+            result: dict[str, str] = json.load(f)
+            return result
+
+    def test_all_json_keys_have_en_ftl(self) -> None:
+        """Every FTL ID referenced in inline_issue_ids.json must exist
+        in the English inline-issues.ftl file."""
+        import os
+        json_map = self._load_json_map()
+        en_ftl = os.path.join(
+            os.path.dirname(__file__), os.pardir,
+            "auto_a11y", "web", "translations", "en", "inline-issues.ftl",
+        )
+        en_ids = self._load_ftl_ids(en_ftl)
+        missing = [
+            f"{ftl_id!r} (for: {text[:60]}...)"
+            for text, ftl_id in sorted(json_map.items())
+            if ftl_id not in en_ids
+        ]
+        assert not missing, "\n  ".join(
+            [f"{len(missing)} FTL ID(s) in inline_issue_ids.json missing from en/inline-issues.ftl:"]
+            + missing
+        )
+
+    def test_all_json_keys_have_fr_ftl(self) -> None:
+        """Every FTL ID referenced in inline_issue_ids.json must exist
+        in the French inline-issues.ftl file."""
+        import os
+        json_map = self._load_json_map()
+        fr_ftl = os.path.join(
+            os.path.dirname(__file__), os.pardir,
+            "auto_a11y", "web", "translations", "fr", "inline-issues.ftl",
+        )
+        fr_ids = self._load_ftl_ids(fr_ftl)
+        missing = [
+            f"{ftl_id!r} (for: {text[:60]}...)"
+            for text, ftl_id in sorted(json_map.items())
+            if ftl_id not in fr_ids
+        ]
+        assert not missing, "\n  ".join(
+            [f"{len(missing)} FTL ID(s) in inline_issue_ids.json missing from fr/inline-issues.ftl:"]
+            + missing
+        )
+
+    def test_static_issue_descriptions_in_json(self) -> None:
+        """Every static (no placeholders) ``what`` and ``what_generic``
+        value from the issue catalog must have an entry in
+        inline_issue_ids.json.  This catches new descriptions added to
+        the catalog without a corresponding translation mapping."""
+        import re as _re
+        from auto_a11y.reporting.issue_descriptions_enhanced import (
+            get_detailed_issue_description,
+        )
+
+        json_map = self._load_json_map()
+
+        # Collect all error codes from the catalog.
+        # The descriptions dict is local to the function, so we extract
+        # codes from the source text of the function.
+        import auto_a11y.reporting.issue_descriptions_enhanced as eid
+        fn_source = __import__('inspect').getsource(eid.get_detailed_issue_description)
+
+        # Match dict keys like 'ErrFoo': { ... } — must be followed by
+        # a colon-space-brace to avoid matching enum values etc.
+        code_pattern = _re.compile(
+            r"'((?:Err|Warn|Disco|AI_)[A-Za-z0-9_]+)'\s*:\s*\{"
+        )
+        codes = code_pattern.findall(fn_source)
+        # Also match Info codes but not the ImpactScale "Informational" value
+        info_pattern = _re.compile(
+            r"'(Info[A-Z][A-Za-z0-9_]+)'\s*:\s*\{"
+        )
+        codes.extend(info_pattern.findall(fn_source))
+
+        missing: list[str] = []
+        for code in codes:
+            desc = get_detailed_issue_description(code, {})
+            for field in ("what", "what_generic"):
+                text = desc.get(field)
+                if not text or not isinstance(text, str):
+                    continue
+                # Skip parameterised descriptions (contain {placeholder})
+                if "{" in text:
+                    continue
+                # Skip fallback descriptions (not real catalog entries)
+                if text.startswith("An accessibility issue of type"):
+                    continue
+                if text not in json_map:
+                    missing.append(f"{code}.{field}: {text[:80]}...")
+
+        assert not missing, "\n  ".join(
+            [f"{len(missing)} static issue description(s) missing from inline_issue_ids.json:"]
+            + missing
+        )
+
+    def test_js_error_codes_have_catalog_entries(self) -> None:
+        """Every error code emitted by JavaScript test scripts must have
+        a real entry in the issue descriptions catalog (not just the
+        auto-generated fallback).  Missing entries cause fallback text
+        like ``"Accessibility issue: ..."`` to reach the template, which
+        cannot be translated."""
+        import os
+        import re as _re
+        from auto_a11y.reporting.issue_descriptions_enhanced import (
+            get_detailed_issue_description,
+        )
+
+        # Collect all error codes from JS test scripts
+        js_dir = os.path.join(
+            os.path.dirname(__file__), os.pardir,
+            "auto_a11y", "testing", "touchpoint_tests",
+        )
+        # Pattern: err: 'ErrFoo' or err: "WarnBar"
+        err_pattern = _re.compile(r"""err:\s*['"](\w+)['"]""")
+        js_codes: set[str] = set()
+        for fname in os.listdir(js_dir):
+            if not fname.endswith(".py"):
+                continue
+            fpath = os.path.join(js_dir, fname)
+            with open(fpath, encoding="utf-8") as f:
+                content = f.read()
+            js_codes.update(err_pattern.findall(content))
+
+        # Check each code has a real catalog entry (not the fallback)
+        missing: list[str] = []
+        for code in sorted(js_codes):
+            desc = get_detailed_issue_description(code, {})
+            title = desc.get("title", "")
+            if (
+                title.startswith("Accessibility issue:")
+                or title.startswith("Issue ")
+                and title.endswith(" needs documentation")
+            ):
+                missing.append(code)
+
+        assert not missing, "\n  ".join(
+            [f"{len(missing)} JS error code(s) have no catalog entry in issue_descriptions_enhanced.py:"]
+            + missing
+        )
 
 
 # ---------------------------------------------------------------------------

@@ -12,7 +12,8 @@ apt-get install -y -qq --no-install-recommends \
     libcups2 libdrm2 libdbus-1-3 libxcb1 libxkbcommon0 \
     libx11-6 libxcomposite1 libxdamage1 libxext6 libxfixes3 \
     libxrandr2 libgbm1 libasound2 libatspi2.0-0 \
-    fonts-liberation xdg-utils
+    fonts-liberation xdg-utils \
+    ghostscript
 
 echo "==> Installing Python dependencies..."
 pip install --upgrade pip

@@ -1,0 +1,937 @@
+{% extends "base.html" %}
+
+{% block title %}{{ pdf.original_filename or pdf.id }} - {{ ftl('pdf-detail-page-title') }} - {{ ftl('common-auto-a11y') }}{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Translatable strings for pdf_viewer_app.js — the file is plain JS
+    // (no Jinja), so it reads from this object instead of inline literals.
+    window.pdfViewerI18n = {
+        "loading": {{ ftl('pdf-viewer-loading') | tojson }},
+        "error-load": {{ ftl('pdf-viewer-error-load') | tojson }},
+        "issue-result-fail": {{ ftl('pdf-violation-result-fail') | tojson }},
+        "issue-result-warn": {{ ftl('pdf-violation-result-warn') | tojson }},
+        "jump-to-page": {{ ftl('pdf-viewer-jump-to-page-template') | tojson }},
+        "overlay-cluster-aria": {{ ftl('pdf-viewer-overlay-cluster-aria-template') | tojson }},
+        "semantic-layer-aria": {{ ftl('pdf-viewer-semantic-layer-aria-template') | tojson }}
+    };
+</script>
+<script src="{{ url_for('static', filename='js/pdf_viewer_app.js') }}" type="module" defer></script>
+<script src="{{ url_for('static', filename='js/pdf_audit_progress.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/pdf_violation_filters.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/pdf_report_navigation.js') }}" defer></script>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    {# Breadcrumb + title via the shared partial. #}
+    {% include '_target_header.html' %}
+
+    {# Optional progress bar while an audit is mid-flight. #}
+    {% if pdf.status.value == 'auditing' %}
+        {% include 'pdf/_audit_progress.html' %}
+    {% endif %}
+
+    {# Top action bar: re-audit, delete. #}
+    <div class="d-flex flex-wrap gap-2 mb-3" role="group"
+         aria-label="{{ ftl('pdf-detail-actions-aria-label') }}">
+        <form method="POST"
+              action="{{ url_for('pdf.audit', pdf_document_id=pdf.id) }}"
+              class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <button type="submit"
+                    class="btn btn-brand"
+                    {% if pdf.status.value == 'auditing' %}disabled{% endif %}>
+                <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
+                {% if pdf.last_audited_at %}
+                    {{ ftl('pdf-reaudit-button') }}
+                {% else %}
+                    {{ ftl('pdf-audit-button') }}
+                {% endif %}
+            </button>
+        </form>
+        {% if pdf.status.value == 'auditing' %}
+        <form method="POST"
+              action="{{ url_for('pdf.cancel', pdf_document_id=pdf.id) }}"
+              class="d-inline"
+              onsubmit="return confirm('{{ ftl('pdf-cancel-confirm') }}');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <button type="submit" class="btn btn-medium">
+                <i class="bi bi-x-octagon" aria-hidden="true"></i>
+                {{ ftl('pdf-cancel-button') }}
+            </button>
+        </form>
+        {% endif %}
+        {# Verbatim pdfMax report — always available; first click is
+           slow (runs pdfMax's audit), subsequent loads are cached. #}
+        <a href="{{ url_for('pdf.pdfmax_report', pdf_document_id=pdf.id) }}"
+           class="btn btn-brand"
+           aria-label="{{ ftl('pdfmax-report-link-aria') }}">
+            <i class="bi bi-file-earmark-text" aria-hidden="true"></i>
+            {{ ftl('pdfmax-report-link') }}
+        </a>
+        {# Export buttons — only meaningful once an audit has run. #}
+        {% if pdf.last_audit_result_id %}
+        <span class="d-inline-flex gap-2"
+              role="group"
+              aria-label="{{ ftl('pdf-report-export-aria-label') }}">
+            <a href="{{ url_for('pdf.export', pdf_document_id=pdf.id, fmt='html') }}"
+               class="btn btn-neutral"
+               download>
+                <i class="bi bi-filetype-html" aria-hidden="true"></i>
+                {{ ftl('pdf-report-export-html') }}
+            </a>
+            <a href="{{ url_for('pdf.export', pdf_document_id=pdf.id, fmt='md') }}"
+               class="btn btn-neutral"
+               download>
+                <i class="bi bi-filetype-md" aria-hidden="true"></i>
+                {{ ftl('pdf-report-export-markdown') }}
+            </a>
+        </span>
+        {% endif %}
+        <form method="POST"
+              action="{{ url_for('pdf.delete', pdf_document_id=pdf.id) }}"
+              class="d-inline"
+              onsubmit="return confirm('{{ ftl('pdf-delete-confirm') }}');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <button type="submit" class="btn btn-high">
+                <i class="bi bi-trash" aria-hidden="true"></i>
+                {{ ftl('pdf-delete-button') }}
+            </button>
+        </form>
+    </div>
+
+    {# Two-pane layout — 55/45 on desktop, stacked on mobile.
+       data-pdf-* attributes drive pdf_viewer_app.js, which renders
+       the PDF with PDF.js, draws issue overlays from the cached
+       pdfMax issue_map.json, and links overlays to the JS-rendered
+       Viewer issue cards on the right with SVG connector lines.
+
+       The connector SVG sits in its own non-flex wrapper (NOT a
+       direct child of the Bootstrap .row) so it can't accidentally
+       inherit the row's gutter / flex-child layout rules. #}
+    <div class="pdf-viewer-host"
+         data-pdf-viewer-host
+         {% if target.inline_viewer_url %}data-pdf-url="{{ target.inline_viewer_url }}"{% endif %}
+         data-issue-map-url="{{ url_for('pdf.issue_map', pdf_document_id=pdf.id) }}"
+         {% if pdf.declared_lang or pdf.detected_lang %}
+         data-document-lang="{{ pdf.declared_lang or pdf.detected_lang }}"
+         {% endif %}>
+        {# Connector-line SVG spans both panes. Pointer-events:none in
+           CSS — it never intercepts clicks. aria-hidden because the
+           line is purely visual; the card and overlay each carry
+           their own labels. #}
+        <svg class="pdf-viewer-connector-layer"
+             data-pdf-viewer-connector-layer
+             aria-hidden="true"
+             focusable="false"></svg>
+
+        <div class="row g-3">
+        <section class="col-12 col-lg-7"
+                 aria-labelledby="pdf-viewer-heading">
+            <h2 id="pdf-viewer-heading" class="visually-hidden">
+                {{ ftl('pdf-detail-iframe-title') }}
+            </h2>
+            {% if target.inline_viewer_url %}
+            {# Toolbar — page nav + zoom. Other ViewerTab tools (search,
+               TTS, annotations, thumbnails, layers, reading guide,
+               focus mode) are intentionally out-of-scope for this
+               first integration step. #}
+            <div class="pdf-viewer-toolbar"
+                 role="toolbar"
+                 aria-label="{{ ftl('pdf-viewer-toolbar-aria-label') }}">
+                <div class="pdf-viewer-toolbar-group">
+                    <button type="button"
+                            class="btn btn-neutral btn-sm"
+                            data-pdf-viewer-prev
+                            aria-label="{{ ftl('pdf-viewer-prev-page') }}"
+                            title="{{ ftl('pdf-viewer-prev-page') }}">
+                        <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                    </button>
+                    <label for="pdf-viewer-page-input" class="visually-hidden">
+                        {{ ftl('pdf-viewer-page-input-label') }}
+                    </label>
+                    <input id="pdf-viewer-page-input"
+                           class="pdf-viewer-page-input form-control form-control-sm"
+                           type="number"
+                           min="1"
+                           value="1"
+                           data-pdf-viewer-page-input
+                           inputmode="numeric"
+                           autocomplete="off">
+                    <span class="pdf-viewer-page-total"
+                          aria-live="polite">
+                        / <span data-pdf-viewer-page-total>—</span>
+                    </span>
+                    <button type="button"
+                            class="btn btn-neutral btn-sm"
+                            data-pdf-viewer-next
+                            aria-label="{{ ftl('pdf-viewer-next-page') }}"
+                            title="{{ ftl('pdf-viewer-next-page') }}">
+                        <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                    </button>
+                </div>
+                <div class="pdf-viewer-toolbar-group">
+                    <button type="button"
+                            class="btn btn-neutral btn-sm"
+                            data-pdf-viewer-zoom-out
+                            aria-label="{{ ftl('pdf-viewer-zoom-out') }}"
+                            title="{{ ftl('pdf-viewer-zoom-out') }}">
+                        <i class="bi bi-zoom-out" aria-hidden="true"></i>
+                    </button>
+                    <span class="pdf-viewer-zoom-label"
+                          data-pdf-viewer-zoom-label
+                          aria-live="polite">150%</span>
+                    <button type="button"
+                            class="btn btn-neutral btn-sm"
+                            data-pdf-viewer-zoom-in
+                            aria-label="{{ ftl('pdf-viewer-zoom-in') }}"
+                            title="{{ ftl('pdf-viewer-zoom-in') }}">
+                        <i class="bi bi-zoom-in" aria-hidden="true"></i>
+                    </button>
+                    <button type="button"
+                            class="btn btn-neutral btn-sm"
+                            data-pdf-viewer-zoom-reset
+                            aria-label="{{ ftl('pdf-viewer-zoom-reset') }}"
+                            title="{{ ftl('pdf-viewer-zoom-reset') }}">
+                        <i class="bi bi-aspect-ratio" aria-hidden="true"></i>
+                    </button>
+                </div>
+                <span class="pdf-viewer-status"
+                      data-pdf-viewer-status
+                      role="status"
+                      aria-live="polite"></span>
+            </div>
+
+            {# The stage holds (in z-order, bottom→top):
+               canvas → text layer → overlay SVG → semantic layer.
+               The semantic layer is a transparent HTML overlay positioned
+               directly over the canvas — same approach as pdfMax's
+               <SemanticLayer> — so screen readers and caret-browsing users
+               navigate proper headings/paragraphs/lists in reading order
+               while sighted users see the canvas underneath. #}
+            <div class="pdf-viewer-stage-wrap mb-3">
+                <div class="pdf-viewer-stage" data-pdf-viewer-stage>
+                    {# Canvas defaults to 300x150 in HTML5 if width/height
+                       aren't set. Pin to 1x1 here so the stage doesn't
+                       briefly flash a 300x150 box before PDF.js renders. #}
+                    <canvas class="pdf-viewer-canvas"
+                            data-pdf-viewer-canvas
+                            width="1" height="1"
+                            aria-hidden="true"></canvas>
+                    <div class="pdf-viewer-text-layer"
+                         data-pdf-viewer-text-layer
+                         aria-hidden="true"></div>
+                    <svg class="pdf-viewer-overlay-layer"
+                         data-pdf-viewer-overlay-layer
+                         aria-label="{{ ftl('pdf-viewer-overlay-layer-aria-label') }}">
+                    </svg>
+                    <div class="pdf-viewer-semantic-layer"
+                         data-pdf-viewer-semantic-layer></div>
+                </div>
+            </div>
+            {% else %}
+            <div class="alert alert-medium" role="alert">
+                <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+                {{ ftl('pdf-detail-no-inline-viewer') }}
+            </div>
+            {% endif %}
+
+            {# Metadata strip beneath the viewer. #}
+            <div class="card">
+                <div class="card-header bg-subtle">
+                    <h3 class="h6 mb-0">{{ ftl('pdf-detail-metadata-heading') }}</h3>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">{{ ftl('pdf-meta-page-count') }}</dt>
+                        <dd class="col-sm-8">{{ pdf.page_count if pdf.page_count is not none else '-' }}</dd>
+
+                        <dt class="col-sm-4">{{ ftl('pdf-meta-pdf-version') }}</dt>
+                        <dd class="col-sm-8">{{ pdf.pdf_version or '-' }}</dd>
+
+                        <dt class="col-sm-4">{{ ftl('pdf-meta-declared-language') }}</dt>
+                        <dd class="col-sm-8">{{ pdf.declared_lang or '-' }}</dd>
+
+                        <dt class="col-sm-4">{{ ftl('pdf-meta-detected-language') }}</dt>
+                        <dd class="col-sm-8">{{ pdf.detected_lang or '-' }}</dd>
+
+                        <dt class="col-sm-4">{{ ftl('pdf-meta-source') }}</dt>
+                        <dd class="col-sm-8">
+                            {% if pdf.source_type == 'uploaded' %}
+                                {{ ftl('pdf-source-uploaded') }}
+                            {% elif pdf.source_type == 'manual_url' %}
+                                {{ ftl('pdf-source-manual-url') }}
+                            {% else %}
+                                {{ ftl('pdf-source-opportunistic') }}
+                            {% endif %}
+                            {% if pdf.source_url %}
+                            <br>
+                            <a href="{{ pdf.source_url }}" target="_blank" rel="noopener">
+                                <small>{{ pdf.source_url }}</small>
+                                <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+                            </a>
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-sm-4">{{ ftl('pdf-meta-discovered-at') }}</dt>
+                        <dd class="col-sm-8">
+                            {% if pdf.discovered_at %}
+                                {{ pdf.discovered_at.strftime('%Y-%m-%d %H:%M') }}
+                            {% else %}-{% endif %}
+                        </dd>
+
+                        <dt class="col-sm-4">{{ ftl('pdf-meta-last-audited-at') }}</dt>
+                        <dd class="col-sm-8">
+                            {% if pdf.last_audited_at %}
+                                {{ pdf.last_audited_at.strftime('%Y-%m-%d %H:%M') }}
+                            {% else %}
+                                {{ ftl('common-never') }}
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-sm-4">{{ ftl('pdf-meta-file-size-bytes') }}</dt>
+                        <dd class="col-sm-8">{{ pdf.file_size_bytes }}</dd>
+
+                        <dt class="col-sm-4">{{ ftl('pdf-meta-sha256') }}</dt>
+                        <dd class="col-sm-8">
+                            <code class="small text-break">{{ pdf.sha256 }}</code>
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </section>
+
+        <section class="col-12 col-lg-5 pdf-report-pane"
+                 aria-labelledby="pdf-results-heading">
+            <h2 id="pdf-results-heading" class="h5 mb-3">
+                {{ ftl('pdf-detail-results-heading') }}
+            </h2>
+
+            {# Viewer issue list — populated client-side from the
+               cached pdfMax issue_map.json. Each card carries a
+               data-issue-id matching the SVG overlay on the canvas
+               so connector lines can join them. Empty until an audit
+               has produced an issue map. #}
+            {% if target.inline_viewer_url %}
+            <section class="pdf-viewer-issues-panel mb-4"
+                     aria-labelledby="pdf-viewer-issues-heading">
+                <h3 id="pdf-viewer-issues-heading" class="h6 mb-2">
+                    {{ ftl('pdf-viewer-issues-heading') }}
+                </h3>
+                <ol class="pdf-viewer-issue-list list-unstyled mb-0"
+                    data-pdf-viewer-issue-list
+                    aria-labelledby="pdf-viewer-issues-heading"></ol>
+                <p class="pdf-viewer-issue-list-empty text-muted small mb-0"
+                   data-pdf-viewer-issue-list-empty
+                   hidden>
+                    {{ ftl('pdf-viewer-issue-list-empty') }}
+                </p>
+            </section>
+            {% endif %}
+
+            {% if test_result is not none %}
+                {# Combine all three severity buckets into one indexable list. #}
+                {% set all_findings = [] %}
+                {% for v in test_result.violations %}
+                    {% set _ = all_findings.append(('fail', v)) %}
+                {% endfor %}
+                {% for v in test_result.warnings %}
+                    {% set _ = all_findings.append(('warn', v)) %}
+                {% endfor %}
+                {% for v in test_result.info %}
+                    {% set _ = all_findings.append(('info', v)) %}
+                {% endfor %}
+
+                {% set fail_count = test_result.violations|length %}
+                {% set warn_count = test_result.warnings|length %}
+                {% set info_count = test_result.info|length %}
+                {% set pass_count = test_result.passes|length if test_result.passes else 0 %}
+
+                {# Group findings by touchpoint, preserving discovery order. #}
+                {% set touchpoint_keys = [] %}
+                {% set findings_by_touchpoint = {} %}
+                {% for level, v in all_findings %}
+                    {% set tp = v.touchpoint or 'other' %}
+                    {% if tp not in findings_by_touchpoint %}
+                        {% set _ = touchpoint_keys.append(tp) %}
+                        {% set _ = findings_by_touchpoint.update({tp: []}) %}
+                    {% endif %}
+                    {% set _ = findings_by_touchpoint[tp].append((level, v)) %}
+                {% endfor %}
+
+                {# Build WCAG → list of (anchor, short_title) index. #}
+                {% set wcag_index = {} %}
+                {% for level, v in all_findings %}
+                    {% set anchor = 'issue-' ~ loop.index %}
+                    {% for criterion in (v.wcag_criteria or []) %}
+                        {% if criterion not in wcag_index %}
+                            {% set _ = wcag_index.update({criterion: []}) %}
+                        {% endif %}
+                        {% set _ = wcag_index[criterion].append((anchor, v.short_title or v.id)) %}
+                    {% endfor %}
+                {% endfor %}
+
+                {# Build per-touchpoint summary counts. #}
+                {% set touchpoint_summary = [] %}
+                {% for tp in touchpoint_keys %}
+                    {% set tp_findings = findings_by_touchpoint[tp] %}
+                    {% set tp_fail = tp_findings|selectattr('0', 'equalto', 'fail')|list|length %}
+                    {% set tp_warn = tp_findings|selectattr('0', 'equalto', 'warn')|list|length %}
+                    {% set tp_info = tp_findings|selectattr('0', 'equalto', 'info')|list|length %}
+                    {% set _ = touchpoint_summary.append({
+                        'key': tp,
+                        'fail': tp_fail,
+                        'warn': tp_warn,
+                        'info': tp_info,
+                        'total': tp_findings|length
+                    }) %}
+                {% endfor %}
+            {% endif %}
+
+            {% if test_result is not none and all_findings %}
+                {# ----- Section navigation (TOC) ----- #}
+                <nav class="pdf-report-nav mb-3"
+                     aria-label="{{ ftl('pdf-report-nav-aria-label') }}">
+                    <p class="pdf-report-nav-heading">
+                        {{ ftl('pdf-report-nav-heading') }}
+                    </p>
+                    <ul class="pdf-report-nav-list" data-pdf-report-nav>
+                        <li><a href="#pdf-report-overview"
+                               class="pdf-report-nav-link"
+                               data-pdf-nav-target="pdf-report-overview">
+                            {{ ftl('pdf-report-nav-overview') }}
+                        </a></li>
+                        <li><a href="#pdf-report-issues"
+                               class="pdf-report-nav-link"
+                               data-pdf-nav-target="pdf-report-issues">
+                            {{ ftl('pdf-report-nav-issues') }}
+                        </a></li>
+                        <li><a href="#pdf-report-appendix-wcag"
+                               class="pdf-report-nav-link"
+                               data-pdf-nav-target="pdf-report-appendix-wcag">
+                            {{ ftl('pdf-report-nav-appendix-wcag') }}
+                        </a></li>
+                        <li><a href="#pdf-report-appendix-touchpoints"
+                               class="pdf-report-nav-link"
+                               data-pdf-nav-target="pdf-report-appendix-touchpoints">
+                            {{ ftl('pdf-report-nav-appendix-touchpoints') }}
+                        </a></li>
+                    </ul>
+                </nav>
+
+                {# ----- Overview header ----- #}
+                <section id="pdf-report-overview"
+                         class="pdf-report-section"
+                         aria-labelledby="pdf-report-overview-heading">
+                    <h3 id="pdf-report-overview-heading" class="h6 mb-2">
+                        {{ ftl('pdf-report-overview-heading') }}
+                    </h3>
+                    <div class="pdf-report-overview-stats">
+                        <div class="pdf-report-stat pdf-report-stat-high">
+                            <span class="pdf-report-stat-value">{{ fail_count }}</span>
+                            <span class="pdf-report-stat-label">
+                                {{ ftl('pdf-report-overview-errors') }}
+                            </span>
+                        </div>
+                        <div class="pdf-report-stat pdf-report-stat-medium">
+                            <span class="pdf-report-stat-value">{{ warn_count }}</span>
+                            <span class="pdf-report-stat-label">
+                                {{ ftl('pdf-report-overview-warnings') }}
+                            </span>
+                        </div>
+                        <div class="pdf-report-stat pdf-report-stat-info">
+                            <span class="pdf-report-stat-value">{{ info_count }}</span>
+                            <span class="pdf-report-stat-label">
+                                {{ ftl('pdf-report-overview-info') }}
+                            </span>
+                        </div>
+                        <div class="pdf-report-stat pdf-report-stat-pass">
+                            <span class="pdf-report-stat-value">{{ pass_count }}</span>
+                            <span class="pdf-report-stat-label">
+                                {{ ftl('pdf-report-overview-passes') }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="pdf-report-conformance">
+                        <h4 class="pdf-violation-section-heading">
+                            {{ ftl('pdf-report-overview-conformance-heading') }}
+                        </h4>
+                        {% if fail_count > 0 %}
+                        <div class="alert alert-high mb-0" role="status">
+                            <i class="bi bi-exclamation-octagon" aria-hidden="true"></i>
+                            {{ ftl('pdf-report-overview-conformance-fail', count=fail_count) }}
+                        </div>
+                        {% elif warn_count > 0 %}
+                        <div class="alert alert-medium mb-0" role="status">
+                            <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+                            {{ ftl('pdf-report-overview-conformance-warn', count=warn_count) }}
+                        </div>
+                        {% else %}
+                        <div class="alert alert-pass mb-0" role="status">
+                            <i class="bi bi-check-circle" aria-hidden="true"></i>
+                            {{ ftl('pdf-report-overview-conformance-pass') }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <dl class="pdf-report-overview-meta">
+                        <dt>{{ ftl('pdf-report-overview-audited-at') }}</dt>
+                        <dd>
+                            {% if pdf.last_audited_at %}
+                                {{ pdf.last_audited_at.strftime('%Y-%m-%d %H:%M') }}
+                            {% else %}-{% endif %}
+                        </dd>
+                        <dt>{{ ftl('pdf-report-overview-page-count') }}</dt>
+                        <dd>{{ pdf.page_count if pdf.page_count is not none else '-' }}</dd>
+                        <dt>{{ ftl('pdf-report-overview-pdf-version') }}</dt>
+                        <dd>{{ pdf.pdf_version or '-' }}</dd>
+                        <dt>{{ ftl('pdf-report-overview-language') }}</dt>
+                        <dd>{{ pdf.declared_lang or pdf.detected_lang or '-' }}</dd>
+                    </dl>
+                </section>
+
+                {# ----- Filters bar ----- #}
+                {% set high_count = all_findings|selectattr('1.impact.value', 'equalto', 'high')|list|length %}
+                {% set medium_count = all_findings|selectattr('1.impact.value', 'equalto', 'medium')|list|length %}
+                {% set low_count = all_findings|selectattr('1.impact.value', 'equalto', 'low')|list|length %}
+
+                <div class="pdf-violation-filters mb-3"
+                     role="group"
+                     aria-label="{{ ftl('pdf-violation-filters-aria-label') }}"
+                     data-pdf-violation-filters>
+                    <div class="pdf-violation-filter-row">
+                        <span class="pdf-violation-filter-heading">
+                            {{ ftl('pdf-violation-filter-level-heading') }}
+                        </span>
+                        <button type="button"
+                                class="pdf-violation-chip is-active"
+                                data-pdf-filter="level"
+                                data-pdf-filter-value="all">
+                            {{ ftl('pdf-violation-filter-all') }}
+                        </button>
+                        <button type="button"
+                                class="pdf-violation-chip"
+                                data-pdf-filter="level"
+                                data-pdf-filter-value="fail">
+                            {{ ftl('pdf-violation-filter-errors', count=fail_count) }}
+                        </button>
+                        <button type="button"
+                                class="pdf-violation-chip"
+                                data-pdf-filter="level"
+                                data-pdf-filter-value="warn">
+                            {{ ftl('pdf-violation-filter-warnings', count=warn_count) }}
+                        </button>
+                        <button type="button"
+                                class="pdf-violation-chip"
+                                data-pdf-filter="level"
+                                data-pdf-filter-value="info">
+                            {{ ftl('pdf-violation-filter-info', count=info_count) }}
+                        </button>
+                    </div>
+                    <div class="pdf-violation-filter-row">
+                        <span class="pdf-violation-filter-heading">
+                            {{ ftl('pdf-violation-filter-impact-heading') }}
+                        </span>
+                        <button type="button"
+                                class="pdf-violation-chip is-active"
+                                data-pdf-filter="impact"
+                                data-pdf-filter-value="all">
+                            {{ ftl('pdf-violation-filter-all') }}
+                        </button>
+                        <button type="button"
+                                class="pdf-violation-chip"
+                                data-pdf-filter="impact"
+                                data-pdf-filter-value="high">
+                            {{ ftl('pdf-violation-filter-impact-high') }} ({{ high_count }})
+                        </button>
+                        <button type="button"
+                                class="pdf-violation-chip"
+                                data-pdf-filter="impact"
+                                data-pdf-filter-value="medium">
+                            {{ ftl('pdf-violation-filter-impact-medium') }} ({{ medium_count }})
+                        </button>
+                        <button type="button"
+                                class="pdf-violation-chip"
+                                data-pdf-filter="impact"
+                                data-pdf-filter-value="low">
+                            {{ ftl('pdf-violation-filter-impact-low') }} ({{ low_count }})
+                        </button>
+                    </div>
+                    {% if touchpoint_keys|length > 1 %}
+                    <div class="pdf-violation-filter-row">
+                        <span class="pdf-violation-filter-heading">
+                            {{ ftl('pdf-violation-filter-touchpoint-heading') }}
+                        </span>
+                        <button type="button"
+                                class="pdf-violation-chip is-active"
+                                data-pdf-filter="touchpoint"
+                                data-pdf-filter-value="all">
+                            {{ ftl('pdf-violation-filter-all') }}
+                        </button>
+                        {% for tp in touchpoint_keys %}
+                        {% set tp_slug = tp|replace('_', '-') %}
+                        {% set tp_label_id = 'touchpoint-' ~ tp_slug ~ '-name' %}
+                        {% set tp_label = ftl(tp_label_id) %}
+                        <button type="button"
+                                class="pdf-violation-chip"
+                                data-pdf-filter="touchpoint"
+                                data-pdf-filter-value="{{ tp }}">
+                            {{ tp_label if tp_label != tp_label_id else tp }}
+                            ({{ findings_by_touchpoint[tp]|length }})
+                        </button>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    <div class="pdf-violation-filter-row">
+                        <label for="pdf-violation-search"
+                               class="pdf-violation-filter-heading">
+                            {{ ftl('pdf-violation-filter-search-label') }}
+                        </label>
+                        <input id="pdf-violation-search"
+                               type="search"
+                               class="pdf-violation-search"
+                               data-pdf-violation-search
+                               placeholder="{{ ftl('pdf-violation-filter-search-placeholder') }}"
+                               autocomplete="off">
+                    </div>
+                </div>
+
+                <p class="visually-hidden"
+                   role="status"
+                   aria-live="polite"
+                   data-pdf-violation-empty
+                   hidden>
+                    {{ ftl('pdf-violation-filter-empty') }}
+                </p>
+
+                {# ----- Findings, grouped by touchpoint ----- #}
+                <section id="pdf-report-issues"
+                         class="pdf-report-section"
+                         aria-labelledby="pdf-report-issues-heading">
+                    <h3 id="pdf-report-issues-heading" class="h6 mb-2">
+                        {{ ftl('pdf-report-issues-heading') }}
+                    </h3>
+
+                    <div data-pdf-violation-list>
+                    {% set ns = namespace(card_index=0) %}
+                    {% for tp in touchpoint_keys %}
+                        {% set tp_findings = findings_by_touchpoint[tp] %}
+                        {% set tp_slug = tp|replace('_', '-') %}
+                        {% set tp_label_id = 'touchpoint-' ~ tp_slug ~ '-name' %}
+                        {% set tp_label = ftl(tp_label_id) %}
+                        {% set group_id = 'pdf-report-group-' ~ tp_slug %}
+                        <details class="pdf-report-group"
+                                 data-pdf-group
+                                 data-pdf-group-touchpoint="{{ tp }}"
+                                 open>
+                            <summary class="pdf-report-group-summary"
+                                     id="{{ group_id }}">
+                                <span class="pdf-report-group-title">
+                                    {{ tp_label if tp_label != tp_label_id else tp }}
+                                </span>
+                                <span class="badge badge-subtle">
+                                    {{ ftl('pdf-report-group-count', count=tp_findings|length) }}
+                                </span>
+                            </summary>
+                            <ol class="list-unstyled pdf-violation-list"
+                                aria-labelledby="{{ group_id }}">
+                                {% for level, violation in tp_findings %}
+                                {% set ns.card_index = ns.card_index + 1 %}
+                                {% set border_class = {
+                                    'fail': 'border-high',
+                                    'warn': 'border-medium',
+                                    'info': 'border-info'
+                                }[level] %}
+                                {% set level_badge_class = {
+                                    'fail': 'badge-high',
+                                    'warn': 'badge-medium',
+                                    'info': 'badge-info'
+                                }[level] %}
+                                {% set level_label_id = {
+                                    'fail': 'pdf-violation-result-fail',
+                                    'warn': 'pdf-violation-result-warn',
+                                    'info': 'pdf-violation-result-info'
+                                }[level] %}
+                                {% set impact_value = violation.impact.value %}
+                                {% set impact_badge_class = {
+                                    'high': 'badge-high',
+                                    'medium': 'badge-medium',
+                                    'low': 'badge-info'
+                                }.get(impact_value, 'badge-subtle') %}
+                                {% set anchor = 'issue-' ~ ns.card_index %}
+                                {% set short_label = (ftl(violation.short_title) if violation.short_title else violation.id) %}
+                                {% set desc_label = (ftl(violation.description) if violation.description else '') %}
+                                {% set what_label = (ftl(violation.what) if violation.what else '') %}
+                                {% set why_label = (ftl(violation.why) if violation.why else '') %}
+                                {% set who_label = (ftl(violation.who) if violation.who else '') %}
+                                {% set search_blob = (short_label ~ ' ' ~ desc_label ~ ' ' ~ what_label ~ ' ' ~ why_label ~ ' ' ~ who_label)|lower %}
+                                <li id="{{ anchor }}"
+                                    class="card mb-3 pdf-violation-card {{ border_class }}"
+                                    data-pdf-violation-card
+                                    data-pdf-result-level="{{ level }}"
+                                    data-pdf-impact="{{ impact_value }}"
+                                    data-pdf-touchpoint="{{ tp }}"
+                                    data-pdf-search="{{ search_blob }}">
+                                    <div class="card-body">
+                                        <div class="d-flex flex-wrap align-items-start gap-2 mb-2">
+                                            <span class="badge {{ level_badge_class }}">
+                                                {{ ftl(level_label_id) }}
+                                            </span>
+                                            <span class="badge {{ impact_badge_class }}">
+                                                {{ ftl_enum(impact_value) }}
+                                            </span>
+                                            <span class="badge badge-subtle">
+                                                {{ tp_label if tp_label != tp_label_id else tp }}
+                                            </span>
+                                            {% if violation.metadata and violation.metadata.pdf_page %}
+                                            <button type="button"
+                                                    class="btn btn-outline-brand btn-sm ms-auto"
+                                                    data-pdf-page="{{ violation.metadata.pdf_page }}">
+                                                <i class="bi bi-arrow-up-right-circle" aria-hidden="true"></i>
+                                                {{ ftl('pdf-jump-to-page', page=violation.metadata.pdf_page) }}
+                                            </button>
+                                            {% endif %}
+                                        </div>
+
+                                        <h4 class="h6 mb-1">{{ short_label }}</h4>
+                                        {% if desc_label %}
+                                        <p class="mb-2">{{ desc_label }}</p>
+                                        {% endif %}
+
+                                        {% if what_label %}
+                                        <section class="pdf-violation-section">
+                                            <h5 class="pdf-violation-section-heading">
+                                                {{ ftl('pdf-violation-section-what') }}
+                                            </h5>
+                                            <p class="mb-0">{{ what_label }}</p>
+                                        </section>
+                                        {% endif %}
+
+                                        {% if why_label %}
+                                        <section class="pdf-violation-section">
+                                            <h5 class="pdf-violation-section-heading">
+                                                {{ ftl('pdf-violation-section-why') }}
+                                            </h5>
+                                            <p class="mb-0">{{ why_label }}</p>
+                                        </section>
+                                        {% endif %}
+
+                                        {% if who_label %}
+                                        <section class="pdf-violation-section">
+                                            <h5 class="pdf-violation-section-heading">
+                                                {{ ftl('pdf-violation-section-who') }}
+                                            </h5>
+                                            <p class="mb-0">{{ who_label }}</p>
+                                        </section>
+                                        {% endif %}
+
+                                        {% if violation.wcag_criteria %}
+                                        <section class="pdf-violation-section">
+                                            <h5 class="pdf-violation-section-heading">
+                                                {{ ftl('pdf-violation-section-wcag') }}
+                                            </h5>
+                                            <ul class="pdf-violation-wcag-list mb-0">
+                                                {% for criterion in violation.wcag_criteria %}
+                                                <li><span class="badge badge-subtle">{{ criterion }}</span></li>
+                                                {% endfor %}
+                                            </ul>
+                                        </section>
+                                        {% endif %}
+
+                                        {% if violation.remediation %}
+                                        <details class="pdf-violation-section">
+                                            <summary>{{ ftl('pdf-violation-section-remediation') }}</summary>
+                                            <pre class="pdf-violation-pre">{{ ftl(violation.remediation) }}</pre>
+                                        </details>
+                                        {% endif %}
+
+                                        {% if violation.metadata and violation.metadata.font_table %}
+                                        {% set ft = violation.metadata.font_table %}
+                                        <section class="pdf-violation-section">
+                                            <h5 class="pdf-violation-section-heading">
+                                                {{ ftl('pdf-violation-font-table-heading') }}
+                                            </h5>
+                                            <p class="text-muted small mb-2">
+                                                {{ ftl('pdf-violation-font-table-thresholds',
+                                                       body=ft.min_body_size_pt,
+                                                       minimum=ft.min_readable_size_pt) }}
+                                            </p>
+                                            <table class="pdf-report-table pdf-violation-font-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th scope="col">{{ ftl('pdf-violation-font-table-col-name') }}</th>
+                                                        <th scope="col">{{ ftl('pdf-violation-font-table-col-size') }}</th>
+                                                        <th scope="col">{{ ftl('pdf-violation-font-table-col-chars') }}</th>
+                                                        <th scope="col">{{ ftl('pdf-violation-font-table-col-pct') }}</th>
+                                                        <th scope="col">{{ ftl('pdf-violation-font-table-col-verdict') }}</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for row in ft.rows %}
+                                                    {% set verdict_class = {
+                                                        'FAIL': 'badge-high',
+                                                        'WARN': 'badge-medium',
+                                                        'OK':   'badge-pass'
+                                                    }.get(row.verdict, 'badge-subtle') %}
+                                                    {% set verdict_label = {
+                                                        'FAIL': ftl('pdf-violation-font-table-verdict-fail'),
+                                                        'WARN': ftl('pdf-violation-font-table-verdict-warn'),
+                                                        'OK':   ftl('pdf-violation-font-table-verdict-ok')
+                                                    }.get(row.verdict, row.verdict) %}
+                                                    <tr>
+                                                        <th scope="row"><code>{{ row.font_name }}</code></th>
+                                                        <td>{{ row.size_pt }}pt</td>
+                                                        <td>{{ row.char_count }}</td>
+                                                        <td>{{ '%.1f' | format(row.char_pct) }}%</td>
+                                                        <td>
+                                                            <span class="badge {{ verdict_class }}">
+                                                                {{ verdict_label }}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                                <tfoot>
+                                                    <tr>
+                                                        <th scope="row" colspan="2">
+                                                            {{ ftl('pdf-violation-font-table-total') }}
+                                                        </th>
+                                                        <td colspan="3">{{ ft.total_chars }}</td>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </section>
+                                        {% endif %}
+
+                                        {% if violation.metadata and violation.metadata.pdfmax_original_details %}
+                                        <details class="pdf-violation-section">
+                                            <summary>{{ ftl('pdf-violation-section-technical') }}</summary>
+                                            <pre class="pdf-violation-pre">{{ violation.metadata.pdfmax_original_details }}</pre>
+                                        </details>
+                                        {% endif %}
+                                    </div>
+                                </li>
+                                {% endfor %}
+                            </ol>
+                            <p class="pdf-report-group-empty"
+                               data-pdf-group-empty
+                               hidden>
+                                {{ ftl('pdf-report-group-empty') }}
+                            </p>
+                        </details>
+                    {% endfor %}
+                    </div>
+                </section>
+
+                {# ----- Appendix: WCAG mapping ----- #}
+                <section id="pdf-report-appendix-wcag"
+                         class="pdf-report-section"
+                         aria-labelledby="pdf-report-appendix-wcag-heading">
+                    <h3 id="pdf-report-appendix-wcag-heading" class="h6 mb-2">
+                        {{ ftl('pdf-report-appendix-wcag-heading') }}
+                    </h3>
+                    {% if wcag_index %}
+                    <table class="pdf-report-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">{{ ftl('pdf-report-appendix-wcag-col-criterion') }}</th>
+                                <th scope="col">{{ ftl('pdf-report-appendix-wcag-col-count') }}</th>
+                                <th scope="col">{{ ftl('pdf-report-appendix-wcag-col-issues') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for criterion in wcag_index|dictsort %}
+                            {% set entries = criterion[1] %}
+                            <tr>
+                                <th scope="row"><span class="badge badge-subtle">{{ criterion[0] }}</span></th>
+                                <td>{{ entries|length }}</td>
+                                <td>
+                                    <ul class="pdf-report-issue-link-list">
+                                        {% for entry in entries %}
+                                        <li>
+                                            <a href="#{{ entry[0] }}">{{ entry[1] }}</a>
+                                        </li>
+                                        {% endfor %}
+                                    </ul>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p class="text-muted mb-0">
+                        {{ ftl('pdf-report-appendix-wcag-empty') }}
+                    </p>
+                    {% endif %}
+                </section>
+
+                {# ----- Document inventory (pdfMax §2-16) ----- #}
+                {% if report_sections %}
+                    {% include 'pdf/_report_sections.html' %}
+                {% else %}
+                <section class="pdf-inventory-master mt-4"
+                         aria-labelledby="pdf-inventory-stale-heading">
+                    <h3 id="pdf-inventory-stale-heading" class="h5 mb-2">
+                        {{ ftl('pdf-inventory-master-heading') }}
+                    </h3>
+                    <div class="alert alert-info" role="status">
+                        {{ ftl('pdf-inventory-stale-banner') }}
+                    </div>
+                </section>
+                {% endif %}
+
+                {# ----- Appendix: Touchpoint summary ----- #}
+                <section id="pdf-report-appendix-touchpoints"
+                         class="pdf-report-section"
+                         aria-labelledby="pdf-report-appendix-touchpoints-heading">
+                    <h3 id="pdf-report-appendix-touchpoints-heading" class="h6 mb-2">
+                        {{ ftl('pdf-report-appendix-touchpoints-heading') }}
+                    </h3>
+                    <table class="pdf-report-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">{{ ftl('pdf-report-appendix-touchpoints-col-name') }}</th>
+                                <th scope="col">{{ ftl('pdf-report-appendix-touchpoints-col-errors') }}</th>
+                                <th scope="col">{{ ftl('pdf-report-appendix-touchpoints-col-warnings') }}</th>
+                                <th scope="col">{{ ftl('pdf-report-appendix-touchpoints-col-info') }}</th>
+                                <th scope="col">{{ ftl('pdf-report-appendix-touchpoints-col-total') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in touchpoint_summary %}
+                            {% set tp_slug = row.key|replace('_', '-') %}
+                            {% set tp_label_id = 'touchpoint-' ~ tp_slug ~ '-name' %}
+                            {% set tp_label = ftl(tp_label_id) %}
+                            <tr>
+                                <th scope="row">
+                                    <a href="#pdf-report-group-{{ tp_slug }}">
+                                        {{ tp_label if tp_label != tp_label_id else row.key }}
+                                    </a>
+                                </th>
+                                <td>{{ row.fail }}</td>
+                                <td>{{ row.warn }}</td>
+                                <td>{{ row.info }}</td>
+                                <td><strong>{{ row.total }}</strong></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </section>
+
+            {% elif test_result is not none %}
+            <div class="alert alert-pass" role="status">
+                <i class="bi bi-check-circle" aria-hidden="true"></i>
+                {{ ftl('pdf-detail-no-violations') }}
+            </div>
+            {% else %}
+            <div class="mb-3">
+                {% include '_target_result_summary.html' %}
+            </div>
+            {% endif %}
+        </section>
+        </div>{# /.row #}
+    </div>{# /.pdf-viewer-host #}
+</div>
+{% endblock %}

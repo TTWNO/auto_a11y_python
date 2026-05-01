@@ -65,9 +65,9 @@ main {
 .dropdown-item:focus-visible,
 .navbar-toggler:focus,
 .navbar-toggler:focus-visible {
-    outline: 2px solid var(--color-focus-ring-inverse, #ffffff);
+    outline: 2px solid var(--color-focus-ring);
     outline-offset: 2px;
-    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 0 2px var(--color-focus-ring-contrast);
 }
 
 /* Current page indicators in navigation */
@@ -183,7 +183,7 @@ summary:focus,
 summary:focus-visible {
     outline: 2px solid var(--color-focus-ring);
     outline-offset: 2px;
-    box-shadow: 0 0 0 4px var(--color-focus-ring-shadow, rgba(10, 88, 202, 0.6));
+    box-shadow: 0 0 0 2px var(--color-focus-ring-contrast);
 }
 
 /* Note: We previously removed the outline for :focus:not(:focus-visible)
@@ -193,19 +193,18 @@ summary:focus-visible {
    Keeping outline on ALL focus states (mouse + keyboard) is also more
    accessible for power users who navigate via mouse. */
 
-/* Form controls: border changes on focus too (forms_WarnInputNoBorderOutline)
-   - 3px outline ensures sufficient non-text contrast (3:1) against the input's
-     own background AND the adjacent page background in both light and dark mode */
+/* Form controls: border changes on focus too (forms_WarnInputNoBorderOutline).
+   Double-ring (outline + contrast shadow) guarantees visibility on any bg. */
 .form-control:focus,
 .form-control:focus-visible,
 .form-select:focus,
 .form-select:focus-visible,
 .form-check-input:focus,
 .form-check-input:focus-visible {
-    outline: 3px solid var(--color-focus-ring);
+    outline: 2px solid var(--color-focus-ring);
     outline-offset: 2px;
     border-color: var(--color-focus-ring);
-    box-shadow: 0 0 0 4px var(--color-focus-ring-shadow, rgba(10, 88, 202, 0.6));
+    box-shadow: 0 0 0 2px var(--color-focus-ring-contrast);
 }
 
 /* Skip to main content link */
@@ -225,9 +224,9 @@ summary:focus-visible {
 .skip-link:focus-visible {
     top: 0;
     z-index: 1100;
-    outline: 3px solid var(--color-focus-ring-inverse, #ffffff);
+    outline: 2px solid var(--color-focus-ring);
     outline-offset: 2px;
-    box-shadow: 0 0 0 5px var(--color-focus-ring, #0a58ca);
+    box-shadow: 0 0 0 2px var(--color-focus-ring-contrast);
 }
 
 /* Responsive improvements */
@@ -2404,6 +2403,7 @@ a a {
 @media (prefers-contrast: more) {
     :root {
         --color-focus-ring: CanvasText;
+        --color-focus-ring-contrast: Canvas;
         --color-border-table: CanvasText;
         --color-text-muted: CanvasText;
     }
@@ -2419,7 +2419,8 @@ a a {
     textarea:focus,
     textarea:focus-visible {
         outline: 3px solid CanvasText;
-        outline-offset: 3px;
+        outline-offset: 2px;
+        box-shadow: 0 0 0 2px Canvas;
     }
 
     .btn,
@@ -2985,4 +2986,351 @@ small.text-muted,
 }
 .table-medium:hover {
     background-color: color-mix(in srgb, var(--color-severity-medium-bg) 85%, var(--color-severity-medium) 15%) !important;
+}
+/* ===========================================================================
+ * PDF.js in-page viewer (pdf_viewer_app.js + pdf/detail.html)
+ *
+ * Layer stack inside .pdf-viewer-stage (z-order, bottom→top):
+ *   canvas → text-layer (selectable) → overlay-layer (issue rects)
+ * The semantic-layer is .visually-hidden (kept off-screen but in DOM
+ * order for screen readers). The connector-layer is a separate SVG
+ * positioned over the .pdf-viewer-host so it can span both panes.
+ * =========================================================================== */
+
+.pdf-viewer-host {
+    /* The connector-layer SVG is absolute-positioned against this
+       wrapper so it can span both the document and report panes. */
+    position: relative;
+}
+
+.pdf-viewer-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.5rem;
+    background: var(--color-bg-subtle);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+}
+
+.pdf-viewer-toolbar-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.pdf-viewer-page-input {
+    width: 4.5rem;
+    text-align: center;
+}
+
+.pdf-viewer-page-total,
+.pdf-viewer-zoom-label {
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text-muted);
+    min-width: 3rem;
+    text-align: center;
+}
+
+.pdf-viewer-status {
+    margin-left: auto;
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+}
+
+/* Stage wrapper centres the page horizontally and lets it scroll vertically
+   inside the left pane when the canvas is taller than the viewport. */
+.pdf-viewer-stage-wrap {
+    background: var(--color-bg-subtle);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    padding: 0.5rem;
+    overflow: auto;
+    max-height: 80vh;
+    display: flex;
+    justify-content: center;
+}
+
+.pdf-viewer-stage {
+    /* Width/height set inline by JS to match the rendered viewport. */
+    position: relative;
+    background: var(--color-bg-elevated);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
+}
+
+.pdf-viewer-canvas,
+.pdf-viewer-text-layer,
+.pdf-viewer-overlay-layer,
+.pdf-viewer-semantic-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.pdf-viewer-canvas {
+    display: block;
+}
+
+.pdf-viewer-text-layer {
+    color: transparent;
+    user-select: text;
+    z-index: 1;
+    line-height: 1.0;
+    /* PDF.js's TextLayer positions its children with absolute offsets.
+       Disable text shadows/decoration that some browsers add by default. */
+    text-shadow: none;
+    overflow: hidden;
+}
+
+/* Screen-reader semantic overlay — same approach as pdfMax's <SemanticLayer>.
+   Transparent HTML positioned directly on top of the canvas so AT users
+   navigate proper headings/paragraphs/lists in reading order. Sighted users
+   see the canvas underneath; pointer-events:none so clicks/selection still
+   reach the text layer for selection-and-copy. z-index:2 puts it above the
+   text layer so caret browsing lands on the semantic block, not the
+   transparent text item. */
+.pdf-viewer-semantic-layer {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 2;
+    color: transparent;
+    caret-color: var(--color-text);
+    white-space: normal;
+    border: 0;
+    padding: 0;
+    margin: 0;
+}
+
+.pdf-viewer-semantic-layer h1,
+.pdf-viewer-semantic-layer h2,
+.pdf-viewer-semantic-layer h3,
+.pdf-viewer-semantic-layer h4,
+.pdf-viewer-semantic-layer h5,
+.pdf-viewer-semantic-layer h6,
+.pdf-viewer-semantic-layer p,
+.pdf-viewer-semantic-layer ul,
+.pdf-viewer-semantic-layer ol,
+.pdf-viewer-semantic-layer li,
+.pdf-viewer-semantic-layer blockquote,
+.pdf-viewer-semantic-layer figure,
+.pdf-viewer-semantic-layer figcaption,
+.pdf-viewer-semantic-layer nav,
+.pdf-viewer-semantic-layer aside,
+.pdf-viewer-semantic-layer section,
+.pdf-viewer-semantic-layer article,
+.pdf-viewer-semantic-layer div,
+.pdf-viewer-semantic-layer span {
+    position: static;
+    display: block;
+    margin: 0;
+    padding: 0;
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: inherit;
+    color: inherit;
+    background: none;
+    border: none;
+}
+
+.pdf-viewer-semantic-layer span { display: inline; }
+.pdf-viewer-semantic-layer table { display: table; }
+.pdf-viewer-semantic-layer tr { display: table-row; }
+.pdf-viewer-semantic-layer th,
+.pdf-viewer-semantic-layer td { display: table-cell; }
+.pdf-viewer-semantic-layer thead { display: table-header-group; }
+.pdf-viewer-semantic-layer tbody { display: table-row-group; }
+.pdf-viewer-semantic-layer tfoot { display: table-footer-group; }
+.pdf-viewer-semantic-layer ul,
+.pdf-viewer-semantic-layer ol { list-style: none; }
+.pdf-viewer-semantic-layer li { display: list-item; }
+
+.pdf-viewer-text-layer ::selection {
+    background: rgba(26, 82, 118, 0.25);
+}
+
+.pdf-viewer-overlay-layer {
+    z-index: 2;
+    /* The container itself is non-interactive; the rects below opt back in. */
+    pointer-events: none;
+}
+
+.pdf-viewer-overlay-layer .pdf-issue-overlay {
+    pointer-events: auto;
+    cursor: pointer;
+    fill: var(--color-severity-medium-bg);
+    fill-opacity: 0.18;
+    stroke: var(--color-severity-medium-border);
+    stroke-width: 2;
+    transition: fill-opacity 0.12s ease, stroke-width 0.12s ease;
+}
+
+.pdf-viewer-overlay-layer .pdf-issue-overlay.is-fail {
+    fill: var(--color-severity-high-bg);
+    stroke: var(--color-severity-high-border);
+}
+
+.pdf-viewer-overlay-layer .pdf-issue-overlay:hover,
+.pdf-viewer-overlay-layer .pdf-issue-overlay:focus-visible {
+    fill-opacity: 0.35;
+    stroke-width: 3;
+    outline: none;
+}
+
+.pdf-viewer-overlay-layer .pdf-issue-overlay.is-selected {
+    fill-opacity: 0.45;
+    stroke-width: 4;
+}
+
+/* Connector layer — overlays the entire host so lines can span panes.
+   Pointer-events:none so it never intercepts clicks.
+   display:block to keep SVG out of any inline-flow surprises. */
+.pdf-viewer-connector-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 3;
+    display: block;
+    overflow: visible;
+}
+
+.pdf-viewer-connector-layer .pdf-connector-line {
+    fill: none;
+}
+
+.pdf-viewer-connector-layer .is-fail.is-outer  { stroke: var(--color-severity-high); }
+.pdf-viewer-connector-layer .is-fail.is-mid    { stroke: var(--color-bg-elevated); }
+.pdf-viewer-connector-layer .is-fail.is-inner  { stroke: var(--color-severity-high); }
+.pdf-viewer-connector-layer .is-warn.is-outer  { stroke: var(--color-severity-medium); }
+.pdf-viewer-connector-layer .is-warn.is-mid    { stroke: var(--color-bg-elevated); }
+.pdf-viewer-connector-layer .is-warn.is-inner  { stroke: var(--color-severity-medium); }
+
+/* Right-pane Viewer issue list — JS-rendered from issue_map.json.
+   Cards must carry a high stacking context so connector lines reach
+   them, and a focus ring for keyboard users. */
+.pdf-viewer-issues-panel {
+    position: relative;
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    padding: 0.75rem 1rem;
+}
+
+.pdf-viewer-issue-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.pdf-viewer-issue-card {
+    position: relative;
+    background: var(--color-bg-subtle);
+    border-left: 4px solid var(--color-severity-medium-border);
+    border-radius: var(--border-radius);
+    padding: 0;
+    transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.pdf-viewer-issue-card.is-fail {
+    border-left-color: var(--color-severity-high-border);
+}
+
+.pdf-viewer-issue-card.is-selected {
+    background: var(--color-brand-subtle);
+    box-shadow: 0 0 0 2px var(--color-border-input-focus);
+}
+
+/* Native <details>/<summary> expansion — same conventions as pdfMax's
+   CheckerReport: data-check-result and data-check-name attributes on the
+   <details> so filter/scroll machinery can target them. */
+.pdf-viewer-issue-details {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+}
+
+.pdf-viewer-issue-summary {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    user-select: none;
+    flex-wrap: wrap;
+}
+
+.pdf-viewer-issue-summary:hover {
+    background: var(--color-brand-subtle);
+}
+
+.pdf-viewer-issue-summary:focus-visible {
+    outline: 2px solid var(--color-border-input-focus);
+    outline-offset: -2px;
+}
+
+.pdf-viewer-issue-card-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--color-text);
+    overflow-wrap: anywhere;
+}
+
+.pdf-viewer-issue-card-page {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.pdf-viewer-issue-card-body {
+    padding: 0 0.75rem 0.75rem 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.pdf-viewer-issue-page-btn {
+    align-self: flex-start;
+}
+
+.pdf-viewer-issue-card-detail {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    line-height: 1.4;
+}
+
+.pdf-viewer-issue-card-detail-list {
+    margin: 0;
+    padding-left: 1.25rem;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    line-height: 1.4;
+}
+
+.pdf-viewer-issue-card-detail-list li {
+    margin: 0.1rem 0;
+}
+
+.pdf-viewer-issue-card-body strong { font-weight: 600; color: var(--color-text); }
+.pdf-viewer-issue-card-body em { font-style: italic; }
+.pdf-viewer-issue-card-body code {
+    font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+    font-size: 0.85em;
+    padding: 0 0.2em;
+    background: var(--color-bg-elevated);
+    border-radius: 3px;
 }

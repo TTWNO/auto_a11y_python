@@ -25,6 +25,7 @@ from auto_a11y.models import (
     TestSchedule, ScheduleRunStatus,
     ShareToken, TokenScope
 )
+from auto_a11y.models.pdf_document import PdfDocument, PdfDocumentStatus
 from auto_a11y.models.permission_group import PermissionGroup
 
 logger = logging.getLogger(__name__)
@@ -71,6 +72,7 @@ class Database:
         self.share_tokens: Collection[dict[str, Any]] = self.db.share_tokens  # Public share tokens
         self.groups: Collection[dict[str, Any]] = self.db['groups']  # Permission groups
         self.issues: Collection[dict[str, Any]] = self.db.issues  # Issues for Drupal sync
+        self.pdf_documents: Collection[dict[str, Any]] = self.db.pdf_documents  # Downloaded auditable PDFs
 
         # Create indexes
         self._create_indexes()
@@ -215,6 +217,16 @@ class Database:
         # Share tokens (public share links)
         self.share_tokens.create_index("token_hash", unique=True)
         self.share_tokens.create_index([("scope", 1), ("scope_id", 1)])
+
+        # PDF documents (downloaded auditable PDF artefacts)
+        self.pdf_documents.create_index(
+            [("website_id", 1), ("sha256", 1)],
+            unique=True,
+            name="pdf_documents_website_sha_unique",
+        )
+        self.pdf_documents.create_index([("project_id", 1), ("discovered_at", -1)])
+        self.pdf_documents.create_index([("website_id", 1), ("discovered_at", -1)])
+        self.pdf_documents.create_index("status")
 
     def test_connection(self) -> bool:
         """Test database connection"""
@@ -380,13 +392,18 @@ class Database:
         website = self.get_website(website_id)
         if not website:
             return False
-        
+
         # Delete related pages and test results
         pages = self.get_pages(website_id)
         for page in pages:
             if page.id:
                 self.delete_page(page.id)
-        
+
+        # Cascade: delete pdf_documents (and their test_results) for this website
+        for pdf in self.get_pdf_documents(website_id=website_id, limit=10000):
+            if pdf.id:
+                self.delete_pdf_document(pdf.id)
+
         # Remove from project's website list
         self.projects.update_one(
             {"_id": ObjectId(website.project_id)},
@@ -724,6 +741,13 @@ class Database:
         # Create summary document (counts only, no arrays)
         summary = {
             'page_id': test_result.page_id,
+            # Polymorphic target. Persisting both fields lets the cascade
+            # delete in :meth:`delete_pdf_document` find PDF-targeted
+            # results, and lets :meth:`TestResult.from_dict` reconstruct
+            # the polymorphism when reading the record back.
+            'target_type': test_result.target_type.value,
+            'target_id': test_result.target_id,
+            'website_id': test_result.website_id,
             'test_date': test_result.test_date,
             'duration_ms': test_result.duration_ms,
 
@@ -774,8 +798,11 @@ class Database:
             logger.error(f"Error creating test result for page {test_result.page_id}: {e}")
 
             # Create minimal error result
-            error_result = {
+            error_result: dict[str, Any] = {
                 'page_id': test_result.page_id,
+                'target_type': test_result.target_type.value,
+                'target_id': test_result.target_id,
+                'website_id': test_result.website_id,
                 'test_date': test_result.test_date,
                 'duration_ms': test_result.duration_ms,
                 'violation_count': 1,
@@ -803,8 +830,8 @@ class Database:
             result = self.test_results.insert_one(error_result)
             test_result.mongo_id = result.inserted_id
 
-        # Update page with latest test info
-        page = self.get_page(test_result.page_id)
+        # Update page with latest test info (only for page-targeted results)
+        page = self.get_page(test_result.page_id) if test_result.page_id else None
         if page:
             page.last_tested = test_result.test_date
             page.status = PageStatus.TESTED
@@ -1448,7 +1475,110 @@ class Database:
         """Delete all document references for a website"""
         result = self.document_references.delete_many({'website_id': website_id})
         return result.deleted_count > 0
-    
+
+    # PDF document methods
+
+    def create_pdf_document(self, doc: PdfDocument) -> str:
+        """Insert a new PdfDocument and return its string id.
+
+        Honors a pre-set ``doc._id`` (via :attr:`PdfDocument.mongo_id`) when
+        the caller has reserved an ``ObjectId`` ahead of insertion. This is
+        the path the :class:`~auto_a11y.testing.pdf_runner.PdfRunner` uses
+        so the on-disk storage layout (which embeds the document id in its
+        path) and the Mongo ``_id`` agree from the very first insert. When
+        no id is reserved, Mongo assigns one and we back-fill it onto the
+        passed-in ``PdfDocument`` so downstream code can read ``doc.id``.
+        """
+        data = doc.to_dict()
+        if doc.mongo_id is None:
+            # ``to_dict`` only adds '_id' when set, so it's already absent.
+            result = self.pdf_documents.insert_one(data)
+            doc.mongo_id = result.inserted_id
+            return str(result.inserted_id)
+        # Pre-allocated id: ``to_dict`` has already embedded it.
+        result = self.pdf_documents.insert_one(data)
+        return str(result.inserted_id)
+
+    def get_pdf_document(self, pdf_document_id: str) -> PdfDocument | None:
+        """Get a PdfDocument by id, or None if not found / id invalid."""
+        try:
+            obj_id = ObjectId(pdf_document_id)
+        except Exception:
+            return None
+        doc = self.pdf_documents.find_one({"_id": obj_id})
+        return PdfDocument.from_dict(doc) if doc else None
+
+    def update_pdf_document(self, doc: PdfDocument) -> bool:
+        """Update an existing PdfDocument; raises ValueError if it has no _id."""
+        mongo_id = doc.mongo_id
+        if mongo_id is None:
+            raise ValueError("Cannot update a PdfDocument without _id")
+        data = doc.to_dict()
+        data.pop('_id', None)
+        result = self.pdf_documents.update_one({"_id": mongo_id}, {"$set": data})
+        return result.modified_count > 0
+
+    def delete_pdf_document(self, pdf_document_id: str) -> bool:
+        """Delete a PdfDocument and its associated test_results."""
+        try:
+            obj_id = ObjectId(pdf_document_id)
+        except Exception:
+            return False
+        # Cascade: delete associated test results first
+        self.test_results.delete_many(
+            {"target_type": "pdf_document", "target_id": pdf_document_id}
+        )
+        result = self.pdf_documents.delete_one({"_id": obj_id})
+        return result.deleted_count > 0
+
+    def find_pdf_document_by_sha256(
+        self, website_id: str, sha256: str
+    ) -> PdfDocument | None:
+        """Find a PdfDocument by (website_id, sha256), the dedup key."""
+        doc = self.pdf_documents.find_one(
+            {"website_id": website_id, "sha256": sha256}
+        )
+        return PdfDocument.from_dict(doc) if doc else None
+
+    def find_pdf_document_by_url(
+        self, website_id: str, source_url: str
+    ) -> PdfDocument | None:
+        """Find any PdfDocument fetched from ``source_url`` for a website.
+
+        Used by discovery's auto-fetch step to skip re-downloading URLs
+        that have already been ingested. SHA-256 dedup still applies for
+        documents that arrive via a different URL.
+        """
+        doc = self.pdf_documents.find_one(
+            {"website_id": website_id, "source_url": source_url}
+        )
+        return PdfDocument.from_dict(doc) if doc else None
+
+    def get_pdf_documents(
+        self,
+        *,
+        website_id: str | None = None,
+        project_id: str | None = None,
+        status: PdfDocumentStatus | None = None,
+        limit: int = 100,
+        skip: int = 0,
+    ) -> list[PdfDocument]:
+        """List PdfDocuments with optional filters, newest discovery first."""
+        query: dict[str, object] = {}
+        if website_id is not None:
+            query['website_id'] = website_id
+        if project_id is not None:
+            query['project_id'] = project_id
+        if status is not None:
+            query['status'] = status.value
+        docs = (
+            self.pdf_documents.find(query)
+            .sort("discovered_at", -1)
+            .skip(skip)
+            .limit(limit)
+        )
+        return [PdfDocument.from_dict(d) for d in docs]
+
     # Discovery Run methods
     def create_discovery_run(self, discovery_run: DiscoveryRun) -> str:
         """Create a new discovery run"""

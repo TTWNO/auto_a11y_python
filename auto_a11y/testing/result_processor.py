@@ -468,7 +468,10 @@ class ResultProcessor:
                 impact = ImpactLevel.HIGH if impact_str == 'High' else (
                     ImpactLevel.MEDIUM if impact_str == 'Medium' else ImpactLevel.LOW
                 )
-                description = enhanced_desc.get('what', '')
+                # Use what_generic for the violation's description field so it
+                # is a static, translatable string (in inline_issue_ids.json).
+                # Instance-specific interpolated text lives in metadata['what'].
+                description = generic_what or enhanced_desc.get('what', '')
                 # Get WCAG criteria and enrich with full names and levels
                 wcag_criteria = enhanced_desc.get('wcag', [])
                 wcag_full = enrich_wcag_criteria(wcag_criteria) if wcag_criteria else []

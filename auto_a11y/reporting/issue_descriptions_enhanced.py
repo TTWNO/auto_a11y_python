@@ -3787,6 +3787,24 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'wcag': ['1.4.8'],
             'remediation': "Move layout CSS from <style> tags to external CSS files loaded via <link> elements, combine styles from multiple pages into shared stylesheets to improve caching, use CSS modules or build tools to manage styles systematically, keep <style> tags only for critical above-the-fold CSS if optimizing initial paint time, document any remaining embedded styles with comments explaining why external CSS isn\'t suitable, and ensure responsive design and media queries are managed in external files where they can be easily updated"
         },
+        'ErrOrphanedMenuitem': {
+            'title': "Menu item is not inside a menu container",
+            'what': 'Element has role="menuitem" but is not inside a parent with role="menu"',
+            'why': "An orphaned menuitem (role=\"menuitem\" without a surrounding role=\"menu\" or role=\"menubar\") is invalid ARIA. Screen readers expect menu items to appear inside a menu container so they can announce item position (e.g. \"item 2 of 5\") and enable menu-specific keyboard shortcuts (arrows, Home, End). Without the container the item loses its navigational context.",
+            'who': "Screen reader users who lose positional context and menu-specific keyboard navigation, keyboard-only users who expect arrow-key navigation between menu items",
+            'impact': ImpactScale.HIGH.value,
+            'wcag': ['1.3.1', '4.1.2'],
+            'remediation': "Wrap the menuitem element(s) in a container with role=\"menu\" or role=\"menubar\". Ensure the container is keyboard-navigable (arrow keys between items) and that each item has an accessible name."
+        },
+        'WarnListRoleOnList': {
+            'title': "List element has redundant or inappropriate role=\"list\"",
+            'what': 'List element has redundant or inappropriate role="list"',
+            'why': "HTML list elements (<ul>, <ol>) already have an implicit ARIA role of \"list\". Adding an explicit role=\"list\" is redundant and can indicate a misunderstanding of ARIA semantics. For <dl> elements, role=\"list\" is inappropriate because it obscures the term-definition relationship that the description list conveys.",
+            'who': "Developers maintaining the codebase, users of description lists who lose the term-definition relationship when role=\"list\" overrides native semantics",
+            'impact': ImpactScale.LOW.value,
+            'wcag': ['1.3.1', '4.1.2'],
+            'remediation': "Remove the explicit role=\"list\" attribute from <ul> and <ol> elements — their native semantics already provide the list role. For <dl> elements, remove role=\"list\" entirely to preserve the description list semantics, or use a more appropriate role if the element is not being used as a description list."
+        },
     }
     
     # Get the specific description for this error type

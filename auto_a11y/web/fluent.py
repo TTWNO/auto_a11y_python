@@ -244,9 +244,13 @@ def ftl_translate_issue(text: str) -> str:
 
     This replaces the old ``translate_issue`` Jinja2 filter.
 
-    In strict mode, an unmapped English string raises
-    ``MissingTranslationError`` so CI catches untranslated issue
-    descriptions.
+    Unlike ``ftl()``, this function never raises in strict mode.
+    Issue descriptions are inherently dynamic — many contain
+    instance-specific values (counts, measurements, element names)
+    that cannot be pre-registered in the static JSON map.  Crashing
+    the page is worse than showing the English fallback.  Translation
+    coverage is enforced at CI time by dedicated tests in
+    ``tests/test_fluent.py::TestInlineIssueIdsCoverage``.
     """
     if not text:
         return text or ''
@@ -254,8 +258,9 @@ def ftl_translate_issue(text: str) -> str:
     ftl_id = id_map.get(text)
     if ftl_id is None:
         if _is_strict():
-            raise MissingTranslationError(
-                f"Inline issue text has no entry in inline_issue_ids.json:\n  {text!r}\n  Strict mode is active. Add this English string to:\n    auto_a11y/web/translations/inline_issue_ids.json"
+            logger.warning(
+                "Inline issue text has no entry in inline_issue_ids.json: %s",
+                text[:120],
             )
         # No mapping — return original text
         return text

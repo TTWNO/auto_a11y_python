@@ -10,9 +10,8 @@ from auto_a11y.reporting.static_html_generator import StaticHTMLReportGenerator
 class TestStaticHTMLSummaryCollection:
     """Tests for _collect_summary_stats() — Pass 1 of the two-pass approach."""
 
-    def __init__(self) -> None:
-        self.mock_db = MagicMock()
-        self.gen = StaticHTMLReportGenerator.__new__(StaticHTMLReportGenerator)
+    gen = StaticHTMLReportGenerator.__new__(StaticHTMLReportGenerator)
+    mock_db = MagicMock()
 
     def setup_method(self) -> None:
         self.gen = StaticHTMLReportGenerator.__new__(StaticHTMLReportGenerator)
@@ -267,9 +266,8 @@ def _make_mock_test_result(violations: list[Any] | None = None,
 class TestDedupStreaming:
     """Tests for _collect_dedup_data_streaming() — streaming dedup report data collection."""
 
-    def __init__(self) -> None:
-        self.mock_db = MagicMock()
-        self.gen = StaticHTMLReportGenerator.__new__(StaticHTMLReportGenerator)
+    gen = StaticHTMLReportGenerator.__new__(StaticHTMLReportGenerator)
+    mock_db = MagicMock()
 
     def setup_method(self) -> None:
         self.gen = StaticHTMLReportGenerator.__new__(StaticHTMLReportGenerator)
@@ -520,9 +518,8 @@ class TestDedupStreaming:
 class TestGroupUnassignedByPageStreaming:
     """Tests for _group_unassigned_by_page_streaming()."""
 
-    def __init__(self) -> None:
-        self.mock_db = MagicMock()
-        self.gen = StaticHTMLReportGenerator.__new__(StaticHTMLReportGenerator)
+    gen = StaticHTMLReportGenerator.__new__(StaticHTMLReportGenerator)
+    mock_db = MagicMock()
 
     def setup_method(self) -> None:
         self.gen = StaticHTMLReportGenerator.__new__(StaticHTMLReportGenerator)

@@ -247,6 +247,7 @@ cat > "$ELECTRON_DIR/build-config.json" <<BUILDCFG
     { "from": "$BUILD_DIR/mongodb", "to": "mongodb" },
     { "from": "$BUILD_DIR/chromium", "to": "chromium" }
   ],
+  "afterPack": "./afterPack.js",
   "mac": {
     "target": "dmg",
     "category": "public.app-category.developer-tools"

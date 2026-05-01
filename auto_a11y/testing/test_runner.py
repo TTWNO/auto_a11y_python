@@ -6,15 +6,17 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any, Callable, Awaitable, TYPE_CHECKING
+from typing import Any, Callable, Awaitable, Literal, TYPE_CHECKING
 from datetime import datetime
 from pathlib import Path
 import time
 
 from bson import ObjectId
 from auto_a11y.models import Page, PageStatus, TestResult
+from auto_a11y.core.async_compat import wait_for
 from auto_a11y.core.database import Database
 from auto_a11y.core.browser_manager import BrowserManager
+from auto_a11y.pdf.errors import NotAPdf, PdfTooLarge
 from auto_a11y.testing.script_injector import ScriptInjector
 from auto_a11y.testing.result_processor import ResultProcessor
 from auto_a11y.testing.script_executor import ScriptExecutor
@@ -24,20 +26,233 @@ from auto_a11y.testing.login_automation import LoginAutomation
 
 if TYPE_CHECKING:
     from auto_a11y.models import WebsiteUser, ProjectUser
+    from auto_a11y.testing.pdf_runner import PdfRunner
 
 logger = logging.getLogger(__name__)
+
+
+async def fetch_pdf_with_playwright_cookies(
+    browser_page: Any,
+    url: str,
+) -> bytes:
+    """Fallback fetch when Playwright's ``response.body()`` is unavailable.
+
+    Re-fetches via :mod:`aiohttp` using cookies extracted from the
+    Playwright browsing context. Handles edge cases where Playwright
+    streams the body or where the response object has been consumed.
+
+    Module-level so it can be monkey-patched in unit tests without
+    going through ``TestRunner`` private machinery.
+    """
+    import aiohttp
+
+    cookies_raw: list[dict[str, Any]] = await browser_page.context.cookies()
+    cookie_jar: dict[str, str] = {
+        str(c["name"]): str(c["value"]) for c in cookies_raw
+    }
+    timeout = aiohttp.ClientTimeout(total=60)
+    async with aiohttp.ClientSession(
+        cookies=cookie_jar, timeout=timeout
+    ) as session:
+        async with session.get(url) as resp:
+            if resp.status >= 400:
+                raise RuntimeError(f"Fetch failed: HTTP {resp.status}")
+            return await resp.read()
+
+
+def url_looks_like_pdf(url: str) -> bool:
+    """Heuristic: does this URL likely serve a PDF?
+
+    Used as a fallback signal when Playwright's :meth:`goto` returns
+    ``None`` (Chromium aborts navigation when the response is a
+    download — the PDF case). True if the URL path ends in ``.pdf``,
+    optionally followed by a query or fragment.
+    """
+    from urllib.parse import urlparse
+    parsed = urlparse(url)
+    return parsed.path.lower().endswith(".pdf")
+
+
+async def _audit_pdf_bytes(
+    *,
+    db: Database,
+    pdf_runner: "PdfRunner",
+    page: Page,
+    pdf_bytes: bytes,
+    run_ai_analysis: bool,
+    ai_api_key: str | None,
+) -> TestResult:
+    """Common tail used by both the in-flight (`handle_opportunistic_pdf`)
+    and the navigation-aborted (`handle_pdf_url_after_navigation_failed`)
+    paths. Validates / dedups via the runner, marks the page IS_PDF,
+    and triggers the audit.
+    """
+    website = db.get_website(page.website_id)
+    if website is None:
+        page.status = PageStatus.ERROR
+        page.error_reason = f"Website {page.website_id} not found"
+        db.update_page(page)
+        raise RuntimeError(page.error_reason)
+
+    try:
+        pdf_doc = await pdf_runner.create_or_find_pdf_document(
+            pdf_bytes,
+            website_id=page.website_id,
+            project_id=website.project_id,
+            source_type="opportunistic",
+            discovered_from_page_id=page.id,
+            discovered_from_user_id=None,
+            original_filename=page.url.rsplit("/", 1)[-1] or "document.pdf",
+            source_url=page.url,
+        )
+    except (NotAPdf, PdfTooLarge) as exc:
+        page.status = PageStatus.ERROR
+        page.error_reason = f"PDF rejected: {exc}"
+        db.update_page(page)
+        raise
+
+    page.status = PageStatus.IS_PDF
+    page.linked_pdf_document_id = pdf_doc.id
+    db.update_page(page)
+
+    return await pdf_runner.audit_pdf_document(
+        pdf_doc.id or "",
+        run_ai=run_ai_analysis,
+        ai_api_key=ai_api_key,
+        wcag_level="AA",
+    )
+
+
+async def handle_opportunistic_pdf(
+    *,
+    db: Database,
+    pdf_runner: "PdfRunner | None",
+    page: Page,
+    browser_page: Any,
+    response: Any,
+    run_ai_analysis: bool,
+    ai_api_key: str | None,
+) -> TestResult:
+    """Handle a PDF response detected during :meth:`TestRunner.test_page` navigation.
+
+    Per the audit-engine port spec: read bytes from the Playwright response
+    (preferred — avoids a re-fetch round-trip and cookie edge cases),
+    validate magic bytes / size via
+    :meth:`PdfRunner.create_or_find_pdf_document`, mark
+    ``Page.status=IS_PDF``, audit, and return the :class:`TestResult`
+    attached to the :class:`PdfDocument`.
+
+    On any failure (download, magic bytes, size, audit) the page is
+    marked :data:`PageStatus.ERROR` with a descriptive ``error_reason``;
+    no :class:`PdfDocument` is created on download / magic-byte failures.
+    The underlying exception is re-raised so the caller treats it like
+    any other test failure.
+
+    Module-level (rather than a private method) so unit tests can target
+    it directly without leaning on protected-member access.
+    """
+    if pdf_runner is None:
+        page.status = PageStatus.ERROR
+        page.error_reason = (
+            "PDF response detected but no PdfRunner configured."
+        )
+        db.update_page(page)
+        raise RuntimeError(page.error_reason)
+
+    try:
+        try:
+            pdf_bytes: bytes = await response.body()
+        except Exception as exc:
+            logger.warning(
+                f"response.body() failed for {page.url}: {exc}; "
+                + "falling back to aiohttp fetch with seeded cookies"
+            )
+            pdf_bytes = await fetch_pdf_with_playwright_cookies(
+                browser_page, page.url
+            )
+    except Exception as exc:
+        page.status = PageStatus.ERROR
+        page.error_reason = f"PDF download failed: {exc}"
+        db.update_page(page)
+        raise
+
+    return await _audit_pdf_bytes(
+        db=db,
+        pdf_runner=pdf_runner,
+        page=page,
+        pdf_bytes=pdf_bytes,
+        run_ai_analysis=run_ai_analysis,
+        ai_api_key=ai_api_key,
+    )
+
+
+async def handle_pdf_url_after_navigation_failed(
+    *,
+    db: Database,
+    pdf_runner: "PdfRunner | None",
+    page: Page,
+    run_ai_analysis: bool,
+    ai_api_key: str | None,
+) -> TestResult:
+    """Fallback when Playwright's ``goto`` returns ``None`` on a PDF URL.
+
+    Chromium aborts navigation when the response is a download (the
+    default behaviour for ``application/pdf``), so the response object
+    we'd ordinarily inspect is unavailable. We re-fetch directly via
+    aiohttp through :meth:`PdfRunner.fetch_pdf_from_url`, then run the
+    same opportunistic-audit tail.
+    """
+    if pdf_runner is None:
+        page.status = PageStatus.ERROR
+        page.error_reason = (
+            "PDF URL detected but no PdfRunner configured."
+        )
+        db.update_page(page)
+        raise RuntimeError(page.error_reason)
+
+    try:
+        pdf_bytes = await pdf_runner.fetch_pdf_from_url(page.url)
+    except (NotAPdf, PdfTooLarge) as exc:
+        page.status = PageStatus.ERROR
+        page.error_reason = f"PDF rejected: {exc}"
+        db.update_page(page)
+        raise
+    except Exception as exc:
+        page.status = PageStatus.ERROR
+        page.error_reason = f"PDF download failed: {exc}"
+        db.update_page(page)
+        raise
+
+    return await _audit_pdf_bytes(
+        db=db,
+        pdf_runner=pdf_runner,
+        page=page,
+        pdf_bytes=pdf_bytes,
+        run_ai_analysis=run_ai_analysis,
+        ai_api_key=ai_api_key,
+    )
 
 
 class TestRunner:
     """Runs accessibility tests on web pages"""
     
-    def __init__(self, database: Database, browser_config: dict[str, Any]) -> None:
+    def __init__(
+        self,
+        database: Database,
+        browser_config: dict[str, Any],
+        pdf_runner: "PdfRunner | None" = None,
+    ) -> None:
         """
         Initialize test runner
 
         Args:
             database: Database connection
             browser_config: Browser configuration
+            pdf_runner: Optional PdfRunner. Required for the opportunistic
+                PDF detection branch in :meth:`test_page` and the
+                :meth:`test_pdf` delegate; both raise ``RuntimeError`` when
+                ``None``. Defaults to ``None`` so existing call sites that
+                only audit HTML pages continue to work unchanged.
         """
         self.db: Database = database
         self.browser_manager: BrowserManager = BrowserManager(browser_config)
@@ -51,6 +266,7 @@ class TestRunner:
         self.screenshot_dir.mkdir(exist_ok=True, parents=True)
         self._current_website_id: str | None = None  # Track current website for session management
         self._logged_in_user: WebsiteUser | ProjectUser | None = None  # Track currently logged in user
+        self._pdf_runner: "PdfRunner | None" = pdf_runner
     
     async def test_page(
         self,
@@ -153,7 +369,40 @@ class TestRunner:
                 )
 
                 if not response:
+                    # Playwright's goto() returns None on download responses
+                    # (Chromium's default behaviour for application/pdf is to
+                    # download, which aborts the navigation). If the URL
+                    # looks like a PDF, route through the opportunistic
+                    # audit flow via a direct fetch.
+                    if url_looks_like_pdf(page.url):
+                        return await handle_pdf_url_after_navigation_failed(
+                            db=self.db,
+                            pdf_runner=self._pdf_runner,
+                            page=page,
+                            run_ai_analysis=run_ai_analysis,
+                            ai_api_key=ai_api_key,
+                        )
                     raise RuntimeError(f"Failed to load page: {page.url}")
+
+                # Opportunistic PDF detection — must happen before wait_for_selector('body')
+                # because a PDF response has no <body>; the wait would error.
+                content_type = (response.headers.get("content-type") or "").lower()
+                url_path = browser_page.url.lower()
+                is_pdf_response = (
+                    content_type.startswith("application/pdf")
+                    or (
+                        content_type.startswith("application/octet-stream")
+                        and url_path.endswith(".pdf")
+                    )
+                )
+                if is_pdf_response:
+                    return await self._handle_opportunistic_pdf(
+                        page=page,
+                        browser_page=browser_page,
+                        response=response,
+                        run_ai_analysis=run_ai_analysis,
+                        ai_api_key=ai_api_key,
+                    )
 
                 # Wait for content to be ready
                 await browser_page.wait_for_selector('body', timeout=5000)
@@ -539,6 +788,61 @@ class TestRunner:
             
             return test_result
 
+    async def test_pdf(
+        self,
+        pdf_document_id: str,
+        *,
+        run_ai_analysis: bool = False,
+        ai_api_key: str | None = None,
+        wcag_level: Literal["AA", "AAA"] = "AA",
+        locale: str = "en",
+    ) -> TestResult:
+        """Audit an existing :class:`PdfDocument` by ID.
+
+        Thin delegate to :meth:`PdfRunner.audit_pdf_document`. Used by manual
+        "test this PDF" UI actions and the opportunistic branch in
+        :meth:`test_page`.
+
+        Raises:
+            RuntimeError: if no :class:`PdfRunner` was attached at construction.
+        """
+        if self._pdf_runner is None:
+            raise RuntimeError(
+                "TestRunner has no PdfRunner attached; cannot audit PDF documents."
+            )
+        return await self._pdf_runner.audit_pdf_document(
+            pdf_document_id,
+            run_ai=run_ai_analysis,
+            ai_api_key=ai_api_key,
+            wcag_level=wcag_level,
+            locale=locale,
+        )
+
+    async def _handle_opportunistic_pdf(
+        self,
+        *,
+        page: Page,
+        browser_page: Any,
+        response: Any,
+        run_ai_analysis: bool,
+        ai_api_key: str | None,
+    ) -> TestResult:
+        """Instance-method shim around :func:`handle_opportunistic_pdf`.
+
+        Kept so the ``test_page`` call site stays a one-liner; the real
+        logic lives in the module-level function so it can be tested
+        directly without crossing the protected-member boundary.
+        """
+        return await handle_opportunistic_pdf(
+            db=self.db,
+            pdf_runner=self._pdf_runner,
+            page=page,
+            browser_page=browser_page,
+            response=response,
+            run_ai_analysis=run_ai_analysis,
+            ai_api_key=ai_api_key,
+        )
+
     async def test_page_multi_state(
         self,
         page: Page,
@@ -684,7 +988,7 @@ class TestRunner:
                 """Run accessibility tests and return TestResult"""
                 # Verify browser connection before starting tests
                 try:
-                    ready_state = await asyncio.wait_for(
+                    ready_state = await wait_for(
                         browser_page.evaluate('() => document.readyState'),
                         timeout=5.0
                     )
@@ -728,7 +1032,7 @@ class TestRunner:
 
                 # Verify connection still alive after injection
                 try:
-                    await asyncio.wait_for(
+                    await wait_for(
                         browser_page.evaluate('() => true'),
                         timeout=2.0
                     )
@@ -754,7 +1058,7 @@ class TestRunner:
                 # Verify browser connection after all tests complete
                 logger.debug("DEBUG run_single_test: all tests complete, verifying connection")
                 try:
-                    await asyncio.wait_for(
+                    await wait_for(
                         browser_page.evaluate('() => document.readyState'),
                         timeout=5.0
                     )
@@ -781,7 +1085,7 @@ class TestRunner:
                 if take_screenshot:
                     # Verify browser is still connected before taking screenshot
                     try:
-                        await asyncio.wait_for(
+                        await wait_for(
                             browser_page.evaluate('() => document.readyState'),
                             timeout=5.0
                         )

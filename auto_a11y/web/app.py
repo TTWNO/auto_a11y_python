@@ -35,7 +35,8 @@ from auto_a11y.web.routes import (
     share_tokens_bp,
     public_bp,
     members_bp,
-    desktop_bp
+    desktop_bp,
+    pdf_bp,
 )
 from auto_a11y.web.routes.demo import demo_bp
 from auto_a11y.web.typed_app import redirect
@@ -155,6 +156,20 @@ def create_app(config: Any) -> Flask:
     from auto_a11y.core.task_runner import task_runner
     task_runner.start()
 
+    # Initialize PDF audit runner (Phase 8.1 / 9.3) — exposed via
+    # ``current_app.pdf_runner`` (see ``typed_app.get_pdf_runner``).
+    from pathlib import Path as _Path
+    from auto_a11y.pdf.storage import PdfStorage as _PdfStorage
+    from auto_a11y.testing.pdf_runner import PdfRunner as _PdfRunner
+    _pdf_storage = _PdfStorage(base_dir=_Path(config.PDF_STORAGE_DIR))
+    setattr(app, 'pdf_runner', _PdfRunner(
+        database=db,
+        storage=_pdf_storage,
+        max_parallel=config.PDF_AUDIT_MAX_PARALLEL,
+        max_size_mb=config.PDF_MAX_SIZE_MB,
+        ghostscript_path_override=config.GHOSTSCRIPT_PATH,
+    ))
+
     # Initialize scheduler for scheduled testing
     if config.SCHEDULER_ENABLED:
         from auto_a11y.core.scheduler import SchedulerService
@@ -178,10 +193,20 @@ def create_app(config: Any) -> Flask:
         except Exception as e:
             logger.warning(f"Task runner shutdown error: {e}")
 
+        _pdf_runner = getattr(app, 'pdf_runner', None)
+        if _pdf_runner is not None:
+            logger.info("Shutting down PDF runner...")
+            try:
+                _pdf_runner.shutdown()
+            except Exception as e:
+                logger.warning(f"PDF runner shutdown error: {e}")
+
         _scheduler = getattr(app, 'scheduler', None)
         if _scheduler:
             logger.info("Shutting down scheduler...")
-            _scheduler.shutdown()
+            # wait=False so APScheduler doesn't block atexit waiting for
+            # in-flight scheduled jobs to finish (Ctrl+C should be prompt).
+            _scheduler.shutdown(wait=False)
 
     atexit.register(_graceful_shutdown)
 
@@ -214,6 +239,9 @@ def create_app(config: Any) -> Flask:
     app.register_blueprint(share_tokens_bp, url_prefix='/share-tokens')
     app.register_blueprint(public_bp, url_prefix='')
     app.register_blueprint(members_bp)
+    # PDF routes already include /projects/, /websites/, and /pdfs/
+    # prefixes in their rules — register at the root.
+    app.register_blueprint(pdf_bp, url_prefix='')
 
     from auto_a11y.web.routes.groups import groups_bp
     app.register_blueprint(groups_bp, url_prefix='/groups')
@@ -485,16 +513,23 @@ def create_app(config: Any) -> Flask:
     # Security headers
     @app.after_request
     def add_security_headers(response: Response) -> Response:
-        response.headers['X-Frame-Options'] = 'DENY'
+        # Only set the global DENY if the route hasn't already set its own
+        # X-Frame-Options (the PDF /pdfs/<id>/file route uses SAMEORIGIN so
+        # the inline viewer iframe on the detail page can render).
+        if 'X-Frame-Options' not in response.headers:
+            response.headers['X-Frame-Options'] = 'DENY'
         response.headers['X-Content-Type-Options'] = 'nosniff'
         response.headers['X-XSS-Protection'] = '0'
-        response.headers['Content-Security-Policy'] = (
-            "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://code.jquery.com; "
-            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
-            "img-src 'self' data:; "
-            "font-src 'self' https://cdn.jsdelivr.net"
-        )
+        # Same logic for CSP — routes that need a permissive frame-ancestors
+        # directive (e.g. the PDF inline viewer) set their own CSP first.
+        if 'Content-Security-Policy' not in response.headers:
+            response.headers['Content-Security-Policy'] = (
+                "default-src 'self'; "
+                "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://code.jquery.com; "
+                "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+                "img-src 'self' data:; "
+                "font-src 'self' https://cdn.jsdelivr.net"
+            )
         if not config.DEBUG:
             response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
         return response

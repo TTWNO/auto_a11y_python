@@ -4,7 +4,7 @@ Website model for managing sites within projects
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from datetime import datetime
 from typing import Any
 from bson import ObjectId
@@ -22,6 +22,7 @@ class ScrapingConfig:
     request_delay: float = 1.0
     allowed_paths: list[str] = field(default_factory=lambda: [])
     excluded_paths: list[str] = field(default_factory=lambda: [])
+    auto_fetch_pdfs: bool = True
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary"""
@@ -33,13 +34,17 @@ class ScrapingConfig:
             'respect_robots': self.respect_robots,
             'request_delay': self.request_delay,
             'allowed_paths': self.allowed_paths,
-            'excluded_paths': self.excluded_paths
+            'excluded_paths': self.excluded_paths,
+            'auto_fetch_pdfs': self.auto_fetch_pdfs,
         }
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ScrapingConfig:
-        """Create from dictionary"""
-        return cls(**data) if data else cls()
+        """Create from dictionary, ignoring unknown keys for forward-compat."""
+        if not data:
+            return cls()
+        known = {f.name for f in fields(cls)}
+        return cls(**{k: v for k, v in data.items() if k in known})
 
 
 @dataclass

@@ -423,6 +423,7 @@ tokens.css (design tokens)  →  style.css (utility classes)  →  templates/JS/
 4. **Bootstrap structural classes are fine** — `btn`, `badge`, `alert`, `card`, `table`, `form-control`, layout utilities (`d-flex`, `row`, `col-*`, `mb-3`), etc. Only the **colour** variants are prohibited
 5. **In Jinja2 dynamic patterns**, use dictionary lookups that map to custom class names (e.g., `badge-{{ {'high': 'high', 'medium': 'medium', 'low': 'info'}[impact] }}`)
 6. **In standalone JS files**, use the custom class names in `classList.add()`, `querySelector()`, and template literals
+7. **Every colour change MUST meet WCAG 2.2 AA contrast requirements** — text: 4.5:1 minimum (SC 1.4.3), large text: 3:1 minimum (SC 1.4.3), non-text UI components and graphical objects: 3:1 minimum (SC 1.4.11). Verify contrast ratios before committing any colour modification
 
 ## Type Checking (MANDATORY)
 

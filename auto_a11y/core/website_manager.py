@@ -4,7 +4,7 @@ Website management business logic
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, TYPE_CHECKING
 from datetime import datetime
 from urllib.parse import urlparse
 
@@ -16,22 +16,35 @@ from auto_a11y.core.scraping_job import ScrapingJob
 from auto_a11y.core.testing_job import TestingJob
 from auto_a11y.core.job_manager import JobManager, JobType
 
+if TYPE_CHECKING:
+    from auto_a11y.testing.pdf_runner import PdfRunner
+
 logger = logging.getLogger(__name__)
 
 
 class WebsiteManager:
     """Manages website operations"""
     
-    def __init__(self, database: Database, browser_config: dict[str, Any]):
+    def __init__(
+        self,
+        database: Database,
+        browser_config: dict[str, Any],
+        pdf_runner: "PdfRunner | None" = None,
+    ):
         """
         Initialize website manager
-        
+
         Args:
             database: Database connection
             browser_config: Browser configuration
+            pdf_runner: Optional PdfRunner. When provided, page discovery
+                downloads internal PDFs found during the crawl and
+                promotes them to PdfDocuments so they appear in the PDFs
+                UI. ``None`` disables that step (e.g. test contexts).
         """
         self.db = database
         self.browser_config = browser_config
+        self.pdf_runner: "PdfRunner | None" = pdf_runner
         # Initialize job manager for database-backed job tracking
         self.job_manager: JobManager = JobManager(database)
     
@@ -295,7 +308,7 @@ class WebsiteManager:
         
         # Run discovery
         logger.info(f"Starting job.run for {job_id}")
-        await job.run(self.db, self.browser_config)
+        await job.run(self.db, self.browser_config, pdf_runner=self.pdf_runner)
         logger.info(f"job.run completed for {job_id}")
         
         logger.info(f"Completed discovery job {job_id} for website {website_id}")

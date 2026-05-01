@@ -3,12 +3,199 @@ Database-backed scraping job implementation
 """
 from __future__ import annotations
 
+import asyncio
 import logging
+from collections.abc import Callable
 from datetime import datetime
-from typing import Any
+from typing import Any, TYPE_CHECKING
 from auto_a11y.core.job_manager import JobManager, JobType, JobStatus
 from auto_a11y.core.database import Database
 from auto_a11y.models.page import Page
+
+if TYPE_CHECKING:
+    from auto_a11y.models.website import Website
+    from auto_a11y.testing.pdf_runner import PdfRunner
+
+
+def _fetch_pdf_bytes_sync(url: str, max_size_bytes: int) -> bytes:
+    """Synchronous PDF fetch with size cap and magic-byte verification.
+
+    Used by :func:`promote_discovered_pdfs` instead of the runner's
+    aiohttp-backed fetcher because the discovery wrapper runs the
+    coroutine chain through ``nest_asyncio`` + ``run_until_complete``,
+    which breaks aiohttp's internal timeout context manager
+    (``asyncio.current_task()`` returns ``None``). Plain ``urllib`` has
+    no such requirement, and we offload it to a worker thread via
+    ``asyncio.to_thread`` so the event loop isn't blocked.
+
+    Mirrors :meth:`PdfRunner.fetch_pdf_from_url`'s contract:
+
+    * Raises :class:`FetchFailed` on network or non-2xx HTTP errors.
+    * Raises :class:`PdfTooLarge` if the streamed body exceeds
+      ``max_size_bytes``.
+    * Raises :class:`NotAPdf` if the response doesn't start with
+      ``%PDF-``.
+    """
+    import urllib.error
+    import urllib.request
+
+    from auto_a11y.pdf.errors import FetchFailed, NotAPdf, PdfTooLarge
+
+    try:
+        with urllib.request.urlopen(url, timeout=60) as resp:
+            chunks: list[bytes] = []
+            total = 0
+            while True:
+                chunk = resp.read(8192)
+                if not chunk:
+                    break
+                total += len(chunk)
+                if total > max_size_bytes:
+                    raise PdfTooLarge(
+                        size_bytes=total, limit_bytes=max_size_bytes
+                    )
+                chunks.append(chunk)
+            data = b"".join(chunks)
+    except urllib.error.HTTPError as exc:
+        raise FetchFailed(url, f"HTTP {exc.code}") from exc
+    except urllib.error.URLError as exc:
+        raise FetchFailed(url, f"Network error: {exc.reason}") from exc
+    except (PdfTooLarge, NotAPdf):
+        raise
+    except Exception as exc:  # noqa: BLE001 — propagate as fetch error
+        raise FetchFailed(url, f"Unexpected error: {exc}") from exc
+
+    if not data.startswith(b"%PDF-"):
+        raise NotAPdf(
+            f"Response from {url} did not start with %PDF- magic bytes"
+        )
+    return data
+
+
+async def promote_discovered_pdfs(
+    *,
+    database: Database,
+    website: "Website",
+    pdf_runner: "PdfRunner | None",
+    website_id: str,
+    is_cancelled: Callable[[], bool],
+) -> None:
+    """Download internal PDF DocumentReferences and create PdfDocuments.
+
+    Idempotent: ``find_pdf_document_by_url`` skips URLs already ingested,
+    and ``PdfRunner.create_or_find_pdf_document`` SHA-256-dedupes the rest.
+    Per-PDF errors are logged and swallowed so one bad URL doesn't abort
+    the loop. Audits for the resulting documents are queued separately
+    when the user clicks "Test All Pages" — see
+    :func:`auto_a11y.core.pdf_audit_job.queue_audits_for_website`.
+    """
+    if pdf_runner is None:
+        logger.info(
+            "Auto-fetch PDFs skipped for %s: no PdfRunner configured",
+            website_id,
+        )
+        return
+    if not getattr(website.scraping_config, 'auto_fetch_pdfs', True):
+        logger.info(
+            "Auto-fetch PDFs skipped for %s: disabled on website",
+            website_id,
+        )
+        return
+
+    from auto_a11y.pdf.errors import FetchFailed, NotAPdf, PdfTooLarge
+
+    refs = database.get_document_references(website_id, internal_only=True)
+    pdf_refs = [r for r in refs if r.mime_type == 'application/pdf']
+    if not pdf_refs:
+        logger.info(
+            "Auto-fetch PDFs: no internal PDF references for %s", website_id
+        )
+        return
+
+    logger.info(
+        "Auto-fetch PDFs: %d candidates for website %s",
+        len(pdf_refs),
+        website_id,
+    )
+
+    fetched = 0
+    skipped = 0
+    failed = 0
+    for ref in pdf_refs:
+        if is_cancelled():
+            logger.info("Auto-fetch PDFs interrupted by cancellation")
+            break
+
+        existing = database.find_pdf_document_by_url(
+            website_id, ref.document_url
+        )
+        if existing is not None:
+            skipped += 1
+            continue
+
+        try:
+            # Discovery runs under ``loop.run_until_complete`` +
+            # ``nest_asyncio`` (see ``websites.py``'s discovery wrapper),
+            # which leaves ``asyncio.current_task()`` returning ``None``
+            # deep in aiohttp's per-request timeout context manager and
+            # raises "Timeout context manager should be used inside a
+            # task". Bypass aiohttp here by doing a synchronous
+            # ``urllib`` fetch on a worker thread.
+            pdf_bytes = await asyncio.to_thread(
+                _fetch_pdf_bytes_sync,
+                ref.document_url,
+                pdf_runner.max_size_bytes,
+            )
+        except (FetchFailed, NotAPdf, PdfTooLarge) as exc:
+            failed += 1
+            logger.warning(
+                "Auto-fetch PDF skipped %s: %s", ref.document_url, exc
+            )
+            continue
+        except Exception as exc:
+            failed += 1
+            logger.warning(
+                "Auto-fetch PDF unexpected error for %s: %s",
+                ref.document_url,
+                exc,
+            )
+            continue
+
+        try:
+            filename = ref.document_url.rsplit('/', 1)[-1] or 'document.pdf'
+            await pdf_runner.create_or_find_pdf_document(
+                pdf_bytes,
+                website_id=website_id,
+                project_id=website.project_id,
+                source_type='discovered',
+                discovered_from_page_id=None,
+                discovered_from_user_id=None,
+                original_filename=filename,
+                source_url=ref.document_url,
+            )
+            fetched += 1
+        except (NotAPdf, PdfTooLarge) as exc:
+            failed += 1
+            logger.warning(
+                "Auto-fetch PDF rejected after download %s: %s",
+                ref.document_url,
+                exc,
+            )
+        except Exception as exc:
+            failed += 1
+            logger.warning(
+                "Auto-fetch PDF persist failed for %s: %s",
+                ref.document_url,
+                exc,
+            )
+
+    logger.info(
+        "Auto-fetch PDFs done for %s: fetched=%d, already_present=%d, failed=%d",
+        website_id,
+        fetched,
+        skipped,
+        failed,
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -203,13 +390,25 @@ class ScrapingJob:
             )
             logger.info(f"Scraping job {self.job_id} cancelled")
     
-    async def run(self, database: Database, browser_config: dict[str, Any]) -> None:
+    async def run(
+        self,
+        database: Database,
+        browser_config: dict[str, Any],
+        pdf_runner: "PdfRunner | None" = None,
+    ) -> None:
         """
-        Run the scraping job with multi-user support
+        Run the scraping job with multi-user support.
+
+        After page discovery completes, internal PDF DocumentReferences are
+        downloaded and promoted to PdfDocuments (gated by the website's
+        ``scraping_config.auto_fetch_pdfs`` flag and a non-None ``pdf_runner``).
 
         Args:
             database: Database instance
             browser_config: Browser configuration
+            pdf_runner: Optional PdfRunner used to fetch and persist PDFs
+                discovered during the crawl. When ``None`` (e.g. test
+                contexts), the auto-fetch step is skipped.
         """
         from auto_a11y.core.scraper import ScrapingEngine
         from auto_a11y.testing.login_automation import LoginAutomation
@@ -303,6 +502,18 @@ class ScrapingJob:
             logger.info(f"Updating {len(all_pages_by_url)} unique pages with visibility information")
             for page in all_pages_by_url.values():
                 database.update_page(page)
+
+            # Promote internal PDF DocumentReferences to PdfDocuments so
+            # they show up in the project/website PDFs UI. Audits are
+            # queued separately when the user clicks "Test All Pages".
+            if not self.is_cancelled():
+                await promote_discovered_pdfs(
+                    database=database,
+                    website=website,
+                    pdf_runner=pdf_runner,
+                    website_id=self.website_id,
+                    is_cancelled=self.is_cancelled,
+                )
 
             # Check final cancellation status
             if self.is_cancelled():

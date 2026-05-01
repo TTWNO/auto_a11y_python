@@ -555,3 +555,43 @@ issue-hreflang-region-qualifier-not-recognized-5383b9 = Qualificateur de région
 issue-lang-and-xml-lang-attributes-don-t-match-bc54cf = Les attributs lang et xml:lang ne correspondent pas
 issue-xml-lang-attribute-is-empty-7b6c30 = L'attribut xml:lang est vide
 issue-xml-lang-language-code-not-recognized-cd9bfa = Code de langue xml:lang non reconnu
+issue-dialog-has-role-dialog-but-no-aria-label-or-aria-labelledby-f3972b = Le dialogue a role="dialog" mais pas d'aria-label ni d'aria-labelledby
+issue-visible-modal-dialog-lacks-role-dialog-or-role-alertdialog-a22224 = Le dialogue modal visible n'a pas role="dialog" ou role="alertdialog"
+issue-svg-element-with-role-img-detected-that-requires-manual-review-to-verify-appropr-894766 = Élément SVG avec role="img" détecté nécessitant une vérification manuelle pour confirmer que des alternatives textuelles appropriées sont fournies
+issue-dialog-or-modal-element-is-missing-role-dialog-or-role-alertdialog-attribute-1ecd2f = L'élément dialogue ou modal n'a pas l'attribut role="dialog" ou role="alertdialog"
+issue-element-non-html-has-a-lang-attribute-present-but-with-no-value-lang-preventing-89a80d = L'élément (non-HTML) a un attribut lang présent mais sans valeur (lang=""), empêchant les lecteurs d'écran de déterminer les changements de langue
+issue-aria-level-attribute-without-role-heading-595e13 = Attribut aria-level sans role="heading"
+issue-html-element-has-a-lang-attribute-present-but-with-no-value-lang-preventing-scre-6224d4 = L'élément HTML a un attribut lang présent mais sans valeur (lang=""), empêchant les lecteurs d'écran de déterminer la langue de la page
+issue-alt-text-contains-image-filename-with-file-extension-e-g-photo-jpg-img-1234-png-328cc5 = Le texte alternatif contient un nom de fichier image avec extension (par ex., « photo.jpg », « IMG_1234.png », « banner.gif »), ne fournissant aucune description significative du contenu de l'image
+issue-list-item-li-or-role-listitem-is-empty-or-contains-only-whitespace-d76d66 = L'élément de liste (<li> ou role="listitem") est vide ou ne contient que des espaces
+issue-main-landmark-has-tabindex-0-which-is-inappropriate-ea222a = Le repère principal a tabindex="0", ce qui est inapproprié
+issue-interactive-map-with-aria-hidden-true-contains-focusable-elements-that-keyboard-d123b5 = La carte interactive avec aria-hidden="true" contient des éléments focalisables que les utilisateurs au clavier peuvent atteindre mais que les utilisateurs de lecteurs d'écran ne peuvent pas percevoir, créant un « piège de focus silencieux ».
+issue-map-has-generic-name-like-map-image-or-location-that-doesn-t-describe-its-purpos-ab543b = La carte a un nom générique comme « map », « image » ou « location » qui ne décrit pas son objectif
+issue-interactive-map-has-role-presentation-which-removes-semantic-meaning-from-focusa-f9b13c = La carte interactive a role="presentation", ce qui supprime la signification sémantique des éléments focalisables
+issue-interactive-element-link-button-form-control-or-custom-interactive-element-has-t-52f1d3 = L'élément interactif (lien, bouton, contrôle de formulaire ou élément interactif personnalisé) a tabindex="-1", le retirant de l'ordre de tabulation naturel et le rendant focalisable uniquement par programmation via JavaScript
+issue-navigation-menu-lacks-aria-current-page-attribute-on-the-current-page-link-preve-6ac193 = Le menu de navigation n'a pas l'attribut aria-current="page" sur le lien de la page courante, empêchant les lecteurs d'écran d'annoncer l'emplacement actuel de l'utilisateur dans la navigation du site
+issue-this-page-does-not-contain-a-main-landmark-main-element-or-role-main-to-identify-493336 = Cette page ne contient pas de repère principal (élément <main> ou role="main") pour identifier la zone de contenu principal unique à cette page
+issue-non-interactive-element-has-tabindex-0-making-it-keyboard-focusable-267ab5 = L'élément non interactif a tabindex="0", le rendant focalisable au clavier
+issue-alt-text-contains-redundant-words-like-image-of-or-picture-of-6c7bad = Le texte alternatif contient des mots redondants comme « image de » ou « photo de »
+issue-region-qualifier-in-primary-language-code-not-recognized-e-g-en-xy-73b904 = Qualificateur de région dans le code de langue principal non reconnu (par ex., « en-XY »)
+issue-role-heading-without-aria-level-c1a92d = role="heading" sans aria-level
+issue-static-inline-svg-element-does-not-have-role-img-attribute-causing-screen-reader-9c9314 = L'élément SVG en ligne statique n'a pas l'attribut role="img", ce qui amène les lecteurs d'écran soit à l'ignorer complètement, soit à tenter de naviguer dans sa structure SVG interne au lieu de le traiter comme une seule image
+issue-tabindex-0-on-non-interactive-element-6aa801 = tabindex="0" sur un élément non interactif
+issue-tooltip-element-is-missing-role-tooltip-and-proper-aria-associations-3fc2ca = L'élément infobulle n'a pas role="tooltip" ni les associations ARIA appropriées
+issue-banner-landmark-uses-generic-term-banner-in-label-be8142 = Le repère de bannière utilise le terme générique « banner » dans son étiquette
+issue-button-uses-generic-text-like-click-here-submit-or-ok-without-context-0d0038 = Le bouton utilise un texte générique comme « Cliquez ici », « Soumettre » ou « OK » sans contexte
+issue-complementary-landmark-label-uses-generic-term-complementary-1b41cd = L'étiquette du repère complémentaire utilise le terme générique « complementary »
+issue-contentinfo-landmark-uses-generic-term-contentinfo-in-label-a51f27 = Le repère contentinfo utilise le terme générique « contentinfo » dans son étiquette
+issue-document-link-uses-generic-text-like-pdf-without-describing-content-5b4eef = Le lien vers le document utilise un texte générique comme « PDF » sans décrire le contenu
+issue-iframe-has-a-title-attribute-but-it-s-generic-or-not-descriptive-e-g-iframe-fram-1610d3 = L'iframe a un attribut title mais il est générique ou non descriptif (par ex., « iframe », « frame », « contenu intégré »)
+issue-interactive-map-has-aria-hidden-or-role-presentation-which-may-hide-content-6a6cdb = La carte interactive a aria-hidden ou role="presentation", ce qui peut masquer du contenu
+issue-modal-dialog-missing-aria-modal-true-7886fa = Le dialogue modal n'a pas aria-modal="true"
+issue-navigation-landmark-uses-generic-term-navigation-in-label-b5928f = Le repère de navigation utilise le terme générique « navigation » dans son étiquette
+issue-this-page-does-not-contain-a-contentinfo-landmark-footer-element-at-page-level-o-a2d924 = Cette page ne contient pas de repère contentinfo (élément <footer> au niveau de la page ou role="contentinfo") pour identifier la zone de pied de page du site
+issue-this-page-contains-no-navigation-landmarks-nav-elements-or-elements-with-role-na-d0fa4f = Cette page ne contient aucun repère de navigation (éléments <nav> ou éléments avec role="navigation") pour identifier les zones de menu de navigation
+issue-region-landmark-incorrectly-uses-navigation-in-its-label-cd02b5 = Le repère de région utilise incorrectement « navigation » dans son étiquette
+issue-slider-control-may-be-missing-role-slider-and-required-aria-attributes-2b1b30 = Le contrôle curseur peut ne pas avoir role="slider" et les attributs ARIA requis
+issue-toggle-switch-control-may-be-missing-role-switch-and-aria-checked-attribute-6af6cc = Le contrôle interrupteur à bascule peut ne pas avoir role="switch" et l'attribut aria-checked
+issue-tree-view-navigation-may-be-missing-role-tree-role-treeitem-and-aria-expanded-at-42c9f3 = La navigation en arborescence peut ne pas avoir role="tree", role="treeitem" et les attributs aria-expanded
+issue-element-has-role-menuitem-but-is-not-inside-a-parent-with-role-menu-db612a = L'élément a role="menuitem" mais n'est pas à l'intérieur d'un parent avec role="menu"
+issue-list-element-has-redundant-or-inappropriate-role-list-fef42a = L'élément de liste a un role="list" redondant ou inapproprié

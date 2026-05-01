@@ -34,6 +34,9 @@ class TouchpointID(Enum):
     MAPS = "maps"
     NAVIGATION = "navigation"
     PAGE = "page"
+    PDF_ANNOTATIONS = "pdf_annotations"
+    PDF_DOCUMENT_PROPERTIES = "pdf_document_properties"
+    PDF_TAGGING = "pdf_tagging"
     READ_MORE_LINKS = "read_more_links"
     TABINDEX = "tabindex"
     TITLE_ATTRIBUTES = "title_attributes"
@@ -224,9 +227,33 @@ TOUCHPOINTS = {
         id=TouchpointID.PAGE,
         name="Page",
         description="Validates page-level structure including page title element and document metadata",
-        
+
         ai_tests=[],
         wcag_criteria=["2.4.2"]
+    ),
+
+    TouchpointID.PDF_ANNOTATIONS: Touchpoint(
+        id=TouchpointID.PDF_ANNOTATIONS,
+        name="PDF Annotations",
+        description="Validates annotations and form fields: link semantics, alternate descriptions, and tab order",
+        ai_tests=[],
+        wcag_criteria=["1.3.1", "2.4.3", "4.1.2"]
+    ),
+
+    TouchpointID.PDF_DOCUMENT_PROPERTIES: Touchpoint(
+        id=TouchpointID.PDF_DOCUMENT_PROPERTIES,
+        name="PDF Document Properties",
+        description="Checks document-level metadata: title, language, viewer preferences, and Marked attribute",
+        ai_tests=[],
+        wcag_criteria=["2.4.2", "3.1.1", "1.4.8"]
+    ),
+
+    TouchpointID.PDF_TAGGING: Touchpoint(
+        id=TouchpointID.PDF_TAGGING,
+        name="PDF Tagging",
+        description="Validates the structure tree, role mappings, and reading order of tagged PDFs",
+        ai_tests=[],
+        wcag_criteria=["1.3.1", "1.3.2", "4.1.2"]
     ),
 
     TouchpointID.READ_MORE_LINKS: Touchpoint(

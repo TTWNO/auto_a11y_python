@@ -28,6 +28,19 @@ if os.getenv('DESKTOP_MODE', 'False').lower() != 'true':
         directory.mkdir(exist_ok=True, parents=True)
 
 
+def _first_existing_dir(candidates: list[Path]) -> str | None:
+    """Return the first existing directory as a string, else ``None``.
+
+    Used to default ``PDFMAX_CHECKER_DIR`` to a sensible dev location
+    without erroring at import time when none of the candidates
+    exist (e.g. on a deploy host that has only auto_a11y, not pdfMax).
+    """
+    for candidate in candidates:
+        if candidate.is_dir():
+            return str(candidate)
+    return None
+
+
 @dataclass
 class Config:
     """Application configuration"""
@@ -130,6 +143,37 @@ class Config:
     GOOGLE_CLIENT_ID: str = os.getenv('GOOGLE_CLIENT_ID', '')
     GOOGLE_CLIENT_SECRET: str = os.getenv('GOOGLE_CLIENT_SECRET', '')
     GOOGLE_REDIRECT_PATH: str = '/auth/google/callback'
+
+    # PDF audit engine (see docs/superpowers/specs/2026-04-24-pdf-audit-engine-port-design.md)
+    # Relative env values are anchored to BASE_DIR (the project root) so the path
+    # is deterministic regardless of the process cwd. Absolute env values pass through.
+    PDF_STORAGE_DIR: str = (
+        str(Path(os.environ['PDF_STORAGE_DIR']))
+        if os.environ.get('PDF_STORAGE_DIR') and Path(os.environ['PDF_STORAGE_DIR']).is_absolute()
+        else str(BASE_DIR / (os.environ.get('PDF_STORAGE_DIR') or 'data/pdfs'))
+    )
+    PDF_MAX_SIZE_MB: int = int(os.getenv('PDF_MAX_SIZE_MB', 100))
+    PDF_DOWNLOAD_TIMEOUT_SECONDS: int = int(os.getenv('PDF_DOWNLOAD_TIMEOUT_SECONDS', 60))
+    PDF_AUDIT_MAX_PARALLEL: int = int(os.getenv('PDF_AUDIT_MAX_PARALLEL', 2))
+    # Ghostscript binary path — None means auto-detect on PATH; empty env var treated as unset
+    GHOSTSCRIPT_PATH: str | None = os.getenv('GHOSTSCRIPT_PATH') or None
+
+    # Verbatim pdfMax report viewer (see auto_a11y/pdf/pdfmax_runner.py).
+    # Path to the pdfMax ``python/checker`` directory that ships
+    # ``pdf_accessibility_audit.py`` + ``remediation_guide.py``.
+    # The Docker image bakes the checker at ``/opt/pdfmax/checker``
+    # (Dockerfile + docker-compose.yml additional_contexts); dev
+    # docker-compose.override.yml bind-mounts the sibling checkout
+    # there. The env var still wins for any deployment that puts
+    # the checker somewhere else.
+    PDFMAX_CHECKER_DIR: str | None = (
+        os.getenv('PDFMAX_CHECKER_DIR')
+        or _first_existing_dir([
+            Path('/opt/pdfmax/checker'),
+            BASE_DIR.parent / 'pdfMax' / 'python' / 'checker',
+            Path.home() / 'Documents' / 'cnib' / 'code' / 'pdfMax' / 'python' / 'checker',
+        ])
+    )
 
     # Paths
     SCRIPTS_DIR: Path = SCRIPTS_DIR

@@ -99,6 +99,11 @@
     <script>
         window.PDFMAX_REPORT_MARKDOWN = {{ report_markdown | tojson }};
     </script>
+    <script>
+        window.pdfMaxReportI18n = {
+            "jumped-to-check": {{ ftl('pdfmax-report-jumped-to-check') | tojson }}
+        };
+    </script>
 
     <div id="pdfmax-report-loading" class="pdfmax-report-loading" role="status" aria-live="polite">
         {{ ftl('pdfmax-report-loading') }}
@@ -194,6 +199,75 @@
                     loading.hidden = true;
                 }
                 target.hidden = false;
+
+                // pdfmax-report-hash-handler — when the page is loaded
+                // with #check=<urlencoded>, scroll to the matching
+                // <details data-check-name="..."> emitted by pdfMax's
+                // markdown. Opens the <details>, focuses the <summary>,
+                // and announces via the existing [role="status"]
+                // live region (the loading element, repurposed once
+                // it's hidden).
+                applyCheckHash();
+            }
+
+            // applyCheckHash and announceJump are siblings of render,
+            // declared at IIFE scope so render() can call them via
+            // function-declaration hoisting. Do NOT nest them inside
+            // render — the existing if (document.readyState ...)
+            // block at the bottom of the IIFE only registers `render`,
+            // and these helpers must be reachable from there.
+            function applyCheckHash() {
+                var hash = (window.location.hash || "").replace(/^#/, "");
+                if (!hash) return;
+                var pairs = hash.split("&");
+                var checkName = null;
+                for (var i = 0; i < pairs.length; i++) {
+                    var eq = pairs[i].indexOf("=");
+                    if (eq === -1) continue;
+                    var key = pairs[i].slice(0, eq);
+                    if (key !== "check") continue;
+                    try {
+                        checkName = decodeURIComponent(pairs[i].slice(eq + 1));
+                    } catch (e) {
+                        return;
+                    }
+                    break;
+                }
+                if (!checkName) return;
+                // CSS-attribute selector tolerates spaces and most
+                // punctuation; we still wrap the value in CSS.escape
+                // when available to be safe against quote chars.
+                var literal = (typeof window.CSS !== "undefined" && typeof window.CSS.escape === "function")
+                    ? window.CSS.escape(checkName)
+                    : checkName.replace(/"/g, '\\"');
+                var match = target.querySelector('[data-check-name="' + literal + '"]');
+                if (match === null) return;
+                if (match.tagName === "DETAILS") {
+                    match.open = true;
+                }
+                try {
+                    match.scrollIntoView({ behavior: "smooth", block: "start" });
+                } catch (err) {
+                    match.scrollIntoView();
+                }
+                var summary = match.querySelector("summary");
+                if (summary && typeof summary.focus === "function") {
+                    summary.focus();
+                }
+                announceJump(checkName);
+            }
+
+            function announceJump(checkName) {
+                if (loading === null) return;
+                // Reuse the existing role="status" / aria-live="polite"
+                // element so SR users hear the jump. Template injects
+                // the message with a {CHECK} placeholder.
+                var msgTemplate =
+                    (window.pdfMaxReportI18n && window.pdfMaxReportI18n["jumped-to-check"])
+                        ? window.pdfMaxReportI18n["jumped-to-check"]
+                        : "Showing report section: {CHECK}";
+                loading.hidden = false;
+                loading.textContent = msgTemplate.replace("{CHECK}", checkName);
             }
 
             if (document.readyState === 'loading') {

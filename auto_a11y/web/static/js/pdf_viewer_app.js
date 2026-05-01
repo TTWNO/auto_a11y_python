@@ -226,8 +226,10 @@
     }
 
     /**
-     * Render a SemanticBlock tree into a target container as visually-hidden
-     * but screen-reader-accessible DOM.
+     * Render a SemanticBlock tree into a target container. The container
+     * is the .pdf-viewer-semantic-layer absolute overlay sitting on top of
+     * the canvas — transparent visually, but exposes proper HTML structure
+     * to screen readers and caret browsing (same approach as pdfMax).
      */
     function renderSemanticBlocks(blocks, container) {
         container.innerHTML = "";
@@ -312,6 +314,10 @@
             return self.renderPage(1);
         }).then(function () {
             self._setStatus("");
+            // Deferred redraw: rAF can fire before web fonts settle their
+            // metrics, which shifts card rects. pdfMax's React version uses
+            // a 100ms setTimeout for the same reason.
+            setTimeout(function () { self._scheduleConnectorRedraw(); }, 250);
         }).catch(function (err) {
             console.error("[pdf_viewer_app] failed to initialise", err);
             self._setStatus(t("error-load", "Failed to load PDF"));
@@ -395,24 +401,125 @@
         }
     };
 
-    PdfViewer.prototype._buildIssueCard = function (issue) {
-        var li = document.createElement("li");
-        li.className = "pdf-viewer-issue-card "
-            + (issue.check_result === "FAIL" ? "is-fail" : "is-warn");
-        li.setAttribute("data-issue-id", issue.id);
-        li.setAttribute("tabindex", "0");
+    /**
+     * Render the small subset of Markdown that pdfMax's audit details emit
+     * (paragraphs separated by blank lines, ``-``/``*`` bullet lists, inline
+     * ``**bold**``, ``*italic*``, and ``` `code` ```) into ``container`` as
+     * real DOM nodes. Plain text is appended via ``textContent``, so any
+     * user-controlled metadata in the audit string is auto-escaped — no
+     * ``innerHTML`` is ever assigned.
+     */
+    function renderDetailMarkdown(text, container) {
+        var blocks = String(text).split(/\n\s*\n/);
+        for (var b = 0; b < blocks.length; b++) {
+            var block = blocks[b].replace(/\s+$/, "");
+            if (!block.trim()) continue;
+            var lines = block.split("\n");
+            var isList = lines.length > 0 && lines.every(function (l) {
+                return /^\s*[-*]\s+/.test(l);
+            });
+            if (isList) {
+                var ul = document.createElement("ul");
+                ul.className = "pdf-viewer-issue-card-detail-list";
+                for (var i = 0; i < lines.length; i++) {
+                    var item = lines[i].replace(/^\s*[-*]\s+/, "");
+                    var li = document.createElement("li");
+                    appendInlineMarkdown(item, li);
+                    ul.appendChild(li);
+                }
+                container.appendChild(ul);
+            } else {
+                var p = document.createElement("p");
+                p.className = "pdf-viewer-issue-card-detail";
+                for (var l = 0; l < lines.length; l++) {
+                    if (l > 0) p.appendChild(document.createElement("br"));
+                    appendInlineMarkdown(lines[l], p);
+                }
+                container.appendChild(p);
+            }
+        }
+    }
 
-        var head = document.createElement("div");
-        head.className = "pdf-viewer-issue-card-head";
+    /**
+     * Inline-pass tokeniser: matches `code`, **bold**, *italic* in left-to-
+     * right order and appends the corresponding DOM nodes; everything else
+     * is appended as plain text. Non-greedy so a single ``*`` inside a
+     * ``**...**`` pair binds to the strong.
+     */
+    function appendInlineMarkdown(text, parent) {
+        var re = /(`([^`]+)`)|(\*\*([^*]+?)\*\*)|(\*([^*]+?)\*)/g;
+        var lastIndex = 0;
+        var m;
+        while ((m = re.exec(text)) !== null) {
+            if (m.index > lastIndex) {
+                parent.appendChild(document.createTextNode(text.slice(lastIndex, m.index)));
+            }
+            var node;
+            if (m[1]) {
+                node = document.createElement("code");
+                node.textContent = m[2];
+            } else if (m[3]) {
+                node = document.createElement("strong");
+                node.textContent = m[4];
+            } else {
+                node = document.createElement("em");
+                node.textContent = m[6];
+            }
+            parent.appendChild(node);
+            lastIndex = re.lastIndex;
+        }
+        if (lastIndex < text.length) {
+            parent.appendChild(document.createTextNode(text.slice(lastIndex)));
+        }
+    }
+
+    PdfViewer.prototype._buildIssueCard = function (issue) {
+        var isFail = (issue.check_result === "FAIL");
+
+        // <li> is the card-level wrapper that carries data-issue-id (matched
+        // by connector lines + selection) and the severity strip.
+        var li = document.createElement("li");
+        li.className = "pdf-viewer-issue-card " + (isFail ? "is-fail" : "is-warn");
+        li.setAttribute("data-issue-id", issue.id);
+
+        // Native <details>/<summary> for expand/collapse — same conventions
+        // as pdfMax's CheckerReport (data-check-result, data-check-name on
+        // the details element so the same filter/scroll machinery applies).
+        var details = document.createElement("details");
+        details.className = "pdf-viewer-issue-details";
+        details.setAttribute("data-check-result", issue.check_result);
+        if (issue.check_name) details.setAttribute("data-check-name", issue.check_name);
+
+        var summary = document.createElement("summary");
+        summary.className = "pdf-viewer-issue-summary";
 
         var resultBadge = document.createElement("span");
-        var resultClass = (issue.check_result === "FAIL")
-            ? "badge badge-high" : "badge badge-medium";
-        resultBadge.className = resultClass;
-        resultBadge.textContent = (issue.check_result === "FAIL")
+        resultBadge.className = "badge " + (isFail ? "badge-high" : "badge-medium");
+        resultBadge.textContent = isFail
             ? t("issue-result-fail", "Fail")
             : t("issue-result-warn", "Warn");
-        head.appendChild(resultBadge);
+        summary.appendChild(resultBadge);
+
+        var name = document.createElement("span");
+        name.className = "pdf-viewer-issue-card-name";
+        name.textContent = issue.check_name;
+        summary.appendChild(name);
+
+        if (issue.page) {
+            var pageTag = document.createElement("span");
+            pageTag.className = "pdf-viewer-issue-card-page";
+            pageTag.textContent = "p." + issue.page;
+            summary.appendChild(pageTag);
+        }
+
+        details.appendChild(summary);
+
+        var body = document.createElement("div");
+        body.className = "pdf-viewer-issue-card-body";
+
+        if (issue.detail) {
+            renderDetailMarkdown(issue.detail, body);
+        }
 
         if (issue.page) {
             var pageBtn = document.createElement("button");
@@ -421,22 +528,11 @@
             pageBtn.setAttribute("data-pdf-page", String(issue.page));
             var label = t("jump-to-page", "Page {page}");
             pageBtn.textContent = label.replace("{page}", String(issue.page));
-            head.appendChild(pageBtn);
+            body.appendChild(pageBtn);
         }
 
-        li.appendChild(head);
-
-        var title = document.createElement("h4");
-        title.className = "pdf-viewer-issue-card-title";
-        title.textContent = issue.check_name;
-        li.appendChild(title);
-
-        if (issue.detail) {
-            var p = document.createElement("p");
-            p.className = "pdf-viewer-issue-card-detail";
-            p.textContent = issue.detail;
-            li.appendChild(p);
-        }
+        details.appendChild(body);
+        li.appendChild(details);
 
         return li;
     };
@@ -665,7 +761,10 @@
             var card = this._findCard(issueId);
             if (card && typeof card.scrollIntoView === "function") {
                 card.scrollIntoView({ block: "nearest", behavior: "smooth" });
-                if (typeof card.focus === "function") card.focus();
+                // The card LI is non-focusable; focus the inner <summary>
+                // so keyboard users land on something they can act on.
+                var summary = card.querySelector("summary");
+                if (summary && typeof summary.focus === "function") summary.focus();
             }
         } else if (options.scrollPage && issueId) {
             var overlay = this._findOverlay(issueId);
@@ -694,8 +793,15 @@
             var card = cards[c];
             if (card.classList.contains("pdf-issue-overlay")) continue;
             if (card.classList.contains("pdf-issue-cluster")) continue;
-            card.classList.toggle("is-selected",
-                card.getAttribute("data-issue-id") === this.selectedIssueId);
+            var matched = card.getAttribute("data-issue-id") === this.selectedIssueId;
+            card.classList.toggle("is-selected", matched);
+            // Auto-open the selected card's <details> so the body is visible
+            // even when the user reached it via overlay click rather than
+            // by clicking the summary directly.
+            if (matched) {
+                var detailsEl = card.querySelector("details.pdf-viewer-issue-details");
+                if (detailsEl && !detailsEl.open) detailsEl.open = true;
+            }
         }
     };
 
@@ -752,7 +858,38 @@
         var issuesOnPage = this.issuesByPage.get(this.pageNum) || [];
         if (issuesOnPage.length === 0) return;
 
+        // Stage-wrap is the PDF page's scrollable viewport. Lines are dropped
+        // when the overlay leaves it. Lines for off-screen cards keep their
+        // full trajectory, but an SVG <clipPath> hides any portion that would
+        // render above the stage-wrap top or below its bottom — so the line
+        // appears to "run off" the edge of the PDF view in its true direction.
+        var stageWrapRect = this.stage && this.stage.parentElement
+            ? this.stage.parentElement.getBoundingClientRect()
+            : hostRect;
+
         var ns = "http://www.w3.org/2000/svg";
+
+        // Build a clipPath whose rect spans the full host width but only the
+        // stage-wrap's vertical band (in host coords). Lines are appended to
+        // a <g> that references this clip, so any segment whose y is outside
+        // [stageTop, stageBottom] is invisible — but the line's geometry
+        // (and therefore its visible angle) is unchanged.
+        var clipId = "pdf-viewer-connector-clip";
+        var defs = document.createElementNS(ns, "defs");
+        var clipPath = document.createElementNS(ns, "clipPath");
+        clipPath.setAttribute("id", clipId);
+        var clipRect = document.createElementNS(ns, "rect");
+        clipRect.setAttribute("x", "0");
+        clipRect.setAttribute("y", String(stageWrapRect.top - hostRect.top));
+        clipRect.setAttribute("width", String(Math.floor(hostRect.width)));
+        clipRect.setAttribute("height", String(stageWrapRect.height));
+        clipPath.appendChild(clipRect);
+        defs.appendChild(clipPath);
+        this.connectorEl.appendChild(defs);
+
+        var lineGroup = document.createElementNS(ns, "g");
+        lineGroup.setAttribute("clip-path", "url(#" + clipId + ")");
+        this.connectorEl.appendChild(lineGroup);
         for (var i = 0; i < issuesOnPage.length; i++) {
             var issue = issuesOnPage[i];
             var overlay = this._findOverlay(issue.id);
@@ -762,13 +899,12 @@
             var orect = overlay.getBoundingClientRect();
             var crect = card.getBoundingClientRect();
 
-            // Vertical visibility gate (skip if overlay is entirely off-screen
-            // and the line isn't the selected one — keeps the SVG quiet).
+            // Visibility gate: only the overlay endpoint is clipped. If the
+            // overlay is outside the PDF's stage-wrap viewport, drop the line.
+            // The card endpoint is unrestricted so every visible-on-PDF issue
+            // still draws, even when its card is scrolled out of the sidebar.
+            if (orect.bottom < stageWrapRect.top || orect.top > stageWrapRect.bottom) continue;
             var isSelected = (this.selectedIssueId === issue.id);
-            if (!isSelected) {
-                if (orect.bottom < hostRect.top || orect.top > hostRect.bottom) continue;
-                if (crect.bottom < hostRect.top || crect.top > hostRect.bottom) continue;
-            }
 
             var x1 = (orect.right - hostRect.left);
             var y1 = (orect.top + orect.bottom) / 2 - hostRect.top;
@@ -788,13 +924,13 @@
                 + (isSelected ? " is-selected" : "");
 
             // Three stacked lines for a high-contrast outline (matches pdfMax).
-            this._appendLine(ns, x1, y1, x2, y2, isSelected ? 7 : 5, className + " is-outer", opacity);
-            this._appendLine(ns, x1, y1, x2, y2, isSelected ? 5 : 3, className + " is-mid",   opacity);
-            this._appendLine(ns, x1, y1, x2, y2, isSelected ? 3 : 1, className + " is-inner", opacity);
+            this._appendLine(lineGroup, ns, x1, y1, x2, y2, isSelected ? 7 : 5, className + " is-outer", opacity);
+            this._appendLine(lineGroup, ns, x1, y1, x2, y2, isSelected ? 5 : 3, className + " is-mid",   opacity);
+            this._appendLine(lineGroup, ns, x1, y1, x2, y2, isSelected ? 3 : 1, className + " is-inner", opacity);
         }
     };
 
-    PdfViewer.prototype._appendLine = function (ns, x1, y1, x2, y2, w, cls, opacity) {
+    PdfViewer.prototype._appendLine = function (parent, ns, x1, y1, x2, y2, w, cls, opacity) {
         var line = document.createElementNS(ns, "line");
         line.setAttribute("x1", String(x1));
         line.setAttribute("y1", String(y1));
@@ -804,7 +940,7 @@
         line.setAttribute("stroke-width", String(w));
         line.setAttribute("stroke-linecap", "round");
         line.setAttribute("opacity", String(opacity));
-        this.connectorEl.appendChild(line);
+        parent.appendChild(line);
     };
 
     // ---------- Toolbar + sidebar wiring -------------------------------

@@ -41,19 +41,24 @@ class TaskRunner:
         logger.info("Task runner started")
 
     def stop(self, timeout: float = 30) -> None:
-        """Stop task runner, waiting up to *timeout* seconds for running tasks."""
+        """Stop task runner. Returns promptly; running workers are daemon
+        threads and will die with the interpreter. ``timeout`` is accepted
+        for API compatibility but no longer slept on — Ctrl+C should feel
+        immediate, and the interpreter will reap the workers itself."""
+        del timeout  # unused — kept for backwards compatibility
         # Mark all running tasks as cancelled so workers can check and exit early
         for _task_id, task in self.tasks.items():
             if task.status == 'running':
                 task.cancel()
 
-        # Wait for the executor to drain.  cancel_futures=True (Python 3.9+)
-        # prevents queued-but-not-started work from launching.
+        # wait=False + cancel_futures=True: drop queued work, don't block
+        # on running work. Daemon worker threads (see _DaemonThreadPoolExecutor)
+        # are torn down by the interpreter shutdown that follows.
         try:
-            self.executor.shutdown(wait=True, cancel_futures=True)
+            self.executor.shutdown(wait=False, cancel_futures=True)
         except TypeError:
             # Python 3.8 doesn't support cancel_futures
-            self.executor.shutdown(wait=True)
+            self.executor.shutdown(wait=False)
         logger.info("Task runner stopped")
 
     def submit_task(

@@ -204,7 +204,9 @@ def create_app(config: Any) -> Flask:
         _scheduler = getattr(app, 'scheduler', None)
         if _scheduler:
             logger.info("Shutting down scheduler...")
-            _scheduler.shutdown()
+            # wait=False so APScheduler doesn't block atexit waiting for
+            # in-flight scheduled jobs to finish (Ctrl+C should be prompt).
+            _scheduler.shutdown(wait=False)
 
     atexit.register(_graceful_shutdown)
 

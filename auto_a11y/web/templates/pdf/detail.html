@@ -204,8 +204,12 @@
             </div>
 
             {# The stage holds (in z-order, bottom→top):
-               canvas → text layer → overlay SVG.  The semantic layer
-               is positioned off-screen but kept in DOM order for AT. #}
+               canvas → text layer → overlay SVG → semantic layer.
+               The semantic layer is a transparent HTML overlay positioned
+               directly over the canvas — same approach as pdfMax's
+               <SemanticLayer> — so screen readers and caret-browsing users
+               navigate proper headings/paragraphs/lists in reading order
+               while sighted users see the canvas underneath. #}
             <div class="pdf-viewer-stage-wrap mb-3">
                 <div class="pdf-viewer-stage" data-pdf-viewer-stage>
                     {# Canvas defaults to 300x150 in HTML5 if width/height
@@ -216,19 +220,15 @@
                             width="1" height="1"
                             aria-hidden="true"></canvas>
                     <div class="pdf-viewer-text-layer"
-                         data-pdf-viewer-text-layer></div>
+                         data-pdf-viewer-text-layer
+                         aria-hidden="true"></div>
                     <svg class="pdf-viewer-overlay-layer"
                          data-pdf-viewer-overlay-layer
                          aria-label="{{ ftl('pdf-viewer-overlay-layer-aria-label') }}">
                     </svg>
+                    <div class="pdf-viewer-semantic-layer"
+                         data-pdf-viewer-semantic-layer></div>
                 </div>
-                {# Visually-hidden semantic tree — derived from the PDF
-                   structure tree + getTextContent.  Lets screen-reader
-                   users navigate the page semantically (headings,
-                   paragraphs, lists, tables) even though the canvas
-                   itself is opaque. #}
-                <div class="visually-hidden"
-                     data-pdf-viewer-semantic-layer></div>
             </div>
             {% else %}
             <div class="alert alert-medium" role="alert">

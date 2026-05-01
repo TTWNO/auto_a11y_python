@@ -50,6 +50,11 @@ implicit_reexport = false
 
 [tool.pyright]
 pythonVersion = "3.11"
+# Point pyright at the project venv so it resolves third-party imports
+# (anthropic, playwright, fluent_compiler, etc.) the same way mypy and ty do.
+# Without this, pyright falls back to the system Python's site-packages.
+venvPath = "."
+venv = ".venv"
 include = [
     "auto_a11y",
     "tests",

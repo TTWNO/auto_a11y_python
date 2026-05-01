@@ -53,18 +53,18 @@ def count_issues(pdf: PdfDocument, storage: PdfStorage) -> PdfIssueCounts:
     Returns :data:`_ZERO` when the PDF has not been audited, when the
     cache directory or file is missing, when the JSON is malformed, or
     when the file's top-level shape is unexpected. Logs a WARNING in
-    the AUDITED-but-missing-cache and malformed-JSON cases so the
-    operator notices the inconsistency without the failure 500-ing
-    the page.
+    the AUDITED-but-missing-cache, OSError, JSONDecodeError, and
+    bare-list (non-dict top-level) cases — these signal an
+    operator-visible inconsistency. Missing ``"issues"`` key and
+    non-list value at ``"issues"`` are silently treated as 0/0;
+    they indicate a partial document rather than an inconsistency.
 
     Expected JSON shape::
 
         {"version": 1, "issues": [{"check_result": "FAIL", ...}, ...]}
 
-    Per ``pdfMax/python/checker/pdf_accessibility_audit.py``. Any other
-    top-level shape (bare list, missing ``"issues"`` key, non-list
-    value at ``"issues"``) is treated as malformed → 0/0 + warning.
-    Within the list, only entries where ``check_result`` is exactly
+    Per ``pdfMax/python/checker/pdf_accessibility_audit.py``. Within
+    the list, only entries where ``check_result`` is exactly
     ``"FAIL"`` or ``"WARN"`` count.
     """
     if pdf.status is not PdfDocumentStatus.AUDITED:

@@ -4,6 +4,7 @@ Project management routes
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
+from pathlib import Path
 from typing import Any
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
@@ -16,7 +17,6 @@ from auto_a11y.models import Project, ProjectStatus, ProjectType
 from auto_a11y.models.page import PageStatus
 from auto_a11y.models.pdf_document import PdfDocument, PdfDocumentStatus
 from auto_a11y.models.app_user import UserRole
-from pathlib import Path
 
 from auto_a11y.pdf.issue_map_counts import PdfIssueCounts, count_issues
 from auto_a11y.pdf.storage import PdfStorage

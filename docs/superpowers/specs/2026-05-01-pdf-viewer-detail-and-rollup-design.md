@@ -196,6 +196,11 @@ The hash form (`#check=<name>`) is chosen over `#<slug>` because:
   - Pre-existing severity → badge class mapping (`badge-high`,
     `badge-medium`) is reused for the new group cards.
   - The "Document-level" badge uses `badge-neutral`.
+  - **Remove the existing per-card "Page N" jump button**
+    (`pdf_viewer_app.js:524-532`). pdfMax's Viewer card has no such
+    button — clicks on the card / its overlay handle navigation, and
+    the "View in report" button replaces the bottom-row affordance.
+    The `p.<page>` label stays in the card header.
 - `auto_a11y/web/templates/pdf/detail.html`
   - Add `data-pdfmax-report-url="{{ url_for('pdf.pdfmax_report',
     pdf_document_id=pdf.id) }}"` to the issue-list container.
@@ -219,11 +224,12 @@ The hash form (`#check=<name>`) is chosen over `#<slug>` because:
 - `auto_a11y/web/translations/fr/pdf.ftl`
   - Five matching IDs under `### TODO_FR ###` per the existing
     release-gate convention. Strings copied verbatim from EN.
-- `auto_a11y/web/static/js/pdf_viewer_app.js` reads the strings off
-  `window.i18n.pdfViewer` (which `detail.html` builds from
-  `{{ ftl(...) | tojson }}` per the standard pattern in CLAUDE.md).
-  Add the new keys to whatever block in `detail.html` builds that
-  i18n object.
+- `auto_a11y/web/static/js/pdf_viewer_app.js` reads strings off
+  `window.pdfViewerI18n` (a flat object, not namespaced — see
+  `detail.html:9` and `pdf_viewer_app.js:31`). The new keys are
+  added to that flat object inside `detail.html`'s existing
+  `window.pdfViewerI18n = {…}` block, populated via
+  `{{ ftl(...) | tojson }}` per the standard pattern in CLAUDE.md.
 
 ### Tests (Part 1)
 
@@ -360,7 +366,7 @@ Add immediately after this aggregation:
 ```python
 storage = _get_storage()
 pdf_totals = PdfIssueCounts(0, 0)
-for pdf in db.list_pdf_documents_for_website(website_id):
+for pdf in db.get_pdf_documents(website_id=website_id, limit=10000):
     if pdf.status == PdfDocumentStatus.AUDITED:
         pdf_totals = pdf_totals + count_issues(pdf, storage)
 stats['total_violations'] += pdf_totals.violations
@@ -373,8 +379,15 @@ shows the rolled-up totals (HTML + PDF).
 
 ### Database read shape
 
-`db.list_pdf_documents_for_website(website_id)` is already used by
-the existing PDF count badge code. No new query helper.
+`db.get_pdf_documents(website_id=..., limit=10000)` is already used
+by the existing PDF count badge code at `websites.py:119` and
+`projects.py:572`, and inside `database.py:403`. The 10000 cap
+matches those call sites — passing it explicitly is **load-bearing**:
+the function's default `limit` is 100, which would silently truncate
+rollups for any website with more than 100 PDFs and the under-count
+would be invisible. Always pass `limit=10000`. (Replacing this with a
+paginated iterator is a tracked Phase 2 followup in the project
+memory; not in scope here.) No new query helper.
 
 ### Edge cases
 

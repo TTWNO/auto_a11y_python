@@ -487,6 +487,47 @@
         }
     }
 
+    // ---------- Issue grouping (port of pdfMax/src/utils/issueGrouping.ts) ---
+
+    /**
+     * Bucket issues by (check_name, detail) so multi-element problems
+     * collapse into a single accordion card. Returns an array of
+     * {groupKey, checkName, checkResult, detail, issues, isMulti} in
+     * insertion order — the first occurrence of each (check, detail)
+     * pair anchors the group's position in the rendered list, which
+     * matches pdfMax's ViewerSidebar behaviour.
+     */
+    function groupIssues(issues) {
+        var map = new Map();
+        var order = [];
+        for (var i = 0; i < issues.length; i++) {
+            var issue = issues[i];
+            var key = (issue.check_name || "") + "\x00" + (issue.detail || "");
+            var arr = map.get(key);
+            if (arr) {
+                arr.push(issue);
+            } else {
+                arr = [issue];
+                map.set(key, arr);
+                order.push(key);
+            }
+        }
+        var out = [];
+        for (var j = 0; j < order.length; j++) {
+            var k = order[j];
+            var groupArr = map.get(k);
+            out.push({
+                groupKey: k,
+                checkName: groupArr[0].check_name,
+                checkResult: groupArr[0].check_result,
+                detail: groupArr[0].detail,
+                issues: groupArr,
+                isMulti: groupArr.length > 1,
+            });
+        }
+        return out;
+    }
+
     PdfViewer.prototype._buildIssueCard = function (issue) {
         var isFail = (issue.check_result === "FAIL");
 

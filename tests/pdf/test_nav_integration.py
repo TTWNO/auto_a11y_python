@@ -120,7 +120,7 @@ def test_is_pdf_badge_absent_when_no_linked_pdf() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_view_project_passes_pdf_count_to_template() -> None:
+def test_view_project_passes_pdf_count_to_template(tmp_path: Path) -> None:
     """``view_project`` calls ``db.get_pdf_documents(project_id=...)`` and
     forwards the length as ``pdf_count`` to ``render_template``."""
     from auto_a11y.web.routes import projects as projects_module
@@ -141,6 +141,9 @@ def test_view_project_passes_pdf_count_to_template() -> None:
     db.get_all_groups.return_value = []
     db.get_pdf_documents.return_value = [MagicMock(), MagicMock(), MagicMock()]
 
+    cfg = MagicMock()
+    cfg.PDF_STORAGE_DIR = str(tmp_path)
+
     captured: dict[str, Any] = {}
 
     def fake_render_template(name: str, **ctx: Any) -> str:
@@ -152,6 +155,7 @@ def test_view_project_passes_pdf_count_to_template() -> None:
     fake_user.is_superadmin = True
 
     with patch.object(projects_module, "get_db", return_value=db), \
+         patch.object(projects_module, "get_app_config", return_value=cfg), \
          patch.object(projects_module, "render_template", side_effect=fake_render_template), \
          patch.object(projects_module, "current_user", fake_user), \
          patch.object(projects_module, "g", MagicMock()):
@@ -170,7 +174,7 @@ def test_view_project_passes_pdf_count_to_template() -> None:
     db.get_pdf_documents.assert_called_once_with(project_id="p-1", limit=10000)
 
 
-def test_view_website_passes_pdf_count_to_template() -> None:
+def test_view_website_passes_pdf_count_to_template(tmp_path: Path) -> None:
     """``view_website`` calls ``db.get_pdf_documents(website_id=...)`` and
     forwards the length as ``pdf_count`` to ``render_template``."""
     from auto_a11y.web.routes import websites as websites_module
@@ -191,6 +195,7 @@ def test_view_website_passes_pdf_count_to_template() -> None:
     cfg = MagicMock()
     cfg.PAGES_PER_PAGE = 100
     cfg.MAX_PAGES_PER_PAGE = 500
+    cfg.PDF_STORAGE_DIR = str(tmp_path)
 
     captured: dict[str, Any] = {}
 

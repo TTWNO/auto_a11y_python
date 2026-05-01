@@ -86,3 +86,46 @@ def test_detail_html_has_pdfmax_report_url_attr() -> None:
     assert "data-pdfmax-report-url" in body, (
         "issue-list container missing data-pdfmax-report-url attribute"
     )
+
+
+JS_VIEWER = REPO_ROOT / "auto_a11y" / "web" / "static" / "js" / "pdf_viewer_app.js"
+
+
+def test_pdf_viewer_app_has_no_jump_to_page_button() -> None:
+    """The per-card 'Page N' jump button is removed in this pass."""
+    body = JS_VIEWER.read_text(encoding="utf-8")
+    # The previous implementation had a `pdf-viewer-issue-page-btn`
+    # class. Spec calls for its removal in favour of a "View in
+    # report" button. Asserts both the class name and the dead
+    # i18n key are gone from the JS source.
+    assert "pdf-viewer-issue-page-btn" not in body, (
+        "dead .pdf-viewer-issue-page-btn class still referenced in JS"
+    )
+    assert '"jump-to-page"' not in body, (
+        "dead 'jump-to-page' i18n key still referenced in JS"
+    )
+
+
+def test_pdf_viewer_app_renders_element_tag_and_doclevel() -> None:
+    """The card builder uses the new i18n keys and renders the new
+    fields. Pure source-presence — actual DOM rendering would need a
+    JSDOM harness which we don't run here.
+    """
+    body = JS_VIEWER.read_text(encoding="utf-8")
+    for needle in (
+        '"issue-element"',
+        '"issue-document-level"',
+        '"issue-view-in-report"',
+        '"issue-view-in-report-aria"',
+        "_buildIssueGroupCard",
+        "data-pdfmax-report-url",
+    ):
+        assert needle in body, f"pdf_viewer_app.js missing reference to {needle}"
+
+
+def test_pdf_viewer_app_uses_groupissues() -> None:
+    body = JS_VIEWER.read_text(encoding="utf-8")
+    assert "function groupIssues" in body, "groupIssues port not found in JS source"
+    assert "groupIssues(this.allIssues)" in body, (
+        "_renderIssueList not wired to groupIssues(this.allIssues)"
+    )

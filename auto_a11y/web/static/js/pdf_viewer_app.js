@@ -528,18 +528,55 @@
         return out;
     }
 
+    /**
+     * Resolve the report URL once per card render via the data-attribute
+     * on the issue-list container. Returns "" when not set, in which
+     * case the "View in report" button is suppressed.
+     */
+    PdfViewer.prototype._reportUrl = function () {
+        if (!this.issueListEl) return "";
+        return this.issueListEl.getAttribute("data-pdfmax-report-url") || "";
+    };
+
+    /**
+     * Build the "View in report" button. Returns null when no report
+     * URL is available (e.g. test fixtures, or audits that pre-date
+     * the pdfmax-report cache).
+     */
+    PdfViewer.prototype._buildViewInReportButton = function (checkName) {
+        var reportUrl = this._reportUrl();
+        if (!reportUrl) return null;
+        var anchor = document.createElement("a");
+        anchor.className = "btn btn-outline-brand btn-sm pdf-viewer-issue-view-in-report";
+        anchor.href = reportUrl + "#check=" + encodeURIComponent(checkName);
+        anchor.textContent = t("issue-view-in-report", "View in report");
+        var ariaTpl = t("issue-view-in-report-aria", 'View "{CHECK}" in the pdfMax report');
+        anchor.setAttribute("aria-label", ariaTpl.replace("{CHECK}", checkName));
+        return anchor;
+    };
+
+    /**
+     * Build the `[<index>] <tag>` line for an issue. Returns null when
+     * either field is missing (the line is suppressed in that case).
+     */
+    PdfViewer.prototype._buildElementLine = function (issue) {
+        if (issue.element_index == null || !issue.element_tag) return null;
+        var span = document.createElement("span");
+        span.className = "pdf-viewer-issue-card-element";
+        var tpl = t("issue-element", "[{INDEX}] {TAG}");
+        span.textContent = tpl
+            .replace("{INDEX}", String(issue.element_index))
+            .replace("{TAG}", String(issue.element_tag));
+        return span;
+    };
+
     PdfViewer.prototype._buildIssueCard = function (issue) {
         var isFail = (issue.check_result === "FAIL");
 
-        // <li> is the card-level wrapper that carries data-issue-id (matched
-        // by connector lines + selection) and the severity strip.
         var li = document.createElement("li");
         li.className = "pdf-viewer-issue-card " + (isFail ? "is-fail" : "is-warn");
         li.setAttribute("data-issue-id", issue.id);
 
-        // Native <details>/<summary> for expand/collapse — same conventions
-        // as pdfMax's CheckerReport (data-check-result, data-check-name on
-        // the details element so the same filter/scroll machinery applies).
         var details = document.createElement("details");
         details.className = "pdf-viewer-issue-details";
         details.setAttribute("data-check-result", issue.check_result);
@@ -572,19 +609,112 @@
         var body = document.createElement("div");
         body.className = "pdf-viewer-issue-card-body";
 
+        // Element-tag line OR document-level marker — never both.
+        var elementLine = this._buildElementLine(issue);
+        if (elementLine) {
+            body.appendChild(elementLine);
+        } else if (issue.page == null && issue.bbox == null) {
+            var docBadge = document.createElement("span");
+            docBadge.className = "badge badge-neutral pdf-viewer-issue-card-document-level";
+            docBadge.textContent = t("issue-document-level", "Document-level");
+            body.appendChild(docBadge);
+        }
+
         if (issue.detail) {
             renderDetailMarkdown(issue.detail, body);
         }
 
-        if (issue.page) {
-            var pageBtn = document.createElement("button");
-            pageBtn.type = "button";
-            pageBtn.className = "btn btn-outline-brand btn-sm pdf-viewer-issue-page-btn";
-            pageBtn.setAttribute("data-pdf-page", String(issue.page));
-            var label = t("jump-to-page", "Page {page}");
-            pageBtn.textContent = label.replace("{page}", String(issue.page));
-            body.appendChild(pageBtn);
+        var viewBtn = this._buildViewInReportButton(issue.check_name);
+        if (viewBtn) body.appendChild(viewBtn);
+
+        details.appendChild(body);
+        li.appendChild(details);
+
+        return li;
+    };
+
+    /**
+     * Multi-element accordion card. Header shows severity badge, check
+     * name, and "{COUNT} elements". Expanded body shows each child's
+     * `[<index>] <tag>` and `p.<page>` on its own row.
+     */
+    PdfViewer.prototype._buildIssueGroupCard = function (group) {
+        var isFail = (group.checkResult === "FAIL");
+
+        var li = document.createElement("li");
+        li.className = "pdf-viewer-issue-card pdf-viewer-issue-card-group "
+            + (isFail ? "is-fail" : "is-warn");
+        li.setAttribute("data-group-key", group.groupKey);
+
+        var details = document.createElement("details");
+        details.className = "pdf-viewer-issue-details";
+        details.setAttribute("data-check-result", group.checkResult);
+        if (group.checkName) details.setAttribute("data-check-name", group.checkName);
+
+        var summary = document.createElement("summary");
+        summary.className = "pdf-viewer-issue-summary";
+
+        var resultBadge = document.createElement("span");
+        resultBadge.className = "badge " + (isFail ? "badge-high" : "badge-medium");
+        resultBadge.textContent = isFail
+            ? t("issue-result-fail", "Fail")
+            : t("issue-result-warn", "Warn");
+        summary.appendChild(resultBadge);
+
+        var name = document.createElement("span");
+        name.className = "pdf-viewer-issue-card-name";
+        name.textContent = group.checkName;
+        summary.appendChild(name);
+
+        var countSpan = document.createElement("span");
+        countSpan.className = "pdf-viewer-issue-card-count";
+        var countTpl = t("issue-group-count", "{COUNT} elements");
+        countSpan.textContent = countTpl.replace("{COUNT}", String(group.issues.length));
+        summary.appendChild(countSpan);
+
+        details.appendChild(summary);
+
+        var body = document.createElement("div");
+        body.className = "pdf-viewer-issue-card-body";
+
+        // Detail text once at the top of the group (it's identical
+        // across all members, since "detail" is part of the group key).
+        if (group.detail) {
+            renderDetailMarkdown(group.detail, body);
         }
+
+        var viewBtn = this._buildViewInReportButton(group.checkName);
+        if (viewBtn) body.appendChild(viewBtn);
+
+        // Per-element rows.
+        var ul = document.createElement("ul");
+        ul.className = "pdf-viewer-issue-group-children list-unstyled mb-0";
+        for (var i = 0; i < group.issues.length; i++) {
+            var child = group.issues[i];
+            var row = document.createElement("li");
+            row.className = "pdf-viewer-issue-group-child";
+            row.setAttribute("data-issue-id", child.id);
+
+            var elementLine = this._buildElementLine(child);
+            if (elementLine) {
+                row.appendChild(elementLine);
+            } else if (child.page == null && child.bbox == null) {
+                var docBadge = document.createElement("span");
+                docBadge.className = "badge badge-neutral pdf-viewer-issue-card-document-level";
+                docBadge.textContent = t("issue-document-level", "Document-level");
+                row.appendChild(docBadge);
+            }
+
+            if (child.page) {
+                var pageTag = document.createElement("span");
+                pageTag.className = "pdf-viewer-issue-card-page";
+                pageTag.textContent = "p." + child.page;
+                row.appendChild(pageTag);
+            }
+
+            ul.appendChild(row);
+        }
+        body.appendChild(ul);
 
         details.appendChild(body);
         li.appendChild(details);

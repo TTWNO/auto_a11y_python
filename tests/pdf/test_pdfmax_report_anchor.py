@@ -29,3 +29,6 @@ def test_pdfmax_report_embeds_hash_handler_script() -> None:
     assert "check=" in body, (
         "hash-handler must parse a check= hash fragment"
     )
+    assert "applyCheckHash()" in body, (
+        "applyCheckHash must be called from render()"
+    )

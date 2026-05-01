@@ -239,7 +239,7 @@
                 // when available to be safe against quote chars.
                 var literal = (typeof window.CSS !== "undefined" && typeof window.CSS.escape === "function")
                     ? window.CSS.escape(checkName)
-                    : checkName.replace(/"/g, '\\"');
+                    : checkName.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
                 var match = target.querySelector('[data-check-name="' + literal + '"]');
                 if (match === null) return;
                 if (match.tagName === "DETAILS") {

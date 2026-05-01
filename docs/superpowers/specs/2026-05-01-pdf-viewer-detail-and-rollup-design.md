@@ -221,9 +221,25 @@ The hash form (`#check=<name>`) is chosen over `#<slug>` because:
     the pdfMax report`
   - `pdfmax-report-jumped-to-check` — `Showing report section: {
     $check }` (live-region copy)
+  - **Remove** the now-dead `pdf-viewer-jump-to-page-template`
+    message (currently consumed only by the per-card "Page N" button
+    that this spec deletes).
 - `auto_a11y/web/translations/fr/pdf.ftl`
-  - Five matching IDs under `### TODO_FR ###` per the existing
+  - Six matching IDs under `### TODO_FR ###` per the existing
     release-gate convention. Strings copied verbatim from EN.
+  - **Remove** the FR `pdf-viewer-jump-to-page-template` entry too.
+- The `window.pdfViewerI18n` block in `detail.html:9-17` follows
+  the existing kebab-case convention — JS reads keys with the
+  feature prefix stripped. New keys to add (keeping that convention,
+  matching the existing entries like `"issue-result-fail"`):
+  - `"issue-element"` ← `pdf-viewer-issue-element`
+  - `"issue-document-level"` ← `pdf-viewer-issue-document-level`
+  - `"issue-group-count"` ← `pdf-viewer-issue-group-count`
+  - `"issue-view-in-report"` ← `pdf-viewer-issue-view-in-report`
+  - `"issue-view-in-report-aria"` ← `pdf-viewer-issue-view-in-report-aria`
+  - `"jumped-to-check"` ← `pdfmax-report-jumped-to-check`
+  - **Remove** `"jump-to-page": ftl('pdf-viewer-jump-to-page-template')`
+    from the block (line 14 today).
 - `auto_a11y/web/static/js/pdf_viewer_app.js` reads strings off
   `window.pdfViewerI18n` (a flat object, not namespaced — see
   `detail.html:9` and `pdf_viewer_app.js:31`). The new keys are
@@ -287,10 +303,12 @@ A PDF is "audited" when:
 - the cache directory exists with a non-empty `*_issue_map.json`.
 
 If the file is missing despite the status, treat as
-`(violations=0, warnings=0)`. We log a warning at WARNING level
-(once per request, deduped via the cache dict described below) so
-the operator sees the inconsistency without spamming. We do **not**
-queue a re-audit from the request path.
+`(violations=0, warnings=0)`. We log a warning at WARNING level so
+the operator sees the inconsistency. We accept that a website with
+N missing-cache PDFs will produce N warnings per request — that's
+acceptable signal volume for an inconsistency that should be rare;
+if it grows, the cure is fixing the audit job, not silencing the
+log. We do **not** queue a re-audit from the request path.
 
 ### New helper module
 
@@ -308,8 +326,17 @@ def count_issues(pdf: PdfDocument, storage: PdfStorage) -> PdfIssueCounts:
 
     Returns PdfIssueCounts(0, 0) when the PDF has not been audited,
     when the cache file is missing, when JSON is malformed, or when
-    the file's "issues" key is absent. Logs a single warning in the
-    cache-missing-but-status-AUDITED case.
+    the file's "issues" key is absent. Logs a warning in the
+    cache-missing-but-status-AUDITED case and in the malformed-JSON
+    case.
+
+    Expected JSON shape: ``{"version": 1, "issues": [...]}`` per
+    pdfMax's ``pdf_accessibility_audit.py:3603-3607``. Any other
+    top-level shape (bare list, missing "issues" key, non-list
+    value at "issues") is treated as malformed → 0/0 + warning.
+    Within the list, only entries where ``check_result`` is exactly
+    ``"FAIL"`` or ``"WARN"`` count toward the totals; anything else
+    is ignored silently.
     """
 ```
 

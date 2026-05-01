@@ -12,6 +12,8 @@ from typing import Any
 
 from playwright.async_api import Page
 
+from auto_a11y.core.async_compat import wait_for
+
 logger = logging.getLogger(__name__)
 
 
@@ -146,7 +148,7 @@ class ScriptInjector:
 
             # Verify page is still responsive
             try:
-                await asyncio.wait_for(page.evaluate('() => true'), timeout=2.0)
+                await wait_for(page.evaluate('() => true'), timeout=2.0)
                 logger.debug("DEBUG inject_script_files: Page connection verified after injection")
             except Exception as verify_err:
                 logger.error(f"Page connection lost after script injection: {verify_err}")
@@ -253,14 +255,13 @@ class ScriptInjector:
                 
                 logger.debug(f"DEBUG run_all_tests: Starting Python touchpoint tests, {len(TOUCHPOINT_TESTS)} tests available")
                 test_count = 0
-                import asyncio
                 for touchpoint_id, test_func in TOUCHPOINT_TESTS.items():
                     # Check if touchpoint is enabled
                     if self.test_config.is_touchpoint_enabled(touchpoint_id):
                         try:
                             # Verify connection before each test
                             try:
-                                await asyncio.wait_for(page.evaluate('() => true'), timeout=2.0)
+                                await wait_for(page.evaluate('() => true'), timeout=2.0)
                             except Exception as conn_err:
                                 logger.error(f"DEBUG: Connection DEAD before test {touchpoint_id}: {conn_err}")
                                 break

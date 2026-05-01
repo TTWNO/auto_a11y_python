@@ -24,6 +24,8 @@ from playwright.async_api import Page
 import re
 from typing import Any
 
+from auto_a11y.core.async_compat import wait_for
+
 logger = logging.getLogger(__name__)
 
 TEST_DOCUMENTATION = {
@@ -241,13 +243,13 @@ async def test_links(page: Page) -> dict[str, Any]:
         )
 
     try:
-        await asyncio.wait_for(page.evaluate('() => true'), timeout=2.0)
+        await wait_for(page.evaluate('() => true'), timeout=2.0)
     except Exception as conn_err:
         logger.error(f"Browser connection lost before test_links: {conn_err}")
         return results
 
     try:
-        link_data = await asyncio.wait_for(
+        link_data = await wait_for(
             page.evaluate('''
         (cssRules) => {
             function getXPath(element) {
@@ -426,7 +428,7 @@ async def test_links(page: Page) -> dict[str, Any]:
     results['elements_tested'] = len(link_data)
 
     try:
-        page_scripts = await asyncio.wait_for(
+        page_scripts = await wait_for(
             page.evaluate('''
                 () => {
                     const scripts = [];

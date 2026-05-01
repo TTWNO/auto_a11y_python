@@ -13,6 +13,7 @@ import time
 
 from bson import ObjectId
 from auto_a11y.models import Page, PageStatus, TestResult
+from auto_a11y.core.async_compat import wait_for
 from auto_a11y.core.database import Database
 from auto_a11y.core.browser_manager import BrowserManager
 from auto_a11y.pdf.errors import NotAPdf, PdfTooLarge
@@ -987,7 +988,7 @@ class TestRunner:
                 """Run accessibility tests and return TestResult"""
                 # Verify browser connection before starting tests
                 try:
-                    ready_state = await asyncio.wait_for(
+                    ready_state = await wait_for(
                         browser_page.evaluate('() => document.readyState'),
                         timeout=5.0
                     )
@@ -1031,7 +1032,7 @@ class TestRunner:
 
                 # Verify connection still alive after injection
                 try:
-                    await asyncio.wait_for(
+                    await wait_for(
                         browser_page.evaluate('() => true'),
                         timeout=2.0
                     )
@@ -1057,7 +1058,7 @@ class TestRunner:
                 # Verify browser connection after all tests complete
                 logger.debug("DEBUG run_single_test: all tests complete, verifying connection")
                 try:
-                    await asyncio.wait_for(
+                    await wait_for(
                         browser_page.evaluate('() => document.readyState'),
                         timeout=5.0
                     )
@@ -1084,7 +1085,7 @@ class TestRunner:
                 if take_screenshot:
                     # Verify browser is still connected before taking screenshot
                     try:
-                        await asyncio.wait_for(
+                        await wait_for(
                             browser_page.evaluate('() => document.readyState'),
                             timeout=5.0
                         )

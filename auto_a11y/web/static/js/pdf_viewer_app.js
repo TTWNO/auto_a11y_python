@@ -294,6 +294,7 @@
         this.viewport = null;          // viewport at current scale
         this.pageDimensions = null;    // {pageNum: [w, h]} from issue_map (PDF user-space units)
         this.issuesByPage = new Map(); // page → [issue]
+        this.allIssues = [];
         this.selectedIssueId = null;
         this.renderTask = null;
         this.connectorRaf = 0;
@@ -347,18 +348,31 @@
             if (!data || !Array.isArray(data.issues)) return;
             self.pageDimensions = data.page_dimensions || {};
             for (var i = 0; i < data.issues.length; i++) {
-                var issue = data.issues[i];
-                if (!issue.page || !issue.bbox) continue;
-                var arr = self.issuesByPage.get(issue.page);
-                if (!arr) { arr = []; self.issuesByPage.set(issue.page, arr); }
-                arr.push({
-                    id: issue.id,
-                    check_name: issue.check_name,
-                    check_result: issue.check_result,
-                    detail: issue.detail,
-                    page: issue.page,
-                    bbox: { x0: issue.bbox[0], y0: issue.bbox[1], x1: issue.bbox[2], y1: issue.bbox[3] },
-                });
+                var raw = data.issues[i];
+                // Full record — preserves element_index/element_tag and
+                // document-level issues (page=null, bbox=null) for the
+                // sidebar. Bbox is normalised to {x0,y0,x1,y1} when
+                // present so overlay code keeps its current shape.
+                var issue = {
+                    id: raw.id,
+                    check_name: raw.check_name,
+                    check_result: raw.check_result,
+                    element_index: (raw.element_index === undefined) ? null : raw.element_index,
+                    element_tag: raw.element_tag || null,
+                    detail: raw.detail || "",
+                    page: raw.page || null,
+                    bbox: null,
+                };
+                if (raw.bbox && raw.bbox.length === 4) {
+                    issue.bbox = { x0: raw.bbox[0], y0: raw.bbox[1], x1: raw.bbox[2], y1: raw.bbox[3] };
+                }
+                self.allIssues.push(issue);
+                // Only issues with both a page and a bbox get an overlay.
+                if (issue.page && issue.bbox) {
+                    var arr = self.issuesByPage.get(issue.page);
+                    if (!arr) { arr = []; self.issuesByPage.set(issue.page, arr); }
+                    arr.push(issue);
+                }
             }
         }).then(function () {
             self._renderIssueList();

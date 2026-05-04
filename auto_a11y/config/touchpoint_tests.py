@@ -250,6 +250,7 @@ TOUCHPOINT_TEST_MAPPING: dict[str, list[str]] = {
     'event_handling': [
         'ErrMouseOnlyHandler',
         'WarnMouseHandlerKeyboardOnAncestor',
+        'WarnGlobalKeyboardHandlerPresent',
         'ErrTabindexNoVisibleFocus',
         'ErrTabindexChildOfInteractive',
         'ErrTabindexAriaHiddenFocusable',

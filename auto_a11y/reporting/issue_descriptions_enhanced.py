@@ -1964,6 +1964,15 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'wcag': ['2.1.1'],
             'remediation': "Either (a) add a keyboard handler directly on the element to make the keyboard equivalence explicit, or (b) manually verify that activating the ancestor with the keyboard performs the same action as clicking the element. Document the keyboard interaction in code comments."
         },
+        'WarnGlobalKeyboardHandlerPresent': {
+            'title': "Page-level keyboard handler detected — keyboard accessibility cannot be verified automatically",
+            'what': "Page has keyboard event handler(s) attached to {targets}.",
+            'why': "This test looks for evidence of keyboard event handling at the document/window/body level but cannot verify whether those handlers provide keyboard equivalents for any specific mouse-driven interaction on the page. Manual review required.",
+            'who': "Keyboard users, screen reader users, users with motor disabilities.",
+            'impact': ImpactScale.MEDIUM.value,
+            'wcag': ['2.1.1'],
+            'remediation': "Manually test that every mouse-driven interaction on the page can be triggered using only the keyboard. Document keyboard equivalents and ensure any global shortcut handlers do not conflict with assistive-technology key bindings."
+        },
         'ErrMultipleBannerLandmarks': {
             'title': "Multiple banner landmarks found",
             'what': "Multiple banner landmarks found",

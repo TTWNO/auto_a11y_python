@@ -1665,6 +1665,14 @@ WarnMouseHandlerKeyboardOnAncestor =
     .remediation = Soit (a) ajouter un gestionnaire clavier directement sur l'élément pour rendre l'équivalence clavier explicite, soit (b) vérifier manuellement que l'activation de l'ancêtre au clavier effectue la même action qu'un clic sur l'élément. Documenter l'interaction clavier dans des commentaires de code.
     .what-generic = L'élément a un gestionnaire souris mais aucun gestionnaire clavier sur lui-même ; l'ancêtre focalisable le plus proche possède un gestionnaire clavier qui peut recevoir les événements remontés.
 
+WarnGlobalKeyboardHandlerPresent =
+    .title = Gestionnaire de clavier au niveau de la page détecté — l'accessibilité au clavier ne peut pas être vérifiée automatiquement
+    .what = La page a des gestionnaires d'événements clavier attachés à { $targets }.
+    .why = Ce test recherche des preuves de gestion d'événements clavier au niveau document/window/body mais ne peut pas vérifier si ces gestionnaires fournissent des équivalents clavier pour une interaction spécifique pilotée par la souris sur la page. Une révision manuelle est requise.
+    .who = Utilisateurs de clavier, utilisateurs de lecteurs d'écran, utilisateurs avec des handicaps moteurs.
+    .remediation = Tester manuellement que chaque interaction pilotée par la souris sur la page peut être déclenchée en utilisant uniquement le clavier. Documenter les équivalents clavier et s'assurer que les gestionnaires de raccourcis globaux n'entrent pas en conflit avec les raccourcis clavier des technologies d'assistance.
+    .what-generic = La page a des gestionnaires d'événements clavier au niveau document/window/body.
+
 ErrMultipleBannerLandmarks =
     .title = Multiples régions repères bannière trouvées
     .what = Multiples régions repères bannière trouvées

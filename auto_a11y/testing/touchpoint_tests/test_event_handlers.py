@@ -27,11 +27,18 @@ TEST_DOCUMENTATION = {
             "wcagCriteria": ["2.1.1", "2.1.3"],
         },
         {
-            "id": "mouse-only",
-            "name": "Elements with Mouse Events but no Keyboard Events",
-            "description": "Identifies elements that respond to mouse events (click, hover) but have no keyboard event handlers, making them inaccessible to keyboard users",
+            "id": "mouse-handler-keyboard-check",
+            "name": "Mouse handler keyboard equivalence (three-state)",
+            "description": "For each element with a mouse handler that is not intrinsically interactive: pass if the element has its own keyboard handler; warn if a focusable ancestor has a keyboard handler (manual verification needed); fail if no keyboard handler exists on the element or any focusable ancestor.",
             "impact": "high",
-            "wcagCriteria": ["2.1.1", "2.1.3"],
+            "wcagCriteria": ["2.1.1"],
+        },
+        {
+            "id": "global-keyboard-handler-discovery",
+            "name": "Global Keyboard Handler Discovery",
+            "description": "Detects keyboard handlers attached to document/window/body. Emits a warning because automated testing cannot tie a global handler to any specific mouse-driven widget; manual verification required.",
+            "impact": "medium",
+            "wcagCriteria": ["2.1.1"],
         },
         {
             "id": "modal-without-escape",
@@ -244,98 +251,6 @@ async def test_event_handlers(page: Page) -> dict[str, Any]:
                     previousRect = rect;
                 });
                 
-                // Parse JavaScript to find programmatic event listeners
-                const elementEventMap = new Map(); // element id/selector -> {mouseEvents: Set, keyEvents: Set}
-
-                const scripts = Array.from(document.querySelectorAll('script'));
-                scripts.forEach(script => {
-                    if (!script.src && script.textContent) {
-                        const code = script.textContent;
-                        // Match patterns like: element.addEventListener('eventType', ...)
-                        const addEventListenerPattern = /(\w+)\.addEventListener\(['"](\w+)['"]/g;
-                        let match;
-                        while ((match = addEventListenerPattern.exec(code)) !== null) {
-                            const varName = match[1];
-                            const eventType = match[2].toLowerCase();
-
-                            if (!elementEventMap.has(varName)) {
-                                elementEventMap.set(varName, {mouseEvents: new Set(), keyEvents: new Set()});
-                            }
-
-                            const events = elementEventMap.get(varName);
-                            if (['click', 'mousedown', 'mouseup', 'mouseover', 'mouseout', 'dblclick', 'contextmenu'].includes(eventType)) {
-                                events.mouseEvents.add(eventType);
-                            } else if (['keydown', 'keyup', 'keypress'].includes(eventType)) {
-                                events.keyEvents.add(eventType);
-                            }
-                        }
-                    }
-                });
-
-                // Check for elements with event handlers but no tabindex
-                const allElements = Array.from(document.querySelectorAll('*'));
-                allElements.forEach(element => {
-                    let hasMouseHandler = false;
-                    let hasKeyboardHandler = false;
-
-                    // Check for inline event handlers
-                    Array.from(element.attributes).forEach(attr => {
-                        if (attr.name.startsWith('on')) {
-                            const eventType = attr.name.slice(2).toLowerCase();
-                            if (['keydown', 'keyup', 'keypress'].includes(eventType)) {
-                                hasKeyboardHandler = true;
-                            }
-                            if (['click', 'mousedown', 'mouseup', 'mouseover', 'mouseout', 'dblclick', 'contextmenu'].includes(eventType)) {
-                                hasMouseHandler = true;
-                            }
-                        }
-                    });
-
-                    // Check if element has programmatic handlers based on parsed JavaScript
-                    if (element.id && elementEventMap.has(element.id)) {
-                        const events = elementEventMap.get(element.id);
-                        if (events.mouseEvents.size > 0) hasMouseHandler = true;
-                        if (events.keyEvents.size > 0) hasKeyboardHandler = true;
-                    }
-
-                    // Check for ErrMissingTabindex
-                    if ((hasMouseHandler || hasKeyboardHandler) && !isIntrinsicInteractive(element) && !element.hasAttribute('tabindex')) {
-                        const tagName = element.tagName.toLowerCase();
-                        const hasOnclick = element.hasAttribute('onclick');
-                        const hasOtherHandlers = element.hasAttribute('onmousedown') ||
-                                                 element.hasAttribute('onmouseup') ||
-                                                 element.hasAttribute('ondblclick');
-
-                        results.errors.push({
-                            err: 'ErrMissingTabindex',
-                            type: 'err',
-                            cat: 'event_handling',
-                            element: tagName,
-                            xpath: getFullXPath(element),
-                            html: element.outerHTML.substring(0, 200),
-                            description: `<${tagName}> with event handler is not keyboard accessible - missing tabindex`,
-                            elementTag: tagName,
-                            hasOnclick: hasOnclick,
-                            hasOtherHandlers: hasOtherHandlers
-                        });
-                        results.elements_failed++;
-                    }
-
-                    // Check for mouse-only handlers
-                    if (hasMouseHandler && !hasKeyboardHandler && !isIntrinsicInteractive(element) && !element.hasAttribute('tabindex')) {
-                        results.errors.push({
-                            err: 'ErrMouseOnlyHandler',
-                            type: 'err',
-                            cat: 'event_handling',
-                            element: element.tagName,
-                            xpath: getFullXPath(element),
-                            html: element.outerHTML.substring(0, 200),
-                            description: 'Element has mouse handler but no keyboard handler'
-                        });
-                        results.elements_failed++;
-                    }
-                });
-                
                 // Check for modals without escape handlers
                 // Collect inline JS and external script URLs for analysis
                 let inlineJsCode = '';
@@ -467,7 +382,240 @@ async def test_event_handlers(page: Page) -> dict[str, Any]:
         # Strip comments from combined JS code
         all_js_code = re.sub(r'//.*$', '', all_js_code, flags=re.MULTILINE)
         all_js_code = re.sub(r'/\*[\s\S]*?\*/', '', all_js_code)
-        
+
+        # Phase 2: handler map + ErrMissingTabindex + Test 1 + Test 2.
+        # Receives combined inline + external JS text so detection sees handlers
+        # registered from external scripts.
+        phase2_results: dict[str, Any] = await page.evaluate(r'''
+            (combinedScriptText) => {
+                const out = {errors: [], warnings: [], elements_passed: 0, elements_failed: 0,
+                             globalHandlers: {document: [], window: [], body: []}};
+
+                function getFullXPath(element) {
+                    if (!element) return '';
+                    function getElementIdx(el) {
+                        let count = 1;
+                        for (let sib = el.previousSibling; sib; sib = sib.previousSibling) {
+                            if (sib.nodeType === 1 && sib.tagName === el.tagName) count++;
+                        }
+                        return count;
+                    }
+                    let path = '';
+                    while (element && element.nodeType === 1) {
+                        const idx = getElementIdx(element);
+                        path = `/${element.tagName.toLowerCase()}[${idx}]${path}`;
+                        element = element.parentNode;
+                    }
+                    return path;
+                }
+                function isIntrinsicInteractive(element) {
+                    const interactiveTags = ['a', 'button', 'input', 'select', 'textarea', 'details', 'summary'];
+                    const interactiveRoles = ['button', 'link', 'menuitem', 'tab', 'checkbox', 'radio', 'switch'];
+                    return interactiveTags.includes(element.tagName.toLowerCase()) ||
+                           (element.getAttribute('role') &&
+                            interactiveRoles.includes(element.getAttribute('role')));
+                }
+
+                const MOUSE_EVENTS = ['click', 'mousedown', 'mouseup', 'mouseover', 'mouseout', 'dblclick', 'contextmenu'];
+                const KEY_EVENTS = ['keydown', 'keyup', 'keypress'];
+
+                // collectHandlerMap — Approach 3 hinge point.
+                // Heuristic regex parsing of combined inline + external scripts. Limitations:
+                //   - querySelectorAll handlers are ignored (ambiguous which element)
+                //   - framework handlers (React, Vue, Svelte) are not detected
+                //   - var reassignment: last assignment wins, scope is not modeled
+                function collectHandlerMap(text) {
+                    const elementHandlers = new Map();
+                    const globalHandlers = {document: new Set(), window: new Set(), body: new Set()};
+                    function ensureEntry(el) {
+                        if (!elementHandlers.has(el)) {
+                            elementHandlers.set(el, {mouseEvents: new Set(), keyEvents: new Set()});
+                        }
+                        return elementHandlers.get(el);
+                    }
+                    function recordEvent(target, eventType) {
+                        const t = eventType.toLowerCase();
+                        if (MOUSE_EVENTS.includes(t)) target.mouseEvents.add(t);
+                        else if (KEY_EVENTS.includes(t)) target.keyEvents.add(t);
+                    }
+
+                    // 1. Inline on* attributes on every element.
+                    Array.from(document.querySelectorAll('*')).forEach(el => {
+                        const entry = ensureEntry(el);
+                        Array.from(el.attributes).forEach(attr => {
+                            if (!attr.name.startsWith('on')) return;
+                            recordEvent(entry, attr.name.slice(2));
+                        });
+                        if (el === document.body) {
+                            entry.keyEvents.forEach(e => globalHandlers.body.add(e));
+                        }
+                    });
+
+                    // 2. Build var-to-element table.
+                    // Reassignment policy: the regex scans left-to-right and each
+                    // varTable.set() overwrites prior entries, implementing the
+                    // spec's "last assignment wins, scope is not modeled" rule.
+                    const varTable = new Map();
+                    const declRe = /(?:const|let|var)\s+(\w+)\s*=\s*document\.(getElementById|querySelector)\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
+                    let m;
+                    while ((m = declRe.exec(text)) !== null) {
+                        const [, varName, fn, arg] = m;
+                        let el = null;
+                        if (fn === 'getElementById') {
+                            el = document.getElementById(arg);
+                        } else {
+                            try { el = document.querySelector(arg); } catch (_) { el = null; }
+                        }
+                        if (el) varTable.set(varName, el);
+                    }
+
+                    // 3. Parse addEventListener calls.
+                    const addRe = /(\w+(?:\.\w+)?)\.addEventListener\s*\(\s*['"](\w+)['"]/g;
+                    while ((m = addRe.exec(text)) !== null) {
+                        const target = m[1];
+                        const eventType = m[2];
+                        if (target === 'document') {
+                            const t = eventType.toLowerCase();
+                            if (KEY_EVENTS.includes(t)) globalHandlers.document.add(t);
+                        } else if (target === 'window') {
+                            const t = eventType.toLowerCase();
+                            if (KEY_EVENTS.includes(t)) globalHandlers.window.add(t);
+                        } else if (target === 'document.body') {
+                            const t = eventType.toLowerCase();
+                            if (KEY_EVENTS.includes(t)) globalHandlers.body.add(t);
+                        } else if (varTable.has(target)) {
+                            recordEvent(ensureEntry(varTable.get(target)), eventType);
+                        }
+                    }
+                    return {elementHandlers, globalHandlers,
+                            getEntry(el) { return elementHandlers.get(el); }};
+                }
+
+                const handlerMap = collectHandlerMap(combinedScriptText);
+
+                // Helpers for Test 1.
+                function isFocusable(el) {
+                    if (!el || el === document.body) return false;
+                    const tag = el.tagName.toLowerCase();
+                    if (['a', 'button', 'input', 'select', 'textarea', 'details', 'summary'].includes(tag)) return true;
+                    const tabindex = el.getAttribute('tabindex');
+                    if (tabindex !== null && parseInt(tabindex) >= 0) return true;
+                    const role = el.getAttribute('role');
+                    if (role && ['button', 'link', 'menuitem', 'tab', 'checkbox', 'radio', 'switch'].includes(role)) return true;
+                    return false;
+                }
+                function findFocusableAncestor(el) {
+                    let cur = el.parentElement;
+                    while (cur && cur !== document.body) {
+                        if (isFocusable(cur)) return cur;
+                        cur = cur.parentElement;
+                    }
+                    return null;
+                }
+
+                // ErrMissingTabindex — preserved logic, sourced from handlerMap.
+                Array.from(document.querySelectorAll('*')).forEach(element => {
+                    const entry = handlerMap.getEntry(element);
+                    if (!entry) return;
+                    if (entry.mouseEvents.size === 0 && entry.keyEvents.size === 0) return;
+                    if (isIntrinsicInteractive(element) || element.hasAttribute('tabindex')) return;
+                    const tagName = element.tagName.toLowerCase();
+                    out.errors.push({
+                        err: 'ErrMissingTabindex',
+                        type: 'err',
+                        cat: 'event_handling',
+                        element: tagName,
+                        xpath: getFullXPath(element),
+                        html: element.outerHTML.substring(0, 200),
+                        description: `<${tagName}> with event handler is not keyboard accessible - missing tabindex`,
+                        elementTag: tagName,
+                        hasOnclick: element.hasAttribute('onclick'),
+                        hasOtherHandlers: element.hasAttribute('onmousedown') ||
+                                          element.hasAttribute('onmouseup') ||
+                                          element.hasAttribute('ondblclick'),
+                    });
+                    out.elements_failed++;
+                });
+
+                // Test 1 — three-state per-element check.
+                Array.from(document.querySelectorAll('*')).forEach(element => {
+                    const entry = handlerMap.getEntry(element);
+                    if (!entry || entry.mouseEvents.size === 0) return;
+                    if (isIntrinsicInteractive(element) || element.hasAttribute('tabindex')) return;
+
+                    if (entry.keyEvents.size > 0) {
+                        out.elements_passed++;
+                        return;
+                    }
+                    const ancestor = findFocusableAncestor(element);
+                    const ancEntry = ancestor ? handlerMap.getEntry(ancestor) : null;
+                    if (ancestor && ancEntry && ancEntry.keyEvents.size > 0) {
+                        out.warnings.push({
+                            err: 'WarnMouseHandlerKeyboardOnAncestor',
+                            type: 'warn',
+                            cat: 'event_handling',
+                            element: element.tagName,
+                            xpath: getFullXPath(element),
+                            html: element.outerHTML.substring(0, 200),
+                            description: 'Element has mouse handler but no keyboard handler; nearest focusable ancestor has a keyboard handler — manual verification required',
+                            ancestorTag: ancestor.tagName.toLowerCase(),
+                            ancestorXpath: getFullXPath(ancestor),
+                            ancestorKeyEvents: Array.from(ancEntry.keyEvents),
+                        });
+                    } else {
+                        out.errors.push({
+                            err: 'ErrMouseOnlyHandler',
+                            type: 'err',
+                            cat: 'event_handling',
+                            element: element.tagName,
+                            xpath: getFullXPath(element),
+                            html: element.outerHTML.substring(0, 200),
+                            description: 'Element has mouse handler, no keyboard handler on itself, and no focusable ancestor with a keyboard handler',
+                        });
+                        out.elements_failed++;
+                    }
+                });
+
+                // Test 2 — global keyboard handler discovery.
+                out.globalHandlers = {
+                    document: Array.from(handlerMap.globalHandlers.document).filter(e => KEY_EVENTS.includes(e)),
+                    window: Array.from(handlerMap.globalHandlers.window).filter(e => KEY_EVENTS.includes(e)),
+                    body: Array.from(handlerMap.globalHandlers.body).filter(e => KEY_EVENTS.includes(e)),
+                };
+
+                return out;
+            }
+        ''', all_js_code)
+
+        # Merge phase-2 results into the main results dict.
+        results['errors'].extend(phase2_results.get('errors', []))
+        results['warnings'].extend(phase2_results.get('warnings', []))
+        results['elements_passed'] = results.get('elements_passed', 0) + phase2_results.get('elements_passed', 0)
+        results['elements_failed'] = results.get('elements_failed', 0) + phase2_results.get('elements_failed', 0)
+
+        # Test 2 emission — single deduped warn per page.
+        global_handlers = phase2_results.get('globalHandlers', {'document': [], 'window': [], 'body': []})
+        targets_with_keys: list[str] = []
+        events_seen: set[str] = set()
+        for target_name in ('document', 'window', 'body'):
+            evs = global_handlers.get(target_name, [])
+            if evs:
+                targets_with_keys.append(target_name)
+                events_seen.update(evs)
+
+        if targets_with_keys:
+            results['warnings'].append({
+                'err': 'WarnGlobalKeyboardHandlerPresent',
+                'type': 'warn',
+                'cat': 'event_handling',
+                'element': 'html',
+                'xpath': '/html[1]',
+                'html': '<html>',
+                'description': f"Page-level keyboard handler(s) detected on {', '.join(targets_with_keys)}. Manual verification required.",
+                'targets': targets_with_keys,
+                'events': sorted(events_seen),
+            })
+
         # Check if JS has escape handler
         has_keydown_listener = bool(re.search(r'addEventListener\s*\(\s*[\'"]keydown[\'"]', all_js_code, re.IGNORECASE)) or \
                                bool(re.search(r'onkeydown', all_js_code, re.IGNORECASE))

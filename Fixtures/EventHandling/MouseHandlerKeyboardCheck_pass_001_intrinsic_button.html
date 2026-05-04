@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MouseHandlerKeyboardCheck — pass (intrinsic interactive)</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "MouseHandlerKeyboardCheck_pass_001_intrinsic_button",
+    "issueId": "ErrMouseOnlyHandler",
+    "expectedViolationCount": 0,
+    "expectedPassCount": 1,
+    "description": "Native button with click and keydown handlers — fully accessible",
+    "wcag": "2.1.1",
+    "impact": "High"
+}
+    </script>
+</head>
+<body>
+    <button id="b" data-expected-pass="true" data-pass-reason="Native button receives keyboard activation automatically">Activate</button>
+    <script>
+        const b = document.getElementById('b');
+        b.addEventListener('click', () => console.log('click'));
+        b.addEventListener('keydown', () => console.log('key'));
+    </script>
+</body>
+</html>

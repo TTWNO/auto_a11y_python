@@ -1765,7 +1765,7 @@ Type: Error
 Impact: High
 WCAG: 2.1.1 Keyboard (Level A)
 Touchpoint: event_handling
-Description: Interactive functionality only available through mouse events
+Description: Element has a mouse handler, no keyboard handler on itself, and no focusable ancestor with a keyboard handler — keyboard users cannot trigger the interaction.
 Why it matters: Mouse-only interactions exclude users who cannot use a pointing device.
 Who it affects: Keyboard users, screen reader users, users with motor disabilities, mobile device users.
 How to fix: Provide keyboard equivalents for all mouse interactions, use click events that work with keyboard, add proper keyboard event handlers.

@@ -1651,11 +1651,11 @@ ErrModalWithoutEscape =
 
 ErrMouseOnlyHandler =
     .title = Fonctionnalité interactive disponible uniquement via les événements souris
-    .what = L'élément a un gestionnaire d'événement souris (onclick, onmouseover, etc.) mais manque de gestionnaires d'événements clavier, le rendant inaccessible aux utilisateurs de clavier
+    .what = L'élément a un gestionnaire souris, aucun gestionnaire clavier sur lui-même, et aucun ancêtre focalisable avec un gestionnaire clavier — les utilisateurs de clavier ne peuvent pas déclencher l'interaction.
     .why = Les interactions souris uniquement excluent les utilisateurs qui ne peuvent pas utiliser un dispositif de pointage. Bien qu'ajouter role=\"button\" aide les lecteurs d'écran à identifier l'élément comme interactif, cela ne fournit pas de fonctionnalité clavier - les gestionnaires d'événements clavier sont toujours requis.
     .who = Utilisateurs de clavier, utilisateurs de lecteurs d'écran, utilisateurs avec des handicaps moteurs, utilisateurs d'appareils mobiles.
     .remediation = Bonne pratique : Utiliser un élément <button> au lieu de <div> ou <span>, qui fournit automatiquement le support souris et clavier. Si vous devez utiliser un élément non-bouton : (1) Ajouter role=\"button\" pour le support des lecteurs d'écran, (2) Ajouter tabindex=\"0\" pour le rendre focalisable au clavier, (3) Ajouter un gestionnaire onkeydown pour répondre aux touches Entrée et Espace : onkeydown=\"if(event.key==='Enter'||event.key===' '){"{"}/* votre action */{"}"}\". Notez que role=\"button\" seul ne fournit PAS de fonctionnalité clavier.
-    .what-generic = L'élément a un gestionnaire d'événement souris (onclick, onmouseover, etc.) mais manque de gestionnaires d'événements clavier, le rendant inaccessible aux utilisateurs de clavier
+    .what-generic = L'élément a un gestionnaire souris, aucun gestionnaire clavier sur lui-même, et aucun ancêtre focalisable avec un gestionnaire clavier — les utilisateurs de clavier ne peuvent pas déclencher l'interaction.
 
 WarnMouseHandlerKeyboardOnAncestor =
     .title = Le gestionnaire souris délègue à un gestionnaire clavier d'un ancêtre — vérification manuelle requise

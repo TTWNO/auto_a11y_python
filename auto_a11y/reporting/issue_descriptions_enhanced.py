@@ -1948,7 +1948,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrMouseOnlyHandler': {
             'title': "Interactive functionality only available through mouse events",
-            'what': "Element has mouse event handler (onclick, onmouseover, etc.) but lacks keyboard event handlers, making it inaccessible to keyboard users",
+            'what': "Element has a mouse handler, no keyboard handler on itself, and no focusable ancestor with a keyboard handler — keyboard users cannot trigger the interaction.",
             'why': "Mouse-only interactions exclude users who cannot use a pointing device. While adding role=\"button\" helps screen readers identify the element as interactive, it does not provide keyboard functionality - keyboard event handlers are still required.",
             'who': "Keyboard users, screen reader users, users with motor disabilities, mobile device users.",
             'impact': ImpactScale.HIGH.value,

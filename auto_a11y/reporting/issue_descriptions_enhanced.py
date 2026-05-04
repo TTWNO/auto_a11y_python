@@ -1967,6 +1967,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         'WarnGlobalKeyboardHandlerPresent': {
             'title': "Page-level keyboard handler detected — keyboard accessibility cannot be verified automatically",
             'what': "Page has keyboard event handler(s) attached to {targets}.",
+            'what_generic': "Page has keyboard event handler(s) attached to document, window, or body.",
             'why': "This test looks for evidence of keyboard event handling at the document/window/body level but cannot verify whether those handlers provide keyboard equivalents for any specific mouse-driven interaction on the page. Manual review required.",
             'who': "Keyboard users, screen reader users, users with motor disabilities.",
             'impact': ImpactScale.MEDIUM.value,

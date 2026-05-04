@@ -1461,6 +1461,7 @@ WarnMouseHandlerKeyboardOnAncestor =
     .why = Automated testing cannot verify whether the ancestor's keyboard handler actually triggers the same interaction as the element's mouse handler. The widget may or may not be keyboard-accessible in practice.
     .who = Keyboard users, screen reader users, users with motor disabilities.
     .remediation = Either (a) add a keyboard handler directly on the element to make the keyboard equivalence explicit, or (b) manually verify that activating the ancestor with the keyboard performs the same action as clicking the element. Document the keyboard interaction in code comments.
+    .what-generic = Element has a mouse handler but no keyboard handler on itself; the nearest focusable ancestor has a keyboard handler that may receive bubbled events.
 
 WarnGlobalKeyboardHandlerPresent =
     .title = Page-level keyboard handler detected — keyboard accessibility cannot be verified automatically
@@ -1468,6 +1469,7 @@ WarnGlobalKeyboardHandlerPresent =
     .why = This test looks for evidence of keyboard event handling at the document/window/body level but cannot verify whether those handlers provide keyboard equivalents for any specific mouse-driven interaction on the page. Manual review required.
     .who = Keyboard users, screen reader users, users with motor disabilities.
     .remediation = Manually test that every mouse-driven interaction on the page can be triggered using only the keyboard. Document keyboard equivalents and ensure any global shortcut handlers do not conflict with assistive-technology key bindings.
+    .what-generic = Page has keyboard event handler(s) attached to document, window, or body.
 
 ErrMultipleBannerLandmarks =
     .title = Multiple banner landmarks found

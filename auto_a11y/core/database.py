@@ -3,7 +3,7 @@ Database connection and repository management
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from collections.abc import Generator
 from pymongo import MongoClient
 from pymongo.database import Database as MongoDatabase
@@ -27,6 +27,9 @@ from auto_a11y.models import (
 )
 from auto_a11y.models.pdf_document import PdfDocument, PdfDocumentStatus
 from auto_a11y.models.permission_group import PermissionGroup
+
+if TYPE_CHECKING:
+    from auto_a11y.pdf.storage import PdfStorage
 
 logger = logging.getLogger(__name__)
 
@@ -1409,8 +1412,26 @@ class Database:
 
     # Statistics
     
-    def get_project_stats(self, project_id: str) -> dict[str, Any]:
-        """Get statistics for a project"""
+    def get_project_stats(
+        self,
+        project_id: str,
+        pdf_storage: "PdfStorage | None" = None,
+    ) -> dict[str, Any]:
+        """Get statistics for a project.
+
+        ``pdf_storage`` is optional only because non-web callers (CLI
+        tooling, fixture scripts) may not have web app config loaded.
+        Web routes that render the project overview MUST pass it so
+        the FAIL/WARN totals include audited PDFs and stay consistent
+        with the per-website badges shown directly below the totals
+        on the same page (issues-counts branch fix).
+        """
+        from auto_a11y.core.issue_aggregator import (
+            ZERO_ISSUE_COUNTS,
+            count_html_page_issues,
+            count_pdf_issues,
+        )
+
         websites = self.get_websites(project_id)
 
         total_pages = 0
@@ -1428,30 +1449,20 @@ class Database:
                     tested_pages += 1
                     tested_page_ids.append(page.id)
 
-        # Aggregate issue counts from test_results (source of truth)
-        total_violations = 0
-        total_warnings = 0
-        if tested_page_ids:
-            pipeline: list[dict[str, Any]] = [
-                {'$match': {'page_id': {'$in': tested_page_ids}}},
-                {'$sort': {'test_date': -1}},
-                {'$group': {
-                    '_id': '$page_id',
-                    'violation_count': {'$first': {'$ifNull': ['$violation_count', 0]}},
-                    'warning_count': {'$first': {'$ifNull': ['$warning_count', 0]}},
-                }},
-            ]
-            for result in self.test_results.aggregate(pipeline):
-                total_violations += result.get('violation_count', 0)
-                total_warnings += result.get('warning_count', 0)
+        html_counts = count_html_page_issues(self, tested_page_ids)
+        pdf_counts = ZERO_ISSUE_COUNTS
+        if pdf_storage is not None:
+            project_pdfs = self.get_pdf_documents(project_id=project_id, limit=10000)
+            pdf_counts = count_pdf_issues(project_pdfs, pdf_storage)
+        totals = html_counts + pdf_counts
 
         return {
             "website_count": len(websites),
             "total_pages": total_pages,
             "tested_pages": tested_pages,
             "untested_pages": total_pages - tested_pages,
-            "total_violations": total_violations,
-            "total_warnings": total_warnings,
+            "total_violations": totals.violations,
+            "total_warnings": totals.warnings,
             "test_coverage": (tested_pages / total_pages * 100) if total_pages > 0 else 0
         }
     

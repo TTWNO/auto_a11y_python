@@ -3,15 +3,17 @@ RESTful API routes
 """
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from flask import Blueprint, Response, jsonify, request
 from flask_login import current_user
 from auto_a11y.models import Project, Page, ProjectStatus, PageStatus
 from auto_a11y.models.app_user import UserRole
+from auto_a11y.pdf.storage import PdfStorage
 from auto_a11y.web.routes.auth import project_role_required
 from auto_a11y.core.job_manager import JobManager, JobStatus
-from auto_a11y.web.typed_app import get_db, get_test_config
+from auto_a11y.web.typed_app import get_db, get_app_config, get_test_config
 from datetime import datetime
 import logging
 
@@ -181,8 +183,9 @@ def get_project(project_id: str) -> tuple[Response, int] | Response:
     if not project:
         return jsonify({'error': 'Project not found'}), 404
     
-    stats = get_db().get_project_stats(project_id)
-    
+    storage = PdfStorage(base_dir=Path(get_app_config().PDF_STORAGE_DIR))
+    stats = get_db().get_project_stats(project_id, pdf_storage=storage)
+
     response = project.to_dict()
     response['statistics'] = stats
     

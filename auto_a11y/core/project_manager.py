@@ -4,12 +4,15 @@ Project management business logic
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from bson import ObjectId
 
 from auto_a11y.models import Project, ProjectStatus
 from auto_a11y.core.database import Database
+
+if TYPE_CHECKING:
+    from auto_a11y.pdf.storage import PdfStorage
 
 logger = logging.getLogger(__name__)
 
@@ -145,21 +148,23 @@ class ProjectManager:
         
         return self.db.delete_project(project_id)
     
-    def get_project_statistics(self, project_id: str) -> dict[str, Any]:
+    def get_project_statistics(
+        self,
+        project_id: str,
+        pdf_storage: "PdfStorage | None" = None,
+    ) -> dict[str, Any]:
         """
-        Get project statistics
-        
-        Args:
-            project_id: Project ID
-            
-        Returns:
-            Project statistics
+        Get project statistics.
+
+        Pass ``pdf_storage`` to include audited PDF FAIL/WARN counts in
+        the totals. Callers without web app context (e.g. CLI tools)
+        may omit it; the totals will then reflect HTML page tests only.
         """
         project = self.get_project(project_id)
         if not project:
             raise ValueError(f"Project {project_id} not found")
-        
-        return self.db.get_project_stats(project_id)
+
+        return self.db.get_project_stats(project_id, pdf_storage=pdf_storage)
     
     def archive_project(self, project_id: str) -> bool:
         """

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any
 
 from flask import (
@@ -13,13 +14,21 @@ from flask import (
     abort, g,
 )
 from auto_a11y.web.fluent import ftl
-from auto_a11y.web.typed_app import get_db
+from auto_a11y.web.typed_app import get_app_config, get_db
 from flask_login import current_user
 
 from auto_a11y.models import TokenScope, Page
 from auto_a11y.models.test_result import Violation
+from auto_a11y.pdf.storage import PdfStorage
 from auto_a11y.reporting.issue_descriptions_translated import get_detailed_issue_description
 from auto_a11y.web.routes.auth import require_access, check_scope, get_effective_role
+
+
+def _pdf_storage() -> PdfStorage:
+    """Build a PdfStorage from app config. Reused by every route that
+    asks the database for project-level totals so the FAIL/WARN counts
+    on public pages match the admin overview."""
+    return PdfStorage(base_dir=Path(get_app_config().PDF_STORAGE_DIR))
 
 public_bp = Blueprint(
     'public', __name__,
@@ -82,7 +91,7 @@ def token_landing(token: str) -> str:
     project = get_db().get_project(g.access_scope_id)
     if not project:
         abort(404)
-    stats = get_db().get_project_stats(g.access_scope_id)
+    stats = get_db().get_project_stats(g.access_scope_id, pdf_storage=_pdf_storage())
     websites = get_db().get_websites(g.access_scope_id)
     return render_template(
         'public/project.html',
@@ -158,11 +167,12 @@ def client_projects() -> str:
             projects = get_db().get_projects_for_user(str(current_user.get_id()))
     else:
         projects = get_db().get_all_projects()
+    storage = _pdf_storage()
     project_data: list[dict[str, Any]] = []
     for project in projects:
         if not project.id:
             continue
-        stats = get_db().get_project_stats(project.id)
+        stats = get_db().get_project_stats(project.id, pdf_storage=storage)
         project_data.append({'project': project, 'stats': stats})
     return render_template('public/project_list.html', project_data=project_data)
 
@@ -179,7 +189,7 @@ def client_project(project_id: str) -> str:
     project = get_db().get_project(project_id)
     if not project:
         abort(404)
-    stats = get_db().get_project_stats(project_id)
+    stats = get_db().get_project_stats(project_id, pdf_storage=_pdf_storage())
     websites = get_db().get_websites(project_id)
     return render_template(
         'public/project.html',

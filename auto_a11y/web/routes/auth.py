@@ -554,11 +554,23 @@ def login() -> str | Response:
 
         # Accept ``next`` from either the form body or the query string.
         # The form action preserves ``next`` in both, but checking both
-        # also tolerates Flask-Login's default ``?next=`` redirect.
+        # also tolerates Flask-Login's default ``?next=`` redirect, which
+        # passes the full absolute URL (scheme + host + path).
         next_page = request.form.get('next') or request.args.get('next')
         if next_page:
             parsed = urlparse(next_page)
-            if parsed.path.startswith('/') and not parsed.netloc and not parsed.scheme:
+            host_url = urlparse(request.host_url)
+            is_relative = (
+                parsed.path.startswith('/')
+                and not parsed.netloc
+                and not parsed.scheme
+            )
+            is_same_origin = (
+                parsed.scheme in ('http', 'https')
+                and parsed.netloc == host_url.netloc
+                and parsed.path.startswith('/')
+            )
+            if is_relative or is_same_origin:
                 return redirect(next_page)
 
         return redirect(url_for('dashboard'))

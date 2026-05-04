@@ -246,7 +246,63 @@ def test_view_project_stats_include_audited_pdf_counts(tmp_path: Path) -> None:
     # Combined: 3+1 violations from PDFs, 2+4 warnings from PDFs.
     assert stats["total_violations"] == 4
     assert stats["total_warnings"] == 6
+    # Coverage rolls PDFs into both numerator and denominator: a project
+    # whose only "document" is an audited PDF reads 1/1 (100%), not 0/0.
+    assert stats["total_pages"] == 2
+    assert stats["tested_pages"] == 2
+    assert stats["test_coverage"] == 100.0
     # And the per-website badge should match (pinned in the same loop).
     website_stats = captured.get("website_stats")
     assert website_stats is not None
     assert website_stats["w-1"] == {"violations": 4, "warnings": 6}
+
+
+def test_get_project_stats_combines_html_and_pdf_documents(tmp_path: Path) -> None:
+    """Combined coverage math: HTML pages + PDFs feed one document total.
+
+    Scenario: 2 HTML pages (1 tested), 3 PDFs (1 AUDITED, 1 PENDING,
+    1 FETCH_FAILED). FETCH_FAILED is excluded from the denominator
+    because the file never reached an auditable state. Expected:
+    total_pages = 2 + 2 = 4, tested_pages = 1 + 1 = 2, coverage = 50%.
+    """
+    from auto_a11y.core.database import Database
+    from auto_a11y.models.page import Page
+
+    storage = PdfStorage(base_dir=tmp_path)
+    audited = _make_doc(status=PdfDocumentStatus.AUDITED)
+    pending = _make_doc(status=PdfDocumentStatus.PENDING)
+    failed = _make_doc(status=PdfDocumentStatus.FETCH_FAILED)
+    _write_cache(storage, audited, fail=0, warn=0)
+
+    website = MagicMock()
+    website.id = "w-1"
+
+    page_tested = MagicMock(spec=Page)
+    page_tested.id = "p-tested"
+    page_tested.status = MagicMock()
+    page_tested.status = __import__(
+        "auto_a11y.models.page", fromlist=["PageStatus"]
+    ).PageStatus.TESTED
+    page_untested = MagicMock(spec=Page)
+    page_untested.id = "p-untested"
+    page_untested.status = __import__(
+        "auto_a11y.models.page", fromlist=["PageStatus"]
+    ).PageStatus.DISCOVERED
+
+    db = MagicMock()
+    db.get_websites.return_value = [website]
+    db.get_pages.return_value = [page_tested, page_untested]
+    db.get_pdf_documents.return_value = [audited, pending, failed]
+    db.test_results = MagicMock()
+    db.test_results.aggregate = MagicMock(return_value=[])
+
+    stats = Database.get_project_stats(db, "p-1", pdf_storage=storage)
+
+    assert stats["html_page_count"] == 2
+    assert stats["tested_html_pages"] == 1
+    assert stats["pdf_count"] == 2  # audited + pending; failed excluded
+    assert stats["tested_pdfs"] == 1
+    assert stats["total_pages"] == 4
+    assert stats["tested_pages"] == 2
+    assert stats["untested_pages"] == 2
+    assert stats["test_coverage"] == 50.0

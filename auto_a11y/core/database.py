@@ -1434,36 +1434,69 @@ class Database:
 
         websites = self.get_websites(project_id)
 
-        total_pages = 0
-        tested_pages = 0
+        html_total = 0
+        html_tested = 0
         tested_page_ids: list[str | None] = []
 
         for website in websites:
             if not website.id:
                 continue
             pages = self.get_pages(website.id)
-            total_pages += len(pages)
+            html_total += len(pages)
 
             for page in pages:
                 if page.status == PageStatus.TESTED:
-                    tested_pages += 1
+                    html_tested += 1
                     tested_page_ids.append(page.id)
+
+        # PDFs are testable documents too. They count toward both the
+        # "documents in the project" denominator and the "tested" numerator
+        # so the project overview's coverage percentage matches what the
+        # user actually sees: a project of one audited PDF reads 1/1 (100%)
+        # rather than 0/0. AUDITING is not "tested yet" — it's in flight —
+        # so we only credit AUDITED. FETCH_FAILED is excluded from the
+        # denominator because the file never made it to a state where
+        # auditing is possible (mirrors the website-detail "documents"
+        # math in auto_a11y/web/routes/websites.py).
+        pdf_total = 0
+        pdf_tested = 0
+        project_pdfs: list[PdfDocument] = []
+        if pdf_storage is not None:
+            project_pdfs = self.get_pdf_documents(project_id=project_id, limit=10000)
+            for pdf in project_pdfs:
+                if pdf.status is PdfDocumentStatus.FETCH_FAILED:
+                    continue
+                pdf_total += 1
+                if pdf.status is PdfDocumentStatus.AUDITED:
+                    pdf_tested += 1
+
+        total_documents = html_total + pdf_total
+        tested_documents = html_tested + pdf_tested
 
         html_counts = count_html_page_issues(self, tested_page_ids)
         pdf_counts = ZERO_ISSUE_COUNTS
         if pdf_storage is not None:
-            project_pdfs = self.get_pdf_documents(project_id=project_id, limit=10000)
             pdf_counts = count_pdf_issues(project_pdfs, pdf_storage)
         totals = html_counts + pdf_counts
 
         return {
             "website_count": len(websites),
-            "total_pages": total_pages,
-            "tested_pages": tested_pages,
-            "untested_pages": total_pages - tested_pages,
+            # HTML-only counts retained for callers/templates that still
+            # distinguish pages from PDFs.
+            "html_page_count": html_total,
+            "tested_html_pages": html_tested,
+            "pdf_count": pdf_total,
+            "tested_pdfs": pdf_tested,
+            # Combined "documents" — what the project overview now displays.
+            "total_pages": total_documents,
+            "tested_pages": tested_documents,
+            "untested_pages": total_documents - tested_documents,
             "total_violations": totals.violations,
             "total_warnings": totals.warnings,
-            "test_coverage": (tested_pages / total_pages * 100) if total_pages > 0 else 0
+            "test_coverage": (
+                (tested_documents / total_documents * 100)
+                if total_documents > 0 else 0
+            ),
         }
     
     # Document Reference methods

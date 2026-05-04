@@ -417,22 +417,29 @@ class Database:
 
     def clear_website_test_results(self, website_id: str) -> dict[str, int]:
         """
-        Clear all test data for every page in a website.
+        Clear all test data for every page and PDF in a website.
 
-        Deletes all test_results documents for pages belonging to this website
-        and resets each page's cached test state (violation/warning/info/
-        discovery/pass counts, last_tested, test_duration_ms) so the pages
-        show as untested. Pages whose status was TESTED, TESTING, or ERROR
-        are moved back to DISCOVERED so they can be re-tested.
+        Deletes all test_results documents for pages and PDFs belonging to
+        this website, and resets each page's cached test state (violation/
+        warning/info/discovery/pass counts, last_tested, test_duration_ms)
+        so the pages show as untested. Pages whose status was TESTED,
+        TESTING, or ERROR are moved back to DISCOVERED so they can be
+        re-tested. PDFs whose status was AUDITED, AUDITING, or AUDIT_FAILED
+        are moved back to PENDING so they can be re-audited; their
+        last_audit_result_id and last_audited_at are cleared. Resetting
+        PDFs is required for the website/project rollup totals — which
+        sum HTML page counts plus issue_map.json tallies for AUDITED
+        PDFs (auto_a11y/pdf/issue_map_counts.py) — to fall to zero.
 
         Pages themselves, their screenshots, discovery runs, and document
-        references are preserved.
+        references are preserved. PDFs themselves and their downloaded
+        bytes are preserved.
 
         Args:
             website_id: Website ID
 
         Returns:
-            Dict with counts: {'test_results_deleted', 'pages_reset'}
+            Dict with counts: {'test_results_deleted', 'pages_reset', 'pdf_documents_reset'}
         """
         # Collect page IDs for this website so we can delete their test results
         page_id_strings = [
@@ -440,12 +447,25 @@ class Database:
             for doc in self.pages.find({"website_id": website_id}, {"_id": 1})
         ]
 
+        # Collect PDF IDs for this website so we can delete their PDF audit
+        # test_results (target_type='pdf_document', page_id=None).
+        pdf_id_strings = [
+            str(doc['_id'])
+            for doc in self.pdf_documents.find({"website_id": website_id}, {"_id": 1})
+        ]
+
         test_results_deleted = 0
         if page_id_strings:
             del_result = self.test_results.delete_many(
                 {"page_id": {"$in": page_id_strings}}
             )
-            test_results_deleted = del_result.deleted_count
+            test_results_deleted += del_result.deleted_count
+
+        if pdf_id_strings:
+            pdf_results_del = self.test_results.delete_many(
+                {"target_type": "pdf_document", "target_id": {"$in": pdf_id_strings}}
+            )
+            test_results_deleted += pdf_results_del.deleted_count
 
         # Reset per-page cached test state
         reset_result = self.pages.update_many(
@@ -475,13 +495,32 @@ class Database:
             {"$set": {"status": PageStatus.DISCOVERED.value}}
         )
 
-        pages_reset = reset_result.modified_count
-        logger.info(
-            f"Cleared test results for website {website_id}: {test_results_deleted} test_results deleted, {pages_reset} pages reset"
+        # Reset PDF audit state. Only AUDITED / AUDITING / AUDIT_FAILED move
+        # back to PENDING — PENDING / FETCHING / FETCH_FAILED describe fetch
+        # state that's unrelated to audit results.
+        pdf_reset_result = self.pdf_documents.update_many(
+            {
+                "website_id": website_id,
+                "status": {"$in": [
+                    PdfDocumentStatus.AUDITED.value,
+                    PdfDocumentStatus.AUDITING.value,
+                    PdfDocumentStatus.AUDIT_FAILED.value,
+                ]},
+            },
+            {"$set": {
+                "status": PdfDocumentStatus.PENDING.value,
+                "last_audit_result_id": None,
+                "last_audited_at": None,
+            }}
         )
+
+        pages_reset = reset_result.modified_count
+        pdf_documents_reset = pdf_reset_result.modified_count
+        logger.info(f"Cleared test results for website {website_id}: {test_results_deleted} test_results deleted, {pages_reset} pages reset, {pdf_documents_reset} PDFs reset")
         return {
             'test_results_deleted': test_results_deleted,
             'pages_reset': pages_reset,
+            'pdf_documents_reset': pdf_documents_reset,
         }
 
     # Page operations

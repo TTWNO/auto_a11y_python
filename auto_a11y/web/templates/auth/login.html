@@ -28,8 +28,11 @@
                     </div>
                 </div>
                 {% endif %}
-                <form method="POST" action="{{ url_for('auth.login') }}" aria-labelledby="login-heading">
+                <form method="POST" action="{{ url_for('auth.login', next=request.args.get('next')) if request.args.get('next') else url_for('auth.login') }}" aria-labelledby="login-heading">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    {% if request.args.get('next') %}
+                    <input type="hidden" name="next" value="{{ request.args.get('next') }}"/>
+                    {% endif %}
                     <p class="form-text mb-3"><span class="text-severity-high" aria-hidden="true">*</span> {{ ftl('common-required-field') }}</p>
                     <fieldset>
                         <legend class="visually-hidden">{{ ftl('auth-login-credentials') }}</legend>

@@ -234,12 +234,24 @@ def clear_test_results(website_id: str) -> Response:
         return redirect(url_for('projects.list_projects'))
 
     try:
+        # Snapshot the website's PDFs before the DB reset so we can wipe
+        # their pdfMax cache directories. The viewer routes
+        # (/pdfs/<id>/pdfmax-report, /issue-map) read those files directly
+        # from disk without consulting PdfDocument.status, so a DB-only
+        # reset would leave the user seeing stale issues.
+        website_pdfs = get_db().get_pdf_documents(website_id=website_id, limit=10000)
         result = get_db().clear_website_test_results(website_id)
+
+        storage = PdfStorage(base_dir=Path(get_app_config().PDF_STORAGE_DIR))
+        for pdf in website_pdfs:
+            storage.delete_audit_cache(pdf)
+
         flash(
             ftl(
                 'websites-test-results-cleared',
                 test_results=result['test_results_deleted'],
                 pages=result['pages_reset'],
+                pdfs=result['pdf_documents_reset'],
             ),
             'success',
         )

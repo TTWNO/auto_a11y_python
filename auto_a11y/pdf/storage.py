@@ -66,6 +66,22 @@ class PdfStorage:
         if doc_dir.is_dir():
             shutil.rmtree(doc_dir, ignore_errors=True)
 
+    def delete_audit_cache(self, doc: PdfDocument) -> None:
+        """Remove the cached pdfMax outputs for one PDF.
+
+        The audit job writes ``*_issue_map.json`` and
+        ``*_accessibility_report.md`` into ``<pdf_dir>/pdfmax-report/``.
+        Both the website-detail rollup
+        (:func:`auto_a11y.pdf.issue_map_counts.count_issues`) and the
+        ``/pdfs/<id>/pdfmax-report`` and ``/issue-map`` viewer routes
+        read directly from this directory, so a stale cache survives a
+        DB-only reset and the user keeps seeing old issues. The PDF
+        bytes and images are kept; only the audit outputs are removed.
+        """
+        cache_dir = self.local_path(doc).parent / "pdfmax-report"
+        if cache_dir.is_dir():
+            shutil.rmtree(cache_dir, ignore_errors=True)
+
     def delete_website(self, website_id: str) -> None:
         website_dir = self.base_dir / website_id
         if website_dir.is_dir():

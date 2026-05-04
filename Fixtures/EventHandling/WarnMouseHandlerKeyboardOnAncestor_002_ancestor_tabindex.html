@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WarnMouseHandlerKeyboardOnAncestor — ancestor div tabindex</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "WarnMouseHandlerKeyboardOnAncestor_002_ancestor_tabindex",
+    "issueId": "WarnMouseHandlerKeyboardOnAncestor",
+    "expectedViolationCount": 1,
+    "expectedPassCount": 0,
+    "description": "Mouse-only span inside div[tabindex=0] with keydown — keyboard delegation cannot be verified",
+    "wcag": "2.1.1",
+    "impact": "Medium"
+}
+    </script>
+</head>
+<body>
+    <div id="wrap" tabindex="0" role="button" aria-label="Toggle">
+        <span id="leaf"
+              data-expected-violation="true"
+              data-violation-id="WarnMouseHandlerKeyboardOnAncestor"
+              data-violation-reason="Span has onmousedown; focusable ancestor has keydown — manual verification required">
+            Toggle
+        </span>
+    </div>
+    <script>
+        const wrap = document.getElementById('wrap');
+        wrap.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') console.log('toggled via keyboard');
+        });
+        const leaf = document.getElementById('leaf');
+        leaf.addEventListener('mousedown', () => console.log('toggled via mouse'));
+    </script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WarnMouseHandlerKeyboardOnAncestor — ancestor button</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "WarnMouseHandlerKeyboardOnAncestor_001_ancestor_button",
+    "issueId": "WarnMouseHandlerKeyboardOnAncestor",
+    "expectedViolationCount": 1,
+    "expectedPassCount": 0,
+    "description": "Mouse-only span nested inside button with keyboard handler — keyboard delegation cannot be verified",
+    "wcag": "2.1.1",
+    "impact": "Medium"
+}
+    </script>
+</head>
+<body>
+    <!-- A <span> is phrasing content and is valid inside <button> per HTML5,
+         unlike <div> which the parser would extract. The button is the
+         focusable ancestor with the keyboard handler. -->
+    <button id="outer">
+        <span id="inner"
+              data-expected-violation="true"
+              data-violation-id="WarnMouseHandlerKeyboardOnAncestor"
+              data-violation-reason="Inner span has onclick; ancestor button has keydown via addEventListener — automated testing cannot verify keyboard delegation works">
+            Click me
+        </span>
+    </button>
+    <script>
+        const outer = document.getElementById('outer');
+        outer.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                document.getElementById('inner').click();
+            }
+        });
+        const inner = document.getElementById('inner');
+        inner.addEventListener('click', () => console.log('clicked'));
+    </script>
+</body>
+</html>

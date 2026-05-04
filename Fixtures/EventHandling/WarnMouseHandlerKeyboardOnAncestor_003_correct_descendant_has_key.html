@@ -17,11 +17,11 @@
 </head>
 <body>
     <button id="outer">
-        <div id="inner" tabindex="0"
+        <span id="inner" tabindex="0"
              data-expected-pass="true"
              data-pass-reason="Inner element has both onclick and onkeydown directly">
             Activate
-        </div>
+        </span>
     </button>
     <script>
         const inner = document.getElementById('inner');

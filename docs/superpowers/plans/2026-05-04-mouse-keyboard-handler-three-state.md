@@ -446,6 +446,9 @@ In the same file, **immediately after** the existing comment block stripping com
                     });
 
                     // 2. Build var-to-element table.
+                    // Reassignment policy: the regex scans left-to-right and each
+                    // varTable.set() overwrites prior entries, implementing the
+                    // spec's "last assignment wins, scope is not modeled" rule.
                     const varTable = new Map();
                     const declRe = /(?:const|let|var)\s+(\w+)\s*=\s*document\.(getElementById|querySelector)\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
                     let m;

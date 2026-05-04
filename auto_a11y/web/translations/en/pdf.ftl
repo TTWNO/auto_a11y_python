@@ -440,8 +440,25 @@ pdf-viewer-zoom-reset = Reset zoom
 pdf-viewer-overlay-layer-aria-label = Issue locations on this page
 pdf-viewer-issues-heading = Issues found by the visual audit
 pdf-viewer-issue-list-empty = The visual audit produced no locatable issues. Run an audit if none has been run yet.
-# {"{page}"} / {"{count}"} — literal placeholders that pdf_viewer_app.js
-# substitutes at runtime; do not translate the placeholder.
-pdf-viewer-jump-to-page-template = Page {"{page}"}
+# {"{count}"} / {"{page}"} / {"{INDEX}"} / {"{TAG}"} / {"{COUNT}"} / {"{CHECK}"}
+# — literal placeholders that pdf_viewer_app.js substitutes at
+# runtime via String.replace. Do not translate the placeholders.
 pdf-viewer-overlay-cluster-aria-template = {"{count}"} issues at this location
 pdf-viewer-semantic-layer-aria-template = Page {"{page}"} content
+
+# Issue-card detail parity (2026-05-01 spec) — pdfMax ViewerSidebar
+# fields now mirrored in the auto_a11y right-hand panel. Plural forms
+# collapse to "1 elements"/"5 elements" because the JS-side substitution
+# can't drive Fluent's plural selector; acceptable tradeoff for the
+# reduced complexity. Escalate to a JS plural helper if that ever bites.
+pdf-viewer-issue-element = [{"{INDEX}"}] {"{TAG}"}
+pdf-viewer-issue-document-level = Document-level
+pdf-viewer-issue-group-count = {"{COUNT}"} elements
+pdf-viewer-issue-view-in-report = View in report
+pdf-viewer-issue-view-in-report-aria = View "{"{CHECK}"}" in the pdfMax report
+
+# Live-region announcement on /pdfs/<id>/pdfmax-report when the page
+# loads with a #check=<name> hash and successfully scrolls to a check
+# section. Suppressed silently when the matching <details> element
+# isn't found.
+pdfmax-report-jumped-to-check = Showing report section: {"{CHECK}"}

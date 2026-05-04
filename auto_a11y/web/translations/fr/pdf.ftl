@@ -440,6 +440,13 @@ pdf-viewer-zoom-reset = Reset zoom
 pdf-viewer-overlay-layer-aria-label = Issue locations on this page
 pdf-viewer-issues-heading = Issues found by the visual audit
 pdf-viewer-issue-list-empty = The visual audit produced no locatable issues. Run an audit if none has been run yet.
-pdf-viewer-jump-to-page-template = Page {"{page}"}
 pdf-viewer-overlay-cluster-aria-template = {"{count}"} issues at this location
 pdf-viewer-semantic-layer-aria-template = Page {"{page}"} content
+
+# Issue-card detail parity (2026-05-01 spec) — TODO_FR placeholder English
+pdf-viewer-issue-element = [{"{INDEX}"}] {"{TAG}"}
+pdf-viewer-issue-document-level = Document-level
+pdf-viewer-issue-group-count = {"{COUNT}"} elements
+pdf-viewer-issue-view-in-report = View in report
+pdf-viewer-issue-view-in-report-aria = View "{"{CHECK}"}" in the pdfMax report
+pdfmax-report-jumped-to-check = Showing report section: {"{CHECK}"}

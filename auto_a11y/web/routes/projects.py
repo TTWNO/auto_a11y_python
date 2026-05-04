@@ -4,6 +4,7 @@ Project management routes
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
+from pathlib import Path
 from typing import Any
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
@@ -16,6 +17,9 @@ from auto_a11y.models import Project, ProjectStatus, ProjectType
 from auto_a11y.models.page import PageStatus
 from auto_a11y.models.pdf_document import PdfDocument, PdfDocumentStatus
 from auto_a11y.models.app_user import UserRole
+
+from auto_a11y.pdf.issue_map_counts import PdfIssueCounts, count_issues
+from auto_a11y.pdf.storage import PdfStorage
 
 
 def summarise_pdf_status(pdfs: list[PdfDocument]) -> dict[str, int]:
@@ -520,6 +524,17 @@ def view_project(project_id: str) -> str | Response:
     websites = get_db().get_websites(project_id)
     stats = get_db().get_project_stats(project_id)
 
+    # PDF rollup prep (2026-05-01 spec Part 2). One DB call for the
+    # whole project; reuse the result for both the per-website
+    # violation/warning rollup AND the existing PDF nav badge count.
+    project_pdfs = get_db().get_pdf_documents(project_id=project_id, limit=10000)
+    pdf_count = len(project_pdfs)
+    pdf_status_counts = summarise_pdf_status(project_pdfs)
+    storage = PdfStorage(base_dir=Path(get_app_config().PDF_STORAGE_DIR))
+    pdfs_by_website: dict[str, list[PdfDocument]] = {}
+    for pdf_doc in project_pdfs:
+        pdfs_by_website.setdefault(pdf_doc.website_id, []).append(pdf_doc)
+
     # Calculate stats for each website (violations, warnings, and actual page count)
     website_stats: dict[str | None, dict[str, int]] = {}
     for website in websites:
@@ -528,7 +543,7 @@ def view_project(project_id: str) -> str | Response:
         pages = get_db().get_pages(website.id)
         tested_page_ids = [p.id for p in pages if p.status == PageStatus.TESTED]
 
-        # Aggregate counts from test_results (source of truth)
+        # Aggregate counts from test_results (source of truth for HTML)
         violations = 0
         warnings = 0
         if tested_page_ids:
@@ -545,9 +560,16 @@ def view_project(project_id: str) -> str | Response:
                 violations += result.get('violation_count', 0)
                 warnings += result.get('warning_count', 0)
 
+        # Roll PDFs into the same total — same source of truth as the
+        # website-detail page (auto_a11y/web/routes/websites.py).
+        pdf_totals = PdfIssueCounts(0, 0)
+        for pdf_doc in pdfs_by_website.get(website.id, []):
+            if pdf_doc.status is PdfDocumentStatus.AUDITED:
+                pdf_totals = pdf_totals + count_issues(pdf_doc, storage)
+
         website_stats[website.id] = {
-            'violations': violations,
-            'warnings': warnings
+            'violations': violations + pdf_totals.violations,
+            'warnings': warnings + pdf_totals.warnings,
         }
         # Use actual page count from DB rather than the cached counter
         website.page_count = len(pages)
@@ -567,11 +589,6 @@ def view_project(project_id: str) -> str | Response:
     )
 
     all_groups = get_db().get_all_groups()
-
-    # PDF nav badge count (Phase 9.7 — additive)
-    project_pdfs = get_db().get_pdf_documents(project_id=project_id, limit=10000)
-    pdf_count = len(project_pdfs)
-    pdf_status_counts = summarise_pdf_status(project_pdfs)
 
     return render_template('projects/view.html',
                          project=project,

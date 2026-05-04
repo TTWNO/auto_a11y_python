@@ -11,9 +11,14 @@
         "error-load": {{ ftl('pdf-viewer-error-load') | tojson }},
         "issue-result-fail": {{ ftl('pdf-violation-result-fail') | tojson }},
         "issue-result-warn": {{ ftl('pdf-violation-result-warn') | tojson }},
-        "jump-to-page": {{ ftl('pdf-viewer-jump-to-page-template') | tojson }},
         "overlay-cluster-aria": {{ ftl('pdf-viewer-overlay-cluster-aria-template') | tojson }},
-        "semantic-layer-aria": {{ ftl('pdf-viewer-semantic-layer-aria-template') | tojson }}
+        "semantic-layer-aria": {{ ftl('pdf-viewer-semantic-layer-aria-template') | tojson }},
+        "issue-element": {{ ftl('pdf-viewer-issue-element') | tojson }},
+        "issue-document-level": {{ ftl('pdf-viewer-issue-document-level') | tojson }},
+        "issue-group-count": {{ ftl('pdf-viewer-issue-group-count') | tojson }},
+        "issue-view-in-report": {{ ftl('pdf-viewer-issue-view-in-report') | tojson }},
+        "issue-view-in-report-aria": {{ ftl('pdf-viewer-issue-view-in-report-aria') | tojson }},
+        "jumped-to-check": {{ ftl('pdfmax-report-jumped-to-check') | tojson }}
     };
 </script>
 <script src="{{ url_for('static', filename='js/pdf_viewer_app.js') }}" type="module" defer></script>
@@ -321,6 +326,7 @@
                 </h3>
                 <ol class="pdf-viewer-issue-list list-unstyled mb-0"
                     data-pdf-viewer-issue-list
+                    data-pdfmax-report-url="{{ url_for('pdf.pdfmax_report', pdf_document_id=pdf.id) }}"
                     aria-labelledby="pdf-viewer-issues-heading"></ol>
                 <p class="pdf-viewer-issue-list-empty text-muted small mb-0"
                    data-pdf-viewer-issue-list-empty

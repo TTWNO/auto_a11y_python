@@ -4,6 +4,7 @@ Website management routes
 from __future__ import annotations
 
 from collections.abc import Mapping
+from pathlib import Path
 from typing import Any
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session
@@ -11,6 +12,9 @@ from werkzeug.wrappers import Response
 from auto_a11y.web.fluent import ftl
 from auto_a11y.web.typed_app import get_db, get_app_config, get_pdf_runner
 from auto_a11y.models import Page, PageStatus
+from auto_a11y.models.pdf_document import PdfDocumentStatus
+from auto_a11y.pdf.issue_map_counts import PdfIssueCounts, count_issues
+from auto_a11y.pdf.storage import PdfStorage
 import logging
 
 logger = logging.getLogger(__name__)
@@ -118,6 +122,20 @@ def view_website(website_id: str) -> str | Response:
     # PDF nav badge count (Phase 9.7 — additive)
     website_pdfs = get_db().get_pdf_documents(website_id=website_id, limit=10000)
     pdf_count = len(website_pdfs)
+
+    # PDF rollup into the global violation/warning totals (2026-05-01
+    # spec Part 2). Reads the cached pdfMax issue_map.json for each
+    # AUDITED PDF; the helper degrades to (0, 0) on missing/malformed
+    # caches with a WARNING log, so a single bad cache never 500s
+    # the page.
+    storage = PdfStorage(base_dir=Path(get_app_config().PDF_STORAGE_DIR))
+    pdf_totals = PdfIssueCounts(0, 0)
+    for pdf in website_pdfs:
+        if pdf.status is PdfDocumentStatus.AUDITED:
+            pdf_totals = pdf_totals + count_issues(pdf, storage)
+    stats['total_violations'] = stats.get('total_violations', 0) + pdf_totals.violations
+    stats['total_warnings'] = stats.get('total_warnings', 0) + pdf_totals.warnings
+
     from auto_a11y.web.routes.projects import summarise_pdf_status
     pdf_status_counts = summarise_pdf_status(website_pdfs)
 

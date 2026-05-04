@@ -294,6 +294,7 @@
         this.viewport = null;          // viewport at current scale
         this.pageDimensions = null;    // {pageNum: [w, h]} from issue_map (PDF user-space units)
         this.issuesByPage = new Map(); // page → [issue]
+        this.allIssues = [];
         this.selectedIssueId = null;
         this.renderTask = null;
         this.connectorRaf = 0;
@@ -347,18 +348,31 @@
             if (!data || !Array.isArray(data.issues)) return;
             self.pageDimensions = data.page_dimensions || {};
             for (var i = 0; i < data.issues.length; i++) {
-                var issue = data.issues[i];
-                if (!issue.page || !issue.bbox) continue;
-                var arr = self.issuesByPage.get(issue.page);
-                if (!arr) { arr = []; self.issuesByPage.set(issue.page, arr); }
-                arr.push({
-                    id: issue.id,
-                    check_name: issue.check_name,
-                    check_result: issue.check_result,
-                    detail: issue.detail,
-                    page: issue.page,
-                    bbox: { x0: issue.bbox[0], y0: issue.bbox[1], x1: issue.bbox[2], y1: issue.bbox[3] },
-                });
+                var raw = data.issues[i];
+                // Full record — preserves element_index/element_tag and
+                // document-level issues (page=null, bbox=null) for the
+                // sidebar. Bbox is normalised to {x0,y0,x1,y1} when
+                // present so overlay code keeps its current shape.
+                var issue = {
+                    id: raw.id,
+                    check_name: raw.check_name,
+                    check_result: raw.check_result,
+                    element_index: (raw.element_index === undefined) ? null : raw.element_index,
+                    element_tag: raw.element_tag || null,
+                    detail: raw.detail || "",
+                    page: raw.page || null,
+                    bbox: null,
+                };
+                if (raw.bbox && raw.bbox.length === 4) {
+                    issue.bbox = { x0: raw.bbox[0], y0: raw.bbox[1], x1: raw.bbox[2], y1: raw.bbox[3] };
+                }
+                self.allIssues.push(issue);
+                // Only issues with both a page and a bbox get an overlay.
+                if (issue.page && issue.bbox) {
+                    var arr = self.issuesByPage.get(issue.page);
+                    if (!arr) { arr = []; self.issuesByPage.set(issue.page, arr); }
+                    arr.push(issue);
+                }
             }
         }).then(function () {
             self._renderIssueList();
@@ -370,34 +384,34 @@
     };
 
     /**
-     * Render the right-pane issue list from issue_map.json. Each card
-     * carries data-issue-id matching the overlay rect on the canvas, so
-     * connector lines can resolve both ends. We don't try to merge with
-     * the existing auto_a11y violation list below — the two come from
-     * different audit engines and can disagree; users want to see both
-     * and triangulate.
+     * Render the right-pane issue list from issue_map.json. Cards mirror
+     * pdfMax's ViewerSidebar 1:1 — single-element groups render as flat
+     * cards with element-tag/index lines; multi-element groups collapse
+     * into an accordion summary. Cards keep data-issue-id matching the
+     * overlay rect on the canvas so the connector-line code resolves
+     * both ends.
+     *
+     * The auto_a11y rich-report violation list below this panel comes
+     * from a different audit engine and can disagree; we deliberately
+     * don't merge.
      */
     PdfViewer.prototype._renderIssueList = function () {
         if (!this.issueListEl) return;
         this.issueListEl.innerHTML = "";
 
-        var totalIssues = 0;
-        this.issuesByPage.forEach(function (arr) { totalIssues += arr.length; });
-
-        if (totalIssues === 0) {
+        if (this.allIssues.length === 0) {
             if (this.issueListEmptyEl) this.issueListEmptyEl.hidden = false;
             return;
         }
         if (this.issueListEmptyEl) this.issueListEmptyEl.hidden = true;
 
-        // Flatten + group by page for predictable visual order.
-        var pages = Array.from(this.issuesByPage.keys()).sort(function (a, b) { return a - b; });
-        for (var p = 0; p < pages.length; p++) {
-            var pageNum = pages[p];
-            var arr = this.issuesByPage.get(pageNum);
-            for (var i = 0; i < arr.length; i++) {
-                this.issueListEl.appendChild(this._buildIssueCard(arr[i]));
-            }
+        var groups = groupIssues(this.allIssues);
+        for (var g = 0; g < groups.length; g++) {
+            var grp = groups[g];
+            var node = grp.isMulti
+                ? this._buildIssueGroupCard(grp)
+                : this._buildIssueCard(grp.issues[0]);
+            this.issueListEl.appendChild(node);
         }
     };
 
@@ -473,18 +487,96 @@
         }
     }
 
+    // ---------- Issue grouping (port of pdfMax/src/utils/issueGrouping.ts) ---
+
+    /**
+     * Bucket issues by (check_name, detail) so multi-element problems
+     * collapse into a single accordion card. Returns an array of
+     * {groupKey, checkName, checkResult, detail, issues, isMulti} in
+     * insertion order — the first occurrence of each (check, detail)
+     * pair anchors the group's position in the rendered list, which
+     * matches pdfMax's ViewerSidebar behaviour.
+     */
+    function groupIssues(issues) {
+        var map = new Map();
+        var order = [];
+        for (var i = 0; i < issues.length; i++) {
+            var issue = issues[i];
+            var key = (issue.check_name || "") + "\x00" + (issue.detail || "");
+            var arr = map.get(key);
+            if (arr) {
+                arr.push(issue);
+            } else {
+                arr = [issue];
+                map.set(key, arr);
+                order.push(key);
+            }
+        }
+        var out = [];
+        for (var j = 0; j < order.length; j++) {
+            var k = order[j];
+            var groupArr = map.get(k);
+            out.push({
+                groupKey: k,
+                checkName: groupArr[0].check_name,
+                checkResult: groupArr[0].check_result,
+                detail: groupArr[0].detail,
+                issues: groupArr,
+                isMulti: groupArr.length > 1,
+            });
+        }
+        return out;
+    }
+
+    /**
+     * Resolve the report URL once per card render via the data-attribute
+     * on the issue-list container. Returns "" when not set, in which
+     * case the "View in report" button is suppressed.
+     */
+    PdfViewer.prototype._reportUrl = function () {
+        if (!this.issueListEl) return "";
+        return this.issueListEl.getAttribute("data-pdfmax-report-url") || "";
+    };
+
+    /**
+     * Build the "View in report" button. Returns null when no report
+     * URL is available (e.g. test fixtures, or audits that pre-date
+     * the pdfmax-report cache).
+     */
+    PdfViewer.prototype._buildViewInReportButton = function (checkName) {
+        var reportUrl = this._reportUrl();
+        if (!reportUrl) return null;
+        var anchor = document.createElement("a");
+        anchor.className = "btn btn-outline-brand btn-sm pdf-viewer-issue-view-in-report";
+        anchor.href = reportUrl + "#check=" + encodeURIComponent(checkName);
+        anchor.textContent = t("issue-view-in-report", "View in report");
+        var ariaTpl = t("issue-view-in-report-aria", 'View "{CHECK}" in the pdfMax report');
+        anchor.setAttribute("aria-label", ariaTpl.replace("{CHECK}", checkName));
+        return anchor;
+    };
+
+    /**
+     * Build the `[<index>] <tag>` line for an issue. Returns null when
+     * either field is missing (the line is suppressed in that case).
+     */
+    PdfViewer.prototype._buildElementLine = function (issue) {
+        if (issue.element_index == null || !issue.element_tag) return null;
+        var span = document.createElement("span");
+        span.className = "pdf-viewer-issue-card-element";
+        var tpl = t("issue-element", "[{INDEX}] {TAG}");
+        span.textContent = tpl
+            .replace("{INDEX}", String(issue.element_index))
+            .replace("{TAG}", String(issue.element_tag));
+        return span;
+    };
+
     PdfViewer.prototype._buildIssueCard = function (issue) {
         var isFail = (issue.check_result === "FAIL");
 
-        // <li> is the card-level wrapper that carries data-issue-id (matched
-        // by connector lines + selection) and the severity strip.
         var li = document.createElement("li");
         li.className = "pdf-viewer-issue-card " + (isFail ? "is-fail" : "is-warn");
         li.setAttribute("data-issue-id", issue.id);
 
-        // Native <details>/<summary> for expand/collapse — same conventions
-        // as pdfMax's CheckerReport (data-check-result, data-check-name on
-        // the details element so the same filter/scroll machinery applies).
         var details = document.createElement("details");
         details.className = "pdf-viewer-issue-details";
         details.setAttribute("data-check-result", issue.check_result);
@@ -517,19 +609,112 @@
         var body = document.createElement("div");
         body.className = "pdf-viewer-issue-card-body";
 
+        // Element-tag line OR document-level marker — never both.
+        var elementLine = this._buildElementLine(issue);
+        if (elementLine) {
+            body.appendChild(elementLine);
+        } else if (issue.page == null && issue.bbox == null) {
+            var docBadge = document.createElement("span");
+            docBadge.className = "badge badge-neutral pdf-viewer-issue-card-document-level";
+            docBadge.textContent = t("issue-document-level", "Document-level");
+            body.appendChild(docBadge);
+        }
+
         if (issue.detail) {
             renderDetailMarkdown(issue.detail, body);
         }
 
-        if (issue.page) {
-            var pageBtn = document.createElement("button");
-            pageBtn.type = "button";
-            pageBtn.className = "btn btn-outline-brand btn-sm pdf-viewer-issue-page-btn";
-            pageBtn.setAttribute("data-pdf-page", String(issue.page));
-            var label = t("jump-to-page", "Page {page}");
-            pageBtn.textContent = label.replace("{page}", String(issue.page));
-            body.appendChild(pageBtn);
+        var viewBtn = this._buildViewInReportButton(issue.check_name);
+        if (viewBtn) body.appendChild(viewBtn);
+
+        details.appendChild(body);
+        li.appendChild(details);
+
+        return li;
+    };
+
+    /**
+     * Multi-element accordion card. Header shows severity badge, check
+     * name, and "{COUNT} elements". Expanded body shows each child's
+     * `[<index>] <tag>` and `p.<page>` on its own row.
+     */
+    PdfViewer.prototype._buildIssueGroupCard = function (group) {
+        var isFail = (group.checkResult === "FAIL");
+
+        var li = document.createElement("li");
+        li.className = "pdf-viewer-issue-card pdf-viewer-issue-card-group "
+            + (isFail ? "is-fail" : "is-warn");
+        li.setAttribute("data-group-key", group.groupKey);
+
+        var details = document.createElement("details");
+        details.className = "pdf-viewer-issue-details";
+        details.setAttribute("data-check-result", group.checkResult);
+        if (group.checkName) details.setAttribute("data-check-name", group.checkName);
+
+        var summary = document.createElement("summary");
+        summary.className = "pdf-viewer-issue-summary";
+
+        var resultBadge = document.createElement("span");
+        resultBadge.className = "badge " + (isFail ? "badge-high" : "badge-medium");
+        resultBadge.textContent = isFail
+            ? t("issue-result-fail", "Fail")
+            : t("issue-result-warn", "Warn");
+        summary.appendChild(resultBadge);
+
+        var name = document.createElement("span");
+        name.className = "pdf-viewer-issue-card-name";
+        name.textContent = group.checkName;
+        summary.appendChild(name);
+
+        var countSpan = document.createElement("span");
+        countSpan.className = "pdf-viewer-issue-card-count";
+        var countTpl = t("issue-group-count", "{COUNT} elements");
+        countSpan.textContent = countTpl.replace("{COUNT}", String(group.issues.length));
+        summary.appendChild(countSpan);
+
+        details.appendChild(summary);
+
+        var body = document.createElement("div");
+        body.className = "pdf-viewer-issue-card-body";
+
+        // Detail text once at the top of the group (it's identical
+        // across all members, since "detail" is part of the group key).
+        if (group.detail) {
+            renderDetailMarkdown(group.detail, body);
         }
+
+        var viewBtn = this._buildViewInReportButton(group.checkName);
+        if (viewBtn) body.appendChild(viewBtn);
+
+        // Per-element rows.
+        var ul = document.createElement("ul");
+        ul.className = "pdf-viewer-issue-group-children list-unstyled mb-0";
+        for (var i = 0; i < group.issues.length; i++) {
+            var child = group.issues[i];
+            var row = document.createElement("li");
+            row.className = "pdf-viewer-issue-group-child";
+            row.setAttribute("data-issue-id", child.id);
+
+            var elementLine = this._buildElementLine(child);
+            if (elementLine) {
+                row.appendChild(elementLine);
+            } else if (child.page == null && child.bbox == null) {
+                var docBadge = document.createElement("span");
+                docBadge.className = "badge badge-neutral pdf-viewer-issue-card-document-level";
+                docBadge.textContent = t("issue-document-level", "Document-level");
+                row.appendChild(docBadge);
+            }
+
+            if (child.page) {
+                var pageTag = document.createElement("span");
+                pageTag.className = "pdf-viewer-issue-card-page";
+                pageTag.textContent = "p." + child.page;
+                row.appendChild(pageTag);
+            }
+
+            ul.appendChild(row);
+        }
+        body.appendChild(ul);
 
         details.appendChild(body);
         li.appendChild(details);

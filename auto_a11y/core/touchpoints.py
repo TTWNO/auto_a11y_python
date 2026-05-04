@@ -509,7 +509,8 @@ class TouchpointMapper:
         
         # Event handling errors
         'ErrMouseOnlyHandler': TouchpointID.EVENT_HANDLING,
-        
+        'WarnMouseHandlerKeyboardOnAncestor': TouchpointID.EVENT_HANDLING,
+
         # Font errors
         'DiscoFontFound': TouchpointID.FONTS,
         'WarnItalicText': TouchpointID.FONTS,

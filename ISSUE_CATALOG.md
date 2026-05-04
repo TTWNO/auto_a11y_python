@@ -1772,6 +1772,18 @@ How to fix: Provide keyboard equivalents for all mouse interactions, use click e
 
 ---
 
+ID: WarnMouseHandlerKeyboardOnAncestor
+Type: Warning
+Impact: Medium
+WCAG: 2.1.1 Keyboard (Level A)
+Touchpoint: event_handling
+Description: Mouse handler delegates to ancestor keyboard handler — manual verification required
+Why it matters: Automated testing cannot verify whether the ancestor's keyboard handler actually triggers the same interaction as the element's mouse handler.
+Who it affects: Keyboard users, screen reader users, users with motor disabilities.
+How to fix: Add a keyboard handler directly on the element, or manually verify keyboard equivalence works through the ancestor.
+
+---
+
 ID: ErrMultipleBannerLandmarks
 Type: Error
 Impact: Medium

@@ -1657,6 +1657,14 @@ ErrMouseOnlyHandler =
     .remediation = Bonne pratique : Utiliser un élément <button> au lieu de <div> ou <span>, qui fournit automatiquement le support souris et clavier. Si vous devez utiliser un élément non-bouton : (1) Ajouter role=\"button\" pour le support des lecteurs d'écran, (2) Ajouter tabindex=\"0\" pour le rendre focalisable au clavier, (3) Ajouter un gestionnaire onkeydown pour répondre aux touches Entrée et Espace : onkeydown=\"if(event.key==='Enter'||event.key===' '){"{"}/* votre action */{"}"}\". Notez que role=\"button\" seul ne fournit PAS de fonctionnalité clavier.
     .what-generic = L'élément a un gestionnaire d'événement souris (onclick, onmouseover, etc.) mais manque de gestionnaires d'événements clavier, le rendant inaccessible aux utilisateurs de clavier
 
+WarnMouseHandlerKeyboardOnAncestor =
+    .title = Le gestionnaire souris délègue à un gestionnaire clavier d'un ancêtre — vérification manuelle requise
+    .what = L'élément a un gestionnaire souris mais aucun gestionnaire clavier sur lui-même ; l'ancêtre focalisable le plus proche possède un gestionnaire clavier qui peut recevoir les événements remontés.
+    .why = Les tests automatisés ne peuvent pas vérifier si le gestionnaire clavier de l'ancêtre déclenche réellement la même interaction que le gestionnaire souris de l'élément. Le widget peut être ou ne pas être accessible au clavier en pratique.
+    .who = Utilisateurs de clavier, utilisateurs de lecteurs d'écran, utilisateurs avec des handicaps moteurs.
+    .remediation = Soit (a) ajouter un gestionnaire clavier directement sur l'élément pour rendre l'équivalence clavier explicite, soit (b) vérifier manuellement que l'activation de l'ancêtre au clavier effectue la même action qu'un clic sur l'élément. Documenter l'interaction clavier dans des commentaires de code.
+    .what-generic = L'élément a un gestionnaire souris mais aucun gestionnaire clavier sur lui-même ; l'ancêtre focalisable le plus proche possède un gestionnaire clavier qui peut recevoir les événements remontés.
+
 ErrMultipleBannerLandmarks =
     .title = Multiples régions repères bannière trouvées
     .what = Multiples régions repères bannière trouvées

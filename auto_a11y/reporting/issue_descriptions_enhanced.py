@@ -1955,6 +1955,15 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'wcag': ['2.1.1'],
             'remediation': "Best practice: Use a <button> element instead of <div> or <span>, which provides mouse and keyboard support automatically. If you must use a non-button element: (1) Add role=\"button\" for screen reader support, (2) Add tabindex=\"0\" to make it keyboard focusable, (3) Add onkeydown handler to respond to Enter and Space keys: onkeydown=\"if(event.key==='Enter'||event.key===' '){/* your action */}\". Note that role=\"button\" alone does NOT provide keyboard functionality."
         },
+        'WarnMouseHandlerKeyboardOnAncestor': {
+            'title': "Mouse handler delegates to ancestor keyboard handler — manual verification required",
+            'what': "Element has a mouse handler but no keyboard handler on itself; the nearest focusable ancestor has a keyboard handler that may receive bubbled events.",
+            'why': "Automated testing cannot verify whether the ancestor's keyboard handler actually triggers the same interaction as the element's mouse handler. The widget may or may not be keyboard-accessible in practice.",
+            'who': "Keyboard users, screen reader users, users with motor disabilities.",
+            'impact': ImpactScale.MEDIUM.value,
+            'wcag': ['2.1.1'],
+            'remediation': "Either (a) add a keyboard handler directly on the element to make the keyboard equivalence explicit, or (b) manually verify that activating the ancestor with the keyboard performs the same action as clicking the element. Document the keyboard interaction in code comments."
+        },
         'ErrMultipleBannerLandmarks': {
             'title': "Multiple banner landmarks found",
             'what': "Multiple banner landmarks found",

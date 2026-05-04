@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WarnGlobalKeyboardHandlerPresent — window + body</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "WarnGlobalKeyboardHandlerPresent_002_window_and_body",
+    "issueId": "WarnGlobalKeyboardHandlerPresent",
+    "expectedViolationCount": 1,
+    "expectedPassCount": 0,
+    "description": "window keydown + inline onkeydown on body — single deduped warning",
+    "wcag": "2.1.1",
+    "impact": "Medium"
+}
+    </script>
+</head>
+<body onkeydown="console.log('body key')"
+      data-expected-violation="true"
+      data-violation-id="WarnGlobalKeyboardHandlerPresent"
+      data-violation-reason="Both window.addEventListener('keydown') and inline body onkeydown — emits one combined warning">
+    <p>Listening for keys on both window and body.</p>
+    <script>
+        window.addEventListener('keydown', (e) => console.log('window key', e.key));
+    </script>
+</body>
+</html>

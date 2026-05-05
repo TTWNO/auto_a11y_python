@@ -61,7 +61,7 @@ def list_audits() -> Response:
         import base64
 
         logger.warning("Getting Drupal config...")
-        config = get_drupal_config()
+        config = get_drupal_config(db=get_db())
         logger.warning(f"Drupal enabled: {config.enabled}")
 
         # Check if Drupal is enabled
@@ -121,7 +121,7 @@ def list_audits() -> Response:
 def _get_drupal_client() -> DrupalJSONAPIClient | None:
     """Get configured Drupal client"""
     try:
-        config = get_drupal_config()
+        config = get_drupal_config(db=get_db())
         return DrupalJSONAPIClient(
             base_url=config.base_url,
             username=config.username,
@@ -138,7 +138,7 @@ def _lookup_audit_uuid(client: DrupalJSONAPIClient, project: Project) -> str | N
         import requests
         import base64
 
-        config = get_drupal_config()
+        config = get_drupal_config(db=get_db())
         credentials = f"{config.username}:{config.password}"
         b64_creds = base64.b64encode(credentials.encode()).decode()
 
@@ -183,9 +183,9 @@ def sync_status(project_id: str) -> Response | tuple[Response, int]:
 
         # Check if Drupal is configured
         try:
-            config = get_drupal_config()
+            config = get_drupal_config(db=db)
             drupal_enabled = config.enabled
-        except:
+        except Exception:
             drupal_enabled = False
 
         # Count discovered pages
@@ -1163,7 +1163,7 @@ def import_discovered_pages(project_id: str) -> Response:
             project = Project.from_dict(project_doc)
 
             # Get Drupal config
-            drupal_config = get_drupal_config()
+            drupal_config = get_drupal_config(db=db)
             if not drupal_config.enabled:
                 yield json.dumps({'type': 'error', 'error': 'Drupal integration not enabled'}) + '\n'
                 return

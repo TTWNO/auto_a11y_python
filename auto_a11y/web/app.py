@@ -37,6 +37,7 @@ from auto_a11y.web.routes import (
     members_bp,
     desktop_bp,
     pdf_bp,
+    admin_settings_bp,
 )
 from auto_a11y.web.routes.demo import demo_bp
 from auto_a11y.web.typed_app import redirect
@@ -245,6 +246,8 @@ def create_app(config: Any) -> Flask:
 
     from auto_a11y.web.routes.groups import groups_bp
     app.register_blueprint(groups_bp, url_prefix='/groups')
+
+    app.register_blueprint(admin_settings_bp, url_prefix='')
 
     # Rate limits on auth endpoints (must be after register_blueprint calls)
     limiter.limit("10/minute")(app.view_functions['auth.login'])

@@ -409,7 +409,7 @@ def upload_to_drupal(project_id: str) -> Response:
             # Step 4: Get Drupal configuration and initialize clients
             yield emit('progress', 'Initializing Drupal connection...', 40)
             logger.info("Initializing Drupal clients")
-            drupal_config = get_drupal_config()
+            drupal_config = get_drupal_config(db=db)
 
             # Initialize Drupal client
             client = DrupalJSONAPIClient(

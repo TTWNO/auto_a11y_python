@@ -1,7 +1,8 @@
 """
 Drupal Configuration Management
 
-Handles loading and validation of Drupal connection settings.
+Handles loading and validation of Drupal connection settings from the
+in-app admin settings page (preferred) or environment variables (fallback).
 """
 
 from __future__ import annotations
@@ -9,8 +10,24 @@ from __future__ import annotations
 import os
 import logging
 from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from auto_a11y.core.database import Database
 
 logger = logging.getLogger(__name__)
+
+DRUPAL_SETTINGS_KEY = "drupal"
+
+# User-facing pointer to the in-app settings page. Kept as a path so the
+# message renders correctly outside request contexts (CLI, scheduler).
+SETTINGS_PATH = "/admin/settings"
+
+MISSING_CONFIG_MESSAGE = (
+    "Drupal integration is not configured. "
+    f"An administrator can set the base URL, username, and password on the "
+    f"settings page at {SETTINGS_PATH}."
+)
 
 
 @dataclass
@@ -21,6 +38,36 @@ class DrupalConfig:
     username: str
     password: str
     enabled: bool = True
+
+    @classmethod
+    def from_db(cls, db: Database) -> DrupalConfig | None:
+        """Load configuration from the in-app system_settings collection.
+
+        Returns ``None`` when the section is missing or incomplete so the
+        caller can fall back to environment variables.
+        """
+        from auto_a11y.core.system_settings import SystemSettings
+
+        section = SystemSettings(db).get_section(DRUPAL_SETTINGS_KEY)
+        if section is None:
+            return None
+
+        base_url = _str_or_none(section.get("base_url"))
+        username = _str_or_none(section.get("username"))
+        password = _str_or_none(section.get("password"))
+        enabled_raw = section.get("enabled", True)
+        enabled = bool(enabled_raw) if not isinstance(enabled_raw, str) else enabled_raw.lower() == "true"
+
+        if not base_url or not username or not password:
+            return None
+
+        logger.info("Loaded Drupal config from system_settings")
+        return cls(
+            base_url=base_url,
+            username=username,
+            password=password,
+            enabled=enabled,
+        )
 
     @classmethod
     def from_env(cls) -> DrupalConfig:
@@ -45,10 +92,7 @@ class DrupalConfig:
         enabled = os.getenv('DRUPAL_EXPORT_ENABLED', 'true').lower() == 'true'
 
         if not base_url or not username or not password:
-            raise ValueError(
-                "Missing required Drupal configuration. "
-                + "Set DRUPAL_BASE_URL, DRUPAL_USERNAME, and DRUPAL_PASSWORD"
-            )
+            raise ValueError(MISSING_CONFIG_MESSAGE)
 
         return cls(
             base_url=base_url,
@@ -73,7 +117,6 @@ class DrupalConfig:
             ValueError: If required settings are missing
         """
         if config_path is None:
-            # Default to config/drupal.conf in project root
             config_path = os.path.join(
                 os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
                 'config',
@@ -83,7 +126,6 @@ class DrupalConfig:
         if not os.path.exists(config_path):
             raise FileNotFoundError(f"Drupal config file not found: {config_path}")
 
-        # Simple key=value parser
         config: dict[str, str] = {}
         with open(config_path, 'r') as f:
             for line in f:
@@ -159,17 +201,32 @@ class DrupalConfig:
         return True
 
 
-def get_drupal_config(config_path: str | None = None) -> DrupalConfig:
+def _str_or_none(value: Any) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        return None
+    stripped = value.strip()
+    return stripped if stripped else None
+
+
+def get_drupal_config(
+    config_path: str | None = None,
+    db: Database | None = None,
+) -> DrupalConfig:
     """
     Get Drupal configuration, trying multiple sources.
 
     Tries in order:
     1. Config file (if path provided)
-    2. Environment variables
-    3. Default config file location
+    2. ``system_settings`` MongoDB document (if ``db`` provided)
+    3. Environment variables
+    4. Default config file location
 
     Args:
         config_path: Optional path to config file
+        db: Optional ``Database`` for reading admin-managed settings.
+            Routes should pass ``get_db()`` here.
 
     Returns:
         DrupalConfig instance
@@ -177,7 +234,6 @@ def get_drupal_config(config_path: str | None = None) -> DrupalConfig:
     Raises:
         ValueError: If configuration cannot be loaded
     """
-    # Try config file if specified
     if config_path:
         try:
             config = DrupalConfig.from_config_file(config_path)
@@ -186,7 +242,15 @@ def get_drupal_config(config_path: str | None = None) -> DrupalConfig:
         except Exception as e:
             logger.warning(f"Could not load config from {config_path}: {e}")
 
-    # Try environment variables
+    if db is not None:
+        db_config = DrupalConfig.from_db(db)
+        if db_config is not None:
+            try:
+                db_config.validate()
+                return db_config
+            except Exception as e:
+                logger.warning(f"system_settings Drupal config failed validation: {e}")
+
     try:
         config = DrupalConfig.from_env()
         config.validate()
@@ -195,7 +259,6 @@ def get_drupal_config(config_path: str | None = None) -> DrupalConfig:
     except Exception as e:
         logger.debug(f"Could not load config from environment: {e}")
 
-    # Try default config file location
     try:
         config = DrupalConfig.from_config_file()
         config.validate()
@@ -203,9 +266,4 @@ def get_drupal_config(config_path: str | None = None) -> DrupalConfig:
     except Exception as e:
         logger.debug(f"Could not load config from default location: {e}")
 
-    # All methods failed
-    raise ValueError(
-        "Could not load Drupal configuration. "
-        + "Please set environment variables (DRUPAL_BASE_URL, DRUPAL_USERNAME, DRUPAL_PASSWORD) "
-        + "or create a config file at config/drupal.conf"
-    )
+    raise ValueError(MISSING_CONFIG_MESSAGE)

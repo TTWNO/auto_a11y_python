@@ -124,6 +124,12 @@
                                 <i class="bi bi-check2-square" aria-hidden="true"></i> {{ ftl('common-fixture-status') }}
                             </a></li>
                             {% endif %}
+                            {% if is_superadmin %}
+                            <li role="separator"><hr class="dropdown-divider"></li>
+                            <li role="none"><a class="dropdown-item" role="menuitem" href="{{ url_for('admin_settings.settings_page') }}" {% if request.endpoint and request.endpoint.startswith('admin_settings.') %}aria-current="page"{% endif %}>
+                                <i class="bi bi-tools" aria-hidden="true"></i> {{ ftl('admin-settings-title') }}
+                            </a></li>
+                            {% endif %}
                         </ul>
                     </li>
                     {% if current_user.is_authenticated %}

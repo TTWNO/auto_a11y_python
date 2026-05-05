@@ -9,13 +9,15 @@ from .website_manager import WebsiteManager
 from .scraper import ScrapingEngine
 from .scraping_job import ScrapingJob
 from .job_manager import JobManager
+from .system_settings import SystemSettings
 
 __all__ = [
     'Database',
-    'BrowserManager', 
+    'BrowserManager',
     'ProjectManager',
     'WebsiteManager',
     'ScrapingEngine',
     'ScrapingJob',
-    'JobManager'
+    'JobManager',
+    'SystemSettings',
 ]

@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}{{ ftl('admin-settings-title') }} - {{ ftl('common-auto-a11y') }}{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4 gap-2">
+    <h1 class="mb-0"><i class="bi bi-gear" aria-hidden="true"></i> {{ ftl('admin-settings-title') }}</h1>
+</div>
+
+<p class="text-muted">{{ ftl('admin-settings-intro') }}</p>
+
+<div class="card shadow mb-4">
+    <div class="card-header">
+        <h2 class="h5 mb-0"><i class="bi bi-link-45deg" aria-hidden="true"></i> {{ ftl('admin-settings-drupal-heading') }}</h2>
+    </div>
+    <div class="card-body">
+        <p class="mb-3">{{ ftl('admin-settings-drupal-description') }}</p>
+
+        {% if drupal.source == 'database' %}
+        <div class="alert alert-info mb-3" role="status">
+            <i class="bi bi-database" aria-hidden="true"></i>
+            {{ ftl('admin-settings-source-database') }}
+        </div>
+        {% elif drupal.source == 'environment' %}
+        <div class="alert alert-medium mb-3" role="status">
+            <i class="bi bi-terminal" aria-hidden="true"></i>
+            {{ ftl('admin-settings-source-environment') }}
+        </div>
+        {% else %}
+        <div class="alert alert-medium mb-3" role="status">
+            <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+            {{ ftl('admin-settings-source-unset') }}
+        </div>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('admin_settings.update_drupal') }}" novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+            <div class="mb-3">
+                <label for="drupal-base-url" class="form-label">{{ ftl('admin-settings-drupal-base-url') }}</label>
+                <input
+                    type="url"
+                    class="form-control"
+                    id="drupal-base-url"
+                    name="base_url"
+                    value="{{ drupal.base_url }}"
+                    placeholder="https://example.com"
+                    aria-describedby="drupal-base-url-help"
+                >
+                <div id="drupal-base-url-help" class="form-text">{{ ftl('admin-settings-drupal-base-url-help') }}</div>
+            </div>
+
+            <div class="mb-3">
+                <label for="drupal-username" class="form-label">{{ ftl('admin-settings-drupal-username') }}</label>
+                <input
+                    type="text"
+                    class="form-control"
+                    id="drupal-username"
+                    name="username"
+                    value="{{ drupal.username }}"
+                    autocomplete="off"
+                >
+            </div>
+
+            <div class="mb-3">
+                <label for="drupal-password" class="form-label">{{ ftl('admin-settings-drupal-password') }}</label>
+                <input
+                    type="password"
+                    class="form-control"
+                    id="drupal-password"
+                    name="password"
+                    autocomplete="new-password"
+                    aria-describedby="drupal-password-help"
+                    {% if drupal.password_set %}placeholder="{{ ftl('admin-settings-drupal-password-placeholder-set') }}"{% endif %}
+                >
+                <div id="drupal-password-help" class="form-text">
+                    {% if drupal.password_set %}
+                    {{ ftl('admin-settings-drupal-password-help-set') }}
+                    {% else %}
+                    {{ ftl('admin-settings-drupal-password-help-unset') }}
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-check mb-3">
+                <input
+                    type="checkbox"
+                    class="form-check-input"
+                    id="drupal-enabled"
+                    name="enabled"
+                    {% if drupal.enabled %}checked{% endif %}
+                >
+                <label for="drupal-enabled" class="form-check-label">{{ ftl('admin-settings-drupal-enabled') }}</label>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+                <button type="submit" class="btn btn-brand">
+                    <i class="bi bi-save" aria-hidden="true"></i> {{ ftl('admin-settings-save') }}
+                </button>
+                {% if drupal.source == 'database' %}
+                <button type="submit" name="action" value="clear" class="btn btn-outline-high" onclick="return confirm('{{ ftl('admin-settings-drupal-clear-confirm') }}');">
+                    <i class="bi bi-trash" aria-hidden="true"></i> {{ ftl('admin-settings-drupal-clear') }}
+                </button>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

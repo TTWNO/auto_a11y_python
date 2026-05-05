@@ -4,12 +4,14 @@ Testing and analysis routes
 from __future__ import annotations
 
 from collections.abc import Mapping
+from pathlib import Path
 from typing import Any
 
 from flask import Blueprint, Response, render_template, request, jsonify, current_app
 from flask_login import login_required, current_user
 from auto_a11y.models import PageStatus, Page, Website, Project
 from auto_a11y.models.app_user import UserRole
+from auto_a11y.pdf.storage import PdfStorage
 from auto_a11y.web.routes.auth import get_effective_role
 from auto_a11y.core.database import Database
 from auto_a11y.core.job_manager import JobType, JobStatus
@@ -21,6 +23,12 @@ logger = logging.getLogger(__name__)
 testing_bp = Blueprint('testing', __name__)
 
 
+def _pdf_storage() -> PdfStorage:
+    """Build PdfStorage from app config so callers feeding it into
+    ``get_project_stats`` see PDF FAIL/WARN counts in the totals."""
+    return PdfStorage(base_dir=Path(get_app_config().PDF_STORAGE_DIR))
+
+
 def calculate_aggregate_stats(db: Database) -> dict[str, Any]:
     """Calculate aggregate statistics across all projects"""
     projects = db.get_all_projects()
@@ -30,11 +38,12 @@ def calculate_aggregate_stats(db: Database) -> dict[str, Any]:
     total_violations = 0
     total_warnings = 0
     website_count = 0
+    storage = _pdf_storage()
 
     for project in projects:
         if not project.id:
             continue
-        stats = db.get_project_stats(project.id)
+        stats = db.get_project_stats(project.id, pdf_storage=storage)
         total_pages += stats.get('total_pages', 0)
         tested_pages += stats.get('tested_pages', 0)
         total_violations += stats.get('total_violations', 0)
@@ -1162,7 +1171,7 @@ def testing_dashboard() -> str:
             'test_coverage': (tested_pages / len(pages) * 100) if pages else 0
         }
     elif project_id and selected_project:
-        stats = db.get_project_stats(project_id)
+        stats = db.get_project_stats(project_id, pdf_storage=_pdf_storage())
     else:
         stats = calculate_aggregate_stats(db)
 

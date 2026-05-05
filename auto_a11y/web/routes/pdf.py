@@ -798,6 +798,13 @@ def issue_map(pdf_document_id: str) -> Response:
     if denied is not None:
         return denied
 
+    # PdfDocument.status is the source of truth for "has a usable audit"
+    # (see auto_a11y/pdf/issue_map_counts.py). After "Clear Test Results"
+    # the status flips to PENDING but the cache files may still exist on
+    # disk; serving them here would leak stale issues into the viewer.
+    if pdf.status is not PdfDocumentStatus.AUDITED:
+        abort(404)
+
     storage = _get_storage()
     pdf_path = storage.local_path(pdf)
     cache_dir = pdf_path.parent / 'pdfmax-report'
@@ -850,7 +857,16 @@ def pdfmax_report(pdf_document_id: str) -> Response | str:
 
     cached_md: str | None = None
     error: str | None = None
-    if cache_dir.is_dir():
+    # PdfDocument.status gates whether cached audit output is "live".
+    # After "Clear Test Results" we flip status to PENDING but the cache
+    # files on disk may outlive the reset; only render them when the
+    # PDF is currently AUDITED.
+    if pdf.status is not PdfDocumentStatus.AUDITED:
+        error = (
+            "No pdfMax report has been generated for this document yet. "
+            "Click 'Re-audit' on the detail page to produce one."
+        )
+    elif cache_dir.is_dir():
         candidates = sorted(cache_dir.glob('*_accessibility_report.md'))
         if candidates:
             try:

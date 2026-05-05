@@ -3,7 +3,7 @@ Database connection and repository management
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from collections.abc import Generator
 from pymongo import MongoClient
 from pymongo.database import Database as MongoDatabase
@@ -27,6 +27,9 @@ from auto_a11y.models import (
 )
 from auto_a11y.models.pdf_document import PdfDocument, PdfDocumentStatus
 from auto_a11y.models.permission_group import PermissionGroup
+
+if TYPE_CHECKING:
+    from auto_a11y.pdf.storage import PdfStorage
 
 logger = logging.getLogger(__name__)
 
@@ -417,22 +420,29 @@ class Database:
 
     def clear_website_test_results(self, website_id: str) -> dict[str, int]:
         """
-        Clear all test data for every page in a website.
+        Clear all test data for every page and PDF in a website.
 
-        Deletes all test_results documents for pages belonging to this website
-        and resets each page's cached test state (violation/warning/info/
-        discovery/pass counts, last_tested, test_duration_ms) so the pages
-        show as untested. Pages whose status was TESTED, TESTING, or ERROR
-        are moved back to DISCOVERED so they can be re-tested.
+        Deletes all test_results documents for pages and PDFs belonging to
+        this website, and resets each page's cached test state (violation/
+        warning/info/discovery/pass counts, last_tested, test_duration_ms)
+        so the pages show as untested. Pages whose status was TESTED,
+        TESTING, or ERROR are moved back to DISCOVERED so they can be
+        re-tested. PDFs whose status was AUDITED, AUDITING, or AUDIT_FAILED
+        are moved back to PENDING so they can be re-audited; their
+        last_audit_result_id and last_audited_at are cleared. Resetting
+        PDFs is required for the website/project rollup totals — which
+        sum HTML page counts plus issue_map.json tallies for AUDITED
+        PDFs (auto_a11y/pdf/issue_map_counts.py) — to fall to zero.
 
         Pages themselves, their screenshots, discovery runs, and document
-        references are preserved.
+        references are preserved. PDFs themselves and their downloaded
+        bytes are preserved.
 
         Args:
             website_id: Website ID
 
         Returns:
-            Dict with counts: {'test_results_deleted', 'pages_reset'}
+            Dict with counts: {'test_results_deleted', 'pages_reset', 'pdf_documents_reset'}
         """
         # Collect page IDs for this website so we can delete their test results
         page_id_strings = [
@@ -440,12 +450,25 @@ class Database:
             for doc in self.pages.find({"website_id": website_id}, {"_id": 1})
         ]
 
+        # Collect PDF IDs for this website so we can delete their PDF audit
+        # test_results (target_type='pdf_document', page_id=None).
+        pdf_id_strings = [
+            str(doc['_id'])
+            for doc in self.pdf_documents.find({"website_id": website_id}, {"_id": 1})
+        ]
+
         test_results_deleted = 0
         if page_id_strings:
             del_result = self.test_results.delete_many(
                 {"page_id": {"$in": page_id_strings}}
             )
-            test_results_deleted = del_result.deleted_count
+            test_results_deleted += del_result.deleted_count
+
+        if pdf_id_strings:
+            pdf_results_del = self.test_results.delete_many(
+                {"target_type": "pdf_document", "target_id": {"$in": pdf_id_strings}}
+            )
+            test_results_deleted += pdf_results_del.deleted_count
 
         # Reset per-page cached test state
         reset_result = self.pages.update_many(
@@ -475,13 +498,32 @@ class Database:
             {"$set": {"status": PageStatus.DISCOVERED.value}}
         )
 
-        pages_reset = reset_result.modified_count
-        logger.info(
-            f"Cleared test results for website {website_id}: {test_results_deleted} test_results deleted, {pages_reset} pages reset"
+        # Reset PDF audit state. Only AUDITED / AUDITING / AUDIT_FAILED move
+        # back to PENDING — PENDING / FETCHING / FETCH_FAILED describe fetch
+        # state that's unrelated to audit results.
+        pdf_reset_result = self.pdf_documents.update_many(
+            {
+                "website_id": website_id,
+                "status": {"$in": [
+                    PdfDocumentStatus.AUDITED.value,
+                    PdfDocumentStatus.AUDITING.value,
+                    PdfDocumentStatus.AUDIT_FAILED.value,
+                ]},
+            },
+            {"$set": {
+                "status": PdfDocumentStatus.PENDING.value,
+                "last_audit_result_id": None,
+                "last_audited_at": None,
+            }}
         )
+
+        pages_reset = reset_result.modified_count
+        pdf_documents_reset = pdf_reset_result.modified_count
+        logger.info(f"Cleared test results for website {website_id}: {test_results_deleted} test_results deleted, {pages_reset} pages reset, {pdf_documents_reset} PDFs reset")
         return {
             'test_results_deleted': test_results_deleted,
             'pages_reset': pages_reset,
+            'pdf_documents_reset': pdf_documents_reset,
         }
 
     # Page operations
@@ -1370,50 +1412,91 @@ class Database:
 
     # Statistics
     
-    def get_project_stats(self, project_id: str) -> dict[str, Any]:
-        """Get statistics for a project"""
+    def get_project_stats(
+        self,
+        project_id: str,
+        pdf_storage: "PdfStorage | None" = None,
+    ) -> dict[str, Any]:
+        """Get statistics for a project.
+
+        ``pdf_storage`` is optional only because non-web callers (CLI
+        tooling, fixture scripts) may not have web app config loaded.
+        Web routes that render the project overview MUST pass it so
+        the FAIL/WARN totals include audited PDFs and stay consistent
+        with the per-website badges shown directly below the totals
+        on the same page (issues-counts branch fix).
+        """
+        from auto_a11y.core.issue_aggregator import (
+            ZERO_ISSUE_COUNTS,
+            count_html_page_issues,
+            count_pdf_issues,
+        )
+
         websites = self.get_websites(project_id)
 
-        total_pages = 0
-        tested_pages = 0
+        html_total = 0
+        html_tested = 0
         tested_page_ids: list[str | None] = []
 
         for website in websites:
             if not website.id:
                 continue
             pages = self.get_pages(website.id)
-            total_pages += len(pages)
+            html_total += len(pages)
 
             for page in pages:
                 if page.status == PageStatus.TESTED:
-                    tested_pages += 1
+                    html_tested += 1
                     tested_page_ids.append(page.id)
 
-        # Aggregate issue counts from test_results (source of truth)
-        total_violations = 0
-        total_warnings = 0
-        if tested_page_ids:
-            pipeline: list[dict[str, Any]] = [
-                {'$match': {'page_id': {'$in': tested_page_ids}}},
-                {'$sort': {'test_date': -1}},
-                {'$group': {
-                    '_id': '$page_id',
-                    'violation_count': {'$first': {'$ifNull': ['$violation_count', 0]}},
-                    'warning_count': {'$first': {'$ifNull': ['$warning_count', 0]}},
-                }},
-            ]
-            for result in self.test_results.aggregate(pipeline):
-                total_violations += result.get('violation_count', 0)
-                total_warnings += result.get('warning_count', 0)
+        # PDFs are testable documents too. They count toward both the
+        # "documents in the project" denominator and the "tested" numerator
+        # so the project overview's coverage percentage matches what the
+        # user actually sees: a project of one audited PDF reads 1/1 (100%)
+        # rather than 0/0. AUDITING is not "tested yet" — it's in flight —
+        # so we only credit AUDITED. FETCH_FAILED is excluded from the
+        # denominator because the file never made it to a state where
+        # auditing is possible (mirrors the website-detail "documents"
+        # math in auto_a11y/web/routes/websites.py).
+        pdf_total = 0
+        pdf_tested = 0
+        project_pdfs: list[PdfDocument] = []
+        if pdf_storage is not None:
+            project_pdfs = self.get_pdf_documents(project_id=project_id, limit=10000)
+            for pdf in project_pdfs:
+                if pdf.status is PdfDocumentStatus.FETCH_FAILED:
+                    continue
+                pdf_total += 1
+                if pdf.status is PdfDocumentStatus.AUDITED:
+                    pdf_tested += 1
+
+        total_documents = html_total + pdf_total
+        tested_documents = html_tested + pdf_tested
+
+        html_counts = count_html_page_issues(self, tested_page_ids)
+        pdf_counts = ZERO_ISSUE_COUNTS
+        if pdf_storage is not None:
+            pdf_counts = count_pdf_issues(project_pdfs, pdf_storage)
+        totals = html_counts + pdf_counts
 
         return {
             "website_count": len(websites),
-            "total_pages": total_pages,
-            "tested_pages": tested_pages,
-            "untested_pages": total_pages - tested_pages,
-            "total_violations": total_violations,
-            "total_warnings": total_warnings,
-            "test_coverage": (tested_pages / total_pages * 100) if total_pages > 0 else 0
+            # HTML-only counts retained for callers/templates that still
+            # distinguish pages from PDFs.
+            "html_page_count": html_total,
+            "tested_html_pages": html_tested,
+            "pdf_count": pdf_total,
+            "tested_pdfs": pdf_tested,
+            # Combined "documents" — what the project overview now displays.
+            "total_pages": total_documents,
+            "tested_pages": tested_documents,
+            "untested_pages": total_documents - tested_documents,
+            "total_violations": totals.violations,
+            "total_warnings": totals.warnings,
+            "test_coverage": (
+                (tested_documents / total_documents * 100)
+                if total_documents > 0 else 0
+            ),
         }
     
     # Document Reference methods

@@ -338,3 +338,4 @@ projects-who-it-affects = Qui cela affecte :
 projects-why-it-matters = Qui cela affecte :
 projects-why-rationale-template = Modèle Pourquoi (Justification) :
 projects-will-be-tested-across-multiple-base-urls = seront testés sur plusieurs URL de base.
+projects-stats-document-breakdown = { $html } pages + { $pdfs } PDF

@@ -50,8 +50,9 @@
         </div>
         <div class="card text-center flex-fill" style="min-width: 140px;">
             <div class="card-body py-3">
-                <h2 class="card-title text-muted mb-1">{{ ftl('common-pages') }}</h2>
+                <h2 class="card-title text-muted mb-1">{{ ftl('common-documents') }}</h2>
                 <p class="display-6 mb-0">{{ stats.total_pages }}</p>
+                <small class="text-muted">{{ ftl('projects-stats-document-breakdown', html=stats.html_page_count, pdfs=stats.pdf_count) }}</small>
             </div>
         </div>
         <div class="card text-center flex-fill" style="min-width: 140px;">

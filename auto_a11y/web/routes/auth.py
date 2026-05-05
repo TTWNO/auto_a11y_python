@@ -232,7 +232,7 @@ def require_access(f: Callable[..., Any]) -> Callable[..., Any]:
             g.access_scope_id = None
             return f(*args, **kwargs)
 
-        return redirect(url_for('auth.login'))
+        return redirect(url_for('auth.login', next=request.url))
 
     return decorated
 
@@ -551,13 +551,28 @@ def login() -> str | Response:
         get_db().update_app_user(user)
         
         login_user(user, remember=remember)
-        
-        next_page = request.args.get('next')
+
+        # Accept ``next`` from either the form body or the query string.
+        # The form action preserves ``next`` in both, but checking both
+        # also tolerates Flask-Login's default ``?next=`` redirect, which
+        # passes the full absolute URL (scheme + host + path).
+        next_page = request.form.get('next') or request.args.get('next')
         if next_page:
             parsed = urlparse(next_page)
-            if parsed.path.startswith('/') and not parsed.netloc and not parsed.scheme:
+            host_url = urlparse(request.host_url)
+            is_relative = (
+                parsed.path.startswith('/')
+                and not parsed.netloc
+                and not parsed.scheme
+            )
+            is_same_origin = (
+                parsed.scheme in ('http', 'https')
+                and parsed.netloc == host_url.netloc
+                and parsed.path.startswith('/')
+            )
+            if is_relative or is_same_origin:
                 return redirect(next_page)
-        
+
         return redirect(url_for('dashboard'))
     
     return render_template('auth/login.html')

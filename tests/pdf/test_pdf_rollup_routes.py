@@ -103,8 +103,16 @@ def test_websites_route_imports_helper() -> None:
 
 
 def test_projects_route_imports_helper() -> None:
-    """Smoke: projects.py imports PdfIssueCounts/count_issues."""
+    """Smoke: projects.py wires in the cross-source rollup helper.
+
+    Originally projects.py imported the PDF-only ``PdfIssueCounts`` /
+    ``count_issues``. After the issues-counts fix it routes through
+    ``count_website_issues``, which composes HTML and PDF sources into
+    one number — adding new test sources happens there, in one place.
+    """
     import auto_a11y.web.routes.projects as projects
-    assert any(
-        name in dir(projects) for name in ("PdfIssueCounts", "count_issues")
-    ), "projects.py does not appear to import the rollup helper"
+    assert "count_website_issues" in dir(projects), (
+        "projects.py does not import count_website_issues — the per-website "
+        "rollup must go through the aggregator so project totals stay in "
+        "sync with website badges."
+    )

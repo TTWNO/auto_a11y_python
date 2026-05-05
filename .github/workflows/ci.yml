@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [ main ]
 
+env:
+  # Opt the actions/* JavaScript actions into Node.js 24 ahead of the
+  # GitHub Actions runtime making it the default in June 2026. This
+  # silences the Node 20 deprecation warning emitted on every run.
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 jobs:
   typecheck:
     runs-on: ubuntu-latest

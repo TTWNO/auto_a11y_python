@@ -69,8 +69,21 @@ echo "Dependencies installed."
 echo ""
 echo "--- Step 3: WeasyPrint native dependencies ---"
 
-# Install via Homebrew (idempotent)
-brew install cairo pango gdk-pixbuf gobject-introspection libffi
+# Install only the formulae that aren't already present. `brew install`
+# on an already-installed formula prints a "is already installed and
+# up-to-date" warning to stderr that surfaces as a CI annotation.
+BREW_FORMULAE=(cairo pango gdk-pixbuf gobject-introspection libffi)
+TO_INSTALL=()
+for formula in "${BREW_FORMULAE[@]}"; do
+    if ! brew list --formula --versions "$formula" >/dev/null 2>&1; then
+        TO_INSTALL+=("$formula")
+    fi
+done
+if [ "${#TO_INSTALL[@]}" -gt 0 ]; then
+    brew install "${TO_INSTALL[@]}"
+else
+    echo "All WeasyPrint Homebrew dependencies already installed."
+fi
 
 # Bundle dylibs into the staging directory so the app works without Homebrew
 DYLIB_DIR="$BUILD_DIR/python/lib/weasyprint_libs"
@@ -233,21 +246,54 @@ if [ ! -d "node_modules" ]; then
     npm install
 fi
 
-# Generate build config that points extraResources at the staging directory.
-#
-# `identity: null` tells electron-builder NOT to attempt its own codesign
-# pass — afterPack.js handles ad-hoc signing of every nested Mach-O and
-# then re-signs the bundle top-down with `--deep`. If electron-builder
-# also signs, it overwrites our nested signatures with its own (broken on
-# CI without a Developer ID) and the resulting bundle is silently rejected
-# by the kernel on first launch.
-#
-# `hardenedRuntime: false` matches the ad-hoc signing posture: we don't
-# ship the entitlements that the hardened runtime requires, so leaving it
-# enabled would block dlopen of the bundled WeasyPrint/Python dylibs.
-#
-# `gatekeeperAssess: false` skips electron-builder's `spctl` check, which
-# always fails for unnotarized builds and would otherwise abort packaging.
+# Two signing modes:
+#   PROPER (Developer ID present):
+#     - electron-builder signs with the cert (CSC_LINK / CSC_KEY_PASSWORD)
+#       and turns on the hardened runtime, then notarizes via Apple's
+#       notary service (APPLE_ID / APPLE_APP_SPECIFIC_PASSWORD / APPLE_TEAM_ID).
+#     - The DMG launches on any Mac with no Gatekeeper warnings.
+#   AD-HOC (no certs — this is the default for forks/CI without secrets):
+#     - electron-builder skips its own signing pass, afterPack.js ad-hoc
+#       signs every nested Mach-O, and `--deep` re-signs the .app top-down.
+#     - The DMG runs, but Gatekeeper blocks first launch unless the user
+#       right-clicks → Open or strips the quarantine xattr. The CI log
+#       below makes this loud so we don't ship a release without realizing.
+PROPER_SIGNING="false"
+if [ -n "${CSC_LINK:-}" ] && [ -n "${APPLE_ID:-}" ] \
+        && [ -n "${APPLE_APP_SPECIFIC_PASSWORD:-}" ] \
+        && [ -n "${APPLE_TEAM_ID:-}" ]; then
+    PROPER_SIGNING="true"
+fi
+
+if [ "$PROPER_SIGNING" = "true" ]; then
+    echo ""
+    echo ">>> Apple Developer ID + notarization secrets detected."
+    echo ">>> The DMG will be properly signed and notarized."
+    SIGNING_BLOCK='
+    "identity": null,
+    "hardenedRuntime": true,
+    "gatekeeperAssess": false,
+    "notarize": {
+      "teamId": "'"$APPLE_TEAM_ID"'"
+    }'
+    # electron-builder's own signing pass needs to run for proper signing,
+    # so we must NOT also ad-hoc sign in afterPack — that would overwrite
+    # the Developer ID signatures. Switch afterPack to a no-op in this case.
+    export AUTO_A11Y_SKIP_ADHOC_SIGN=1
+else
+    echo ""
+    echo ">>> No Apple Developer ID detected. Building an ad-hoc-signed DMG."
+    echo ">>> Users will need to right-click → Open the first time, or run:"
+    echo ">>>   sudo xattr -dr com.apple.quarantine '/Applications/Auto A11y.app'"
+    echo ">>> To produce a notarized release, set GitHub Action secrets:"
+    echo ">>>   CSC_LINK, CSC_KEY_PASSWORD, APPLE_ID,"
+    echo ">>>   APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID"
+    SIGNING_BLOCK='
+    "identity": null,
+    "hardenedRuntime": false,
+    "gatekeeperAssess": false'
+fi
+
 cat > "$ELECTRON_DIR/build-config.json" <<BUILDCFG
 {
   "appId": "com.cnib.auto-a11y",
@@ -264,10 +310,7 @@ cat > "$ELECTRON_DIR/build-config.json" <<BUILDCFG
   "afterPack": "./afterPack.js",
   "mac": {
     "target": "dmg",
-    "category": "public.app-category.developer-tools",
-    "identity": null,
-    "hardenedRuntime": false,
-    "gatekeeperAssess": false
+    "category": "public.app-category.developer-tools",${SIGNING_BLOCK}
   },
   "dmg": {
     "title": "Auto A11y"

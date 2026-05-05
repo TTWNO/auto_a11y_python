@@ -12,6 +12,11 @@ jobs:
     # for arm64 — Intel Macs are out of scope.
     runs-on: macos-14
     timeout-minutes: 60
+    env:
+      # Opt the actions/* JavaScript actions into Node.js 24 ahead of the
+      # GitHub Actions runtime making it the default in June 2026. This
+      # silences the Node 20 deprecation warning emitted on every run.
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
     steps:
     - name: Checkout code
@@ -20,6 +25,9 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
+        # Toolchain version used by the build itself (electron-builder etc.).
+        # Independent of FORCE_JAVASCRIPT_ACTIONS_TO_NODE24 above, which
+        # only governs the runtime that JS-based actions execute under.
         node-version: '20'
 
     - name: Show toolchain versions
@@ -32,6 +40,17 @@ jobs:
         xcrun --show-sdk-version
 
     - name: Run macOS build script
+      env:
+        # Apple Developer signing + notarization. All five secrets must be
+        # set for build-mac.sh to enable the proper-signing path; otherwise
+        # the build falls back to ad-hoc signing (works, but Gatekeeper
+        # blocks first launch unless the user right-clicks → Open).
+        # Set these in repo Settings → Secrets and variables → Actions.
+        CSC_LINK: ${{ secrets.CSC_LINK }}
+        CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+        APPLE_ID: ${{ secrets.APPLE_ID }}
+        APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+        APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
       run: bash build/build-mac.sh
 
     # If anything in afterPack or the post-build audit failed, dump the

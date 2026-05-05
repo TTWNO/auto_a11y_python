@@ -58,6 +58,15 @@ function isMachO(filePath) {
 exports.default = async function afterPack(context) {
   if (process.platform !== 'darwin') return;
 
+  // When the build is using a real Developer ID + notarization,
+  // electron-builder's own signing pass runs after afterPack and would
+  // be clobbered by ad-hoc signatures here. build-mac.sh sets this env
+  // var in that case to make afterPack a no-op.
+  if (process.env.AUTO_A11Y_SKIP_ADHOC_SIGN === '1') {
+    console.log('[afterPack] AUTO_A11Y_SKIP_ADHOC_SIGN=1; deferring to electron-builder');
+    return;
+  }
+
   const appPath = path.join(
     context.appOutDir,
     `${context.packager.appInfo.productFilename}.app`,

@@ -393,9 +393,9 @@ class IssueExporter:
         if description:
             attributes['body'] = {
                 'value': description,
-                'format': 'unfiltered'  # Use unfiltered format to allow HTML
+                'format': 'formatted_text'
             }
-            logger.warning(f"✓ Issue '{title}': Setting body field with {len(description)} characters (format=unfiltered)")
+            logger.warning(f"✓ Issue '{title}': Setting body field with {len(description)} characters (format=formatted_text)")
         else:
             logger.warning(f"✗ Issue '{title}': NO DESCRIPTION - body field will be omitted!")
 

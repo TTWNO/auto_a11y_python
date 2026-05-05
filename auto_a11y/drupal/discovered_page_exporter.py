@@ -302,7 +302,7 @@ class DiscoveredPageExporter:
             attributes['field_notes_in_discovery'] = [
                 {
                     'value': private_notes,
-                    'format': 'unfiltered'
+                    'format': 'formatted_text'
                 }
             ]
 
@@ -310,7 +310,7 @@ class DiscoveredPageExporter:
         if public_notes:
             attributes['field_public_note_on_page'] = {
                 'value': public_notes,
-                'format': 'unfiltered'
+                'format': 'formatted_text'
             }
 
         # Add document links if provided

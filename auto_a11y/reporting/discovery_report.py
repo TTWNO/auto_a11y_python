@@ -3028,20 +3028,7 @@ class DiscoveryReportGenerator:
         Returns:
             PDF content as bytes
         """
-        # Catch any exception during import: on macOS without Pango/Cairo,
-        # `from weasyprint import HTML` itself raises OSError from cffi.
-        try:
-            from weasyprint import HTML as WeasyprintHTML  # noqa: N811
-        except Exception as e:
-            from auto_a11y.reporting.formatters import (
-                is_native_lib_error, platform_install_hint,
-            )
-            logger.error(f"WeasyPrint failed to load - cannot generate PDF: {e}")
-            hint = platform_install_hint() if is_native_lib_error(e) or isinstance(e, ImportError) else ""
-            message = f"PDF report generation failed: {e}"
-            if hint:
-                message = f"{message}\n\n{hint}"
-            raise RuntimeError(message) from e
+        from weasyprint import HTML as WeasyprintHTML  # noqa: N811
 
         html_content = self._generate_html_report_legacy(data)
 

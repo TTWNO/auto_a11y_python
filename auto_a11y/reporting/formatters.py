@@ -11,7 +11,7 @@ import sys
 import tempfile
 import os
 import warnings
-from typing import IO, Any, NoReturn, TextIO
+from typing import IO, Any, TextIO
 from typing_extensions import override
 from datetime import datetime
 from pathlib import Path
@@ -1659,38 +1659,20 @@ class ExcelFormatter(BaseFormatter):
         self._wb: Any = None  # openpyxl Workbook
         self._ws_violations: Any = None  # openpyxl Worksheet
         self._ws_warnings: Any = None  # openpyxl Worksheet
-        # Import error captured at construction time. None means openpyxl loaded.
-        self._openpyxl_import_error: str | None = None
-        try:
-            from openpyxl import Workbook
-            from openpyxl.styles import Font, Fill, PatternFill, Alignment, Border, Side
-            from openpyxl.utils import get_column_letter
-            self.Workbook = Workbook
-            self.Font = Font
-            self.Fill = Fill
-            self.PatternFill = PatternFill
-            self.Alignment = Alignment
-            self.Border = Border
-            self.Side = Side
-            self.get_column_letter = get_column_letter
-            self.has_openpyxl = True
-        except ImportError as e:
-            self._openpyxl_import_error = str(e)
-            logger.error(f"openpyxl is required for Excel reports but failed to import: {e}")
-            self.has_openpyxl = False
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, Fill, PatternFill, Alignment, Border, Side
+        from openpyxl.utils import get_column_letter
+        self.Workbook = Workbook
+        self.Font = Font
+        self.Fill = Fill
+        self.PatternFill = PatternFill
+        self.Alignment = Alignment
+        self.Border = Border
+        self.Side = Side
+        self.get_column_letter = get_column_letter
 
-    def _require_openpyxl(self) -> NoReturn:
-        """Raise a clear error explaining why Excel generation is unavailable."""
-        detail = self._openpyxl_import_error or "openpyxl is not installed"
-        raise RuntimeError(
-            f"Excel report generation requires openpyxl, which failed to load ({detail}). Install it with: pip install openpyxl"
-        )
-    
     def _get_styles(self) -> dict[str, Any]:
         """Get common Excel styles"""
-        if not self.has_openpyxl:
-            return {}
-        
         return {
             'header': {
                 'font': self.Font(bold=True, color="FFFFFF", size=12),
@@ -1740,9 +1722,6 @@ class ExcelFormatter(BaseFormatter):
     @override
     def format_page_report(self, data: dict[str, Any]) -> bytes:
         """Generate Excel report for a page"""
-        if not self.has_openpyxl:
-            self._require_openpyxl()
-
         wb = self.Workbook()
         styles = self._get_styles()
 
@@ -1802,9 +1781,6 @@ class ExcelFormatter(BaseFormatter):
     @override
     def format_website_report(self, data: dict[str, Any]) -> bytes:
         """Generate Excel report for a website"""
-        if not self.has_openpyxl:
-            self._require_openpyxl()
-
         wb = self.Workbook()
         styles = self._get_styles()
         
@@ -1834,9 +1810,6 @@ class ExcelFormatter(BaseFormatter):
     @override
     def format_project_report(self, data: dict[str, Any]) -> bytes:
         """Generate Excel report for a project"""
-        if not self.has_openpyxl:
-            self._require_openpyxl()
-
         wb = self.Workbook()
         styles = self._get_styles()
         
@@ -1877,9 +1850,6 @@ class ExcelFormatter(BaseFormatter):
             DeprecationWarning,
             stacklevel=2
         )
-        if not self.has_openpyxl:
-            self._require_openpyxl()
-
         wb = self.Workbook()
         styles = self._get_styles()
         
@@ -1904,9 +1874,6 @@ class ExcelFormatter(BaseFormatter):
     @override
     def format_summary_report(self, data: dict[str, Any]) -> bytes:
         """Generate Excel summary report"""
-        if not self.has_openpyxl:
-            self._require_openpyxl()
-
         wb = self.Workbook()
         styles = self._get_styles()
         
@@ -3307,9 +3274,6 @@ class ExcelFormatter(BaseFormatter):
     @override
     def begin(self, output_file: str, summary: dict[str, Any]) -> None:
         """Create a Workbook with Summary, Violations, and Warnings sheets."""
-        if not self.has_openpyxl:
-            self._require_openpyxl()
-
         self._output_file = output_file
         self._wb = self.Workbook()
         styles = self._get_styles()
@@ -3346,9 +3310,7 @@ class ExcelFormatter(BaseFormatter):
     @override
     def append_page(self, output_file: str, page_data: dict[str, Any]) -> None:
         """Append rows for one page to the Violations and Warnings sheets."""
-        if not self.has_openpyxl:
-            self._require_openpyxl()
-        if not hasattr(self, '_wb') or self._wb is None:
+        if self._wb is None:
             raise RuntimeError("ExcelFormatter.append_page() called before begin()")
 
         page = page_data.get('page', {})
@@ -3370,9 +3332,7 @@ class ExcelFormatter(BaseFormatter):
     @override
     def finalize(self, output_file: str, summary: dict[str, Any]) -> None:
         """Auto-size columns and save the workbook to *output_file*."""
-        if not self.has_openpyxl:
-            self._require_openpyxl()
-        if not hasattr(self, '_wb') or self._wb is None:
+        if self._wb is None:
             raise RuntimeError("ExcelFormatter.finalize() called before begin()")
 
         for ws in self._wb.worksheets:
@@ -3425,38 +3385,16 @@ class PDFFormatter(BaseFormatter):
         self._pdf_output_file: str = ''
         self._internal_html: HTMLFormatter | None = None
         self._temp_html_path: str = ''
-        # Import error captured at construction. None means weasyprint loaded.
-        self._weasyprint_import_error: str | None = None
+        from weasyprint import HTML, CSS
+        self.HTML = HTML
+        self.CSS = CSS
 
-        # Try to import weasyprint. Catch any exception (not just ImportError):
-        # on macOS without Pango/Cairo, the import itself can raise OSError
-        # from cffi while loading the native libraries.
-        try:
-            from weasyprint import HTML, CSS
-            self.HTML = HTML
-            self.CSS = CSS
-            self.has_weasyprint = True
-        except Exception as e:
-            self._weasyprint_import_error = str(e)
-            logger.error(f"weasyprint failed to load - PDF reports will fail: {e}")
-            self.has_weasyprint = False
-
-    def _raise_pdf_unavailable(self, runtime_error: BaseException | None = None) -> NoReturn:
-        """Raise a clear error when PDF generation cannot proceed.
-
-        ``runtime_error`` is set when weasyprint imported successfully but
-        failed during rendering; otherwise the captured import error is used.
-        """
-        cause: str = (
-            str(runtime_error) if runtime_error is not None
-            else (self._weasyprint_import_error or "weasyprint is not installed")
-        )
-        message = f"PDF report generation failed: {cause}"
-        if runtime_error is None or is_native_lib_error(runtime_error):
+    def _wrap_render_error(self, err: BaseException) -> RuntimeError:
+        """Wrap a weasyprint runtime error with an actionable message."""
+        message = f"PDF report generation failed: {err}"
+        if is_native_lib_error(err):
             message = f"{message}\n\n{platform_install_hint()}"
-        if runtime_error is not None:
-            raise RuntimeError(message) from runtime_error
-        raise RuntimeError(message)
+        return RuntimeError(message)
     
     @override
     def format_page_report(self, data: dict[str, Any]) -> bytes:
@@ -3494,10 +3432,6 @@ class PDFFormatter(BaseFormatter):
     
     def _convert_to_pdf(self, html_content: str) -> bytes:
         """Convert HTML content to PDF bytes"""
-        if not self.has_weasyprint:
-            self._raise_pdf_unavailable()
-
-        # Add some PDF-specific CSS for better rendering
         pdf_css = self.CSS(string='''
             @page {
                 size: A4;
@@ -3525,7 +3459,7 @@ class PDFFormatter(BaseFormatter):
             return pdf_bytes
         except Exception as e:
             logger.error(f"Failed to generate PDF with weasyprint: {e}", exc_info=True)
-            self._raise_pdf_unavailable(runtime_error=e)
+            raise self._wrap_render_error(e) from e
     
     def save_pdf(self, html_content: str, filepath: Path) -> None:
         """
@@ -3563,14 +3497,11 @@ class PDFFormatter(BaseFormatter):
 
         self._internal_html.finalize(self._temp_html_path, summary)
 
-        if not self.has_weasyprint:
-            self._raise_pdf_unavailable()
-
         try:
             self.HTML(filename=self._temp_html_path).write_pdf(output_file)
         except Exception as e:
             logger.error(f"PDF streaming conversion failed: {e}", exc_info=True)
-            self._raise_pdf_unavailable(runtime_error=e)
+            raise self._wrap_render_error(e) from e
 
     @override
     def cleanup(self) -> None:

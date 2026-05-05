@@ -36,7 +36,11 @@ jobs:
         uname -m
         node --version
         npm --version
-        codesign --version
+        # macOS `codesign` has no --version flag; the build number is what
+        # `-h` (help) prints to stderr. Use `which` for a stable identity
+        # check, then dump help so the version is still in the log.
+        which codesign
+        codesign -h 2>&1 | head -n 1 || true
         xcrun --show-sdk-version
 
     - name: Run macOS build script

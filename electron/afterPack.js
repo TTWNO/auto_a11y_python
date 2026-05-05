@@ -129,6 +129,38 @@ exports.default = async function afterPack(context) {
     );
   }
 
+  // Sign every nested .app / .framework as a bundle, deepest-first. The
+  // per-file pass above produced bare ad-hoc Mach-O signatures, but for
+  // bundle main executables that is not enough: macOS validates them
+  // against the parent bundle's _CodeSignature/CodeResources seal, which
+  // only exists if the bundle itself has been signed. Signing the bundle
+  // path here rewrites the main executable signature AND writes the seal.
+  // Without this step Playwright's bundled "Google Chrome for Testing.app"
+  // and its "Google Chrome for Testing Framework.framework" land in the
+  // DMG with stale/missing bundle signatures and the audit step fails.
+  const bundlesOutput = execSync(
+    `find "${resourcesDir}" \\( -name '*.app' -o -name '*.framework' \\) -type d`,
+    { encoding: 'utf8', maxBuffer: 50 * 1024 * 1024 },
+  );
+  const nestedBundles = bundlesOutput.trim().split('\n').filter(Boolean);
+  // Longest path first ensures inner frameworks are sealed before the
+  // app that contains them, so the outer seal captures the inner seals.
+  nestedBundles.sort((a, b) => b.length - a.length);
+  console.log(`[afterPack] Signing ${nestedBundles.length} nested bundles (deepest-first)`);
+  for (const bundlePath of nestedBundles) {
+    const bundleResult = spawnSync(
+      'codesign',
+      ['--force', '--sign', '-', '--timestamp=none', bundlePath],
+      { stdio: ['ignore', 'ignore', 'pipe'], encoding: 'utf8' },
+    );
+    if (bundleResult.status !== 0) {
+      throw new Error(
+        `[afterPack] Failed to sign nested bundle ${bundlePath}: `
+        + `${(bundleResult.stderr || '').trim()}`,
+      );
+    }
+  }
+
   // Re-sign the outer .app top-down so its signature reflects the new
   // nested signatures. Without `--deep` here the parent is stale and the
   // hardened runtime rejects the whole bundle on first launch.

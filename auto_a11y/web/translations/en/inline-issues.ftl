@@ -127,6 +127,8 @@ issue-element-appears-to-be-a-dialog-or-modal-but-lacks-proper-aria-markup-267ee
 issue-element-appears-to-be-a-dialog-modal-but-lacks-proper-aria-markup-7e321a = Element appears to be a dialog/modal but lacks proper ARIA markup
 issue-element-contains-list-like-items-but-does-not-use-proper-list-markup-8a78c9 = Element contains list-like items but does not use proper list markup
 issue-element-has-a-mouse-event-handler-but-lacks-tabindex-making-it-inaccessible-to-k-5da47d = Element has a mouse event handler but lacks tabindex, making it inaccessible to keyboard users
+issue-element-has-a-mouse-handler-but-no-keyboard-handler-on-itself-the-nearest-focusa-5f0bd0 = Element has a mouse handler but no keyboard handler on itself; the nearest focusable ancestor has a keyboard handler that may receive bubbled events.
+issue-element-has-a-mouse-handler-no-keyboard-handler-on-itself-and-no-focusable-ances-c5c03e = Element has a mouse handler, no keyboard handler on itself, and no focusable ancestor with a keyboard handler — keyboard users cannot trigger the interaction.
 issue-element-has-a-tabindex-attribute-with-an-invalid-value-non-numeric-or-decimal-2d84bd = Element has a tabindex attribute with an invalid value (non-numeric or decimal)
 issue-element-has-a-title-attribute-that-duplicates-or-overlaps-with-visible-text-cont-e66f71 = Element has a title attribute that duplicates or overlaps with visible text content
 issue-element-has-both-tabindex-attribute-making-it-keyboard-focusable-and-aria-hidden-3eff72 = Element has both tabindex attribute (making it keyboard-focusable) and aria-hidden='true', creating a conflict where the element is focusable but hidden from assistive technologies
@@ -440,6 +442,7 @@ issue-page-contains-multiple-main-landmarks-but-should-have-exactly-one-d3a453 =
 issue-page-contains-settimeout-or-setinterval-calls-that-execute-immediately-on-page-l-2fb736 = Page contains setTimeout or setInterval calls that execute immediately on page load without user interaction
 issue-page-content-exists-outside-of-any-landmark-regions-main-navigation-complementar-01a35f = Page content exists outside of any landmark regions (main, navigation, complementary, contentinfo, banner), preventing screen reader users from finding it through landmark navigation
 issue-page-defines-responsive-breakpoints-in-css-media-queries-842b69 = Page defines responsive breakpoints in CSS media queries
+issue-page-has-keyboard-event-handler-s-attached-to-document-window-or-body-1d843e = Page has keyboard event handler(s) attached to document, window, or body.
 issue-page-has-no-title-element-in-the-document-head-eb2a07 = Page has no <title> element in the document head
 issue-page-has-no-h1-heading-6cb8d8 = Page has no h1 heading
 issue-page-has-no-main-landmark-af6e16 = Page has no main landmark

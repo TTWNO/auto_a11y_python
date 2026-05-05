@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WarnMouseHandlerKeyboardOnAncestor — descendant has its own keyboard handler</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "WarnMouseHandlerKeyboardOnAncestor_003_correct_descendant_has_key",
+    "issueId": "WarnMouseHandlerKeyboardOnAncestor",
+    "expectedViolationCount": 0,
+    "expectedPassCount": 1,
+    "description": "Descendant has its own keyboard handler — Test 1 passes outright (no warn, no err)",
+    "wcag": "2.1.1",
+    "impact": "Medium"
+}
+    </script>
+</head>
+<body>
+    <button id="outer">
+        <span id="inner" tabindex="0"
+             data-expected-pass="true"
+             data-pass-reason="Inner element has both onclick and onkeydown directly">
+            Activate
+        </span>
+    </button>
+    <script>
+        const inner = document.getElementById('inner');
+        inner.addEventListener('click', () => console.log('clicked'));
+        inner.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') console.log('keyed');
+        });
+    </script>
+</body>
+</html>

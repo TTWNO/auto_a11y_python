@@ -1450,10 +1450,26 @@ ErrModalWithoutEscape =
 
 ErrMouseOnlyHandler =
     .title = Interactive functionality only available through mouse events
-    .what = Element has mouse event handler (onclick, onmouseover, etc.) but lacks keyboard event handlers, making it inaccessible to keyboard users
+    .what = Element has a mouse handler, no keyboard handler on itself, and no focusable ancestor with a keyboard handler — keyboard users cannot trigger the interaction.
     .why = Mouse-only interactions exclude users who cannot use a pointing device. While adding role="button" helps screen readers identify the element as interactive, it does not provide keyboard functionality - keyboard event handlers are still required.
     .who = Keyboard users, screen reader users, users with motor disabilities, mobile device users.
     .remediation = Best practice: Use a <button> element instead of <div> or <span>, which provides mouse and keyboard support automatically. If you must use a non-button element: (1) Add role="button" for screen reader support, (2) Add tabindex="0" to make it keyboard focusable, (3) Add onkeydown handler to respond to Enter and Space keys: onkeydown="if(event.key==='Enter'||event.key===' '){"{"}/* your action */{"}"}". Note that role="button" alone does NOT provide keyboard functionality.
+
+WarnMouseHandlerKeyboardOnAncestor =
+    .title = Mouse handler delegates to ancestor keyboard handler — manual verification required
+    .what = Element has a mouse handler but no keyboard handler on itself; the nearest focusable ancestor has a keyboard handler that may receive bubbled events.
+    .why = Automated testing cannot verify whether the ancestor's keyboard handler actually triggers the same interaction as the element's mouse handler. The widget may or may not be keyboard-accessible in practice.
+    .who = Keyboard users, screen reader users, users with motor disabilities.
+    .remediation = Either (a) add a keyboard handler directly on the element to make the keyboard equivalence explicit, or (b) manually verify that activating the ancestor with the keyboard performs the same action as clicking the element. Document the keyboard interaction in code comments.
+    .what-generic = Element has a mouse handler but no keyboard handler on itself; the nearest focusable ancestor has a keyboard handler that may receive bubbled events.
+
+WarnGlobalKeyboardHandlerPresent =
+    .title = Page-level keyboard handler detected — keyboard accessibility cannot be verified automatically
+    .what = Page has keyboard event handler(s) attached to { $targets }.
+    .why = This test looks for evidence of keyboard event handling at the document/window/body level but cannot verify whether those handlers provide keyboard equivalents for any specific mouse-driven interaction on the page. Manual review required.
+    .who = Keyboard users, screen reader users, users with motor disabilities.
+    .remediation = Manually test that every mouse-driven interaction on the page can be triggered using only the keyboard. Document keyboard equivalents and ensure any global shortcut handlers do not conflict with assistive-technology key bindings.
+    .what-generic = Page has keyboard event handler(s) attached to document, window, or body.
 
 ErrMultipleBannerLandmarks =
     .title = Multiple banner landmarks found

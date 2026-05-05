@@ -127,6 +127,8 @@ issue-element-appears-to-be-a-dialog-or-modal-but-lacks-proper-aria-markup-267ee
 issue-element-appears-to-be-a-dialog-modal-but-lacks-proper-aria-markup-7e321a = L'élément semble être un dialogue/modal mais n'a pas de balisage ARIA approprié
 issue-element-contains-list-like-items-but-does-not-use-proper-list-markup-8a78c9 = L'élément contient des éléments de type liste mais n'utilise pas de balisage de liste approprié
 issue-element-has-a-mouse-event-handler-but-lacks-tabindex-making-it-inaccessible-to-k-5da47d = L'élément a un gestionnaire d'événement souris mais n'a pas de tabindex, le rendant inaccessible aux utilisateurs de clavier
+issue-element-has-a-mouse-handler-but-no-keyboard-handler-on-itself-the-nearest-focusa-5f0bd0 = L'élément a un gestionnaire souris mais aucun gestionnaire clavier sur lui-même ; l'ancêtre focalisable le plus proche possède un gestionnaire clavier qui peut recevoir les événements remontés.
+issue-element-has-a-mouse-handler-no-keyboard-handler-on-itself-and-no-focusable-ances-c5c03e = L'élément a un gestionnaire souris, aucun gestionnaire clavier sur lui-même, et aucun ancêtre focalisable avec un gestionnaire clavier — les utilisateurs de clavier ne peuvent pas déclencher l'interaction.
 issue-element-has-a-tabindex-attribute-with-an-invalid-value-non-numeric-or-decimal-2d84bd = L'élément a un attribut tabindex avec une valeur invalide (non numérique ou décimale)
 issue-element-has-a-title-attribute-that-duplicates-or-overlaps-with-visible-text-cont-e66f71 = L'élément a un attribut title qui duplique ou chevauche le contenu textuel visible
 issue-element-has-both-tabindex-attribute-making-it-keyboard-focusable-and-aria-hidden-3eff72 = L'élément a à la fois un attribut tabindex (le rendant focalisable au clavier) et aria-hidden='true', créant un conflit où l'élément est focalisable mais masqué aux technologies d'assistance
@@ -440,6 +442,7 @@ issue-page-contains-multiple-main-landmarks-but-should-have-exactly-one-d3a453 =
 issue-page-contains-settimeout-or-setinterval-calls-that-execute-immediately-on-page-l-2fb736 = La page contient des appels setTimeout ou setInterval qui s'exécutent immédiatement au chargement de la page sans interaction utilisateur
 issue-page-content-exists-outside-of-any-landmark-regions-main-navigation-complementar-01a35f = Le contenu de la page existe en dehors de toute région de repère (main, navigation, complementary, contentinfo, banner), empêchant les utilisateurs de lecteurs d'écran de le trouver via la navigation par repères
 issue-page-defines-responsive-breakpoints-in-css-media-queries-842b69 = La page définit des points de rupture réactifs dans les requêtes média CSS
+issue-page-has-keyboard-event-handler-s-attached-to-document-window-or-body-1d843e = La page a des gestionnaires d'événements clavier attachés à document, window ou body.
 issue-page-has-no-title-element-in-the-document-head-eb2a07 = La page n'a pas d'élément <title> dans le head du document
 issue-page-has-no-h1-heading-6cb8d8 = La page n'a pas de titre h1
 issue-page-has-no-main-landmark-af6e16 = La page n'a pas de repère principal

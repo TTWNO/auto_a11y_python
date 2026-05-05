@@ -1765,10 +1765,34 @@ Type: Error
 Impact: High
 WCAG: 2.1.1 Keyboard (Level A)
 Touchpoint: event_handling
-Description: Interactive functionality only available through mouse events
+Description: Element has a mouse handler, no keyboard handler on itself, and no focusable ancestor with a keyboard handler — keyboard users cannot trigger the interaction.
 Why it matters: Mouse-only interactions exclude users who cannot use a pointing device.
 Who it affects: Keyboard users, screen reader users, users with motor disabilities, mobile device users.
 How to fix: Provide keyboard equivalents for all mouse interactions, use click events that work with keyboard, add proper keyboard event handlers.
+
+---
+
+ID: WarnMouseHandlerKeyboardOnAncestor
+Type: Warning
+Impact: Medium
+WCAG: 2.1.1 Keyboard (Level A)
+Touchpoint: event_handling
+Description: Mouse handler delegates to ancestor keyboard handler — manual verification required
+Why it matters: Automated testing cannot verify whether the ancestor's keyboard handler actually triggers the same interaction as the element's mouse handler.
+Who it affects: Keyboard users, screen reader users, users with motor disabilities.
+How to fix: Add a keyboard handler directly on the element, or manually verify keyboard equivalence works through the ancestor.
+
+---
+
+ID: WarnGlobalKeyboardHandlerPresent
+Type: Warning
+Impact: Medium
+WCAG: 2.1.1 Keyboard (Level A)
+Touchpoint: event_handling
+Description: Page-level keyboard handler detected — keyboard accessibility cannot be verified automatically
+Why it matters: This test looks for evidence of keyboard event handling at the document/window/body level but cannot verify whether those handlers provide keyboard equivalents for any specific mouse-driven interaction.
+Who it affects: Keyboard users, screen reader users, users with motor disabilities.
+How to fix: Manually test that every mouse-driven interaction on the page can be triggered using only the keyboard.
 
 ---
 

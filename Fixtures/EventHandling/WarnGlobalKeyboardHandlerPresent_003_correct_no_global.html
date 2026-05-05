@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WarnGlobalKeyboardHandlerPresent — no global handlers</title>
+    <script type="application/json" id="test-metadata">
+{
+    "id": "WarnGlobalKeyboardHandlerPresent_003_correct_no_global",
+    "issueId": "WarnGlobalKeyboardHandlerPresent",
+    "expectedViolationCount": 0,
+    "expectedPassCount": 0,
+    "description": "Page has only element-scoped handlers — no global warning emitted",
+    "wcag": "2.1.1",
+    "impact": "Medium"
+}
+    </script>
+</head>
+<body>
+    <button id="b">Click</button>
+    <script>
+        const b = document.getElementById('b');
+        b.addEventListener('click', () => console.log('clicked'));
+        b.addEventListener('keydown', () => console.log('keyed'));
+    </script>
+</body>
+</html>

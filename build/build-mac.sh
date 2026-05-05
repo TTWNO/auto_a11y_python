@@ -371,6 +371,29 @@ done < <(find "$APP_IN_DMG" -type f)
 
 echo "Audited $checked_count Mach-O files; $unsigned_count unsigned/invalid"
 
+# Explicit existence checks for each bundled resource tree. A blanket
+# Mach-O count threshold turned out to be too brittle — it tracks
+# Playwright's Chromium layout, which fluctuates across versions — and
+# the failure mode the threshold was actually guarding against is
+# "build-mac.sh forgot to copy a directory", which these checks catch
+# directly. Run while the DMG is still mounted; detach is below.
+RESOURCES_IN_DMG="$APP_IN_DMG/Contents/Resources"
+missing_paths=()
+[ -f "$RESOURCES_IN_DMG/python/bin/python3.12" ] \
+    || missing_paths+=("python/bin/python3.12")
+[ -f "$RESOURCES_IN_DMG/python/bin/python3.12-wrapper" ] \
+    || missing_paths+=("python/bin/python3.12-wrapper")
+[ -f "$RESOURCES_IN_DMG/mongodb/bin/mongod" ] \
+    || missing_paths+=("mongodb/bin/mongod")
+[ -d "$RESOURCES_IN_DMG/chromium" ] \
+    && [ -n "$(ls -A "$RESOURCES_IN_DMG/chromium" 2>/dev/null)" ] \
+    || missing_paths+=("chromium/ (missing or empty)")
+[ -d "$RESOURCES_IN_DMG/app/auto_a11y" ] \
+    || missing_paths+=("app/auto_a11y/")
+[ -d "$RESOURCES_IN_DMG/python/lib/weasyprint_libs" ] \
+    && [ -n "$(ls -A "$RESOURCES_IN_DMG/python/lib/weasyprint_libs" 2>/dev/null)" ] \
+    || missing_paths+=("python/lib/weasyprint_libs/ (missing or empty)")
+
 hdiutil detach "$MOUNT_POINT" -force >/dev/null 2>&1 || true
 trap - EXIT
 
@@ -380,12 +403,12 @@ if [ "$unsigned_count" -gt 0 ]; then
     exit 1
 fi
 
-# Sanity-check: a healthy Auto A11y bundle has at least ~1500 Mach-Os
-# (Python stdlib .so + Chromium helpers + mongod + WeasyPrint dylibs).
-# If we see far fewer, the build is missing something — fail loudly.
-if [ "$checked_count" -lt 1000 ]; then
-    echo "ERROR: only $checked_count Mach-O files inside the bundle. Expected"
-    echo "       >= 1000. The build is incomplete (Python/Chromium missing?)."
+if [ "${#missing_paths[@]}" -gt 0 ]; then
+    echo "ERROR: bundled resources missing from DMG:"
+    for p in "${missing_paths[@]}"; do
+        echo "  - $p"
+    done
+    echo "       The build is incomplete; check Steps 1-7 above for failures."
     exit 1
 fi
 

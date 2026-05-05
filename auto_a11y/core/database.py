@@ -76,6 +76,7 @@ class Database:
         self.groups: Collection[dict[str, Any]] = self.db['groups']  # Permission groups
         self.issues: Collection[dict[str, Any]] = self.db.issues  # Issues for Drupal sync
         self.pdf_documents: Collection[dict[str, Any]] = self.db.pdf_documents  # Downloaded auditable PDFs
+        self.system_settings: Collection[dict[str, Any]] = self.db.system_settings  # Singleton doc with admin-managed config (Drupal, SMTP, SSO, etc.)
 
         # Create indexes
         self._create_indexes()

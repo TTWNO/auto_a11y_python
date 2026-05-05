@@ -47,7 +47,7 @@ def view_discovered_page(page_id: str) -> str | Response | WerkzeugResponse:
         page_elements_terms = []
 
         try:
-            drupal_config = get_drupal_config()
+            drupal_config = get_drupal_config(db=get_db())
             if drupal_config.enabled:
                 client = DrupalJSONAPIClient(
                     base_url=drupal_config.base_url,

@@ -5,6 +5,7 @@ drupal-applying-filters = Applying filters...
 drupal-audit = Audit:
 drupal-coming-soon = Coming Soon:
 drupal-configure-portal-connection-in = Configure portal connection in
+drupal-configure-portal-connection-on-settings-page = Configure the portal connection on the
 drupal-drupal-audit = Drupal Audit
 drupal-drupal-synchronization = Drupal Synchronization
 drupal-error-applying-filters = Error applying filters:

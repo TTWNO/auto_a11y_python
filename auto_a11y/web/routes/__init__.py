@@ -23,6 +23,7 @@ from .public import public_bp
 from .members import members_bp
 from .desktop import desktop_bp
 from .pdf import pdf_bp
+from .admin_settings import admin_settings_bp
 
 __all__ = [
     'projects_bp',
@@ -52,4 +53,5 @@ __all__ = [
     'members_bp',
     'desktop_bp',
     'pdf_bp',
+    'admin_settings_bp',
 ]

@@ -153,10 +153,12 @@ async function loadSyncStatus() {
 
 function renderSyncStatus() {
     if (!syncStatus.drupal_enabled) {
+        const settingsUrl = {{ url_for('admin_settings.settings_page') | tojson }};
+        const settingsLinkLabel = {{ ftl('admin-settings-title') | tojson }};
         document.getElementById('drupalSyncContent').innerHTML = `
             <div class="alert alert-medium">
                 <strong><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> {{ ftl('drupal-access-labs-portal-integration-not-configured') }}</strong>
-                <p class="mb-0">{{ ftl('drupal-configure-portal-connection-in') }} <code>config/drupal.conf</code> {{ ftl('drupal-to-enable-sync') }}</p>
+                <p class="mb-0">{{ ftl('drupal-configure-portal-connection-on-settings-page') }} <a href="${settingsUrl}">${settingsLinkLabel}</a>.</p>
             </div>
         `;
         return;

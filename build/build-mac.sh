@@ -233,7 +233,21 @@ if [ ! -d "node_modules" ]; then
     npm install
 fi
 
-# Generate build config that points extraResources at the staging directory
+# Generate build config that points extraResources at the staging directory.
+#
+# `identity: null` tells electron-builder NOT to attempt its own codesign
+# pass — afterPack.js handles ad-hoc signing of every nested Mach-O and
+# then re-signs the bundle top-down with `--deep`. If electron-builder
+# also signs, it overwrites our nested signatures with its own (broken on
+# CI without a Developer ID) and the resulting bundle is silently rejected
+# by the kernel on first launch.
+#
+# `hardenedRuntime: false` matches the ad-hoc signing posture: we don't
+# ship the entitlements that the hardened runtime requires, so leaving it
+# enabled would block dlopen of the bundled WeasyPrint/Python dylibs.
+#
+# `gatekeeperAssess: false` skips electron-builder's `spctl` check, which
+# always fails for unnotarized builds and would otherwise abort packaging.
 cat > "$ELECTRON_DIR/build-config.json" <<BUILDCFG
 {
   "appId": "com.cnib.auto-a11y",
@@ -250,7 +264,10 @@ cat > "$ELECTRON_DIR/build-config.json" <<BUILDCFG
   "afterPack": "./afterPack.js",
   "mac": {
     "target": "dmg",
-    "category": "public.app-category.developer-tools"
+    "category": "public.app-category.developer-tools",
+    "identity": null,
+    "hardenedRuntime": false,
+    "gatekeeperAssess": false
   },
   "dmg": {
     "title": "Auto A11y"
@@ -262,6 +279,72 @@ echo "Generated build-config.json"
 
 # Run electron-builder
 npx electron-builder --mac --config build-config.json
+
+# -------------------------------------------------------
+# 8. Post-build signature audit
+# -------------------------------------------------------
+# Mount the DMG, walk every Mach-O inside the .app, and fail if any of them
+# is unsigned or has a stale signature. This is the canary that originally
+# caught us: an earlier build shipped 419 signed binaries when there are
+# thousands of Mach-Os, and dlopen failed at the user's first launch.
+echo ""
+echo "--- Step 8: Verify DMG signatures ---"
+DMG_FILE="$(ls "$ELECTRON_DIR/dist/"*.dmg 2>/dev/null | head -1)"
+if [ -z "$DMG_FILE" ]; then
+    echo "ERROR: no DMG produced in $ELECTRON_DIR/dist/"
+    exit 1
+fi
+
+MOUNT_POINT="$(mktemp -d)"
+hdiutil attach "$DMG_FILE" -nobrowse -readonly -mountpoint "$MOUNT_POINT" >/dev/null
+trap 'hdiutil detach "$MOUNT_POINT" -force >/dev/null 2>&1 || true' EXIT
+
+APP_IN_DMG="$(find "$MOUNT_POINT" -maxdepth 2 -name '*.app' -type d | head -1)"
+if [ -z "$APP_IN_DMG" ]; then
+    echo "ERROR: no .app inside $DMG_FILE"
+    exit 1
+fi
+
+echo "Auditing $APP_IN_DMG ..."
+unsigned_count=0
+checked_count=0
+while IFS= read -r f; do
+    # Skip empty lines from find
+    [ -z "$f" ] && continue
+    # Cheap Mach-O magic check; skip non-binaries
+    magic="$(xxd -l 4 -p "$f" 2>/dev/null || true)"
+    case "$magic" in
+        feedface|feedfacf|cefaedfe|cffaedfe|cafebabe|bebafeca) ;;
+        *) continue ;;
+    esac
+    checked_count=$((checked_count + 1))
+    if ! codesign --verify --strict "$f" >/dev/null 2>&1; then
+        unsigned_count=$((unsigned_count + 1))
+        if [ "$unsigned_count" -le 20 ]; then
+            echo "  UNSIGNED: ${f#"$APP_IN_DMG/"}"
+        fi
+    fi
+done < <(find "$APP_IN_DMG" -type f)
+
+echo "Audited $checked_count Mach-O files; $unsigned_count unsigned/invalid"
+
+hdiutil detach "$MOUNT_POINT" -force >/dev/null 2>&1 || true
+trap - EXIT
+
+if [ "$unsigned_count" -gt 0 ]; then
+    echo "ERROR: DMG contains $unsigned_count unsigned/invalid Mach-O files."
+    echo "       The resulting app will fail to launch on macOS."
+    exit 1
+fi
+
+# Sanity-check: a healthy Auto A11y bundle has at least ~1500 Mach-Os
+# (Python stdlib .so + Chromium helpers + mongod + WeasyPrint dylibs).
+# If we see far fewer, the build is missing something — fail loudly.
+if [ "$checked_count" -lt 1000 ]; then
+    echo "ERROR: only $checked_count Mach-O files inside the bundle. Expected"
+    echo "       >= 1000. The build is incomplete (Python/Chromium missing?)."
+    exit 1
+fi
 
 echo ""
 echo "=== Build complete ==="

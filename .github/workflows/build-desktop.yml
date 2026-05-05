@@ -4,11 +4,14 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 jobs:
   build-mac:
-    runs-on: macos-latest
-    timeout-minutes: 45
+    # macos-14 is the Apple Silicon runner image. The product only ships
+    # for arm64 — Intel Macs are out of scope.
+    runs-on: macos-14
+    timeout-minutes: 60
 
     steps:
     - name: Checkout code
@@ -19,13 +22,49 @@ jobs:
       with:
         node-version: '20'
 
+    - name: Show toolchain versions
+      run: |
+        sw_vers
+        uname -m
+        node --version
+        npm --version
+        codesign --version
+        xcrun --show-sdk-version
+
     - name: Run macOS build script
       run: bash build/build-mac.sh
+
+    # If anything in afterPack or the post-build audit failed, dump the
+    # bundle's signature state so the CI log makes the cause obvious
+    # without having to download the artifact.
+    - name: Diagnose on failure
+      if: failure()
+      run: |
+        set +e
+        echo "=== electron/dist/ contents ==="
+        ls -la electron/dist/ || true
+        APP="$(find electron/dist -maxdepth 3 -name '*.app' -type d | head -1)"
+        if [ -n "$APP" ]; then
+          echo "=== codesign --verify --verbose=4 $APP ==="
+          codesign --verify --verbose=4 --strict "$APP"
+          echo "=== codesign --display $APP ==="
+          codesign --display --verbose=4 "$APP" 2>&1 | head -40
+          echo "=== first 20 nested Mach-Os ==="
+          find "$APP" -type f | head -20 | while read -r f; do
+            magic="$(xxd -l 4 -p "$f" 2>/dev/null)"
+            case "$magic" in
+              feedface|feedfacf|cefaedfe|cffaedfe|cafebabe|bebafeca)
+                printf '  %s\n' "${f#"$APP/"}"
+                codesign --verify --strict "$f" 2>&1 | sed 's/^/    /'
+                ;;
+            esac
+          done
+        fi
 
     - name: Upload DMG artifact
       uses: actions/upload-artifact@v4
       with:
-        name: auto-a11y-macos-dmg
+        name: auto-a11y-macos-arm64-dmg
         path: electron/dist/*.dmg
         if-no-files-found: error
         retention-days: 30

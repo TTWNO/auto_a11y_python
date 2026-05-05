@@ -3028,22 +3028,36 @@ class DiscoveryReportGenerator:
         Returns:
             PDF content as bytes
         """
+        # Catch any exception during import: on macOS without Pango/Cairo,
+        # `from weasyprint import HTML` itself raises OSError from cffi.
         try:
             from weasyprint import HTML as WeasyprintHTML  # noqa: N811
-
-            # Generate HTML first (uses legacy in-memory approach)
-            html_content = self._generate_html_report_legacy(data)
-
-            # Convert to PDF
-            pdf_bytes = WeasyprintHTML(string=html_content).write_pdf()
-
-            return pdf_bytes or b''
-
-        except ImportError:
-            logger.error("WeasyPrint not installed. Cannot generate PDF.")
-            raise ImportError(
-                "WeasyPrint is required for PDF generation. Install with: pip install weasyprint"
+        except Exception as e:
+            from auto_a11y.reporting.formatters import (
+                is_native_lib_error, platform_install_hint,
             )
+            logger.error(f"WeasyPrint failed to load - cannot generate PDF: {e}")
+            hint = platform_install_hint() if is_native_lib_error(e) or isinstance(e, ImportError) else ""
+            message = f"PDF report generation failed: {e}"
+            if hint:
+                message = f"{message}\n\n{hint}"
+            raise RuntimeError(message) from e
+
+        html_content = self._generate_html_report_legacy(data)
+
+        try:
+            pdf_bytes = WeasyprintHTML(string=html_content).write_pdf()
+        except Exception as e:
+            from auto_a11y.reporting.formatters import (
+                is_native_lib_error, platform_install_hint,
+            )
+            logger.error(f"WeasyPrint rendering failed: {e}", exc_info=True)
+            message = f"PDF report generation failed: {e}"
+            if is_native_lib_error(e):
+                message = f"{message}\n\n{platform_install_hint()}"
+            raise RuntimeError(message) from e
+
+        return pdf_bytes or b''
 
     def _get_html_css(self) -> str:
         """Get CSS styles for HTML reports"""

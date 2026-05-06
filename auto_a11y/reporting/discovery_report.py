@@ -20,6 +20,7 @@ from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
 from typing import IO, Any
+from urllib.parse import unquote, urlparse
 
 from auto_a11y.core.database import Database
 from auto_a11y.models import DocumentReference, Page, Project, TestResult, Violation, Website
@@ -31,6 +32,17 @@ logger = logging.getLogger(__name__)
 # Type alias for progress callbacks used throughout the module
 _ProgressCallback = Callable[[int, int, str], object]
 
+# Phrases that fail WCAG 2.4.4 (Link Purpose - In Context) when used as the
+# accessible name of a link. Compared after lowercasing and stripping
+# whitespace + trailing punctuation.
+_GENERIC_LINK_TEXT_TOKENS: frozenset[str] = frozenset({
+    'click here', 'click', 'here', 'read more', 'learn more',
+    'more', 'view', 'view here', 'view more', 'open', 'open here',
+    'download', 'download here', 'link', 'this link',
+    'go', 'go here', 'continue', 'see more', 'more info',
+    'more information', 'this',
+})
+
 
 def _issue_to_dict(issue: dict[str, Any] | Violation) -> dict[str, Any]:
     """Convert a Violation or dict issue to a plain dict.
@@ -41,6 +53,55 @@ def _issue_to_dict(issue: dict[str, Any] | Violation) -> dict[str, Any]:
     if isinstance(issue, Violation):
         return issue.to_dict()
     return issue
+
+
+def _is_generic_link_text(text: str) -> bool:
+    """Return True if ``text`` fails WCAG 2.4.4 as a link's accessible name.
+
+    Empty/whitespace-only strings count as generic so callers fall back to a
+    descriptive replacement (e.g. the document filename).
+    """
+    if not text:
+        return True
+    normalized = text.strip().lower().rstrip('.!?:,; \t').strip()
+    return not normalized or normalized in _GENERIC_LINK_TEXT_TOKENS
+
+
+def _document_filename(url: str) -> str:
+    """Return a human-readable filename for ``url``, falling back to the URL."""
+    path = urlparse(url).path
+    name = path.rsplit('/', 1)[-1]
+    if not name:
+        return url
+    return unquote(name)
+
+
+def _document_link_html(doc: DocumentReference, t: dict[str, str]) -> tuple[str, str]:
+    """Return ``(link_text_html, source_link_note_html)`` for a document row.
+
+    The discovery report previously rendered ``doc.link_text`` verbatim, which
+    inherited any WCAG 2.4.4 violation from the source page (e.g. PDFs linked
+    as "Click here"). This helper substitutes the document's filename when the
+    source link text is generic, and surfaces the original text as a separate
+    note so auditors still see what the source page used.
+    """
+    raw_link_text = (doc.link_text or '').strip()
+    if _is_generic_link_text(raw_link_text):
+        link_html = html_mod.escape(_document_filename(doc.document_url))
+        if raw_link_text:
+            label = html_mod.escape(t['link_text_on_source_page'])
+            quoted = html_mod.escape(raw_link_text)
+            note_html = (
+                '<span class="document-link-source-note" '
+                f'data-i18n="link_text_on_source_page">{label}: '
+                f'<q>{quoted}</q></span>'
+            )
+        else:
+            note_html = ''
+    else:
+        link_html = html_mod.escape(raw_link_text)
+        note_html = ''
+    return link_html, note_html
 
 
 class DiscoveryReportGenerator:
@@ -151,6 +212,7 @@ class DiscoveryReportGenerator:
                 'language_unknown': 'Language Unknown',
                 'document': 'document',
                 'documents': 'documents',
+                'link_text_on_source_page': 'Link text on source page',
                 # Issue breakdown section
                 'discovery_issues_total': 'Discovery Issues (%(count)s total)',
                 'informational_items_total': 'Informational Items (%(count)s total)',
@@ -265,6 +327,7 @@ class DiscoveryReportGenerator:
                 'language_unknown': 'Langue inconnue',
                 'document': 'document',
                 'documents': 'documents',
+                'link_text_on_source_page': 'Texte du lien sur la page source',
                 # Issue breakdown section
                 'discovery_issues_total': 'Probl\u00e8mes de d\u00e9couverte (%(count)s au total)',
                 'informational_items_total': '\u00c9l\u00e9ments informatifs (%(count)s au total)',
@@ -2732,10 +2795,9 @@ class DiscoveryReportGenerator:
             if internal_docs:
                 docs_html += f"<h4 data-i18n='internal_documents'>{t['internal_documents']}</h4><ul class='documents-list'>"
                 for doc in sorted(internal_docs, key=lambda x: (x.language or 'zzz', x.document_url)):
-                    doc_link_text: str = doc.link_text or ''
                     doc_url: str = doc.document_url
                     doc_ref_url: str = doc.referring_page_url
-                    link_text_display = html_mod.escape(doc_link_text) if doc_link_text else html_mod.escape(doc_url.split('/')[-1])
+                    link_text_display, source_link_note = _document_link_html(doc, t)
 
                     # Language badge and info
                     language_info = ""
@@ -2758,6 +2820,7 @@ class DiscoveryReportGenerator:
                         </div>
                         <div class="document-meta">
                             <span class="document-referring" data-i18n="found_on">{t['found_on']}: <a href="{html_mod.escape(doc_ref_url)}" target="_blank">{html_mod.escape(doc_ref_url)}</a></span>
+                            {source_link_note}
                         </div>
                     </li>
                     """
@@ -2766,10 +2829,9 @@ class DiscoveryReportGenerator:
             if external_docs:
                 docs_html += f"<h4 data-i18n='external_documents'>{t['external_documents']}</h4><ul class='documents-list'>"
                 for doc in sorted(external_docs, key=lambda x: (x.language or 'zzz', x.document_url)):
-                    doc_link_text = doc.link_text or ''
                     doc_url = doc.document_url
                     doc_ref_url = doc.referring_page_url
-                    link_text_display = html_mod.escape(doc_link_text) if doc_link_text else html_mod.escape(doc_url.split('/')[-1])
+                    link_text_display, source_link_note = _document_link_html(doc, t)
 
                     # Language badge and info
                     language_info = ""
@@ -2792,6 +2854,7 @@ class DiscoveryReportGenerator:
                         </div>
                         <div class="document-meta">
                             <span class="document-referring" data-i18n="found_on">{t['found_on']}: <a href="{html_mod.escape(doc_ref_url)}" target="_blank">{html_mod.escape(doc_ref_url)}</a></span>
+                            {source_link_note}
                         </div>
                     </li>
                     """
@@ -3348,6 +3411,7 @@ class DiscoveryReportGenerator:
         .document-meta { margin-top: 5px; font-size: 0.85em; color: #7f8c8d; }
         .document-referring a { color: #7f8c8d; text-decoration: none; }
         .document-referring a:hover { color: #3498db; text-decoration: underline; }
+        .document-link-source-note { display: block; margin-top: 3px; font-style: italic; }
     </style>
         """
 

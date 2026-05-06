@@ -78,7 +78,8 @@ The current API uses `{"success": true, ...}` envelopes. **#27 will move to bare
 
 - It's idiomatic REST and lets clients use `response.json()` directly as the resource.
 - `success: true` is redundant with the HTTP status code.
-- Existing `success`-wrapped endpoints will stay supported through #27 — the implementation PR adds new shapes alongside, deprecates the old ones, and the frontend-migration phase is what removes them.
+
+**Migration plan:** #27 introduces new endpoints with the bare-body shape, but does **not** remove the existing `success`-wrapped responses. Wrapped endpoints get `Deprecation: true` and `Sunset: <date>` HTTP headers (RFC 8594) pointing at the frontend-migration cut-over. The frontend-migration PR is what actually deletes them, once nothing on our side calls them anymore.
 
 Errors use [RFC 7807 Problem Details](https://www.rfc-editor.org/rfc/rfc7807):
 
@@ -116,6 +117,8 @@ A single `auto_a11y/web/api/serializers.py` module per resource, returning `dict
 ### 4.9 Idempotency
 
 `PUT` and `DELETE` are naturally idempotent. For `POST /resource/<id>/<action>` that triggers async work (test runs, discovery, report generation), accept an optional `Idempotency-Key` header; if a job with the same key is already in flight, return its existing job id with 202 instead of starting a new one.
+
+**Storage:** a new MongoDB collection `idempotency_keys` with a TTL index (24h retention). In-memory storage was rejected because it produces duplicate jobs as soon as the app runs with more than one worker.
 
 ## 5. Route inventory and target REST mapping
 
@@ -219,7 +222,7 @@ Symbols:
 | `GET /reports/job/<id>/status` | `GET /api/v1/jobs/<id>` |
 | `POST /reports/job/<id>/drop` | `DELETE /api/v1/jobs/<id>` |
 | `POST /reports/job/<id>/restart` | `POST /api/v1/jobs/<id>/restart` |
-| `GET /reports/download/<filename>` | `GET /api/v1/reports/<id>/file` (return Content-Disposition: attachment) |
+| `GET /reports/download/<filename>` | `GET /api/v1/reports/<id>/file` — opaque id; `Content-Disposition: attachment; filename="..."` carries the human filename |
 | `POST /reports/<filename>/delete` | `DELETE /api/v1/reports/<id>` |
 | `GET /reports/project/<id>/summary` | `GET /api/v1/projects/<id>/report-summary` |
 | `POST /reports/export-csv` | `POST /api/v1/reports` (with `format=csv`) |
@@ -235,6 +238,8 @@ Symbols:
 | `POST /reports/generate/recordings/<project_id>` | `POST /api/v1/projects/<id>/reports` (body: `type=recordings`) |
 
 The report endpoints sprawl because each format/scope has its own URL. The roadmap collapses them into `POST /api/v1/{scope}/reports` with a `type` discriminator in the body, plus `GET /api/v1/reports/<id>/file` for downloads.
+
+A report record stores `(id, filename, project_id, created_at, type, format)` so the opaque id maps back to a human-friendly download filename via `Content-Disposition`. Existing filename-based URLs do not leak into the new API surface.
 
 ### 5.6 Recordings (`recordings.py`)
 
@@ -457,14 +462,16 @@ Add a step in `.github/workflows/ci.yml` after the existing `pytest` invocation 
 
 `tests/api/` is in scope per CLAUDE.md's mypy/pyright/ty configuration. New test files MUST pass strict type checking with no escape hatches.
 
-## 8. Open questions (resolve before #27 starts)
+## 8. Resolved decisions
 
-1. **Idempotency-Key storage** — in-memory per-process, or in Mongo? In-memory is simpler but breaks across multi-worker deployments. Recommendation: Mongo collection `idempotency_keys` with TTL index.
-2. **Filename for downloaded reports** — keep current `<filename>` URL pattern, or move to opaque report ids? Recommendation: opaque ids, with `Content-Disposition` carrying the human filename.
-3. **Should `success`-envelope endpoints be removed in #27 or kept until frontend migration?** Recommendation: keep, deprecate in `Sunset` headers, remove in the frontend-migration PR.
+These were open questions during drafting; they are now locked in for #27.
+
+1. **Idempotency-Key storage:** MongoDB collection `idempotency_keys` with a 24h TTL index. In-memory was rejected because it produces duplicate jobs under multi-worker deployments. (See §4.9.)
+2. **Report download URLs:** opaque report ids, with `Content-Disposition: attachment; filename="..."` carrying the human filename. Filenames in URLs were rejected to avoid leaking project info and to make URLs unguessable. (See §5.5.)
+3. **`success`-envelope deprecation:** keep the wrapped responses through #27, mark them with RFC 8594 `Deprecation` / `Sunset` HTTP headers, and remove them in the frontend-migration PR once nothing on our side calls them. Pulling the envelope inside #27 was rejected as too risky to couple with the surface expansion. (See §4.4.)
 
 ## 9. Definition of done for this doc (#26)
 
 - [x] Doc committed under `docs/`
+- [x] Open questions resolved
 - [ ] PR opened and reviewed by repo owner
-- [ ] Open questions resolved (or explicitly deferred) before #27 begins

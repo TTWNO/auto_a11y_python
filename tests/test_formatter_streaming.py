@@ -333,12 +333,21 @@ class TestHTMLFormatterStreaming:
 # Task 6 -- ExcelFormatter streaming
 # ---------------------------------------------------------------------------
 
+def _has_openpyxl() -> bool:
+    try:
+        import openpyxl as _openpyxl_check
+        return bool(_openpyxl_check)
+    except ImportError:
+        return False
+
+
+@pytest.mark.skipif(not _has_openpyxl(), reason='openpyxl not installed')
 class TestExcelFormatterStreaming:
     """ExcelFormatter.begin / append_page / finalize / cleanup."""
 
     tmpdir = ""
     outfile = ""
-    formatter = ExcelFormatter(config={})
+    formatter: Any = None
 
     def setup_method(self) -> None:
         self.tmpdir = tempfile.mkdtemp()
@@ -349,10 +358,6 @@ class TestExcelFormatterStreaming:
         self.formatter.cleanup()
         shutil.rmtree(self.tmpdir, ignore_errors=True)
 
-    @pytest.mark.skipif(
-        not ExcelFormatter(config={}).has_openpyxl,
-        reason='openpyxl not installed',
-    )
     def test_produces_valid_xlsx(self) -> None:
         """Produces valid xlsx with at least 2 sheets."""
         from openpyxl import load_workbook
@@ -373,10 +378,6 @@ class TestExcelFormatterStreaming:
         assert len(wb.sheetnames) >= 2
         wb.close()
 
-    @pytest.mark.skipif(
-        not ExcelFormatter(config={}).has_openpyxl,
-        reason='openpyxl not installed',
-    )
     def test_multiple_pages_add_rows(self) -> None:
         """Violations sheet has header + rows from multiple pages."""
         from openpyxl import load_workbook
@@ -411,12 +412,13 @@ def _has_weasyprint() -> bool:
         return False
 
 
+@pytest.mark.skipif(not _has_weasyprint(), reason='weasyprint not installed')
 class TestPDFFormatterStreaming:
     """PDFFormatter.begin / append_page / finalize / cleanup."""
 
     tmpdir = ""
     outfile = ""
-    formatter = PDFFormatter(config={})
+    formatter: Any = None
 
     def setup_method(self) -> None:
         self.tmpdir = tempfile.mkdtemp()
@@ -427,7 +429,6 @@ class TestPDFFormatterStreaming:
         self.formatter.cleanup()
         shutil.rmtree(self.tmpdir, ignore_errors=True)
 
-    @pytest.mark.skipif(not _has_weasyprint(), reason='weasyprint not installed')
     def test_produces_pdf_file(self) -> None:
         """Output starts with %PDF bytes."""
         summary: dict[str, Any] = {'total_pages': 1}

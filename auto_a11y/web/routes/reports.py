@@ -202,18 +202,30 @@ def job_status(job_id: str) -> tuple[Response, int] | Response:
 
 @reports_bp.route('/job/<job_id>/drop', methods=['POST'])
 def drop_job(job_id: str) -> tuple[Response, int] | Response:
-    """Drop/delete a stalled or in-progress report job"""
-    job_manager = JobManager(get_db())
-    job = job_manager.get_job(job_id)
-    if not job:
-        return jsonify({'error': 'Job not found'}), 404
+    """Drop/cancel an in-progress report job.
 
-    # Request cancellation if still active (so thread stops gracefully)
-    if job.get('status') in (JobStatus.PENDING.value, JobStatus.RUNNING.value):
-        job_manager.request_cancellation(job_id)
+    The doc is NOT deleted here: the worker thread polls
+    ``is_cancellation_requested(job_id)`` to break out of generation, so
+    the doc must outlive this request. Once the worker observes the flag
+    it raises ``ReportCancelled`` and writes back ``CANCELLED``; the
+    JobManager TTL/cleanup task removes the doc later. Deleting it
+    eagerly (the previous behaviour) made the worker keep generating —
+    the cancel flag was unreachable.
+    """
+    try:
+        job_manager = JobManager(get_db())
+        job = job_manager.get_job(job_id)
+        if not job:
+            # Idempotent: already gone is success from the user's view.
+            return jsonify({'success': True, 'already_gone': True})
 
-    job_manager.collection.delete_one({'job_id': job_id})
-    return jsonify({'success': True})
+        if job.get('status') in (JobStatus.PENDING.value, JobStatus.RUNNING.value):
+            job_manager.request_cancellation(job_id)
+
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"Error dropping job {job_id}: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @reports_bp.route('/job/<job_id>/restart', methods=['POST'])
@@ -231,10 +243,10 @@ def restart_job(job_id: str) -> tuple[Response, int] | Response:
     project_id = old_job.get('project_id')
     website_id = old_job.get('website_id')
 
-    # Cancel and remove old job
+    # Request cancellation of the old job (don't delete the doc; the
+    # worker thread reads the cancellation flag from it). See drop_job.
     if old_job.get('status') in (JobStatus.PENDING.value, JobStatus.RUNNING.value):
         job_manager.request_cancellation(job_id)
-    job_manager.collection.delete_one({'job_id': job_id})
 
     # Capture context for background thread
     db = get_db()

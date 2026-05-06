@@ -1,5 +1,7 @@
 # API Design Documentation
 
+> **Note:** This document describes the API as originally designed. For an inventory of what is currently implemented vs. missing, plus the phased plan to round out the surface, see [REST_API_ROADMAP.md](REST_API_ROADMAP.md).
+
 ## Table of Contents
 1. [API Overview](#api-overview)
 2. [RESTful Endpoints](#restful-endpoints)

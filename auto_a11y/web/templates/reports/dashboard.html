@@ -406,6 +406,15 @@
 <script>
 // Report job polling system
 const activePolls = {};
+// Jobs the user has dropped (or that the server reported as cancelled/missing).
+// Polling tasks check this on every tick to bail out instead of rescheduling.
+const stoppedJobs = new Set();
+// Per-job consecutive network-error counter. Reset on any successful response.
+const jobErrorCounts = {};
+// After this many back-to-back errors for a given job, give up polling and
+// surface the global service-unavailable banner so the user sees a clear
+// message instead of silent network errors stacking up in the console.
+const MAX_CONSECUTIVE_ERRORS = 3;
 
 // Pre-computed i18n strings for dynamic table creation
 const _i18n = {
@@ -432,6 +441,17 @@ const _i18n = {
     report: {{ ftl('reports-report') | tojson }},
     generationProgress: {{ ftl('reports-generation-progress') | tojson }}
 };
+
+// Stop polling for a given job, clear timers, and forget any error counter.
+// Idempotent — safe to call multiple times.
+function stopJobPoll(jobId) {
+    stoppedJobs.add(jobId);
+    if (activePolls[jobId]) {
+        clearTimeout(activePolls[jobId]);
+        delete activePolls[jobId];
+    }
+    delete jobErrorCounts[jobId];
+}
 
 function cloneRowTemplate(templateId, replacements) {
     const tmpl = document.getElementById(templateId);
@@ -518,11 +538,42 @@ function startJobPoll(jobId, displayName) {
     }
 
     const poll = () => {
+        // The user (or the server) has marked this job as no longer pollable.
+        // Bail out before issuing the request — guards against stale fetches
+        // that were in-flight when stopJobPoll() ran.
+        if (stoppedJobs.has(jobId)) return;
+
         fetch(`/reports/job/${jobId}/status`)
-            .then(r => r.json())
+            .then(r => {
+                // 404 means the job doc has been cleaned up server-side.
+                // That is a terminal state — stop polling silently.
+                if (r.status === 404) {
+                    stopJobPoll(jobId);
+                    const row = document.querySelector(`tr[data-job-id="${jobId}"]`);
+                    if (row) row.remove();
+                    return null;
+                }
+                return r.json();
+            })
             .then(data => {
+                if (!data || stoppedJobs.has(jobId)) return;
+
+                // Successful response: reset any error state and hide the
+                // global "service unavailable" banner if it was up.
+                jobErrorCounts[jobId] = 0;
+                if (window.hideServerUnavailable) window.hideServerUnavailable();
+
                 const row = document.querySelector(`tr[data-job-id="${jobId}"]`);
                 if (!row) return;
+
+                // Cancellation is terminal from the user's perspective.
+                // The worker may still be unwinding; we stop polling and
+                // remove the row so the dashboard doesn't show ghost jobs.
+                if (data.status === 'cancelled' || data.status === 'cancelling') {
+                    stopJobPoll(jobId);
+                    row.remove();
+                    return;
+                }
 
                 if (data.status === 'running' || data.status === 'pending') {
                     // Check if stalled (no update for 2+ minutes)
@@ -564,7 +615,7 @@ function startJobPoll(jobId, displayName) {
                         '__DATE__': new Date().toLocaleString()
                     });
                     row.replaceWith(newRow);
-                    delete activePolls[jobId];
+                    stopJobPoll(jobId);
                 } else if (data.status === 'failed') {
                     const name = (data.metadata && data.metadata.display_name) || _i18n.report;
                     const newRow = cloneRowTemplate('tmpl-failed-row', {
@@ -572,11 +623,24 @@ function startJobPoll(jobId, displayName) {
                         '__ERROR__': data.error || _i18n.unknownError
                     });
                     row.replaceWith(newRow);
-                    delete activePolls[jobId];
+                    stopJobPoll(jobId);
                 }
             })
             .catch(() => {
-                activePolls[jobId] = setTimeout(poll, 5000);
+                if (stoppedJobs.has(jobId)) return;
+                jobErrorCounts[jobId] = (jobErrorCounts[jobId] || 0) + 1;
+
+                if (jobErrorCounts[jobId] >= MAX_CONSECUTIVE_ERRORS) {
+                    // The server has been unreachable for several attempts.
+                    // Show the global banner so the user knows AutoA11y is
+                    // not responding — better than silent network errors.
+                    if (window.showServerUnavailable) window.showServerUnavailable();
+                    // Keep polling on a slower cadence so the row recovers
+                    // automatically once the server is back.
+                    activePolls[jobId] = setTimeout(poll, 15000);
+                } else {
+                    activePolls[jobId] = setTimeout(poll, 5000);
+                }
             });
     };
     poll();
@@ -606,17 +670,18 @@ startJobPoll('{{ job.job_id }}', '{{ job.metadata.get("display_name", "Report") 
 function dropJob(jobId) {
     if (!confirm(_i18n.confirmDrop)) return;
 
+    // Stop polling immediately and optimistically remove the row so the user
+    // sees the cancellation take effect right away. The worker thread will
+    // observe the cancel flag on its next progress callback and unwind; the
+    // server-side doc is reaped by the JobManager cleanup task afterwards.
+    stopJobPoll(jobId);
+    const row = document.querySelector(`tr[data-job-id="${jobId}"]`);
+    if (row) row.remove();
+
     fetch(`/reports/job/${jobId}/drop`, { method: 'POST' })
         .then(r => r.json())
         .then(data => {
-            if (data.success) {
-                const row = document.querySelector(`tr[data-job-id="${jobId}"]`);
-                if (row) row.remove();
-                if (activePolls[jobId]) {
-                    clearTimeout(activePolls[jobId]);
-                    delete activePolls[jobId];
-                }
-            } else {
+            if (!data.success) {
                 alert(data.error || _i18n.failedToDropJob);
             }
         })
@@ -627,10 +692,7 @@ function restartJob(jobId) {
     if (!confirm(_i18n.confirmRestart)) return;
 
     // Stop polling old job
-    if (activePolls[jobId]) {
-        clearTimeout(activePolls[jobId]);
-        delete activePolls[jobId];
-    }
+    stopJobPoll(jobId);
 
     fetch(`/reports/job/${jobId}/restart`, { method: 'POST' })
         .then(r => r.json())

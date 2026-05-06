@@ -176,6 +176,22 @@
     </nav>
     </header>
 
+    <!-- Global Service Unavailable Banner -->
+    <section id="service-unavailable-banner" class="d-none" aria-label="{{ ftl('common-service-status-region') }}">
+        <div class="container-fluid">
+            <div class="alert alert-high mt-2 d-flex align-items-center" role="alert" aria-live="assertive">
+                <i class="bi bi-exclamation-octagon-fill me-2" aria-hidden="true"></i>
+                <div class="flex-grow-1">
+                    <strong>{{ ftl('common-service-unavailable-title') }}</strong>
+                    {{ ftl('common-service-unavailable-message') }}
+                </div>
+                <button type="button" class="btn btn-sm btn-brand ms-2" onclick="window.location.reload()">
+                    {{ ftl('common-try-again') }}
+                </button>
+            </div>
+        </div>
+    </section>
+
     <!-- Global Test Status Indicator -->
     <section id="global-test-status" class="d-none" aria-label="{{ ftl('common-activity-status-region') }}">
         <div class="container-fluid">
@@ -280,6 +296,20 @@
     <!-- Global Test Tracking System -->
     <script>
     window.i18nNewWindow = {{ ftl('common-opens-in-new-tab') | tojson }};
+
+    // Global service-unavailable banner controls. Polling code anywhere in
+    // the app can call these when consecutive fetches fail, so the user
+    // sees a clear "AutoA11y is not responding" message instead of silent
+    // network errors stacking up. The banner is reused across pages, so
+    // its DOM lives in base.html and the API is exposed on `window`.
+    window.showServerUnavailable = function() {
+        const el = document.getElementById('service-unavailable-banner');
+        if (el) el.classList.remove('d-none');
+    };
+    window.hideServerUnavailable = function() {
+        const el = document.getElementById('service-unavailable-banner');
+        if (el) el.classList.add('d-none');
+    };
     // Global activity tracking system (tests and discoveries)
     const TestTracker = {
         STORAGE_KEY: 'active_activities',  // Renamed from 'active_tests' for clarity

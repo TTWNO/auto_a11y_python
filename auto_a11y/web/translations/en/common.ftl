@@ -827,6 +827,12 @@ wcag-criteria-not-specified = Criteria not specified
 # Landmark labels for global notification regions
 common-notifications-region = Notifications
 common-activity-status-region = Activity status
+common-service-status-region = Service status
+
+# Service unavailable banner (shown when the app cannot reach the server)
+common-service-unavailable-title = AutoA11y is not responding.
+common-service-unavailable-message = The server appears to be unavailable. Please wait a moment and try again.
+common-try-again = Try again
 
 # Generic actions
 common-remove-filter = Remove filter

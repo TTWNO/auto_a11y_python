@@ -14,6 +14,18 @@ from typing import Any
 
 from flask import Blueprint, Response, flash, render_template, request, url_for
 
+from auto_a11y.core.runtime_config import (
+    CONFIG_SECTIONS,
+    ConfigField,
+    ConfigSection,
+    FieldType,
+    coerce_value,
+    get_field_view_value,
+    get_section,
+    is_bool_true,
+    is_password_set,
+    section_source,
+)
 from auto_a11y.core.system_settings import SystemSettings
 from auto_a11y.drupal.config import DRUPAL_SETTINGS_KEY
 from auto_a11y.web.fluent import ftl
@@ -57,15 +69,44 @@ def _drupal_form_view(settings: SystemSettings) -> dict[str, Any]:
     }
 
 
+def _section_form_view(section: ConfigSection, settings: SystemSettings) -> dict[str, Any]:
+    """Build the data passed to the template for one env-var section."""
+    section_data = settings.get_section(section.section_id)
+    fields_view: list[dict[str, Any]] = []
+    for field in section.fields:
+        fields_view.append({
+            "env_var": field.env_var,
+            "db_key": field.db_key,
+            "type": field.field_type.value,
+            "label_id": field.label_id,
+            "help_id": field.help_id,
+            "value": get_field_view_value(field, section_data),
+            "password_set": is_password_set(field, section_data),
+            "checked": is_bool_true(field, section_data),
+            "input_id": f"setting-{section.section_id}-{field.db_key}".replace("_", "-"),
+        })
+    return {
+        "section_id": section.section_id,
+        "heading_id": section.heading_id,
+        "description_id": section.description_id,
+        "icon": section.icon,
+        "note_id": section.note_id,
+        "source": section_source(section, section_data),
+        "fields": fields_view,
+    }
+
+
 @admin_settings_bp.route('/admin/settings', methods=['GET'])
 @admin_required
 def settings_page() -> str | Response:
     """Render the admin system-settings page."""
     db = get_db()
     settings = SystemSettings(db)
+    sections_view = [_section_form_view(s, settings) for s in CONFIG_SECTIONS]
     return render_template(
         'admin_settings/index.html',
         drupal=_drupal_form_view(settings),
+        env_sections=sections_view,
     )
 
 
@@ -129,6 +170,93 @@ def update_drupal() -> Response:
     )
     flash(ftl('admin-settings-drupal-saved'), 'success')
     return redirect(url_for('admin_settings.settings_page'))
+
+
+@admin_settings_bp.route('/admin/settings/section/<section_id>', methods=['POST'])
+@admin_required
+def update_env_section(section_id: str) -> Response:
+    """Save (or clear) one env-var-backed section.
+
+    For each field in the section schema, parse the form value, coerce it
+    to the right type, and persist the whole section dict to
+    ``system_settings``. Password fields left blank preserve the existing
+    stored password (mirrors the Drupal flow).
+
+    ``action=clear`` removes the section entirely so the env-var fallback
+    takes over again.
+    """
+    section = get_section(section_id)
+    if section is None:
+        flash(ftl('admin-settings-unknown-section'), 'danger')
+        return redirect(url_for('admin_settings.settings_page'))
+
+    db = get_db()
+    settings = SystemSettings(db)
+    user_id = _current_user_id()
+
+    if request.form.get('action') == 'clear':
+        settings.clear_section(section.section_id)
+        flash(ftl('admin-settings-section-cleared', heading=ftl(section.heading_id)), 'success')
+        return redirect(url_for('admin_settings.settings_page'))
+
+    existing = settings.get_section(section.section_id) or {}
+    new_values: dict[str, Any] = {}
+
+    for field in section.fields:
+        try:
+            new_values[field.db_key] = _read_field(field, existing)
+        except ValueError as exc:
+            flash(
+                ftl(
+                    'admin-settings-field-invalid',
+                    label=ftl(field.label_id),
+                    detail=str(exc),
+                ),
+                'danger',
+            )
+            return redirect(url_for('admin_settings.settings_page'))
+
+    settings.set_section(section.section_id, new_values, updated_by=user_id)
+    flash(ftl('admin-settings-section-saved', heading=ftl(section.heading_id)), 'success')
+    return redirect(url_for('admin_settings.settings_page'))
+
+
+def _read_field(field: ConfigField, existing: dict[str, Any]) -> Any:
+    """Parse a single field's form value, with type coercion and the
+    "blank password keeps existing" rule."""
+    if field.field_type is FieldType.BOOL:
+        return request.form.get(field.db_key) == 'on'
+
+    raw = request.form.get(field.db_key, '')
+
+    if field.field_type is FieldType.PASSWORD:
+        if raw == '':
+            existing_pw = existing.get(field.db_key)
+            return existing_pw if isinstance(existing_pw, str) else ''
+        return raw
+
+    raw = raw.strip()
+
+    if field.field_type is FieldType.INT:
+        source = raw if raw else field.default
+        if source == '':
+            return 0
+        try:
+            return int(source)
+        except ValueError as exc:
+            raise ValueError(f"expected integer, got {raw!r}") from exc
+
+    if field.field_type is FieldType.FLOAT:
+        source = raw if raw else field.default
+        if source == '':
+            return 0.0
+        try:
+            return float(source)
+        except ValueError as exc:
+            raise ValueError(f"expected number, got {raw!r}") from exc
+
+    coerced = coerce_value(field, raw)
+    return coerced
 
 
 def _current_user_id() -> str | None:

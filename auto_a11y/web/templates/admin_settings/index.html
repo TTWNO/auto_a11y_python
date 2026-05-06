@@ -9,7 +9,17 @@
 
 <p class="text-muted">{{ ftl('admin-settings-intro') }}</p>
 
-<div class="card shadow mb-4">
+{# In-page table of contents so admins can jump straight to a section. #}
+<nav aria-label="{{ ftl('admin-settings-toc-label') }}" class="mb-4">
+    <ul class="list-inline mb-0">
+        <li class="list-inline-item"><a href="#section-drupal">{{ ftl('admin-settings-drupal-heading') }}</a></li>
+        {% for section in env_sections %}
+        <li class="list-inline-item"><a href="#section-{{ section.section_id }}">{{ ftl(section.heading_id) }}</a></li>
+        {% endfor %}
+    </ul>
+</nav>
+
+<div class="card shadow mb-4" id="section-drupal">
     <div class="card-header">
         <h2 class="h5 mb-0"><i class="bi bi-link-45deg" aria-hidden="true"></i> {{ ftl('admin-settings-drupal-heading') }}</h2>
     </div>
@@ -106,4 +116,120 @@
         </form>
     </div>
 </div>
+
+{# Generic env-var sections, each driven by the runtime_config schema. #}
+{% for section in env_sections %}
+<div class="card shadow mb-4" id="section-{{ section.section_id }}">
+    <div class="card-header">
+        <h2 class="h5 mb-0"><i class="bi {{ section.icon }}" aria-hidden="true"></i> {{ ftl(section.heading_id) }}</h2>
+    </div>
+    <div class="card-body">
+        <p class="mb-3">{{ ftl(section.description_id) }}</p>
+
+        {% if section.source == 'database' %}
+        <div class="alert alert-info mb-3" role="status">
+            <i class="bi bi-database" aria-hidden="true"></i>
+            {{ ftl('admin-settings-source-database') }}
+        </div>
+        {% elif section.source == 'environment' %}
+        <div class="alert alert-medium mb-3" role="status">
+            <i class="bi bi-terminal" aria-hidden="true"></i>
+            {{ ftl('admin-settings-source-environment') }}
+        </div>
+        {% else %}
+        <div class="alert alert-neutral mb-3" role="status">
+            <i class="bi bi-info-circle" aria-hidden="true"></i>
+            {{ ftl('admin-settings-source-default') }}
+        </div>
+        {% endif %}
+
+        {% if section.note_id %}
+        <p class="text-muted small mb-3">
+            <i class="bi bi-info-circle" aria-hidden="true"></i>
+            {{ ftl(section.note_id) }}
+        </p>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('admin_settings.update_env_section', section_id=section.section_id) }}" novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+            {% for field in section.fields %}
+                {% if field.type == 'bool' %}
+                <div class="form-check mb-3">
+                    <input
+                        type="checkbox"
+                        class="form-check-input"
+                        id="{{ field.input_id }}"
+                        name="{{ field.db_key }}"
+                        {% if field.checked %}checked{% endif %}
+                    >
+                    <label for="{{ field.input_id }}" class="form-check-label">
+                        {{ ftl(field.label_id) }}
+                        <code class="ms-1 text-muted small">{{ field.env_var }}</code>
+                    </label>
+                    {% if field.help_id %}
+                    <div class="form-text">{{ ftl(field.help_id) }}</div>
+                    {% endif %}
+                </div>
+                {% elif field.type == 'password' %}
+                <div class="mb-3">
+                    <label for="{{ field.input_id }}" class="form-label">
+                        {{ ftl(field.label_id) }}
+                        <code class="ms-1 text-muted small">{{ field.env_var }}</code>
+                    </label>
+                    <input
+                        type="password"
+                        class="form-control"
+                        id="{{ field.input_id }}"
+                        name="{{ field.db_key }}"
+                        autocomplete="new-password"
+                        aria-describedby="{{ field.input_id }}-help"
+                        {% if field.password_set %}placeholder="{{ ftl('admin-settings-password-placeholder-set') }}"{% endif %}
+                    >
+                    <div id="{{ field.input_id }}-help" class="form-text">
+                        {% if field.password_set %}
+                        {{ ftl('admin-settings-password-help-set') }}
+                        {% else %}
+                        {{ ftl('admin-settings-password-help-unset') }}
+                        {% endif %}
+                        {% if field.help_id %} {{ ftl(field.help_id) }}{% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="mb-3">
+                    <label for="{{ field.input_id }}" class="form-label">
+                        {{ ftl(field.label_id) }}
+                        <code class="ms-1 text-muted small">{{ field.env_var }}</code>
+                    </label>
+                    <input
+                        type="{% if field.type == 'int' %}number{% elif field.type == 'float' %}number{% else %}text{% endif %}"
+                        {% if field.type == 'float' %}step="any"{% endif %}
+                        class="form-control"
+                        id="{{ field.input_id }}"
+                        name="{{ field.db_key }}"
+                        value="{{ field.value }}"
+                        autocomplete="off"
+                        {% if field.help_id %}aria-describedby="{{ field.input_id }}-help"{% endif %}
+                    >
+                    {% if field.help_id %}
+                    <div id="{{ field.input_id }}-help" class="form-text">{{ ftl(field.help_id) }}</div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            {% endfor %}
+
+            <div class="d-flex flex-wrap gap-2">
+                <button type="submit" class="btn btn-brand">
+                    <i class="bi bi-save" aria-hidden="true"></i> {{ ftl('admin-settings-save') }}
+                </button>
+                {% if section.source == 'database' %}
+                <button type="submit" name="action" value="clear" class="btn btn-outline-high" onclick="return confirm('{{ ftl('admin-settings-section-clear-confirm', heading=ftl(section.heading_id)) }}');">
+                    <i class="bi bi-trash" aria-hidden="true"></i> {{ ftl('admin-settings-clear') }}
+                </button>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+{% endfor %}
 {% endblock %}

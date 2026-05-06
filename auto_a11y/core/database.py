@@ -77,6 +77,7 @@ class Database:
         self.issues: Collection[dict[str, Any]] = self.db.issues  # Issues for Drupal sync
         self.pdf_documents: Collection[dict[str, Any]] = self.db.pdf_documents  # Downloaded auditable PDFs
         self.system_settings: Collection[dict[str, Any]] = self.db.system_settings  # Singleton doc with admin-managed config (Drupal, SMTP, SSO, etc.)
+        self.idempotency_keys: Collection[dict[str, Any]] = self.db.idempotency_keys  # REST API Idempotency-Key store (TTL index, see auto_a11y/web/api/idempotency.py)
 
         # Create indexes
         self._create_indexes()
@@ -231,6 +232,12 @@ class Database:
         self.pdf_documents.create_index([("project_id", 1), ("discovered_at", -1)])
         self.pdf_documents.create_index([("website_id", 1), ("discovered_at", -1)])
         self.pdf_documents.create_index("status")
+
+        # Idempotency keys for REST API. The TTL index lives next to the
+        # rest of the API scaffolding so the retention duration is owned in
+        # one place (auto_a11y/web/api/idempotency.py).
+        from auto_a11y.web.api.idempotency import ensure_ttl_index
+        ensure_ttl_index(self.idempotency_keys)
 
     def test_connection(self) -> bool:
         """Test database connection"""

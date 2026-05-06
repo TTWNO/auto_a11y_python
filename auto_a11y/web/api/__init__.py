@@ -16,6 +16,7 @@ Public surface:
 """
 from __future__ import annotations
 
+from auto_a11y.web.api.auth import require_authenticated, require_project_role
 from auto_a11y.web.api.decorators import api_endpoint
 from auto_a11y.web.api.errors import (
     ApiError,
@@ -48,4 +49,6 @@ __all__ = [
     "no_content",
     "paginate",
     "register_api_error_handlers",
+    "require_authenticated",
+    "require_project_role",
 ]

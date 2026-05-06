@@ -795,7 +795,9 @@ enum-screenshot = Capture d'écran
 # Touchpoint enums
 enum-accessible-names = Noms accessibles
 enum-animation = Animation
+enum-aria = ARIA
 enum-buttons = Boutons
+enum-color-contrast = Contraste des couleurs
 enum-colors = Couleurs
 enum-dialogs = Boîtes de dialogue
 enum-electronic-documents = Documents électroniques
@@ -804,8 +806,10 @@ enum-floating-content = Contenu flottant
 enum-focus-management = Gestion du focus
 enum-fonts = Polices
 enum-forms = Formulaires
+enum-general = Général
 enum-headings = Titres
 enum-images = Images
+enum-keyboard = Clavier
 enum-landmarks = Points de repère
 enum-language = Langue
 enum-links = Liens
@@ -813,12 +817,14 @@ enum-lists = Listes
 enum-maps = Cartes
 enum-navigation = Navigation
 enum-page = Page
+enum-page-structure = Structure de la page
 enum-read-more-links = Liens « En savoir plus »
 enum-styles = Styles
 enum-tabindex = Index de tabulation
 enum-tables = Tableaux
 enum-timers = Minuteries
 enum-title-attributes = Attributs title
+enum-typography = Typographie
 enum-videos = Vidéos
 
 # WCAG

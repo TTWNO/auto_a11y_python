@@ -506,12 +506,14 @@ def create_app(config: Any) -> Flask:
         """Serve screenshot files"""
         from flask import send_from_directory
         from pathlib import Path
-        import os
-        screenshots_dir = os.path.join(os.getcwd(), 'screenshots')
-        file_path = Path(screenshots_dir) / filename
-        if not file_path.resolve().is_relative_to(Path(screenshots_dir).resolve()):
+        # Use the configured directory rather than cwd-relative; the test runner
+        # writes to config.SCREENSHOTS_DIR (absolute) and cwd is not guaranteed
+        # to match BASE_DIR (desktop mode, systemd WorkingDirectory, etc.).
+        screenshots_dir = Path(config.SCREENSHOTS_DIR).resolve()
+        file_path = (screenshots_dir / filename).resolve()
+        if not file_path.is_relative_to(screenshots_dir):
             return jsonify({'error': 'Invalid file path'}), 403
-        return send_from_directory(screenshots_dir, filename)
+        return send_from_directory(str(screenshots_dir), filename)
 
     # Security headers
     @app.after_request

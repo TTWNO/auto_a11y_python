@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 from typing import Any, Callable, Awaitable, Literal, TYPE_CHECKING
 from datetime import datetime
 from pathlib import Path
@@ -1430,6 +1431,43 @@ class TestRunner:
         summary['website_id'] = website_id
         return summary
     
+    def _save_screenshot_bytes(self, screenshot_bytes: bytes, page_id: str) -> str | None:
+        # Write to a sibling .tmp file, fsync, then os.replace into final name.
+        # This guarantees the serve route only ever sees a complete file at the
+        # final path — closing the race window where a partial write could be
+        # served while the screenshot was still being captured.
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"page_{page_id}_{timestamp}.jpg"
+        final_path = self.screenshot_dir / filename
+        tmp_path = final_path.with_name(final_path.name + '.tmp')
+
+        try:
+            with open(tmp_path, 'wb') as f:
+                f.write(screenshot_bytes)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(tmp_path, final_path)
+        except OSError as e:
+            logger.error(f"Failed to write screenshot {final_path}: {e}")
+            try:
+                tmp_path.unlink(missing_ok=True)
+            except OSError:
+                pass
+            return None
+
+        if not final_path.is_file():
+            logger.error(f"Screenshot rename completed but file not found at {final_path}")
+            return None
+
+        try:
+            relative_path = os.path.relpath(final_path, os.getcwd())
+            logger.debug(f"Screenshot saved: {final_path} (relative: {relative_path})")
+            return relative_path
+        except ValueError:
+            # Different drives on Windows — fall back to a path the templates can still split.
+            logger.debug(f"Screenshot saved: {final_path} (returning: {self.screenshot_dir.name}/{filename})")
+            return f"{self.screenshot_dir.name}/{filename}"
+
     async def _take_screenshot(self, browser_page: Any, page_id: str) -> str | None:
         """
         Take screenshot of page
@@ -1442,32 +1480,20 @@ class TestRunner:
             Screenshot file path (relative to project root for Flask static serving)
         """
         try:
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            filename = f"page_{page_id}_{timestamp}.jpg"
-            filepath = self.screenshot_dir / filename
-
-            await self.browser_manager.take_screenshot(
+            screenshot_bytes = await self.browser_manager.take_screenshot(
                 browser_page,
-                path=filepath,
+                path=None,
                 full_page=True
             )
-
-            # Return relative path for Flask static serving
-            # Convert absolute path to relative from project root
-            import os
-            try:
-                # Get path relative to current working directory (project root)
-                relative_path = os.path.relpath(filepath, os.getcwd())
-                logger.debug(f"Screenshot saved: {filepath} (relative: {relative_path})")
-                return relative_path
-            except ValueError:
-                # If relative path cannot be computed (different drives on Windows), return just filename
-                logger.debug(f"Screenshot saved: {filepath} (returning: {self.screenshot_dir.name}/{filename})")
-                return f"{self.screenshot_dir.name}/{filename}"
-
         except Exception as e:
             logger.error(f"Failed to take screenshot: {e}")
             return None
+
+        if not screenshot_bytes:
+            logger.error("Screenshot capture returned no bytes")
+            return None
+
+        return self._save_screenshot_bytes(screenshot_bytes, page_id)
 
     async def _take_screenshot_with_bytes(self, browser_page: Any, page_id: str) -> tuple[str | None, bytes | None]:
         """
@@ -1481,31 +1507,25 @@ class TestRunner:
             Tuple of (screenshot file path, screenshot bytes)
         """
         try:
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            filename = f"page_{page_id}_{timestamp}.jpg"
-            filepath = self.screenshot_dir / filename
-
-            # Take screenshot - Playwright returns bytes and saves to file if path provided
             screenshot_bytes = await browser_page.screenshot(
-                path=str(filepath),
                 full_page=True,
                 type='jpeg',
-                quality=80
+                quality=80,
             )
-
-            # Return relative path for Flask static serving
-            import os
-            try:
-                relative_path = os.path.relpath(filepath, os.getcwd())
-                logger.debug(f"Screenshot saved: {filepath} (relative: {relative_path})")
-                return relative_path, screenshot_bytes
-            except ValueError:
-                logger.debug(f"Screenshot saved: {filepath} (returning: {self.screenshot_dir.name}/{filename})")
-                return f"{self.screenshot_dir.name}/{filename}", screenshot_bytes
-
         except Exception as e:
             logger.error(f"Failed to take screenshot: {e}")
             return None, None
+
+        if not screenshot_bytes:
+            logger.error("Screenshot capture returned no bytes")
+            return None, None
+
+        path = self._save_screenshot_bytes(screenshot_bytes, page_id)
+        if path is None:
+            # File didn't make it to disk; do not advertise a path the serve
+            # route cannot satisfy. AI analysis can still use the in-memory bytes.
+            return None, screenshot_bytes
+        return path, screenshot_bytes
     
     async def cleanup(self) -> None:
         """Clean up resources"""

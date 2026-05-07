@@ -5077,3 +5077,392 @@ def delete_website_test_user_rest(user_id: str) -> tuple[Response, int]:
     )
     get_db().delete_website_user(user_id)
     return Response(status=204), 204
+
+
+# ---------------------------------------------------------------------------
+# Project participants (lived-experience testers + test supervisors).
+#
+# Closes the last open piece of docs/REST_API_ROADMAP.md §5.11. Both
+# resources live as inline arrays on the Project document
+# (project.lived_experience_testers, project.test_supervisors), with
+# string UUID ids assigned on insert via ``ensure_id()``. The Project
+# helpers (add_tester, get_tester, update_tester, remove_tester and
+# their supervisor mirrors) are the system of record; we lift them
+# into REST and persist by replacing the whole project document.
+#
+# The legacy project_participants_bp HTML routes still serve the admin
+# UI under /projects/<id>/participants/...
+# ---------------------------------------------------------------------------
+
+from auto_a11y.models.project import LivedExperienceTester, TestSupervisor  # noqa: E402
+
+
+def _serialize_tester(tester: LivedExperienceTester) -> dict[str, Any]:
+    return {
+        "id": tester.id,
+        "name": tester.name,
+        "email": tester.email,
+        "disability_type": tester.disability_type,
+        "assistive_tech": list(tester.assistive_tech),
+        "notes": tester.notes,
+    }
+
+
+def _serialize_supervisor(supervisor: TestSupervisor) -> dict[str, Any]:
+    return {
+        "id": supervisor.id,
+        "name": supervisor.name,
+        "email": supervisor.email,
+        "role": supervisor.role,
+        "organization": supervisor.organization,
+        "notes": supervisor.notes,
+    }
+
+
+def _validate_required_name(body: dict[str, Any]) -> str:
+    name_raw = body.get("name")
+    if not isinstance(name_raw, str) or not name_raw.strip():
+        raise ValidationError(
+            "name is required",
+            errors=(_FieldError(field="name", code="required", message="required"),),
+        )
+    return name_raw.strip()
+
+
+def _build_tester_from_body(body: dict[str, Any]) -> LivedExperienceTester:
+    name = _validate_required_name(body)
+    assistive_tech_raw: Any = body.get("assistive_tech", [])
+    if not isinstance(assistive_tech_raw, list):
+        raise ValidationError(
+            "assistive_tech must be an array",
+            errors=(_FieldError(field="assistive_tech", code="invalid_type", message="must be array"),),
+        )
+    return LivedExperienceTester(
+        name=name,
+        email=_optional_str(body.get("email"), field="email"),
+        disability_type=_optional_str(body.get("disability_type"), field="disability_type"),
+        assistive_tech=_coerce_str_list(assistive_tech_raw),
+        notes=_optional_str(body.get("notes"), field="notes"),
+    )
+
+
+def _build_supervisor_from_body(body: dict[str, Any]) -> TestSupervisor:
+    name = _validate_required_name(body)
+    return TestSupervisor(
+        name=name,
+        email=_optional_str(body.get("email"), field="email"),
+        role=_optional_str(body.get("role"), field="role"),
+        organization=_optional_str(body.get("organization"), field="organization"),
+        notes=_optional_str(body.get("notes"), field="notes"),
+    )
+
+
+def _apply_patch_to_tester(
+    tester: LivedExperienceTester, body: dict[str, Any]
+) -> None:
+    if "name" in body:
+        if not isinstance(body["name"], str) or not body["name"].strip():
+            raise ValidationError(
+                "name must be a non-empty string",
+                errors=(_FieldError(field="name", code="invalid_value", message="must be non-empty"),),
+            )
+        tester.name = body["name"].strip()
+    if "email" in body:
+        tester.email = _optional_str(body["email"], field="email")
+    if "disability_type" in body:
+        tester.disability_type = _optional_str(body["disability_type"], field="disability_type")
+    if "assistive_tech" in body:
+        if not isinstance(body["assistive_tech"], list):
+            raise ValidationError(
+                "assistive_tech must be an array",
+                errors=(_FieldError(field="assistive_tech", code="invalid_type", message="must be array"),),
+            )
+        tester.assistive_tech = _coerce_str_list(body["assistive_tech"])
+    if "notes" in body:
+        tester.notes = _optional_str(body["notes"], field="notes")
+
+
+def _apply_patch_to_supervisor(
+    supervisor: TestSupervisor, body: dict[str, Any]
+) -> None:
+    if "name" in body:
+        if not isinstance(body["name"], str) or not body["name"].strip():
+            raise ValidationError(
+                "name must be a non-empty string",
+                errors=(_FieldError(field="name", code="invalid_value", message="must be non-empty"),),
+            )
+        supervisor.name = body["name"].strip()
+    if "email" in body:
+        supervisor.email = _optional_str(body["email"], field="email")
+    if "role" in body:
+        supervisor.role = _optional_str(body["role"], field="role")
+    if "organization" in body:
+        supervisor.organization = _optional_str(body["organization"], field="organization")
+    if "notes" in body:
+        supervisor.notes = _optional_str(body["notes"], field="notes")
+
+
+# --- Testers ------------------------------------------------------------------
+
+
+@api_bp.route("/projects/<project_id>/testers", methods=["GET"])
+@api_endpoint
+def list_testers_rest(project_id: str) -> tuple[Response, int] | Response:
+    """List lived-experience testers for a project."""
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, project_id=project_id
+    )
+    project = get_db().get_project(project_id)
+    if project is None:
+        raise NotFoundError(f"project {project_id} not found")
+    return jsonify(
+        {"items": [_serialize_tester(t) for t in project.lived_experience_testers]}
+    )
+
+
+@api_bp.route("/projects/<project_id>/testers", methods=["POST"])
+@api_endpoint
+def create_tester_rest(project_id: str) -> tuple[Response, int]:
+    """Create a lived-experience tester on a project."""
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id
+    )
+    project = get_db().get_project(project_id)
+    if project is None:
+        raise NotFoundError(f"project {project_id} not found")
+
+    body = _require_dict_body()
+    tester = _build_tester_from_body(body)
+    project.add_tester(tester)
+    if not get_db().update_project(project):
+        raise ConflictError("project document could not be updated")
+
+    response = jsonify(_serialize_tester(tester))
+    response.headers["Location"] = (
+        f"/api/v1/projects/{project_id}/testers/{tester.id}"
+    )
+    return response, 201
+
+
+@api_bp.route("/projects/<project_id>/testers/<tester_id>", methods=["GET"])
+@api_endpoint
+def get_tester_rest(
+    project_id: str, tester_id: str
+) -> tuple[Response, int] | Response:
+    """Get one lived-experience tester."""
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, project_id=project_id
+    )
+    project = get_db().get_project(project_id)
+    if project is None:
+        raise NotFoundError(f"project {project_id} not found")
+    tester = project.get_tester(tester_id)
+    if tester is None:
+        raise NotFoundError(f"tester {tester_id} not found in project {project_id}")
+    return jsonify(_serialize_tester(tester))
+
+
+@api_bp.route("/projects/<project_id>/testers/<tester_id>", methods=["PUT"])
+@api_endpoint
+def replace_tester_rest(
+    project_id: str, tester_id: str
+) -> tuple[Response, int] | Response:
+    """Full replace of a tester's editable fields. The id is preserved."""
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id
+    )
+    project = get_db().get_project(project_id)
+    if project is None:
+        raise NotFoundError(f"project {project_id} not found")
+    existing = project.get_tester(tester_id)
+    if existing is None:
+        raise NotFoundError(f"tester {tester_id} not found in project {project_id}")
+
+    body = _require_dict_body()
+    replaced = _build_tester_from_body(body)
+    replaced.mongo_id = tester_id
+    if not project.update_tester(replaced):
+        raise ConflictError("tester could not be updated")
+    if not get_db().update_project(project):
+        raise ConflictError("project document could not be updated")
+    return jsonify(_serialize_tester(replaced))
+
+
+@api_bp.route("/projects/<project_id>/testers/<tester_id>", methods=["PATCH"])
+@api_endpoint
+def patch_tester_rest(
+    project_id: str, tester_id: str
+) -> tuple[Response, int] | Response:
+    """Partial update of a tester."""
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id
+    )
+    project = get_db().get_project(project_id)
+    if project is None:
+        raise NotFoundError(f"project {project_id} not found")
+    tester = project.get_tester(tester_id)
+    if tester is None:
+        raise NotFoundError(f"tester {tester_id} not found in project {project_id}")
+
+    body = _require_dict_body()
+    _apply_patch_to_tester(tester, body)
+    if not project.update_tester(tester):
+        raise ConflictError("tester could not be updated")
+    if not get_db().update_project(project):
+        raise ConflictError("project document could not be updated")
+    return jsonify(_serialize_tester(tester))
+
+
+@api_bp.route("/projects/<project_id>/testers/<tester_id>", methods=["DELETE"])
+@api_endpoint
+def delete_tester_rest(project_id: str, tester_id: str) -> tuple[Response, int]:
+    """Delete a lived-experience tester from a project."""
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id
+    )
+    project = get_db().get_project(project_id)
+    if project is None:
+        raise NotFoundError(f"project {project_id} not found")
+    if not project.remove_tester(tester_id):
+        raise NotFoundError(f"tester {tester_id} not found in project {project_id}")
+    if not get_db().update_project(project):
+        raise ConflictError("project document could not be updated")
+    return Response(status=204), 204
+
+
+# --- Supervisors --------------------------------------------------------------
+
+
+@api_bp.route("/projects/<project_id>/supervisors", methods=["GET"])
+@api_endpoint
+def list_supervisors_rest(project_id: str) -> tuple[Response, int] | Response:
+    """List test supervisors for a project."""
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, project_id=project_id
+    )
+    project = get_db().get_project(project_id)
+    if project is None:
+        raise NotFoundError(f"project {project_id} not found")
+    return jsonify(
+        {"items": [_serialize_supervisor(s) for s in project.test_supervisors]}
+    )
+
+
+@api_bp.route("/projects/<project_id>/supervisors", methods=["POST"])
+@api_endpoint
+def create_supervisor_rest(project_id: str) -> tuple[Response, int]:
+    """Create a test supervisor on a project."""
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id
+    )
+    project = get_db().get_project(project_id)
+    if project is None:
+        raise NotFoundError(f"project {project_id} not found")
+
+    body = _require_dict_body()
+    supervisor = _build_supervisor_from_body(body)
+    project.add_supervisor(supervisor)
+    if not get_db().update_project(project):
+        raise ConflictError("project document could not be updated")
+
+    response = jsonify(_serialize_supervisor(supervisor))
+    response.headers["Location"] = (
+        f"/api/v1/projects/{project_id}/supervisors/{supervisor.id}"
+    )
+    return response, 201
+
+
+@api_bp.route("/projects/<project_id>/supervisors/<supervisor_id>", methods=["GET"])
+@api_endpoint
+def get_supervisor_rest(
+    project_id: str, supervisor_id: str
+) -> tuple[Response, int] | Response:
+    """Get one test supervisor."""
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, project_id=project_id
+    )
+    project = get_db().get_project(project_id)
+    if project is None:
+        raise NotFoundError(f"project {project_id} not found")
+    supervisor = project.get_supervisor(supervisor_id)
+    if supervisor is None:
+        raise NotFoundError(
+            f"supervisor {supervisor_id} not found in project {project_id}"
+        )
+    return jsonify(_serialize_supervisor(supervisor))
+
+
+@api_bp.route("/projects/<project_id>/supervisors/<supervisor_id>", methods=["PUT"])
+@api_endpoint
+def replace_supervisor_rest(
+    project_id: str, supervisor_id: str
+) -> tuple[Response, int] | Response:
+    """Full replace of a supervisor's editable fields. The id is preserved."""
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id
+    )
+    project = get_db().get_project(project_id)
+    if project is None:
+        raise NotFoundError(f"project {project_id} not found")
+    existing = project.get_supervisor(supervisor_id)
+    if existing is None:
+        raise NotFoundError(
+            f"supervisor {supervisor_id} not found in project {project_id}"
+        )
+
+    body = _require_dict_body()
+    replaced = _build_supervisor_from_body(body)
+    replaced.mongo_id = supervisor_id
+    if not project.update_supervisor(replaced):
+        raise ConflictError("supervisor could not be updated")
+    if not get_db().update_project(project):
+        raise ConflictError("project document could not be updated")
+    return jsonify(_serialize_supervisor(replaced))
+
+
+@api_bp.route("/projects/<project_id>/supervisors/<supervisor_id>", methods=["PATCH"])
+@api_endpoint
+def patch_supervisor_rest(
+    project_id: str, supervisor_id: str
+) -> tuple[Response, int] | Response:
+    """Partial update of a supervisor."""
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id
+    )
+    project = get_db().get_project(project_id)
+    if project is None:
+        raise NotFoundError(f"project {project_id} not found")
+    supervisor = project.get_supervisor(supervisor_id)
+    if supervisor is None:
+        raise NotFoundError(
+            f"supervisor {supervisor_id} not found in project {project_id}"
+        )
+
+    body = _require_dict_body()
+    _apply_patch_to_supervisor(supervisor, body)
+    if not project.update_supervisor(supervisor):
+        raise ConflictError("supervisor could not be updated")
+    if not get_db().update_project(project):
+        raise ConflictError("project document could not be updated")
+    return jsonify(_serialize_supervisor(supervisor))
+
+
+@api_bp.route("/projects/<project_id>/supervisors/<supervisor_id>", methods=["DELETE"])
+@api_endpoint
+def delete_supervisor_rest(
+    project_id: str, supervisor_id: str
+) -> tuple[Response, int]:
+    """Delete a test supervisor from a project."""
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id
+    )
+    project = get_db().get_project(project_id)
+    if project is None:
+        raise NotFoundError(f"project {project_id} not found")
+    if not project.remove_supervisor(supervisor_id):
+        raise NotFoundError(
+            f"supervisor {supervisor_id} not found in project {project_id}"
+        )
+    if not get_db().update_project(project):
+        raise ConflictError("project document could not be updated")
+    return Response(status=204), 204

@@ -327,7 +327,7 @@ These are five overlapping flavors of "user-membership-of-thing". The audit reco
 - `/api/v1/projects/<id>/test-users` + `/api/v1/project-test-users/<id>` (covers `project_users.py` minus the test-login automation action) — ✅ shipped (full CRUD with secret-preserving PATCH)
 - `/api/v1/websites/<id>/test-users` + `/api/v1/website-test-users/<id>` (covers `website_users.py`) — ✅ shipped
 - `/api/v1/groups` (covers `groups.py`) — ✅ shipped (full CRUD with `is_system` protection)
-- `/api/v1/projects/<id>/testers` + `/api/v1/projects/<id>/supervisors` (covers `project_participants.py`) — ❌ **deferred** (lived-experience testers and supervisors are inline arrays on the Project document; need a separate endpoint design)
+- `/api/v1/projects/<id>/testers` + `/api/v1/projects/<id>/supervisors` (covers `project_participants.py`) — ✅ shipped (full CRUD over the inline arrays on the Project document)
 - `POST .../test-users/<id>/test-login` (action endpoint that runs the login automation against a live site) — ❌ **deferred** alongside the broader test-runs / async-job action endpoints
 
 The HTML routes stay; the JSON routes consolidate.

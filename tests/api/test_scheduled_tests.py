@@ -86,7 +86,7 @@ def flask_app(database: Database) -> Flask:
     from auto_a11y.web.routes.api import api_bp
 
     app.register_blueprint(api_bp, url_prefix="/api/v1")
-    register_api_error_handlers(api_bp)
+    register_api_error_handlers(app)
     return app
 
 

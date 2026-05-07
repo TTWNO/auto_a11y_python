@@ -322,10 +322,10 @@ A report record stores `(id, filename, project_id, created_at, type, format)` so
 
 These are five overlapping flavors of "user-membership-of-thing". The audit recommends collapsing them under three top-level resources in #27:
 
-- `/api/v1/users` — system users (admin)
-- `/api/v1/projects/<id>/members` (covers `members.py`, `project_users.py`, `project_participants.py`)
-- `/api/v1/websites/<id>/members` (covers `website_users.py`)
-- `/api/v1/groups` (covers `groups.py`)
+- `/api/v1/users` — system users (admin) — ❌ **deferred**
+- `/api/v1/projects/<id>/members` (covers `members.py`, `project_users.py`, `project_participants.py`) — ❌ **deferred (consolidation work)**
+- `/api/v1/websites/<id>/members` (covers `website_users.py`) — ❌ **deferred (consolidation work)**
+- `/api/v1/groups` (covers `groups.py`) — ✅ shipped (full CRUD with `is_system` protection)
 
 Each follows standard CRUD. The HTML routes stay; the JSON routes consolidate.
 

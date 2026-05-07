@@ -3986,3 +3986,272 @@ def delete_pdf_document_rest(pdf_id: str) -> tuple[Response, int]:
     _pdf_storage().delete(pdf)
     get_db().delete_pdf_document(pdf_id)
     return Response(status=204), 204
+
+
+# ---------------------------------------------------------------------------
+# Permission groups (REST shape — uses the @api_endpoint scaffolding).
+#
+# Sits alongside the existing groups_bp HTML routes at /groups/* (still
+# serving the admin frontend). Per docs/REST_API_ROADMAP.md §5.11.
+# Members consolidation (members.py / project_users.py /
+# project_participants.py / website_users.py) is a separate follow-up.
+# ---------------------------------------------------------------------------
+
+from auto_a11y.models.permission_group import (  # noqa: E402
+    PERMISSION_LEVELS,
+    PermissionGroup,
+    RESOURCE_NOUNS,
+)
+from auto_a11y.web.api import require_global_permission  # noqa: E402
+
+_RESOURCE_NOUNS_SET: frozenset[str] = frozenset(RESOURCE_NOUNS)
+_PERMISSION_LEVEL_NAMES: frozenset[str] = frozenset(PERMISSION_LEVELS.keys())
+
+
+def _serialize_permission_group(group: PermissionGroup) -> dict[str, Any]:
+    """Project a :class:`PermissionGroup` to a JSON-safe dict."""
+
+    def _iso(dt: datetime | None) -> str | None:
+        return dt.isoformat() if dt is not None else None
+
+    return {
+        "id": group.id,
+        "name": group.name,
+        "description": group.description,
+        "permissions": dict(group.permissions),
+        "is_system": group.is_system,
+        "created_at": _iso(group.created_at),
+        "updated_at": _iso(group.updated_at),
+    }
+
+
+def _validate_permissions_dict(raw: Any, *, field: str) -> dict[str, str]:
+    """Validate a permissions dict against the ``RESOURCE_NOUNS`` and
+    ``PERMISSION_LEVELS`` enums.
+
+    Unknown resource nouns and unknown permission levels are both 400s
+    with structured field errors.  Missing resource nouns default to
+    ``'none'`` so callers can send a partial dict (only the resources
+    they want to grant something on).
+    """
+    if not isinstance(raw, dict):
+        raise ValidationError(
+            f"{field} must be an object",
+            errors=(_FieldError(field=field, code="invalid_type", message="must be object"),),
+        )
+    raw_dict = cast(dict[str, Any], raw)
+    field_errors: list[_FieldError] = []
+    for key, value in raw_dict.items():
+        if key not in _RESOURCE_NOUNS_SET:
+            field_errors.append(_FieldError(
+                field=f"{field}.{key}", code="unknown_resource",
+                message=f"not a known resource noun (allowed: {sorted(_RESOURCE_NOUNS_SET)})",
+            ))
+            continue
+        if not isinstance(value, str) or value not in _PERMISSION_LEVEL_NAMES:
+            field_errors.append(_FieldError(
+                field=f"{field}.{key}", code="invalid_value",
+                message=f"not a recognized permission level (allowed: {sorted(_PERMISSION_LEVEL_NAMES)})",
+            ))
+            continue
+    if field_errors:
+        raise ValidationError(
+            f"{field} contains invalid entries", errors=tuple(field_errors)
+        )
+
+    permissions: dict[str, str] = {r: "none" for r in RESOURCE_NOUNS}
+    for key, value in raw_dict.items():
+        if isinstance(value, str):
+            permissions[key] = value
+    return permissions
+
+
+def _validate_group_name_unique(name: str, *, exclude_id: str | None = None) -> None:
+    existing = get_db().get_group_by_name(name)
+    if existing is not None and existing.id != exclude_id:
+        raise ConflictError(f"group name {name!r} is already in use")
+
+
+def _build_group_from_body(body: dict[str, Any]) -> PermissionGroup:
+    name_raw = body.get("name")
+    if not isinstance(name_raw, str) or not name_raw.strip():
+        raise ValidationError(
+            "name is required",
+            errors=(_FieldError(field="name", code="required", message="required"),),
+        )
+    name = name_raw.strip()
+    description_raw = body.get("description", "")
+    if not isinstance(description_raw, str):
+        raise ValidationError(
+            "description must be a string",
+            errors=(_FieldError(field="description", code="invalid_type", message="must be string"),),
+        )
+    permissions = (
+        _validate_permissions_dict(body["permissions"], field="permissions")
+        if "permissions" in body
+        else {r: "none" for r in RESOURCE_NOUNS}
+    )
+    return PermissionGroup(
+        name=name,
+        description=description_raw,
+        permissions=permissions,
+    )
+
+
+def _apply_patch_to_group(group: PermissionGroup, body: dict[str, Any]) -> PermissionGroup:
+    """Apply only the keys present in ``body`` to ``group``.
+
+    ``is_system`` is intentionally not patchable — that flag protects
+    the seeded default groups from deletion, and clients shouldn't be
+    able to flip it on/off.
+    """
+    if "name" in body:
+        if not isinstance(body["name"], str) or not body["name"].strip():
+            raise ValidationError(
+                "name must be a non-empty string",
+                errors=(_FieldError(field="name", code="invalid_value", message="must be non-empty string"),),
+            )
+        group.name = body["name"].strip()
+    if "description" in body:
+        desc = body["description"]
+        if not isinstance(desc, str):
+            raise ValidationError(
+                "description must be a string",
+                errors=(_FieldError(field="description", code="invalid_type", message="must be string"),),
+            )
+        group.description = desc
+    if "permissions" in body:
+        group.permissions = _validate_permissions_dict(body["permissions"], field="permissions")
+    group.updated_at = datetime.now()
+    return group
+
+
+@api_bp.route("/groups", methods=["GET"])
+@api_endpoint
+def list_groups_rest() -> tuple[Response, int] | Response:
+    """List all permission groups with cursor pagination.
+
+    Defaults to the smallest sensible page; the underlying collection
+    is bounded (a handful of system groups + custom additions), so the
+    response shape with ``next_cursor`` is preserved for forward
+    compatibility even though most deployments will fit on one page.
+    """
+    require_global_permission("groups", "read")
+
+    limit = parse_limit(request.args.get("limit"))
+    cursor_raw = request.args.get("cursor")
+    cursor = _Cursor.decode(cursor_raw) if cursor_raw else None
+
+    query: dict[str, Any] = {}
+    if cursor is not None:
+        from bson import ObjectId
+        try:
+            query["_id"] = {"$lt": ObjectId(cursor.last_id)}
+        except Exception as exc:
+            raise ValidationError(
+                "cursor.last_id is not a valid ObjectId",
+                errors=(_FieldError(field="cursor.last_id", code="invalid_format", message=str(exc)),),
+            ) from exc
+
+    docs = list(get_db().groups.find(query).sort("_id", -1).limit(limit + 1))
+    groups = [PermissionGroup.from_dict(doc) for doc in docs]
+    page = paginate(
+        groups, limit=limit, get_id=lambda g: str(g.mongo_id) if g.mongo_id else ""
+    )
+    return jsonify(
+        {
+            "items": [_serialize_permission_group(g) for g in page["items"]],
+            "next_cursor": page["next_cursor"],
+        }
+    )
+
+
+@api_bp.route("/groups", methods=["POST"])
+@api_endpoint
+def create_group_rest() -> tuple[Response, int]:
+    """Create a permission group."""
+    require_global_permission("groups", "create")
+    body = _require_dict_body()
+    group = _build_group_from_body(body)
+    _validate_group_name_unique(group.name)
+    group_id = get_db().create_group(group)
+    refreshed = get_db().get_group(group_id)
+    if refreshed is None:
+        raise ConflictError("group failed to persist")
+    response = jsonify(_serialize_permission_group(refreshed))
+    response.headers["Location"] = f"/api/v1/groups/{group_id}"
+    return response, 201
+
+
+@api_bp.route("/groups/<group_id>", methods=["GET"])
+@api_endpoint
+def get_group_rest(group_id: str) -> tuple[Response, int] | Response:
+    """Get a permission group by id."""
+    require_global_permission("groups", "read")
+    group = get_db().get_group(group_id)
+    if group is None:
+        raise NotFoundError(f"group {group_id} not found")
+    return jsonify(_serialize_permission_group(group))
+
+
+@api_bp.route("/groups/<group_id>", methods=["PUT"])
+@api_endpoint
+def replace_group_rest(group_id: str) -> tuple[Response, int] | Response:
+    """Full replace of a group's editable fields.
+
+    ``is_system`` and ``created_at`` are preserved; the ``updated_at``
+    timestamp is bumped.
+    """
+    require_global_permission("groups", "update")
+    existing = get_db().get_group(group_id)
+    if existing is None:
+        raise NotFoundError(f"group {group_id} not found")
+    body = _require_dict_body()
+    replaced = _build_group_from_body(body)
+    _validate_group_name_unique(replaced.name, exclude_id=group_id)
+    replaced.mongo_id = existing.mongo_id
+    replaced.is_system = existing.is_system
+    replaced.created_at = existing.created_at
+    replaced.updated_at = datetime.now()
+    if not get_db().update_group(replaced):
+        raise ConflictError("group could not be updated")
+    return jsonify(_serialize_permission_group(replaced))
+
+
+@api_bp.route("/groups/<group_id>", methods=["PATCH"])
+@api_endpoint
+def patch_group_rest(group_id: str) -> tuple[Response, int] | Response:
+    """Partial update — only fields present in the request body are changed."""
+    require_global_permission("groups", "update")
+    group = get_db().get_group(group_id)
+    if group is None:
+        raise NotFoundError(f"group {group_id} not found")
+    body = _require_dict_body()
+    if "name" in body and isinstance(body["name"], str):
+        _validate_group_name_unique(body["name"].strip(), exclude_id=group_id)
+    patched = _apply_patch_to_group(group, body)
+    if not get_db().update_group(patched):
+        raise ConflictError("group could not be updated")
+    return jsonify(_serialize_permission_group(patched))
+
+
+@api_bp.route("/groups/<group_id>", methods=["DELETE"])
+@api_endpoint
+def delete_group_rest(group_id: str) -> tuple[Response, int]:
+    """Delete a non-system group.
+
+    System groups (``is_system=True``) are the seeded default groups
+    (Admin, Auditor, Client). Removing them would orphan every
+    project_member.group_ids reference, so the legacy form blocks it
+    and the REST endpoint mirrors that with a 409.
+    """
+    require_global_permission("groups", "delete")
+    group = get_db().get_group(group_id)
+    if group is None:
+        raise NotFoundError(f"group {group_id} not found")
+    if group.is_system:
+        raise ConflictError(
+            f"group {group_id} is a system group and cannot be deleted"
+        )
+    get_db().delete_group(group_id)
+    return Response(status=204), 204

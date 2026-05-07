@@ -18,6 +18,7 @@ from __future__ import annotations
 
 from auto_a11y.web.api.auth import (
     require_authenticated,
+    require_global_permission,
     require_project_role,
     require_superadmin,
 )
@@ -54,6 +55,7 @@ __all__ = [
     "paginate",
     "register_api_error_handlers",
     "require_authenticated",
+    "require_global_permission",
     "require_project_role",
     "require_superadmin",
 ]

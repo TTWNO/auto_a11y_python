@@ -48,6 +48,34 @@ def require_superadmin() -> object:
     return current_user
 
 
+def require_global_permission(resource: str, level: str) -> object:
+    """Enforce a permission level on a global resource (no project scope).
+
+    Used for the resources flagged as ``GLOBAL_RESOURCES`` in
+    :mod:`auto_a11y.models.permission_group` — currently ``users``,
+    ``groups``, and ``fixture_tests``. The check delegates to
+    :func:`auto_a11y.core.permissions.user_has_global_permission`,
+    which sweeps every project the user belongs to and returns true if
+    *any* of their groups grants the level on the resource.
+
+    Raises:
+        UnauthorizedError: not logged in.
+        ForbiddenError: logged in but no project membership grants the
+            required level on this global resource.
+    """
+    require_authenticated()
+    if getattr(current_user, "is_superadmin", False):
+        return current_user
+
+    from auto_a11y.core.permissions import user_has_global_permission
+
+    if not user_has_global_permission(current_user, resource, level):
+        raise ForbiddenError(
+            f"Insufficient permission on {resource} (need {level})"
+        )
+    return current_user
+
+
 def require_project_role(
     *roles: UserRole,
     project_id: str | None = None,

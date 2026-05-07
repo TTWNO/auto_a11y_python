@@ -181,9 +181,11 @@ Symbols:
 | `POST /pages/<id>/delete` | `DELETE /api/v1/pages/<id>` | ✅ |
 | `GET /pages/<id>/violations` | `GET /api/v1/pages/<id>/violations` | ❌ |
 | `GET/POST /pages/<id>/matrix` | `GET/PUT /api/v1/pages/<id>/matrix` | ❌ |
-| `GET /discovered-pages/<id>` | `GET /api/v1/discovered-pages/<id>` | ❌ |
-| `POST /discovered-pages/<id>/edit` | `PATCH /api/v1/discovered-pages/<id>` | ❌ |
-| `POST /discovered-pages/<id>/delete` | `DELETE /api/v1/discovered-pages/<id>` | ❌ |
+| `GET /discovered-pages/<id>` | `GET /api/v1/discovered-pages/<id>` | ✅ |
+| `POST /discovered-pages/<id>/edit` | `PATCH /api/v1/discovered-pages/<id>` (also `PUT` for full replace) | ✅ |
+| `POST /discovered-pages/<id>/delete` | `DELETE /api/v1/discovered-pages/<id>` | ✅ |
+| (new) | `GET /api/v1/projects/<id>/discovered-pages` (paginated list) | ✅ |
+| (new) | `POST /api/v1/projects/<id>/discovered-pages` (create) | ✅ |
 
 ### 5.4 Test runs and results (`testing.py` + `api.py`)
 

@@ -5466,3 +5466,335 @@ def delete_supervisor_rest(
     if not get_db().update_project(project):
         raise ConflictError("project document could not be updated")
     return Response(status=204), 204
+
+
+# ---------------------------------------------------------------------------
+# Discovered pages (REST shape — uses the @api_endpoint scaffolding).
+#
+# Per docs/REST_API_ROADMAP.md §5.3. A "discovered page" is a key page
+# or screen flagged for manual inspection / lived-experience testing
+# (typically the 20-25 most interesting pages in an audit). They live
+# in their own ``discovered_pages`` Mongo collection — separate from
+# the regular Page model — and carry taxonomy tags (``interested_because``,
+# ``page_elements``) plus public/private notes that flow into Drupal
+# audit-report nodes.
+#
+# The legacy discovered_pages_bp HTML routes still serve the admin UI;
+# the REST endpoints add the standard /api/v1 surface with cursor
+# pagination and Problem-Details errors.
+# ---------------------------------------------------------------------------
+
+from auto_a11y.models.discovered_page import DiscoveredPage  # noqa: E402
+
+
+def _serialize_discovered_page(page: DiscoveredPage) -> dict[str, Any]:
+    """Project a :class:`DiscoveredPage` to a JSON-safe dict.
+
+    Datetimes go to ISO 8601 and the Mongo ``_id`` is dropped (the public
+    identifier is the string ``id`` property). The Drupal-sync fields
+    are exposed read-only — they're managed by the Drupal sync subsystem
+    rather than by REST clients.
+    """
+
+    def _iso(dt: datetime | None) -> str | None:
+        return dt.isoformat() if dt is not None else None
+
+    return {
+        "id": page.id,
+        "title": page.title,
+        "url": page.url,
+        "project_id": page.project_id,
+        "source_type": page.source_type,
+        "source_page_id": page.source_page_id,
+        "source_website_id": page.source_website_id,
+        "source_component_signature": page.source_component_signature,
+        "source_upload_id": page.source_upload_id,
+        "interested_because": list(page.interested_because),
+        "page_elements": list(page.page_elements),
+        "private_notes": page.private_notes,
+        "public_notes": page.public_notes,
+        "include_in_report": page.include_in_report,
+        "audited": page.audited,
+        "manual_audit": page.manual_audit,
+        "screenshot_paths": list(page.screenshot_paths),
+        "document_links": list(page.document_links),
+        "drupal_uuid": page.drupal_uuid,
+        "drupal_sync_status": page.drupal_sync_status.value,
+        "drupal_last_synced": _iso(page.drupal_last_synced),
+        "drupal_error_message": page.drupal_error_message,
+        "created_at": _iso(page.created_at),
+        "updated_at": _iso(page.updated_at),
+        "created_by": page.created_by,
+    }
+
+
+def _validate_document_links(raw: Any, *, field: str) -> list[dict[str, Any]]:
+    """``document_links`` is a list of objects; validate the shape minimally."""
+    if not isinstance(raw, list):
+        raise ValidationError(
+            f"{field} must be an array",
+            errors=(_FieldError(field=field, code="invalid_type", message="must be array"),),
+        )
+    items: list[dict[str, Any]] = []
+    for index, item in enumerate(_iter_to_any_list(raw)):
+        if not isinstance(item, dict):
+            raise ValidationError(
+                f"{field}[{index}] must be an object",
+                errors=(_FieldError(field=f"{field}[{index}]", code="invalid_type", message="must be object"),),
+            )
+        items.append(cast(dict[str, Any], item))
+    return items
+
+
+def _build_discovered_page_from_body(
+    project_id: str, body: dict[str, Any]
+) -> DiscoveredPage:
+    title_raw = body.get("title")
+    if not isinstance(title_raw, str) or not title_raw.strip():
+        raise ValidationError(
+            "title is required",
+            errors=(_FieldError(field="title", code="required", message="required"),),
+        )
+    url_raw = body.get("url")
+    if not isinstance(url_raw, str) or not url_raw.strip():
+        raise ValidationError(
+            "url is required",
+            errors=(_FieldError(field="url", code="required", message="required"),),
+        )
+    interested_raw: Any = body.get("interested_because", [])
+    if not isinstance(interested_raw, list):
+        raise ValidationError(
+            "interested_because must be an array",
+            errors=(_FieldError(field="interested_because", code="invalid_type", message="must be array"),),
+        )
+    elements_raw: Any = body.get("page_elements", [])
+    if not isinstance(elements_raw, list):
+        raise ValidationError(
+            "page_elements must be an array",
+            errors=(_FieldError(field="page_elements", code="invalid_type", message="must be array"),),
+        )
+    screenshots_raw: Any = body.get("screenshot_paths", [])
+    if not isinstance(screenshots_raw, list):
+        raise ValidationError(
+            "screenshot_paths must be an array",
+            errors=(_FieldError(field="screenshot_paths", code="invalid_type", message="must be array"),),
+        )
+    document_links_raw: Any = body.get("document_links", [])
+    document_links = _validate_document_links(document_links_raw, field="document_links")
+
+    return DiscoveredPage(
+        title=title_raw.strip(),
+        url=url_raw.strip(),
+        project_id=project_id,
+        source_type=str(body.get("source_type", "manual")),
+        interested_because=_coerce_str_list(interested_raw),
+        page_elements=_coerce_str_list(elements_raw),
+        private_notes=_optional_str(body.get("private_notes"), field="private_notes"),
+        public_notes=_optional_str(body.get("public_notes"), field="public_notes"),
+        include_in_report=bool(body.get("include_in_report", True)),
+        audited=bool(body.get("audited", False)),
+        manual_audit=bool(body.get("manual_audit", False)),
+        screenshot_paths=_coerce_str_list(screenshots_raw),
+        document_links=document_links,
+        created_by=str(current_user.get_id()) if current_user.is_authenticated else None,
+    )
+
+
+def _apply_patch_to_discovered_page(
+    page: DiscoveredPage, body: dict[str, Any]
+) -> None:
+    if "title" in body:
+        if not isinstance(body["title"], str) or not body["title"].strip():
+            raise ValidationError(
+                "title must be a non-empty string",
+                errors=(_FieldError(field="title", code="invalid_value", message="must be non-empty"),),
+            )
+        page.title = body["title"].strip()
+    if "url" in body:
+        if not isinstance(body["url"], str) or not body["url"].strip():
+            raise ValidationError(
+                "url must be a non-empty string",
+                errors=(_FieldError(field="url", code="invalid_value", message="must be non-empty"),),
+            )
+        page.url = body["url"].strip()
+    if "interested_because" in body:
+        if not isinstance(body["interested_because"], list):
+            raise ValidationError(
+                "interested_because must be an array",
+                errors=(_FieldError(field="interested_because", code="invalid_type", message="must be array"),),
+            )
+        page.interested_because = _coerce_str_list(body["interested_because"])
+    if "page_elements" in body:
+        if not isinstance(body["page_elements"], list):
+            raise ValidationError(
+                "page_elements must be an array",
+                errors=(_FieldError(field="page_elements", code="invalid_type", message="must be array"),),
+            )
+        page.page_elements = _coerce_str_list(body["page_elements"])
+    if "private_notes" in body:
+        page.private_notes = _optional_str(body["private_notes"], field="private_notes")
+    if "public_notes" in body:
+        page.public_notes = _optional_str(body["public_notes"], field="public_notes")
+    if "include_in_report" in body:
+        page.include_in_report = bool(body["include_in_report"])
+    if "audited" in body:
+        page.audited = bool(body["audited"])
+    if "manual_audit" in body:
+        page.manual_audit = bool(body["manual_audit"])
+    if "screenshot_paths" in body:
+        if not isinstance(body["screenshot_paths"], list):
+            raise ValidationError(
+                "screenshot_paths must be an array",
+                errors=(_FieldError(field="screenshot_paths", code="invalid_type", message="must be array"),),
+            )
+        page.screenshot_paths = _coerce_str_list(body["screenshot_paths"])
+    if "document_links" in body:
+        page.document_links = _validate_document_links(
+            body["document_links"], field="document_links"
+        )
+    page.updated_at = datetime.now()
+
+
+@api_bp.route("/projects/<project_id>/discovered-pages", methods=["GET"])
+@api_endpoint
+def list_discovered_pages_rest(
+    project_id: str,
+) -> tuple[Response, int] | Response:
+    """List discovered pages within a project, with cursor pagination."""
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, project_id=project_id
+    )
+    if get_db().get_project(project_id) is None:
+        raise NotFoundError(f"project {project_id} not found")
+
+    limit = parse_limit(request.args.get("limit"))
+    cursor_raw = request.args.get("cursor")
+    cursor = _Cursor.decode(cursor_raw) if cursor_raw else None
+
+    query: dict[str, Any] = {"project_id": project_id}
+    if cursor is not None:
+        from bson import ObjectId
+        try:
+            query["_id"] = {"$lt": ObjectId(cursor.last_id)}
+        except Exception as exc:
+            raise ValidationError(
+                "cursor.last_id is not a valid ObjectId",
+                errors=(_FieldError(field="cursor.last_id", code="invalid_format", message=str(exc)),),
+            ) from exc
+
+    docs = list(get_db().discovered_pages.find(query).sort("_id", -1).limit(limit + 1))
+    pages = [DiscoveredPage.from_dict(doc) for doc in docs]
+    page = paginate(
+        pages, limit=limit, get_id=lambda p: str(p.mongo_id) if p.mongo_id else ""
+    )
+    return jsonify(
+        {
+            "items": [_serialize_discovered_page(p) for p in page["items"]],
+            "next_cursor": page["next_cursor"],
+        }
+    )
+
+
+@api_bp.route("/projects/<project_id>/discovered-pages", methods=["POST"])
+@api_endpoint
+def create_discovered_page_rest(project_id: str) -> tuple[Response, int]:
+    """Create a discovered page on a project."""
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id
+    )
+    if get_db().get_project(project_id) is None:
+        raise NotFoundError(f"project {project_id} not found")
+
+    body = _require_dict_body()
+    page = _build_discovered_page_from_body(project_id, body)
+    new_id = get_db().create_discovered_page(page)
+    refreshed = get_db().get_discovered_page_by_id(new_id)
+    if refreshed is None:
+        raise ConflictError("discovered page failed to persist")
+    response = jsonify(_serialize_discovered_page(refreshed))
+    response.headers["Location"] = f"/api/v1/discovered-pages/{new_id}"
+    return response, 201
+
+
+@api_bp.route("/discovered-pages/<page_id>", methods=["GET"])
+@api_endpoint
+def get_discovered_page_rest(page_id: str) -> tuple[Response, int] | Response:
+    """Get a discovered page by id."""
+    page = get_db().get_discovered_page_by_id(page_id)
+    if page is None:
+        raise NotFoundError(f"discovered page {page_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, project_id=page.project_id
+    )
+    return jsonify(_serialize_discovered_page(page))
+
+
+@api_bp.route("/discovered-pages/<page_id>", methods=["PUT"])
+@api_endpoint
+def replace_discovered_page_rest(
+    page_id: str,
+) -> tuple[Response, int] | Response:
+    """Full replace of a discovered page's editable fields.
+
+    Server-managed fields (project_id, source_*, drupal_*, created_at,
+    created_by) are preserved across PUT — clients cannot reassign a
+    discovered page to a different project, change its source, or
+    rewrite Drupal-sync state through this endpoint.
+    """
+    existing = get_db().get_discovered_page_by_id(page_id)
+    if existing is None:
+        raise NotFoundError(f"discovered page {page_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, project_id=existing.project_id
+    )
+    body = _require_dict_body()
+    replaced = _build_discovered_page_from_body(existing.project_id, body)
+    replaced.mongo_id = existing.mongo_id
+    replaced.created_at = existing.created_at
+    replaced.created_by = existing.created_by
+    replaced.source_type = existing.source_type
+    replaced.source_page_id = existing.source_page_id
+    replaced.source_website_id = existing.source_website_id
+    replaced.source_component_signature = existing.source_component_signature
+    replaced.source_upload_id = existing.source_upload_id
+    replaced.drupal_uuid = existing.drupal_uuid
+    replaced.drupal_sync_status = existing.drupal_sync_status
+    replaced.drupal_last_synced = existing.drupal_last_synced
+    replaced.drupal_error_message = existing.drupal_error_message
+    replaced.updated_at = datetime.now()
+    if not get_db().update_discovered_page(replaced):
+        raise ConflictError("discovered page could not be updated")
+    return jsonify(_serialize_discovered_page(replaced))
+
+
+@api_bp.route("/discovered-pages/<page_id>", methods=["PATCH"])
+@api_endpoint
+def patch_discovered_page_rest(
+    page_id: str,
+) -> tuple[Response, int] | Response:
+    """Partial update — covers the legacy edit form's per-field updates."""
+    page = get_db().get_discovered_page_by_id(page_id)
+    if page is None:
+        raise NotFoundError(f"discovered page {page_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, project_id=page.project_id
+    )
+    body = _require_dict_body()
+    _apply_patch_to_discovered_page(page, body)
+    if not get_db().update_discovered_page(page):
+        raise ConflictError("discovered page could not be updated")
+    return jsonify(_serialize_discovered_page(page))
+
+
+@api_bp.route("/discovered-pages/<page_id>", methods=["DELETE"])
+@api_endpoint
+def delete_discovered_page_rest(page_id: str) -> tuple[Response, int]:
+    """Delete a discovered page."""
+    page = get_db().get_discovered_page_by_id(page_id)
+    if page is None:
+        raise NotFoundError(f"discovered page {page_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, project_id=page.project_id
+    )
+    get_db().delete_discovered_page(page_id)
+    return Response(status=204), 204

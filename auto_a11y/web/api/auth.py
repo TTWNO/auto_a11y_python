@@ -36,6 +36,18 @@ def require_authenticated() -> object:
     return current_user
 
 
+def require_superadmin() -> object:
+    """Raise :class:`UnauthorizedError`/:class:`ForbiddenError` for non-superadmins.
+
+    Mirrors the legacy ``@admin_required`` decorator's check. Returns the
+    Flask-Login ``current_user`` proxy on success.
+    """
+    require_authenticated()
+    if not getattr(current_user, "is_superadmin", False):
+        raise ForbiddenError("Superadmin access required")
+    return current_user
+
+
 def require_project_role(
     *roles: UserRole,
     project_id: str | None = None,

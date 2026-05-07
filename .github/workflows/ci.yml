@@ -183,7 +183,14 @@ jobs:
 
     - name: Run pytest
       run: |
-        python -m pytest tests/ -v
+        # ``-n auto`` runs tests across the runner's CPU cores via
+        # pytest-xdist. Each worker is a separate process — fixtures
+        # that build per-test ephemeral Mongo databases (UUID-named)
+        # are already parallel-safe.
+        # ``--dist loadfile`` keeps tests from a single file on the
+        # same worker so module-scoped fixtures (e.g. the mongo_check
+        # module fixture) stay coherent.
+        python -m pytest tests/ -v -n auto --dist loadfile
 
     - name: Run check scripts
       run: |

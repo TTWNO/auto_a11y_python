@@ -5,6 +5,7 @@ Allows auditors/admins to create, list, and revoke public share links.
 from __future__ import annotations
 
 import hashlib
+import uuid
 
 from flask import Blueprint, Response, request, jsonify, url_for
 from flask_login import current_user
@@ -73,7 +74,14 @@ def _create_token(scope: TokenScope, scope_id: str) -> Response:
             pass
 
     serializer = _get_serializer()
-    token_string = serializer.dumps({'scope': scope.value, 'scope_id': scope_id})
+    # ``nonce`` ensures every dump produces a distinct signed string —
+    # without it, ``URLSafeSerializer.dumps`` is deterministic on
+    # (scope, scope_id) and a second token for the same scope collides
+    # on the unique ``token_hash`` index. validate_token() looks up by
+    # hash, so the nonce is never inspected.
+    token_string = serializer.dumps(
+        {'scope': scope.value, 'scope_id': scope_id, 'nonce': uuid.uuid4().hex}
+    )
     token_hash = _make_token_hash(token_string)
 
     token = ShareToken(

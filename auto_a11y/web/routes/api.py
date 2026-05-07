@@ -2090,3 +2090,251 @@ def delete_page_resource(page_id: str) -> tuple[Response, int]:
     )
     get_db().delete_page(page_id)
     return Response(status=204), 204
+
+
+# ---------------------------------------------------------------------------
+# Share tokens (REST shape — uses the @api_endpoint scaffolding).
+#
+# These endpoints sit alongside the existing `share_tokens_bp` HTML
+# routes at /share-tokens/... — those still serve the admin frontend
+# until the issue #21 stage-2 migration. The new REST surface adds:
+#   - JSON body input (legacy used multipart form)
+#   - RFC 7807 errors
+#   - DELETE-as-revoke (idempotent, 204)
+#   - Cursor pagination on list
+#   - Single-resource GET (legacy never had this)
+#
+# Per docs/REST_API_ROADMAP.md §5.10.
+# ---------------------------------------------------------------------------
+
+import hashlib  # noqa: E402
+import uuid  # noqa: E402
+
+from itsdangerous import URLSafeSerializer  # noqa: E402
+
+from auto_a11y.models.share_token import ShareToken, TokenScope  # noqa: E402
+
+
+_SHARE_TOKEN_SALT = "public-share-token"
+
+
+def _share_token_serializer() -> URLSafeSerializer:
+    return URLSafeSerializer(get_app_config().SECRET_KEY, salt=_SHARE_TOKEN_SALT)
+
+
+def _share_token_hash(token_string: str) -> str:
+    return hashlib.sha256(token_string.encode("utf-8")).hexdigest()
+
+
+def _build_public_url(token_string: str) -> str:
+    """Build the public share URL.
+
+    Uses ``request.host_url`` directly so the result is correct even in
+    test contexts where the public blueprint is not registered (and so
+    ``url_for('public.token_landing', ...)`` would raise BuildError).
+    """
+    host = request.host_url.rstrip("/")
+    return f"{host}/t/{token_string}/"
+
+
+def _serialize_share_token(token: ShareToken) -> dict[str, Any]:
+    """Project a :class:`ShareToken` to a JSON-safe metadata dict.
+
+    Never includes the raw token or the SHA-256 hash. The raw token is
+    only ever returned by the create handler in the same response.
+    """
+
+    def _iso(dt: datetime | None) -> str | None:
+        return dt.isoformat() if dt is not None else None
+
+    return {
+        "id": token.id,
+        "scope": token.scope.value,
+        "scope_id": token.scope_id,
+        "label": token.label,
+        "created_by": token.created_by,
+        "created_at": _iso(token.created_at),
+        "expires_at": _iso(token.expires_at),
+        "revoked": token.revoked,
+        "revoked_at": _iso(token.revoked_at),
+        "last_used": _iso(token.last_used),
+        "use_count": token.use_count,
+        "is_valid": token.is_valid,
+    }
+
+
+def _parse_share_token_body(body: dict[str, Any]) -> tuple[str, datetime | None]:
+    """Validate and extract ``label`` / ``expires_at`` from a create body."""
+    label_raw = body.get("label")
+    if not isinstance(label_raw, str) or not label_raw.strip():
+        raise ValidationError(
+            "label is required",
+            errors=(_FieldError(field="label", code="required", message="required"),),
+        )
+    label = label_raw.strip()
+    expires_at: datetime | None = None
+    if "expires_at" in body and body["expires_at"] is not None:
+        expires_at = _parse_iso_datetime(body["expires_at"], field="expires_at")
+    return label, expires_at
+
+
+def _create_share_token(scope: TokenScope, scope_id: str) -> tuple[Response, int]:
+    """Shared logic for project- and website-scoped token creation."""
+    body = _require_dict_body()
+    label, expires_at = _parse_share_token_body(body)
+
+    serializer = _share_token_serializer()
+    # ``nonce`` ensures every dump produces a distinct signed string —
+    # without it, ``URLSafeSerializer.dumps`` is deterministic on
+    # (scope, scope_id) and a second token for the same scope collides
+    # on the unique ``token_hash`` index. validate_token() looks up by
+    # hash, so the nonce is never inspected on the public side.
+    token_string = serializer.dumps(
+        {"scope": scope.value, "scope_id": scope_id, "nonce": uuid.uuid4().hex}
+    )
+
+    token = ShareToken(
+        scope=scope,
+        scope_id=scope_id,
+        created_by=str(current_user.get_id()) if current_user.is_authenticated else "",
+        label=label,
+        token_hash=_share_token_hash(token_string),
+        expires_at=expires_at,
+    )
+    token_id = get_db().create_share_token(token)
+    refreshed = get_db().get_share_token(token_id)
+    if refreshed is None:
+        raise ConflictError("share token failed to persist")
+
+    payload = _serialize_share_token(refreshed)
+    payload["token"] = token_string  # raw token — only ever in the create response
+    payload["public_url"] = _build_public_url(token_string)
+    response = jsonify(payload)
+    response.headers["Location"] = f"/api/v1/share-tokens/{token_id}"
+    return response, 201
+
+
+@api_bp.route("/projects/<project_id>/share-tokens", methods=["POST"])
+@api_endpoint
+def create_project_share_token(project_id: str) -> tuple[Response, int]:
+    """Create a project-scoped share token."""
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id
+    )
+    if get_db().get_project(project_id) is None:
+        raise NotFoundError(f"project {project_id} not found")
+    return _create_share_token(TokenScope.PROJECT, project_id)
+
+
+@api_bp.route("/websites/<website_id>/share-tokens", methods=["POST"])
+@api_endpoint
+def create_website_share_token(website_id: str) -> tuple[Response, int]:
+    """Create a website-scoped share token."""
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, website_id=website_id
+    )
+    if get_db().get_website(website_id) is None:
+        raise NotFoundError(f"website {website_id} not found")
+    return _create_share_token(TokenScope.WEBSITE, website_id)
+
+
+def _list_share_tokens(scope: TokenScope, scope_id: str) -> Response:
+    limit = parse_limit(request.args.get("limit"))
+    cursor_raw = request.args.get("cursor")
+    cursor = _Cursor.decode(cursor_raw) if cursor_raw else None
+
+    query: dict[str, Any] = {"scope": scope.value, "scope_id": scope_id}
+    if cursor is not None:
+        from bson import ObjectId
+        try:
+            query["_id"] = {"$lt": ObjectId(cursor.last_id)}
+        except Exception as exc:
+            raise ValidationError(
+                "cursor.last_id is not a valid ObjectId",
+                errors=(
+                    _FieldError(
+                        field="cursor.last_id",
+                        code="invalid_format",
+                        message=str(exc),
+                    ),
+                ),
+            ) from exc
+
+    docs = list(get_db().share_tokens.find(query).sort("_id", -1).limit(limit + 1))
+    tokens = [ShareToken.from_dict(doc) for doc in docs]
+    page = paginate(
+        tokens, limit=limit, get_id=lambda t: str(t.mongo_id) if t.mongo_id else ""
+    )
+    return jsonify(
+        {
+            "items": [_serialize_share_token(t) for t in page["items"]],
+            "next_cursor": page["next_cursor"],
+        }
+    )
+
+
+@api_bp.route("/projects/<project_id>/share-tokens", methods=["GET"])
+@api_endpoint
+def list_project_share_tokens(project_id: str) -> tuple[Response, int] | Response:
+    """List share tokens scoped to a project."""
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id
+    )
+    if get_db().get_project(project_id) is None:
+        raise NotFoundError(f"project {project_id} not found")
+    return _list_share_tokens(TokenScope.PROJECT, project_id)
+
+
+@api_bp.route("/websites/<website_id>/share-tokens", methods=["GET"])
+@api_endpoint
+def list_website_share_tokens(website_id: str) -> tuple[Response, int] | Response:
+    """List share tokens scoped to a website."""
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, website_id=website_id
+    )
+    if get_db().get_website(website_id) is None:
+        raise NotFoundError(f"website {website_id} not found")
+    return _list_share_tokens(TokenScope.WEBSITE, website_id)
+
+
+def _resolve_token_project_id(token: ShareToken) -> str | None:
+    """Resolve a token's scope to its owning project_id (for auth checks)."""
+    if token.scope is TokenScope.WEBSITE:
+        website = get_db().get_website(token.scope_id)
+        return website.project_id if website is not None else None
+    return token.scope_id
+
+
+@api_bp.route("/share-tokens/<token_id>", methods=["GET"])
+@api_endpoint
+def get_share_token(token_id: str) -> tuple[Response, int] | Response:
+    """Get share token metadata by id."""
+    token = get_db().get_share_token(token_id)
+    if token is None:
+        raise NotFoundError(f"share token {token_id} not found")
+    project_id = _resolve_token_project_id(token)
+    if project_id is None:
+        # Token references a deleted scope — treat as not found rather
+        # than expose its existence to anyone with the id.
+        raise NotFoundError(f"share token {token_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id
+    )
+    return jsonify(_serialize_share_token(token))
+
+
+@api_bp.route("/share-tokens/<token_id>", methods=["DELETE"])
+@api_endpoint
+def revoke_share_token(token_id: str) -> tuple[Response, int]:
+    """Revoke a share token (idempotent — repeated DELETE returns 204)."""
+    token = get_db().get_share_token(token_id)
+    if token is None:
+        raise NotFoundError(f"share token {token_id} not found")
+    project_id = _resolve_token_project_id(token)
+    if project_id is None:
+        raise NotFoundError(f"share token {token_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id
+    )
+    get_db().revoke_share_token(token_id)
+    return Response(status=204), 204

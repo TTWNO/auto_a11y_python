@@ -304,13 +304,14 @@ A report record stores `(id, filename, project_id, created_at, type, format)` so
 
 ### 5.10 Share tokens (`share_tokens.py`)
 
-| Current | Target |
-|---|---|
-| `POST /share-tokens/projects/<id>/share-tokens` | `POST /api/v1/projects/<id>/share-tokens` |
-| `POST /share-tokens/websites/<id>/share-tokens` | `POST /api/v1/websites/<id>/share-tokens` |
-| `GET /share-tokens/projects/<id>/share-tokens` | `GET /api/v1/projects/<id>/share-tokens` |
-| `GET /share-tokens/websites/<id>/share-tokens` | `GET /api/v1/websites/<id>/share-tokens` |
-| `POST /share-tokens/share-tokens/<id>/revoke` | `DELETE /api/v1/share-tokens/<id>` |
+| Current | Target | Status |
+|---|---|---|
+| `POST /share-tokens/projects/<id>/share-tokens` | `POST /api/v1/projects/<id>/share-tokens` | ✅ |
+| `POST /share-tokens/websites/<id>/share-tokens` | `POST /api/v1/websites/<id>/share-tokens` | ✅ |
+| `GET /share-tokens/projects/<id>/share-tokens` | `GET /api/v1/projects/<id>/share-tokens` | ✅ |
+| `GET /share-tokens/websites/<id>/share-tokens` | `GET /api/v1/websites/<id>/share-tokens` | ✅ |
+| `POST /share-tokens/share-tokens/<id>/revoke` | `DELETE /api/v1/share-tokens/<id>` | ✅ |
+| (new) | `GET /api/v1/share-tokens/<id>` (metadata-only single-resource read) | ✅ |
 
 ### 5.11 Members, groups, project users, project participants, website users
 

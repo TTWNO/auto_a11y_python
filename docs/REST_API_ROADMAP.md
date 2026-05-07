@@ -173,12 +173,12 @@ Symbols:
 
 | Current | Target | Status |
 |---|---|---|
-| `GET /pages/<id>` | 🚫 HTML detail | — |
-| `POST /pages/<id>/edit` | `PUT /api/v1/pages/<id>` | ❌ |
+| `GET /pages/<id>` | `GET /api/v1/pages/<id>` | ✅ |
+| `POST /pages/<id>/edit` | `PUT /api/v1/pages/<id>`, `PATCH /api/v1/pages/<id>` | ✅ |
 | `POST /pages/<id>/test` | `POST /api/v1/pages/<id>/test-runs` | 🟡 (`POST /api/v1/pages/<id>/test` exists; rename) |
 | `GET /pages/<id>/test-status` | `GET /api/v1/pages/<id>/test-runs/latest` | 🟡 (`GET /api/v1/pages/<id>/test-results` exists but lists results, not run status) |
 | `POST /pages/<id>/cancel-test` | `POST /api/v1/pages/<id>/test-runs/latest/cancel` | ❌ |
-| `POST /pages/<id>/delete` | `DELETE /api/v1/pages/<id>` | ❌ |
+| `POST /pages/<id>/delete` | `DELETE /api/v1/pages/<id>` | ✅ |
 | `GET /pages/<id>/violations` | `GET /api/v1/pages/<id>/violations` | ❌ |
 | `GET/POST /pages/<id>/matrix` | `GET/PUT /api/v1/pages/<id>/matrix` | ❌ |
 | `GET /discovered-pages/<id>` | `GET /api/v1/discovered-pages/<id>` | ❌ |

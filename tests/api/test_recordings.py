@@ -450,7 +450,7 @@ def test_get_issue_returns_serialized_resource(
     body = response.get_json()
     assert body["id"] == issue.id
     assert body["status"] == "open"
-    assert body["impact"] == "Medium"
+    assert body["impact"] == "medium"
 
 
 # ---------------------------------------------------------------------------

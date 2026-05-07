@@ -155,7 +155,7 @@ Symbols:
 |---|---|---|
 | `GET /websites/api/list` | `GET /api/v1/websites` (filter by `?project_id=`) | 🟡 (only project-scoped list exists) |
 | `GET /websites/<id>` | 🚫 HTML detail | — |
-| `POST /websites/<id>/edit` | `PUT /api/v1/websites/<id>` | ❌ |
+| `POST /websites/<id>/edit` | `PUT /api/v1/websites/<id>`, `PATCH /api/v1/websites/<id>` | ✅ |
 | `POST /websites/<id>/delete` | `DELETE /api/v1/websites/<id>` | ✅ |
 | `POST /websites/<id>/clear-test-results` | `DELETE /api/v1/websites/<id>/test-results` | ❌ |
 | `POST /websites/<id>/discover` | `POST /api/v1/websites/<id>/discoveries` | ✅ |

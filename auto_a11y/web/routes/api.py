@@ -246,69 +246,11 @@ def delete_project(project_id: str) -> tuple[Response, int]:
 
 # Pages API
 
-@api_bp.route('/websites/<website_id>/pages', methods=['GET'])
-def get_pages(website_id: str) -> tuple[Response, int] | Response:
-    """Get pages for website"""
-    website = get_db().get_website(website_id)
-    if not website:
-        return jsonify({'error': 'Website not found'}), 404
-    
-    status = request.args.get('status')
-    has_violations = request.args.get('has_violations')
-    
-    if status:
-        try:
-            status_enum = PageStatus(status)
-            pages = get_db().get_pages(website_id, status=status_enum)
-        except ValueError:
-            return jsonify({'error': 'Invalid status value'}), 400
-    else:
-        pages = get_db().get_pages(website_id)
-    
-    if has_violations is not None:
-        has_violations_bool = has_violations.lower() == 'true'
-        pages = [p for p in pages if p.has_issues == has_violations_bool]
-    
-    return jsonify({
-        'pages': [p.to_dict() for p in pages]
-    })
-
-
-@api_bp.route('/websites/<website_id>/pages', methods=['POST'])
-def add_page(website_id: str) -> tuple[Response, int]:
-    """Add page to website"""
-    website = get_db().get_website(website_id)
-    if not website:
-        return jsonify({'error': 'Website not found'}), 404
-    
-    data = request.get_json()
-    
-    if not data or 'url' not in data:
-        return jsonify({'error': 'Page URL is required'}), 400
-    
-    page = Page(
-        website_id=website_id,
-        url=data['url'],
-        priority=data.get('priority', 'normal')
-    )
-    
-    page_id = get_db().create_page(page)
-    
-    return jsonify({
-        'id': page_id,
-        'message': 'Page added successfully'
-    }), 201
-
-
-@api_bp.route('/pages/<page_id>', methods=['GET'])
-@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
-def get_page(page_id: str) -> tuple[Response, int] | Response:
-    """Get page by ID"""
-    page = get_db().get_page(page_id)
-    if not page:
-        return jsonify({'error': 'Page not found'}), 404
-    
-    return jsonify(page.to_dict())
+# Page CRUD endpoints moved to the REST block at the bottom of this file
+# (search for "Pages (REST shape — uses the @api_endpoint scaffolding)").
+# The legacy stubs at this position were never wired into the frontend
+# and lacked auth guards on list/create — consolidating into the
+# `@api_endpoint` shape closes that gap and adds PUT/PATCH/DELETE.
 
 
 @api_bp.route('/pages/<page_id>/test', methods=['POST'])
@@ -1819,4 +1761,332 @@ def delete_website(website_id: str) -> tuple[Response, int]:
         UserRole.ADMIN, website_id=website_id
     )
     get_db().delete_website(website_id)
+    return Response(status=204), 204
+
+
+# ---------------------------------------------------------------------------
+# Pages (REST shape — uses the @api_endpoint scaffolding).
+#
+# Mirrors the conventions from the websites and scheduled-tests blocks
+# above. Action endpoints (`/test`, `/test-results`, `/test-states`,
+# `/test-sessions`) remain on the legacy URL surface for now — they
+# share async-job tracking with the schedules `/runs` endpoint and are
+# scoped out of this PR per ``docs/REST_API_ROADMAP.md`` §5.3.
+# ---------------------------------------------------------------------------
+
+
+_VALID_PAGE_PRIORITIES: frozenset[str] = frozenset({"high", "normal", "low"})
+
+
+def _serialize_page(page: Page) -> dict[str, Any]:
+    """Project a :class:`Page` to a JSON-safe dict.
+
+    Datetimes emit as ISO 8601 strings; the Mongo ``_id`` becomes a
+    string ``id``. Drupal-sync fields are exposed read-only — they are
+    set by the Drupal sync subsystem, not by REST clients, but reading
+    them is useful for downstream tooling.
+    """
+
+    def _iso(dt: datetime | None) -> str | None:
+        return dt.isoformat() if dt is not None else None
+
+    return {
+        "id": page.id,
+        "website_id": page.website_id,
+        "url": page.url,
+        "title": page.title,
+        "status": page.status.value,
+        "priority": page.priority,
+        "depth": page.depth,
+        "discovered_at": _iso(page.discovered_at),
+        "discovered_from": page.discovered_from,
+        "discovery_run_id": page.discovery_run_id,
+        "last_tested": _iso(page.last_tested),
+        "violation_count": page.violation_count,
+        "warning_count": page.warning_count,
+        "info_count": page.info_count,
+        "discovery_count": page.discovery_count,
+        "pass_count": page.pass_count,
+        "test_duration_ms": page.test_duration_ms,
+        "error_reason": page.error_reason,
+        "is_in_latest_discovery": page.is_in_latest_discovery,
+        "screenshot_path": page.screenshot_path,
+        "setup_script_id": page.setup_script_id,
+        "linked_pdf_document_id": page.linked_pdf_document_id,
+    }
+
+
+def _validate_page_priority(raw: Any, *, field: str) -> str:
+    if not isinstance(raw, str):
+        raise ValidationError(
+            f"{field} must be a string",
+            errors=(_FieldError(field=field, code="invalid_type", message="must be string"),),
+        )
+    if raw not in _VALID_PAGE_PRIORITIES:
+        raise ValidationError(
+            f"{field} must be one of high|normal|low",
+            errors=(
+                _FieldError(
+                    field=field,
+                    code="invalid_value",
+                    message=f"must be one of {sorted(_VALID_PAGE_PRIORITIES)}",
+                ),
+            ),
+        )
+    return raw
+
+
+def _build_page_from_body(website_id: str, body: dict[str, Any]) -> Page:
+    """Construct a :class:`Page` from a POST/PUT body, validating fields."""
+    url = _validate_url(body.get("url"), field="url")
+    title_raw = body.get("title")
+    if title_raw is not None and not isinstance(title_raw, str):
+        raise ValidationError(
+            "title must be a string or null",
+            errors=(_FieldError(field="title", code="invalid_type", message="must be string"),),
+        )
+    title = title_raw.strip() if isinstance(title_raw, str) and title_raw.strip() else None
+    priority = (
+        _validate_page_priority(body["priority"], field="priority")
+        if "priority" in body
+        else "normal"
+    )
+    setup_script_id_raw = body.get("setup_script_id")
+    if setup_script_id_raw is not None and not isinstance(setup_script_id_raw, str):
+        raise ValidationError(
+            "setup_script_id must be a string or null",
+            errors=(
+                _FieldError(
+                    field="setup_script_id",
+                    code="invalid_type",
+                    message="must be string",
+                ),
+            ),
+        )
+    return Page(
+        website_id=website_id,
+        url=url,
+        title=title,
+        priority=priority,
+        setup_script_id=setup_script_id_raw if isinstance(setup_script_id_raw, str) else None,
+    )
+
+
+def _apply_patch_to_page(page: Page, body: dict[str, Any]) -> Page:
+    """Apply only the keys present in ``body`` to ``page`` in place.
+
+    ``url`` and ``website_id`` are not patchable: the page identity is
+    its (website_id, url) pair, and changing either would conflict with
+    the upsert semantics in :meth:`Database.create_page`.
+    """
+    if "title" in body:
+        title_raw = body["title"]
+        if title_raw is not None and not isinstance(title_raw, str):
+            raise ValidationError(
+                "title must be a string or null",
+                errors=(_FieldError(field="title", code="invalid_type", message="must be string"),),
+            )
+        page.title = (
+            title_raw.strip() if isinstance(title_raw, str) and title_raw.strip() else None
+        )
+    if "priority" in body:
+        page.priority = _validate_page_priority(body["priority"], field="priority")
+    if "setup_script_id" in body:
+        raw = body["setup_script_id"]
+        if raw is not None and not isinstance(raw, str):
+            raise ValidationError(
+                "setup_script_id must be a string or null",
+                errors=(
+                    _FieldError(
+                        field="setup_script_id",
+                        code="invalid_type",
+                        message="must be string",
+                    ),
+                ),
+            )
+        page.setup_script_id = raw if isinstance(raw, str) else None
+    return page
+
+
+@api_bp.route("/websites/<website_id>/pages", methods=["GET"])
+@api_endpoint
+def list_pages_for_website(website_id: str) -> tuple[Response, int] | Response:
+    """List pages for a website with cursor pagination.
+
+    Optional query params:
+    - ``status``: filter to a single PageStatus value (e.g. ``tested``).
+      Unknown values produce a 400.
+    - ``limit`` / ``cursor``: standard pagination.
+    """
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, website_id=website_id
+    )
+    if get_db().get_website(website_id) is None:
+        raise NotFoundError(f"website {website_id} not found")
+
+    limit = parse_limit(request.args.get("limit"))
+    cursor_raw = request.args.get("cursor")
+    cursor = _Cursor.decode(cursor_raw) if cursor_raw else None
+
+    query: dict[str, Any] = {"website_id": website_id}
+    status_raw = request.args.get("status")
+    if status_raw is not None:
+        try:
+            query["status"] = PageStatus(status_raw).value
+        except ValueError as exc:
+            raise ValidationError(
+                "status is not a recognized PageStatus value",
+                errors=(_FieldError(field="status", code="invalid_value", message=str(exc)),),
+            ) from exc
+    if cursor is not None:
+        from bson import ObjectId
+        try:
+            query["_id"] = {"$lt": ObjectId(cursor.last_id)}
+        except Exception as exc:
+            raise ValidationError(
+                "cursor.last_id is not a valid ObjectId",
+                errors=(
+                    _FieldError(
+                        field="cursor.last_id",
+                        code="invalid_format",
+                        message=str(exc),
+                    ),
+                ),
+            ) from exc
+
+    docs = list(get_db().pages.find(query).sort("_id", -1).limit(limit + 1))
+    pages = [Page.from_dict(doc) for doc in docs]
+    page = paginate(
+        pages, limit=limit, get_id=lambda p: str(p.mongo_id) if p.mongo_id else ""
+    )
+    return jsonify(
+        {
+            "items": [_serialize_page(p) for p in page["items"]],
+            "next_cursor": page["next_cursor"],
+        }
+    )
+
+
+@api_bp.route("/websites/<website_id>/pages", methods=["POST"])
+@api_endpoint
+def create_page(website_id: str) -> tuple[Response, int]:
+    """Create a page on a website.
+
+    Note: :meth:`Database.create_page` is upsert-by-(website_id, url) —
+    posting a duplicate URL returns the existing page rather than a new
+    one. The 201 response and ``Location`` header reflect the resulting
+    resource either way.
+    """
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, website_id=website_id
+    )
+    if get_db().get_website(website_id) is None:
+        raise NotFoundError(f"website {website_id} not found")
+
+    body = _require_dict_body()
+    page = _build_page_from_body(website_id, body)
+    page_id = get_db().create_page(page)
+    refreshed = get_db().get_page(page_id)
+    if refreshed is None:
+        raise ConflictError("page failed to persist")
+    response = jsonify(_serialize_page(refreshed))
+    response.headers["Location"] = f"/api/v1/pages/{page_id}"
+    return response, 201
+
+
+@api_bp.route("/pages/<page_id>", methods=["GET"])
+@api_endpoint
+def get_page_resource(page_id: str) -> tuple[Response, int] | Response:
+    """Get a page by id."""
+    page = get_db().get_page(page_id)
+    if page is None:
+        raise NotFoundError(f"page {page_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, website_id=page.website_id
+    )
+    return jsonify(_serialize_page(page))
+
+
+@api_bp.route("/pages/<page_id>", methods=["PUT"])
+@api_endpoint
+def replace_page(page_id: str) -> tuple[Response, int] | Response:
+    """Full replace of a page's editable fields.
+
+    Server-managed fields (status, counts, dates, screenshot, drupal
+    sync, discovery metadata) are preserved. ``website_id`` and ``url``
+    are also locked — the (website_id, url) pair is the page's identity.
+    """
+    existing = get_db().get_page(page_id)
+    if existing is None:
+        raise NotFoundError(f"page {page_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, website_id=existing.website_id
+    )
+    body = _require_dict_body()
+    replaced = _build_page_from_body(existing.website_id, body)
+    if replaced.url != existing.url:
+        raise ValidationError(
+            "url cannot be changed; (website_id, url) is the page identity",
+            errors=(_FieldError(field="url", code="immutable", message="immutable"),),
+        )
+    replaced.mongo_id = existing.mongo_id
+    replaced.discovered_at = existing.discovered_at
+    replaced.discovered_from = existing.discovered_from
+    replaced.discovery_run_id = existing.discovery_run_id
+    replaced.last_tested = existing.last_tested
+    replaced.status = existing.status
+    replaced.violation_count = existing.violation_count
+    replaced.warning_count = existing.warning_count
+    replaced.info_count = existing.info_count
+    replaced.discovery_count = existing.discovery_count
+    replaced.pass_count = existing.pass_count
+    replaced.test_duration_ms = existing.test_duration_ms
+    replaced.depth = existing.depth
+    replaced.error_reason = existing.error_reason
+    replaced.is_in_latest_discovery = existing.is_in_latest_discovery
+    replaced.screenshot_path = existing.screenshot_path
+    replaced.visible_to_users = list(existing.visible_to_users)
+    replaced.is_flagged_for_discovery = existing.is_flagged_for_discovery
+    replaced.discovery_reasons = list(existing.discovery_reasons)
+    replaced.discovery_areas = list(existing.discovery_areas)
+    replaced.discovery_notes_private = existing.discovery_notes_private
+    replaced.discovery_notes_public = existing.discovery_notes_public
+    replaced.drupal_discovered_page_uuid = existing.drupal_discovered_page_uuid
+    replaced.drupal_sync_status = existing.drupal_sync_status
+    replaced.drupal_last_synced = existing.drupal_last_synced
+    replaced.drupal_error_message = existing.drupal_error_message
+    replaced.linked_pdf_document_id = existing.linked_pdf_document_id
+    if not get_db().update_page(replaced):
+        raise ConflictError("page could not be updated")
+    return jsonify(_serialize_page(replaced))
+
+
+@api_bp.route("/pages/<page_id>", methods=["PATCH"])
+@api_endpoint
+def patch_page(page_id: str) -> tuple[Response, int] | Response:
+    """Partial update — only fields present in the request body are changed."""
+    page = get_db().get_page(page_id)
+    if page is None:
+        raise NotFoundError(f"page {page_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, website_id=page.website_id
+    )
+    body = _require_dict_body()
+    patched = _apply_patch_to_page(page, body)
+    if not get_db().update_page(patched):
+        raise ConflictError("page could not be updated")
+    return jsonify(_serialize_page(patched))
+
+
+@api_bp.route("/pages/<page_id>", methods=["DELETE"])
+@api_endpoint
+def delete_page_resource(page_id: str) -> tuple[Response, int]:
+    """Delete a page and its test results."""
+    page = get_db().get_page(page_id)
+    if page is None:
+        raise NotFoundError(f"page {page_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, website_id=page.website_id
+    )
+    get_db().delete_page(page_id)
     return Response(status=204), 204

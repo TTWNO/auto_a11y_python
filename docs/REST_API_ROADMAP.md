@@ -213,7 +213,7 @@ Symbols:
 | `GET /api/v1/test-results/<id>/states` | (target) | ✅ |
 | `GET /api/v1/pages/<id>/test-states` | (target) | ✅ |
 | `GET /api/v1/pages/<id>/test-sessions` | (target) | ✅ |
-| `POST /api/v1/test-results/compare` | `GET /api/v1/test-results/compare?a=<id>&b=<id>` | 🟡 (verb-fix only) |
+| `POST /api/v1/test-results/compare` | `GET /api/v1/test-results/compare?a=<id>&b=<id>` | ✅ |
 
 ### 5.5 Reports (`reports.py`)
 

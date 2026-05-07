@@ -494,6 +494,43 @@ If two checkers disagree:
 
 The `typecheck` CI job (both `3.11` and `3.12` matrix variants) must be a required status check on `main`. This is configured in the GitHub repo settings by the repo owner.
 
+## Frontend Accessibility (MANDATORY)
+
+**Every frontend change must be designed with accessibility in mind from the start, not bolted on at the end.** This product is an accessibility-testing platform — shipping an inaccessible UI is incoherent.
+
+Automated tests for accessibility (especially screen-reader interaction patterns, focus trap behaviour, ARIA semantics in motion) are hard to write and harder to keep meaningful. We do not ship a generic "a11y test passed" gate. Instead, **accessibility lives in the design phase**: before you write the markup, think through the points below; while you implement, keep checking yourself against them; before you commit, walk through them once more.
+
+### Things to think through during design
+
+For any new or modified UI element, work through this list as part of the design conversation. If the answer to any question is "I'm not sure," stop and figure it out before coding.
+
+- **Semantic HTML first.** Is there a native element (`<button>`, `<a>`, `<input>`, `<select>`, `<details>`, `<dialog>`) that already does this? Use it. Reach for ARIA only when no native element fits.
+- **Keyboard reachability.** Can every interactive element be reached and operated using only the keyboard? Tab/Shift-Tab to move, Enter/Space to activate, arrow keys for composite widgets (menus, listboxes, radio groups, tabs).
+- **Focus management.** When something opens (modal, popover, drawer), where does focus go? When it closes, where does focus return? Is focus visibly indicated at all times (3:1 contrast minimum on the focus ring per SC 1.4.11)?
+- **Screen-reader name & role.** What does a screen reader announce when this element is focused? Does the accessible name match what a sighted user would call it? Does the role match the behaviour?
+- **State changes are announced.** Loading spinners, validation errors, toast notifications, items appearing/disappearing — does a screen reader user know it happened? Use `aria-live`, `role="status"`, `role="alert"` as appropriate.
+- **Colour is not the only signal.** Errors red and successes green — but is there also a text label, icon, or pattern? (SC 1.4.1 Use of Color.)
+- **Contrast.** Text 4.5:1 minimum, large text and non-text UI 3:1 minimum. Verified against the design tokens, not eyeballed. (Already enforced for the colour system; this is a reminder it applies to *every* change.)
+- **Reflow & zoom.** Does the layout still work at 200% zoom and at 320 CSS pixels wide without horizontal scrolling? (SC 1.4.10.)
+- **Motion & autoplay.** Anything moving, blinking, or auto-advancing — is there a pause/stop control, and is `prefers-reduced-motion` respected?
+- **Forms.** Every input has a programmatic label. Errors are tied to their field via `aria-describedby`/`aria-invalid`. Required fields are marked both visually and programmatically.
+- **Headings & landmarks.** Heading levels are hierarchical (no skipping). Page regions use landmarks (`<main>`, `<nav>`, `<header>`, `<footer>` — or ARIA role equivalents).
+- **Translatable strings.** New UI text follows the bilingual rules above (English + French via Fluent).
+
+### Working alongside existing patterns
+
+The custom colour system (the section above) already locks in WCAG 2.2 AA contrast for the design tokens. New UI work should:
+
+- Use the existing utility classes (`btn-brand`, `text-severity-high`, etc.) rather than inventing new colour combinations.
+- Match the keyboard and focus patterns of similar existing components (look at how the closest existing widget handles focus before designing a new one).
+- Reuse existing dialog/modal/toast patterns rather than building a one-off — those already have focus traps, escape handling, and live-region wiring sorted out.
+
+### When in doubt
+
+Test with a real screen reader (VoiceOver, NVDA, or Orca) on the actual change before claiming it's done. If you cannot test that way in the current environment, say so explicitly in the PR description rather than asserting WCAG compliance you haven't verified — the project's whole purpose makes a hand-wavy claim worse than a clear "untested manually."
+
+The fixture tests in this repo validate that the *testing engine* catches issues correctly. They do not validate that the *UI of this app* is itself accessible. That responsibility lives in the design and review phase of every frontend PR.
+
 ## Common Gotchas
 
 1. **Port Conflict:** macOS AirPlay Receiver uses 5000 → We use 5001

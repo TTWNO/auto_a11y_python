@@ -3701,3 +3701,116 @@ def delete_settings_section(section_id: str) -> tuple[Response, int]:
         raise NotFoundError(f"unknown settings section {section_id!r}")
     SystemSettings(get_db()).clear_section(section_id)
     return Response(status=204), 204
+
+
+# ---------------------------------------------------------------------------
+# Jobs (REST shape — uses the @api_endpoint scaffolding).
+#
+# The legacy /jobs/* endpoints (stats, active, clear-all, clear-stale,
+# cleanup-page-counts) are unauthenticated administrative tools — they
+# stay where they are, but the per-job operations (read, cancel) are
+# the kind of thing a future SPA would poll, so they get a proper REST
+# treatment with auth + RFC 7807 errors.
+#
+# In scope: ``GET /api/v1/jobs/<job_id>`` and
+# ``POST /api/v1/jobs/<job_id>/cancel``. Restart is more involved (the
+# legacy reports.py /job/<id>/restart hard-codes the report-job
+# generator rebuild) and is deferred to a follow-up PR alongside the
+# test-runs / reports REST work, where the per-job-type restart
+# generators have a natural home.
+#
+# Per docs/REST_API_ROADMAP.md §5.15.
+# ---------------------------------------------------------------------------
+
+from auto_a11y.web.api import require_authenticated  # noqa: E402
+
+
+def _serialize_job(doc: dict[str, Any]) -> dict[str, Any]:
+    """Project a raw job Mongo doc to a JSON-safe dict.
+
+    Datetimes go to ISO 8601, the Mongo ``_id`` is dropped (the public
+    identifier is ``job_id``), and the nested ``progress``/``metadata``
+    dicts are passed through as-is so callers can render whatever the
+    individual job_type recorded there.
+    """
+
+    def _iso(value: Any) -> Any:
+        if isinstance(value, datetime):
+            return value.isoformat()
+        return value
+
+    return {
+        "job_id": doc.get("job_id"),
+        "job_type": doc.get("job_type"),
+        "status": doc.get("status"),
+        "website_id": doc.get("website_id"),
+        "project_id": doc.get("project_id"),
+        "user_id": doc.get("user_id"),
+        "session_id": doc.get("session_id"),
+        "created_at": _iso(doc.get("created_at")),
+        "updated_at": _iso(doc.get("updated_at")),
+        "started_at": _iso(doc.get("started_at")),
+        "completed_at": _iso(doc.get("completed_at")),
+        "progress": doc.get("progress") or {},
+        "metadata": doc.get("metadata") or {},
+        "error": doc.get("error"),
+        "result": doc.get("result"),
+        "cancellation_requested": doc.get("cancellation_requested", False),
+        "cancellation_requested_at": _iso(doc.get("cancellation_requested_at")),
+        "cancellation_requested_by": doc.get("cancellation_requested_by"),
+    }
+
+
+def _resolve_job_or_404(job_id: str) -> dict[str, Any]:
+    job_manager = JobManager(get_db())
+    doc = job_manager.get_job(job_id)
+    if doc is None:
+        raise NotFoundError(f"job {job_id} not found")
+    return doc
+
+
+@api_bp.route("/jobs/<job_id>", methods=["GET"])
+@api_endpoint
+def get_job_rest(job_id: str) -> tuple[Response, int] | Response:
+    """Read a single job's status, progress, and metadata."""
+    require_authenticated()
+    doc = _resolve_job_or_404(job_id)
+    return jsonify(_serialize_job(doc))
+
+
+@api_bp.route("/jobs/<job_id>/cancel", methods=["POST"])
+@api_endpoint
+def cancel_job_rest(job_id: str) -> tuple[Response, int] | Response:
+    """Request cancellation of a pending or running job.
+
+    Returns 202 because cancellation is asynchronous — the worker
+    thread polls the ``cancellation_requested`` flag and transitions to
+    CANCELLED on its next checkpoint. The response shape mirrors GET so
+    callers can immediately observe the new ``CANCELLING`` status.
+
+    Idempotent: a second POST against an already-cancelling job returns
+    409, since the request_cancellation underlying call rejects the
+    transition once the status has already moved past
+    ``pending``/``running``.
+    """
+    require_authenticated()
+    doc = _resolve_job_or_404(job_id)
+
+    job_manager = JobManager(get_db())
+    requested_by = (
+        str(current_user.get_id()) if current_user.is_authenticated else None
+    )
+    requested = job_manager.request_cancellation(job_id, requested_by=requested_by)
+    if not requested:
+        # Either the job is no longer cancellable (already completed,
+        # cancelled, or failed) or the update lost a race. Surface the
+        # current status so callers can decide what to do.
+        current_status = doc.get("status")
+        raise ConflictError(
+            f"job {job_id} cannot be cancelled (current status: {current_status})"
+        )
+
+    refreshed = job_manager.get_job(job_id)
+    if refreshed is None:
+        raise ConflictError(f"job {job_id} disappeared after cancel")
+    return jsonify(_serialize_job(refreshed)), 202

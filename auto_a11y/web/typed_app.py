@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     from auto_a11y.core.job_manager import JobManager
     from auto_a11y.core.scheduler import SchedulerService
     from auto_a11y.testing.pdf_runner import PdfRunner
+    from auto_a11y.web.api.idempotency import IdempotencyStore
     from config import Config
 
 
@@ -59,6 +60,17 @@ def get_pdf_runner() -> PdfRunner | None:
     ``None`` in test contexts where the runner has not been wired up.
     """
     return cast("PdfRunner | None", getattr(current_app, "pdf_runner", None))
+
+
+def get_idempotency_store() -> IdempotencyStore:
+    """Return the REST API idempotency store.
+
+    Backed by the ``idempotency_keys`` Mongo collection on the active
+    ``Database`` (TTL index installed at app startup, see
+    :mod:`auto_a11y.web.api.idempotency`).
+    """
+    from auto_a11y.web.api.idempotency import IdempotencyStore as _Store
+    return _Store(get_db().idempotency_keys)
 
 
 def get_flask_app() -> Flask:

@@ -77,6 +77,7 @@ class Database:
         self.issues: Collection[dict[str, Any]] = self.db.issues  # Issues for Drupal sync
         self.pdf_documents: Collection[dict[str, Any]] = self.db.pdf_documents  # Downloaded auditable PDFs
         self.system_settings: Collection[dict[str, Any]] = self.db.system_settings  # Singleton doc with admin-managed config (Drupal, SMTP, SSO, etc.)
+        self.idempotency_keys: Collection[dict[str, Any]] = self.db.idempotency_keys  # REST API Idempotency-Key store (TTL index, see auto_a11y/web/api/idempotency.py)
 
         # Create indexes
         self._create_indexes()
@@ -216,7 +217,21 @@ class Database:
         self.test_schedules.create_index("enabled")
         self.test_schedules.create_index([("website_id", 1), ("enabled", 1)])
         self.test_schedules.create_index("next_run_at")
-        self.test_schedules.create_index("apscheduler_job_id", unique=True, sparse=True)
+        # Unique on apscheduler_job_id, but only for documents that have a
+        # non-null string value. ``sparse=True`` is not sufficient: MongoDB
+        # treats an explicit ``null`` as a value and indexes it, so two
+        # schedules created before a scheduler assigns them job IDs would
+        # collide. Drop the legacy sparse index if it lingers from an older
+        # deploy before installing the partial replacement.
+        existing_index_names = {ix["name"] for ix in self.test_schedules.list_indexes()}
+        if "apscheduler_job_id_1" in existing_index_names:
+            self.test_schedules.drop_index("apscheduler_job_id_1")
+        self.test_schedules.create_index(
+            "apscheduler_job_id",
+            unique=True,
+            partialFilterExpression={"apscheduler_job_id": {"$type": "string"}},
+            name="apscheduler_job_id_unique_partial",
+        )
 
         # Share tokens (public share links)
         self.share_tokens.create_index("token_hash", unique=True)
@@ -231,6 +246,12 @@ class Database:
         self.pdf_documents.create_index([("project_id", 1), ("discovered_at", -1)])
         self.pdf_documents.create_index([("website_id", 1), ("discovered_at", -1)])
         self.pdf_documents.create_index("status")
+
+        # Idempotency keys for REST API. The TTL index lives next to the
+        # rest of the API scaffolding so the retention duration is owned in
+        # one place (auto_a11y/web/api/idempotency.py).
+        from auto_a11y.web.api.idempotency import ensure_ttl_index
+        ensure_ttl_index(self.idempotency_keys)
 
     def test_connection(self) -> bool:
         """Test database connection"""

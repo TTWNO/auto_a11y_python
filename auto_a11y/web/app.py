@@ -249,6 +249,13 @@ def create_app(config: Any) -> Flask:
 
     app.register_blueprint(admin_settings_bp, url_prefix='')
 
+    # REST API: translate uncaught ApiError into RFC 7807 responses.
+    # Registered on the app (not the blueprint) so create_app() can be
+    # called multiple times in tests — Flask blueprints reject setup
+    # methods after their first registration with any app.
+    from auto_a11y.web.api import register_api_error_handlers
+    register_api_error_handlers(app)
+
     # Rate limits on auth endpoints (must be after register_blueprint calls)
     limiter.limit("10/minute")(app.view_functions['auth.login'])
     limiter.limit("5/minute")(app.view_functions['auth.register'])

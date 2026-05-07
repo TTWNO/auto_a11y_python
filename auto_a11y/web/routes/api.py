@@ -4,7 +4,7 @@ RESTful API routes
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from flask import Blueprint, Response, jsonify, request
 from flask_login import current_user
@@ -967,3 +967,578 @@ def pdf_health() -> tuple[Response, int]:
     }
     status = 200 if health.ok else 503
     return jsonify(payload), status
+
+
+# ---------------------------------------------------------------------------
+# Scheduled tests (REST shape — uses the @api_endpoint scaffolding).
+#
+# These endpoints follow the conventions in ``docs/REST_API_ROADMAP.md``:
+# bare-body JSON responses (no ``success`` envelope), Problem Details on
+# error, cursor pagination on list, RFC 7807 ``Idempotency-Key`` support
+# on the action endpoint. They live alongside the legacy ``success``-
+# wrapped endpoints above; both shapes coexist until the frontend-
+# migration phase per the locked-in §4.4 deprecation plan.
+# ---------------------------------------------------------------------------
+
+from auto_a11y.models.schedule import (  # noqa: E402
+    AITestMode,
+    PresetConfig,
+    ScheduleTestConfig,
+    ScheduleType,
+    TestSchedule,
+)
+from auto_a11y.web.api import (  # noqa: E402
+    ConflictError,
+    NotFoundError,
+    ValidationError,
+    api_endpoint,
+    paginate,
+    require_project_role,
+)
+from auto_a11y.web.api.errors import FieldError as _FieldError  # noqa: E402
+from auto_a11y.web.api.pagination import Cursor as _Cursor  # noqa: E402
+from auto_a11y.web.api.pagination import parse_limit  # noqa: E402
+from auto_a11y.web.typed_app import get_idempotency_store  # noqa: E402
+
+
+def _serialize_schedule(schedule: TestSchedule) -> dict[str, Any]:
+    """Project a :class:`TestSchedule` to a JSON-safe dict.
+
+    ``TestSchedule.to_dict`` keeps datetimes as ``datetime`` objects for
+    Mongo. The REST API surfaces them as ISO 8601 UTC strings and drops
+    the Mongo ``_id`` field in favor of the string ``id`` property.
+    """
+
+    def _iso(dt: datetime | None) -> str | None:
+        return dt.isoformat() if dt is not None else None
+
+    return {
+        "id": schedule.id,
+        "website_id": schedule.website_id,
+        "name": schedule.name,
+        "description": schedule.description,
+        "schedule_type": schedule.schedule_type.value,
+        "scheduled_datetime": _iso(schedule.scheduled_datetime),
+        "cron_expression": schedule.cron_expression,
+        "preset_config": schedule.preset_config.to_dict(),
+        "test_config": schedule.test_config.to_dict(),
+        "project_user_ids": list(schedule.project_user_ids),
+        "enabled": schedule.enabled,
+        "created_by": schedule.created_by,
+        "last_run_at": _iso(schedule.last_run_at),
+        "last_run_job_id": schedule.last_run_job_id,
+        "last_run_status": (
+            schedule.last_run_status.value
+            if schedule.last_run_status is not None
+            else None
+        ),
+        "next_run_at": _iso(schedule.next_run_at),
+        "run_count": schedule.run_count,
+        "created_at": _iso(schedule.created_at),
+        "updated_at": _iso(schedule.updated_at),
+    }
+
+
+def _coerce_str_list(value: Any) -> list[str]:
+    """Coerce an arbitrary iterable into a ``list[str]``.
+
+    Centralizes the ``Any → list[str]`` conversion so callers don't have
+    to wrestle with pyright's Unknown propagation on every comprehension.
+    """
+    items: list[Any] = []
+    for item in value:
+        items.append(item)
+    return [str(item) for item in items]
+
+
+def _require_dict_body() -> dict[str, Any]:
+    """Return the parsed JSON body or raise ValidationError."""
+    body_any: Any = request.get_json(silent=True)
+    if not isinstance(body_any, dict):
+        raise ValidationError(
+            "request body must be a JSON object",
+            errors=(
+                _FieldError(field="<root>", code="invalid_type", message="must be object"),
+            ),
+        )
+    return cast(dict[str, Any], body_any)
+
+
+def _parse_schedule_type(raw: Any, *, field: str) -> ScheduleType:
+    if not isinstance(raw, str):
+        raise ValidationError(
+            f"{field} must be a string",
+            errors=(
+                _FieldError(field=field, code="invalid_type", message="must be string"),
+            ),
+        )
+    try:
+        return ScheduleType(raw)
+    except ValueError as exc:
+        raise ValidationError(
+            f"{field} is not a recognized schedule type",
+            errors=(
+                _FieldError(field=field, code="invalid_value", message=str(exc)),
+            ),
+        ) from exc
+
+
+def _parse_iso_datetime(raw: Any, *, field: str) -> datetime:
+    if not isinstance(raw, str):
+        raise ValidationError(
+            f"{field} must be an ISO 8601 datetime string",
+            errors=(_FieldError(field=field, code="invalid_type", message="must be string"),),
+        )
+    try:
+        parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValidationError(
+            f"{field} is not a valid ISO 8601 datetime",
+            errors=(_FieldError(field=field, code="invalid_format", message=str(exc)),),
+        ) from exc
+    return parsed
+
+
+def _parse_preset_config(raw: Any, *, field: str) -> PresetConfig:
+    if not isinstance(raw, dict):
+        raise ValidationError(
+            f"{field} must be an object",
+            errors=(_FieldError(field=field, code="invalid_type", message="must be object"),),
+        )
+    raw_dict = cast(dict[str, Any], raw)
+    return PresetConfig(
+        time=str(raw_dict.get("time", "02:00")),
+        day_of_week=int(raw_dict.get("day_of_week", 0)),
+        day_of_month=int(raw_dict.get("day_of_month", 1)),
+        timezone=str(raw_dict.get("timezone", "America/Toronto")),
+    )
+
+
+def _parse_test_config(raw: Any, *, field: str) -> ScheduleTestConfig:
+    if not isinstance(raw, dict):
+        raise ValidationError(
+            f"{field} must be an object",
+            errors=(_FieldError(field=field, code="invalid_type", message="must be object"),),
+        )
+    raw_dict = cast(dict[str, Any], raw)
+    ai_pages_mode_raw: Any = raw_dict.get("ai_pages_mode", "all")
+    try:
+        ai_pages_mode = (
+            AITestMode(ai_pages_mode_raw)
+            if isinstance(ai_pages_mode_raw, str)
+            else AITestMode.ALL
+        )
+    except ValueError as exc:
+        raise ValidationError(
+            "test_config.ai_pages_mode is not recognized",
+            errors=(
+                _FieldError(
+                    field=f"{field}.ai_pages_mode",
+                    code="invalid_value",
+                    message=str(exc),
+                ),
+            ),
+        ) from exc
+    return ScheduleTestConfig(
+        run_ai_tests=bool(raw_dict.get("run_ai_tests", False)),
+        run_javascript_tests=bool(raw_dict.get("run_javascript_tests", True)),
+        run_python_tests=bool(raw_dict.get("run_python_tests", True)),
+        enabled_touchpoints=list(raw_dict.get("enabled_touchpoints", [])),
+        ai_pages_mode=ai_pages_mode,
+        ai_page_ids=list(raw_dict.get("ai_page_ids", [])),
+        take_screenshots=bool(raw_dict.get("take_screenshots", True)),
+    )
+
+
+def _validate_schedule_invariants(schedule: TestSchedule) -> None:
+    """Cross-field checks not enforceable from a single field's parser."""
+    if not schedule.name.strip():
+        raise ValidationError(
+            "name is required",
+            errors=(_FieldError(field="name", code="required", message="required"),),
+        )
+    if (
+        schedule.schedule_type is ScheduleType.CRON
+        and not (schedule.cron_expression or "").strip()
+    ):
+        raise ValidationError(
+            "cron_expression is required when schedule_type=cron",
+            errors=(
+                _FieldError(
+                    field="cron_expression",
+                    code="required",
+                    message="required when schedule_type=cron",
+                ),
+            ),
+        )
+    if (
+        schedule.schedule_type is ScheduleType.ONE_TIME
+        and schedule.scheduled_datetime is None
+    ):
+        raise ValidationError(
+            "scheduled_datetime is required when schedule_type=one_time",
+            errors=(
+                _FieldError(
+                    field="scheduled_datetime",
+                    code="required",
+                    message="required when schedule_type=one_time",
+                ),
+            ),
+        )
+
+
+def _build_schedule_from_body(
+    website_id: str, body: dict[str, Any]
+) -> TestSchedule:
+    schedule_type = _parse_schedule_type(
+        body.get("schedule_type", "daily"), field="schedule_type"
+    )
+    scheduled_datetime: datetime | None = None
+    if "scheduled_datetime" in body and body["scheduled_datetime"] is not None:
+        scheduled_datetime = _parse_iso_datetime(
+            body["scheduled_datetime"], field="scheduled_datetime"
+        )
+    preset_config = _parse_preset_config(
+        body.get("preset_config", {}), field="preset_config"
+    )
+    test_config = _parse_test_config(body.get("test_config", {}), field="test_config")
+    cron_raw = body.get("cron_expression")
+    cron_expression = cron_raw.strip() if isinstance(cron_raw, str) and cron_raw.strip() else None
+    project_user_ids_raw: Any = body.get("project_user_ids", [])
+    if not isinstance(project_user_ids_raw, list):
+        raise ValidationError(
+            "project_user_ids must be an array",
+            errors=(
+                _FieldError(
+                    field="project_user_ids",
+                    code="invalid_type",
+                    message="must be array",
+                ),
+            ),
+        )
+    project_user_ids = _coerce_str_list(project_user_ids_raw)
+    schedule = TestSchedule(
+        website_id=website_id,
+        name=str(body.get("name", "")).strip(),
+        description=(
+            str(body["description"]).strip()
+            if isinstance(body.get("description"), str)
+            else None
+        ),
+        schedule_type=schedule_type,
+        scheduled_datetime=scheduled_datetime,
+        cron_expression=cron_expression,
+        preset_config=preset_config,
+        test_config=test_config,
+        project_user_ids=project_user_ids,
+        enabled=bool(body.get("enabled", True)),
+        created_by=(
+            str(current_user.get_id()) if current_user.is_authenticated else None
+        ),
+    )
+    _validate_schedule_invariants(schedule)
+    return schedule
+
+
+def _apply_patch_to_schedule(
+    schedule: TestSchedule, body: dict[str, Any]
+) -> TestSchedule:
+    """Apply only the keys present in ``body`` to ``schedule``."""
+    if "name" in body:
+        if not isinstance(body["name"], str):
+            raise ValidationError(
+                "name must be a string",
+                errors=(
+                    _FieldError(field="name", code="invalid_type", message="must be string"),
+                ),
+            )
+        schedule.name = body["name"].strip()
+    if "description" in body:
+        desc = body["description"]
+        schedule.description = desc.strip() if isinstance(desc, str) else None
+    if "schedule_type" in body:
+        schedule.schedule_type = _parse_schedule_type(
+            body["schedule_type"], field="schedule_type"
+        )
+    if "scheduled_datetime" in body:
+        schedule.scheduled_datetime = (
+            _parse_iso_datetime(body["scheduled_datetime"], field="scheduled_datetime")
+            if body["scheduled_datetime"] is not None
+            else None
+        )
+    if "cron_expression" in body:
+        cron_raw = body["cron_expression"]
+        schedule.cron_expression = (
+            cron_raw.strip() if isinstance(cron_raw, str) and cron_raw.strip() else None
+        )
+    if "preset_config" in body:
+        schedule.preset_config = _parse_preset_config(
+            body["preset_config"], field="preset_config"
+        )
+    if "test_config" in body:
+        schedule.test_config = _parse_test_config(
+            body["test_config"], field="test_config"
+        )
+    if "project_user_ids" in body:
+        ids_raw: Any = body["project_user_ids"]
+        if not isinstance(ids_raw, list):
+            raise ValidationError(
+                "project_user_ids must be an array",
+                errors=(
+                    _FieldError(
+                        field="project_user_ids",
+                        code="invalid_type",
+                        message="must be array",
+                    ),
+                ),
+            )
+        schedule.project_user_ids = _coerce_str_list(ids_raw)
+    if "enabled" in body:
+        schedule.enabled = bool(body["enabled"])
+    schedule.update_timestamp()
+    _validate_schedule_invariants(schedule)
+    return schedule
+
+
+def _resync_with_scheduler(schedule: TestSchedule) -> None:
+    """Mirror the legacy register/remove dance against the scheduler.
+
+    Imported lazily so endpoints can run in tests where the APScheduler
+    service is not configured.
+    """
+    from auto_a11y.core.scheduler import get_scheduler_service
+
+    scheduler = get_scheduler_service()
+    if scheduler is None:
+        return
+    if schedule.enabled:
+        scheduler.register_schedule_with_apscheduler(schedule)
+    elif schedule.id:
+        scheduler.remove_from_apscheduler(schedule.id)
+
+
+@api_bp.route("/websites/<website_id>/scheduled-tests", methods=["GET"])
+@api_endpoint
+def list_scheduled_tests(website_id: str) -> tuple[Response, int] | Response:
+    """List scheduled tests for a website with cursor pagination."""
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, website_id=website_id
+    )
+    website = get_db().get_website(website_id)
+    if website is None:
+        raise NotFoundError(f"website {website_id} not found")
+
+    limit = parse_limit(request.args.get("limit"))
+    cursor_raw = request.args.get("cursor")
+    cursor = _Cursor.decode(cursor_raw) if cursor_raw else None
+
+    query: dict[str, Any] = {"website_id": website_id}
+    if cursor is not None:
+        from bson import ObjectId
+        try:
+            query["_id"] = {"$lt": ObjectId(cursor.last_id)}
+        except Exception as exc:
+            raise ValidationError(
+                "cursor.last_id is not a valid ObjectId",
+                errors=(
+                    _FieldError(
+                        field="cursor.last_id",
+                        code="invalid_format",
+                        message=str(exc),
+                    ),
+                ),
+            ) from exc
+
+    docs = list(
+        get_db().test_schedules.find(query).sort("_id", -1).limit(limit + 1)
+    )
+    schedules = [TestSchedule.from_dict(doc) for doc in docs]
+    page = paginate(
+        schedules, limit=limit, get_id=lambda s: str(s.mongo_id) if s.mongo_id else ""
+    )
+    return jsonify(
+        {
+            "items": [_serialize_schedule(s) for s in page["items"]],
+            "next_cursor": page["next_cursor"],
+        }
+    )
+
+
+@api_bp.route("/websites/<website_id>/scheduled-tests", methods=["POST"])
+@api_endpoint
+def create_scheduled_test(website_id: str) -> tuple[Response, int]:
+    """Create a scheduled test on a website."""
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, website_id=website_id
+    )
+    if get_db().get_website(website_id) is None:
+        raise NotFoundError(f"website {website_id} not found")
+
+    body = _require_dict_body()
+    schedule = _build_schedule_from_body(website_id, body)
+    schedule_id = get_db().create_test_schedule(schedule)
+    refreshed = get_db().get_test_schedule(schedule_id)
+    if refreshed is None:
+        raise ConflictError("schedule failed to persist")
+    if refreshed.enabled:
+        _resync_with_scheduler(refreshed)
+    response = jsonify(_serialize_schedule(refreshed))
+    response.headers["Location"] = f"/api/v1/scheduled-tests/{schedule_id}"
+    return response, 201
+
+
+@api_bp.route("/scheduled-tests/<schedule_id>", methods=["GET"])
+@api_endpoint
+def get_scheduled_test(schedule_id: str) -> tuple[Response, int] | Response:
+    """Get a scheduled test by id."""
+    schedule = get_db().get_test_schedule(schedule_id)
+    if schedule is None:
+        raise NotFoundError(f"scheduled test {schedule_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, website_id=schedule.website_id
+    )
+    return jsonify(_serialize_schedule(schedule))
+
+
+@api_bp.route("/scheduled-tests/<schedule_id>", methods=["PUT"])
+@api_endpoint
+def replace_scheduled_test(schedule_id: str) -> tuple[Response, int] | Response:
+    """Full replace of a scheduled test."""
+    schedule = get_db().get_test_schedule(schedule_id)
+    if schedule is None:
+        raise NotFoundError(f"scheduled test {schedule_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, website_id=schedule.website_id
+    )
+    body = _require_dict_body()
+    replaced = _build_schedule_from_body(schedule.website_id, body)
+    replaced.mongo_id = schedule.mongo_id
+    replaced.created_at = schedule.created_at
+    replaced.created_by = schedule.created_by
+    replaced.last_run_at = schedule.last_run_at
+    replaced.last_run_job_id = schedule.last_run_job_id
+    replaced.last_run_status = schedule.last_run_status
+    replaced.next_run_at = schedule.next_run_at
+    replaced.run_count = schedule.run_count
+    replaced.apscheduler_job_id = schedule.apscheduler_job_id
+    replaced.update_timestamp()
+    if not get_db().update_test_schedule(replaced):
+        raise ConflictError("schedule could not be updated")
+    _resync_with_scheduler(replaced)
+    return jsonify(_serialize_schedule(replaced))
+
+
+@api_bp.route("/scheduled-tests/<schedule_id>", methods=["PATCH"])
+@api_endpoint
+def patch_scheduled_test(schedule_id: str) -> tuple[Response, int] | Response:
+    """Partial update — used for toggle (``{"enabled": true}``) and similar edits."""
+    schedule = get_db().get_test_schedule(schedule_id)
+    if schedule is None:
+        raise NotFoundError(f"scheduled test {schedule_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, website_id=schedule.website_id
+    )
+    body = _require_dict_body()
+    patched = _apply_patch_to_schedule(schedule, body)
+    if not get_db().update_test_schedule(patched):
+        raise ConflictError("schedule could not be updated")
+    _resync_with_scheduler(patched)
+    return jsonify(_serialize_schedule(patched))
+
+
+@api_bp.route("/scheduled-tests/<schedule_id>", methods=["DELETE"])
+@api_endpoint
+def delete_scheduled_test(schedule_id: str) -> tuple[Response, int]:
+    """Delete a scheduled test."""
+    schedule = get_db().get_test_schedule(schedule_id)
+    if schedule is None:
+        raise NotFoundError(f"scheduled test {schedule_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, website_id=schedule.website_id
+    )
+    from auto_a11y.core.scheduler import get_scheduler_service
+    scheduler = get_scheduler_service()
+    if scheduler is not None:
+        scheduler.remove_from_apscheduler(schedule_id)
+    get_db().delete_test_schedule(schedule_id)
+    return Response(status=204), 204
+
+
+@api_bp.route("/scheduled-tests/<schedule_id>/runs", methods=["POST"])
+@api_endpoint
+def run_scheduled_test_now(
+    schedule_id: str,
+) -> tuple[Response, int] | Response:
+    """Trigger an immediate run of the schedule.
+
+    Honors the ``Idempotency-Key`` header per §4.9 of the roadmap. A
+    repeated POST with the same key returns the recorded ``job_id``
+    without enqueuing a second job.
+    """
+    schedule = get_db().get_test_schedule(schedule_id)
+    if schedule is None:
+        raise NotFoundError(f"scheduled test {schedule_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, website_id=schedule.website_id
+    )
+
+    from auto_a11y.core.scheduler import get_scheduler_service
+    scheduler = get_scheduler_service()
+    if scheduler is None:
+        raise ConflictError("scheduler service is not available")
+
+    def _run() -> tuple[int, dict[str, Any]]:
+        job_id = scheduler.run_now(schedule_id)
+        if not job_id:
+            raise ConflictError("scheduler refused to start the run")
+        return 202, {"job_id": job_id, "schedule_id": schedule_id}
+
+    idempotency_key = request.headers.get("Idempotency-Key")
+    body_any: Any = request.get_json(silent=True)
+    request_body: dict[str, Any] | None = (
+        cast(dict[str, Any], body_any) if isinstance(body_any, dict) else None
+    )
+
+    if idempotency_key:
+        status_code, body = get_idempotency_store().get_or_record(
+            idempotency_key, request_body=request_body, compute=_run
+        )
+    else:
+        status_code, body = _run()
+
+    return jsonify(body), status_code
+
+
+@api_bp.route("/scheduled-tests/<schedule_id>/preview", methods=["GET"])
+@api_endpoint
+def preview_scheduled_test(
+    schedule_id: str,
+) -> tuple[Response, int] | Response:
+    """Return the next N upcoming run times for a schedule."""
+    schedule = get_db().get_test_schedule(schedule_id)
+    if schedule is None:
+        raise NotFoundError(f"scheduled test {schedule_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, website_id=schedule.website_id
+    )
+    from auto_a11y.core.scheduler import get_scheduler_service
+    scheduler = get_scheduler_service()
+    if scheduler is None:
+        raise ConflictError("scheduler service is not available")
+
+    count_raw = request.args.get("count", "5")
+    try:
+        count = max(1, min(int(count_raw), 50))
+    except ValueError as exc:
+        raise ValidationError(
+            "count must be an integer",
+            errors=(_FieldError(field="count", code="invalid_type", message=str(exc)),),
+        ) from exc
+
+    next_runs = scheduler.get_next_run_times(schedule_id, count)
+    return jsonify(
+        {
+            "schedule_id": schedule_id,
+            "next_runs": [dt.isoformat() for dt in next_runs],
+        }
+    )

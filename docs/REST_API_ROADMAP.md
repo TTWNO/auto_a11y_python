@@ -290,22 +290,22 @@ A report record stores `(id, filename, project_id, created_at, type, format)` so
 
 ### 5.9 PDFs (`pdf.py`)
 
-| Current | Target |
-|---|---|
-| `GET /projects/<id>/pdfs` | `GET /api/v1/projects/<id>/pdfs` |
-| `GET /websites/<id>/pdfs` | `GET /api/v1/websites/<id>/pdfs` |
-| `GET /projects/<id>/pdfs/add` | 🚫 HTML form |
-| `POST /projects/<id>/pdfs` | `POST /api/v1/projects/<id>/pdfs` (multipart) |
-| `GET /pdfs/<id>` | `GET /api/v1/pdf-documents/<id>` |
-| `POST /pdfs/<id>/audit` | `POST /api/v1/pdf-documents/<id>/audits` |
-| `GET /pdfs/<id>/audit-status` | `GET /api/v1/pdf-documents/<id>/audits/latest` |
-| `POST /pdfs/<id>/cancel` | `POST /api/v1/pdf-documents/<id>/audits/latest/cancel` |
-| `GET /pdfs/<id>/file` | `GET /api/v1/pdf-documents/<id>/file` |
-| `GET /pdfs/<id>/images/<name>` | `GET /api/v1/pdf-documents/<id>/images/<name>` |
-| `GET /pdfs/<id>/export.<fmt>` | `GET /api/v1/pdf-documents/<id>/export?format=<fmt>` |
-| `GET /pdfs/<id>/issue-map` | `GET /api/v1/pdf-documents/<id>/issue-map` |
-| `GET /pdfs/<id>/pdfmax-report` | `GET /api/v1/pdf-documents/<id>/reports/pdfmax` |
-| `POST /pdfs/<id>/delete` | `DELETE /api/v1/pdf-documents/<id>` |
+| Current | Target | Status |
+|---|---|---|
+| `GET /projects/<id>/pdfs` | `GET /api/v1/projects/<id>/pdfs` | ✅ |
+| `GET /websites/<id>/pdfs` | `GET /api/v1/websites/<id>/pdfs` | ✅ |
+| `GET /projects/<id>/pdfs/add` | 🚫 HTML form | — |
+| `POST /projects/<id>/pdfs` | `POST /api/v1/projects/<id>/pdfs` (multipart) | ❌ (deferred — multipart upload, same complexity bucket as recordings upload) |
+| `GET /pdfs/<id>` | `GET /api/v1/pdf-documents/<id>` | ✅ |
+| `POST /pdfs/<id>/audit` | `POST /api/v1/pdf-documents/<id>/audits` | ❌ (deferred — async-job action endpoint) |
+| `GET /pdfs/<id>/audit-status` | `GET /api/v1/pdf-documents/<id>/audits/latest` | ❌ (deferred) |
+| `POST /pdfs/<id>/cancel` | `POST /api/v1/pdf-documents/<id>/audits/latest/cancel` | ❌ (deferred) |
+| `GET /pdfs/<id>/file` | `GET /api/v1/pdf-documents/<id>/file` | ❌ (deferred — binary streaming) |
+| `GET /pdfs/<id>/images/<name>` | `GET /api/v1/pdf-documents/<id>/images/<name>` | ❌ (deferred) |
+| `GET /pdfs/<id>/export.<fmt>` | `GET /api/v1/pdf-documents/<id>/export?format=<fmt>` | ❌ (deferred) |
+| `GET /pdfs/<id>/issue-map` | `GET /api/v1/pdf-documents/<id>/issue-map` | ❌ (deferred) |
+| `GET /pdfs/<id>/pdfmax-report` | `GET /api/v1/pdf-documents/<id>/reports/pdfmax` | ❌ (deferred) |
+| `POST /pdfs/<id>/delete` | `DELETE /api/v1/pdf-documents/<id>` | ✅ |
 
 ### 5.10 Share tokens (`share_tokens.py`)
 

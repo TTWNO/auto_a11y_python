@@ -236,74 +236,12 @@ def delete_project(project_id: str) -> tuple[Response, int]:
 
 # Websites API
 
-@api_bp.route('/projects/<project_id>/websites', methods=['GET'])
-@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
-def get_websites(project_id: str) -> tuple[Response, int] | Response:
-    """Get websites for project"""
-    project = get_db().get_project(project_id)
-    if not project:
-        return jsonify({'error': 'Project not found'}), 404
-    
-    websites = get_db().get_websites(project_id)
-    
-    return jsonify({
-        'websites': [w.to_dict() for w in websites]
-    })
-
-
-@api_bp.route('/projects/<project_id>/websites', methods=['POST'])
-@project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
-def add_website(project_id: str) -> tuple[Response, int]:
-    """Add website to project"""
-    project = get_db().get_project(project_id)
-    if not project:
-        return jsonify({'error': 'Project not found'}), 404
-    
-    data = request.get_json()
-    
-    if not data or 'url' not in data:
-        return jsonify({'error': 'Website URL is required'}), 400
-    
-    from auto_a11y.models import Website, ScrapingConfig
-    
-    website = Website(
-        project_id=project_id,
-        url=data['url'],
-        name=data.get('name'),
-        scraping_config=ScrapingConfig(**data.get('scraping_config', {}))
-    )
-    
-    website_id = get_db().create_website(website)
-    
-    return jsonify({
-        'id': website_id,
-        'message': 'Website added successfully'
-    }), 201
-
-
-@api_bp.route('/websites/<website_id>', methods=['GET'])
-@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
-def get_website(website_id: str) -> tuple[Response, int] | Response:
-    """Get website by ID"""
-    website = get_db().get_website(website_id)
-    if not website:
-        return jsonify({'error': 'Website not found'}), 404
-    
-    return jsonify(website.to_dict())
-
-
-@api_bp.route('/websites/<website_id>', methods=['DELETE'])
-@project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
-def delete_website(website_id: str) -> tuple[Response, int]:
-    """Delete website"""
-    website = get_db().get_website(website_id)
-    if not website:
-        return jsonify({'error': 'Website not found'}), 404
-    
-    if get_db().delete_website(website_id):
-        return jsonify({'message': 'Website deleted successfully'}), 204
-    else:
-        return jsonify({'error': 'Failed to delete website'}), 500
+# Website CRUD endpoints moved to the REST block at the bottom of this
+# file (search for "Websites (REST shape — uses the @api_endpoint
+# scaffolding)"). The legacy stubs at this position were never wired
+# into the frontend and used a different error envelope from the rest of
+# /api/v1; consolidating into the proper RFC 7807 shape keeps the
+# /api/v1/websites surface consistent.
 
 
 # Pages API
@@ -1542,3 +1480,343 @@ def preview_scheduled_test(
             "next_runs": [dt.isoformat() for dt in next_runs],
         }
     )
+
+
+# ---------------------------------------------------------------------------
+# Websites (REST shape — uses the @api_endpoint scaffolding).
+#
+# Mirrors the conventions from the scheduled-tests block above. Action
+# endpoints (discoveries, test-runs, cancels, clear-test-results) are
+# scoped out of this PR — they involve async-job tracking and idempotency
+# concerns that are best handled in a follow-up alongside their respective
+# resources, per ``docs/REST_API_ROADMAP.md`` §5.2.
+# ---------------------------------------------------------------------------
+
+from auto_a11y.models.website import ScrapingConfig, Website  # noqa: E402
+
+
+def _serialize_website(website: Website) -> dict[str, Any]:
+    """Project a :class:`Website` to a JSON-safe dict.
+
+    Datetimes are emitted as ISO 8601 strings; the Mongo ``_id`` is
+    surfaced as the string ``id`` field. ``members`` is intentionally
+    omitted — the legacy field is unused and the project members API
+    is the authoritative surface for that data.
+    """
+
+    def _iso(dt: datetime | None) -> str | None:
+        return dt.isoformat() if dt is not None else None
+
+    return {
+        "id": website.id,
+        "project_id": website.project_id,
+        "url": website.url,
+        "name": website.name,
+        "display_name": website.display_name,
+        "page_count": website.page_count,
+        "scraping_config": website.scraping_config.to_dict(),
+        "created_at": _iso(website.created_at),
+        "last_scraped": _iso(website.last_scraped),
+        "last_tested": _iso(website.last_tested),
+    }
+
+
+def _parse_scraping_config(raw: Any, *, field: str) -> ScrapingConfig:
+    """Validate and project a JSON object into a :class:`ScrapingConfig`.
+
+    Unknown keys are dropped (ScrapingConfig.from_dict already does this).
+    Type coercion for primitives is intentionally light: callers send
+    whatever JSON parses produce, and ScrapingConfig's defaults absorb
+    most omissions.
+    """
+    if not isinstance(raw, dict):
+        raise ValidationError(
+            f"{field} must be an object",
+            errors=(_FieldError(field=field, code="invalid_type", message="must be object"),),
+        )
+    raw_dict = cast(dict[str, Any], raw)
+
+    def _int(value: Any, *, key: str) -> int:
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise ValidationError(
+                f"{field}.{key} must be an integer",
+                errors=(
+                    _FieldError(
+                        field=f"{field}.{key}",
+                        code="invalid_type",
+                        message="must be integer",
+                    ),
+                ),
+            )
+        return int(value)
+
+    def _float(value: Any, *, key: str) -> float:
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ValidationError(
+                f"{field}.{key} must be a number",
+                errors=(
+                    _FieldError(
+                        field=f"{field}.{key}",
+                        code="invalid_type",
+                        message="must be number",
+                    ),
+                ),
+            )
+        return float(value)
+
+    def _bool(value: Any, *, key: str) -> bool:
+        if not isinstance(value, bool):
+            raise ValidationError(
+                f"{field}.{key} must be a boolean",
+                errors=(
+                    _FieldError(
+                        field=f"{field}.{key}",
+                        code="invalid_type",
+                        message="must be boolean",
+                    ),
+                ),
+            )
+        return value
+
+    def _str_list(value: Any, *, key: str) -> list[str]:
+        if not isinstance(value, list):
+            raise ValidationError(
+                f"{field}.{key} must be an array",
+                errors=(
+                    _FieldError(
+                        field=f"{field}.{key}",
+                        code="invalid_type",
+                        message="must be array",
+                    ),
+                ),
+            )
+        return _coerce_str_list(value)
+
+    defaults = ScrapingConfig()
+    return ScrapingConfig(
+        max_pages=_int(raw_dict["max_pages"], key="max_pages")
+            if "max_pages" in raw_dict else defaults.max_pages,
+        max_depth=_int(raw_dict["max_depth"], key="max_depth")
+            if "max_depth" in raw_dict else defaults.max_depth,
+        follow_external=_bool(raw_dict["follow_external"], key="follow_external")
+            if "follow_external" in raw_dict else defaults.follow_external,
+        include_subdomains=_bool(raw_dict["include_subdomains"], key="include_subdomains")
+            if "include_subdomains" in raw_dict else defaults.include_subdomains,
+        respect_robots=_bool(raw_dict["respect_robots"], key="respect_robots")
+            if "respect_robots" in raw_dict else defaults.respect_robots,
+        request_delay=_float(raw_dict["request_delay"], key="request_delay")
+            if "request_delay" in raw_dict else defaults.request_delay,
+        allowed_paths=_str_list(raw_dict["allowed_paths"], key="allowed_paths")
+            if "allowed_paths" in raw_dict else list(defaults.allowed_paths),
+        excluded_paths=_str_list(raw_dict["excluded_paths"], key="excluded_paths")
+            if "excluded_paths" in raw_dict else list(defaults.excluded_paths),
+        auto_fetch_pdfs=_bool(raw_dict["auto_fetch_pdfs"], key="auto_fetch_pdfs")
+            if "auto_fetch_pdfs" in raw_dict else defaults.auto_fetch_pdfs,
+    )
+
+
+def _validate_url(raw: Any, *, field: str) -> str:
+    """Require ``raw`` to be a non-empty http(s) URL string."""
+    if not isinstance(raw, str):
+        raise ValidationError(
+            f"{field} must be a string",
+            errors=(_FieldError(field=field, code="invalid_type", message="must be string"),),
+        )
+    value = raw.strip()
+    if not value:
+        raise ValidationError(
+            f"{field} is required",
+            errors=(_FieldError(field=field, code="required", message="required"),),
+        )
+    if not (value.startswith("http://") or value.startswith("https://")):
+        raise ValidationError(
+            f"{field} must be an http(s) URL",
+            errors=(_FieldError(field=field, code="invalid_format", message="must start with http:// or https://"),),
+        )
+    return value
+
+
+def _build_website_from_body(project_id: str, body: dict[str, Any]) -> Website:
+    """Construct a :class:`Website` from a POST/PUT body, validating fields."""
+    url = _validate_url(body.get("url"), field="url")
+    name_raw = body.get("name")
+    if name_raw is not None and not isinstance(name_raw, str):
+        raise ValidationError(
+            "name must be a string or null",
+            errors=(_FieldError(field="name", code="invalid_type", message="must be string"),),
+        )
+    name = name_raw.strip() if isinstance(name_raw, str) and name_raw.strip() else None
+    scraping_config = (
+        _parse_scraping_config(body["scraping_config"], field="scraping_config")
+        if "scraping_config" in body and body["scraping_config"] is not None
+        else ScrapingConfig()
+    )
+    return Website(
+        project_id=project_id,
+        url=url,
+        name=name,
+        scraping_config=scraping_config,
+    )
+
+
+def _apply_patch_to_website(website: Website, body: dict[str, Any]) -> Website:
+    """Apply only the keys present in ``body`` to ``website`` in place."""
+    if "url" in body:
+        website.url = _validate_url(body["url"], field="url")
+    if "name" in body:
+        name_raw = body["name"]
+        if name_raw is not None and not isinstance(name_raw, str):
+            raise ValidationError(
+                "name must be a string or null",
+                errors=(_FieldError(field="name", code="invalid_type", message="must be string"),),
+            )
+        website.name = (
+            name_raw.strip() if isinstance(name_raw, str) and name_raw.strip() else None
+        )
+    if "scraping_config" in body:
+        if body["scraping_config"] is None:
+            website.scraping_config = ScrapingConfig()
+        else:
+            website.scraping_config = _parse_scraping_config(
+                body["scraping_config"], field="scraping_config"
+            )
+    return website
+
+
+@api_bp.route("/projects/<project_id>/websites", methods=["GET"])
+@api_endpoint
+def list_websites_for_project(project_id: str) -> tuple[Response, int] | Response:
+    """List websites in a project with cursor pagination."""
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, project_id=project_id
+    )
+    if get_db().get_project(project_id) is None:
+        raise NotFoundError(f"project {project_id} not found")
+
+    limit = parse_limit(request.args.get("limit"))
+    cursor_raw = request.args.get("cursor")
+    cursor = _Cursor.decode(cursor_raw) if cursor_raw else None
+
+    query: dict[str, Any] = {"project_id": project_id}
+    if cursor is not None:
+        from bson import ObjectId
+        try:
+            query["_id"] = {"$lt": ObjectId(cursor.last_id)}
+        except Exception as exc:
+            raise ValidationError(
+                "cursor.last_id is not a valid ObjectId",
+                errors=(
+                    _FieldError(
+                        field="cursor.last_id",
+                        code="invalid_format",
+                        message=str(exc),
+                    ),
+                ),
+            ) from exc
+
+    docs = list(get_db().websites.find(query).sort("_id", -1).limit(limit + 1))
+    websites = [Website.from_dict(doc) for doc in docs]
+    page = paginate(
+        websites, limit=limit, get_id=lambda w: str(w.mongo_id) if w.mongo_id else ""
+    )
+    return jsonify(
+        {
+            "items": [_serialize_website(w) for w in page["items"]],
+            "next_cursor": page["next_cursor"],
+        }
+    )
+
+
+@api_bp.route("/projects/<project_id>/websites", methods=["POST"])
+@api_endpoint
+def create_website(project_id: str) -> tuple[Response, int]:
+    """Create a website inside a project."""
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id
+    )
+    if get_db().get_project(project_id) is None:
+        raise NotFoundError(f"project {project_id} not found")
+
+    body = _require_dict_body()
+    website = _build_website_from_body(project_id, body)
+    website_id = get_db().create_website(website)
+    refreshed = get_db().get_website(website_id)
+    if refreshed is None:
+        raise ConflictError("website failed to persist")
+    response = jsonify(_serialize_website(refreshed))
+    response.headers["Location"] = f"/api/v1/websites/{website_id}"
+    return response, 201
+
+
+@api_bp.route("/websites/<website_id>", methods=["GET"])
+@api_endpoint
+def get_website(website_id: str) -> tuple[Response, int] | Response:
+    """Get a website by id."""
+    website = get_db().get_website(website_id)
+    if website is None:
+        raise NotFoundError(f"website {website_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, website_id=website_id
+    )
+    return jsonify(_serialize_website(website))
+
+
+@api_bp.route("/websites/<website_id>", methods=["PUT"])
+@api_endpoint
+def replace_website(website_id: str) -> tuple[Response, int] | Response:
+    """Full replace of a website's editable fields.
+
+    Server-managed fields (created_at, last_scraped, last_tested,
+    page_count, project_id, members) are preserved from the existing
+    record — clients cannot reassign a website to a different project
+    via PUT.
+    """
+    existing = get_db().get_website(website_id)
+    if existing is None:
+        raise NotFoundError(f"website {website_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, website_id=website_id
+    )
+    body = _require_dict_body()
+    replaced = _build_website_from_body(existing.project_id, body)
+    replaced.mongo_id = existing.mongo_id
+    replaced.created_at = existing.created_at
+    replaced.last_scraped = existing.last_scraped
+    replaced.last_tested = existing.last_tested
+    replaced.page_count = existing.page_count
+    replaced.discovery_history = list(existing.discovery_history)
+    replaced.members = list(existing.members)
+    if not get_db().update_website(replaced):
+        raise ConflictError("website could not be updated")
+    return jsonify(_serialize_website(replaced))
+
+
+@api_bp.route("/websites/<website_id>", methods=["PATCH"])
+@api_endpoint
+def patch_website(website_id: str) -> tuple[Response, int] | Response:
+    """Partial update — only fields present in the request body are changed."""
+    website = get_db().get_website(website_id)
+    if website is None:
+        raise NotFoundError(f"website {website_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, website_id=website_id
+    )
+    body = _require_dict_body()
+    patched = _apply_patch_to_website(website, body)
+    if not get_db().update_website(patched):
+        raise ConflictError("website could not be updated")
+    return jsonify(_serialize_website(patched))
+
+
+@api_bp.route("/websites/<website_id>", methods=["DELETE"])
+@api_endpoint
+def delete_website(website_id: str) -> tuple[Response, int]:
+    """Delete a website. Cascades to pages, PDFs, and test results."""
+    website = get_db().get_website(website_id)
+    if website is None:
+        raise NotFoundError(f"website {website_id} not found")
+    require_project_role(
+        UserRole.ADMIN, website_id=website_id
+    )
+    get_db().delete_website(website_id)
+    return Response(status=204), 204

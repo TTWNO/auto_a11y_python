@@ -219,6 +219,27 @@ def test_create_then_get_returns_resource(
     assert fetched.get_json()["id"] == page_id
 
 
+def test_create_with_duplicate_url_returns_existing_page(
+    client: FlaskClient,
+    admin_user: AppUser,
+    project: Project,
+    login: Any,
+) -> None:
+    """create_discovered_page upserts by (project_id, url). A second POST
+    with the same URL returns the same id rather than creating a duplicate."""
+    login(admin_user)
+    body = _valid_create_body()
+    first = client.post(
+        f"/api/v1/projects/{project.id}/discovered-pages", json=body
+    )
+    second = client.post(
+        f"/api/v1/projects/{project.id}/discovered-pages", json=body,
+    )
+    assert first.status_code == 201
+    assert second.status_code == 201
+    assert first.get_json()["id"] == second.get_json()["id"]
+
+
 def test_patch_updates_only_provided_fields(
     client: FlaskClient,
     admin_user: AppUser,
@@ -396,7 +417,12 @@ def test_list_paginates_with_cursor(
 ) -> None:
     login(admin_user)
     for n in range(3):
-        body = _valid_create_body() | {"title": f"Page {n}"}
+        body = _valid_create_body() | {
+            "title": f"Page {n}",
+            # The DB layer upserts by (project_id, url), so distinct URLs are
+            # required to land three rows.
+            "url": f"https://example.test/checkout-{n}",
+        }
         client.post(
             f"/api/v1/projects/{project.id}/discovered-pages", json=body
         )

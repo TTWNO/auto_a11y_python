@@ -356,9 +356,9 @@ Login, logout, register, password reset, profile, user CRUD, Microsoft/Google SS
 - ✅ `POST /api/v1/jobs/clear-all`
 - ✅ `POST /api/v1/jobs/clear-stale`
 - ✅ `POST /api/v1/jobs/cleanup-page-counts`
-- ❌ `GET /api/v1/jobs/<id>` (per-job status — needed by reports/test-runs alignment)
-- ❌ `POST /api/v1/jobs/<id>/cancel`
-- ❌ `POST /api/v1/jobs/<id>/restart`
+- ✅ `GET /api/v1/jobs/<id>` (per-job status — needed by reports/test-runs alignment)
+- ✅ `POST /api/v1/jobs/<id>/cancel`
+- ❌ `POST /api/v1/jobs/<id>/restart` (deferred — restart logic is per-job-type and lives most naturally with the test-runs / reports REST work)
 
 ### 5.16 Fixture tests (`api.py` already)
 

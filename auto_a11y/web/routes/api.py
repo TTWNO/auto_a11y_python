@@ -4255,3 +4255,825 @@ def delete_group_rest(group_id: str) -> tuple[Response, int]:
         )
     get_db().delete_group(group_id)
     return Response(status=204), 204
+
+
+# ---------------------------------------------------------------------------
+# Users + project/website members and test users (REST shape).
+#
+# Per docs/REST_API_ROADMAP.md §5.11. The roadmap recommends folding
+# five overlapping legacy blueprints — members.py, project_users.py,
+# project_participants.py, website_users.py, plus the user-search bit
+# of members — into three top-level surfaces:
+#   - /api/v1/users (system-user search and "me" lookup)
+#   - /api/v1/projects/<id>/members (platform access control;
+#     ProjectMember[user_id, group_ids[]])
+#   - /api/v1/websites/<id>/members
+#
+# We diverge slightly from the roadmap on naming for the test users:
+# the legacy ProjectUser and WebsiteUser models are credentials for
+# logging into sites *under* test (login automation), not platform
+# membership, so calling them "members" would be misleading.  They
+# live at /api/v1/projects/<id>/test-users and
+# /api/v1/websites/<id>/test-users with a
+# /api/v1/project-test-users/<id> + /api/v1/website-test-users/<id>
+# single-resource surface.
+#
+# Out of scope, deferred to a follow-up:
+#   - Lived-experience testers and supervisors (§5.11 also mentions
+#     project_participants.py — they're inline arrays on the Project
+#     document and need a separate endpoint design)
+#   - The legacy POST .../toggle endpoint — subsumed by PATCH with
+#     {enabled: false} on the test-user resources
+#   - Test-login automation action endpoints (POST .../test-login) —
+#     they share async-job mechanics with the broader test-runs PR
+# ---------------------------------------------------------------------------
+
+from auto_a11y.models.app_user import AppUser  # noqa: E402
+from auto_a11y.models.project_member import ProjectMember  # noqa: E402
+from auto_a11y.models.project_user import ProjectUser  # noqa: E402
+from auto_a11y.models.website_user import WebsiteUser  # noqa: E402
+
+# Allowed values are duplicated between the project_user.AuthenticationMethod
+# and website_user.AuthenticationMethod enums — they have identical
+# definitions but distinct types. We validate against the string values and
+# let each model's ``from_dict`` reconstruct the right enum on its side.
+_AUTH_METHOD_VALUES: frozenset[str] = frozenset(
+    {"form_login", "basic_auth", "oauth", "sso"}
+)
+
+
+def _serialize_app_user_search_hit(user: AppUser) -> dict[str, Any]:
+    """Project an :class:`AppUser` to the search-result shape.
+
+    Deliberately narrow — this endpoint exists for picking a user when
+    adding a project member, so it surfaces the email, display name,
+    and id and nothing else (no password hash, no SSO id, no
+    last_login). The full AppUser surface is out of scope for #27.
+    """
+    return {
+        "user_id": user.id,
+        "email": user.email,
+        "display_name": user.display_name,
+    }
+
+
+def _serialize_login_config_via_model(config: Any) -> dict[str, Any]:
+    """Project either model's LoginConfig to JSON.
+
+    Both ProjectUser and WebsiteUser have their own LoginConfig class;
+    they share an identical to_dict() shape, so we delegate to it
+    instead of binding to one specific class.
+    """
+    raw: dict[str, Any] = config.to_dict()
+    return {
+        "authentication_method": raw["authentication_method"],
+        "login_url": raw["login_url"],
+        "username_field_selector": raw["username_field_selector"],
+        "password_field_selector": raw["password_field_selector"],
+        "submit_button_selector": raw["submit_button_selector"],
+        "success_indicator_selector": raw["success_indicator_selector"],
+        "logout_url": raw["logout_url"],
+        "logout_button_selector": raw["logout_button_selector"],
+        "logout_success_indicator_selector": raw["logout_success_indicator_selector"],
+        "additional_steps": list(raw["additional_steps"]),
+        "session_timeout_minutes": raw["session_timeout_minutes"],
+    }
+
+
+def _serialize_project_test_user(user: ProjectUser) -> dict[str, Any]:
+    """Project a :class:`ProjectUser` to a JSON-safe dict.
+
+    The raw ``password`` is intentionally not included — it's a
+    test-credentials secret used by the login automation and the API
+    surfaces only a ``password_set`` boolean. PATCHing with a blank
+    password preserves the existing one, mirroring the admin-settings
+    secret-handling rule.
+    """
+
+    def _iso(dt: datetime | None) -> str | None:
+        return dt.isoformat() if dt is not None else None
+
+    return {
+        "id": user.id,
+        "project_id": user.project_id,
+        "username": user.username,
+        "password_set": bool(user.password),
+        "display_name": user.display_name,
+        "roles": list(user.roles),
+        "description": user.description,
+        "login_config": _serialize_login_config_via_model(user.login_config),
+        "enabled": user.enabled,
+        "last_used": _iso(user.last_used),
+        "last_login_success": user.last_login_success,
+        "last_login_error": user.last_login_error,
+        "created_at": _iso(user.created_at),
+        "updated_at": _iso(user.updated_at),
+    }
+
+
+def _serialize_website_test_user(user: WebsiteUser) -> dict[str, Any]:
+    """Same shape as project test user, with ``website_id`` instead of ``project_id``."""
+
+    def _iso(dt: datetime | None) -> str | None:
+        return dt.isoformat() if dt is not None else None
+
+    return {
+        "id": user.id,
+        "website_id": user.website_id,
+        "username": user.username,
+        "password_set": bool(user.password),
+        "display_name": user.display_name,
+        "roles": list(user.roles),
+        "description": user.description,
+        "login_config": _serialize_login_config_via_model(user.login_config),
+        "enabled": user.enabled,
+        "last_used": _iso(user.last_used),
+        "last_login_success": user.last_login_success,
+        "last_login_error": user.last_login_error,
+        "created_at": _iso(user.created_at),
+        "updated_at": _iso(user.updated_at),
+    }
+
+
+def _parse_login_config_dict(raw: Any, *, field: str) -> dict[str, Any]:
+    """Validate a JSON ``login_config`` object and return a normalized dict.
+
+    Returning a dict (rather than a model instance) lets each test-user
+    model — ``ProjectUser`` and ``WebsiteUser`` each ship their own
+    ``LoginConfig`` class — do its own ``LoginConfig.from_dict()``
+    reconstruction without forcing the validator to know which one.
+
+    Validates ``authentication_method`` against the shared set of
+    allowed string values, types optional fields, and rejects
+    ``additional_steps`` entries that aren't objects.
+    """
+    if not isinstance(raw, dict):
+        raise ValidationError(
+            f"{field} must be an object",
+            errors=(_FieldError(field=field, code="invalid_type", message="must be object"),),
+        )
+    raw_dict = cast(dict[str, Any], raw)
+    auth_method_raw = raw_dict.get("authentication_method", "form_login")
+    if not isinstance(auth_method_raw, str) or auth_method_raw not in _AUTH_METHOD_VALUES:
+        raise ValidationError(
+            f"{field}.authentication_method is not recognized",
+            errors=(_FieldError(
+                field=f"{field}.authentication_method", code="invalid_value",
+                message=f"must be one of {sorted(_AUTH_METHOD_VALUES)}"),),
+        )
+
+    def _opt_str(key: str) -> str | None:
+        value = raw_dict.get(key)
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            raise ValidationError(
+                f"{field}.{key} must be a string or null",
+                errors=(_FieldError(field=f"{field}.{key}", code="invalid_type", message="must be string"),),
+            )
+        return value
+
+    additional_steps_raw: Any = raw_dict.get("additional_steps", [])
+    if not isinstance(additional_steps_raw, list):
+        raise ValidationError(
+            f"{field}.additional_steps must be an array",
+            errors=(_FieldError(field=f"{field}.additional_steps", code="invalid_type", message="must be array"),),
+        )
+    additional_steps: list[dict[str, Any]] = []
+    for index, step in enumerate(_iter_to_any_list(additional_steps_raw)):
+        if not isinstance(step, dict):
+            raise ValidationError(
+                f"{field}.additional_steps[{index}] must be an object",
+                errors=(_FieldError(field=f"{field}.additional_steps[{index}]", code="invalid_type", message="must be object"),),
+            )
+        additional_steps.append(cast(dict[str, Any], step))
+
+    session_timeout_raw: Any = raw_dict.get("session_timeout_minutes", 30)
+    if isinstance(session_timeout_raw, bool) or not isinstance(session_timeout_raw, int):
+        raise ValidationError(
+            f"{field}.session_timeout_minutes must be an integer",
+            errors=(_FieldError(field=f"{field}.session_timeout_minutes", code="invalid_type", message="must be integer"),),
+        )
+
+    return {
+        "authentication_method": auth_method_raw,
+        "login_url": _opt_str("login_url"),
+        "username_field_selector": _opt_str("username_field_selector"),
+        "password_field_selector": _opt_str("password_field_selector"),
+        "submit_button_selector": _opt_str("submit_button_selector"),
+        "success_indicator_selector": _opt_str("success_indicator_selector"),
+        "logout_url": _opt_str("logout_url"),
+        "logout_button_selector": _opt_str("logout_button_selector"),
+        "logout_success_indicator_selector": _opt_str("logout_success_indicator_selector"),
+        "additional_steps": additional_steps,
+        "session_timeout_minutes": int(session_timeout_raw),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Users
+# ---------------------------------------------------------------------------
+
+
+@api_bp.route("/users/me", methods=["GET"])
+@api_endpoint
+def get_current_user() -> tuple[Response, int] | Response:
+    """Return basic info about the currently-authenticated user.
+
+    Useful for SPAs that need to know who they're logged in as without
+    rolling their own session-introspection endpoint. Surface is
+    intentionally minimal — full AppUser CRUD is out of scope (auth
+    flows are owned by the legacy auth.py blueprint per roadmap §5.13).
+    """
+    require_authenticated()
+    return jsonify({
+        "user_id": str(current_user.get_id()),
+        "email": getattr(current_user, "email", None),
+        "display_name": getattr(current_user, "display_name", None),
+        "is_superadmin": bool(getattr(current_user, "is_superadmin", False)),
+    })
+
+
+@api_bp.route("/users/search", methods=["GET"])
+@api_endpoint
+def search_users_rest() -> tuple[Response, int] | Response:
+    """Search active app users by email/display name.
+
+    Replaces the legacy ``GET /members/api/search-users``. Results are
+    capped at 20 entries server-side. The ``exclude_project`` query
+    param strips out users who are already members of that project,
+    which is the standard usage when populating a "add member"
+    autocomplete.
+    """
+    require_authenticated()
+    q = (request.args.get("q") or "").strip()
+    if len(q) < 2:
+        return jsonify({"users": []})
+
+    limit_raw = request.args.get("limit", "10")
+    try:
+        limit = min(max(int(limit_raw), 1), 20)
+    except ValueError as exc:
+        raise ValidationError(
+            "limit must be an integer",
+            errors=(_FieldError(field="limit", code="invalid_type", message=str(exc)),),
+        ) from exc
+
+    exclude_user_ids: list[str] = []
+    exclude_project = (request.args.get("exclude_project") or "").strip()
+    if exclude_project:
+        project = get_db().get_project(exclude_project)
+        if project is not None:
+            exclude_user_ids = [m.user_id for m in project.members]
+
+    users = get_db().search_app_users(
+        query=q,
+        exclude_user_ids=exclude_user_ids or None,
+        limit=limit,
+    )
+    return jsonify({"users": [_serialize_app_user_search_hit(u) for u in users]})
+
+
+# ---------------------------------------------------------------------------
+# Project members (platform access control — ProjectMember[user_id, group_ids[]])
+# ---------------------------------------------------------------------------
+
+
+def _serialize_project_member(member: ProjectMember, *, user: AppUser | None) -> dict[str, Any]:
+    return {
+        "user_id": member.user_id,
+        "email": user.email if user is not None else None,
+        "display_name": user.display_name if user is not None else None,
+        "group_ids": list(member.group_ids),
+    }
+
+
+def _validate_group_ids_body(body: dict[str, Any], *, field: str = "group_ids") -> list[str]:
+    raw = body.get(field)
+    if not isinstance(raw, list) or not raw:
+        raise ValidationError(
+            f"{field} must be a non-empty array",
+            errors=(_FieldError(field=field, code="required", message="must be non-empty array"),),
+        )
+    return _coerce_str_list(raw)
+
+
+@api_bp.route("/projects/<project_id>/members", methods=["GET"])
+@api_endpoint
+def list_project_members_rest(project_id: str) -> tuple[Response, int] | Response:
+    """List the platform members of a project + the available groups.
+
+    Returns each member with their email + display name + ``group_ids``,
+    plus an ``available_groups`` array (id + name) so a UI can render
+    a group picker without a second round-trip.
+    """
+    require_global_permission("project_members", "read")
+    project = get_db().get_project(project_id)
+    if project is None:
+        raise NotFoundError(f"project {project_id} not found")
+
+    members: list[dict[str, Any]] = []
+    for member in project.members:
+        user = get_db().get_app_user(member.user_id)
+        members.append(_serialize_project_member(member, user=user))
+
+    available_groups = [
+        {"id": g.id, "name": g.name, "is_system": g.is_system}
+        for g in get_db().get_all_groups()
+    ]
+    return jsonify({"members": members, "available_groups": available_groups})
+
+
+@api_bp.route("/projects/<project_id>/members", methods=["POST"])
+@api_endpoint
+def add_project_member_rest(project_id: str) -> tuple[Response, int]:
+    """Add a member to a project."""
+    require_global_permission("project_members", "create")
+    project = get_db().get_project(project_id)
+    if project is None:
+        raise NotFoundError(f"project {project_id} not found")
+
+    body = _require_dict_body()
+    user_id_raw = body.get("user_id")
+    if not isinstance(user_id_raw, str) or not user_id_raw.strip():
+        raise ValidationError(
+            "user_id is required",
+            errors=(_FieldError(field="user_id", code="required", message="required"),),
+        )
+    user_id = user_id_raw.strip()
+
+    user = get_db().get_app_user(user_id)
+    if user is None:
+        raise NotFoundError(f"user {user_id} not found")
+
+    if any(m.user_id == user_id for m in project.members):
+        raise ConflictError(f"user {user_id} is already a member of project {project_id}")
+
+    group_ids = _validate_group_ids_body(body)
+    get_db().add_project_member(project_id, user_id, group_ids)
+
+    refreshed = get_db().get_project(project_id)
+    if refreshed is None:
+        raise ConflictError("project disappeared after member-add")
+    member = next((m for m in refreshed.members if m.user_id == user_id), None)
+    if member is None:
+        raise ConflictError("member-add did not persist")
+    response = jsonify(_serialize_project_member(member, user=user))
+    response.headers["Location"] = f"/api/v1/projects/{project_id}/members/{user_id}"
+    return response, 201
+
+
+@api_bp.route("/projects/<project_id>/members/<user_id>", methods=["GET"])
+@api_endpoint
+def get_project_member_rest(project_id: str, user_id: str) -> tuple[Response, int] | Response:
+    """Get one project member."""
+    require_global_permission("project_members", "read")
+    project = get_db().get_project(project_id)
+    if project is None:
+        raise NotFoundError(f"project {project_id} not found")
+    member = next((m for m in project.members if m.user_id == user_id), None)
+    if member is None:
+        raise NotFoundError(f"user {user_id} is not a member of project {project_id}")
+    user = get_db().get_app_user(user_id)
+    return jsonify(_serialize_project_member(member, user=user))
+
+
+@api_bp.route("/projects/<project_id>/members/<user_id>", methods=["PUT"])
+@api_endpoint
+def update_project_member_rest(
+    project_id: str, user_id: str
+) -> tuple[Response, int] | Response:
+    """Replace a member's group assignments."""
+    require_global_permission("project_members", "update")
+    project = get_db().get_project(project_id)
+    if project is None:
+        raise NotFoundError(f"project {project_id} not found")
+    if not any(m.user_id == user_id for m in project.members):
+        raise NotFoundError(f"user {user_id} is not a member of project {project_id}")
+
+    body = _require_dict_body()
+    group_ids = _validate_group_ids_body(body)
+    if not get_db().update_project_member_groups(project_id, user_id, group_ids):
+        raise ConflictError("member group update did not modify any document")
+
+    refreshed = get_db().get_project(project_id)
+    if refreshed is None:
+        raise ConflictError("project disappeared after member-update")
+    member = next((m for m in refreshed.members if m.user_id == user_id), None)
+    if member is None:
+        raise ConflictError("member disappeared after update")
+    user = get_db().get_app_user(user_id)
+    return jsonify(_serialize_project_member(member, user=user))
+
+
+@api_bp.route("/projects/<project_id>/members/<user_id>", methods=["DELETE"])
+@api_endpoint
+def remove_project_member_rest(
+    project_id: str, user_id: str
+) -> tuple[Response, int]:
+    """Remove a member from a project. Self-removal is rejected (400)."""
+    require_global_permission("project_members", "delete")
+    if user_id == str(current_user.get_id()):
+        raise ValidationError(
+            "cannot remove yourself from a project",
+            errors=(_FieldError(field="user_id", code="self_removal", message="self-removal is not allowed"),),
+        )
+    project = get_db().get_project(project_id)
+    if project is None:
+        raise NotFoundError(f"project {project_id} not found")
+    if not any(m.user_id == user_id for m in project.members):
+        raise NotFoundError(f"user {user_id} is not a member of project {project_id}")
+    get_db().remove_project_member(project_id, user_id)
+    return Response(status=204), 204
+
+
+# ---------------------------------------------------------------------------
+# Test users — login automation credentials for sites under test
+# ---------------------------------------------------------------------------
+
+
+def _build_project_test_user_from_body(project_id: str, body: dict[str, Any]) -> ProjectUser:
+    from auto_a11y.models.project_user import LoginConfig as ProjectLoginConfig
+
+    username_raw = body.get("username")
+    if not isinstance(username_raw, str) or not username_raw.strip():
+        raise ValidationError(
+            "username is required",
+            errors=(_FieldError(field="username", code="required", message="required"),),
+        )
+    password_raw = body.get("password")
+    if not isinstance(password_raw, str) or not password_raw:
+        raise ValidationError(
+            "password is required on create",
+            errors=(_FieldError(field="password", code="required", message="required"),),
+        )
+    login_config_dict = (
+        _parse_login_config_dict(body["login_config"], field="login_config")
+        if "login_config" in body and body["login_config"] is not None
+        else None
+    )
+    return ProjectUser(
+        project_id=project_id,
+        username=username_raw.strip(),
+        password=password_raw,
+        display_name=_optional_str(body.get("display_name"), field="display_name"),
+        roles=_coerce_str_list(body["roles"]) if isinstance(body.get("roles"), list) else [],
+        description=_optional_str(body.get("description"), field="description"),
+        login_config=ProjectLoginConfig.from_dict(login_config_dict) if login_config_dict else ProjectLoginConfig(),
+        enabled=bool(body.get("enabled", True)),
+    )
+
+
+def _build_website_test_user_from_body(website_id: str, body: dict[str, Any]) -> WebsiteUser:
+    from auto_a11y.models.website_user import LoginConfig as WebsiteLoginConfig
+
+    username_raw = body.get("username")
+    if not isinstance(username_raw, str) or not username_raw.strip():
+        raise ValidationError(
+            "username is required",
+            errors=(_FieldError(field="username", code="required", message="required"),),
+        )
+    password_raw = body.get("password")
+    if not isinstance(password_raw, str) or not password_raw:
+        raise ValidationError(
+            "password is required on create",
+            errors=(_FieldError(field="password", code="required", message="required"),),
+        )
+    login_config_dict = (
+        _parse_login_config_dict(body["login_config"], field="login_config")
+        if "login_config" in body and body["login_config"] is not None
+        else None
+    )
+    return WebsiteUser(
+        website_id=website_id,
+        username=username_raw.strip(),
+        password=password_raw,
+        display_name=_optional_str(body.get("display_name"), field="display_name"),
+        roles=_coerce_str_list(body["roles"]) if isinstance(body.get("roles"), list) else [],
+        description=_optional_str(body.get("description"), field="description"),
+        login_config=WebsiteLoginConfig.from_dict(login_config_dict) if login_config_dict else WebsiteLoginConfig(),
+        enabled=bool(body.get("enabled", True)),
+    )
+
+
+def _optional_str(value: Any, *, field: str) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValidationError(
+            f"{field} must be a string or null",
+            errors=(_FieldError(field=field, code="invalid_type", message="must be string"),),
+        )
+    return value if value else None
+
+
+def _apply_patch_to_test_user(
+    user: ProjectUser | WebsiteUser, body: dict[str, Any]
+) -> None:
+    """Apply a partial update to a test-user model in place.
+
+    Same shape for ProjectUser and WebsiteUser — the only difference
+    between them is the parent-id field, which is locked.
+
+    A blank or omitted password preserves the existing value (mirrors
+    the admin-settings rule). Setting password to a non-empty string
+    rotates it.
+    """
+    if "username" in body:
+        if not isinstance(body["username"], str) or not body["username"].strip():
+            raise ValidationError(
+                "username must be a non-empty string",
+                errors=(_FieldError(field="username", code="invalid_value", message="must be non-empty"),),
+            )
+        user.username = body["username"].strip()
+    if "password" in body:
+        password = body["password"]
+        if password is None or password == "":
+            pass  # preserve existing
+        elif not isinstance(password, str):
+            raise ValidationError(
+                "password must be a string",
+                errors=(_FieldError(field="password", code="invalid_type", message="must be string"),),
+            )
+        else:
+            user.password = password
+    if "display_name" in body:
+        user.display_name = _optional_str(body["display_name"], field="display_name")
+    if "description" in body:
+        user.description = _optional_str(body["description"], field="description")
+    if "roles" in body:
+        if not isinstance(body["roles"], list):
+            raise ValidationError(
+                "roles must be an array",
+                errors=(_FieldError(field="roles", code="invalid_type", message="must be array"),),
+            )
+        user.roles = _coerce_str_list(body["roles"])
+    if "login_config" in body:
+        login_config_dict = (
+            None
+            if body["login_config"] is None
+            else _parse_login_config_dict(body["login_config"], field="login_config")
+        )
+        # Each model carries its own LoginConfig class — reach into the
+        # right one based on the runtime type.
+        if isinstance(user, ProjectUser):
+            from auto_a11y.models.project_user import LoginConfig as ProjectLoginConfig
+            user.login_config = (
+                ProjectLoginConfig.from_dict(login_config_dict) if login_config_dict
+                else ProjectLoginConfig()
+            )
+        else:
+            from auto_a11y.models.website_user import LoginConfig as WebsiteLoginConfig
+            user.login_config = (
+                WebsiteLoginConfig.from_dict(login_config_dict) if login_config_dict
+                else WebsiteLoginConfig()
+            )
+    if "enabled" in body:
+        user.enabled = bool(body["enabled"])
+    user.update_timestamp()
+
+
+# --- Project-scoped test users -------------------------------------------------
+
+
+@api_bp.route("/projects/<project_id>/test-users", methods=["GET"])
+@api_endpoint
+def list_project_test_users_rest(project_id: str) -> tuple[Response, int] | Response:
+    """List test users (login credentials) for a project."""
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, project_id=project_id
+    )
+    if get_db().get_project(project_id) is None:
+        raise NotFoundError(f"project {project_id} not found")
+    users = get_db().get_project_users(project_id)
+    return jsonify({"items": [_serialize_project_test_user(u) for u in users]})
+
+
+@api_bp.route("/projects/<project_id>/test-users", methods=["POST"])
+@api_endpoint
+def create_project_test_user_rest(project_id: str) -> tuple[Response, int]:
+    """Create a test user under a project."""
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id
+    )
+    if get_db().get_project(project_id) is None:
+        raise NotFoundError(f"project {project_id} not found")
+
+    body = _require_dict_body()
+    user = _build_project_test_user_from_body(project_id, body)
+
+    if get_db().get_project_user_by_username(project_id, user.username) is not None:
+        raise ConflictError(f"username {user.username!r} is already in use in this project")
+
+    user_id = get_db().create_project_user(user)
+    refreshed = get_db().get_project_user(user_id)
+    if refreshed is None:
+        raise ConflictError("project test user failed to persist")
+    response = jsonify(_serialize_project_test_user(refreshed))
+    response.headers["Location"] = f"/api/v1/project-test-users/{user_id}"
+    return response, 201
+
+
+@api_bp.route("/project-test-users/<user_id>", methods=["GET"])
+@api_endpoint
+def get_project_test_user_rest(user_id: str) -> tuple[Response, int] | Response:
+    """Get one project test user."""
+    user = get_db().get_project_user(user_id)
+    if user is None:
+        raise NotFoundError(f"project test user {user_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, project_id=user.project_id
+    )
+    return jsonify(_serialize_project_test_user(user))
+
+
+@api_bp.route("/project-test-users/<user_id>", methods=["PUT"])
+@api_endpoint
+def replace_project_test_user_rest(user_id: str) -> tuple[Response, int] | Response:
+    """Full replace of a project test user's editable fields.
+
+    project_id and metadata (last_used, last_login_*) are preserved;
+    blank password preserves the existing one.
+    """
+    existing = get_db().get_project_user(user_id)
+    if existing is None:
+        raise NotFoundError(f"project test user {user_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, project_id=existing.project_id
+    )
+    body = _require_dict_body()
+    # PUT body needs a password unless the existing record has one we
+    # can preserve (admin-settings rule).
+    if "password" not in body or not isinstance(body.get("password"), str) or not body["password"]:
+        body["password"] = existing.password
+    replaced = _build_project_test_user_from_body(existing.project_id, body)
+    if (
+        replaced.username != existing.username
+        and get_db().get_project_user_by_username(existing.project_id, replaced.username) is not None
+    ):
+        raise ConflictError(f"username {replaced.username!r} is already in use in this project")
+    replaced.mongo_id = existing.mongo_id
+    replaced.created_at = existing.created_at
+    replaced.last_used = existing.last_used
+    replaced.last_login_success = existing.last_login_success
+    replaced.last_login_error = existing.last_login_error
+    replaced.update_timestamp()
+    if not get_db().update_project_user(replaced):
+        raise ConflictError("project test user could not be updated")
+    return jsonify(_serialize_project_test_user(replaced))
+
+
+@api_bp.route("/project-test-users/<user_id>", methods=["PATCH"])
+@api_endpoint
+def patch_project_test_user_rest(user_id: str) -> tuple[Response, int] | Response:
+    """Partial update — covers the legacy enable/disable toggle."""
+    user = get_db().get_project_user(user_id)
+    if user is None:
+        raise NotFoundError(f"project test user {user_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, project_id=user.project_id
+    )
+    body = _require_dict_body()
+    if "username" in body and isinstance(body["username"], str):
+        new_username = body["username"].strip()
+        if new_username != user.username:
+            if get_db().get_project_user_by_username(user.project_id, new_username) is not None:
+                raise ConflictError(f"username {new_username!r} is already in use in this project")
+    _apply_patch_to_test_user(user, body)
+    if not get_db().update_project_user(user):
+        raise ConflictError("project test user could not be updated")
+    return jsonify(_serialize_project_test_user(user))
+
+
+@api_bp.route("/project-test-users/<user_id>", methods=["DELETE"])
+@api_endpoint
+def delete_project_test_user_rest(user_id: str) -> tuple[Response, int]:
+    """Delete a project test user."""
+    user = get_db().get_project_user(user_id)
+    if user is None:
+        raise NotFoundError(f"project test user {user_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, project_id=user.project_id
+    )
+    get_db().delete_project_user(user_id)
+    return Response(status=204), 204
+
+
+# --- Website-scoped test users ------------------------------------------------
+
+
+@api_bp.route("/websites/<website_id>/test-users", methods=["GET"])
+@api_endpoint
+def list_website_test_users_rest(website_id: str) -> tuple[Response, int] | Response:
+    """List test users (login credentials) for a website."""
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, website_id=website_id
+    )
+    if get_db().get_website(website_id) is None:
+        raise NotFoundError(f"website {website_id} not found")
+    users = get_db().get_website_users(website_id)
+    return jsonify({"items": [_serialize_website_test_user(u) for u in users]})
+
+
+@api_bp.route("/websites/<website_id>/test-users", methods=["POST"])
+@api_endpoint
+def create_website_test_user_rest(website_id: str) -> tuple[Response, int]:
+    """Create a test user under a website."""
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, website_id=website_id
+    )
+    if get_db().get_website(website_id) is None:
+        raise NotFoundError(f"website {website_id} not found")
+
+    body = _require_dict_body()
+    user = _build_website_test_user_from_body(website_id, body)
+
+    if get_db().get_website_user_by_username(website_id, user.username) is not None:
+        raise ConflictError(f"username {user.username!r} is already in use on this website")
+
+    user_id = get_db().create_website_user(user)
+    refreshed = get_db().get_website_user(user_id)
+    if refreshed is None:
+        raise ConflictError("website test user failed to persist")
+    response = jsonify(_serialize_website_test_user(refreshed))
+    response.headers["Location"] = f"/api/v1/website-test-users/{user_id}"
+    return response, 201
+
+
+@api_bp.route("/website-test-users/<user_id>", methods=["GET"])
+@api_endpoint
+def get_website_test_user_rest(user_id: str) -> tuple[Response, int] | Response:
+    """Get one website test user."""
+    user = get_db().get_website_user(user_id)
+    if user is None:
+        raise NotFoundError(f"website test user {user_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, website_id=user.website_id
+    )
+    return jsonify(_serialize_website_test_user(user))
+
+
+@api_bp.route("/website-test-users/<user_id>", methods=["PUT"])
+@api_endpoint
+def replace_website_test_user_rest(user_id: str) -> tuple[Response, int] | Response:
+    """Full replace of a website test user's editable fields."""
+    existing = get_db().get_website_user(user_id)
+    if existing is None:
+        raise NotFoundError(f"website test user {user_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, website_id=existing.website_id
+    )
+    body = _require_dict_body()
+    if "password" not in body or not isinstance(body.get("password"), str) or not body["password"]:
+        body["password"] = existing.password
+    replaced = _build_website_test_user_from_body(existing.website_id, body)
+    if (
+        replaced.username != existing.username
+        and get_db().get_website_user_by_username(existing.website_id, replaced.username) is not None
+    ):
+        raise ConflictError(f"username {replaced.username!r} is already in use on this website")
+    replaced.mongo_id = existing.mongo_id
+    replaced.created_at = existing.created_at
+    replaced.last_used = existing.last_used
+    replaced.last_login_success = existing.last_login_success
+    replaced.last_login_error = existing.last_login_error
+    replaced.update_timestamp()
+    if not get_db().update_website_user(replaced):
+        raise ConflictError("website test user could not be updated")
+    return jsonify(_serialize_website_test_user(replaced))
+
+
+@api_bp.route("/website-test-users/<user_id>", methods=["PATCH"])
+@api_endpoint
+def patch_website_test_user_rest(user_id: str) -> tuple[Response, int] | Response:
+    """Partial update of a website test user."""
+    user = get_db().get_website_user(user_id)
+    if user is None:
+        raise NotFoundError(f"website test user {user_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, website_id=user.website_id
+    )
+    body = _require_dict_body()
+    if "username" in body and isinstance(body["username"], str):
+        new_username = body["username"].strip()
+        if new_username != user.username:
+            if get_db().get_website_user_by_username(user.website_id, new_username) is not None:
+                raise ConflictError(f"username {new_username!r} is already in use on this website")
+    _apply_patch_to_test_user(user, body)
+    if not get_db().update_website_user(user):
+        raise ConflictError("website test user could not be updated")
+    return jsonify(_serialize_website_test_user(user))
+
+
+@api_bp.route("/website-test-users/<user_id>", methods=["DELETE"])
+@api_endpoint
+def delete_website_test_user_rest(user_id: str) -> tuple[Response, int]:
+    """Delete a website test user."""
+    user = get_db().get_website_user(user_id)
+    if user is None:
+        raise NotFoundError(f"website test user {user_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, website_id=user.website_id
+    )
+    get_db().delete_website_user(user_id)
+    return Response(status=204), 204

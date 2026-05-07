@@ -320,14 +320,17 @@ A report record stores `(id, filename, project_id, created_at, type, format)` so
 
 ### 5.11 Members, groups, project users, project participants, website users
 
-These are five overlapping flavors of "user-membership-of-thing". The audit recommends collapsing them under three top-level resources in #27:
+These are five overlapping flavors of "user-membership-of-thing". The audit recommended collapsing them under three top-level resources in #27. The PR series ended up splitting *test users* (login-automation credentials) from *members* (platform access control), since the legacy code conflated them but they are conceptually different — test users have nothing to do with platform-level membership; they're per-project / per-website credentials for sites under test.
 
-- `/api/v1/users` — system users (admin) — ❌ **deferred**
-- `/api/v1/projects/<id>/members` (covers `members.py`, `project_users.py`, `project_participants.py`) — ❌ **deferred (consolidation work)**
-- `/api/v1/websites/<id>/members` (covers `website_users.py`) — ❌ **deferred (consolidation work)**
+- `/api/v1/users/me` + `/api/v1/users/search` (covers `members.py`'s search endpoint plus a new "who am I" surface) — ✅ shipped
+- `/api/v1/projects/<id>/members` (covers `members.py` access-control routes; ProjectMember[user_id, group_ids[]]) — ✅ shipped (full CRUD, self-removal blocked)
+- `/api/v1/projects/<id>/test-users` + `/api/v1/project-test-users/<id>` (covers `project_users.py` minus the test-login automation action) — ✅ shipped (full CRUD with secret-preserving PATCH)
+- `/api/v1/websites/<id>/test-users` + `/api/v1/website-test-users/<id>` (covers `website_users.py`) — ✅ shipped
 - `/api/v1/groups` (covers `groups.py`) — ✅ shipped (full CRUD with `is_system` protection)
+- `/api/v1/projects/<id>/testers` + `/api/v1/projects/<id>/supervisors` (covers `project_participants.py`) — ❌ **deferred** (lived-experience testers and supervisors are inline arrays on the Project document; need a separate endpoint design)
+- `POST .../test-users/<id>/test-login` (action endpoint that runs the login automation against a live site) — ❌ **deferred** alongside the broader test-runs / async-job action endpoints
 
-Each follows standard CRUD. The HTML routes stay; the JSON routes consolidate.
+The HTML routes stay; the JSON routes consolidate.
 
 ### 5.12 Drupal sync (`drupal_sync.py`)
 

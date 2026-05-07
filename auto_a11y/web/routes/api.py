@@ -2108,6 +2108,7 @@ def delete_page_resource(page_id: str) -> tuple[Response, int]:
 # ---------------------------------------------------------------------------
 
 import hashlib  # noqa: E402
+import uuid  # noqa: E402
 
 from itsdangerous import URLSafeSerializer  # noqa: E402
 
@@ -2183,7 +2184,14 @@ def _create_share_token(scope: TokenScope, scope_id: str) -> tuple[Response, int
     label, expires_at = _parse_share_token_body(body)
 
     serializer = _share_token_serializer()
-    token_string = serializer.dumps({"scope": scope.value, "scope_id": scope_id})
+    # ``nonce`` ensures every dump produces a distinct signed string —
+    # without it, ``URLSafeSerializer.dumps`` is deterministic on
+    # (scope, scope_id) and a second token for the same scope collides
+    # on the unique ``token_hash`` index. validate_token() looks up by
+    # hash, so the nonce is never inspected on the public side.
+    token_string = serializer.dumps(
+        {"scope": scope.value, "scope_id": scope_id, "nonce": uuid.uuid4().hex}
+    )
 
     token = ShareToken(
         scope=scope,

@@ -271,17 +271,17 @@ A report record stores `(id, filename, project_id, created_at, type, format)` so
 
 ### 5.8 Scripts (`scripts.py`)
 
-| Current | Target |
-|---|---|
-| `GET /scripts/page/<id>/scripts` | `GET /api/v1/pages/<id>/scripts` |
-| `GET/POST /scripts/page/<id>/scripts/create` | `POST /api/v1/pages/<id>/scripts` |
-| `GET/POST /scripts/website/<id>/scripts/create` | `POST /api/v1/websites/<id>/scripts` |
-| `GET /scripts/website/<id>/scripts` | `GET /api/v1/websites/<id>/scripts` |
-| `GET /scripts/<id>` | `GET /api/v1/scripts/<id>` |
-| `GET/POST /scripts/<id>/edit` | `PUT /api/v1/scripts/<id>` |
-| `POST /scripts/<id>/delete` | `DELETE /api/v1/scripts/<id>` |
-| `POST /scripts/<id>/toggle` | `PATCH /api/v1/scripts/<id>` |
-| `POST /scripts/<id>/test` | `POST /api/v1/scripts/<id>/test-runs` |
+| Current | Target | Status |
+|---|---|---|
+| `GET /scripts/page/<id>/scripts` | `GET /api/v1/pages/<id>/scripts` | ✅ |
+| `GET/POST /scripts/page/<id>/scripts/create` | `POST /api/v1/pages/<id>/scripts` | ✅ |
+| `GET/POST /scripts/website/<id>/scripts/create` | `POST /api/v1/websites/<id>/scripts` | ✅ |
+| `GET /scripts/website/<id>/scripts` | `GET /api/v1/websites/<id>/scripts` | ✅ |
+| `GET /scripts/<id>` | `GET /api/v1/scripts/<id>` | ✅ |
+| `GET/POST /scripts/<id>/edit` | `PUT /api/v1/scripts/<id>` | ✅ |
+| `POST /scripts/<id>/delete` | `DELETE /api/v1/scripts/<id>` | ✅ |
+| `POST /scripts/<id>/toggle` | `PATCH /api/v1/scripts/<id>` (e.g. `{"enabled": false}`) | ✅ |
+| `POST /scripts/<id>/test` | `POST /api/v1/scripts/<id>/test-runs` | ❌ (deferred to test-runs PR) |
 
 ### 5.9 PDFs (`pdf.py`)
 

@@ -2338,3 +2338,597 @@ def revoke_share_token(token_id: str) -> tuple[Response, int]:
     )
     get_db().revoke_share_token(token_id)
     return Response(status=204), 204
+
+
+# ---------------------------------------------------------------------------
+# Page-setup scripts (REST shape — uses the @api_endpoint scaffolding).
+#
+# Sits alongside the existing scripts_bp HTML routes at /scripts/... —
+# those still serve the admin frontend (templates call /scripts/<id>/test,
+# /toggle, /delete) until issue #21 stage 2 migrates the frontend. The
+# new REST surface adds:
+#   - JSON body input (legacy used multipart form)
+#   - RFC 7807 errors
+#   - PUT replace + PATCH partial update (legacy had only "edit" + "toggle")
+#   - DELETE returns 204 (legacy returned JSON)
+#   - Cursor pagination on list
+#
+# Scripts have a ``scope`` discriminator: PAGE-scoped scripts attach to a
+# single page, WEBSITE-scoped scripts run for every page on a website.
+# The TEST_RUN scope is internal/runtime-injected and is not exposed via
+# REST. Per docs/REST_API_ROADMAP.md §5.8.
+#
+# Action endpoint POST /api/v1/scripts/<id>/test-runs is deferred to a
+# follow-up alongside other test-run action endpoints.
+# ---------------------------------------------------------------------------
+
+from auto_a11y.models.page_setup_script import (  # noqa: E402
+    ActionType,
+    ExecutionTrigger,
+    PageSetupScript,
+    ScriptScope,
+    ScriptStep,
+    ScriptValidation,
+)
+
+
+def _serialize_script_step(step: ScriptStep) -> dict[str, Any]:
+    return {
+        "step_number": step.step_number,
+        "action_type": step.action_type.value,
+        "description": step.description,
+        "selector": step.selector,
+        "value": step.value,
+        "timeout": step.timeout,
+        "wait_after": step.wait_after,
+        "screenshot_after": step.screenshot_after,
+    }
+
+
+def _serialize_script_validation(validation: ScriptValidation | None) -> dict[str, Any] | None:
+    if validation is None:
+        return None
+    return {
+        "success_selector": validation.success_selector,
+        "success_text": validation.success_text,
+        "failure_selectors": list(validation.failure_selectors),
+    }
+
+
+def _serialize_script(script: PageSetupScript) -> dict[str, Any]:
+    """Project a :class:`PageSetupScript` to a JSON-safe dict."""
+
+    def _iso(dt: datetime | None) -> str | None:
+        return dt.isoformat() if dt is not None else None
+
+    stats = script.execution_stats
+    return {
+        "id": script.id,
+        "name": script.name,
+        "description": script.description,
+        "scope": script.scope.value,
+        "website_id": script.website_id,
+        "page_id": script.page_id,
+        "trigger": script.trigger.value,
+        "condition_selector": script.condition_selector,
+        "report_violation_if_condition_met": script.report_violation_if_condition_met,
+        "violation_message": script.violation_message,
+        "violation_code": script.violation_code,
+        "test_before_execution": script.test_before_execution,
+        "test_after_execution": script.test_after_execution,
+        "expect_visible_after": list(script.expect_visible_after),
+        "expect_hidden_after": list(script.expect_hidden_after),
+        "clear_cookies_before": script.clear_cookies_before,
+        "clear_local_storage_before": script.clear_local_storage_before,
+        "wait_for_selector": script.wait_for_selector,
+        "wait_timeout": script.wait_timeout,
+        "enabled": script.enabled,
+        "steps": [_serialize_script_step(s) for s in script.steps],
+        "validation": _serialize_script_validation(script.validation),
+        "created_by": script.created_by,
+        "created_date": _iso(script.created_date),
+        "last_modified": _iso(script.last_modified),
+        "execution_stats": {
+            "last_executed": _iso(stats.last_executed),
+            "success_count": stats.success_count,
+            "failure_count": stats.failure_count,
+            "average_duration_ms": stats.average_duration_ms,
+        },
+    }
+
+
+def _parse_action_type(raw: Any, *, field: str) -> ActionType:
+    if not isinstance(raw, str):
+        raise ValidationError(
+            f"{field} must be a string",
+            errors=(_FieldError(field=field, code="invalid_type", message="must be string"),),
+        )
+    try:
+        return ActionType(raw)
+    except ValueError as exc:
+        raise ValidationError(
+            f"{field} is not a recognized action type",
+            errors=(_FieldError(field=field, code="invalid_value", message=str(exc)),),
+        ) from exc
+
+
+def _parse_execution_trigger(raw: Any, *, field: str) -> ExecutionTrigger:
+    if not isinstance(raw, str):
+        raise ValidationError(
+            f"{field} must be a string",
+            errors=(_FieldError(field=field, code="invalid_type", message="must be string"),),
+        )
+    try:
+        return ExecutionTrigger(raw)
+    except ValueError as exc:
+        raise ValidationError(
+            f"{field} is not a recognized trigger",
+            errors=(_FieldError(field=field, code="invalid_value", message=str(exc)),),
+        ) from exc
+
+
+def _parse_script_step(raw: Any, *, index: int) -> ScriptStep:
+    field_prefix = f"steps[{index}]"
+    if not isinstance(raw, dict):
+        raise ValidationError(
+            f"{field_prefix} must be an object",
+            errors=(_FieldError(field=field_prefix, code="invalid_type", message="must be object"),),
+        )
+    step_dict = cast(dict[str, Any], raw)
+
+    description_raw = step_dict.get("description", "")
+    if not isinstance(description_raw, str):
+        raise ValidationError(
+            f"{field_prefix}.description must be a string",
+            errors=(_FieldError(field=f"{field_prefix}.description", code="invalid_type", message="must be string"),),
+        )
+
+    selector_raw = step_dict.get("selector")
+    if selector_raw is not None and not isinstance(selector_raw, str):
+        raise ValidationError(
+            f"{field_prefix}.selector must be a string or null",
+            errors=(_FieldError(field=f"{field_prefix}.selector", code="invalid_type", message="must be string"),),
+        )
+
+    value_raw = step_dict.get("value")
+    if value_raw is not None and not isinstance(value_raw, str):
+        raise ValidationError(
+            f"{field_prefix}.value must be a string or null",
+            errors=(_FieldError(field=f"{field_prefix}.value", code="invalid_type", message="must be string"),),
+        )
+
+    timeout_raw = step_dict.get("timeout", 5000)
+    if isinstance(timeout_raw, bool) or not isinstance(timeout_raw, int):
+        raise ValidationError(
+            f"{field_prefix}.timeout must be an integer",
+            errors=(_FieldError(field=f"{field_prefix}.timeout", code="invalid_type", message="must be integer"),),
+        )
+
+    wait_after_raw = step_dict.get("wait_after", 0)
+    if isinstance(wait_after_raw, bool) or not isinstance(wait_after_raw, int):
+        raise ValidationError(
+            f"{field_prefix}.wait_after must be an integer",
+            errors=(_FieldError(field=f"{field_prefix}.wait_after", code="invalid_type", message="must be integer"),),
+        )
+
+    screenshot_after_raw = step_dict.get("screenshot_after", False)
+    if not isinstance(screenshot_after_raw, bool):
+        raise ValidationError(
+            f"{field_prefix}.screenshot_after must be a boolean",
+            errors=(_FieldError(field=f"{field_prefix}.screenshot_after", code="invalid_type", message="must be boolean"),),
+        )
+
+    return ScriptStep(
+        step_number=index + 1,
+        action_type=_parse_action_type(step_dict.get("action_type"), field=f"{field_prefix}.action_type"),
+        description=description_raw,
+        selector=selector_raw,
+        value=value_raw,
+        timeout=int(timeout_raw),
+        wait_after=int(wait_after_raw),
+        screenshot_after=screenshot_after_raw,
+    )
+
+
+def _iter_to_any_list(value: Any) -> list[Any]:
+    """Re-widen a narrowed iterable to ``list[Any]``.
+
+    Same trick as :func:`_coerce_str_list`: by routing the value through
+    a parameter typed ``Any``, pyright drops the ``list[Unknown]``
+    narrowing that an outer ``isinstance(_, list)`` check imposes, and
+    iteration inside this body yields properly-typed ``Any`` items.
+    """
+    items: list[Any] = []
+    for item in value:
+        items.append(item)
+    return items
+
+
+def _parse_script_steps(raw: Any, *, field: str) -> list[ScriptStep]:
+    if not isinstance(raw, list):
+        raise ValidationError(
+            f"{field} must be an array",
+            errors=(_FieldError(field=field, code="invalid_type", message="must be array"),),
+        )
+    items = _iter_to_any_list(raw)
+    return [_parse_script_step(item, index=i) for i, item in enumerate(items)]
+
+
+def _parse_script_validation(raw: Any, *, field: str) -> ScriptValidation | None:
+    if raw is None:
+        return None
+    if not isinstance(raw, dict):
+        raise ValidationError(
+            f"{field} must be an object or null",
+            errors=(_FieldError(field=field, code="invalid_type", message="must be object"),),
+        )
+    raw_dict = cast(dict[str, Any], raw)
+    success_selector = raw_dict.get("success_selector")
+    success_text = raw_dict.get("success_text")
+    failure_selectors_raw = raw_dict.get("failure_selectors", [])
+    if success_selector is not None and not isinstance(success_selector, str):
+        raise ValidationError(
+            f"{field}.success_selector must be a string or null",
+            errors=(_FieldError(field=f"{field}.success_selector", code="invalid_type", message="must be string"),),
+        )
+    if success_text is not None and not isinstance(success_text, str):
+        raise ValidationError(
+            f"{field}.success_text must be a string or null",
+            errors=(_FieldError(field=f"{field}.success_text", code="invalid_type", message="must be string"),),
+        )
+    if not isinstance(failure_selectors_raw, list):
+        raise ValidationError(
+            f"{field}.failure_selectors must be an array",
+            errors=(_FieldError(field=f"{field}.failure_selectors", code="invalid_type", message="must be array"),),
+        )
+    return ScriptValidation(
+        success_selector=success_selector,
+        success_text=success_text,
+        failure_selectors=_coerce_str_list(failure_selectors_raw),
+    )
+
+
+def _build_script_from_body(
+    body: dict[str, Any], *, scope: ScriptScope, scope_id: str
+) -> PageSetupScript:
+    """Construct a :class:`PageSetupScript` from a POST/PUT body."""
+    name_raw = body.get("name")
+    if not isinstance(name_raw, str) or not name_raw.strip():
+        raise ValidationError(
+            "name is required",
+            errors=(_FieldError(field="name", code="required", message="required"),),
+        )
+    description_raw = body.get("description", "")
+    if not isinstance(description_raw, str):
+        raise ValidationError(
+            "description must be a string",
+            errors=(_FieldError(field="description", code="invalid_type", message="must be string"),),
+        )
+
+    trigger = (
+        _parse_execution_trigger(body["trigger"], field="trigger")
+        if "trigger" in body
+        else ExecutionTrigger.ONCE_PER_PAGE
+    )
+    steps = _parse_script_steps(body["steps"], field="steps") if "steps" in body else []
+    validation = (
+        _parse_script_validation(body["validation"], field="validation")
+        if "validation" in body
+        else None
+    )
+
+    script = PageSetupScript(
+        name=name_raw.strip(),
+        description=description_raw,
+        scope=scope,
+        page_id=scope_id if scope is ScriptScope.PAGE else None,
+        website_id=scope_id if scope is ScriptScope.WEBSITE else None,
+        trigger=trigger,
+        steps=steps,
+        validation=validation,
+        enabled=bool(body.get("enabled", True)),
+        condition_selector=(
+            body["condition_selector"] if isinstance(body.get("condition_selector"), str) else None
+        ),
+        report_violation_if_condition_met=bool(body.get("report_violation_if_condition_met", False)),
+        violation_message=(
+            body["violation_message"] if isinstance(body.get("violation_message"), str) else None
+        ),
+        violation_code=(
+            body["violation_code"] if isinstance(body.get("violation_code"), str) else None
+        ),
+        test_before_execution=bool(body.get("test_before_execution", False)),
+        test_after_execution=bool(body.get("test_after_execution", True)),
+        expect_visible_after=_coerce_str_list(body.get("expect_visible_after", [])),
+        expect_hidden_after=_coerce_str_list(body.get("expect_hidden_after", [])),
+        clear_cookies_before=bool(body.get("clear_cookies_before", False)),
+        clear_local_storage_before=bool(body.get("clear_local_storage_before", False)),
+        wait_for_selector=bool(body.get("wait_for_selector", False)),
+        wait_timeout=int(body.get("wait_timeout", 5000)) if not isinstance(body.get("wait_timeout"), bool) else 5000,
+        created_by=str(current_user.get_id()) if current_user.is_authenticated else None,
+    )
+    if script.trigger is ExecutionTrigger.CONDITIONAL and not (script.condition_selector or "").strip():
+        raise ValidationError(
+            "condition_selector is required when trigger=conditional",
+            errors=(_FieldError(field="condition_selector", code="required", message="required when trigger=conditional"),),
+        )
+    return script
+
+
+def _apply_patch_to_script(script: PageSetupScript, body: dict[str, Any]) -> PageSetupScript:
+    """Apply only the keys present in ``body`` to ``script`` in place."""
+    if "name" in body:
+        if not isinstance(body["name"], str) or not body["name"].strip():
+            raise ValidationError(
+                "name must be a non-empty string",
+                errors=(_FieldError(field="name", code="invalid_value", message="must be non-empty string"),),
+            )
+        script.name = body["name"].strip()
+    if "description" in body:
+        desc = body["description"]
+        if not isinstance(desc, str):
+            raise ValidationError(
+                "description must be a string",
+                errors=(_FieldError(field="description", code="invalid_type", message="must be string"),),
+            )
+        script.description = desc
+    if "trigger" in body:
+        script.trigger = _parse_execution_trigger(body["trigger"], field="trigger")
+    if "condition_selector" in body:
+        cs = body["condition_selector"]
+        script.condition_selector = cs if isinstance(cs, str) else None
+    if "report_violation_if_condition_met" in body:
+        script.report_violation_if_condition_met = bool(body["report_violation_if_condition_met"])
+    if "violation_message" in body:
+        vm = body["violation_message"]
+        script.violation_message = vm if isinstance(vm, str) else None
+    if "violation_code" in body:
+        vc = body["violation_code"]
+        script.violation_code = vc if isinstance(vc, str) else None
+    if "test_before_execution" in body:
+        script.test_before_execution = bool(body["test_before_execution"])
+    if "test_after_execution" in body:
+        script.test_after_execution = bool(body["test_after_execution"])
+    if "expect_visible_after" in body:
+        if not isinstance(body["expect_visible_after"], list):
+            raise ValidationError(
+                "expect_visible_after must be an array",
+                errors=(_FieldError(field="expect_visible_after", code="invalid_type", message="must be array"),),
+            )
+        script.expect_visible_after = _coerce_str_list(body["expect_visible_after"])
+    if "expect_hidden_after" in body:
+        if not isinstance(body["expect_hidden_after"], list):
+            raise ValidationError(
+                "expect_hidden_after must be an array",
+                errors=(_FieldError(field="expect_hidden_after", code="invalid_type", message="must be array"),),
+            )
+        script.expect_hidden_after = _coerce_str_list(body["expect_hidden_after"])
+    if "clear_cookies_before" in body:
+        script.clear_cookies_before = bool(body["clear_cookies_before"])
+    if "clear_local_storage_before" in body:
+        script.clear_local_storage_before = bool(body["clear_local_storage_before"])
+    if "wait_for_selector" in body:
+        script.wait_for_selector = bool(body["wait_for_selector"])
+    if "wait_timeout" in body:
+        wt = body["wait_timeout"]
+        if isinstance(wt, bool) or not isinstance(wt, int):
+            raise ValidationError(
+                "wait_timeout must be an integer",
+                errors=(_FieldError(field="wait_timeout", code="invalid_type", message="must be integer"),),
+            )
+        script.wait_timeout = int(wt)
+    if "enabled" in body:
+        script.enabled = bool(body["enabled"])
+    if "steps" in body:
+        script.steps = _parse_script_steps(body["steps"], field="steps")
+    if "validation" in body:
+        script.validation = _parse_script_validation(body["validation"], field="validation")
+    if script.trigger is ExecutionTrigger.CONDITIONAL and not (script.condition_selector or "").strip():
+        raise ValidationError(
+            "condition_selector is required when trigger=conditional",
+            errors=(_FieldError(field="condition_selector", code="required", message="required when trigger=conditional"),),
+        )
+    script.update_timestamp()
+    return script
+
+
+def _resolve_script_auth_context(script: PageSetupScript) -> tuple[str | None, str | None]:
+    """Return ``(website_id, page_id)`` for ``require_project_role`` lookup.
+
+    REST surfaces only PAGE- and WEBSITE-scoped scripts; TEST_RUN-scoped
+    scripts are runtime-internal and not exposed.
+    """
+    if script.scope is ScriptScope.PAGE:
+        return None, script.page_id
+    if script.scope is ScriptScope.WEBSITE:
+        return script.website_id, None
+    return None, None
+
+
+def _list_scripts_for_scope(
+    scope: ScriptScope, scope_id: str, *, scope_field: str
+) -> Response:
+    limit = parse_limit(request.args.get("limit"))
+    cursor_raw = request.args.get("cursor")
+    cursor = _Cursor.decode(cursor_raw) if cursor_raw else None
+
+    query: dict[str, Any] = {"scope": scope.value, scope_field: scope_id}
+    if cursor is not None:
+        from bson import ObjectId
+        try:
+            query["_id"] = {"$lt": ObjectId(cursor.last_id)}
+        except Exception as exc:
+            raise ValidationError(
+                "cursor.last_id is not a valid ObjectId",
+                errors=(_FieldError(field="cursor.last_id", code="invalid_format", message=str(exc)),),
+            ) from exc
+
+    docs = list(get_db().page_setup_scripts.find(query).sort("_id", -1).limit(limit + 1))
+    scripts = [PageSetupScript.from_dict(doc) for doc in docs]
+    page = paginate(
+        scripts, limit=limit, get_id=lambda s: str(s.mongo_id) if s.mongo_id else ""
+    )
+    return jsonify(
+        {
+            "items": [_serialize_script(s) for s in page["items"]],
+            "next_cursor": page["next_cursor"],
+        }
+    )
+
+
+@api_bp.route("/pages/<page_id>/scripts", methods=["GET"])
+@api_endpoint
+def list_page_scripts_rest(page_id: str) -> tuple[Response, int] | Response:
+    """List page-scoped setup scripts."""
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, page_id=page_id
+    )
+    if get_db().get_page(page_id) is None:
+        raise NotFoundError(f"page {page_id} not found")
+    return _list_scripts_for_scope(ScriptScope.PAGE, page_id, scope_field="page_id")
+
+
+@api_bp.route("/pages/<page_id>/scripts", methods=["POST"])
+@api_endpoint
+def create_page_script_rest(page_id: str) -> tuple[Response, int]:
+    """Create a page-scoped setup script."""
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, page_id=page_id
+    )
+    if get_db().get_page(page_id) is None:
+        raise NotFoundError(f"page {page_id} not found")
+
+    body = _require_dict_body()
+    script = _build_script_from_body(body, scope=ScriptScope.PAGE, scope_id=page_id)
+    script_id = get_db().create_page_setup_script(script)
+    refreshed = get_db().get_page_setup_script(script_id)
+    if refreshed is None:
+        raise ConflictError("script failed to persist")
+    response = jsonify(_serialize_script(refreshed))
+    response.headers["Location"] = f"/api/v1/scripts/{script_id}"
+    return response, 201
+
+
+@api_bp.route("/websites/<website_id>/scripts", methods=["GET"])
+@api_endpoint
+def list_website_scripts_rest(website_id: str) -> tuple[Response, int] | Response:
+    """List website-scoped setup scripts."""
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, website_id=website_id
+    )
+    if get_db().get_website(website_id) is None:
+        raise NotFoundError(f"website {website_id} not found")
+    return _list_scripts_for_scope(ScriptScope.WEBSITE, website_id, scope_field="website_id")
+
+
+@api_bp.route("/websites/<website_id>/scripts", methods=["POST"])
+@api_endpoint
+def create_website_script_rest(website_id: str) -> tuple[Response, int]:
+    """Create a website-scoped setup script."""
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, website_id=website_id
+    )
+    if get_db().get_website(website_id) is None:
+        raise NotFoundError(f"website {website_id} not found")
+
+    body = _require_dict_body()
+    script = _build_script_from_body(body, scope=ScriptScope.WEBSITE, scope_id=website_id)
+    script_id = get_db().create_page_setup_script(script)
+    refreshed = get_db().get_page_setup_script(script_id)
+    if refreshed is None:
+        raise ConflictError("script failed to persist")
+    response = jsonify(_serialize_script(refreshed))
+    response.headers["Location"] = f"/api/v1/scripts/{script_id}"
+    return response, 201
+
+
+@api_bp.route("/scripts/<script_id>", methods=["GET"])
+@api_endpoint
+def get_script_rest(script_id: str) -> tuple[Response, int] | Response:
+    """Get a setup script by id."""
+    script = get_db().get_page_setup_script(script_id)
+    if script is None:
+        raise NotFoundError(f"script {script_id} not found")
+    if script.scope is ScriptScope.TEST_RUN:
+        # TEST_RUN-scoped scripts are runtime-internal; they are not part
+        # of the REST surface, so return 404 rather than expose them.
+        raise NotFoundError(f"script {script_id} not found")
+    website_id, page_id = _resolve_script_auth_context(script)
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT,
+        website_id=website_id, page_id=page_id,
+    )
+    return jsonify(_serialize_script(script))
+
+
+@api_bp.route("/scripts/<script_id>", methods=["PUT"])
+@api_endpoint
+def replace_script_rest(script_id: str) -> tuple[Response, int] | Response:
+    """Full replace of a setup script's editable fields.
+
+    Server-managed fields (created_date, created_by, execution_stats,
+    scope/page_id/website_id) are preserved.
+    """
+    existing = get_db().get_page_setup_script(script_id)
+    if existing is None:
+        raise NotFoundError(f"script {script_id} not found")
+    if existing.scope is ScriptScope.TEST_RUN:
+        raise NotFoundError(f"script {script_id} not found")
+    website_id, page_id = _resolve_script_auth_context(existing)
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR,
+        website_id=website_id, page_id=page_id,
+    )
+    body = _require_dict_body()
+    scope_id = existing.page_id if existing.scope is ScriptScope.PAGE else existing.website_id
+    if scope_id is None:
+        raise ConflictError("existing script has no scope id")
+    replaced = _build_script_from_body(body, scope=existing.scope, scope_id=scope_id)
+    replaced.mongo_id = existing.mongo_id
+    replaced.created_by = existing.created_by
+    replaced.created_date = existing.created_date
+    replaced.execution_stats = existing.execution_stats
+    replaced.update_timestamp()
+    if not get_db().update_page_setup_script(replaced):
+        raise ConflictError("script could not be updated")
+    return jsonify(_serialize_script(replaced))
+
+
+@api_bp.route("/scripts/<script_id>", methods=["PATCH"])
+@api_endpoint
+def patch_script_rest(script_id: str) -> tuple[Response, int] | Response:
+    """Partial update — covers the legacy enable/disable toggle (``{"enabled": false}``)
+    plus any other field-level edit."""
+    script = get_db().get_page_setup_script(script_id)
+    if script is None:
+        raise NotFoundError(f"script {script_id} not found")
+    if script.scope is ScriptScope.TEST_RUN:
+        raise NotFoundError(f"script {script_id} not found")
+    website_id, page_id = _resolve_script_auth_context(script)
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR,
+        website_id=website_id, page_id=page_id,
+    )
+    body = _require_dict_body()
+    patched = _apply_patch_to_script(script, body)
+    if not get_db().update_page_setup_script(patched):
+        raise ConflictError("script could not be updated")
+    return jsonify(_serialize_script(patched))
+
+
+@api_bp.route("/scripts/<script_id>", methods=["DELETE"])
+@api_endpoint
+def delete_script_rest(script_id: str) -> tuple[Response, int]:
+    """Delete a setup script."""
+    script = get_db().get_page_setup_script(script_id)
+    if script is None:
+        raise NotFoundError(f"script {script_id} not found")
+    if script.scope is ScriptScope.TEST_RUN:
+        raise NotFoundError(f"script {script_id} not found")
+    website_id, page_id = _resolve_script_auth_context(script)
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR,
+        website_id=website_id, page_id=page_id,
+    )
+    get_db().delete_page_setup_script(script_id)
+    return Response(status=204), 204

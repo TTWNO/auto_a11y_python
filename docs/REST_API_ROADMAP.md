@@ -339,11 +339,13 @@ Login, logout, register, password reset, profile, user CRUD, Microsoft/Google SS
 
 ### 5.14 Admin settings (`admin_settings.py`)
 
-| Current | Target |
-|---|---|
-| `GET /admin/settings` | `GET /api/v1/admin/settings` |
-| `POST /admin/settings/drupal` | `PATCH /api/v1/admin/settings/drupal` |
-| `POST /admin/settings/section/<id>` | `PATCH /api/v1/admin/settings/<section>` |
+| Current | Target | Status |
+|---|---|---|
+| `GET /admin/settings` | `GET /api/v1/admin/settings` | ✅ |
+| `POST /admin/settings/drupal` | `PATCH /api/v1/admin/settings/drupal` | ✅ |
+| `POST /admin/settings/section/<id>` | `PATCH /api/v1/admin/settings/<section>` | ✅ |
+| (new) | `DELETE /api/v1/admin/settings/drupal` (revert to env-var fallback) | ✅ |
+| (new) | `DELETE /api/v1/admin/settings/<section>` (revert to env-var fallback) | ✅ |
 
 ### 5.15 Health and jobs (`api.py` already)
 

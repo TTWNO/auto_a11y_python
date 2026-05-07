@@ -217,7 +217,21 @@ class Database:
         self.test_schedules.create_index("enabled")
         self.test_schedules.create_index([("website_id", 1), ("enabled", 1)])
         self.test_schedules.create_index("next_run_at")
-        self.test_schedules.create_index("apscheduler_job_id", unique=True, sparse=True)
+        # Unique on apscheduler_job_id, but only for documents that have a
+        # non-null string value. ``sparse=True`` is not sufficient: MongoDB
+        # treats an explicit ``null`` as a value and indexes it, so two
+        # schedules created before a scheduler assigns them job IDs would
+        # collide. Drop the legacy sparse index if it lingers from an older
+        # deploy before installing the partial replacement.
+        existing_index_names = {ix["name"] for ix in self.test_schedules.list_indexes()}
+        if "apscheduler_job_id_1" in existing_index_names:
+            self.test_schedules.drop_index("apscheduler_job_id_1")
+        self.test_schedules.create_index(
+            "apscheduler_job_id",
+            unique=True,
+            partialFilterExpression={"apscheduler_job_id": {"$type": "string"}},
+            name="apscheduler_job_id_unique_partial",
+        )
 
         # Share tokens (public share links)
         self.share_tokens.create_index("token_hash", unique=True)

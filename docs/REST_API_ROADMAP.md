@@ -243,6 +243,11 @@ A report record stores `(id, filename, project_id, created_at, type, format)` so
 
 ### 5.6 Recordings (`recordings.py`)
 
+| Status |
+|---|
+| Read/update/delete shipped on recordings + recording-issues with cursor pagination, RFC 7807 errors, project-role auth. The legacy ``recordings_bp`` HTML routes (`/recordings/`, `/recordings/<id>`, `/recordings/upload`) still serve the admin frontend. POST `/api/v1/recordings` (multipart upload + DictaphoneImporter parsing + bulk RecordingIssue creation) is **deferred to a follow-up** alongside other multipart-bodied endpoints. |
+
+
 | Current | Target |
 |---|---|
 | `GET /recordings/` | 🚫 HTML |

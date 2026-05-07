@@ -2932,3 +2932,415 @@ def delete_script_rest(script_id: str) -> tuple[Response, int]:
     )
     get_db().delete_page_setup_script(script_id)
     return Response(status=204), 204
+
+
+# ---------------------------------------------------------------------------
+# Recordings (REST shape — uses the @api_endpoint scaffolding).
+#
+# Sits alongside the existing recordings_bp HTML routes at /recordings/...
+# (still serving the admin frontend) and the legacy ad-hoc JSON endpoints
+# at /recordings/api/list, /recordings/api/<id>/issues, and
+# /recordings/api/issue/<id>/status. Per docs/REST_API_ROADMAP.md §5.6.
+#
+# In scope for this PR: read/update/delete on existing recordings + their
+# issues. Out of scope (deferred to a follow-up PR): multipart upload
+# (`POST /api/v1/recordings`) — that involves file-system handoff,
+# DictaphoneImporter parsing, and bulk issue creation, large enough to
+# deserve its own review.
+# ---------------------------------------------------------------------------
+
+from auto_a11y.models.recording import Recording, RecordingType  # noqa: E402
+from auto_a11y.models.recording_issue import RecordingIssue  # noqa: E402
+
+
+_VALID_ISSUE_STATUSES: frozenset[str] = frozenset(
+    {"open", "in_progress", "resolved", "verified"}
+)
+
+
+def _serialize_recording(recording: Recording) -> dict[str, Any]:
+    """Project a :class:`Recording` to a JSON-safe dict."""
+
+    def _iso(dt: datetime | None) -> str | None:
+        return dt.isoformat() if dt is not None else None
+
+    return {
+        "id": recording.id,
+        "recording_id": recording.recording_id,
+        "title": recording.title,
+        "description": recording.description,
+        "duration": recording.duration,
+        "recorded_date": _iso(recording.recorded_date),
+        "auditor_name": recording.auditor_name,
+        "auditor_role": recording.auditor_role,
+        "recording_type": recording.recording_type.value,
+        "project_id": recording.project_id,
+        "testing_scope": dict(recording.testing_scope),
+        "website_ids": list(recording.website_ids),
+        "page_urls": list(recording.page_urls),
+        "page_ids": list(recording.page_ids),
+        "discovered_page_ids": list(recording.discovered_page_ids),
+        "component_names": list(recording.component_names),
+        "app_screens": list(recording.app_screens),
+        "device_sections": list(recording.device_sections),
+        "task_description": recording.task_description,
+        "total_issues": recording.total_issues,
+        "high_impact_count": recording.high_impact_count,
+        "medium_impact_count": recording.medium_impact_count,
+        "low_impact_count": recording.low_impact_count,
+        "tags": list(recording.tags),
+        "notes": recording.notes,
+        "created_at": _iso(recording.created_at),
+        "updated_at": _iso(recording.updated_at),
+    }
+
+
+def _serialize_recording_issue(issue: RecordingIssue) -> dict[str, Any]:
+    """Project a :class:`RecordingIssue` to a JSON-safe dict."""
+
+    def _iso(dt: datetime | None) -> str | None:
+        return dt.isoformat() if dt is not None else None
+
+    return {
+        "id": issue.id,
+        "recording_id": issue.recording_id,
+        "title": issue.title,
+        "short_title": issue.short_title,
+        "language": issue.language,
+        "what": issue.what,
+        "why": issue.why,
+        "who": issue.who,
+        "remediation": issue.remediation,
+        "impact": issue.impact.value,
+        "touchpoint": issue.touchpoint,
+        "timecodes": [tc.to_dict() for tc in issue.timecodes],
+        "wcag": [w.to_dict() for w in issue.wcag],
+        "xpath": issue.xpath,
+        "element": issue.element,
+        "html": issue.html,
+        "project_id": issue.project_id,
+        "website_ids": list(issue.website_ids),
+        "page_urls": list(issue.page_urls),
+        "page_ids": list(issue.page_ids),
+        "component_names": list(issue.component_names),
+        "app_screens": list(issue.app_screens),
+        "device_sections": list(issue.device_sections),
+        "task_description": issue.task_description,
+        "status": issue.status,
+        "assigned_to": issue.assigned_to,
+        "resolution_notes": issue.resolution_notes,
+        "tags": list(issue.tags),
+        "created_at": _iso(issue.created_at),
+        "updated_at": _iso(issue.updated_at),
+    }
+
+
+def _apply_patch_to_recording(recording: Recording, body: dict[str, Any]) -> Recording:
+    """Apply a partial-update body to ``recording``.
+
+    Editable fields are intentionally narrow: human-facing metadata only
+    (title, description, auditor_name/role, tags, notes). Computed
+    counts, project_id, recording_id, recording_type, media_file_path,
+    Drupal sync, and multi-language structured content
+    (key_takeaways/user_painpoints/user_assertions) are server- or
+    upload-managed and not editable here.
+    """
+    if "title" in body:
+        if not isinstance(body["title"], str) or not body["title"].strip():
+            raise ValidationError(
+                "title must be a non-empty string",
+                errors=(_FieldError(field="title", code="invalid_value", message="must be non-empty string"),),
+            )
+        recording.title = body["title"].strip()
+    if "description" in body:
+        desc = body["description"]
+        if desc is not None and not isinstance(desc, str):
+            raise ValidationError(
+                "description must be a string or null",
+                errors=(_FieldError(field="description", code="invalid_type", message="must be string"),),
+            )
+        recording.description = desc.strip() if isinstance(desc, str) and desc.strip() else None
+    if "auditor_name" in body:
+        name = body["auditor_name"]
+        if name is not None and not isinstance(name, str):
+            raise ValidationError(
+                "auditor_name must be a string or null",
+                errors=(_FieldError(field="auditor_name", code="invalid_type", message="must be string"),),
+            )
+        recording.auditor_name = name if isinstance(name, str) else None
+    if "auditor_role" in body:
+        role = body["auditor_role"]
+        if role is not None and not isinstance(role, str):
+            raise ValidationError(
+                "auditor_role must be a string or null",
+                errors=(_FieldError(field="auditor_role", code="invalid_type", message="must be string"),),
+            )
+        recording.auditor_role = role if isinstance(role, str) else None
+    if "tags" in body:
+        if not isinstance(body["tags"], list):
+            raise ValidationError(
+                "tags must be an array",
+                errors=(_FieldError(field="tags", code="invalid_type", message="must be array"),),
+            )
+        recording.tags = _coerce_str_list(body["tags"])
+    if "notes" in body:
+        notes = body["notes"]
+        if notes is not None and not isinstance(notes, str):
+            raise ValidationError(
+                "notes must be a string or null",
+                errors=(_FieldError(field="notes", code="invalid_type", message="must be string"),),
+            )
+        recording.notes = notes if isinstance(notes, str) else None
+    recording.updated_at = datetime.now()
+    return recording
+
+
+def _apply_patch_to_recording_issue(
+    issue: RecordingIssue, body: dict[str, Any]
+) -> RecordingIssue:
+    """Apply a partial-update body to ``issue``.
+
+    Editable fields cover the issue-triage workflow: status (with enum
+    validation), assigned_to, resolution_notes, tags. The bulk content
+    fields (what/why/who/remediation, timecodes, WCAG references) are
+    set during upload from the source JSON and are not patchable here.
+    """
+    if "status" in body:
+        status = body["status"]
+        if not isinstance(status, str) or status not in _VALID_ISSUE_STATUSES:
+            raise ValidationError(
+                f"status must be one of {sorted(_VALID_ISSUE_STATUSES)}",
+                errors=(_FieldError(field="status", code="invalid_value", message="not a recognized status"),),
+            )
+        issue.status = status
+    if "assigned_to" in body:
+        assigned = body["assigned_to"]
+        if assigned is not None and not isinstance(assigned, str):
+            raise ValidationError(
+                "assigned_to must be a string or null",
+                errors=(_FieldError(field="assigned_to", code="invalid_type", message="must be string"),),
+            )
+        issue.assigned_to = assigned if isinstance(assigned, str) else None
+    if "resolution_notes" in body:
+        notes = body["resolution_notes"]
+        if notes is not None and not isinstance(notes, str):
+            raise ValidationError(
+                "resolution_notes must be a string or null",
+                errors=(_FieldError(field="resolution_notes", code="invalid_type", message="must be string"),),
+            )
+        issue.resolution_notes = notes if isinstance(notes, str) else None
+    if "tags" in body:
+        if not isinstance(body["tags"], list):
+            raise ValidationError(
+                "tags must be an array",
+                errors=(_FieldError(field="tags", code="invalid_type", message="must be array"),),
+            )
+        issue.tags = _coerce_str_list(body["tags"])
+    issue.updated_at = datetime.now()
+    return issue
+
+
+def _resolve_recording_project_id(recording: Recording) -> str | None:
+    """Recordings are scoped to projects via ``project_id``.
+
+    Some legacy recordings predate that linkage and may have
+    ``project_id is None``. Treat those as not-found via REST rather
+    than expose an unscopable resource.
+    """
+    return recording.project_id
+
+
+@api_bp.route("/recordings", methods=["GET"])
+@api_endpoint
+def list_recordings_rest() -> tuple[Response, int] | Response:
+    """List recordings.
+
+    Filter via ``?project_id=<id>`` (required for non-superadmins so the
+    project-role check has a target). ``recording_type=<type>`` further
+    narrows by type.
+    """
+    project_id = request.args.get("project_id")
+    if project_id is None:
+        raise ValidationError(
+            "project_id query parameter is required",
+            errors=(_FieldError(field="project_id", code="required", message="required"),),
+        )
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, project_id=project_id
+    )
+    if get_db().get_project(project_id) is None:
+        raise NotFoundError(f"project {project_id} not found")
+
+    recording_type_raw = request.args.get("recording_type")
+    if recording_type_raw is not None:
+        try:
+            RecordingType(recording_type_raw)
+        except ValueError as exc:
+            raise ValidationError(
+                "recording_type is not a recognized value",
+                errors=(_FieldError(field="recording_type", code="invalid_value", message=str(exc)),),
+            ) from exc
+
+    limit = parse_limit(request.args.get("limit"))
+    cursor_raw = request.args.get("cursor")
+    cursor = _Cursor.decode(cursor_raw) if cursor_raw else None
+
+    query: dict[str, Any] = {"project_id": project_id}
+    if recording_type_raw is not None:
+        query["recording_type"] = recording_type_raw
+    if cursor is not None:
+        from bson import ObjectId
+        try:
+            query["_id"] = {"$lt": ObjectId(cursor.last_id)}
+        except Exception as exc:
+            raise ValidationError(
+                "cursor.last_id is not a valid ObjectId",
+                errors=(_FieldError(field="cursor.last_id", code="invalid_format", message=str(exc)),),
+            ) from exc
+
+    docs = list(get_db().recordings.find(query).sort("_id", -1).limit(limit + 1))
+    recordings = [Recording.from_dict(doc) for doc in docs]
+    page = paginate(
+        recordings, limit=limit, get_id=lambda r: str(r.mongo_id) if r.mongo_id else ""
+    )
+    return jsonify(
+        {
+            "items": [_serialize_recording(r) for r in page["items"]],
+            "next_cursor": page["next_cursor"],
+        }
+    )
+
+
+@api_bp.route("/recordings/<recording_id>", methods=["GET"])
+@api_endpoint
+def get_recording_rest(recording_id: str) -> tuple[Response, int] | Response:
+    """Get a recording by id."""
+    recording = get_db().get_recording(recording_id)
+    if recording is None:
+        raise NotFoundError(f"recording {recording_id} not found")
+    project_id = _resolve_recording_project_id(recording)
+    if project_id is None:
+        raise NotFoundError(f"recording {recording_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, project_id=project_id
+    )
+    return jsonify(_serialize_recording(recording))
+
+
+@api_bp.route("/recordings/<recording_id>", methods=["PATCH"])
+@api_endpoint
+def patch_recording_rest(recording_id: str) -> tuple[Response, int] | Response:
+    """Partial update of a recording's metadata."""
+    recording = get_db().get_recording(recording_id)
+    if recording is None:
+        raise NotFoundError(f"recording {recording_id} not found")
+    project_id = _resolve_recording_project_id(recording)
+    if project_id is None:
+        raise NotFoundError(f"recording {recording_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id
+    )
+    body = _require_dict_body()
+    patched = _apply_patch_to_recording(recording, body)
+    if not get_db().update_recording(patched):
+        raise ConflictError("recording could not be updated")
+    return jsonify(_serialize_recording(patched))
+
+
+@api_bp.route("/recordings/<recording_id>", methods=["DELETE"])
+@api_endpoint
+def delete_recording_rest(recording_id: str) -> tuple[Response, int]:
+    """Delete a recording. Cascades to its RecordingIssues."""
+    recording = get_db().get_recording(recording_id)
+    if recording is None:
+        raise NotFoundError(f"recording {recording_id} not found")
+    project_id = _resolve_recording_project_id(recording)
+    if project_id is None:
+        raise NotFoundError(f"recording {recording_id} not found")
+    require_project_role(
+        UserRole.ADMIN, project_id=project_id
+    )
+    get_db().delete_recording(recording_id)
+    return Response(status=204), 204
+
+
+@api_bp.route("/recordings/<recording_id>/issues", methods=["GET"])
+@api_endpoint
+def list_recording_issues_rest(
+    recording_id: str,
+) -> tuple[Response, int] | Response:
+    """List the issues for a recording with cursor pagination."""
+    recording = get_db().get_recording(recording_id)
+    if recording is None:
+        raise NotFoundError(f"recording {recording_id} not found")
+    project_id = _resolve_recording_project_id(recording)
+    if project_id is None:
+        raise NotFoundError(f"recording {recording_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, project_id=project_id
+    )
+
+    limit = parse_limit(request.args.get("limit"))
+    cursor_raw = request.args.get("cursor")
+    cursor = _Cursor.decode(cursor_raw) if cursor_raw else None
+
+    # RecordingIssue.recording_id is the human-readable string
+    # (e.g. "NED-A") on the parent Recording, not its ObjectId. Look it
+    # up from the resolved recording rather than the URL parameter so a
+    # caller cannot inject an arbitrary string here.
+    query: dict[str, Any] = {"recording_id": recording.recording_id}
+    if cursor is not None:
+        from bson import ObjectId
+        try:
+            query["_id"] = {"$lt": ObjectId(cursor.last_id)}
+        except Exception as exc:
+            raise ValidationError(
+                "cursor.last_id is not a valid ObjectId",
+                errors=(_FieldError(field="cursor.last_id", code="invalid_format", message=str(exc)),),
+            ) from exc
+
+    docs = list(get_db().recording_issues.find(query).sort("_id", -1).limit(limit + 1))
+    issues = [RecordingIssue.from_dict(doc) for doc in docs]
+    page = paginate(
+        issues, limit=limit, get_id=lambda i: str(i.mongo_id) if i.mongo_id else ""
+    )
+    return jsonify(
+        {
+            "items": [_serialize_recording_issue(i) for i in page["items"]],
+            "next_cursor": page["next_cursor"],
+        }
+    )
+
+
+@api_bp.route("/recording-issues/<issue_id>", methods=["GET"])
+@api_endpoint
+def get_recording_issue_rest(issue_id: str) -> tuple[Response, int] | Response:
+    """Get a recording issue by id."""
+    issue = get_db().get_recording_issue(issue_id)
+    if issue is None:
+        raise NotFoundError(f"recording issue {issue_id} not found")
+    if issue.project_id is None:
+        raise NotFoundError(f"recording issue {issue_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, project_id=issue.project_id
+    )
+    return jsonify(_serialize_recording_issue(issue))
+
+
+@api_bp.route("/recording-issues/<issue_id>", methods=["PATCH"])
+@api_endpoint
+def patch_recording_issue_rest(issue_id: str) -> tuple[Response, int] | Response:
+    """Partial update of a recording issue (status, assignment, notes, tags)."""
+    issue = get_db().get_recording_issue(issue_id)
+    if issue is None:
+        raise NotFoundError(f"recording issue {issue_id} not found")
+    if issue.project_id is None:
+        raise NotFoundError(f"recording issue {issue_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, project_id=issue.project_id
+    )
+    body = _require_dict_body()
+    patched = _apply_patch_to_recording_issue(issue, body)
+    if not get_db().update_recording_issue(patched):
+        raise ConflictError("recording issue could not be updated")
+    return jsonify(_serialize_recording_issue(patched))

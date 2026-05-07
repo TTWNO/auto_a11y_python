@@ -3814,3 +3814,175 @@ def cancel_job_rest(job_id: str) -> tuple[Response, int] | Response:
     if refreshed is None:
         raise ConflictError(f"job {job_id} disappeared after cancel")
     return jsonify(_serialize_job(refreshed)), 202
+
+
+# ---------------------------------------------------------------------------
+# PDF documents (REST shape — uses the @api_endpoint scaffolding).
+#
+# Sits alongside the existing pdf_bp HTML routes at /projects/<id>/pdfs,
+# /websites/<id>/pdfs, /pdfs/<id>, /pdfs/<id>/delete, etc. (still serving
+# the admin frontend) and the various /pdfs/<id>/file, /audit, /export,
+# /images, /issue-map, /pdfmax-report viewer routes.
+#
+# In scope: list (project- and website-scoped), single read, delete.
+# Out of scope (deferred to follow-up PRs):
+#   - POST /api/v1/projects/<id>/pdfs (multipart upload + DB dedup +
+#     async fetch) — same complexity bucket as the recordings upload
+#   - POST /pdf-documents/<id>/audits / /audits/latest / /audits/latest/cancel
+#     (action endpoints; share idempotency-key + JobManager mechanics
+#     with the deferred test-runs work)
+#   - GET /file, /images/<n>, /export?format=, /issue-map, /reports/pdfmax
+#     (binary streaming + cached-artefact serving; needs a separate review
+#     pass for cache headers, range requests, and content-disposition)
+#
+# Per docs/REST_API_ROADMAP.md §5.9.
+# ---------------------------------------------------------------------------
+
+from auto_a11y.models.pdf_document import PdfDocument, PdfDocumentStatus  # noqa: E402
+from auto_a11y.pdf.storage import PdfStorage  # noqa: E402
+
+
+def _pdf_storage() -> PdfStorage:
+    return PdfStorage(base_dir=Path(get_app_config().PDF_STORAGE_DIR))
+
+
+def _serialize_pdf_document(pdf: PdfDocument) -> dict[str, Any]:
+    """Project a :class:`PdfDocument` to a JSON-safe dict.
+
+    Mirrors the shape of the underlying model except that:
+    - datetimes become ISO 8601 strings;
+    - the Mongo ``_id`` is dropped (the public id is the string ``id`` property);
+    - the ``storage_relpath`` and ``images_relpath`` filesystem paths are kept
+      because they're useful identifiers for clients that consume the
+      file-streaming endpoints (deferred), but they describe layout under a
+      server-side base dir, not absolute paths.
+    """
+
+    def _iso(dt: datetime | None) -> str | None:
+        return dt.isoformat() if dt is not None else None
+
+    return {
+        "id": pdf.id,
+        "website_id": pdf.website_id,
+        "project_id": pdf.project_id,
+        "source_url": pdf.source_url,
+        "source_type": pdf.source_type,
+        "discovered_from_page_id": pdf.discovered_from_page_id,
+        "discovered_from_user_id": pdf.discovered_from_user_id,
+        "sha256": pdf.sha256,
+        "file_size_bytes": pdf.file_size_bytes,
+        "storage_relpath": pdf.storage_relpath,
+        "images_relpath": pdf.images_relpath,
+        "original_filename": pdf.original_filename,
+        "pdf_version": pdf.pdf_version,
+        "page_count": pdf.page_count,
+        "declared_lang": pdf.declared_lang,
+        "detected_lang": pdf.detected_lang,
+        "lang_confidence": pdf.lang_confidence,
+        "status": pdf.status.value,
+        "error_reason": pdf.error_reason,
+        "last_audit_result_id": pdf.last_audit_result_id,
+        "discovered_at": _iso(pdf.discovered_at),
+        "last_audited_at": _iso(pdf.last_audited_at),
+    }
+
+
+def _list_pdfs_with_query(query: dict[str, Any]) -> Response:
+    """Cursor-paginate ``query`` against the pdf_documents collection."""
+    limit = parse_limit(request.args.get("limit"))
+    cursor_raw = request.args.get("cursor")
+    cursor = _Cursor.decode(cursor_raw) if cursor_raw else None
+
+    status_raw = request.args.get("status")
+    if status_raw is not None:
+        try:
+            query["status"] = PdfDocumentStatus(status_raw).value
+        except ValueError as exc:
+            raise ValidationError(
+                "status is not a recognized PdfDocumentStatus value",
+                errors=(_FieldError(field="status", code="invalid_value", message=str(exc)),),
+            ) from exc
+
+    if cursor is not None:
+        from bson import ObjectId
+        try:
+            query["_id"] = {"$lt": ObjectId(cursor.last_id)}
+        except Exception as exc:
+            raise ValidationError(
+                "cursor.last_id is not a valid ObjectId",
+                errors=(_FieldError(field="cursor.last_id", code="invalid_format", message=str(exc)),),
+            ) from exc
+
+    docs = list(get_db().pdf_documents.find(query).sort("_id", -1).limit(limit + 1))
+    pdfs = [PdfDocument.from_dict(doc) for doc in docs]
+    page = paginate(
+        pdfs, limit=limit, get_id=lambda p: str(p.mongo_id) if p.mongo_id else ""
+    )
+    return jsonify(
+        {
+            "items": [_serialize_pdf_document(p) for p in page["items"]],
+            "next_cursor": page["next_cursor"],
+        }
+    )
+
+
+@api_bp.route("/projects/<project_id>/pdfs", methods=["GET"])
+@api_endpoint
+def list_pdfs_for_project(project_id: str) -> tuple[Response, int] | Response:
+    """List PDF documents across every website in a project."""
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, project_id=project_id
+    )
+    if get_db().get_project(project_id) is None:
+        raise NotFoundError(f"project {project_id} not found")
+    return _list_pdfs_with_query({"project_id": project_id})
+
+
+@api_bp.route("/websites/<website_id>/pdfs", methods=["GET"])
+@api_endpoint
+def list_pdfs_for_website(website_id: str) -> tuple[Response, int] | Response:
+    """List PDF documents attached to one website."""
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, website_id=website_id
+    )
+    if get_db().get_website(website_id) is None:
+        raise NotFoundError(f"website {website_id} not found")
+    return _list_pdfs_with_query({"website_id": website_id})
+
+
+@api_bp.route("/pdf-documents/<pdf_id>", methods=["GET"])
+@api_endpoint
+def get_pdf_document_rest(pdf_id: str) -> tuple[Response, int] | Response:
+    """Read a PDF document's metadata.
+
+    The PDF *bytes* and extracted images live behind separate endpoints
+    that are deferred to a follow-up PR — this endpoint is metadata-only.
+    """
+    pdf = get_db().get_pdf_document(pdf_id)
+    if pdf is None:
+        raise NotFoundError(f"pdf document {pdf_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, project_id=pdf.project_id
+    )
+    return jsonify(_serialize_pdf_document(pdf))
+
+
+@api_bp.route("/pdf-documents/<pdf_id>", methods=["DELETE"])
+@api_endpoint
+def delete_pdf_document_rest(pdf_id: str) -> tuple[Response, int]:
+    """Delete a PDF document — DB record + filesystem artefacts.
+
+    Mirrors the legacy /pdfs/<id>/delete cascade: the storage helper
+    removes the per-PDF directory (PDF bytes, extracted images, cached
+    pdfMax outputs) and then the DB record is dropped. ADMIN/AUDITOR
+    only — CLIENT readers cannot tear down audit artefacts.
+    """
+    pdf = get_db().get_pdf_document(pdf_id)
+    if pdf is None:
+        raise NotFoundError(f"pdf document {pdf_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, project_id=pdf.project_id
+    )
+    _pdf_storage().delete(pdf)
+    get_db().delete_pdf_document(pdf_id)
+    return Response(status=204), 204

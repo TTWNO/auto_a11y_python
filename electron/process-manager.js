@@ -293,9 +293,56 @@ class ProcessManager {
   }
 
   /**
+   * Strip com.apple.quarantine from bundled Resources on macOS.
+   *
+   * Why this exists: an ad-hoc-signed DMG arrives with the quarantine
+   * extended attribute set on every file. Right-clicking → Open the
+   * outer .app de-quarantines that one bundle, but Gatekeeper re-evaluates
+   * each *nested* bundle on first launch. Playwright's full GUI Chromium
+   * forks helper bundles (Google Chrome for Testing Helper.app, Helper
+   * (GPU).app, Helper (Renderer).app, Helper (Plugin).app) — these are
+   * each separate bundles whose quarantine xattr is still set, and macOS
+   * refuses to launch them. This breaks manual-login mode specifically,
+   * because it is the only flow that uses the GUI Chromium; the
+   * single-binary chromium-headless-shell used by every other test
+   * doesn't fork helper bundles and is unaffected.
+   *
+   * `xattr -dr` is recursive and idempotent: a no-op on files without
+   * the attribute, so safe to run on every launch. We scope it to
+   * resourcesPath (chromium + python + mongodb sidecars) rather than
+   * the whole app to keep wall time bounded on machines with cold
+   * filesystem caches.
+   */
+  async unquarantineResources() {
+    if (process.platform !== 'darwin') return;
+    const resourcesPath = process.resourcesPath;
+    if (!resourcesPath || !fs.existsSync(resourcesPath)) return;
+    // Skip in dev: extraResources don't exist when running `npm start`.
+    if (!fs.existsSync(path.join(resourcesPath, 'chromium'))) return;
+
+    log.info('Stripping com.apple.quarantine from bundled resources');
+    await new Promise((resolve) => {
+      const proc = spawn('xattr', ['-dr', 'com.apple.quarantine', resourcesPath], {
+        stdio: 'ignore',
+      });
+      proc.on('exit', (code) => {
+        if (code !== 0) {
+          log.warn(`xattr -dr exited with code ${code} (continuing)`);
+        }
+        resolve();
+      });
+      proc.on('error', (err) => {
+        log.warn('xattr failed (continuing):', err.message);
+        resolve();
+      });
+    });
+  }
+
+  /**
    * Start all internal services in order.
    */
   async startAll(onProgress) {
+    await this.unquarantineResources();
     await this.startMongoDB(onProgress);
     await this.startFlask(onProgress);
     onProgress && onProgress('Ready');

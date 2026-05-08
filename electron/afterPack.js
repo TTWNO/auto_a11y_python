@@ -161,12 +161,24 @@ exports.default = async function afterPack(context) {
     }
   }
 
-  // Re-sign the outer .app top-down so its signature reflects the new
-  // nested signatures. Without `--deep` here the parent is stale and the
-  // hardened runtime rejects the whole bundle on first launch.
-  console.log('[afterPack] Re-signing outer .app with --deep');
+  // Re-sign the outer .app so its CodeResources seal captures the
+  // nested signatures we just produced. We deliberately do NOT pass
+  // `--deep` here: the deepest-first loop above has already given every
+  // nested .app / .framework a correct ad-hoc signature, and `--deep`
+  // would walk the tree again and overwrite those seals in arbitrary
+  // order — which has been observed to leave Playwright's
+  // "Google Chrome for Testing.app" with a stale parent seal pointing
+  // at re-signed helper bundles whose own seals had moved on. The full
+  // Chromium then refuses to fork its GPU/Renderer helper bundles at
+  // first launch, killing manual-login mode while the single-binary
+  // chromium-headless-shell continues to work.
+  //
+  // Without `--deep`, codesign on a bundle path rewrites only that
+  // bundle's own _CodeSignature/CodeResources, computed against the
+  // current on-disk hashes of the nested bundles — exactly what we want.
+  console.log('[afterPack] Re-signing outer .app (no --deep, see comment)');
   execSync(
-    `codesign --force --deep --sign - --timestamp=none "${appPath}"`,
+    `codesign --force --sign - --timestamp=none "${appPath}"`,
     { stdio: 'inherit' },
   );
 

@@ -15,6 +15,7 @@ class AuthenticationMethod(Enum):
     """Authentication method types"""
     FORM_LOGIN = "form_login"  # Standard username/password form
     BASIC_AUTH = "basic_auth"  # HTTP Basic Authentication
+    MANUAL_LOGIN = "manual_login"  # User logs in interactively in a visible browser (2FA, multi-step)
     OAUTH = "oauth"  # OAuth flow (future support)
     SSO = "sso"  # Single Sign-On (future support)
 
@@ -39,6 +40,11 @@ class LoginConfig:
     # Additional login steps (for multi-step logins)
     additional_steps: list[dict[str, Any]] = field(default_factory=lambda: [])  # PageSetupScript-like steps
 
+    # Manual login configuration (used when authentication_method == MANUAL_LOGIN)
+    # The user is given this many seconds to complete login in a visible browser window
+    # before testing proceeds with whatever cookies/storage state were established.
+    manual_login_wait_seconds: int = 120
+
     # Session configuration
     session_timeout_minutes: int = 30  # How long the session is valid
 
@@ -55,6 +61,7 @@ class LoginConfig:
             'logout_button_selector': self.logout_button_selector,
             'logout_success_indicator_selector': self.logout_success_indicator_selector,
             'additional_steps': self.additional_steps,
+            'manual_login_wait_seconds': self.manual_login_wait_seconds,
             'session_timeout_minutes': self.session_timeout_minutes
         }
 
@@ -79,6 +86,7 @@ class LoginConfig:
             logout_button_selector=data.get('logout_button_selector'),
             logout_success_indicator_selector=data.get('logout_success_indicator_selector'),
             additional_steps=data.get('additional_steps', []),
+            manual_login_wait_seconds=data.get('manual_login_wait_seconds', 120),
             session_timeout_minutes=data.get('session_timeout_minutes', 30)
         )
 

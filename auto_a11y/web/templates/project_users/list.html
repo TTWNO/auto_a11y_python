@@ -36,6 +36,8 @@
         </div>
     </div>
 
+    <div id="manual-login-status" class="visually-hidden" role="status" aria-live="assertive" aria-atomic="true"></div>
+
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
@@ -139,6 +141,8 @@
                                     </a>
                                     <button type="button" class="btn btn-outline-brand"
                                             id="test-login-btn-{{ user.id }}"
+                                            data-auth-method="{{ user.login_config.authentication_method.value }}"
+                                            data-manual-wait="{{ user.login_config.manual_login_wait_seconds }}"
                                             onclick="testLogin('{{ user.id }}')" aria-label="{{ ftl('websites-test-login') }}">
                                         <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>
                                     </button>
@@ -188,15 +192,32 @@
 
 {% block extra_js %}
 <script>
+function announceManualLogin(message) {
+    const region = document.getElementById('manual-login-status');
+    if (!region) return;
+    region.textContent = '';
+    setTimeout(() => { region.textContent = message; }, 50);
+}
+
 function testLogin(userId) {
     const btn = document.getElementById(`test-login-btn-${userId}`);
     const icon = btn.querySelector('i');
     const originalClass = icon.className;
+    const authMethod = btn.dataset.authMethod || '';
+    const manualWait = parseInt(btn.dataset.manualWait || '0', 10);
+    const isManual = authMethod === 'manual_login';
+
+    if (isManual) {
+        const template = {{ ftl('websites-manual-login-aria-announcement', seconds='__SECONDS__') | tojson }};
+        announceManualLogin(template.replace('__SECONDS__', String(manualWait)));
+    }
 
     // Show spinner
     btn.disabled = true;
     icon.className = 'bi bi-arrow-repeat spin';
-    btn.title = {{ ftl('websites-testing-login') | tojson }};
+    btn.title = isManual
+        ? {{ ftl('websites-manual-login-in-progress') | tojson }}
+        : {{ ftl('websites-testing-login') | tojson }};
 
     fetch(`/projects/users/${userId}/test-login`, {
         method: 'POST',
@@ -212,6 +233,9 @@ function testLogin(userId) {
             btn.classList.remove('btn-outline-brand');
             btn.classList.add('btn-outline-pass');
             btn.title = {{ ftl('websites-login-test-succeeded', duration='') | tojson }} + data.duration_ms + 'ms';
+            if (data.manual_login) {
+                announceManualLogin({{ ftl('websites-manual-login-completed') | tojson }});
+            }
         } else {
             icon.className = 'bi bi-x-circle-fill';
             btn.classList.remove('btn-outline-brand');

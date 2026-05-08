@@ -223,11 +223,9 @@ def test_login(user_id: str) -> Response | tuple[Response, int]:
     else:
         browser_config['stealth_mode'] = False
 
-    # Manual login requires a visible browser so the user can authenticate.
-    if is_manual:
-        browser_config['BROWSER_HEADLESS'] = False
-        browser_config['headless'] = False
-
+    # Manual login spawns a separate visible browser inside LoginAutomation
+    # (the test-run browser stays whatever the project config says); we only
+    # need to extend the request timeout to cover the configured wait.
     wait_seconds = login_config.manual_login_wait_seconds if is_manual else 30
     timeout_ms = max(30000, (wait_seconds + 30) * 1000)
 

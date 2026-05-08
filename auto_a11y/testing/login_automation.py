@@ -9,6 +9,7 @@ import logging
 from typing import Any, cast, TYPE_CHECKING
 from datetime import datetime
 
+from playwright._impl._api_structures import SetCookieParam
 from playwright.async_api import Page
 
 if TYPE_CHECKING:
@@ -214,23 +215,43 @@ class LoginAutomation:
         """
         Perform manual (interactive) login.
 
-        Opens the configured login URL in the visible browser window and pauses
-        for ``manual_login_wait_seconds``, allowing a human operator to complete
-        2FA or multi-step flows that automation cannot reliably perform. After
-        the wait elapses, the browser context retains whatever cookies and
-        storage state the user established.
+        Launches a *separate* visible browser window for the human operator to
+        log in (including 2FA, SSO, multi-page flows). The test-run browser
+        ``browser_page`` belongs to keeps whatever headless setting the project
+        configured — we don't touch it. After ``manual_login_wait_seconds``
+        elapses (or the operator closes the login window), cookies captured in
+        the visible context are transferred into ``browser_page.context`` so
+        subsequent test navigation is authenticated. The visible browser is
+        always closed before this method returns.
 
-        The caller is responsible for launching the browser non-headless; this
-        method performs no headless detection of its own.
+        Limitations: only cookies are transferred. Site-specific
+        ``localStorage`` / ``sessionStorage`` are not — most auth flows use
+        cookies, but token-in-localStorage SPAs may need additional handling.
         """
+        # Imported lazily to avoid a hard dep at module import time.
+        from auto_a11y.core.browser_manager import BrowserManager
+
         config = user.login_config
         wait_seconds = max(1, getattr(config, 'manual_login_wait_seconds', 120))
 
+        visible_config: dict[str, Any] = {
+            'headless': False,
+            'BROWSER_HEADLESS': False,
+            'timeout': 60000,
+            'viewport_width': 1280,
+            'viewport_height': 800,
+        }
+        visible_bm = BrowserManager(visible_config)
+
         try:
+            await visible_bm.start()
+            visible_ctx = await visible_bm.create_context()
+            visible_page = await visible_ctx.new_page()
+
             if config.login_url:
-                logger.info(f"Manual login: navigating to {config.login_url}")
+                logger.info(f"Manual login: opening visible window at {config.login_url}")
                 try:
-                    await browser_page.goto(
+                    await visible_page.goto(
                         config.login_url,
                         wait_until='domcontentloaded',
                         timeout=30000,
@@ -240,24 +261,114 @@ class LoginAutomation:
                         f"Manual login: initial navigation issue (continuing): {nav_error}"
                     )
             else:
-                logger.info("Manual login: no login_url configured, waiting on current page")
+                logger.info("Manual login: no login_url configured, opened blank visible window")
 
-            logger.info(
-                f"Manual login: waiting {wait_seconds}s for user to complete login"
-            )
-            await asyncio.sleep(wait_seconds)
+            # Wait either for the configured timeout OR the operator closing
+            # the login page early — whichever comes first. Closing early lets
+            # finished users skip the rest of the wait.
+            logger.info(f"Manual login: waiting up to {wait_seconds}s for user to complete login")
 
-            logger.info("Manual login: wait elapsed, accepting current browser state")
+            # Poll for window closure so finished operators can skip the
+            # remaining wait by closing the tab. Polling (rather than
+            # ``page.wait_for_event``) keeps the types fully reified in strict
+            # type-check mode.
+            poll_interval = 0.5
+            elapsed = 0.0
+            closed_early = False
+            while elapsed < wait_seconds:
+                if visible_page.is_closed():
+                    closed_early = True
+                    break
+                await asyncio.sleep(poll_interval)
+                elapsed += poll_interval
+            if closed_early:
+                logger.info("Manual login: operator closed the login window — proceeding early")
+            else:
+                logger.info("Manual login: wait elapsed")
+
+            # Capture cookies from the visible context, even if the page was
+            # closed (the context still holds them).
+            raw_cookies: list[Any] = []
+            try:
+                storage = await visible_ctx.storage_state()
+                raw_cookies = list(storage.get('cookies') or [])
+            except Exception as state_err:
+                logger.error(f"Manual login: could not read storage_state: {state_err}")
+
+            # storage_state() returns StorageStateCookie objects; add_cookies()
+            # expects SetCookieParam. The shapes overlap but Playwright types
+            # them distinctly (and StorageStateCookie marks fields as
+            # NotRequired), so reproject explicitly and skip any cookie missing
+            # the required identity fields.
+            cookies: list[SetCookieParam] = []
+            for c in raw_cookies:
+                name = c.get('name')
+                value = c.get('value')
+                domain = c.get('domain')
+                path = c.get('path')
+                if not (isinstance(name, str) and isinstance(value, str)
+                        and isinstance(domain, str) and isinstance(path, str)):
+                    continue
+                expires_raw = c.get('expires')
+                expires: float | None = (
+                    float(expires_raw)
+                    if isinstance(expires_raw, (int, float)) and expires_raw > 0
+                    else None
+                )
+                http_only = c.get('httpOnly')
+                secure = c.get('secure')
+                same_site_raw = c.get('sameSite')
+                same_site: Any = same_site_raw if same_site_raw in ('Lax', 'None', 'Strict') else None
+                cookie_param: SetCookieParam = {
+                    'name': name,
+                    'value': value,
+                    'url': None,
+                    'domain': domain,
+                    'path': path,
+                    'expires': expires,
+                    'httpOnly': http_only if isinstance(http_only, bool) else None,
+                    'secure': secure if isinstance(secure, bool) else None,
+                    'sameSite': same_site,
+                    'partitionKey': None,
+                }
+                cookies.append(cookie_param)
+
+            # Transfer cookies into the test browser's context.
+            target_ctx = browser_page.context
+            if cookies:
+                try:
+                    await target_ctx.add_cookies(cookies)
+                    logger.info(
+                        f"Manual login: transferred {len(cookies)} cookie(s) from login window to test browser"
+                    )
+                except Exception as add_err:
+                    error_msg = f"Manual login: failed to transfer cookies: {add_err}"
+                    logger.error(error_msg)
+                    return {'success': False, 'error': error_msg}
+            else:
+                logger.warning(
+                    "Manual login: no cookies were established during the wait window"
+                )
+
             return {
                 'success': True,
                 'error': None,
                 'wait_seconds': wait_seconds,
+                'cookies_transferred': len(cookies),
             }
 
         except Exception as e:
             error_msg = f"Manual login failed: {str(e)}"
             logger.error(error_msg)
             return {'success': False, 'error': error_msg}
+
+        finally:
+            # Always close the visible login window, even on error.
+            try:
+                await visible_bm.stop()
+                logger.info("Manual login: closed visible login window")
+            except Exception as stop_err:
+                logger.warning(f"Manual login: error closing visible window: {stop_err}")
 
     async def perform_logout(
         self,

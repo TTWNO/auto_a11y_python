@@ -758,6 +758,7 @@ enum-critical = Critique
 # Authentication method
 enum-form-login = Connexion par formulaire
 enum-basic-auth = Authentification de base
+enum-manual-login = Connexion manuelle
 enum-oauth = OAuth
 enum-sso = SSO
 

@@ -124,7 +124,7 @@
                                 </select>
                             </div>
 
-                            <div id="form-login-config" {% if user.login_config.authentication_method.value != 'form_login' %}style="display: none;"{% endif %}>
+                            <div id="login-url-group" {% if user.login_config.authentication_method.value not in ['form_login', 'manual_login'] %}style="display: none;"{% endif %}>
                                 <div class="mb-3">
                                     <label for="login_url" class="form-label">{{ ftl('common-login-page-url') }}</label>
                                     <input type="url" class="form-control" id="login_url" name="login_url"
@@ -133,7 +133,25 @@
                                            aria-describedby="login-url-help">
                                     <div class="form-text" id="login-url-help">{{ ftl('common-full-url-of-the-login-page') }}</div>
                                 </div>
+                            </div>
 
+                            <div id="manual-login-config" {% if user.login_config.authentication_method.value != 'manual_login' %}style="display: none;"{% endif %}>
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle" aria-hidden="true"></i>
+                                    {{ ftl('websites-manual-login-explanation') }}
+                                </div>
+                                <div class="mb-3">
+                                    <label for="manual_login_wait_seconds" class="form-label">{{ ftl('websites-manual-login-wait-seconds') }}</label>
+                                    <input type="number" class="form-control" id="manual_login_wait_seconds"
+                                           name="manual_login_wait_seconds"
+                                           value="{{ user.login_config.manual_login_wait_seconds }}"
+                                           min="1" max="3600"
+                                           aria-describedby="manual-login-wait-help">
+                                    <div class="form-text" id="manual-login-wait-help">{{ ftl('websites-manual-login-wait-help') }}</div>
+                                </div>
+                            </div>
+
+                            <div id="form-login-config" {% if user.login_config.authentication_method.value != 'form_login' %}style="display: none;"{% endif %}>
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label for="username_field_selector" class="form-label">{{ ftl('common-username-field-selector') }}</label>
@@ -323,14 +341,23 @@
     });
 })();
 
-// Show/hide form login config based on auth method
-document.getElementById('authentication_method').addEventListener('change', function() {
+// Show/hide login config sections based on auth method.
+// form_login and manual_login are mutually exclusive.
+(function() {
+    const select = document.getElementById('authentication_method');
+    const loginUrlGroup = document.getElementById('login-url-group');
     const formLoginConfig = document.getElementById('form-login-config');
-    if (this.value === 'form_login') {
-        formLoginConfig.style.display = 'block';
-    } else {
-        formLoginConfig.style.display = 'none';
+    const manualLoginConfig = document.getElementById('manual-login-config');
+
+    function applyVisibility() {
+        const method = select.value;
+        loginUrlGroup.style.display = (method === 'form_login' || method === 'manual_login') ? 'block' : 'none';
+        formLoginConfig.style.display = (method === 'form_login') ? 'block' : 'none';
+        manualLoginConfig.style.display = (method === 'manual_login') ? 'block' : 'none';
     }
-});
+
+    select.addEventListener('change', applyVisibility);
+    applyVisibility();
+})();
 </script>
 {% endblock %}

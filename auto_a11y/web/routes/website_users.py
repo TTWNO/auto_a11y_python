@@ -73,6 +73,7 @@ def create_user(website_id: str) -> str | Response | WerkzeugResponse:
                 logout_url=data.get('logout_url', '').strip() or None,
                 logout_button_selector=data.get('logout_button_selector', '').strip() or None,
                 logout_success_indicator_selector=data.get('logout_success_indicator_selector', '').strip() or None,
+                manual_login_wait_seconds=max(1, int(data.get('manual_login_wait_seconds', 120) or 120)),
                 session_timeout_minutes=int(data.get('session_timeout_minutes', 30))
             )
 
@@ -154,6 +155,9 @@ def edit_user(user_id: str) -> str | Response | WerkzeugResponse:
             user.login_config.logout_url = data.get('logout_url', '').strip() or None
             user.login_config.logout_button_selector = data.get('logout_button_selector', '').strip() or None
             user.login_config.logout_success_indicator_selector = data.get('logout_success_indicator_selector', '').strip() or None
+            user.login_config.manual_login_wait_seconds = max(
+                1, int(data.get('manual_login_wait_seconds', 120) or 120)
+            )
             user.login_config.session_timeout_minutes = int(data.get('session_timeout_minutes', 30))
 
             # Update user fields
@@ -213,7 +217,8 @@ def test_login(user_id: str) -> Response | tuple[Response, int]:
         return jsonify({'error': ftl('common-user-not-found')}), 404
 
     login_config = user.login_config
-    if not login_config.login_url:
+    is_manual = login_config.authentication_method.value == 'manual_login'
+    if not login_config.login_url and not is_manual:
         return jsonify({
             'success': False,
             'error': ftl('websites-login-url-not-configured')
@@ -230,6 +235,15 @@ def test_login(user_id: str) -> Response | tuple[Response, int]:
     else:
         browser_config['stealth_mode'] = False
 
+    # Manual login requires a visible browser so the user can authenticate.
+    if is_manual:
+        browser_config['BROWSER_HEADLESS'] = False
+        browser_config['headless'] = False
+
+    # Test-login timeout must accommodate the configured manual wait.
+    wait_seconds = login_config.manual_login_wait_seconds if is_manual else 30
+    timeout_ms = max(30000, (wait_seconds + 30) * 1000)
+
     async def _do_test_login() -> dict[str, object]:
         bm = BrowserManager(browser_config)
         try:
@@ -237,7 +251,7 @@ def test_login(user_id: str) -> Response | tuple[Response, int]:
             context = await bm.create_context()
             page = await context.new_page()
             login_automation = LoginAutomation(get_db())
-            result = await login_automation.perform_login(page, user, timeout=30000)
+            result = await login_automation.perform_login(page, user, timeout=timeout_ms)
             return result
         finally:
             await bm.stop()
@@ -253,7 +267,9 @@ def test_login(user_id: str) -> Response | tuple[Response, int]:
         return jsonify({
             'success': result.get('success', False),
             'error': result.get('error'),
-            'duration_ms': result.get('duration_ms', 0)
+            'duration_ms': result.get('duration_ms', 0),
+            'manual_login': is_manual,
+            'wait_seconds': wait_seconds if is_manual else None,
         })
 
     except Exception as e:

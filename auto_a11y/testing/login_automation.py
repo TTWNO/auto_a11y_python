@@ -4,6 +4,7 @@ Login automation for authenticated testing using Playwright
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any, cast, TYPE_CHECKING
 from datetime import datetime
@@ -55,6 +56,8 @@ class LoginAutomation:
                 result = await self._perform_form_login(browser_page, user, timeout)
             elif login_config.authentication_method.value == 'basic_auth':
                 result = await self._perform_basic_auth(browser_page, user)
+            elif login_config.authentication_method.value == 'manual_login':
+                result = await self._perform_manual_login(browser_page, user)
             else:
                 return {
                     'success': False,
@@ -200,6 +203,59 @@ class LoginAutomation:
 
         except Exception as e:
             error_msg = f"Basic auth failed: {str(e)}"
+            logger.error(error_msg)
+            return {'success': False, 'error': error_msg}
+
+    async def _perform_manual_login(
+        self,
+        browser_page: Page,
+        user: WebsiteUser | ProjectUser,
+    ) -> dict[str, Any]:
+        """
+        Perform manual (interactive) login.
+
+        Opens the configured login URL in the visible browser window and pauses
+        for ``manual_login_wait_seconds``, allowing a human operator to complete
+        2FA or multi-step flows that automation cannot reliably perform. After
+        the wait elapses, the browser context retains whatever cookies and
+        storage state the user established.
+
+        The caller is responsible for launching the browser non-headless; this
+        method performs no headless detection of its own.
+        """
+        config = user.login_config
+        wait_seconds = max(1, getattr(config, 'manual_login_wait_seconds', 120))
+
+        try:
+            if config.login_url:
+                logger.info(f"Manual login: navigating to {config.login_url}")
+                try:
+                    await browser_page.goto(
+                        config.login_url,
+                        wait_until='domcontentloaded',
+                        timeout=30000,
+                    )
+                except Exception as nav_error:
+                    logger.warning(
+                        f"Manual login: initial navigation issue (continuing): {nav_error}"
+                    )
+            else:
+                logger.info("Manual login: no login_url configured, waiting on current page")
+
+            logger.info(
+                f"Manual login: waiting {wait_seconds}s for user to complete login"
+            )
+            await asyncio.sleep(wait_seconds)
+
+            logger.info("Manual login: wait elapsed, accepting current browser state")
+            return {
+                'success': True,
+                'error': None,
+                'wait_seconds': wait_seconds,
+            }
+
+        except Exception as e:
+            error_msg = f"Manual login failed: {str(e)}"
             logger.error(error_msg)
             return {'success': False, 'error': error_msg}
 

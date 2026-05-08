@@ -269,9 +269,16 @@ if [ "$PROPER_SIGNING" = "true" ]; then
     echo ""
     echo ">>> Apple Developer ID + notarization secrets detected."
     echo ">>> The DMG will be properly signed and notarized."
+    # entitlements + entitlementsInherit point at the same plist; inherit
+    # is what electron-builder applies to nested signed bundles, including
+    # Playwright's Chromium under Resources/chromium. Without these the
+    # full GUI Chromium (used by manual-login mode) cannot JIT or load
+    # its own framework, so it crashes the moment a visible window opens.
     SIGNING_BLOCK='
     "identity": null,
     "hardenedRuntime": true,
+    "entitlements": "entitlements.mac.plist",
+    "entitlementsInherit": "entitlements.mac.plist",
     "gatekeeperAssess": false,
     "notarize": {
       "teamId": "'"$APPLE_TEAM_ID"'"

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Hardened-runtime entitlements applied to the Auto A11y .app and
+  every nested helper / extra-resource binary signed by electron-builder.
+
+  Why each entry exists:
+
+  - allow-jit / allow-unsigned-executable-memory / disable-executable-page-protection:
+    Playwright's bundled Chromium ("Google Chrome for Testing.app") uses V8
+    JIT and writable+executable code pages. Without these, Chromium crashes
+    on launch under hardened runtime. Headless tests in this codebase use
+    chromium-headless-shell and have happened to work without them on some
+    builds, but the manual-login flow (login_automation.py) explicitly
+    launches the full GUI Chromium, which always trips JIT.
+
+  - disable-library-validation:
+    The bundled Chromium framework is signed with a different identity
+    (or ad-hoc) than the outer Auto A11y app. Library validation rejects
+    cross-identity dlopen, so Chromium fails to load its own framework.
+    Also required for WeasyPrint's Homebrew dylibs that ship inside
+    python/lib/weasyprint_libs.
+
+  - allow-dyld-environment-variables:
+    The macOS Python wrapper (python3.12-wrapper) sets DYLD_LIBRARY_PATH
+    so WeasyPrint can find its bundled GObject / Pango / Cairo dylibs.
+    Hardened runtime strips DYLD_* by default; this exemption preserves
+    them for the Python sidecar and any browser it spawns.
+-->
+<plist version="1.0">
+<dict>
+  <key>com.apple.security.cs.allow-jit</key>
+  <true/>
+  <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+  <true/>
+  <key>com.apple.security.cs.disable-executable-page-protection</key>
+  <true/>
+  <key>com.apple.security.cs.disable-library-validation</key>
+  <true/>
+  <key>com.apple.security.cs.allow-dyld-environment-variables</key>
+  <true/>
+</dict>
+</plist>

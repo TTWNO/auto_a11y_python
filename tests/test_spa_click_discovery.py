@@ -17,8 +17,31 @@ from collections.abc import Awaitable
 from typing import Protocol, cast
 from unittest.mock import AsyncMock, MagicMock
 
+import asyncio as _asyncio
+
 import pytest
 from bson import ObjectId
+
+
+@pytest.fixture(autouse=True)
+def _fast_sleep(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Replace asyncio.sleep with a no-op for tests that don't assert sleep duration.
+
+    Tests that need to observe real sleep durations ("settle" tests) call
+    ``monkeypatch.setattr(_asyncio, "sleep", fake_sleep)`` themselves — that
+    second ``setattr`` overrides this no-op because monkeypatch applies patches
+    in LIFO order within the same fixture scope.
+    """
+
+    async def _noop(duration: float) -> None:
+        return None
+
+    monkeypatch.setattr(_asyncio, "sleep", _noop)
+
+
+# Pyright sees autouse fixtures as unused; this reference pacifies the lint
+# without affecting fixture registration.
+_ = _fast_sleep
 
 from auto_a11y.core.scraper import (
     CLICK_TIMEOUT_MS,

@@ -23,6 +23,7 @@ class ScrapingConfig:
     allowed_paths: list[str] = field(default_factory=lambda: [])
     excluded_paths: list[str] = field(default_factory=lambda: [])
     auto_fetch_pdfs: bool = True
+    spa_click_discovery: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary"""
@@ -36,6 +37,7 @@ class ScrapingConfig:
             'allowed_paths': self.allowed_paths,
             'excluded_paths': self.excluded_paths,
             'auto_fetch_pdfs': self.auto_fetch_pdfs,
+            'spa_click_discovery': self.spa_click_discovery,
         }
 
     @classmethod

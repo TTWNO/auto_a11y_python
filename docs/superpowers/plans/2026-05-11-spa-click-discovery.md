@@ -32,7 +32,9 @@
    - **Distinct-name pattern:** `websites-follow-external` = "Follow External:" (dt label) and `websites-follow-external-links` = "Follow external links" (checkbox label) — different keys for different surfaces.
    - **`-2` suffix pattern:** `websites-max-pages` = "Max Pages:" (dt with colon) and `websites-max-pages-2` = "Max Pages" (form/inline without colon).
 
-   For SPA discovery we will use the distinct-name pattern (clearer for English readers).
+   For SPA discovery we will use the **distinct-name pattern** (clearer for English readers).
+
+   **NOTE — this supersedes the spec.** The spec at lines 296–301 used the `-2` suffix pattern with `websites-spa-click-discovery` as the checkbox label and `websites-spa-click-discovery-2` as the dt label. That was inconsistent with the surrounding `websites-follow-external` family, so this plan uses the distinct-name pattern instead: `websites-spa-click-discovery` (with colon) for the dt label, and `websites-spa-click-discovery-toggle` for the checkbox label. The visible English/French strings are unchanged from the spec — only the key names differ.
 
 6. **Test style.** Look at `tests/test_scraping_job_auto_fetch_pdfs.py` for the canonical pattern: `unittest.mock.MagicMock` + `AsyncMock`, `@pytest.mark.asyncio`, narrow tests of a single function. No real browser, no HTTP server. We follow this style for the new helper.
 
@@ -454,44 +456,19 @@ The substance of the feature. Each task is a single TDD cycle that adds one capa
 
 - [ ] **Step 1: Write a failing skeleton test**
 
-Append to `tests/test_spa_click_discovery.py`:
+Append to `tests/test_spa_click_discovery.py` (these are constants-only tests; we don't construct an engine yet):
 
 ```python
 import logging
-from unittest.mock import AsyncMock, MagicMock
-
-import pytest
 
 from auto_a11y.core.scraper import (
     DESTRUCTIVE_ANCHOR_PATTERN,
     MAX_CLICK_CANDIDATES_PER_PAGE,
     CLICK_TIMEOUT_MS,
     POST_CLICK_SETTLE_MS,
-    ScrapingEngine,
 )
-from auto_a11y.models.website import ScrapingConfig, Website
 
 
-def _make_engine() -> ScrapingEngine:
-    """ScrapingEngine with mocked database + browser manager."""
-    db = MagicMock()
-    engine = ScrapingEngine(database=db, browser_config={})
-    engine.browser_manager = MagicMock()
-    engine.browser_manager.goto = AsyncMock()
-    return engine
-
-
-def _make_website(*, spa_click: bool = True) -> Website:
-    cfg = ScrapingConfig(spa_click_discovery=spa_click)
-    w = Website(project_id="pid", url="https://example.com/", name="ex",
-                scraping_config=cfg)
-    w._id = "wid"  # type: ignore[assignment]  # NOT ALLOWED — see step 2
-    return w
-```
-
-Wait — the helper above uses `# type: ignore`, which is forbidden. Drop the helper for now; we'll fix it before running anything. Instead, add this single test that exercises constants only (no engine construction yet):
-
-```python
 class TestSpaClickModuleConstants:
     def test_constants_exist_and_have_sane_values(self) -> None:
         assert MAX_CLICK_CANDIDATES_PER_PAGE == 50
@@ -583,9 +560,45 @@ This lets us test (1)–(4) in isolation before adding the click loop.
 
 - [ ] **Step 1: Write the failing tests**
 
-Append to `tests/test_spa_click_discovery.py`:
+Append to `tests/test_spa_click_discovery.py`. First, the shared engine helper plus a small `_FakePage` class that satisfies the `_ClickablePage` protocol defined in Step 3 of this task. Both use `setattr` for monkey-patching to avoid `# type: ignore`.
 
 ```python
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+from bson import ObjectId
+
+from auto_a11y.core.scraper import ScrapingEngine
+from auto_a11y.models.website import ScrapingConfig, Website
+
+
+def _make_engine() -> ScrapingEngine:
+    """ScrapingEngine with mocked database + browser manager.
+
+    Uses setattr instead of attribute assignment to avoid mypy/pyright
+    complaints about replacing a typed BrowserManager with a MagicMock.
+    """
+    engine = ScrapingEngine(database=MagicMock(), browser_config={})
+    setattr(engine, "browser_manager", MagicMock())
+    setattr(engine.browser_manager, "goto", AsyncMock())
+    setattr(engine.browser_manager, "config", {})
+    return engine
+
+
+def _make_website(*, spa_click: bool = True,
+                  follow_external: bool = False,
+                  excluded_paths: list[str] | None = None) -> Website:
+    cfg = ScrapingConfig(
+        spa_click_discovery=spa_click,
+        follow_external=follow_external,
+        excluded_paths=excluded_paths or [],
+    )
+    w = Website(project_id="pid", url="https://example.com/",
+                name="ex", scraping_config=cfg)
+    w._id = ObjectId()
+    return w
+
+
 def _engine_with_mocked_page(candidates: list[dict[str, object]]) -> tuple[
     ScrapingEngine, MagicMock
 ]:
@@ -598,15 +611,16 @@ def _engine_with_mocked_page(candidates: list[dict[str, object]]) -> tuple[
     return engine, page
 
 
+from auto_a11y.core.scraper import MAX_CLICK_CANDIDATES_PER_PAGE
+
+
 @pytest.mark.asyncio
 async def test_candidate_collection_filters_anchors_with_usable_href() -> None:
     engine, page = _engine_with_mocked_page([
         {"hasUsableHref": True,  "text": "Home",      "ariaLabel": "", "selector": "/html/body/a[1]"},
         {"hasUsableHref": False, "text": "Dashboard", "ariaLabel": "", "selector": "/html/body/a[2]"},
     ])
-    website = Website(project_id="p", url="https://example.com/",
-                      scraping_config=ScrapingConfig(spa_click_discovery=True))
-    website._id = ObjectId()  # noqa  -- see imports below
+    website = _make_website()
 
     # At this stage the helper returns an empty set (no click loop yet).
     # We assert that the evaluate JS was run exactly once.
@@ -626,9 +640,7 @@ async def test_candidate_collection_filters_destructive_anchors(
         {"hasUsableHref": False, "text": "Logout", "ariaLabel": "", "selector": "/html/body/a[1]"},
         {"hasUsableHref": False, "text": "Settings", "ariaLabel": "", "selector": "/html/body/a[2]"},
     ])
-    website = Website(project_id="p", url="https://example.com/",
-                      scraping_config=ScrapingConfig(spa_click_discovery=True))
-    website._id = ObjectId()
+    website = _make_website()
 
     with caplog.at_level(logging.INFO, logger="auto_a11y.core.scraper"):
         await engine._extract_links_via_clicking(
@@ -649,9 +661,7 @@ async def test_candidate_collection_caps_at_max(
          "selector": f"/html/body/a[{i}]"}
         for i in range(MAX_CLICK_CANDIDATES_PER_PAGE + 10)
     ])
-    website = Website(project_id="p", url="https://example.com/",
-                      scraping_config=ScrapingConfig(spa_click_discovery=True))
-    website._id = ObjectId()
+    website = _make_website()
 
     with caplog.at_level(logging.INFO, logger="auto_a11y.core.scraper"):
         await engine._extract_links_via_clicking(
@@ -665,12 +675,6 @@ async def test_candidate_collection_caps_at_max(
     assert f"{MAX_CLICK_CANDIDATES_PER_PAGE} candidates" in starting_lines[0]
 ```
 
-And add the `ObjectId` import at the top of the test file (it's already needed because `Website._id` is typed `ObjectId | None`):
-
-```python
-from bson import ObjectId
-```
-
 - [ ] **Step 2: Run to verify failure**
 
 ```bash
@@ -679,14 +683,33 @@ from bson import ObjectId
 
 Expected: `AttributeError: ScrapingEngine has no attribute '_extract_links_via_clicking'`.
 
-- [ ] **Step 3: Implement the skeleton helper**
+- [ ] **Step 3: Define the `_ClickablePage` Protocol and the skeleton helper**
 
-In `auto_a11y/core/scraper.py`, immediately after the closing of `_extract_links` (the existing method ending around line 997), add:
+In `auto_a11y/core/scraper.py`, add a `Protocol` near the existing top-of-module imports (after the `playwright.async_api` import block, before `if TYPE_CHECKING`):
+
+```python
+from typing import Protocol
+
+
+class _ClickablePage(Protocol):
+    """Subset of the Playwright Page API used by SPA click-discovery.
+
+    Defining a Protocol here lets unit tests pass an in-process fake
+    that satisfies the same structural interface, without requiring a
+    real Playwright Page instance or any `# type: ignore` casts.
+    """
+    url: str
+    async def evaluate(self, source: str, *args: object) -> object: ...
+    async def click(self, selector: str, timeout: int = ...) -> None: ...
+    async def query_selector(self, selector: str) -> object: ...
+```
+
+Then, immediately after the closing of `_extract_links` (the existing method ending around line 997), add:
 
 ```python
 async def _extract_links_via_clicking(
     self,
-    page: PlaywrightPage,
+    page: _ClickablePage,
     current_url: str,
     website: Website,
     base_domain: str,
@@ -744,7 +767,7 @@ async def _extract_links_via_clicking(
     return discovered
 ```
 
-And at module top, near the constants from Task 7, add the JS source as a module-level constant:
+And in `auto_a11y/core/scraper.py`, immediately after the `DESTRUCTIVE_ANCHOR_PATTERN` constant added in Task 7 (and before `_is_expected_skip`), add the JS source as a module-level constant:
 
 ```python
 # Collects every <a> on the page and computes whether its href is
@@ -834,21 +857,26 @@ This is the meat. Implement the click loop, including:
 
 - [ ] **Step 1: Write failing tests covering all click-loop branches**
 
-Append to `tests/test_spa_click_discovery.py`. The tests use a fake `page` whose `goto`-on-`browser_manager` is mocked and whose `url` attribute is updated programmatically to simulate SPA navigation:
+Append to `tests/test_spa_click_discovery.py`. The `_FakePage` class below satisfies the `_ClickablePage` protocol added in Task 8, so no `# type: ignore` is needed at the call sites.
 
 ```python
 class _FakePage:
     """Minimal Playwright-like page for click-loop tests.
 
-    Tracks navigation calls and lets the test script the URL each click ends at.
+    Satisfies the `_ClickablePage` protocol defined in scraper.py. Tracks
+    navigation calls and lets the test script the URL each click ends at.
     """
     def __init__(self, candidates_payload: list[dict[str, object]]) -> None:
         self._candidates = candidates_payload
-        self.url = "https://example.com/parent"
+        self.url: str = "https://example.com/parent"
         self.click_calls: list[tuple[str, int]] = []
         self.eval_calls: list[str] = []
         # Sequence of URLs to return after each click; popped left-to-right.
         self.url_after_click: list[str] = []
+        # Selectors for which query_selector should report "not found".
+        self.missing_selectors: set[str] = set()
+        # Optional per-test override for click side-effect (set via setattr).
+        # Default behavior is "navigate to next URL in url_after_click".
 
     async def evaluate(self, source: str, *args: object) -> object:
         self.eval_calls.append(source)
@@ -865,8 +893,7 @@ class _FakePage:
             self.url = self.url_after_click.pop(0)
 
     async def query_selector(self, selector: str) -> object:
-        # Anchor located unless the test sets self.missing_selectors.
-        if selector in getattr(self, "missing_selectors", set()):
+        if selector in self.missing_selectors:
             return None
         return MagicMock()
 
@@ -879,12 +906,10 @@ async def test_click_loop_captures_url_after_pushstate() -> None:
          "ariaLabel": "", "selector": "/html/body/a[1]"},
     ])
     page.url_after_click = ["https://example.com/parent/dashboard"]
-    website = Website(project_id="p", url="https://example.com/",
-                      scraping_config=ScrapingConfig(spa_click_discovery=True))
-    website._id = ObjectId()
+    website = _make_website()
 
     result = await engine._extract_links_via_clicking(
-        page=page,  # type: ignore[arg-type]  -- see step 3 fix
+        page=page,
         current_url="https://example.com/parent",
         website=website, base_domain="example.com", base_path="",
     )
@@ -892,13 +917,8 @@ async def test_click_loop_captures_url_after_pushstate() -> None:
     # Re-navigated to parent once (one click → one renavigation).
     assert engine.browser_manager.goto.await_count == 1
     assert page.click_calls and page.click_calls[0][0] == "/html/body/a[1]"
-```
 
-The `# type: ignore` above is a placeholder — strict typing forbids it. We'll fix this at step 3 by defining a `Protocol` for the page surface, or by using `cast` to a Playwright `Page` type with the relevant attributes typed. **Do not commit the `type: ignore`.**
 
-Continue with more cases:
-
-```python
 @pytest.mark.asyncio
 async def test_click_loop_skips_when_url_unchanged(
     caplog: pytest.LogCaptureFixture,
@@ -910,9 +930,7 @@ async def test_click_loop_skips_when_url_unchanged(
     ])
     # No URL change after click: page.url stays at parent.
     page.url_after_click = ["https://example.com/parent"]
-    website = Website(project_id="p", url="https://example.com/",
-                      scraping_config=ScrapingConfig(spa_click_discovery=True))
-    website._id = ObjectId()
+    website = _make_website()
 
     with caplog.at_level(logging.WARNING, logger="auto_a11y.core.scraper"):
         result = await engine._extract_links_via_clicking(
@@ -933,10 +951,8 @@ async def test_click_loop_skips_anchor_not_found_after_renavigation(
         {"hasUsableHref": False, "text": "Phantom",
          "ariaLabel": "", "selector": "/html/body/a[99]"},
     ])
-    page.missing_selectors = {"/html/body/a[99]"}  # type: ignore[attr-defined]
-    website = Website(project_id="p", url="https://example.com/",
-                      scraping_config=ScrapingConfig(spa_click_discovery=True))
-    website._id = ObjectId()
+    page.missing_selectors = {"/html/body/a[99]"}
+    website = _make_website()
 
     with caplog.at_level(logging.WARNING, logger="auto_a11y.core.scraper"):
         result = await engine._extract_links_via_clicking(
@@ -956,10 +972,7 @@ async def test_click_loop_excludes_off_domain_post_click_urls() -> None:
          "ariaLabel": "", "selector": "/html/body/a[1]"},
     ])
     page.url_after_click = ["https://evil.example.org/something"]
-    website = Website(project_id="p", url="https://example.com/",
-                      scraping_config=ScrapingConfig(
-                          spa_click_discovery=True, follow_external=False))
-    website._id = ObjectId()
+    website = _make_website(follow_external=False)
 
     result = await engine._extract_links_via_clicking(
         page=page,
@@ -977,11 +990,7 @@ async def test_click_loop_respects_excluded_paths() -> None:
          "ariaLabel": "", "selector": "/html/body/a[1]"},
     ])
     page.url_after_click = ["https://example.com/admin/dashboard"]
-    cfg = ScrapingConfig(spa_click_discovery=True,
-                         excluded_paths=["/admin"])
-    website = Website(project_id="p", url="https://example.com/",
-                      scraping_config=cfg)
-    website._id = ObjectId()
+    website = _make_website(excluded_paths=["/admin"])
 
     result = await engine._extract_links_via_clicking(
         page=page,
@@ -999,9 +1008,7 @@ async def test_click_loop_strips_target_blank_before_click() -> None:
          "ariaLabel": "", "selector": "/html/body/a[1]"},
     ])
     page.url_after_click = ["https://example.com/popped"]
-    website = Website(project_id="p", url="https://example.com/",
-                      scraping_config=ScrapingConfig(spa_click_discovery=True))
-    website._id = ObjectId()
+    website = _make_website()
 
     result = await engine._extract_links_via_clicking(
         page=page,
@@ -1027,16 +1034,16 @@ async def test_click_loop_continues_after_per_click_exception(
          "ariaLabel": "", "selector": "/html/body/a[2]"},
     ])
     # Make the first click raise; second click navigates normally.
+    # Use setattr to monkey-patch the method without triggering
+    # mypy's method-assign warning.
     original_click = page.click
     async def click_side_effect(selector: str, timeout: int = 0) -> None:
         if selector == "/html/body/a[1]":
             raise RuntimeError("simulated click failure")
         await original_click(selector, timeout)
-    page.click = click_side_effect  # type: ignore[assignment]
+    setattr(page, "click", click_side_effect)
     page.url_after_click = ["https://example.com/works"]
-    website = Website(project_id="p", url="https://example.com/",
-                      scraping_config=ScrapingConfig(spa_click_discovery=True))
-    website._id = ObjectId()
+    website = _make_website()
 
     with caplog.at_level(logging.WARNING, logger="auto_a11y.core.scraper"):
         result = await engine._extract_links_via_clicking(
@@ -1172,23 +1179,7 @@ def _filter_post_click_url(
     return normalized
 ```
 
-For the typing issue with the test's `_FakePage`: rather than allow `# type: ignore` in tests, define the helper signature using a `Protocol` so `_FakePage` satisfies it structurally. Add at the top of `scraper.py` (near other imports):
-
-```python
-from typing import Protocol
-
-
-class _ClickablePage(Protocol):
-    """Subset of the Playwright page API used by click-discovery."""
-    url: str
-    async def evaluate(self, source: str, *args: object) -> object: ...
-    async def click(self, selector: str, timeout: int = ...) -> None: ...
-    async def query_selector(self, selector: str) -> object: ...
-```
-
-Then change the helper signature so `page` is typed as `_ClickablePage` (covariant fit: real `PlaywrightPage` satisfies this protocol). Update the call site in `_extract_links` accordingly when wiring it in Task 11.
-
-Remove the `# type: ignore[arg-type]` comments from the tests once the protocol is in place.
+The `_ClickablePage` Protocol added in Task 8 already lets `_FakePage` satisfy the helper's `page` parameter structurally — no `# type: ignore` is needed at any test call site. Real `PlaywrightPage` also satisfies the protocol (it has `url: str`, `async evaluate(...)`, `async click(...)`, `async query_selector(...)`), so the wiring in Task 10 will work without further annotation.
 
 - [ ] **Step 4: Run tests to verify pass**
 
@@ -1245,18 +1236,17 @@ async def test_extract_links_does_not_call_helper_when_flag_off() -> None:
     engine = _make_engine()
     page = MagicMock()
     page.evaluate = AsyncMock(return_value=[])  # No href anchors.
-    website = Website(project_id="p", url="https://example.com/",
-                      scraping_config=ScrapingConfig(spa_click_discovery=False))
-    website._id = ObjectId()
+    website = _make_website(spa_click=False)
 
-    # Spy on the helper.
-    engine._extract_links_via_clicking = AsyncMock(return_value={"unused"})  # type: ignore[method-assign]
+    # Spy on the helper via setattr to avoid mypy method-assign warning.
+    spy = AsyncMock(return_value={"unused"})
+    setattr(engine, "_extract_links_via_clicking", spy)
 
     result = await engine._extract_links(
         page=page, current_url="https://example.com/",
         website=website, base_domain="example.com", base_path="",
     )
-    engine._extract_links_via_clicking.assert_not_called()
+    spy.assert_not_called()
     assert result == set()
 
 
@@ -1265,23 +1255,18 @@ async def test_extract_links_unions_helper_result_when_flag_on() -> None:
     engine = _make_engine()
     page = MagicMock()
     page.evaluate = AsyncMock(return_value=[])  # No href anchors.
-    website = Website(project_id="p", url="https://example.com/",
-                      scraping_config=ScrapingConfig(spa_click_discovery=True))
-    website._id = ObjectId()
+    website = _make_website(spa_click=True)
 
-    engine._extract_links_via_clicking = AsyncMock(  # type: ignore[method-assign]
-        return_value={"https://example.com/spa-route"}
-    )
+    spy = AsyncMock(return_value={"https://example.com/spa-route"})
+    setattr(engine, "_extract_links_via_clicking", spy)
 
     result = await engine._extract_links(
         page=page, current_url="https://example.com/",
         website=website, base_domain="example.com", base_path="",
     )
-    engine._extract_links_via_clicking.assert_awaited_once()
+    spy.assert_awaited_once()
     assert "https://example.com/spa-route" in result
 ```
-
-The `# type: ignore[method-assign]` on these two lines is acceptable **only** if the strict-typing tools accept that pattern for test-time monkey-patching of methods. If they don't, replace with `setattr(engine, "_extract_links_via_clicking", AsyncMock(...))`. **Verify before committing** that no `type: ignore` remains.
 
 - [ ] **Step 2: Run to verify failure**
 
@@ -1350,11 +1335,11 @@ EOF
 
 Append to `tests/test_spa_click_discovery.py`:
 
+**Before writing this test**, read `scraper.py:95-235` and confirm which side-effect (database call or browser-manager call) happens first after the `DiscoveryRun` is created. In the current code, `self.db.create_discovery_run(discovery_run)` is invoked on line ~111, then several DB lookups, then `self.db.mark_pages_not_in_latest_discovery(website_id)` on line ~235. The browser-managed loop starts after that. Pick the *first* db method called *after* `create_discovery_run` to raise from, so the test exits the function cleanly after the DiscoveryRun has been captured.
+
 ```python
 @pytest.mark.asyncio
-async def test_discover_website_records_click_discovery_mode_on_run(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+async def test_discover_website_records_click_discovery_mode_on_run() -> None:
     """Verify the DiscoveryRun created at the start carries the flag through."""
     from auto_a11y.models.discovery_run import DiscoveryRun
 
@@ -1365,30 +1350,27 @@ async def test_discover_website_records_click_discovery_mode_on_run(
         captured.append(run)
         return "run-1"
 
-    engine.db.create_discovery_run = fake_create_discovery_run  # type: ignore[attr-defined]
-    engine.db.get_discovery_runs = MagicMock(return_value=[])  # type: ignore[attr-defined]
-    engine.db.mark_pages_not_in_latest_discovery = MagicMock()  # type: ignore[attr-defined]
-
-    # Cut the loop short by raising in browser startup so we only test the
-    # DiscoveryRun creation block.
-    engine.browser_manager.ensure_running = AsyncMock(  # type: ignore[method-assign]
-        side_effect=RuntimeError("stop here")
+    # Use setattr to monkey-patch db methods without triggering
+    # mypy/pyright complaints about MagicMock attribute assignment.
+    setattr(engine.db, "create_discovery_run", fake_create_discovery_run)
+    setattr(engine.db, "get_discovery_runs", MagicMock(return_value=[]))
+    # Make the *next* db call after create_discovery_run raise, to short-circuit
+    # the function once the DiscoveryRun has been captured. Adjust this method
+    # name to match whichever db method is called next in discover_website.
+    setattr(
+        engine.db,
+        "mark_pages_not_in_latest_discovery",
+        MagicMock(side_effect=RuntimeError("stop here")),
     )
 
-    website = Website(project_id="p", url="https://example.com/",
-                      scraping_config=ScrapingConfig(spa_click_discovery=True))
-    website._id = ObjectId()
+    website = _make_website(spa_click=True)
 
     with pytest.raises(Exception):
         await engine.discover_website(website=website)
 
-    assert captured, "DiscoveryRun should have been created before browser startup"
+    assert captured, "DiscoveryRun should have been created before the raise"
     assert captured[0].spa_click_discovery is True
 ```
-
-The placement of `mark_pages_not_in_latest_discovery` vs `ensure_running` in the existing `discover_website` matters — verify the source order so the test triggers the right early-exit. Adjust the side-effect target if needed (e.g. `engine.db.mark_pages_not_in_latest_discovery` if that's called first).
-
-If the `type: ignore` comments are required for mocking `db` attributes, replace with `setattr(engine.db, "create_discovery_run", ...)` etc. **No `type: ignore` in committed code.**
 
 - [ ] **Step 2: Run to verify failure**
 
@@ -1450,6 +1432,8 @@ EOF
 ### Task 12: Full-stack manual verification
 
 **Files:** None (manual smoke test only).
+
+**Why this task is load-bearing.** The unit tests in Tasks 8–11 hand-construct candidate-list payloads — they bypass the real `_CLICK_CANDIDATES_JS` source, so the in-browser `xpathOf` function is **not exercised by any automated test**. The spec originally suggested an `aiohttp.web` test fixture for this; the plan deliberately drops that in favor of mock-only unit tests (matches the project's existing `tests/test_scraping_job_auto_fetch_pdfs.py` style and avoids the complexity of running a real browser in CI). The trade-off is that this manual smoke test is the only place the JS path is verified end-to-end. **Do not skip this task.** If the smoke test reveals a bug in the JS, fix it in a follow-up commit and add a targeted regression test (mock or otherwise) before declaring the feature done.
 
 This is the integration check. Without a real SPA fixture, we verify by configuring discovery against a known site that has `href="#"` anchors and observing logs.
 

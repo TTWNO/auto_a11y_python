@@ -125,27 +125,39 @@ class BrowserManager:
                 is_headless = False
 
             # Build args list (similar to Pyppeteer for consistency)
+            is_interactive = bool(self.config.get('INTERACTIVE_AUTH_DELAY_SECONDS', 0))
+            if is_interactive:
+                logger.info("Browser launching in interactive mode (relaxed flags)")
+            else:
+                logger.info("Browser launching in headless-crawl mode (strict flags)")
+
             browser_args = [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
                 '--disable-dev-shm-usage',
                 '--disable-accelerated-2d-canvas',
                 '--no-first-run',
-                '--disable-gpu',
                 f'--window-size={self.config.get("viewport_width", 1920)},{self.config.get("viewport_height", 1080)}',
                 '--disable-extensions',
-                '--disable-background-networking',
                 '--disable-blink-features=AutomationControlled',
                 '--disable-features=TranslateUI',
                 '--disable-ipc-flooding-protection',
                 '--disable-renderer-backgrounding',
                 '--disable-backgrounding-occluded-windows',
-                '--disable-component-update',
-                # Memory management: prevent cache/renderer bloat during long test runs
-                '--disk-cache-size=0',              # Disable HTTP disk cache (not needed for testing)
-                '--aggressive-cache-discard',       # Aggressively discard cached data
-                '--disable-application-cache',      # Disable application cache
             ]
+            if not is_interactive:
+                # These flags optimize for fast headless crawling but break SPAs by
+                # preventing background networking, caching, and GPU rendering that
+                # SPA boot sequences depend on.
+                browser_args.extend([
+                    '--disable-gpu',
+                    '--disable-background-networking',
+                    '--disable-component-update',
+                    # Memory management: prevent cache/renderer bloat during long test runs
+                    '--disk-cache-size=0',              # Disable HTTP disk cache (not needed for testing)
+                    '--aggressive-cache-discard',       # Aggressively discard cached data
+                    '--disable-application-cache',      # Disable application cache
+                ])
 
             launch_options: dict[str, Any] = {
                 'headless': is_headless,
@@ -275,10 +287,16 @@ class BrowserManager:
         )
 
         # Build keyword arguments explicitly for type safety
+        # Allow service workers in interactive mode: SPAs depend on them for routing,
+        # caching, and auth token refresh.  In headless-crawl mode we block them to
+        # prevent background fetch interference with test measurements.
+        service_workers_mode: Literal['allow', 'block'] = (
+            'allow' if self.config.get('INTERACTIVE_AUTH_DELAY_SECONDS', 0) else 'block'
+        )
         ctx_kwargs: dict[str, Any] = {
             'viewport': resolved_viewport,
             'user_agent': resolved_user_agent,
-            'service_workers': 'block',
+            'service_workers': service_workers_mode,
         }
 
         # If no explicit storage_state was given, check whether a

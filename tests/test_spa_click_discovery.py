@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Awaitable
-from typing import Protocol, cast
+from typing import Literal, Protocol, cast
 from unittest.mock import AsyncMock, MagicMock
 
 import asyncio as _asyncio
@@ -48,10 +48,10 @@ from auto_a11y.core.scraper import (
     DESTRUCTIVE_ANCHOR_PATTERN,
     MAX_CLICK_CANDIDATES_PER_PAGE,
     POST_CLICK_SETTLE_MS,
-    SPA_INITIAL_SETTLE_MS,
     ScrapingEngine,
     ClickablePage,
 )
+from playwright.async_api import TimeoutError as PlaywrightTimeout
 from auto_a11y.models.discovery_run import DiscoveryRun
 from auto_a11y.models.website import ScrapingConfig, Website
 
@@ -135,7 +135,6 @@ class TestSpaClickModuleConstants:
         assert MAX_CLICK_CANDIDATES_PER_PAGE == 50
         assert CLICK_TIMEOUT_MS == 5000
         assert POST_CLICK_SETTLE_MS == 1500
-        assert SPA_INITIAL_SETTLE_MS == 2500
 
     def test_destructive_pattern_matches_common_actions(self) -> None:
         for word in ["Logout", "log out", "Sign Out", "sign out",
@@ -196,15 +195,23 @@ async def test_candidate_collection_filters_anchors_with_usable_href() -> None:
     ])
     website = _make_website()
 
-    # At this stage the helper returns an empty set (no click loop yet).
-    # We assert that the evaluate JS was run exactly once.
+    # The only candidate with hasUsableHref=False ("Dashboard") would be
+    # clicked, but the MagicMock page can't satisfy the readiness helper
+    # cleanly, so the click loop logs and continues. The candidate-collection
+    # evaluate must have been called at least once.
     result = await _run_helper(
         engine,
         page=page, current_url="https://example.com/parent",
         website=website, base_domain="example.com", base_path="",
     )
     assert result == set()
-    page.evaluate.assert_called_once()
+    # Find the candidate-collection JS call among all evaluate calls.
+    candidate_calls = [
+        c for c in page.evaluate.call_args_list
+        if c.args and "querySelectorAll('a')" in c.args[0]
+        and "requiredStableSamples" not in c.args[0]
+    ]
+    assert len(candidate_calls) == 1
 
 
 @pytest.mark.asyncio
@@ -267,9 +274,30 @@ class _FakePage:
         self.url_after_click: list[str] = []
         # Selectors for which query_selector should report "not found".
         self.missing_selectors: set[str] = set()
+        # Recordings for _wait_for_spa_ready calls.
+        self.load_state_calls: list[tuple[
+            Literal['domcontentloaded', 'load', 'networkidle'] | None,
+            float | None,
+        ]] = []
+        self.wait_selector_calls: list[tuple[
+            str,
+            Literal['attached', 'detached', 'hidden', 'visible'] | None,
+            float | None,
+        ]] = []
+        # Test hook for the stabilization-poll result. When set, ``evaluate``
+        # returns this dict instead of ``self._candidates`` for the
+        # stabilization JS. Reset between calls if needed by the test.
+        self.stabilization_result: dict[str, object] | None = None
+        # Test hook for raising from ``wait_for_load_state``.
+        self.load_state_raises: Exception | None = None
+        # Test hook for raising from ``wait_for_selector``.
+        self.wait_selector_raises: Exception | None = None
 
     async def evaluate(self, expression: str, arg: object = None) -> object:
         self.eval_calls.append(expression)
+        # Stabilization poll uses ``new Promise`` with a clearInterval pattern.
+        if "requiredStableSamples" in expression:
+            return self.stabilization_result or {"stable": True, "count": 0}
         # First call: return the candidate list.
         if "querySelectorAll('a')" in expression:
             return self._candidates
@@ -285,6 +313,29 @@ class _FakePage:
     async def query_selector(self, selector: str) -> object:
         if selector in self.missing_selectors:
             return None
+        return MagicMock()
+
+    async def wait_for_load_state(
+        self,
+        state: Literal['domcontentloaded', 'load', 'networkidle'] | None = None,
+        *,
+        timeout: float | None = None,
+    ) -> None:
+        self.load_state_calls.append((state, timeout))
+        if self.load_state_raises is not None:
+            raise self.load_state_raises
+
+    async def wait_for_selector(
+        self,
+        selector: str,
+        *,
+        timeout: float | None = None,
+        state: Literal['attached', 'detached', 'hidden', 'visible'] | None = None,
+        strict: bool | None = None,
+    ) -> object:
+        self.wait_selector_calls.append((selector, state, timeout))
+        if self.wait_selector_raises is not None:
+            raise self.wait_selector_raises
         return MagicMock()
 
 
@@ -581,19 +632,8 @@ async def test_discover_website_records_click_discovery_mode_on_run() -> None:
 
 
 @pytest.mark.asyncio
-async def test_click_loop_settles_after_renavigation(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """After re-navigating to the parent, wait for SPA to re-render before locating anchor."""
-    import asyncio as _asyncio
-
-    sleep_durations: list[float] = []
-
-    async def fake_sleep(duration: float) -> None:
-        sleep_durations.append(duration)
-
-    monkeypatch.setattr(_asyncio, "sleep", fake_sleep)
-
+async def test_click_loop_invokes_wait_for_spa_ready_after_renavigation() -> None:
+    """After re-navigating to the parent, the readiness helper runs before clicking."""
     engine = _make_engine()
     page = _FakePage([
         {"hasUsableHref": False, "text": "Dashboard",
@@ -602,14 +642,112 @@ async def test_click_loop_settles_after_renavigation(
     page.url_after_click = ["https://example.com/parent/dashboard"]
     website = _make_website()
 
+    # Spy on the readiness helper. setattr keeps mypy/pyright happy about
+    # replacing a real method with an AsyncMock on a typed instance.
+    spy = AsyncMock(return_value=None)
+    setattr(engine, "_wait_for_spa_ready", spy)
+
     await _run_helper(
         engine, page=page,
         current_url="https://example.com/parent",
         website=website, base_domain="example.com", base_path="",
     )
-    # The helper should have called asyncio.sleep at least twice:
-    # once for the re-navigation settle, and once for POST_CLICK_SETTLE_MS.
-    expected_initial = SPA_INITIAL_SETTLE_MS / 1000
-    expected_post_click = POST_CLICK_SETTLE_MS / 1000
-    assert expected_initial in sleep_durations
-    assert expected_post_click in sleep_durations
+
+    # One click → one re-navigation → one readiness invocation.
+    assert spy.await_count == 1
+    await_args = spy.await_args
+    assert await_args is not None
+    args = await_args.args
+    # Positional args: (page, website, url)
+    assert args[0] is page
+    assert args[1] is website
+    assert args[2] == "https://example.com/parent"
+
+
+# ---------------------------------------------------------------------------
+# _wait_for_spa_ready: readiness signals replacing the fixed-time settle
+# ---------------------------------------------------------------------------
+
+
+class _WaitForSpaReady(Protocol):
+    """Typed signature of ``ScrapingEngine._wait_for_spa_ready``."""
+
+    def __call__(
+        self,
+        page: object,
+        website: Website,
+        url: str,
+    ) -> Awaitable[None]: ...
+
+
+def _run_wait_for_spa_ready(
+    engine: ScrapingEngine,
+    *,
+    page: ClickablePage,
+    website: Website,
+    url: str,
+) -> Awaitable[None]:
+    """Call the private readiness helper without tripping reportPrivateUsage."""
+    fn = cast(_WaitForSpaReady, getattr(engine, "_wait_for_spa_ready"))
+    return fn(page, website, url)
+
+
+@pytest.mark.asyncio
+async def test_wait_for_spa_ready_runs_all_phases_when_clean() -> None:
+    """networkidle ok, anchor-count stabilizes, no selector configured → all phases complete."""
+    engine = _make_engine()
+    page = _FakePage([])
+    page.stabilization_result = {"stable": True, "count": 5}
+    website = _make_website()
+    website.scraping_config.spa_ready_selector = ""
+
+    await _run_wait_for_spa_ready(
+        engine, page=page, website=website, url="https://example.com/",
+    )
+
+    # Phase 1: wait_for_load_state called once with networkidle.
+    assert page.load_state_calls == [("networkidle", 15000)]
+    # Phase 2: stabilization JS evaluated.
+    assert any("requiredStableSamples" in expr for expr in page.eval_calls)
+    # Phase 3: skipped because selector is empty.
+    assert page.wait_selector_calls == []
+
+
+@pytest.mark.asyncio
+async def test_wait_for_spa_ready_invokes_wait_for_selector_when_configured() -> None:
+    """A configured ``spa_ready_selector`` triggers wait_for_selector(state='visible')."""
+    engine = _make_engine()
+    page = _FakePage([])
+    page.stabilization_result = {"stable": True, "count": 3}
+    website = _make_website()
+    website.scraping_config.spa_ready_selector = ".app-loaded"
+
+    await _run_wait_for_spa_ready(
+        engine, page=page, website=website, url="https://example.com/",
+    )
+
+    assert page.wait_selector_calls == [(".app-loaded", "visible", 15000)]
+
+
+@pytest.mark.asyncio
+async def test_wait_for_spa_ready_continues_when_networkidle_times_out(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A PlaywrightTimeout from wait_for_load_state must not propagate."""
+    engine = _make_engine()
+    page = _FakePage([])
+    page.load_state_raises = PlaywrightTimeout("simulated networkidle timeout")
+    page.stabilization_result = {"stable": True, "count": 2}
+    website = _make_website()
+    website.scraping_config.spa_ready_selector = ""
+
+    with caplog.at_level(logging.WARNING, logger="auto_a11y.core.scraper"):
+        # Should not raise.
+        await _run_wait_for_spa_ready(
+            engine, page=page, website=website, url="https://example.com/",
+        )
+
+    # The function continued past the timeout: stabilization JS still ran.
+    assert any("requiredStableSamples" in expr for expr in page.eval_calls)
+    assert any("networkidle" in r.message and "timeout" in r.message.lower()
+               for r in caplog.records)

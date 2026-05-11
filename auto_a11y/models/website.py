@@ -24,6 +24,7 @@ class ScrapingConfig:
     excluded_paths: list[str] = field(default_factory=lambda: [])
     auto_fetch_pdfs: bool = True
     spa_click_discovery: bool = False
+    spa_ready_selector: str = ""  # Optional: wait for this CSS selector before reading DOM (SPA mode only)
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary"""
@@ -38,6 +39,7 @@ class ScrapingConfig:
             'excluded_paths': self.excluded_paths,
             'auto_fetch_pdfs': self.auto_fetch_pdfs,
             'spa_click_discovery': self.spa_click_discovery,
+            'spa_ready_selector': self.spa_ready_selector,
         }
 
     @classmethod

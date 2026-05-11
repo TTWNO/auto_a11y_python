@@ -155,6 +155,8 @@ websites-spa-click-discovery = Découverte par clic :
 websites-spa-click-discovery-help = Découvre les pages d'une application monopage en cliquant sur les liens au lieu de lire leur attribut href. Nécessaire lorsqu'une application monopage utilise href="#" avec un routage JavaScript. Beaucoup plus lent — une découverte complète peut prendre plusieurs fois plus de temps que la normale.
 websites-spa-click-discovery-toggle = Découverte par clic (pour applications monopage)
 websites-spa-click-discovery-warning = Ce site utilise la découverte par clic. Prévoyez des durées d'exécution sensiblement plus longues que la normale.
+websites-spa-ready-selector = Sélecteur de fin de chargement (optionnel)
+websites-spa-ready-selector-help = Sélecteur CSS qui, lorsqu'il est visible, indique que l'application monopage a terminé son rendu. Laisser vide pour utiliser la détection automatique (inactivité réseau + stabilisation du nombre d'ancres). Exemple : .app-loaded
 websites-start-a-new-discovery-run-for-this-website = Démarrer une nouvelle exécution de découverte pour ce site Web ?
 websites-start-new-discovery = Démarrer une nouvelle découverte
 websites-start-testing = Tests

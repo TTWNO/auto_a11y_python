@@ -34,6 +34,7 @@ class DiscoveryRun:
     follow_external: bool = False
     respect_robots: bool = True
     spa_click_discovery: bool = False
+    spa_ready_selector: str = ""
 
     # Results
     pages_discovered: int = 0
@@ -103,6 +104,7 @@ class DiscoveryRun:
             'follow_external': self.follow_external,
             'respect_robots': self.respect_robots,
             'spa_click_discovery': self.spa_click_discovery,
+            'spa_ready_selector': self.spa_ready_selector,
             'pages_discovered': self.pages_discovered,
             'pages_failed': self.pages_failed,
             'documents_found': self.documents_found,
@@ -134,6 +136,7 @@ class DiscoveryRun:
             follow_external=data.get('follow_external', False),
             respect_robots=data.get('respect_robots', True),
             spa_click_discovery=data.get('spa_click_discovery', False),
+            spa_ready_selector=data.get('spa_ready_selector', ''),
             pages_discovered=data.get('pages_discovered', 0),
             pages_failed=data.get('pages_failed', 0),
             documents_found=data.get('documents_found', 0),

@@ -199,6 +199,9 @@ def edit_website(website_id: str) -> str | Response:
         website.scraping_config.spa_click_discovery = (
             request.form.get('spa_click_discovery') == 'on'
         )
+        website.scraping_config.spa_ready_selector = (
+            request.form.get('spa_ready_selector', '').strip()
+        )
 
         if get_db().update_website(website):
             flash(ftl('websites-website-updated-successfully'), 'success')

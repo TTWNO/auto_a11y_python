@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any, Protocol, TYPE_CHECKING, cast
+from typing import Any, Literal, Protocol, TYPE_CHECKING, cast
 from collections.abc import Callable, Coroutine
 from urllib.parse import urlparse, urljoin, urlunparse
 from urllib.robotparser import RobotFileParser
@@ -44,6 +44,22 @@ class ClickablePage(Protocol):
 
     async def query_selector(self, selector: str) -> object: ...
 
+    async def wait_for_load_state(
+        self,
+        state: Literal['domcontentloaded', 'load', 'networkidle'] | None = ...,
+        *,
+        timeout: float | None = ...,
+    ) -> None: ...
+
+    async def wait_for_selector(
+        self,
+        selector: str,
+        *,
+        timeout: float | None = ...,
+        state: Literal['attached', 'detached', 'hidden', 'visible'] | None = ...,
+        strict: bool | None = ...,
+    ) -> object: ...
+
 
 from auto_a11y.models.page import Page, PageStatus
 from auto_a11y.models.website import Website
@@ -74,7 +90,6 @@ _EXPECTED_SKIP_REASON_PREFIXES = (
 MAX_CLICK_CANDIDATES_PER_PAGE: int = 50
 CLICK_TIMEOUT_MS: int = 5000
 POST_CLICK_SETTLE_MS: int = 1500
-SPA_INITIAL_SETTLE_MS: int = 2500  # Wait after navigation for SPA JS to render anchors
 DESTRUCTIVE_ANCHOR_PATTERN: re.Pattern[str] = re.compile(
     r"\b(log ?out|sign ?out|delete|remove|submit|unsubscribe)\b",
     re.IGNORECASE,
@@ -180,6 +195,7 @@ class ScrapingEngine:
             follow_external=website.scraping_config.follow_external,
             respect_robots=website.scraping_config.respect_robots,
             spa_click_discovery=website.scraping_config.spa_click_discovery,
+            spa_ready_selector=website.scraping_config.spa_ready_selector,
             triggered_by=job.user_id if job and hasattr(job, 'user_id') else 'manual',
             job_id=job.job_id if job and hasattr(job, 'job_id') else None
         )
@@ -692,6 +708,12 @@ class ScrapingEngine:
                 wait_until = 'networkidle'  # Wait for network to settle (Playwright compatible)
                 nav_timeout = 40000  # 40 seconds
                 post_nav_wait = 3  # Wait 3 seconds after navigation
+            elif website.scraping_config.spa_click_discovery:
+                # SPA mode: networkidle covers initial XHR/fetch on hydration; the
+                # explicit readiness helper handles per-framework variation below.
+                wait_until = 'networkidle'
+                nav_timeout = 40000  # 40 seconds
+                post_nav_wait = 0  # _wait_for_spa_ready handles all post-nav waiting
             else:
                 # Faster for normal sites
                 wait_until = 'domcontentloaded'  # Just wait for DOM
@@ -720,15 +742,12 @@ class ScrapingEngine:
 
                 # Give SPA frameworks time to render JS-injected anchors before
                 # any DOM inspection (title check, Cloudflare check, redirect
-                # check, and link extraction all run after this point).  The
-                # settle fires even when the page later fails the redirect check
-                # so users can confirm from logs that the settle is running.
+                # check, and link extraction all run after this point).  A fixed
+                # sleep proved unreliable — slow SPAs were still blank when the
+                # DOM was read. ``_wait_for_spa_ready`` applies three layered,
+                # bounded readiness checks instead.
                 if website.scraping_config.spa_click_discovery:
-                    spa_settle_seconds = SPA_INITIAL_SETTLE_MS / 1000
-                    logger.info(
-                        f"SPA settle: sleeping {spa_settle_seconds:.1f}s after navigation for {url} to allow JS-rendered anchors"
-                    )
-                    await asyncio.sleep(spa_settle_seconds)
+                    await self._wait_for_spa_ready(page, website, url)
 
                 # Check if we're stuck on a Cloudflare challenge page
                 try:
@@ -1098,6 +1117,111 @@ class ScrapingEngine:
             logger.error(f"Error extracting links from {current_url}: {e}")
             return set()
 
+    async def _wait_for_spa_ready(
+        self,
+        page: ClickablePage,
+        website: Website,
+        url: str,
+    ) -> None:
+        """Wait for an SPA page to be ready before reading the DOM.
+
+        Three layered checks, each best-effort with a bounded timeout:
+
+        1. ``networkidle`` (Playwright wait_for_load_state): no network activity
+           for 500ms. Already implied by navigation wait_until='networkidle' but
+           calling it again is cheap and handles cases where the initial wait
+           returned early.
+        2. Anchor-count stabilization: poll until ``a`` count is unchanged for
+           1s. Strong signal the framework has finished hydrating nav.
+        3. Optional ``spa_ready_selector`` from website config: if set, wait
+           for that selector to become visible.
+
+        Each phase logs success/timeout but never raises.
+        """
+        # Phase 1: network idle
+        try:
+            await page.wait_for_load_state('networkidle', timeout=15000)
+            logger.info(f"SPA readiness [networkidle]: ok for {url}")
+        except PlaywrightTimeout:
+            logger.warning(
+                f"SPA readiness [networkidle]: timeout after 15s for {url}, continuing"
+            )
+        except Exception as e:
+            logger.warning(
+                f"SPA readiness [networkidle]: error for {url}: {e}, continuing"
+            )
+
+        # Phase 2: anchor-count stabilization (poll in JS for efficiency)
+        stabilization_js = """
+        () => new Promise((resolve) => {
+          const sampleEveryMs = 250;
+          const requiredStableSamples = 4;  // 4 * 250ms = 1s
+          const maxWaitMs = 10000;
+          let last = document.querySelectorAll('a').length;
+          let stable = 0;
+          const interval = setInterval(() => {
+            const now = document.querySelectorAll('a').length;
+            if (now === last) {
+              stable += 1;
+              if (stable >= requiredStableSamples) {
+                clearInterval(interval);
+                clearTimeout(safety);
+                resolve({stable: true, count: now});
+              }
+            } else {
+              stable = 0;
+              last = now;
+            }
+          }, sampleEveryMs);
+          const safety = setTimeout(() => {
+            clearInterval(interval);
+            resolve({stable: false, count: document.querySelectorAll('a').length});
+          }, maxWaitMs);
+        });
+        """
+        try:
+            raw_result: object = await page.evaluate(stabilization_js)
+            # raw_result is {stable: bool, count: int} but typed as object
+            if isinstance(raw_result, dict):
+                raw_dict: dict[object, object] = cast(dict[object, object], raw_result)
+                stable_obj: object = raw_dict.get("stable", False)
+                stable = bool(stable_obj)
+                count_obj: object = raw_dict.get("count", 0)
+                count: int = count_obj if isinstance(count_obj, int) else 0
+                if stable:
+                    logger.info(
+                        f"SPA readiness [anchor-count]: stable at {count} anchors for {url}"
+                    )
+                else:
+                    logger.warning(
+                        f"SPA readiness [anchor-count]: did not stabilize within 10s, saw {count} anchors at {url}"
+                    )
+            else:
+                logger.warning(
+                    f"SPA readiness [anchor-count]: unexpected result type for {url}"
+                )
+        except Exception as e:
+            logger.warning(
+                f"SPA readiness [anchor-count]: error for {url}: {e}, continuing"
+            )
+
+        # Phase 3: user-configured selector (if any)
+        selector = website.scraping_config.spa_ready_selector.strip()
+        if selector:
+            try:
+                await page.wait_for_selector(selector, state='visible', timeout=15000)
+                logger.info(
+                    f"SPA readiness [selector '{selector}']: visible for {url}"
+                )
+            except PlaywrightTimeout:
+                logger.warning(
+                    f"SPA readiness [selector '{selector}']: timeout after 15s for {url}, continuing"
+                )
+            except Exception as e:
+                logger.warning(
+                    f"SPA readiness [selector '{selector}']: error for {url}: {e}, continuing"
+                )
+
     async def _extract_links_via_clicking(
         self,
         page: ClickablePage,
@@ -1184,8 +1308,9 @@ class ScrapingEngine:
                     wait_until=wait_until, timeout=nav_timeout,
                 )
 
-                # SPA re-renders after re-navigation; wait before locating anchor.
-                await asyncio.sleep(SPA_INITIAL_SETTLE_MS / 1000)
+                # SPA re-renders after re-navigation; wait for readiness signals
+                # (the same helper used after initial navigation).
+                await self._wait_for_spa_ready(playwright_page, website, current_url)
 
                 # 2) Locate the anchor; skip if the DOM has changed.
                 element = await page.query_selector(selector)

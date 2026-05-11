@@ -155,6 +155,8 @@ websites-spa-click-discovery = Click-based discovery:
 websites-spa-click-discovery-help = Discovers SPA pages by clicking links instead of reading their href. Required when an SPA uses href="#" with JavaScript routing. Significantly slower — full discovery may take many times longer than normal.
 websites-spa-click-discovery-toggle = Click-based discovery (for single-page apps)
 websites-spa-click-discovery-warning = This website uses click-based discovery. Expect runs to take considerably longer than normal.
+websites-spa-ready-selector = SPA ready selector (optional)
+websites-spa-ready-selector-help = CSS selector that, when visible, signals the SPA has finished rendering. Leave blank to rely on automatic detection (network idle + anchor-count stabilization). Example: .app-loaded
 websites-start-a-new-discovery-run-for-this-website = Start a new discovery run for this website?
 websites-start-new-discovery = Start New Discovery
 websites-start-testing = Start Testing

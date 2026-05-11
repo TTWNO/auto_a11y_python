@@ -107,6 +107,19 @@
                                         {{ ftl('websites-spa-click-discovery-help') }}
                                     </div>
                                 </div>
+                                <div class="mb-3 ms-4">
+                                    <label for="spa_ready_selector" class="form-label">
+                                        {{ ftl('websites-spa-ready-selector') }}
+                                    </label>
+                                    <input type="text" class="form-control" id="spa_ready_selector"
+                                           name="spa_ready_selector"
+                                           value="{{ website.scraping_config.spa_ready_selector }}"
+                                           placeholder=".app-loaded, [data-app-ready], #main-nav"
+                                           aria-describedby="spa-ready-selector-help">
+                                    <div id="spa-ready-selector-help" class="form-text">
+                                        {{ ftl('websites-spa-ready-selector-help') }}
+                                    </div>
+                                </div>
                             </div>
                         </fieldset>
 

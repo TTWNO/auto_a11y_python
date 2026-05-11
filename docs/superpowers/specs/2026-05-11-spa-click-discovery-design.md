@@ -97,8 +97,12 @@ creates a `DiscoveryRun`, populate this from
 
 ### No schema migration needed
 
-`from_dict` on both models tolerates missing keys (defaulting to `False`).
-Existing MongoDB documents work as-is.
+Both models' `from_dict` tolerate missing keys (defaulting to `False`).
+Note that `ScrapingConfig.from_dict` filters unknown keys via the
+`fields(cls)` set, while `DiscoveryRun.from_dict` uses explicit per-field
+`data.get(...)` calls — both styles handle the new field cleanly with a
+single-line addition, but the two are not interchangeable. Existing
+MongoDB documents work as-is.
 
 ## Crawl Mechanics
 
@@ -278,6 +282,12 @@ In the discovery-start modal/section (around line 598+), when
 </div>
 {% endif %}
 ```
+
+The `alert-info` class is a project-custom utility (defined in
+`auto_a11y/web/static/public/css/style.css`) and is the correct,
+CLAUDE.md-compliant choice here. Do not substitute Bootstrap colour
+variants such as `alert-warning` or `alert-primary` — the Colour System
+rule in CLAUDE.md prohibits them.
 
 ### Translations — `auto_a11y/web/translations/{en,fr}/websites.ftl`
 

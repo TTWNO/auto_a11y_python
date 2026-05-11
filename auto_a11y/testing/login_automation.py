@@ -8,7 +8,7 @@ import asyncio
 import json
 import logging
 from pathlib import Path
-from typing import Any, cast, TYPE_CHECKING
+from typing import Any, Literal, cast, TYPE_CHECKING
 from datetime import datetime
 
 from playwright._impl._api_structures import SetCookieParam
@@ -34,6 +34,24 @@ def _session_cache_path(user: WebsiteUser | ProjectUser) -> Path:
     uid = user.id or user.username  # id may be None on a fresh in-memory user
     safe = ''.join(ch if ch.isalnum() or ch in '-_' else '_' for ch in uid)
     return _session_cache_dir() / f"{safe}.json"
+
+
+def _drop_none_fields(cookie: SetCookieParam) -> SetCookieParam:
+    """Return a copy of ``cookie`` with ``None``-valued keys removed.
+
+    Why: Playwright's wire-protocol validator (``tOptional`` in
+    ``validatorPrimitives.js``) only short-circuits on JS ``undefined``.
+    Python's ``None`` serializes to JSON ``null``, which falls through
+    to the type-specific validator and fails with errors like
+    ``cookies[0].url: expected string, got object`` (since
+    ``typeof null === 'object'`` in JS). Optional fields without a
+    value must therefore be omitted from the payload rather than sent
+    as ``None``.
+    """
+    return cast(
+        SetCookieParam,
+        {k: v for k, v in cookie.items() if v is not None},
+    )
 
 
 def _session_cache_fresh(path: Path, max_age_minutes: int) -> bool:
@@ -432,7 +450,10 @@ class LoginAutomation:
 
         Returns a dict with counts of what was injected, for logging.
         """
-        # Cookies.
+        # Cookies. Build each SetCookieParam declaratively with whatever
+        # fields the captured cookie has, using ``None`` for absent ones,
+        # then pass through ``_drop_none_fields`` to omit the missing keys
+        # before sending to Playwright.
         raw_cookies = list(captured.get('cookies') or [])
         cookies: list[SetCookieParam] = []
         for c in raw_cookies:
@@ -452,8 +473,12 @@ class LoginAutomation:
             http_only = c.get('httpOnly')
             secure = c.get('secure')
             same_site_raw = c.get('sameSite')
-            same_site: Any = same_site_raw if same_site_raw in ('Lax', 'None', 'Strict') else None
-            cookies.append({
+            same_site: Literal['Lax', 'None', 'Strict'] | None = (
+                same_site_raw
+                if same_site_raw in ('Lax', 'None', 'Strict')
+                else None
+            )
+            cookies.append(_drop_none_fields({
                 'name': name,
                 'value': value,
                 'url': None,
@@ -464,7 +489,7 @@ class LoginAutomation:
                 'secure': secure if isinstance(secure, bool) else None,
                 'sameSite': same_site,
                 'partitionKey': None,
-            })
+            }))
         if cookies:
             try:
                 await target_ctx.add_cookies(cookies)

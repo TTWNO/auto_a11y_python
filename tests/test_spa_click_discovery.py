@@ -5,6 +5,10 @@ naming convention (leading underscore) but is invoked here as direct
 unit-testing of the implementation. To avoid ``reportPrivateUsage``
 errors from pyright, we call it through a small ``getattr`` shim
 (``_run_helper``) that returns a typed ``Awaitable[set[str]]``.
+
+The integration tests at the bottom exercise ``_extract_links`` (the
+public-facing method) through a similar ``getattr``-based shim so that
+pyright's ``reportPrivateUsage`` rule is not triggered there either.
 """
 from __future__ import annotations
 
@@ -413,3 +417,81 @@ async def test_click_loop_continues_after_per_click_exception(
         )
     assert result == {"https://example.com/works"}
     assert any("simulated click failure" in r.message for r in caplog.records)
+
+
+# ---------------------------------------------------------------------------
+# Integration tests: _extract_links wires the helper in when flag is on
+# ---------------------------------------------------------------------------
+
+
+class _ExtractLinks(Protocol):
+    """Typed signature of ``ScrapingEngine._extract_links``."""
+
+    def __call__(
+        self,
+        *,
+        page: object,
+        current_url: str,
+        website: Website,
+        base_domain: str,
+        base_path: str,
+    ) -> Awaitable[set[str]]: ...
+
+
+def _run_extract_links(
+    engine: ScrapingEngine,
+    *,
+    page: object,
+    current_url: str,
+    website: Website,
+    base_domain: str,
+    base_path: str = "",
+) -> Awaitable[set[str]]:
+    """Call the private ``_extract_links`` method without tripping reportPrivateUsage."""
+    fn = cast(_ExtractLinks, getattr(engine, "_extract_links"))
+    return fn(
+        page=page,
+        current_url=current_url,
+        website=website,
+        base_domain=base_domain,
+        base_path=base_path,
+    )
+
+
+@pytest.mark.asyncio
+async def test_extract_links_does_not_call_helper_when_flag_off() -> None:
+    engine = _make_engine()
+    page = MagicMock()
+    page.evaluate = AsyncMock(return_value=[])  # No href anchors.
+    website = _make_website(spa_click=False)
+
+    # Spy on the helper via setattr to avoid mypy method-assign warning.
+    spy = AsyncMock(return_value={"unused"})
+    setattr(engine, "_extract_links_via_clicking", spy)
+
+    result = await _run_extract_links(
+        engine,
+        page=page, current_url="https://example.com/",
+        website=website, base_domain="example.com", base_path="",
+    )
+    spy.assert_not_called()
+    assert result == set()
+
+
+@pytest.mark.asyncio
+async def test_extract_links_unions_helper_result_when_flag_on() -> None:
+    engine = _make_engine()
+    page = MagicMock()
+    page.evaluate = AsyncMock(return_value=[])  # No href anchors.
+    website = _make_website(spa_click=True)
+
+    spy = AsyncMock(return_value={"https://example.com/spa-route"})
+    setattr(engine, "_extract_links_via_clicking", spy)
+
+    result = await _run_extract_links(
+        engine,
+        page=page, current_url="https://example.com/",
+        website=website, base_domain="example.com", base_path="",
+    )
+    spy.assert_awaited_once()
+    assert "https://example.com/spa-route" in result

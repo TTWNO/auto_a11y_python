@@ -22,11 +22,25 @@ class _ClickablePage(Protocol):
 
     Defining a Protocol here lets unit tests pass an in-process fake
     that satisfies the same structural interface, without requiring a
-    real Playwright Page instance or any `# type: ignore` casts.
+    real Playwright Page instance or any ``cast`` is needed at the call site.
+
+    Member signatures intentionally mirror Playwright's ``async_api`` so
+    that ``PlaywrightPage`` satisfies this Protocol structurally and strict
+    type-checkers (mypy, pyright, ty) accept passing a real page directly.
     """
-    url: str
-    async def evaluate(self, source: str, *args: object) -> object: ...
-    async def click(self, selector: str, timeout: int = ...) -> None: ...
+
+    @property
+    def url(self) -> str: ...
+
+    async def evaluate(self, expression: str, arg: object = ...) -> object: ...
+
+    async def click(
+        self,
+        selector: str,
+        *,
+        timeout: float | None = ...,
+    ) -> None: ...
+
     async def query_selector(self, selector: str) -> object: ...
 
 
@@ -1047,9 +1061,24 @@ class ScrapingEngine:
             # Save document references to database
             if document_refs:
                 await self._save_document_references(document_refs, _extract_wid, current_url)
-            
+
+            if website.scraping_config.spa_click_discovery:
+                try:
+                    click_links = await self._extract_links_via_clicking(
+                        page=page,
+                        current_url=current_url,
+                        website=website,
+                        base_domain=base_domain,
+                        base_path=base_path,
+                    )
+                    valid_links.update(click_links)
+                except Exception as e:
+                    logger.warning(
+                        f"Click-based discovery failed for {current_url}: {e}"
+                    )
+
             return valid_links
-            
+
         except Exception as e:
             logger.error(f"Error extracting links from {current_url}: {e}")
             return set()

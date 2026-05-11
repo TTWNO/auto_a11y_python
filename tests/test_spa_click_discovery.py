@@ -524,3 +524,32 @@ async def test_extract_links_swallows_helper_exception_and_returns_href_links(
     assert any("Click-based discovery failed" in r.message
                and "simulated helper failure" in r.message
                for r in caplog.records)
+
+
+@pytest.mark.asyncio
+async def test_discover_website_records_click_discovery_mode_on_run() -> None:
+    """Verify the DiscoveryRun created at the start carries the flag through."""
+    captured: list[DiscoveryRun] = []
+    engine = _make_engine()
+
+    def fake_create_discovery_run(run: DiscoveryRun) -> str:
+        captured.append(run)
+        return "run-1"
+
+    # Use setattr to monkey-patch db methods without triggering
+    # mypy/pyright complaints about MagicMock attribute assignment.
+    setattr(engine.db, "create_discovery_run", fake_create_discovery_run)
+    # Make the next db call after create_discovery_run raise, to short-circuit.
+    setattr(
+        engine.db,
+        "get_discovery_runs",
+        MagicMock(side_effect=RuntimeError("stop here")),
+    )
+
+    website = _make_website(spa_click=True)
+
+    with pytest.raises(Exception):
+        await engine.discover_website(website=website)
+
+    assert captured, "DiscoveryRun should have been created before the raise"
+    assert captured[0].spa_click_discovery is True

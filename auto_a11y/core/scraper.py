@@ -178,6 +178,7 @@ class ScrapingEngine:
             max_depth=website.scraping_config.max_depth,
             follow_external=website.scraping_config.follow_external,
             respect_robots=website.scraping_config.respect_robots,
+            spa_click_discovery=website.scraping_config.spa_click_discovery,
             triggered_by=job.user_id if job and hasattr(job, 'user_id') else 'manual',
             job_id=job.job_id if job and hasattr(job, 'job_id') else None
         )

@@ -150,6 +150,14 @@
                                             onclick="toggleUser('{{ user.id }}')" aria-label="{% if user.enabled %}{{ ftl('common-disable') }}{% else %}{{ ftl('common-enable') }}{% endif %}">
                                         <i class="bi bi-toggle-{% if user.enabled %}on{% else %}off{% endif %}" aria-hidden="true"></i>
                                     </button>
+                                    <button type="button" class="btn btn-outline-neutral"
+                                            id="clear-cache-btn-{{ user.id }}"
+                                            onclick="clearLoginCache('{{ user.id }}')"
+                                            aria-label="{{ ftl('websites-clear-login-cache') }}"
+                                            title="{{ ftl('websites-clear-login-cache') }}">
+                                        <i class="bi bi-trash3" aria-hidden="true"></i>
+                                        <span class="visually-hidden">{{ ftl('websites-clear-login-cache') }}</span>
+                                    </button>
                                     <button type="button" class="btn btn-outline-high"
                                             onclick="deleteUser('{{ user.id }}')" aria-label="{{ ftl('common-delete') }}">
                                         <i class="bi bi-trash" aria-hidden="true"></i>
@@ -291,6 +299,38 @@ function deleteUser(userId) {
     })
     .catch(err => {
         alert('{{ ftl('projects-error-deleting-user') }}' + err);
+    });
+}
+
+function clearLoginCache(userId) {
+    const btn = document.getElementById(`clear-cache-btn-${userId}`);
+    btn.disabled = true;
+    fetch(`/projects/users/${userId}/clear-cache`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.disabled = false;
+        if (data.success) {
+            btn.classList.remove('btn-outline-neutral');
+            btn.classList.add('btn-outline-pass');
+            btn.title = data.message;
+            setTimeout(() => {
+                btn.classList.remove('btn-outline-pass');
+                btn.classList.add('btn-outline-neutral');
+                btn.title = {{ ftl('websites-clear-login-cache') | tojson }};
+            }, 2000);
+        } else {
+            btn.classList.add('btn-outline-high');
+            btn.title = data.error || data.message;
+        }
+    })
+    .catch(err => {
+        btn.disabled = false;
+        btn.title = String(err);
     });
 }
 </script>

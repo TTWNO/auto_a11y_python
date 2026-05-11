@@ -284,3 +284,21 @@ def toggle_user(user_id: str) -> Response | tuple[Response, int]:
     except Exception as e:
         logger.error(f"Error toggling user: {e}")
         return jsonify({'error': str(e)}), 500
+
+
+@project_users_bp.route('/projects/users/<user_id>/clear-cache', methods=['POST'])
+def clear_cache(user_id: str) -> Response | tuple[Response, int]:
+    """Delete the cached manual-login session for this project user."""
+    from auto_a11y.testing.login_automation import clear_session_cache
+
+    user = get_db().get_project_user(user_id)
+    if not user:
+        return jsonify({'success': False, 'error': ftl('common-user-not-found')}), 404
+
+    removed = clear_session_cache(user)
+    return jsonify({
+        'success': True,
+        'removed': removed,
+        'message': (ftl('websites-login-cache-cleared') if removed
+                    else ftl('websites-login-cache-empty')),
+    })

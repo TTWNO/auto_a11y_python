@@ -54,6 +54,20 @@ def _drop_none_fields(cookie: SetCookieParam) -> SetCookieParam:
     )
 
 
+def clear_session_cache(user: WebsiteUser | ProjectUser) -> bool:
+    """Delete the cached manual-login session for ``user`` (if any).
+
+    Returns True if a cache file existed and was removed, False if there
+    was nothing to clear.
+    """
+    path = _session_cache_path(user)
+    try:
+        path.unlink()
+        return True
+    except FileNotFoundError:
+        return False
+
+
 def _session_cache_fresh(path: Path, max_age_minutes: int) -> bool:
     """True when ``path`` exists and was modified within ``max_age_minutes``."""
     try:

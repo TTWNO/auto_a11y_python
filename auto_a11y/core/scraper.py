@@ -1083,16 +1083,16 @@ class ScrapingEngine:
         if not isinstance(raw_candidates, list):
             return discovered
         # ``isinstance(x, list)`` narrows to ``list[Unknown]`` under pyright
-        # strict, so re-bind through an annotated comprehension that walks
-        # the elements as ``object`` for downstream typed handling.
-        raw_list: list[object] = [item for item in cast(list[object], raw_candidates)]
+        # strict, so re-bind via a direct cast to ``list[object]`` for
+        # downstream typed handling.
+        raw_list: list[object] = cast(list[object], raw_candidates)
 
         # Coerce JS-returned values to typed Python objects.
         candidates: list[dict[str, str]] = []
         for c in raw_list:
             if not isinstance(c, dict):
                 continue
-            c_dict: dict[object, object] = {k: v for k, v in cast(dict[object, object], c).items()}
+            c_dict: dict[object, object] = cast(dict[object, object], c)
             if bool(c_dict.get("hasUsableHref")):
                 continue
             text_val: object = c_dict.get("text", "")

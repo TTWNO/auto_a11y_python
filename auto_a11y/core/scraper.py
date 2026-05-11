@@ -74,6 +74,7 @@ _EXPECTED_SKIP_REASON_PREFIXES = (
 MAX_CLICK_CANDIDATES_PER_PAGE: int = 50
 CLICK_TIMEOUT_MS: int = 5000
 POST_CLICK_SETTLE_MS: int = 1500
+SPA_INITIAL_SETTLE_MS: int = 2500  # Wait after navigation for SPA JS to render anchors
 DESTRUCTIVE_ANCHOR_PATTERN: re.Pattern[str] = re.compile(
     r"\b(log ?out|sign ?out|delete|remove|submit|unsubscribe)\b",
     re.IGNORECASE,
@@ -948,6 +949,11 @@ class ScrapingEngine:
         assert website.id is not None
         _extract_wid: str = website.id
         try:
+            if website.scraping_config.spa_click_discovery:
+                # SPA frameworks (React/Vue/Angular) render anchors via JS after
+                # navigation completes; settle gives them time before we read the DOM.
+                await asyncio.sleep(SPA_INITIAL_SETTLE_MS / 1000)
+
             # Extract all links with their text using JavaScript
             links_with_text = await page.evaluate('''
                 () => {
@@ -1170,6 +1176,9 @@ class ScrapingEngine:
                     page=playwright_page, url=current_url,
                     wait_until=wait_until, timeout=nav_timeout,
                 )
+
+                # SPA re-renders after re-navigation; wait before locating anchor.
+                await asyncio.sleep(SPA_INITIAL_SETTLE_MS / 1000)
 
                 # 2) Locate the anchor; skip if the DOM has changed.
                 element = await page.query_selector(selector)

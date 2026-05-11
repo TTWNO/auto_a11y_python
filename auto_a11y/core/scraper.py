@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any, TYPE_CHECKING
+from typing import Any, Protocol, TYPE_CHECKING, cast
 from collections.abc import Callable, Coroutine
 from urllib.parse import urlparse, urljoin, urlunparse
 from urllib.robotparser import RobotFileParser
@@ -15,6 +15,20 @@ from io import BytesIO
 
 from playwright.async_api import TimeoutError as PlaywrightTimeout
 from playwright.async_api import Page as PlaywrightPage
+
+
+class _ClickablePage(Protocol):
+    """Subset of the Playwright Page API used by SPA click-discovery.
+
+    Defining a Protocol here lets unit tests pass an in-process fake
+    that satisfies the same structural interface, without requiring a
+    real Playwright Page instance or any `# type: ignore` casts.
+    """
+    url: str
+    async def evaluate(self, source: str, *args: object) -> object: ...
+    async def click(self, selector: str, timeout: int = ...) -> None: ...
+    async def query_selector(self, selector: str) -> object: ...
+
 
 from auto_a11y.models.page import Page, PageStatus
 from auto_a11y.models.website import Website
@@ -49,6 +63,41 @@ DESTRUCTIVE_ANCHOR_PATTERN: re.Pattern[str] = re.compile(
     r"\b(log ?out|sign ?out|delete|remove|submit|unsubscribe)\b",
     re.IGNORECASE,
 )
+
+# Collects every <a> on the page and computes whether its href is
+# usable (real navigation target) or not (#, empty, javascript:).
+_CLICK_CANDIDATES_JS = """
+() => {
+  const here = window.location.href;
+  function xpathOf(el) {
+    if (!el || el.nodeType !== 1) return '';
+    const parts = [];
+    let cur = el;
+    while (cur && cur.nodeType === 1 && cur !== document.documentElement) {
+      let sib = cur, idx = 1;
+      while ((sib = sib.previousElementSibling)) {
+        if (sib.nodeName === cur.nodeName) idx++;
+      }
+      parts.unshift(cur.nodeName.toLowerCase() + '[' + idx + ']');
+      cur = cur.parentElement;
+    }
+    return '/html/' + parts.join('/');
+  }
+  function isUsable(a) {
+    const raw = a.getAttribute('href');
+    if (raw === null || raw === '' || raw.startsWith('javascript:')) return false;
+    // Anchors whose resolved href equals the current URL (typical of href="#")
+    // are not directly navigable.
+    return a.href !== here;
+  }
+  return Array.from(document.querySelectorAll('a')).map(a => ({
+    hasUsableHref: isUsable(a),
+    text: (a.textContent || '').trim(),
+    ariaLabel: a.getAttribute('aria-label') || '',
+    selector: xpathOf(a),
+  }));
+}
+"""
 
 
 def _is_expected_skip(page: Page | None) -> bool:
@@ -1004,7 +1053,76 @@ class ScrapingEngine:
         except Exception as e:
             logger.error(f"Error extracting links from {current_url}: {e}")
             return set()
-    
+
+    async def _extract_links_via_clicking(
+        self,
+        page: _ClickablePage,
+        current_url: str,
+        website: Website,
+        base_domain: str,
+        base_path: str = "",
+    ) -> set[str]:
+        """
+        Discover SPA links by clicking anchors with no usable href.
+
+        For sites where navigation happens via JavaScript (href="#",
+        href="javascript:..."), the standard href extraction misses real
+        routes. This helper clicks each such anchor, reads the resulting
+        page.url, and runs it through the same filter pipeline as the
+        href path.
+
+        Returns the set of newly discovered, in-scope URLs.
+        """
+        discovered: set[str] = set()
+        try:
+            raw_candidates: object = await page.evaluate(_CLICK_CANDIDATES_JS)
+        except Exception as e:
+            logger.warning(f"Failed to collect click candidates on {current_url}: {e}")
+            return discovered
+
+        if not isinstance(raw_candidates, list):
+            return discovered
+        # ``isinstance(x, list)`` narrows to ``list[Unknown]`` under pyright
+        # strict, so re-bind through an annotated comprehension that walks
+        # the elements as ``object`` for downstream typed handling.
+        raw_list: list[object] = [item for item in cast(list[object], raw_candidates)]
+
+        # Coerce JS-returned values to typed Python objects.
+        candidates: list[dict[str, str]] = []
+        for c in raw_list:
+            if not isinstance(c, dict):
+                continue
+            c_dict: dict[object, object] = {k: v for k, v in cast(dict[object, object], c).items()}
+            if bool(c_dict.get("hasUsableHref")):
+                continue
+            text_val: object = c_dict.get("text", "")
+            aria_val: object = c_dict.get("ariaLabel", "")
+            selector_val: object = c_dict.get("selector", "")
+            text = str(text_val).strip()
+            aria = str(aria_val).strip()
+            selector = str(selector_val)
+            if not selector or (not text and not aria):
+                continue
+            # Destructive-anchor filter
+            if DESTRUCTIVE_ANCHOR_PATTERN.search(f"{text} {aria}"):
+                label = text or aria
+                logger.info(
+                    f"Skipped destructive anchor '{label}' at {current_url} (matched filter)"
+                )
+                continue
+            candidates.append({"text": text, "aria": aria, "selector": selector})
+
+        # Effort cap
+        if len(candidates) > MAX_CLICK_CANDIDATES_PER_PAGE:
+            candidates = candidates[:MAX_CLICK_CANDIDATES_PER_PAGE]
+
+        logger.info(
+            f"Starting click-based discovery for {current_url}: {len(candidates)} candidates after filtering"
+        )
+
+        # Click loop is added in Task 9.
+        return discovered
+
     async def _save_document_references(self, document_refs: list[dict[str, Any]], website_id: str, referring_page_url: str) -> None:
         """
         Save document references to database with language detection

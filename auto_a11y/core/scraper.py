@@ -1120,8 +1120,115 @@ class ScrapingEngine:
             f"Starting click-based discovery for {current_url}: {len(candidates)} candidates after filtering"
         )
 
-        # Click loop is added in Task 9.
+        stealth_mode = bool(self.browser_manager.config.get("stealth_mode", False))
+        wait_until = "networkidle" if stealth_mode else "domcontentloaded"
+        nav_timeout = 40000 if stealth_mode else 20000
+
+        # The Protocol ``_ClickablePage`` is a structural subset suitable for
+        # the inline calls (evaluate/click/query_selector). ``browser_manager.goto``
+        # expects a full Playwright Page; in practice the helper is invoked with
+        # one in production, and a MagicMock in tests. Cast for the typing layer.
+        playwright_page = cast(PlaywrightPage, page)
+
+        for c in candidates:
+            selector = c["selector"]
+            text = c["text"] or c["aria"]
+            try:
+                # 1) Restore parent state before each click.
+                await self.browser_manager.goto(
+                    page=playwright_page, url=current_url,
+                    wait_until=wait_until, timeout=nav_timeout,
+                )
+
+                # 2) Locate the anchor; skip if the DOM has changed.
+                element = await page.query_selector(selector)
+                if element is None:
+                    logger.warning(
+                        f"Could not locate anchor at {selector} after re-navigating to {current_url}; skipping"
+                    )
+                    continue
+
+                # 3) Strip target so the click navigates in-place.
+                await page.evaluate(
+                    """(sel) => {
+                        const el = document.evaluate(sel, document, null,
+                            XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+                        if (el) el.removeAttribute('target');
+                    }""",
+                    selector,
+                )
+
+                # 4) Click and settle.
+                await page.click(selector, timeout=CLICK_TIMEOUT_MS)
+                await asyncio.sleep(POST_CLICK_SETTLE_MS / 1000)
+
+                # ``_ClickablePage.url`` is typed ``str`` by the Protocol; no
+                # narrowing needed here.
+                final_url: str = page.url
+
+                if final_url == current_url:
+                    logger.warning(
+                        f"Click on '{text}' at {current_url} produced no URL change — SPA may not be URL-routed"
+                    )
+                    continue
+
+                # 5) Run through the same filters as the href path.
+                filtered = self._filter_post_click_url(
+                    final_url, current_url, website, base_domain, base_path,
+                )
+                if filtered is not None:
+                    discovered.add(filtered)
+            except Exception as e:
+                logger.warning(
+                    f"Error clicking anchor '{text}' on {current_url}: {e}"
+                )
+                continue
+
         return discovered
+
+    def _filter_post_click_url(
+        self,
+        url: str,
+        current_url: str,
+        website: Website,
+        base_domain: str,
+        base_path: str,
+    ) -> str | None:
+        """Apply the standard scope/excluded/allowed filters to a click-discovered URL.
+
+        Returns the normalized URL if it should be queued, else None.
+        """
+        normalized = self._normalize_url(url, current_url)
+        if not normalized:
+            return None
+        parsed = urlparse(normalized)
+
+        if not website.scraping_config.follow_external:
+            if parsed.netloc != base_domain:
+                if not (website.scraping_config.include_subdomains
+                        and parsed.netloc.endswith(f".{base_domain}")):
+                    return None
+            if base_path:
+                if (not parsed.path.startswith(base_path + "/")
+                        and parsed.path != base_path):
+                    return None
+
+        path = parsed.path
+        # Skip non-HTML resources the existing extraction also skips.
+        if path.endswith((
+            ".pdf", ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx",
+            ".jpg", ".jpeg", ".png", ".gif", ".exe", ".dmg", ".mp4", ".mp3",
+        )):
+            return None
+        if website.scraping_config.excluded_paths:
+            if any(path.startswith(p)
+                   for p in website.scraping_config.excluded_paths):
+                return None
+        if website.scraping_config.allowed_paths:
+            if not any(path.startswith(p)
+                       for p in website.scraping_config.allowed_paths):
+                return None
+        return normalized
 
     async def _save_document_references(self, document_refs: list[dict[str, Any]], website_id: str, referring_page_url: str) -> None:
         """

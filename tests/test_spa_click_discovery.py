@@ -216,3 +216,200 @@ async def test_candidate_collection_caps_at_max(
                       if "Starting click-based discovery" in r.message]
     assert len(starting_lines) == 1
     assert f"{MAX_CLICK_CANDIDATES_PER_PAGE} candidates" in starting_lines[0]
+
+
+class _FakePage:
+    """Minimal Playwright-like page for click-loop tests.
+
+    Satisfies the `_ClickablePage` protocol defined in scraper.py. Tracks
+    navigation calls and lets the test script the URL each click ends at.
+    """
+    def __init__(self, candidates_payload: list[dict[str, object]]) -> None:
+        self._candidates = candidates_payload
+        self.url: str = "https://example.com/parent"
+        self.click_calls: list[tuple[str, int]] = []
+        self.eval_calls: list[str] = []
+        # Sequence of URLs to return after each click; popped left-to-right.
+        self.url_after_click: list[str] = []
+        # Selectors for which query_selector should report "not found".
+        self.missing_selectors: set[str] = set()
+
+    async def evaluate(self, source: str, *args: object) -> object:
+        self.eval_calls.append(source)
+        # First call: return the candidate list.
+        if "querySelectorAll('a')" in source:
+            return self._candidates
+        # Subsequent calls: target-strip helper. Returns None.
+        return None
+
+    async def click(self, selector: str, timeout: int = 0) -> None:
+        self.click_calls.append((selector, timeout))
+        # Simulate the SPA navigation: update self.url to the next scripted URL.
+        if self.url_after_click:
+            self.url = self.url_after_click.pop(0)
+
+    async def query_selector(self, selector: str) -> object:
+        if selector in self.missing_selectors:
+            return None
+        return MagicMock()
+
+
+@pytest.mark.asyncio
+async def test_click_loop_captures_url_after_pushstate() -> None:
+    engine = _make_engine()
+    page = _FakePage([
+        {"hasUsableHref": False, "text": "Dashboard",
+         "ariaLabel": "", "selector": "/html/body/a[1]"},
+    ])
+    page.url_after_click = ["https://example.com/parent/dashboard"]
+    website = _make_website()
+
+    result = await _run_helper(
+        engine, page=page,
+        current_url="https://example.com/parent",
+        website=website, base_domain="example.com", base_path="",
+    )
+    assert result == {"https://example.com/parent/dashboard"}
+    # Re-navigated to parent once (one click → one renavigation). The
+    # ``browser_manager`` attribute is a MagicMock for tests (see
+    # ``_make_engine``); cast its ``goto`` to AsyncMock for typed access
+    # to ``await_count``.
+    goto_mock = cast(AsyncMock, getattr(engine.browser_manager, "goto"))
+    assert goto_mock.await_count == 1
+    assert page.click_calls and page.click_calls[0][0] == "/html/body/a[1]"
+
+
+@pytest.mark.asyncio
+async def test_click_loop_skips_when_url_unchanged(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    engine = _make_engine()
+    page = _FakePage([
+        {"hasUsableHref": False, "text": "Open menu",
+         "ariaLabel": "", "selector": "/html/body/a[1]"},
+    ])
+    # No URL change after click: page.url stays at parent.
+    page.url_after_click = ["https://example.com/parent"]
+    website = _make_website()
+
+    with caplog.at_level(logging.WARNING, logger="auto_a11y.core.scraper"):
+        result = await _run_helper(
+            engine, page=page,
+            current_url="https://example.com/parent",
+            website=website, base_domain="example.com", base_path="",
+        )
+    assert result == set()
+    assert any("no URL change" in r.message for r in caplog.records)
+
+
+@pytest.mark.asyncio
+async def test_click_loop_skips_anchor_not_found_after_renavigation(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    engine = _make_engine()
+    page = _FakePage([
+        {"hasUsableHref": False, "text": "Phantom",
+         "ariaLabel": "", "selector": "/html/body/a[99]"},
+    ])
+    page.missing_selectors = {"/html/body/a[99]"}
+    website = _make_website()
+
+    with caplog.at_level(logging.WARNING, logger="auto_a11y.core.scraper"):
+        result = await _run_helper(
+            engine, page=page,
+            current_url="https://example.com/parent",
+            website=website, base_domain="example.com", base_path="",
+        )
+    assert result == set()
+    assert any("could not locate anchor" in r.message.lower() for r in caplog.records)
+
+
+@pytest.mark.asyncio
+async def test_click_loop_excludes_off_domain_post_click_urls() -> None:
+    engine = _make_engine()
+    page = _FakePage([
+        {"hasUsableHref": False, "text": "External",
+         "ariaLabel": "", "selector": "/html/body/a[1]"},
+    ])
+    page.url_after_click = ["https://evil.example.org/something"]
+    website = _make_website(follow_external=False)
+
+    result = await _run_helper(
+        engine, page=page,
+        current_url="https://example.com/parent",
+        website=website, base_domain="example.com", base_path="",
+    )
+    assert result == set()  # Off-domain URL filtered out.
+
+
+@pytest.mark.asyncio
+async def test_click_loop_respects_excluded_paths() -> None:
+    engine = _make_engine()
+    page = _FakePage([
+        {"hasUsableHref": False, "text": "Admin panel",
+         "ariaLabel": "", "selector": "/html/body/a[1]"},
+    ])
+    page.url_after_click = ["https://example.com/admin/dashboard"]
+    website = _make_website(excluded_paths=["/admin"])
+
+    result = await _run_helper(
+        engine, page=page,
+        current_url="https://example.com/parent",
+        website=website, base_domain="example.com", base_path="",
+    )
+    assert result == set()
+
+
+@pytest.mark.asyncio
+async def test_click_loop_strips_target_blank_before_click() -> None:
+    engine = _make_engine()
+    page = _FakePage([
+        {"hasUsableHref": False, "text": "Pop",
+         "ariaLabel": "", "selector": "/html/body/a[1]"},
+    ])
+    page.url_after_click = ["https://example.com/popped"]
+    website = _make_website()
+
+    result = await _run_helper(
+        engine, page=page,
+        current_url="https://example.com/parent",
+        website=website, base_domain="example.com", base_path="",
+    )
+    assert result == {"https://example.com/popped"}
+    # Confirm a target-stripping evaluate call ran *before* the click.
+    target_strip_calls = [s for s in page.eval_calls
+                          if "removeAttribute" in s and "target" in s]
+    assert target_strip_calls, "Expected a target-strip JS call before clicking"
+
+
+@pytest.mark.asyncio
+async def test_click_loop_continues_after_per_click_exception(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    engine = _make_engine()
+    page = _FakePage([
+        {"hasUsableHref": False, "text": "Breaks",
+         "ariaLabel": "", "selector": "/html/body/a[1]"},
+        {"hasUsableHref": False, "text": "Works",
+         "ariaLabel": "", "selector": "/html/body/a[2]"},
+    ])
+    # Make the first click raise; second click navigates normally.
+    original_click = page.click
+
+    async def click_side_effect(selector: str, timeout: int = 0) -> None:
+        if selector == "/html/body/a[1]":
+            raise RuntimeError("simulated click failure")
+        await original_click(selector, timeout)
+
+    setattr(page, "click", click_side_effect)
+    page.url_after_click = ["https://example.com/works"]
+    website = _make_website()
+
+    with caplog.at_level(logging.WARNING, logger="auto_a11y.core.scraper"):
+        result = await _run_helper(
+            engine, page=page,
+            current_url="https://example.com/parent",
+            website=website, base_domain="example.com", base_path="",
+        )
+    assert result == {"https://example.com/works"}
+    assert any("simulated click failure" in r.message for r in caplog.records)

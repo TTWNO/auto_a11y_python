@@ -509,6 +509,12 @@
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle" aria-hidden="true"></i> {{ ftl('websites-discovery-will-crawl-your-website-starting-from') }}
                     </div>
+                    {% if website.scraping_config.spa_click_discovery %}
+                    <div class="alert alert-info mt-2" role="status">
+                        <i class="bi bi-info-circle" aria-hidden="true"></i>
+                        {{ ftl('websites-spa-click-discovery-warning') }}
+                    </div>
+                    {% endif %}
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-neutral" data-close-modal>{{ ftl('common-cancel') }}</button>

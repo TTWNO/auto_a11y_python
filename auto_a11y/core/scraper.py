@@ -17,12 +17,13 @@ from playwright.async_api import TimeoutError as PlaywrightTimeout
 from playwright.async_api import Page as PlaywrightPage
 
 
-class _ClickablePage(Protocol):
+class ClickablePage(Protocol):
     """Subset of the Playwright Page API used by SPA click-discovery.
 
     Defining a Protocol here lets unit tests pass an in-process fake
     that satisfies the same structural interface, without requiring a
-    real Playwright Page instance or any ``cast`` is needed at the call site.
+    real Playwright Page instance and without any ``cast`` at the call
+    site.
 
     Member signatures intentionally mirror Playwright's ``async_api`` so
     that ``PlaywrightPage`` satisfies this Protocol structurally and strict
@@ -1085,7 +1086,7 @@ class ScrapingEngine:
 
     async def _extract_links_via_clicking(
         self,
-        page: _ClickablePage,
+        page: ClickablePage,
         current_url: str,
         website: Website,
         base_domain: str,
@@ -1153,7 +1154,7 @@ class ScrapingEngine:
         wait_until = "networkidle" if stealth_mode else "domcontentloaded"
         nav_timeout = 40000 if stealth_mode else 20000
 
-        # The Protocol ``_ClickablePage`` is a structural subset suitable for
+        # The Protocol ``ClickablePage`` is a structural subset suitable for
         # the inline calls (evaluate/click/query_selector). ``browser_manager.goto``
         # expects a full Playwright Page; in practice the helper is invoked with
         # one in production, and a MagicMock in tests. Cast for the typing layer.
@@ -1191,7 +1192,7 @@ class ScrapingEngine:
                 await page.click(selector, timeout=CLICK_TIMEOUT_MS)
                 await asyncio.sleep(POST_CLICK_SETTLE_MS / 1000)
 
-                # ``_ClickablePage.url`` is typed ``str`` by the Protocol; no
+                # ``ClickablePage.url`` is typed ``str`` by the Protocol; no
                 # narrowing needed here.
                 final_url: str = page.url
 

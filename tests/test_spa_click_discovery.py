@@ -26,6 +26,7 @@ from auto_a11y.core.scraper import (
     MAX_CLICK_CANDIDATES_PER_PAGE,
     POST_CLICK_SETTLE_MS,
     ScrapingEngine,
+    ClickablePage,
 )
 from auto_a11y.models.discovery_run import DiscoveryRun
 from auto_a11y.models.website import ScrapingConfig, Website
@@ -48,7 +49,7 @@ class _ExtractLinksViaClicking(Protocol):
 def _run_helper(
     engine: ScrapingEngine,
     *,
-    page: object,
+    page: ClickablePage,
     current_url: str,
     website: Website,
     base_domain: str,
@@ -60,6 +61,10 @@ def _run_helper(
     convention only — these tests are unit tests of that exact method,
     so the access is legitimate. Going through ``getattr`` makes the
     intent explicit and keeps the call site fully typed.
+
+    ``page`` is typed as ``ClickablePage`` so that pyright enforces the
+    structural Protocol check on whatever fake is passed in — if ``_FakePage``
+    drifts from the Protocol, a type error appears here rather than silently.
     """
     fn = cast(_ExtractLinksViaClicking, getattr(engine, "_extract_links_via_clicking"))
     return fn(
@@ -225,28 +230,28 @@ async def test_candidate_collection_caps_at_max(
 class _FakePage:
     """Minimal Playwright-like page for click-loop tests.
 
-    Satisfies the `_ClickablePage` protocol defined in scraper.py. Tracks
+    Satisfies the ``ClickablePage`` protocol defined in scraper.py. Tracks
     navigation calls and lets the test script the URL each click ends at.
     """
     def __init__(self, candidates_payload: list[dict[str, object]]) -> None:
         self._candidates = candidates_payload
         self.url: str = "https://example.com/parent"
-        self.click_calls: list[tuple[str, int]] = []
+        self.click_calls: list[tuple[str, float | None]] = []
         self.eval_calls: list[str] = []
         # Sequence of URLs to return after each click; popped left-to-right.
         self.url_after_click: list[str] = []
         # Selectors for which query_selector should report "not found".
         self.missing_selectors: set[str] = set()
 
-    async def evaluate(self, source: str, *args: object) -> object:
-        self.eval_calls.append(source)
+    async def evaluate(self, expression: str, arg: object = None) -> object:
+        self.eval_calls.append(expression)
         # First call: return the candidate list.
-        if "querySelectorAll('a')" in source:
+        if "querySelectorAll('a')" in expression:
             return self._candidates
         # Subsequent calls: target-strip helper. Returns None.
         return None
 
-    async def click(self, selector: str, timeout: int = 0) -> None:
+    async def click(self, selector: str, *, timeout: float | None = None) -> None:
         self.click_calls.append((selector, timeout))
         # Simulate the SPA navigation: update self.url to the next scripted URL.
         if self.url_after_click:
@@ -400,10 +405,10 @@ async def test_click_loop_continues_after_per_click_exception(
     # Make the first click raise; second click navigates normally.
     original_click = page.click
 
-    async def click_side_effect(selector: str, timeout: int = 0) -> None:
+    async def click_side_effect(selector: str, *, timeout: float | None = None) -> None:
         if selector == "/html/body/a[1]":
             raise RuntimeError("simulated click failure")
-        await original_click(selector, timeout)
+        await original_click(selector, timeout=timeout)
 
     setattr(page, "click", click_side_effect)
     page.url_after_click = ["https://example.com/works"]
@@ -495,3 +500,27 @@ async def test_extract_links_unions_helper_result_when_flag_on() -> None:
     )
     spy.assert_awaited_once()
     assert "https://example.com/spa-route" in result
+
+
+@pytest.mark.asyncio
+async def test_extract_links_swallows_helper_exception_and_returns_href_links(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    engine = _make_engine()
+    page = MagicMock()
+    page.evaluate = AsyncMock(return_value=[])  # No href anchors found.
+    website = _make_website(spa_click=True)
+
+    boom = AsyncMock(side_effect=RuntimeError("simulated helper failure"))
+    setattr(engine, "_extract_links_via_clicking", boom)
+
+    with caplog.at_level(logging.WARNING, logger="auto_a11y.core.scraper"):
+        result = await _run_extract_links(
+            engine, page=page, current_url="https://example.com/",
+            website=website, base_domain="example.com", base_path="",
+        )
+    # The helper raised; the outer method must still return what it had.
+    assert result == set()
+    assert any("Click-based discovery failed" in r.message
+               and "simulated helper failure" in r.message
+               for r in caplog.records)

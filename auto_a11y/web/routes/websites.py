@@ -196,7 +196,10 @@ def edit_website(website_id: str) -> str | Response:
         website.scraping_config.include_subdomains = request.form.get('include_subdomains') == 'on'
         website.scraping_config.respect_robots = request.form.get('respect_robots') == 'on'
         website.scraping_config.request_delay = float(request.form.get('request_delay', 1.0))
-        
+        website.scraping_config.spa_click_discovery = (
+            request.form.get('spa_click_discovery') == 'on'
+        )
+
         if get_db().update_website(website):
             flash(ftl('websites-website-updated-successfully'), 'success')
             return redirect(url_for('websites.view_website', website_id=website_id))

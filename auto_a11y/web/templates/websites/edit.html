@@ -95,6 +95,18 @@
                                         {{ ftl('websites-respect-robots-txt') }}
                                     </label>
                                 </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="spa_click_discovery"
+                                           name="spa_click_discovery"
+                                           {% if website.scraping_config.spa_click_discovery %}checked{% endif %}
+                                           aria-describedby="spa-click-discovery-help">
+                                    <label class="form-check-label" for="spa_click_discovery">
+                                        {{ ftl('websites-spa-click-discovery-toggle') }}
+                                    </label>
+                                    <div id="spa-click-discovery-help" class="form-text">
+                                        {{ ftl('websites-spa-click-discovery-help') }}
+                                    </div>
+                                </div>
                             </div>
                         </fieldset>
 

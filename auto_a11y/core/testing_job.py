@@ -5,8 +5,10 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import tempfile
 import time
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 from auto_a11y.core.job_manager import JobManager, JobType, JobStatus
 from auto_a11y.core.database import Database
@@ -303,6 +305,9 @@ class TestingJob:
         if browser_mode in ('disabled', 'remote'):
             raise RuntimeError(f"Browser testing unavailable (BROWSER_MODE={browser_mode})")
 
+        # Track temp file created by interactive-auth delay (cleaned up after workers finish)
+        _auth_state_path: str | None = None
+
         try:
             # Get website
             website = database.get_website(self.website_id)
@@ -352,6 +357,63 @@ class TestingJob:
             page_queue: asyncio.Queue[Page] = asyncio.Queue()
             for page in testable_pages:
                 page_queue.put_nowait(page)
+
+            # Interactive auth delay: pause before workers start so the user can
+            # sign in manually in a visible browser window.  After the delay, the
+            # captured session state is saved to a temp file and injected into
+            # browser_config so every worker's BrowserContext loads it.
+            _auth_delay: int = int(browser_config.get('INTERACTIVE_AUTH_DELAY_SECONDS', 0))
+            if _auth_delay > 0 and testable_pages:
+                from auto_a11y.core.browser_manager import BrowserManager
+                _delay_bm = BrowserManager(browser_config)
+                try:
+                    await _delay_bm.start()
+                    _delay_page = await _delay_bm.create_page()
+                    try:
+                        await _delay_bm.goto(
+                            page=_delay_page,
+                            url=testable_pages[0].url,
+                            wait_until='domcontentloaded',
+                            timeout=30000,
+                        )
+                        logger.info(
+                            "Interactive auth delay: waiting %ds for manual sign-in at %s. Sign in now.",
+                            _auth_delay,
+                            testable_pages[0].url,
+                        )
+                        await asyncio.sleep(_auth_delay)
+                        logger.info("Interactive auth delay: complete; proceeding with testing.")
+                        # Capture the signed-in session and share it with all workers
+                        _default_ctx = _delay_bm.default_context
+                        if _default_ctx is not None:
+                            _tf = tempfile.NamedTemporaryFile(
+                                suffix='.json', delete=False
+                            )
+                            _auth_state_path = _tf.name
+                            _tf.close()
+                            await _delay_bm.save_storage_state(
+                                _default_ctx, _auth_state_path
+                            )
+                            browser_config = dict(browser_config)
+                            browser_config['INTERACTIVE_AUTH_STATE'] = _auth_state_path
+                            logger.info(
+                                "Interactive auth delay: session state saved to %s",
+                                _auth_state_path,
+                            )
+                    finally:
+                        try:
+                            await _delay_page.close()
+                        except Exception:
+                            pass
+                finally:
+                    try:
+                        await _delay_bm.stop()
+                    except Exception:
+                        pass
+            elif _auth_delay > 0:
+                logger.warning(
+                    "Interactive auth delay: no testable pages found, skipping delay."
+                )
 
             # Global rate limiter: enforce minimum delay between page navigations
             # Uses the website's configured request_delay (same as scraping)
@@ -537,6 +599,13 @@ class TestingJob:
             logger.error(f"Testing job {self.job_id} failed: {e}")
             self.set_failed(str(e))
             raise
+        finally:
+            # Clean up the interactive-auth session temp file (if one was created)
+            if _auth_state_path is not None:
+                try:
+                    Path(_auth_state_path).unlink(missing_ok=True)
+                except Exception:
+                    pass
     
     def get_status(self) -> dict[str, Any]:
         """

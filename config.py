@@ -69,6 +69,10 @@ class Config:
     #               "disabled" = no browser testing at all
     BROWSER_MODE: str = os.getenv('BROWSER_MODE', 'local')
     BROWSER_HEADLESS: bool = os.getenv('BROWSER_HEADLESS', 'True').lower() == 'true'
+    # When > 0, pause for this many seconds at the start of discovery/testing so the
+    # user can sign in manually in the visible browser window.  Forces BROWSER_HEADLESS
+    # off for the duration of the run.
+    INTERACTIVE_AUTH_DELAY_SECONDS: int = int(os.getenv('INTERACTIVE_AUTH_DELAY_SECONDS', '0'))
     BROWSER_TIMEOUT: int = int(os.getenv('BROWSER_TIMEOUT', 30000))
     BROWSER_VIEWPORT_WIDTH: int = int(os.getenv('BROWSER_VIEWPORT_WIDTH', 1920))
     BROWSER_VIEWPORT_HEIGHT: int = int(os.getenv('BROWSER_VIEWPORT_HEIGHT', 1080))

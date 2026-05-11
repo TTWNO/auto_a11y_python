@@ -247,6 +247,31 @@ class ScrapingEngine:
                 })
             raise RuntimeError(error_msg)
 
+        # Interactive auth delay: pause so the user can sign in manually
+        # in the visible browser window before discovery begins.
+        _auth_delay: int = int(self.browser_manager.config.get('INTERACTIVE_AUTH_DELAY_SECONDS', 0))
+        if _auth_delay > 0:
+            _auth_page = await self.browser_manager.create_page()
+            try:
+                await self.browser_manager.goto(
+                    page=_auth_page,
+                    url=website.url,
+                    wait_until='domcontentloaded',
+                    timeout=30000,
+                )
+                logger.info(
+                    "Interactive auth delay: waiting %ds for manual sign-in at %s. Sign in now.",
+                    _auth_delay,
+                    website.url,
+                )
+                await asyncio.sleep(_auth_delay)
+                logger.info("Interactive auth delay: complete; proceeding with discovery.")
+            finally:
+                try:
+                    await _auth_page.close()
+                except Exception:
+                    pass
+
         # Helper function to perform authentication
         async def perform_authentication(context_msg: str = "") -> Any:
             """Perform authentication and return authenticated user or None"""

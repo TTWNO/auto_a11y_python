@@ -106,14 +106,23 @@ class BrowserManager:
         """Get browser instance (for compatibility)"""
         return self._browser
 
+    @property
+    def default_context(self) -> BrowserContext | None:
+        """Get the current default BrowserContext (may be None before any page is created)."""
+        return self._default_context
+
     async def start(self) -> None:
         """Start browser instance (safe for concurrent callers)"""
         async with self._start_lock:
             if self._browser and self._browser.is_connected():
                 return  # Browser already running
 
-            # Get headless setting (check both uppercase and lowercase keys)
+            # Get headless setting (check both uppercase and lowercase keys).
+            # If an interactive auth delay is configured, force the browser to be
+            # visible so the user can sign in through the window.
             is_headless = self.config.get('headless', self.config.get('BROWSER_HEADLESS', True))
+            if self.config.get('INTERACTIVE_AUTH_DELAY_SECONDS', 0):
+                is_headless = False
 
             # Build args list (similar to Pyppeteer for consistency)
             browser_args = [
@@ -271,6 +280,14 @@ class BrowserManager:
             'user_agent': resolved_user_agent,
             'service_workers': 'block',
         }
+
+        # If no explicit storage_state was given, check whether a
+        # session file was captured by an interactive-auth delay and
+        # stored in browser_config['INTERACTIVE_AUTH_STATE'].
+        if storage_state is None:
+            config_state: str | None = self.config.get('INTERACTIVE_AUTH_STATE')
+            if config_state:
+                storage_state = config_state
 
         # Load saved authentication state if provided
         if storage_state and Path(storage_state).exists():

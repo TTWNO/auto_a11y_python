@@ -33,6 +33,7 @@ class DiscoveryRun:
     max_depth: int = 10  # How many clicks away from the starting page
     follow_external: bool = False
     respect_robots: bool = True
+    spa_click_discovery: bool = False
 
     # Results
     pages_discovered: int = 0
@@ -101,6 +102,7 @@ class DiscoveryRun:
             'max_depth': self.max_depth,
             'follow_external': self.follow_external,
             'respect_robots': self.respect_robots,
+            'spa_click_discovery': self.spa_click_discovery,
             'pages_discovered': self.pages_discovered,
             'pages_failed': self.pages_failed,
             'documents_found': self.documents_found,
@@ -131,6 +133,7 @@ class DiscoveryRun:
             max_depth=data.get('max_depth', 10),
             follow_external=data.get('follow_external', False),
             respect_robots=data.get('respect_robots', True),
+            spa_click_discovery=data.get('spa_click_discovery', False),
             pages_discovered=data.get('pages_discovered', 0),
             pages_failed=data.get('pages_failed', 0),
             documents_found=data.get('documents_found', 0),

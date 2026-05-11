@@ -1215,7 +1215,8 @@ class ScrapingEngine:
 
         path = parsed.path
         # Skip non-HTML resources the existing extraction also skips.
-        if path.endswith((
+        path_lower = path.lower()
+        if path_lower.endswith((
             ".pdf", ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx",
             ".jpg", ".jpeg", ".png", ".gif", ".exe", ".dmg", ".mp4", ".mp3",
         )):

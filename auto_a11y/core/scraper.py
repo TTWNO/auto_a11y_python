@@ -718,6 +718,18 @@ class ScrapingEngine:
                 if post_nav_wait > 0:
                     await asyncio.sleep(post_nav_wait)
 
+                # Give SPA frameworks time to render JS-injected anchors before
+                # any DOM inspection (title check, Cloudflare check, redirect
+                # check, and link extraction all run after this point).  The
+                # settle fires even when the page later fails the redirect check
+                # so users can confirm from logs that the settle is running.
+                if website.scraping_config.spa_click_discovery:
+                    spa_settle_seconds = SPA_INITIAL_SETTLE_MS / 1000
+                    logger.info(
+                        f"SPA settle: sleeping {spa_settle_seconds:.1f}s after navigation for {url} to allow JS-rendered anchors"
+                    )
+                    await asyncio.sleep(spa_settle_seconds)
+
                 # Check if we're stuck on a Cloudflare challenge page
                 try:
                     page_title = await page.title()
@@ -949,11 +961,6 @@ class ScrapingEngine:
         assert website.id is not None
         _extract_wid: str = website.id
         try:
-            if website.scraping_config.spa_click_discovery:
-                # SPA frameworks (React/Vue/Angular) render anchors via JS after
-                # navigation completes; settle gives them time before we read the DOM.
-                await asyncio.sleep(SPA_INITIAL_SETTLE_MS / 1000)
-
             # Extract all links with their text using JavaScript
             links_with_text = await page.evaluate('''
                 () => {

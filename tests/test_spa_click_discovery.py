@@ -581,66 +581,6 @@ async def test_discover_website_records_click_discovery_mode_on_run() -> None:
 
 
 @pytest.mark.asyncio
-async def test_extract_links_settles_before_reading_dom_when_spa_flag_on(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """When spa_click_discovery is on, sleep before reading the DOM."""
-    import asyncio as _asyncio
-
-    sleep_durations: list[float] = []
-
-    async def fake_sleep(duration: float) -> None:
-        sleep_durations.append(duration)
-
-    # Patch asyncio.sleep on the real asyncio module — this is what
-    # scraper.py calls (it imports asyncio, not ``from asyncio import sleep``).
-    monkeypatch.setattr(_asyncio, "sleep", fake_sleep)
-
-    engine = _make_engine()
-    page = MagicMock()
-    page.evaluate = AsyncMock(return_value=[])
-    website = _make_website(spa_click=True)
-
-    await _run_extract_links(
-        engine, page=page, current_url="https://example.com/",
-        website=website, base_domain="example.com", base_path="",
-    )
-    expected = SPA_INITIAL_SETTLE_MS / 1000
-    assert expected in sleep_durations, (
-        f"expected initial-settle sleep of {expected}s; got {sleep_durations}"
-    )
-
-
-@pytest.mark.asyncio
-async def test_extract_links_does_not_settle_when_spa_flag_off(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """When spa_click_discovery is off, no settle delay is added."""
-    import asyncio as _asyncio
-
-    sleep_durations: list[float] = []
-
-    async def fake_sleep(duration: float) -> None:
-        sleep_durations.append(duration)
-
-    monkeypatch.setattr(_asyncio, "sleep", fake_sleep)
-
-    engine = _make_engine()
-    page = MagicMock()
-    page.evaluate = AsyncMock(return_value=[])
-    website = _make_website(spa_click=False)
-
-    await _run_extract_links(
-        engine, page=page, current_url="https://example.com/",
-        website=website, base_domain="example.com", base_path="",
-    )
-    expected = SPA_INITIAL_SETTLE_MS / 1000
-    assert expected not in sleep_durations, (
-        f"unexpected initial-settle sleep when flag off; got {sleep_durations}"
-    )
-
-
-@pytest.mark.asyncio
 async def test_click_loop_settles_after_renavigation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

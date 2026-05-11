@@ -41,6 +41,15 @@ _EXPECTED_SKIP_REASON_PREFIXES = (
     "Redirected outside base path",
 )
 
+# SPA click-discovery constants
+MAX_CLICK_CANDIDATES_PER_PAGE: int = 50
+CLICK_TIMEOUT_MS: int = 5000
+POST_CLICK_SETTLE_MS: int = 1500
+DESTRUCTIVE_ANCHOR_PATTERN: re.Pattern[str] = re.compile(
+    r"\b(log ?out|sign ?out|delete|remove|submit|unsubscribe)\b",
+    re.IGNORECASE,
+)
+
 
 def _is_expected_skip(page: Page | None) -> bool:
     """

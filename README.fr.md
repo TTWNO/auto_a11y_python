@@ -395,7 +395,7 @@ Après le clonage :
 python run.py --install-hooks
 ```
 
-Cela configure `git` pour utiliser le répertoire `.githooks/` du dépôt. Le crochet pre-commit exécute les trois vérificateurs de types sur les chemins ciblés et bloque le commit en cas d'échec.
+Cela configure `git` pour utiliser le répertoire `.githooks/` du dépôt. Le crochet pre-commit exécute les trois vérificateurs de types sur les chemins ciblés, ainsi qu'une vérification d'accessibilité CSS basée sur bun (`scripts/check-css-a11y.ts`) qui signale les défauts de contraste, l'usage des classes de couleurs Bootstrap interdites et `outline: none` sans style de focus de remplacement. Le commit est bloqué en cas d'échec. L'étape CSS-a11y est ignorée si `bun` n'est pas installé localement — installez-le depuis https://bun.sh.
 
 ### Exécution manuelle des vérifications
 
@@ -403,6 +403,7 @@ Cela configure `git` pour utiliser le répertoire `.githooks/` du dépôt. Le cr
 .venv/bin/python -m mypy
 .venv/bin/python -m pyright
 .venv/bin/python -m ty check
+bun run scripts/check-css-a11y.ts
 ```
 
 ### Politique

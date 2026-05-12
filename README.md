@@ -391,7 +391,7 @@ After cloning:
 python run.py --install-hooks
 ```
 
-This configures `git` to use the repo's `.githooks/` directory. The pre-commit hook runs all three type checkers against the scoped paths and blocks the commit on any failure.
+This configures `git` to use the repo's `.githooks/` directory. The pre-commit hook runs all three type checkers against the scoped paths, plus a bun-based CSS accessibility check (`scripts/check-css-a11y.ts`) that flags contrast failures, prohibited Bootstrap colour classes, and `outline: none` without a replacement focus style. The commit is blocked on any failure. The CSS-a11y step is skipped when `bun` is not installed locally — install it from https://bun.sh.
 
 ### Running checks manually
 
@@ -399,6 +399,7 @@ This configures `git` to use the repo's `.githooks/` directory. The pre-commit h
 .venv/bin/python -m mypy
 .venv/bin/python -m pyright
 .venv/bin/python -m ty check
+bun run scripts/check-css-a11y.ts
 ```
 
 ### Policy

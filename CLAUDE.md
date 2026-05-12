@@ -425,6 +425,34 @@ tokens.css (design tokens)  →  style.css (utility classes)  →  templates/JS/
 6. **In standalone JS files**, use the custom class names in `classList.add()`, `querySelector()`, and template literals
 7. **Every colour change MUST meet WCAG 2.2 AA contrast requirements** — text: 4.5:1 minimum (SC 1.4.3), large text: 3:1 minimum (SC 1.4.3), non-text UI components and graphical objects: 3:1 minimum (SC 1.4.11). Verify contrast ratios before committing any colour modification
 
+### Automated Check (pre-commit)
+
+A bun-based linter at `scripts/check-css-a11y.ts` runs on every commit (after the type checks) and blocks if it finds:
+
+- **Contrast failures** — any rule that declares both `color:` and `background[-color]:` as hex literals where the pair is below 4.5:1 (SC 1.4.3)
+- **Prohibited Bootstrap colour classes** in HTML/JS/Python — `btn-primary`, `bg-danger`, `text-warning`, etc.
+- **`outline: none` / `outline: 0`** without a replacement focus style (`box-shadow`, `border`, `outline-offset`, or SVG `fill`/`stroke`) — SC 2.4.7
+- **font-size below 12px / 0.75rem / 0.75em** — warn-only, doesn't block
+
+Run manually:
+
+```bash
+bun run scripts/check-css-a11y.ts            # whole repo
+bun run scripts/check-css-a11y.ts <files>    # specific files
+bun run scripts/check-css-a11y.ts --json     # machine-readable
+```
+
+**Inline suppression** is allowed via the `@a11y-ignore` marker on the offending line (or the line directly above) when the rule has a documented false positive — e.g. when focus is rendered on a child element and the host legitimately needs `outline: none`:
+
+```css
+[role="treeitem"]:focus {
+    /* @a11y-ignore: focus indicator is on the child, not the host */
+    outline: none;
+}
+```
+
+The hook will be skipped if `bun` is not installed, but CI will still run it — install bun from https://bun.sh before contributing.
+
 ## Type Checking (MANDATORY)
 
 **All in-scope Python code MUST pass `mypy` strict mode, `pyright` strict mode, and `ty` in its strictest available mode.** This is a hard requirement, not optional. Type errors are fixed in code — never suppressed.

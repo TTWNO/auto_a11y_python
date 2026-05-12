@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 #
-# Pre-commit hook: block commits that do not pass strict type checking.
+# Pre-commit hook: block commits that do not pass strict type checking
+# or the CSS-accessibility check.
 #
-# Runs mypy, pyright, and ty against the scoped paths. All three run even
-# if earlier ones fail so the developer sees the full picture in one shot.
+# Runs mypy, pyright, ty, and check-css-a11y.ts against the scoped paths.
+# All run even if earlier ones fail so the developer sees the full picture
+# in one shot.
 #
 # Install: python run.py --install-hooks
 #      or: git config core.hooksPath .githooks
@@ -72,10 +74,39 @@ else
     echo "==> ty SKIPPED ([tool.auto_a11y_typecheck] ty_enabled = false)"
 fi
 
+# ---------------------------------------------------------------------------
+# CSS / colour-token accessibility check (bun).
+#
+# Scans report-output Python heredocs, Jinja2 templates, and own .css files
+# for: WCAG 1.4.3 / 1.4.11 contrast failures on declared color+background
+# pairs; prohibited Bootstrap colour utility classes (CLAUDE.md "Colour
+# System"); outline: none / 0 with no replacement focus style (SC 2.4.7);
+# font-size below 12px / 0.75rem (warn-only).
+#
+# Inline suppression via '@a11y-ignore' comment is allowed at the
+# offending line or one above it, for documented false positives.
+#
+# Skipped if bun is not installed.
+# ---------------------------------------------------------------------------
+
+if command -v bun &>/dev/null; then
+    echo
+    echo "==> css-a11y"
+    if ! bun run scripts/check-css-a11y.ts; then
+        STATUS=1
+    fi
+else
+    echo
+    echo "==> css-a11y SKIPPED (bun not found — install from https://bun.sh)"
+fi
+
 if [ $STATUS -ne 0 ]; then
     echo
-    echo "COMMIT BLOCKED: strict type checking failed."
-    echo "Fix the errors above. Suppression comments are NOT permitted."
+    echo "COMMIT BLOCKED: a strict check failed."
+    echo "Fix the errors above. Type-error suppression comments are NOT"
+    echo "permitted; CSS-a11y findings may be silenced with an inline"
+    echo "'@a11y-ignore' comment when the rule has a documented false"
+    echo "positive."
     echo "Policy: docs/superpowers/specs/2026-04-16-strict-type-checking-design.md"
     exit 1
 fi

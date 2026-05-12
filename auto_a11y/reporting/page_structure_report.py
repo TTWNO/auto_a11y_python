@@ -409,6 +409,7 @@ class PageStructureReport:
             outline-offset: 1px;
         }}
         [role="treeitem"]:focus {{
+            /* @a11y-ignore: focus indicator is rendered on the child .tree-node-content above; removing it here avoids a duplicated outline */
             outline: none;
         }}
         .node-toggle {{

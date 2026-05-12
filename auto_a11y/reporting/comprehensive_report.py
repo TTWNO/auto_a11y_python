@@ -45,15 +45,18 @@ class ComprehensiveReportGenerator:
     }
 
     def __init__(self, claude_api_key: str | None = None) -> None:
+        # Chart palette aligned with the design tokens (tokens.css):
+        # dark, saturated colours that meet 3:1 against white for non-text UI
+        # (SC 1.4.11) and pair well with white legend text inside chart segments.
         self.chart_colors = {
-            'high': '#dc3545',
-            'medium': '#ffc107',
-            'low': '#17a2b8',
-            'error': '#dc3545',
-            'warning': '#ffc107',
-            'info': '#17a2b8',
+            'high': '#922b21',
+            'medium': '#7d6608',
+            'low': '#0e7490',
+            'error': '#922b21',
+            'warning': '#7d6608',
+            'info': '#0e7490',
             'discovery': '#6f42c1',
-            'pass': '#28a745'
+            'pass': '#1e8449',
         }
         
         # Initialize AI summary generator
@@ -690,7 +693,7 @@ class ComprehensiveReportGenerator:
             
             <h3 style="margin-top: 2rem;">Additional Insights</h3>
             <div class="metrics-grid">
-                <div class="metric-card" style="border-color: #17a2b8;">
+                <div class="metric-card" style="border-color: #0e7490;">
                     <div class="metric-value">{analytics.get('total_info', 0)}</div>
                     <div class="metric-label">Informational Items</div>
                     <div class="metric-trend">Non-violations for awareness</div>
@@ -703,7 +706,7 @@ class ComprehensiveReportGenerator:
             </div>
             
             <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-top: 1.5rem;">
-                <p style="margin: 0; font-size: 0.875rem; color: #6c757d;">
+                <p style="margin: 0; font-size: 0.875rem; color: #4a4a4a;">
                     <strong>Note:</strong> Only Errors and Warnings count as accessibility violations. 
                     Info items provide additional context, while Discovery items highlight areas that may need manual testing 
                     (e.g., forms, PDFs, complex interactions).
@@ -810,7 +813,7 @@ class ComprehensiveReportGenerator:
                         <tr>
                             <td style="font-weight: 500;">{touchpoint.name}</td>
                             <td>{count}</td>
-                            <td style="font-size: 0.85rem; color: #6c757d;">{touchpoint.description[:80]}...</td>
+                            <td style="font-size: 0.85rem; color: #4a4a4a;">{touchpoint.description[:80]}...</td>
                         </tr>
                         """)
                 except (ValueError, KeyError):
@@ -848,25 +851,25 @@ class ComprehensiveReportGenerator:
                         <div class="category-icon">⚠️</div>
                         <div class="category-count">{analytics['by_type'].get('error', 0)}</div>
                         <div class="category-label">Errors</div>
-                        <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.5rem;">WCAG violations</div>
+                        <div style="font-size: 0.75rem; color: #4a4a4a; margin-top: 0.5rem;">WCAG violations</div>
                     </div>
                     <div class="category-card warning">
                         <div class="category-icon">⚡</div>
                         <div class="category-count">{analytics['by_type'].get('warning', 0)}</div>
                         <div class="category-label">Warnings</div>
-                        <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.5rem;">Potential issues</div>
+                        <div style="font-size: 0.75rem; color: #4a4a4a; margin-top: 0.5rem;">Potential issues</div>
                     </div>
                     <div class="category-card info">
                         <div class="category-icon">ℹ️</div>
                         <div class="category-count">{analytics['by_type'].get('info', 0)}</div>
                         <div class="category-label">Info</div>
-                        <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.5rem;">Non-violations</div>
+                        <div style="font-size: 0.75rem; color: #4a4a4a; margin-top: 0.5rem;">Non-violations</div>
                     </div>
                     <div class="category-card discovery">
                         <div class="category-icon">🔍</div>
                         <div class="category-count">{analytics['by_type'].get('discovery', 0)}</div>
                         <div class="category-label">Discovery</div>
-                        <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.5rem;">Manual review areas</div>
+                        <div style="font-size: 0.75rem; color: #4a4a4a; margin-top: 0.5rem;">Manual review areas</div>
                     </div>
                 </div>
             </div>
@@ -1096,8 +1099,8 @@ class ComprehensiveReportGenerator:
             
             /* Header Styles */
             .report-header {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
+                background: linear-gradient(135deg, #1a5276 0%, #0e2f44 100%);
+                color: #ffffff;
                 padding: 3rem 2rem;
             }
             
@@ -1190,7 +1193,7 @@ class ComprehensiveReportGenerator:
             .score-label {
                 display: block;
                 font-size: 0.875rem;
-                color: #7f8c8d;
+                color: #4a4a4a;
                 text-transform: uppercase;
             }
             
@@ -1235,18 +1238,18 @@ class ComprehensiveReportGenerator:
             }
             
             .metric-card.high-impact {
-                border-color: #dc3545;
-                background: #fff5f5;
+                border-color: #922b21;
+                background: #fdedec;
             }
-            
+
             .metric-card.medium-impact {
-                border-color: #ffc107;
-                background: #fffdf5;
+                border-color: #b38600;
+                background: #fff3cd;
             }
-            
+
             .metric-card.low-impact {
-                border-color: #17a2b8;
-                background: #f5fdff;
+                border-color: #0e7490;
+                background: #e0f3f8;
             }
             
             .metric-value {
@@ -1257,14 +1260,14 @@ class ComprehensiveReportGenerator:
             
             .metric-label {
                 font-size: 1rem;
-                color: #7f8c8d;
+                color: #4a4a4a;
                 margin-top: 0.5rem;
             }
             
             .metric-trend {
                 font-size: 0.875rem;
                 margin-top: 0.5rem;
-                color: #28a745;
+                color: #1e8449;
             }
             
             /* Charts */
@@ -1318,23 +1321,27 @@ class ComprehensiveReportGenerator:
             }
             
             .impact-badge.high, .priority-badge.critical {
-                background: #dc3545;
-                color: white;
+                background: #fdedec;
+                color: #922b21;
+                border: 1px solid #922b21;
             }
-            
+
             .impact-badge.medium, .priority-badge.high {
-                background: #ffc107;
-                color: #333;
+                background: #fff3cd;
+                color: #7d6608;
+                border: 1px solid #b38600;
             }
-            
+
             .impact-badge.low, .priority-badge.medium {
-                background: #17a2b8;
-                color: white;
+                background: #e0f3f8;
+                color: #0e7490;
+                border: 1px solid #0e7490;
             }
-            
+
             .priority-badge.low {
-                background: #6c757d;
-                color: white;
+                background: #e9ecef;
+                color: #2c3e50;
+                border: 1px solid #85929e;
             }
             
             /* Category Cards */
@@ -1353,23 +1360,23 @@ class ComprehensiveReportGenerator:
             }
             
             .category-card.error {
-                border-color: #dc3545;
-                background: #fff5f5;
+                border-color: #922b21;
+                background: #fdedec;
             }
-            
+
             .category-card.warning {
-                border-color: #ffc107;
-                background: #fffdf5;
+                border-color: #b38600;
+                background: #fff3cd;
             }
-            
+
             .category-card.info {
-                border-color: #17a2b8;
-                background: #f5fdff;
+                border-color: #0e7490;
+                background: #e0f3f8;
             }
-            
+
             .category-card.discovery {
                 border-color: #6f42c1;
-                background: #f8f5ff;
+                background: #f3eefa;
             }
             
             .category-icon {
@@ -1385,7 +1392,7 @@ class ComprehensiveReportGenerator:
             
             .category-label {
                 font-size: 0.875rem;
-                color: #7f8c8d;
+                color: #4a4a4a;
                 text-transform: uppercase;
                 margin-top: 0.5rem;
             }
@@ -1495,7 +1502,7 @@ class ComprehensiveReportGenerator:
                                 {analytics['by_impact'].get('medium', 0)},
                                 {analytics['by_impact'].get('low', 0)}
                             ],
-                            backgroundColor: ['#dc3545', '#ffc107', '#17a2b8']
+                            backgroundColor: ['#922b21', '#7d6608', '#0e7490']
                         }}]
                     }},
                     options: {{
@@ -1520,7 +1527,7 @@ class ComprehensiveReportGenerator:
                         datasets: [{{
                             label: 'Violations',
                             data: Object.values(wcagData).map(v => v.count),
-                            backgroundColor: '#667eea'
+                            backgroundColor: '#1a5276'
                         }}]
                     }},
                     options: {{
@@ -1549,7 +1556,7 @@ class ComprehensiveReportGenerator:
                                 {analytics['by_type'].get('info', 0)},
                                 {analytics['by_type'].get('discovery', 0)}
                             ],
-                            backgroundColor: ['#dc3545', '#ffc107', '#17a2b8', '#6f42c1']
+                            backgroundColor: ['#922b21', '#7d6608', '#0e7490', '#6f42c1']
                         }}]
                     }},
                     options: {{
@@ -1573,12 +1580,12 @@ class ComprehensiveReportGenerator:
                         datasets: [{{
                             label: 'Total Issues',
                             data: [320, 285, 250, {analytics['total_issues']}],
-                            borderColor: '#667eea',
+                            borderColor: '#1a5276',
                             tension: 0.1
                         }}, {{
                             label: 'High Impact',
                             data: [45, 38, 30, {analytics['by_impact'].get('high', 0)}],
-                            borderColor: '#dc3545',
+                            borderColor: '#922b21',
                             tension: 0.1
                         }}]
                     }},
@@ -1599,11 +1606,11 @@ class ComprehensiveReportGenerator:
     def _get_score_color(self, score: float) -> str:
         """Get color based on compliance score"""
         if score >= 90:
-            return '#28a745'
+            return '#1e8449'
         elif score >= 70:
-            return '#ffc107'
+            return '#b38600'
         else:
-            return '#dc3545'
+            return '#922b21'
     
     def _get_grade(self, score: float) -> str:
         """Get letter grade based on score"""
@@ -1629,8 +1636,8 @@ class ComprehensiveReportGenerator:
         if ai_summary_en and ai_summary_fr:
             html_output += """
                 <div class="language-switcher" style="text-align: right; margin-bottom: 1rem;">
-                    <button class="lang-btn lang-btn-active" data-lang="en" onclick="switchLanguage('en')" style="padding: 0.5rem 1rem; margin-left: 0.5rem; border: 2px solid #667eea; background: #667eea; color: white; border-radius: 4px; cursor: pointer; font-weight: bold;">English</button>
-                    <button class="lang-btn" data-lang="fr" onclick="switchLanguage('fr')" style="padding: 0.5rem 1rem; margin-left: 0.5rem; border: 2px solid #667eea; background: white; color: #667eea; border-radius: 4px; cursor: pointer; font-weight: bold;">Français</button>
+                    <button class="lang-btn lang-btn-active" data-lang="en" onclick="switchLanguage('en')" style="padding: 0.5rem 1rem; margin-left: 0.5rem; border: 2px solid #1a5276; background: #1a5276; color: #ffffff; border-radius: 4px; cursor: pointer; font-weight: bold;">English</button>
+                    <button class="lang-btn" data-lang="fr" onclick="switchLanguage('fr')" style="padding: 0.5rem 1rem; margin-left: 0.5rem; border: 2px solid #1a5276; background: #ffffff; color: #1a5276; border-radius: 4px; cursor: pointer; font-weight: bold;">Français</button>
                 </div>
             """
 
@@ -1709,8 +1716,8 @@ class ComprehensiveReportGenerator:
             show_stoppers = ai_summary.get('show_stoppers', [])
             if show_stoppers:
                 html += """
-                    <div class="show-stoppers-alert" style="background: #fff5f5; border: 2px solid #dc3545; border-radius: 8px; padding: 1.5rem; margin: 2rem 0;">
-                        <h3 style="color: #dc3545;">🚫 Show Stoppers - Immediate Action Required</h3>
+                    <div class="show-stoppers-alert" style="background: #fdedec; border: 2px solid #922b21; border-radius: 8px; padding: 1.5rem; margin: 2rem 0;">
+                        <h3 style="color: #922b21;">🚫 Show Stoppers - Immediate Action Required</h3>
                         <ul>"""
                 for stopper in show_stoppers:
                     html += f"<li>{stopper}</li>"
@@ -1729,7 +1736,7 @@ class ComprehensiveReportGenerator:
                         <div class="maturity-scale" style="display: flex; justify-content: space-between; padding: 1rem; background: white; border-radius: 4px; margin: 1rem 0;">"""
                 
                 for level in maturity_levels:
-                    active_style = 'background: #667eea; color: white; font-weight: bold;' if level == current_level else 'color: #6c757d;'
+                    active_style = 'background: #1a5276; color: white; font-weight: bold;' if level == current_level else 'color: #4a4a4a;'
                     html += f'<span style="padding: 0.5rem 1rem; border-radius: 4px; {active_style}">{level}</span>'
                 
                 html += f"""
@@ -1889,23 +1896,23 @@ class ComprehensiveReportGenerator:
     def _get_rating_color(self, rating: str) -> str:
         """Get color for rating"""
         colors = {
-            'Excellent': '#28a745',
+            'Excellent': '#1e8449',
             'Good': '#5cb85c',
-            'Fair': '#ffc107',
+            'Fair': '#b38600',
             'Poor': '#ff6b6b',
-            'Critical': '#dc3545'
+            'Critical': '#922b21'
         }
-        return colors.get(rating, '#6c757d')
+        return colors.get(rating, '#4a4a4a')
     
     def _get_risk_color(self, level: str) -> str:
         """Get color for risk level"""
         colors = {
-            'Low': '#28a745',
-            'Medium': '#ffc107',
+            'Low': '#1e8449',
+            'Medium': '#b38600',
             'High': '#ff6b6b',
-            'Critical': '#dc3545'
+            'Critical': '#922b21'
         }
-        return colors.get(level, '#6c757d')
+        return colors.get(level, '#4a4a4a')
     
     def _generate_wcag_rows(self, wcag_sorted: list[tuple[str, dict[str, Any]]]) -> str:
         """Generate WCAG table rows"""
@@ -2091,7 +2098,7 @@ class ComprehensiveReportGenerator:
                 <details class="breakpoint-section" style="margin-bottom: 1rem; border: 1px solid #dee2e6; border-radius: 0.25rem; padding: 1rem;">
                     <summary style="cursor: pointer; font-weight: bold; margin-bottom: 0.5rem;">
                         <span style="color: #0066cc;">{breakpoint_display}</span>
-                        <span class="badge" style="background-color: #dc3545; color: white; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-size: 0.875rem;">{len(issues)} instances</span>
+                        <span class="badge" style="background-color: #fdedec; color: #922b21; border: 1px solid #922b21; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-size: 0.875rem;">{len(issues)} instances</span>
                     </summary>
                     <table class="contrast-table" style="width: 100%; margin-top: 1rem; border-collapse: collapse;">
                         <thead>
@@ -2124,7 +2131,7 @@ class ComprehensiveReportGenerator:
             if len(issues) > 20:
                 html += f"""
                             <tr>
-                                <td colspan="5" style="padding: 0.75rem; text-align: center; font-style: italic; color: #6c757d;">
+                                <td colspan="5" style="padding: 0.75rem; text-align: center; font-style: italic; color: #4a4a4a;">
                                     ... and {len(issues) - 20} more instances
                                 </td>
                             </tr>

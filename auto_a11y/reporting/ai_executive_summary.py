@@ -448,15 +448,17 @@ class AIExecutiveSummaryGenerator:
         legal_risk = ai_summary.get('legal_risk', {})
         recommendations = ai_summary.get('recommendations', {})
         
-        # Determine color based on rating
+        # Rating colours aligned with design tokens. Each value meets 3:1
+        # against white (so the card's left-edge swatch is perceivable per
+        # SC 1.4.11) and 4.5:1 when used as text colour.
         rating_colors = {
-            'Excellent': '#28a745',
-            'Good': '#5cb85c', 
-            'Fair': '#ffc107',
-            'Poor': '#ff6b6b',
-            'Critical': '#dc3545'
+            'Excellent': '#0e8c6a',
+            'Good': '#1e8449',
+            'Fair': '#b38600',
+            'Poor': '#c75f00',
+            'Critical': '#922b21'
         }
-        rating_color = rating_colors.get(assessment.get('rating', 'Unknown'), '#6c757d')
+        rating_color = rating_colors.get(assessment.get('rating', 'Unknown'), '#4a4a4a')
         
         html = f"""
         <section class="executive-summary-analysis">
@@ -603,14 +605,19 @@ class AIExecutiveSummaryGenerator:
         return impact_html
     
     def _get_risk_color(self, level: str) -> str:
-        """Get color for risk level"""
+        """Get colour for risk level.
+
+        These values are used both as a card border (UI, needs 3:1 vs white)
+        and as a badge background with white text (text, needs 4.5:1 vs white).
+        Each value below clears both bars when paired with white.
+        """
         colors = {
-            'Low': '#28a745',
-            'Medium': '#ffc107',
-            'High': '#ff6b6b',
-            'Critical': '#dc3545'
+            'Low': '#1e8449',
+            'Medium': '#7d6608',
+            'High': '#c75f00',
+            'Critical': '#922b21',
         }
-        return colors.get(level, '#6c757d')
+        return colors.get(level, '#4a4a4a')
     
     def get_ai_summary_css(self) -> str:
         """Get CSS styles for executive summary analysis"""
@@ -643,7 +650,7 @@ class AIExecutiveSummaryGenerator:
         }
         
         .summary-section.critical {
-            border-left: 4px solid #ff6b6b;
+            border-left: 4px solid #922b21;
         }
         
         .maturity-scale {
@@ -658,19 +665,19 @@ class AIExecutiveSummaryGenerator:
         .maturity-scale .level {
             padding: 0.5rem 1rem;
             border-radius: 4px;
-            color: #6c757d;
+            color: #4a4a4a;
             font-size: 0.875rem;
         }
         
         .maturity-scale .level.active {
-            background: #667eea;
+            background: #1a5276;
             color: white;
             font-weight: bold;
         }
         
         .show-stoppers-alert {
             background: #fff5f5;
-            border: 2px solid #dc3545;
+            border: 2px solid #922b21;
             border-radius: 8px;
             padding: 1.5rem;
             margin: 2rem 0;
@@ -721,7 +728,7 @@ class AIExecutiveSummaryGenerator:
         }
         
         .recommendation-category h4 {
-            color: #667eea;
+            color: #1a5276;
             margin-bottom: 1rem;
         }
         
@@ -754,7 +761,7 @@ class AIExecutiveSummaryGenerator:
             left: 1rem;
             top: 50%;
             transform: translateY(-50%);
-            background: #667eea;
+            background: #1a5276;
             color: white;
             width: 1.5rem;
             height: 1.5rem;

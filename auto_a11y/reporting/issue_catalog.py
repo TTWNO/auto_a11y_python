@@ -2670,18 +2670,64 @@ class IssueCatalog:
     
     @classmethod
     def _get_default_issue(cls, issue_id: str) -> dict[str, Any]:
-        """Return default issue data when specific issue not found"""
+        """Return default issue data when the specific issue is not in the catalog.
+
+        Rather than emitting generic 'this issue may create barriers' filler, we
+        derive readable text from the issue id itself so the report still tells
+        the reviewer roughly what was found and which side of the catalog gap
+        they're standing on.
+        """
+        import re as _re
+
+        short = issue_id.split('_', 1)[1] if '_' in issue_id and not issue_id.startswith('AI_') else issue_id
+        if short.startswith('AI_'):
+            short = short[3:]
+        kind = 'Error'
+        kind_label = 'failure'
+        for _p, _kt, _kl in (
+            ('Err', 'Error', 'failure'),
+            ('Warn', 'Warning', 'warning'),
+            ('Info', 'Info', 'notice'),
+            ('Disco', 'Discovery', 'discovery'),
+        ):
+            if short.startswith(_p):
+                kind = _kt
+                kind_label = _kl
+                short = short[len(_p):]
+                break
+        _words = _re.findall(r'[A-Z]+(?=[A-Z][a-z])|[A-Z]?[a-z]+|[A-Z]+|\d+', short)
+        readable = ' '.join(w.lower() for w in _words).strip() or short.lower() or issue_id
+
         return {
             "id": issue_id,
-            "type": "Error",
+            "type": kind,
             "impact": "Medium",
             "wcag": [],
             "wcag_full": "WCAG criteria not specified",
             "category": "general",
-            "description": f"Accessibility issue: {issue_id}",
-            "why_it_matters": "This issue may create barriers for users with disabilities. Specific impact details are not available for this issue type.",
-            "who_it_affects": "Users with disabilities who rely on assistive technologies or accessible interfaces",
-            "how_to_fix": "Review the specific issue details and apply appropriate accessibility fixes. Consult WCAG guidelines for more information."
+            "description": (
+                f"The '{readable}' {kind_label} fired on this element, but the issue code "
+                f"'{issue_id}' isn't in the catalog yet, so detailed guidance and WCAG mapping "
+                f"are unavailable. Treat this as an uncatalogued finding pending classification."
+            ),
+            "why_it_matters": (
+                f"Until '{issue_id}' has a catalog entry, the report can't tell you which "
+                "WCAG criterion it maps to or which user groups it affects most. The check "
+                "fired for a reason — examine the flagged element to determine the real impact."
+            ),
+            "who_it_affects": (
+                "Affected user groups depend on what the underlying check measures. Common "
+                "candidates: blind and low-vision users (when names, contrast, or text are "
+                "involved), keyboard-only users (when focus or activation are involved), "
+                "users with cognitive disabilities (when structure or predictability are "
+                "involved)."
+            ),
+            "how_to_fix": (
+                f"Inspect the element via the XPath in the report, fix the underlying "
+                f"'{readable}' problem so it satisfies the relevant WCAG criterion, then add "
+                f"a catalog entry for '{issue_id}' so the next report explains the fix in "
+                "context instead of falling back to this generic guidance."
+            ),
         }
     
     @classmethod

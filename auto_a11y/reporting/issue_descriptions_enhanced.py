@@ -120,14 +120,14 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Review and fix the heading structure to ensure proper hierarchy and semantic markup"
         },
         'AI_ErrAccessibilityIssue': {
-            'title': "Accessibility issue detected",
-            'what': "AI analysis detected an accessibility issue that requires attention",
-            'what_generic': "Accessibility issue detected",
-            'why': "This issue may create barriers for users with disabilities",
-            'who': "Users who depend on assistive technology — including blind and low-vision users using screen readers, users with motor disabilities, users with cognitive disabilities, and users with hearing impairments",
+            'title': "AI flagged an accessibility issue that needs manual classification",
+            'what': "Visual AI analysis flagged this element as a likely accessibility problem, but the specific failure mode wasn't matched to one of our catalogued issue types. The element's screenshot and surrounding context are preserved in the report so you can determine which WCAG criterion applies.",
+            'what_generic': "AI flagged an unclassified accessibility issue",
+            'why': "AI catches issues that pure DOM scanning misses — visual hierarchy that doesn't match heading levels, ambiguous focus states, modals without proper trapping, animations that may trigger vestibular disorders, reading order that conflicts with visual flow. Because the failure mode is varied, it lands here unclassified rather than as a specific rule violation.",
+            'who': "Screen reader users when the issue affects accessible names or focus order, low-vision users when the issue affects visual hierarchy or contrast, users with cognitive disabilities when the issue affects predictability, users with motion sensitivities when the issue involves animation.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': [],
-            'remediation': "Review the specific issue and apply appropriate accessibility fixes"
+            'remediation': "Open the flagged element, compare its rendered appearance to its semantic role and accessible name, and check it against the WCAG 2.1 quick reference. If you can identify a specific criterion, file or update the catalog entry so future runs classify it automatically; otherwise document the manual review outcome on the issue."
         },
         'ErrInteractiveElementIssue': {
             'title': "Interactive {element_tag} element \"{element_text}\" has accessibility issues",
@@ -3315,15 +3315,6 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'wcag': ['1.3.1'],
             'remediation': "Use <footer> element or role=\"contentinfo\" for page footer."
         },
-        'WarnMissingDocumentMetadata': {
-            'title': "Document links missing metadata about file type or size",
-            'what': "Document links missing metadata about file type or size",
-            'why': "Users need to know document details before downloading.",
-            'who': "Users on slow connections, mobile users with data limits.",
-            'impact': ImpactScale.LOW.value,
-            'wcag': ['2.4.2'],
-            'remediation': "Include file type and size in link text or adjacent text."
-        },
         'WarnMissingRequiredIndication': {
             'title': "Required form fields not clearly indicated",
             'what': "A form field has the required attribute (or aria-required=\"true\") but no visible \"required\" indicator near the label, so sighted users do not know the field is mandatory.",
@@ -3752,15 +3743,6 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'wcag': ['2.4.6'],
             'remediation': "Change \"{text}\" to describe the specific action, like \"Submit registration\", \"Save changes\", or \"Search products\" instead of just \"{text}\""
         },
-        'WarnNoFieldset': {
-            'title': "Radio/checkbox group lacks fieldset and legend",
-            'what': "Radio/checkbox group lacks fieldset and legend",
-            'why': "Group relationship is not clear",
-            'who': "Screen reader users",
-            'impact': ImpactScale.MEDIUM.value,
-            'wcag': ['1.3.1', '3.3.2'],
-            'remediation': "Wrap related inputs in fieldset with legend"
-        },
         'WarnRequiredNotIndicated': {
             'title': "Required field not clearly indicated",
             'what': "A field is required (e.g., the page submits an error when it is empty), but the markup does not declare it as required via the required attribute, aria-required, or a visible cue.",
@@ -3817,7 +3799,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnListRoleOnList': {
             'title': "List element has redundant or inappropriate role=\"list\"",
-            'what': 'List element has redundant or inappropriate role="list"',
+            'what': "A <ul>, <ol>, or <dl> element carries an explicit role=\"list\" attribute. The list role is already implicit on <ul>/<ol>, so the attribute is redundant; on <dl> it actively overrides the description-list semantics that pair terms with definitions.",
             'why': "HTML list elements (<ul>, <ol>) already have an implicit ARIA role of \"list\". Adding an explicit role=\"list\" is redundant and can indicate a misunderstanding of ARIA semantics. For <dl> elements, role=\"list\" is inappropriate because it obscures the term-definition relationship that the description list conveys.",
             'who': "Developers maintaining the codebase, users of description lists who lose the term-definition relationship when role=\"list\" overrides native semantics",
             'impact': ImpactScale.LOW.value,
@@ -3912,7 +3894,12 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             if '{bg}' in val and 'backgroundColor' in metadata:
                 val = val.replace('{bg}', str(metadata.get('backgroundColor', '')))
 
-            # Replace nested metadata placeholders (e.g., {currentElement.tag})
+            # Replace nested metadata placeholders (e.g., {currentElement.tag}).
+            # If a placeholder can't be resolved, leave it literal — the
+            # downstream translation layer (issue_descriptions_translated) has
+            # one more substitution pass plus a cleanup pass that replaces any
+            # surviving literal '{...}' with sensible fallback words, so we
+            # never leak raw placeholders to users.
             import re
             nested_pattern = r'\{([^}]+)\}'
 
@@ -3933,7 +3920,6 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
                         return match.group(0)
                     step = nav[part]
                     if part_idx == len(parts) - 1:
-                        # Last part - return the value
                         return str(step) if step is not None else match.group(0)
                     if not hasattr(step, 'get'):
                         return match.group(0)
@@ -3945,15 +3931,61 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         
         return desc
     
-    # Default fallback
+    # Default fallback — derive readable text from the error code rather than
+    # returning the generic 'This issue may create barriers' boilerplate that
+    # users see when an issue isn't in the catalog yet.
+    import re as _re
+
+    short_code = error_type[3:] if error_type.startswith('AI_') else error_type
+    severity_word: str = 'issue'
+    severity_kind: str = 'issue'
+    for _p, _label, _kind in (
+        ('Err', 'failure', 'error'),
+        ('Warn', 'warning', 'warning'),
+        ('Info', 'notice', 'notice'),
+        ('Disco', 'discovery', 'discovery'),
+    ):
+        if short_code.startswith(_p):
+            severity_word = _label
+            severity_kind = _kind
+            short_code = short_code[len(_p):]
+            break
+
+    _words = _re.findall(r'[A-Z]+(?=[A-Z][a-z])|[A-Z]?[a-z]+|[A-Z]+|\d+', short_code)
+    _readable = ' '.join(w.lower() for w in _words).strip() or error_type
+
+    _why_by_kind: dict[str, str] = {
+        'error': "Errors break a documented WCAG criterion outright: assistive-technology users will hit a hard barrier here (missing accessible name, unreachable control, illegible text, etc.) rather than a degraded experience.",
+        'warning': "Warnings flag patterns that fail WCAG in many but not all contexts. They need human judgement: confirm whether the surrounding markup or design actually meets the criterion before dismissing or filing the fix.",
+        'notice': "Notices are best-practice observations that improve accessibility without being a strict WCAG failure. Address them when polish and consistency matter; the impact is real but smaller than an error.",
+        'discovery': "Discovery items aren't violations — they're elements that need a manual decision (e.g. is this carousel decorative or content, is this SVG meant to be focusable). Skipping them means an automated scan can't reach a verdict.",
+    }
+    _remediation_by_kind: dict[str, str] = {
+        'error': f"Locate the flagged element via the XPath in the report, fix the {_readable} so it satisfies the relevant WCAG criterion, then re-run the test suite to confirm the failure is gone. If this rule is missing detailed remediation guidance, add a catalog entry for code '{error_type}' so the next report explains the fix instead of falling back to this generic text.",
+        'warning': f"Inspect the flagged element and decide whether the {_readable} pattern actually breaks WCAG in this context. If it does, fix it; if it doesn't, suppress this specific instance with a rationale so reviewers know it was assessed.",
+        'notice': f"Treat the {_readable} as an improvement opportunity rather than a release blocker. Capture it in the team's accessibility backlog and address during the next pass over the relevant component.",
+        'discovery': f"Manually review the discovered element and record the outcome: keep, remove, or refactor. Discovery items don't auto-resolve — they wait for a person to make the call.",
+    }
+
     return {
-        'title': f"Accessibility issue: {error_type}",
-        'what': f"An accessibility issue of type '{error_type}' was detected.",
-        'why': "This issue may create barriers for users with disabilities.",
-        'who': "Users with disabilities",
+        'title': f"Uncatalogued {severity_kind}: {_readable}",
+        'what': (
+            f"An automated check fired the {error_type} {severity_word}, but this issue code "
+            f"doesn't have a dedicated catalog entry yet. The check name suggests the element "
+            f"has a '{_readable}' problem; full remediation context is unavailable until the "
+            f"catalog entry is added."
+        ),
+        'why': _why_by_kind[severity_kind],
+        'who': (
+            "Depending on the specific failure mode, this can affect any of: blind and "
+            "low-vision users (when the issue touches accessible names, contrast, or text "
+            "rendering), keyboard-only users (when it touches focus or activation), users "
+            "with cognitive disabilities (when it touches predictability or content "
+            "structure), or users with motor or motion-sensitivity needs."
+        ),
         'impact': ImpactScale.MEDIUM.value,
         'wcag': [],
-        'remediation': "Review the specific issue and apply appropriate accessibility fixes."
+        'remediation': _remediation_by_kind[severity_kind],
     }
 
 

@@ -2790,12 +2790,12 @@
     "what_generic": "Page manquant une région repère contentinfo pour le pied de page"
   },
   "WarnMissingDocumentMetadata": {
-    "title": "Liens de documents manquant des métadonnées sur le type de fichier ou la taille",
-    "what": "Liens de documents manquant des métadonnées sur le type de fichier ou la taille",
-    "why": "Les utilisateurs ont besoin de connaître les détails du document avant de le télécharger.",
-    "who": "Utilisateurs avec connexions lentes, utilisateurs mobiles avec limites de données.",
-    "remediation": "Incluez le type de fichier et la taille dans le texte du lien ou le texte adjacent.",
-    "what_generic": "Liens de documents manquant des métadonnées sur le type de fichier ou la taille"
+    "title": "Lien vers un document sans indication de taille ou de métadonnées",
+    "what": "Un lien vers un document téléchargeable (par exemple PDF, DOCX, XLSX) n'indique ni le type de fichier ni la taille du fichier dans son texte visible ou son nom accessible.",
+    "why": "Connaître la taille du fichier aide les utilisateurs à décider en connaissance de cause s'ils veulent le télécharger, surtout sur mobile ou avec une connexion limitée. Le nombre de pages ou la longueur du document permet aussi d'anticiper le temps de lecture.",
+    "who": "Utilisateurs mobiles avec un forfait limité, utilisateurs avec une connexion lente, utilisateurs avec un stockage limité, utilisateurs ayant des troubles cognitifs qui bénéficient d'attentes claires.",
+    "remediation": "Indiquez la taille du fichier et éventuellement le nombre de pages dans le texte du lien ou à proximité (par exemple « Rapport annuel (PDF, 3,2 Mo, 48 pages) »). Cela peut figurer dans le texte du lien, dans un aria-describedby ou dans un texte adjacent.",
+    "what_generic": "Lien de document sans indication de type ou de taille"
   },
   "WarnMissingRequiredIndication": {
     "title": "Champs de formulaire requis non clairement indiqués",
@@ -2977,12 +2977,12 @@
     "what_generic": "L'élément cliquable n'affiche pas de curseur pointeur"
   },
   "WarnNoFieldset": {
-    "title": "Le groupe de boutons radio/cases à cocher manque de fieldset et de legend",
-    "what": "Le groupe de boutons radio/cases à cocher manque de fieldset et de legend",
-    "why": "La relation de groupe n'est pas claire",
-    "who": "Utilisateurs de lecteurs d'écran",
-    "remediation": "Enveloppez les champs liés dans un fieldset avec une legend",
-    "what_generic": "Le groupe de boutons radio/cases à cocher manque de fieldset et de legend"
+    "title": "Champs de formulaire liés non regroupés dans un fieldset",
+    "what": "Un groupe de boutons radio ou de cases à cocher liés a été détecté, mais il n'est pas enveloppé dans un <fieldset> accompagné d'un <legend> qui décrirait l'objet du groupe.",
+    "why": "Les fieldsets aident les utilisateurs à comprendre les relations entre les contrôles d'un formulaire.",
+    "who": "Utilisateurs de lecteurs d'écran, utilisateurs ayant des troubles cognitifs.",
+    "remediation": "Utilisez <fieldset> et <legend> pour regrouper les champs de formulaire liés comme les boutons radio.",
+    "what_generic": "Groupe de boutons radio ou cases à cocher sans fieldset/legend"
   },
   "WarnNoLegend": {
     "title": "Fieldset sans élément legend",
@@ -3456,12 +3456,12 @@
     "what_generic": "Problème de structure de titre détecté"
   },
   "AI_ErrAccessibilityIssue": {
-    "title": "Problème d'accessibilité détecté par l'IA",
-    "what": "L'analyse par IA a détecté un problème d'accessibilité nécessitant une attention.",
-    "why": "Ce problème peut créer des obstacles pour les utilisateurs handicapés",
-    "who": "Utilisateurs handicapés",
-    "remediation": "Examinez le problème spécifique et appliquez les correctifs d'accessibilité appropriés",
-    "what_generic": "Problème d'accessibilité détecté par l'IA"
+    "title": "L'IA a signalé un problème d'accessibilité nécessitant un classement manuel",
+    "what": "L'analyse visuelle par IA a signalé cet élément comme un probable problème d'accessibilité, mais le mode de défaillance précis n'a pas pu être rattaché à l'un des types d'issues répertoriés. La capture d'écran et le contexte de l'élément sont conservés dans le rapport afin que vous puissiez déterminer quel critère WCAG s'applique.",
+    "why": "L'IA détecte des problèmes que le balayage du DOM seul ne voit pas — hiérarchie visuelle qui ne correspond pas aux niveaux de titres, états de focus ambigus, modales sans piège de focus, animations susceptibles de déclencher des troubles vestibulaires, ordre de lecture en conflit avec le flux visuel. Comme le mode de défaillance varie, l'issue est consignée ici sans classement plutôt que comme violation d'une règle précise.",
+    "who": "Utilisateurs de lecteurs d'écran lorsque le problème touche aux noms accessibles ou à l'ordre du focus, personnes malvoyantes lorsque le problème touche à la hiérarchie visuelle ou au contraste, personnes ayant des troubles cognitifs lorsque le problème touche à la prévisibilité, personnes sensibles au mouvement lorsqu'une animation est en cause.",
+    "remediation": "Ouvrez l'élément signalé, comparez son rendu visuel à son rôle sémantique et à son nom accessible, puis confrontez-le à la référence rapide WCAG 2.1. Si vous pouvez identifier un critère précis, créez ou mettez à jour l'entrée du catalogue pour que les prochains rapports le classent automatiquement ; sinon, documentez la conclusion de la revue manuelle sur l'issue.",
+    "what_generic": "L'IA a signalé un problème d'accessibilité non classé"
   },
   "AI_ErrVisualHierarchyInconsistent": {
     "title": "La hiérarchie visuelle ne correspond pas à la structure sémantique",

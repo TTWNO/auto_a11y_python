@@ -3144,7 +3144,7 @@ class DiscoveryReportGenerator:
 
         .subtitle {
             font-size: 1.2em;
-            color: #7f8c8d;
+            color: #4a4a4a;
             margin-bottom: 15px;
         }
 
@@ -3158,7 +3158,7 @@ class DiscoveryReportGenerator:
         }
 
         .metadata a {
-            color: #3498db;
+            color: #0a58ca;
             text-decoration: none;
         }
 
@@ -3216,31 +3216,31 @@ class DiscoveryReportGenerator:
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
-        .stat-card.disco { border-left-color: #9b59b6; }
-        .stat-card.info { border-left-color: #3498db; }
-        .stat-card.warning { border-left-color: #f39c12; }
+        .stat-card.disco { border-left-color: #6f42c1; }
+        .stat-card.info { border-left-color: #0e7490; }
+        .stat-card.warning { border-left-color: #b38600; }
 
         .stat-number { font-size: 2.5em; font-weight: bold; color: #2c3e50; margin-bottom: 5px; }
         .stat-label { font-size: 1em; color: #555; font-weight: 600; margin-bottom: 5px; }
-        .stat-detail { font-size: 0.85em; color: #7f8c8d; }
+        .stat-detail { font-size: 0.85em; color: #4a4a4a; }
 
         .issue-breakdown { margin-top: 30px; }
 
         .breakdown-section { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #3498db; }
-        .breakdown-section.disco { border-left-color: #9b59b6; }
-        .breakdown-section.info { border-left-color: #3498db; }
-        .breakdown-section.accessible-names { border-left-color: #f39c12; }
+        .breakdown-section.disco { border-left-color: #6f42c1; }
+        .breakdown-section.info { border-left-color: #0e7490; }
+        .breakdown-section.accessible-names { border-left-color: #b38600; }
         .breakdown-section h3 { margin-top: 0; color: #2c3e50; }
         .breakdown-section ul { margin-left: 20px; margin-top: 15px; }
         .breakdown-section li { margin-bottom: 10px; line-height: 1.6; }
 
-        .common-issues-section { margin-top: 30px; background: #fff8dc; padding: 25px; border-radius: 8px; border: 2px solid #f39c12; }
+        .common-issues-section { margin-top: 30px; background: #fff8dc; padding: 25px; border-radius: 8px; border: 2px solid #b38600; }
         .common-issues-section h2 { color: #856404; margin-top: 0; }
 
         .common-section { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #3498db; }
-        .common-section.disco { border-left-color: #9b59b6; }
-        .common-section.info { border-left-color: #3498db; }
-        .common-section.accessible-names { border-left-color: #f39c12; }
+        .common-section.disco { border-left-color: #6f42c1; }
+        .common-section.info { border-left-color: #0e7490; }
+        .common-section.accessible-names { border-left-color: #b38600; }
         .common-section h3 { margin-top: 0; color: #2c3e50; }
         .common-intro { color: #666; font-style: italic; margin-bottom: 15px; }
         .common-issue-list { list-style: none; padding-left: 0; }
@@ -3277,9 +3277,9 @@ class DiscoveryReportGenerator:
         .page-url-full a:hover { text-decoration: underline; }
 
         .issue-category { margin-bottom: 25px; }
-        .issue-category.discovery h4 { color: #9b59b6; }
+        .issue-category.discovery h4 { color: #6f42c1; }
         .issue-category.informational h4 { color: #3498db; }
-        .issue-category.accessible-names h4 { color: #f39c12; }
+        .issue-category.accessible-names h4 { color: #b38600; }
 
         .issue-list { margin-top: 10px; }
         .issue-item { background: #f8f9fa; border-left: 3px solid #dee2e6; padding: 15px; margin-bottom: 15px; border-radius: 4px; }
@@ -3290,12 +3290,12 @@ class DiscoveryReportGenerator:
         .issue-why strong, .issue-fix strong { color: #24292e; }
 
         .no-issues { text-align: center; padding: 40px 20px; color: #666; font-size: 1.1em; background: #f8f9fa; border-radius: 8px; }
-        .truncation-notice { background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 25px; margin-top: 30px; margin-bottom: 20px; }
+        .truncation-notice { background: #fff3cd; border: 2px solid #b38600; border-radius: 8px; padding: 25px; margin-top: 30px; margin-bottom: 20px; }
         .truncation-notice h3 { color: #856404; margin-bottom: 15px; font-size: 1.3em; }
         .truncation-notice p { color: #856404; margin-bottom: 10px; line-height: 1.6; }
         .truncation-notice p:last-child { margin-bottom: 0; }
 
-        footer { margin-top: 50px; padding-top: 20px; border-top: 2px solid #ecf0f1; text-align: center; color: #7f8c8d; font-size: 0.9em; }
+        footer { margin-top: 50px; padding-top: 20px; border-top: 2px solid #ecf0f1; text-align: center; color: #4a4a4a; font-size: 0.9em; }
         footer p { margin: 5px 0; }
 
         @media print { .container { box-shadow: none; max-width: none; } .page-card { page-break-inside: avoid; } }
@@ -3313,11 +3313,11 @@ class DiscoveryReportGenerator:
         /* Forms section */
         .forms-section { margin: 40px 0; }
         .forms-list { display: flex; flex-direction: column; gap: 20px; margin-top: 20px; }
-        .form-item { background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #9b59b6; }
+        .form-item { background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #6f42c1; }
         .form-header { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; flex-wrap: wrap; }
         .form-signature { font-size: 1.2em; color: #2c3e50; margin: 0; font-family: 'Courier New', monospace; }
         .search-badge { background: #27ae60; color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.85em; font-weight: 500; }
-        .form-pages-count { background: #9b59b6; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.85em; font-weight: 500; margin-left: auto; }
+        .form-pages-count { background: #6f42c1; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.85em; font-weight: 500; margin-left: auto; }
         .form-details { display: flex; flex-direction: column; gap: 8px; }
         .form-detail-row { color: #555; font-size: 0.95em; line-height: 1.6; }
         .form-detail-row strong { color: #34495e; margin-right: 5px; }
@@ -3375,10 +3375,10 @@ class DiscoveryReportGenerator:
         /* Footers section styles */
         .footers-section { margin: 40px 0; }
         .footers-list { display: flex; flex-direction: column; gap: 20px; margin-top: 20px; }
-        .footer-item { background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #9b59b6; }
+        .footer-item { background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #6f42c1; }
         .footer-header { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; flex-wrap: wrap; }
         .footer-signature { font-size: 1.2em; color: #2c3e50; margin: 0; font-family: 'Courier New', monospace; }
-        .footer-pages-count { background: #9b59b6; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.85em; font-weight: 500; margin-left: auto; }
+        .footer-pages-count { background: #6f42c1; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.85em; font-weight: 500; margin-left: auto; }
         .footer-details { display: flex; flex-direction: column; gap: 8px; }
         .footer-detail-row { color: #555; font-size: 0.95em; line-height: 1.6; }
         .footer-detail-row strong { color: #34495e; margin-right: 5px; }
@@ -3399,17 +3399,17 @@ class DiscoveryReportGenerator:
         /* Documents section styles */
         .documents-section { margin: 40px 0; }
         .documents-container { margin-top: 20px; }
-        .document-type-section { background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #f39c12; margin-bottom: 20px; }
+        .document-type-section { background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #b38600; margin-bottom: 20px; }
         .document-type-title { color: #2c3e50; margin: 0 0 15px 0; font-size: 1.3em; }
-        .document-count { color: #7f8c8d; font-size: 0.85em; font-weight: normal; margin-left: 8px; }
+        .document-count { color: #4a4a4a; font-size: 0.85em; font-weight: normal; margin-left: 8px; }
         .document-type-section h4 { color: #34495e; margin: 15px 0 10px 0; font-size: 1.1em; }
         .documents-list { list-style: none; padding: 0; margin: 0; }
-        .document-item { padding: 12px; margin-bottom: 8px; background: white; border-radius: 4px; border-left: 3px solid #f39c12; }
+        .document-item { padding: 12px; margin-bottom: 8px; background: white; border-radius: 4px; border-left: 3px solid #b38600; }
         .document-link { color: #3498db; text-decoration: none; font-weight: 500; }
         .document-link:hover { text-decoration: underline; }
         .lang-badge { display: inline-block; background: #95a5a6; color: white; padding: 2px 8px; border-radius: 3px; font-size: 0.75em; margin-left: 8px; }
-        .document-meta { margin-top: 5px; font-size: 0.85em; color: #7f8c8d; }
-        .document-referring a { color: #7f8c8d; text-decoration: none; }
+        .document-meta { margin-top: 5px; font-size: 0.85em; color: #4a4a4a; }
+        .document-referring a { color: #4a4a4a; text-decoration: none; }
         .document-referring a:hover { color: #3498db; text-decoration: underline; }
         .document-link-source-note { display: block; margin-top: 3px; font-style: italic; }
     </style>

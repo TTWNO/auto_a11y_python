@@ -26,6 +26,93 @@ from auto_a11y.reporting.issue_descriptions_enhanced import (
 _TRANSLATIONS_CACHE: dict[str, dict[str, dict[str, str]]] = {}
 
 
+_PLACEHOLDER_FALLBACKS_EN: dict[str, str] = {
+    'skippedFrom': '?',
+    'skippedTo': '?',
+    'levelsSkipped': 'one or more',
+    'expectedLevel': '?',
+    'fromLevel': '?',
+    'toLevel': '?',
+    'foundLevel': '?',
+    'firstHeadingLevel': '?',
+    'current_level': '?',
+    'suggested_level': '?',
+    'heading_text': 'this heading',
+    'headingText': 'this heading',
+    'element': 'an element',
+    'element_text': 'this element',
+    'element_tag': 'element',
+    'count': 'multiple',
+    'itemCount': 'multiple',
+    'fieldCount': 'several',
+    'sizeCount': 'several',
+    'linkCount': 'several',
+    'fg': 'an unknown colour',
+    'bg': 'an unknown colour',
+    'ratio': 'a low value',
+    'textColor': 'unknown',
+    'backgroundColor': 'unknown',
+    'fontSize': 'unknown',
+    'minLineHeight': 'an adequate value',
+    'pattern': 'a non-semantic pattern',
+    'iconClasses': 'icon font classes',
+    'animationName': 'an animation',
+    'duration': 'too long',
+}
+
+_PLACEHOLDER_FALLBACKS_FR: dict[str, str] = {
+    'skippedFrom': '?',
+    'skippedTo': '?',
+    'levelsSkipped': 'un ou plusieurs',
+    'expectedLevel': '?',
+    'fromLevel': '?',
+    'toLevel': '?',
+    'foundLevel': '?',
+    'firstHeadingLevel': '?',
+    'current_level': '?',
+    'suggested_level': '?',
+    'heading_text': 'ce titre',
+    'headingText': 'ce titre',
+    'element': 'un élément',
+    'element_text': 'cet élément',
+    'element_tag': 'élément',
+    'count': 'plusieurs',
+    'itemCount': 'plusieurs',
+    'fieldCount': 'plusieurs',
+    'sizeCount': 'plusieurs',
+    'linkCount': 'plusieurs',
+    'fg': 'une couleur inconnue',
+    'bg': 'une couleur inconnue',
+    'ratio': 'une valeur faible',
+    'textColor': 'inconnue',
+    'backgroundColor': 'inconnue',
+    'fontSize': 'inconnue',
+    'minLineHeight': 'une valeur adéquate',
+    'pattern': 'un motif non sémantique',
+    'iconClasses': 'des classes d\'icônes',
+    'animationName': 'une animation',
+    'duration': 'trop longue',
+}
+
+
+def _placeholder_fallback(key: str, locale: str) -> str:
+    """Return a sensible fallback when a placeholder can't be filled from metadata.
+
+    Prevents literal '{key}' strings from leaking into rendered reports. The
+    fallback table is consulted with the raw key first, then with the leading
+    dotted/underscore segment (so e.g. 'currentElement.tag' falls back via
+    'currentElement' if present).
+    """
+    table = _PLACEHOLDER_FALLBACKS_FR if locale == 'fr' else _PLACEHOLDER_FALLBACKS_EN
+    if key in table:
+        return table[key]
+    base = key.split('.')[0]
+    if base in table:
+        return table[base]
+    base = base.split('_')[0]
+    return table.get(base, '')
+
+
 def _load_translations(lang: str) -> dict[str, dict[str, str]]:
     """Load translations for a language from JSON file."""
     if lang in _TRANSLATIONS_CACHE:
@@ -143,10 +230,16 @@ def _resolve_dotted_path(data: dict[str, Any], keys: list[str]) -> str | None:
 
 
 def _apply_metadata(desc: dict[str, Any], metadata: dict[str, Any] | None) -> dict[str, Any]:
-    """Apply metadata substitution to description fields using {placeholder} syntax."""
-    if not metadata:
-        return desc
-    
+    """Apply metadata substitution to description fields using {placeholder} syntax.
+
+    Even when ``metadata`` is empty we still walk the fields so the final
+    cleanup pass can replace any literal ``{placeholder}`` (which would
+    otherwise leak to users for issues whose metadata didn't survive the
+    pipeline) with a sensible fallback word.
+    """
+    if metadata is None:
+        metadata = {}
+
     translatable_fields = ('title', 'what', 'what_generic', 'why', 'who', 'remediation')
     
     for field in translatable_fields:
@@ -242,23 +335,27 @@ def _apply_metadata(desc: dict[str, Any], metadata: dict[str, Any] | None) -> di
             
             # Replace standard {key} placeholders from metadata
             nested_pattern = r'\{([^}]+)\}'
-            
+            locale = _get_current_locale()
+
             def replace_nested(match: re.Match[str]) -> str:
                 path = match.group(1)
-                
+
                 # Skip special placeholders already handled above
-                if path in ['fontSizes_list', 'sizeCount_plural', 'sizeCount_singular_size', 'fieldCount_plural', 
-                            'fieldTypes_summary', 'searchContext_title', 'searchContext_description', 
+                if path in ['fontSizes_list', 'sizeCount_plural', 'sizeCount_singular_size', 'fieldCount_plural',
+                            'fieldTypes_summary', 'searchContext_title', 'searchContext_description',
                             'searchContext_remediation', 'minLineHeight', 'ratio', 'fg', 'bg',
                             'asideLabel_description', 'footerLabel_description', 'headerLabel_description',
                             'linkCount_plural']:
                     return match.group(0)
-                
+
                 parts = path.split('.')
-                
+
                 result = _resolve_dotted_path(metadata, parts)
-                return result if result is not None else match.group(0)
-            
+                if result is not None:
+                    return result
+                logger.debug("Placeholder {%s} missing from metadata; using fallback.", path)
+                return _placeholder_fallback(path, locale)
+
             text = re.sub(nested_pattern, replace_nested, text)
 
             # Also handle %(key)s style placeholders (used in French translations)
@@ -278,14 +375,11 @@ def _apply_metadata(desc: dict[str, Any], metadata: dict[str, Any] | None) -> di
                     base_key = key.replace('_description', '')
                     label_value = metadata.get(base_key)
                     if label_value:
-                        # Generate conditional text based on current locale
-                        locale = _get_current_locale()
                         if locale == 'fr':
                             return f'Il a l\'étiquette "{label_value}".'
                         else:
                             return f'It has the label "{label_value}".'
                     else:
-                        locale = _get_current_locale()
                         if locale == 'fr':
                             return "Il n'a pas d'étiquette."
                         else:
@@ -302,9 +396,31 @@ def _apply_metadata(desc: dict[str, Any], metadata: dict[str, Any] | None) -> di
 
                 # Look up value in metadata
                 value = metadata.get(key)
-                return str(value) if value is not None else match.group(0)
+                if value is not None:
+                    return str(value)
+                logger.debug("Placeholder %%(%s)s missing from metadata; using fallback.", key)
+                return _placeholder_fallback(key, locale)
 
             text = re.sub(percent_pattern, replace_percent, text)
+
+            # Final safety net: any literal {single-token} that survived all the
+            # passes above (e.g. typo in a template, brand-new placeholder added
+            # to a description without a corresponding handler) gets replaced with
+            # a graceful fallback rather than leaking '{varname}' to the report.
+            def _cleanup_brace(match: re.Match[str]) -> str:
+                inner = match.group(1)
+                # Heuristic: only sweep placeholders that look like identifiers
+                # (so we don't strip "{0}" inside example code or curly-quote text).
+                if not re.match(r'^[A-Za-z_][A-Za-z0-9_.]*$', inner):
+                    return match.group(0)
+                logger.warning(
+                    "Unhandled placeholder '{%s}' in field '%s' for issue with metadata keys %s",
+                    inner, field, sorted(metadata.keys()) if metadata else [],
+                )
+                return _placeholder_fallback(inner, locale)
+
+            text = re.sub(r'\{([^{}]+)\}', _cleanup_brace, text)
+
             desc[field] = text
 
     return desc

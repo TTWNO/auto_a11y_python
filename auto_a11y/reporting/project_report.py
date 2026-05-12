@@ -156,20 +156,20 @@ class ProjectReport:
             font-weight: bold;
         }}
         .stat-label {{
-            color: #6c757d;
+            color: #4a4a4a;
             font-size: 0.9rem;
         }}
         .progress-bar-animated {{
             animation: progress-bar-stripes 1s linear infinite;
         }}
         .severity-high {{
-            color: #dc3545;
+            color: #922b21;
         }}
         .severity-medium {{
-            color: #ffc107;
+            color: #7d6608;
         }}
         .severity-low {{
-            color: #28a745;
+            color: #1e8449;
         }}
     </style>
 </head>

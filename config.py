@@ -81,7 +81,15 @@ class Config:
     MAX_PAGES_PER_SITE: int = int(os.getenv('MAX_PAGES_PER_SITE', 50000))
     MAX_CRAWL_DEPTH: int = int(os.getenv('MAX_CRAWL_DEPTH', 10))
     REQUEST_DELAY: float = float(os.getenv('REQUEST_DELAY', 1.0))
-    USER_AGENT: str = os.getenv('USER_AGENT', 'Auto-A11y/1.0 Accessibility Scanner')
+    # Default to a real Chrome-on-Mac User-Agent. Enterprise WAFs (Dayforce,
+    # Akamai/Cloudflare bot-detection layers, etc.) return blank stub pages
+    # to non-browser UAs, which breaks both visible-browser sessions and
+    # headless screenshot/test runs — every page comes back empty.
+    # Accessibility testing must see what real users see, so a real browser
+    # UA is the correct default. Operators who specifically need an honest
+    # scanner identifier (allow-listed hosts, internal QA fleets) can still
+    # set USER_AGENT in `.env`.
+    USER_AGENT: str = os.getenv('USER_AGENT', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
     RESPECT_ROBOTS_TXT: bool = os.getenv('RESPECT_ROBOTS_TXT', 'True').lower() == 'true'
     
     # Testing

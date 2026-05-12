@@ -1005,6 +1005,250 @@ def cancel_testing(website_id: str) -> Response | tuple[Response, int]:
         }), 500
 
 
+@websites_bp.route('/<website_id>/manual/start', methods=['POST'])
+def manual_session_start(
+    website_id: str,
+) -> Response | tuple[Response, int]:
+    """Start (or restart) a visible browser session for manual discovery/testing.
+
+    Opens a Chromium window driven by the user; the same window backs both
+    "capture current URL" (manual discovery) and "test this page" (manual
+    testing) until the user explicitly stops the session.
+    """
+    from auto_a11y.core import manual_session
+
+    website = get_db().get_website(website_id)
+    if not website:
+        return jsonify({'error': ftl('common-website-not-found')}), 404
+
+    payload: dict[str, Any] = request.get_json(silent=True) or {}
+    initial_url: str = str(payload.get('url') or website.url)
+
+    try:
+        project = get_db().get_project(website.project_id)
+        browser_config: dict[str, Any] = get_app_config().__dict__.copy()
+        if project and project.config:
+            browser_config['stealth_mode'] = project.config.get(
+                'stealth_mode', False
+            )
+        info = manual_session.start_session(
+            website_id=website_id,
+            initial_url=initial_url,
+            browser_config=browser_config,
+        )
+        return jsonify({
+            'success': True,
+            'session': {
+                'website_id': info.website_id,
+                'current_url': info.current_url,
+                'current_title': info.current_title,
+                'is_running': info.is_running,
+                'started_at': info.started_at,
+            },
+        })
+    except Exception as e:
+        logger.error(
+            f"Failed to start manual session for {website_id}: {e}",
+            exc_info=True,
+        )
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': ftl('websites-manual-session-start-failed'),
+        }), 500
+
+
+@websites_bp.route('/<website_id>/manual/status')
+def manual_session_status(
+    website_id: str,
+) -> Response | tuple[Response, int]:
+    """Return the current state of the manual session, if any."""
+    from auto_a11y.core import manual_session
+
+    if not get_db().get_website(website_id):
+        return jsonify({'error': ftl('common-website-not-found')}), 404
+
+    session_obj = manual_session.get_session(website_id)
+    if session_obj is None:
+        return jsonify({
+            'success': True,
+            'session': None,
+        })
+    info = session_obj.info()
+    return jsonify({
+        'success': True,
+        'session': {
+            'website_id': info.website_id,
+            'current_url': info.current_url,
+            'current_title': info.current_title,
+            'is_running': info.is_running,
+            'started_at': info.started_at,
+        },
+    })
+
+
+@websites_bp.route('/<website_id>/manual/capture', methods=['POST'])
+def manual_session_capture(
+    website_id: str,
+) -> Response | tuple[Response, int]:
+    """Add the manual session's current URL to the website's page list."""
+    from auto_a11y.core import manual_session
+
+    website = get_db().get_website(website_id)
+    if not website:
+        return jsonify({'error': ftl('common-website-not-found')}), 404
+
+    session_obj = manual_session.get_session(website_id)
+    if session_obj is None or not session_obj.is_alive():
+        return jsonify({
+            'success': False,
+            'message': ftl('websites-manual-session-not-running'),
+        }), 400
+
+    info = session_obj.info()
+    if not info.current_url:
+        return jsonify({
+            'success': False,
+            'message': ftl('websites-manual-session-no-url'),
+        }), 400
+
+    existing = get_db().get_page_by_url(website_id, info.current_url)
+    if existing is not None:
+        return jsonify({
+            'success': True,
+            'already_existed': True,
+            'page_id': existing.id,
+            'url': info.current_url,
+            'title': info.current_title,
+            'message': ftl('websites-manual-page-already-exists'),
+        })
+
+    page = Page(
+        website_id=website_id,
+        url=info.current_url,
+        title=info.current_title or None,
+        discovered_from='manual',
+        status=PageStatus.DISCOVERED,
+    )
+    page_id = get_db().create_page(page)
+    return jsonify({
+        'success': True,
+        'already_existed': False,
+        'page_id': page_id,
+        'url': info.current_url,
+        'title': info.current_title,
+        'message': ftl('websites-manual-page-captured'),
+    })
+
+
+@websites_bp.route('/<website_id>/manual/test', methods=['POST'])
+def manual_session_test(
+    website_id: str,
+) -> Response | tuple[Response, int]:
+    """Run the test suite against the manual session's currently-loaded page."""
+    from auto_a11y.core import manual_session
+    from auto_a11y.testing.test_runner import TestRunner
+    from playwright.async_api import Page as PlaywrightPage
+
+    website = get_db().get_website(website_id)
+    if not website:
+        return jsonify({'error': ftl('common-website-not-found')}), 404
+
+    session_obj = manual_session.get_session(website_id)
+    if session_obj is None or not session_obj.is_alive():
+        return jsonify({
+            'success': False,
+            'message': ftl('websites-manual-session-not-running'),
+        }), 400
+
+    info = session_obj.info()
+    if not info.current_url:
+        return jsonify({
+            'success': False,
+            'message': ftl('websites-manual-session-no-url'),
+        }), 400
+
+    existing = get_db().get_page_by_url(website_id, info.current_url)
+    if existing is None:
+        page = Page(
+            website_id=website_id,
+            url=info.current_url,
+            title=info.current_title or None,
+            discovered_from='manual',
+            status=PageStatus.DISCOVERED,
+        )
+        get_db().create_page(page)
+    else:
+        page = existing
+
+    try:
+        project = get_db().get_project(website.project_id)
+        browser_config: dict[str, Any] = get_app_config().__dict__.copy()
+        if project and project.config:
+            browser_config['stealth_mode'] = project.config.get(
+                'stealth_mode', False
+            )
+
+        test_runner = TestRunner(
+            get_db(), browser_config, pdf_runner=get_pdf_runner()
+        )
+        ai_api_key = getattr(get_app_config(), 'CLAUDE_API_KEY', None)
+
+        async def _run(live_page: PlaywrightPage) -> Any:
+            return await test_runner.test_loaded_browser_page(
+                page,
+                live_page,
+                take_screenshot=True,
+                run_ai_analysis=False,
+                ai_api_key=ai_api_key,
+            )
+
+        result = session_obj.run_with_page(_run, timeout=600.0)
+        return jsonify({
+            'success': True,
+            'page_id': page.id,
+            'url': info.current_url,
+            'violations': result.violation_count,
+            'warnings': result.warning_count,
+            'info': result.info_count,
+            'discoveries': result.discovery_count,
+            'passes': result.pass_count,
+            'message': ftl('websites-manual-test-complete'),
+        })
+    except Exception as e:
+        logger.error(
+            f"Manual test failed for website {website_id}: {e}",
+            exc_info=True,
+        )
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': ftl('websites-manual-test-failed'),
+        }), 500
+
+
+@websites_bp.route('/<website_id>/manual/stop', methods=['POST'])
+def manual_session_stop(
+    website_id: str,
+) -> Response | tuple[Response, int]:
+    """Close the manual session's browser window."""
+    from auto_a11y.core import manual_session
+
+    if not get_db().get_website(website_id):
+        return jsonify({'error': ftl('common-website-not-found')}), 404
+
+    stopped = manual_session.stop_session(website_id)
+    return jsonify({
+        'success': True,
+        'stopped': stopped,
+        'message': ftl(
+            'websites-manual-session-stopped'
+            if stopped
+            else 'websites-manual-session-not-running'
+        ),
+    })
+
+
 @websites_bp.route('/<website_id>/documents')
 def view_documents(website_id: str) -> str | Response:
     """View document references for a website"""

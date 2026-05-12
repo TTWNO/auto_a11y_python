@@ -4,15 +4,15 @@
 
 AI_ErrAccessibilityIssue =
     .title = Problème d'accessibilité détecté par l'IA
-    .what = Problème d'accessibilité détecté par l'IA
+    .what = L'analyse par IA a détecté un problème d'accessibilité nécessitant une attention.
     .why = Ce problème peut créer des obstacles pour les utilisateurs handicapés
-    .who = Utilisateurs handicapés
+    .who = Les utilisateurs qui dépendent des technologies d'assistance — y compris les utilisateurs aveugles et malvoyants qui utilisent des lecteurs d'écran, les utilisateurs ayant des troubles moteurs, les utilisateurs ayant des troubles cognitifs et les utilisateurs malentendants
     .remediation = Examinez le problème spécifique et appliquez les correctifs d'accessibilité appropriés
     .what-generic = Problème d'accessibilité détecté par l'IA
 
 AI_ErrAccordionWithoutARIA =
     .title = L'élément accordéon "{"{"}element_text{"}"}" manque de balisage ARIA approprié
-    .what = L'élément accordéon "{"{"}element_text{"}"}" manque de balisage ARIA approprié
+    .what = Un widget de type accordéon (« {"{"}element_text{"}"} ») a été trouvé dans lequel les en-têtes ouvrent et ferment du contenu, mais le balisage ne contient pas aria-expanded, aria-controls ni les rôles appropriés de bouton/titre.
     .why = Sans aria-expanded et les rôles appropriés, les utilisateurs ne peuvent pas déterminer si les sections sont développées ou réduites
     .who = Utilisateurs de lecteurs d'écran, utilisateurs de clavier
     .remediation = Ajoutez le rôle button aux en-têtes, aria-expanded pour indiquer l'état, et aria-controls pour lier les en-têtes aux panneaux
@@ -20,7 +20,7 @@ AI_ErrAccordionWithoutARIA =
 
 AI_ErrAmbiguousLinkText =
     .title = Le texte du lien "{"{"}element_text{"}"}" est ambigu sans contexte environnant
-    .what = Le texte du lien "{"{"}element_text{"}"}" est ambigu sans contexte environnant
+    .what = Le texte du lien (« {"{"}element_text{"}"} ») ne décrit pas sa destination ou son objectif sans le contexte environnant (par exemple, « cliquez ici », « plus », « en savoir plus »).
     .why = Les utilisateurs de lecteurs d'écran naviguant par liens ne comprendront pas l'objectif du lien
     .who = Utilisateurs de lecteurs d'écran naviguant hors contexte
     .remediation = Utilisez un texte de lien descriptif qui a du sens sans contexte, ou ajoutez aria-label
@@ -28,7 +28,7 @@ AI_ErrAmbiguousLinkText =
 
 AI_ErrAutoPlayingMedia =
     .title = Vidéo/audio en lecture automatique sans contrôles
-    .what = Vidéo/audio en lecture automatique sans contrôles
+    .what = Une vidéo ou un son en lecture automatique a été détecté sans contrôle visible permettant de l'arrêter.
     .why = La lecture automatique peut être désorientante et interférer avec les lecteurs d'écran
     .who = Utilisateurs de lecteurs d'écran, utilisateurs avec déficiences cognitives
     .remediation = Supprimez la lecture automatique ou fournissez des contrôles visibles pour arrêter/mettre en pause
@@ -36,7 +36,7 @@ AI_ErrAutoPlayingMedia =
 
 AI_ErrCarouselWithoutARIA =
     .title = Le carrousel "{"{"}element_text{"}"}" manque de balisage ARIA et de contrôles appropriés
-    .what = Le carrousel "{"{"}element_text{"}"}" manque de balisage ARIA et de contrôles appropriés
+    .what = Un carrousel ou un curseur (« {"{"}element_text{"}"} ») a été détecté, mais il ne possède pas role="region" avec un nom accessible, ni annonces de l'état des diapositives, ni contrôles étiquetés.
     .why = Sans ARIA et contrôles appropriés, les utilisateurs ne peuvent pas comprendre ou contrôler le comportement du carrousel
     .who = Utilisateurs de lecteurs d'écran, utilisateurs de clavier, utilisateurs avec déficiences motrices
     .remediation = Ajoutez role="region", aria-label, aria-live pour les mises à jour, et des contrôles précédent/suivant accessibles
@@ -44,7 +44,7 @@ AI_ErrCarouselWithoutARIA =
 
 AI_ErrClickableNotFocusable =
     .title = L'élément a un gestionnaire de clic mais pas de tabindex (non accessible au clavier)
-    .what = L'élément a un gestionnaire de clic mais pas de tabindex (non accessible au clavier)
+    .what = L'élément possède un gestionnaire de clic mais ne peut pas recevoir le focus clavier (pas de tabindex).
     .why = Les utilisateurs de clavier ne peuvent pas atteindre ou activer cet élément
     .who = Utilisateurs de clavier
     .remediation = Ajoutez tabindex="0" pour rendre l'élément focusable et ajoutez des gestionnaires de clavier
@@ -52,7 +52,7 @@ AI_ErrClickableNotFocusable =
 
 AI_ErrClickableWithoutKeyboard =
     .title = L'élément avec gestionnaire onclick n'est pas accessible au clavier
-    .what = L'élément avec gestionnaire onclick n'est pas accessible au clavier
+    .what = Un élément possède un gestionnaire onclick (ou un écouteur de clic JavaScript similaire), mais aucun rôle, aucun tabindex et aucun gestionnaire d'événements clavier — il peut être cliqué mais pas activé au clavier.
     .why = Les utilisateurs de clavier ne peuvent pas activer ce contrôle
     .who = Utilisateurs de clavier, utilisateurs qui ne peuvent pas utiliser une souris
     .remediation = Ajoutez tabindex="0" et implémentez les gestionnaires onkeypress/onkeydown pour les touches Entrée et Espace
@@ -60,7 +60,7 @@ AI_ErrClickableWithoutKeyboard =
 
 AI_ErrCustomControlNoARIA =
     .title = Le widget personnalisé (onglets, accordéon, menu déroulant) manque de rôles/états ARIA appropriés
-    .what = Le widget personnalisé (onglets, accordéon, menu déroulant) manque de rôles/états ARIA appropriés
+    .what = Un widget personnalisé (onglets, accordéon, menu déroulant) manque des rôles et états ARIA appropriés.
     .why = Les lecteurs d'écran ne peuvent pas transmettre l'objectif ou l'état du widget
     .who = Utilisateurs de lecteurs d'écran, utilisateurs de clavier
     .remediation = Ajoutez les rôles ARIA appropriés et gérez les attributs d'état (aria-expanded, aria-selected, etc.)
@@ -68,7 +68,7 @@ AI_ErrCustomControlNoARIA =
 
 AI_ErrDialogMissingLabel =
     .title = Le dialogue a un rôle mais pas d'aria-label ou aria-labelledby
-    .what = Le dialogue a un rôle mais pas d'aria-label ou aria-labelledby
+    .what = La boîte de dialogue possède role="dialog" mais ni aria-label ni aria-labelledby.
     .why = Les lecteurs d'écran annonceront le dialogue sans nom, rendant son objectif inclair
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Ajoutez aria-label ou aria-labelledby au dialogue pour fournir un nom accessible
@@ -76,7 +76,7 @@ AI_ErrDialogMissingLabel =
 
 AI_ErrDialogMissingRole =
     .title = Le modal/dialogue visible manque de role="dialog" ou role="alertdialog"
-    .what = Le modal/dialogue visible manque de role="dialog" ou role="alertdialog"
+    .what = L'analyse visuelle a identifié une superposition de type modal, mais l'élément conteneur n'a pas d'attribut role="dialog" ou role="alertdialog".
     .why = Les lecteurs d'écran ne reconnaîtront pas ceci comme un dialogue
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Ajoutez role="dialog" ou role="alertdialog" à l'élément modal
@@ -92,7 +92,7 @@ AI_ErrDialogNoCloseButton =
 
 AI_ErrDialogWithoutARIA =
     .title = L'élément {"{"}element_tag{"}"} "{"{"}element_text{"}"}" semble être un dialogue/modal mais manque de balisage ARIA approprié
-    .what = L'élément {"{"}element_tag{"}"} "{"{"}element_text{"}"}" semble être un dialogue/modal mais manque de balisage ARIA approprié
+    .what = L'élément {"{"}element_tag{"}"} « {"{"}element_text{"}"} » semble être une boîte de dialogue ou un modal, mais ne possède pas le balisage ARIA approprié.
     .why = Sans attributs ARIA appropriés, les lecteurs d'écran ne peuvent pas annoncer l'objectif du dialogue, son état, ou fournir une navigation appropriée
     .who = Utilisateurs de lecteurs d'écran, utilisateurs de clavier nécessitant une gestion du focus
     .remediation = Ajoutez role="dialog", aria-modal="true", aria-label ou aria-labelledby, et implémentez le piège de focus
@@ -100,7 +100,7 @@ AI_ErrDialogWithoutARIA =
 
 AI_ErrDropdownWithoutARIA =
     .title = Le menu déroulant "{"{"}element_text{"}"}" manque de balisage ARIA approprié
-    .what = Le menu déroulant "{"{"}element_text{"}"}" manque de balisage ARIA approprié
+    .what = Un widget de menu déroulant (« {"{"}element_text{"}"} ») a été trouvé dont le déclencheur et le panneau ne possèdent pas les relations aria-haspopup, aria-expanded et aria-controls nécessaires à l'utilisation par lecteur d'écran.
     .why = Sans aria-expanded, aria-haspopup et les rôles appropriés, les utilisateurs ne peuvent pas comprendre l'état du menu ou y naviguer correctement
     .who = Utilisateurs de lecteurs d'écran, utilisateurs de clavier
     .remediation = Ajoutez aria-haspopup="true", l'état aria-expanded, et role="menu" avec role="menuitem" pour les options
@@ -116,7 +116,7 @@ AI_ErrForeignTextUnmarked =
 
 AI_ErrHeadingIssue =
     .title = Problème de structure de titre détecté
-    .what = Problème de structure de titre détecté
+    .what = L'analyse par IA a détecté un problème d'accessibilité lié aux titres.
     .why = Les titres mal structurés rendent la navigation difficile pour les utilisateurs de lecteurs d'écran
     .who = Utilisateurs de lecteurs d'écran, utilisateurs qui naviguent par titres
     .remediation = Assurez-vous que les titres suivent une hiérarchie logique et utilisent les balises h1-h6 appropriées
@@ -124,7 +124,7 @@ AI_ErrHeadingIssue =
 
 AI_ErrHeadingLevelMismatch =
     .title = Le niveau de titre {"{"}current_level{"}"} ne correspond pas à la hiérarchie visuelle (devrait être niveau {"{"}suggested_level{"}"})
-    .what = Le niveau de titre {"{"}current_level{"}"} ne correspond pas à la hiérarchie visuelle (devrait être niveau {"{"}suggested_level{"}"})
+    .what = Le titre « {"{"}heading_text{"}"} » est marqué comme <h{"{"}current_level{"}"}>, mais sa proéminence visuelle suggère qu'il devrait être <h{"{"}suggested_level{"}"}>.
     .why = Des niveaux de titres incorrects créent une structure de document confuse pour les utilisateurs de lecteurs d'écran
     .who = Utilisateurs de lecteurs d'écran, utilisateurs qui naviguent par titres
     .remediation = Ajustez le niveau de titre pour correspondre à la hiérarchie visuelle de la page
@@ -132,7 +132,7 @@ AI_ErrHeadingLevelMismatch =
 
 AI_ErrInfiniteAnimationNoPause =
     .title = Animation CSS infinie sans contrôle de pause
-    .what = Animation CSS infinie sans contrôle de pause
+    .what = L'animation CSS infinie « {"{"}animation_name{"}"} » n'a aucun mécanisme pour mettre en pause ou arrêter l'animation.
     .why = Le mouvement continu peut distraire ou causer de l'inconfort pour certains utilisateurs
     .who = Utilisateurs avec troubles vestibulaires, utilisateurs avec déficiences cognitives
     .remediation = Ajoutez un contrôle de pause/arrêt ou respectez prefers-reduced-motion
@@ -140,7 +140,7 @@ AI_ErrInfiniteAnimationNoPause =
 
 AI_ErrInteractiveElementIssue =
     .title = L'élément interactif {"{"}element_tag{"}"} "{"{"}element_text{"}"}" présente des problèmes d'accessibilité
-    .what = L'élément interactif {"{"}element_tag{"}"} "{"{"}element_text{"}"}" présente des problèmes d'accessibilité
+    .what = Un élément interactif a été détecté qui peut présenter des problèmes d'accessibilité clavier ou ARIA.
     .why = Les éléments interactifs sans balisage sémantique approprié ou support clavier créent des obstacles pour les utilisateurs de technologies d'assistance
     .who = Utilisateurs de clavier, utilisateurs de lecteurs d'écran, utilisateurs de contrôle vocal
     .remediation = Utilisez des éléments HTML sémantiques ou ajoutez des rôles ARIA appropriés et le support clavier
@@ -148,7 +148,7 @@ AI_ErrInteractiveElementIssue =
 
 AI_ErrLinkWithoutText =
     .title = L'élément lien n'a pas de texte accessible
-    .what = L'élément lien n'a pas de texte accessible
+    .what = Un élément <a> a été détecté sans texte visible, aria-label, aria-labelledby ni image enfant avec alt — il n'a donc aucun nom accessible.
     .why = Les lecteurs d'écran annoncent ceci comme "lien" sans aucun contexte
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Ajoutez du texte de lien, aria-label, ou l'attribut aria-labelledby
@@ -156,7 +156,7 @@ AI_ErrLinkWithoutText =
 
 AI_ErrMenuWithoutARIA =
     .title = Le menu de navigation manque de balisage ARIA approprié
-    .what = Le menu de navigation manque de balisage ARIA approprié
+    .what = Un menu de navigation (par exemple, un menu déroulant ou un méga-menu) a été détecté sans le modèle ARIA approprié — pas de structure role="menu"/role="menuitem" et pas de gestion clavier par tabindex itinérant.
     .why = Les lecteurs d'écran ne reconnaîtront pas ceci comme un menu de navigation
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Ajoutez role="navigation" au conteneur et les attributs ARIA appropriés pour les éléments de menu
@@ -164,7 +164,7 @@ AI_ErrMenuWithoutARIA =
 
 AI_ErrMissingFocusIndicator =
     .title = L'élément interactif manque d'indicateur de focus visible
-    .what = L'élément interactif manque d'indicateur de focus visible
+    .what = Lorsque l'élément reçoit le focus clavier, aucun changement visible ne se produit — aucun contour, bordure, couleur de fond ou ombre n'est appliqué.
     .why = Les utilisateurs ne peuvent pas voir quel élément a le focus clavier
     .who = Utilisateurs de clavier, utilisateurs avec des problèmes d'attention ou de mémoire
     .remediation = Ajoutez des styles CSS :focus avec un contour, une bordure ou un changement d'arrière-plan visible
@@ -172,7 +172,7 @@ AI_ErrMissingFocusIndicator =
 
 AI_ErrMissingInteractiveRole =
     .title = L'élément interactif {"{"}element_tag{"}"} manque de rôle ARIA approprié
-    .what = L'élément interactif {"{"}element_tag{"}"} manque de rôle ARIA approprié
+    .what = Un élément interactif <{"{"}element_tag{"}"}> (avec des gestionnaires de clic ou un autre comportement interactif) n'a aucun rôle ARIA déclarant ce qu'il est — les lecteurs d'écran ne peuvent pas indiquer aux utilisateurs s'il s'agit d'un bouton, d'un lien, d'un commutateur, etc.
     .why = Les lecteurs d'écran n'annonceront pas ceci comme un contrôle interactif
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Ajoutez le rôle ARIA approprié (button, link, checkbox, etc.) à l'élément
@@ -180,7 +180,7 @@ AI_ErrMissingInteractiveRole =
 
 AI_ErrModalFocusTrap =
     .title = Le modal/dialogue "{"{"}element_text{"}"}" ne piège pas correctement le focus
-    .what = Le modal/dialogue "{"{"}element_text{"}"}" ne piège pas correctement le focus
+    .what = Lorsque la fenêtre modale est ouverte, Tab/Maj+Tab peut déplacer le focus vers des éléments situés en dehors de la boîte de dialogue au lieu de circuler entre les contrôles situés à l'intérieur.
     .why = Sans piège de focus, les utilisateurs de clavier peuvent naviguer en dehors du modal pendant qu'il est ouvert, causant de la confusion
     .who = Utilisateurs de clavier, utilisateurs de lecteurs d'écran
     .remediation = Implémentez un piège de focus pour garder le focus dans le modal pendant qu'il est ouvert, et retournez le focus à l'élément déclencheur à la fermeture
@@ -188,7 +188,7 @@ AI_ErrModalFocusTrap =
 
 AI_ErrNonSemanticButton =
     .title = L'élément cliquable {"{"}element_tag{"}"} "{"{"}element_text{"}"}" n'est pas un bouton sémantique
-    .what = L'élément cliquable {"{"}element_tag{"}"} "{"{"}element_text{"}"}" n'est pas un bouton sémantique
+    .what = L'élément <{"{"}element_tag{"}"}> est stylisé comme un bouton avec onclick — il devrait utiliser <button>.
     .why = Les boutons non sémantiques ne sont pas accessibles au clavier et invisibles aux lecteurs d'écran
     .who = Utilisateurs de clavier, utilisateurs de lecteurs d'écran
     .remediation = Remplacez {"{"}element_tag{"}"} par un élément <button> ou ajoutez role="button" et tabindex="0"
@@ -196,7 +196,7 @@ AI_ErrNonSemanticButton =
 
 AI_ErrNonSemanticLink =
     .title = L'élément ressemble à un lien mais utilise {"{"}element_tag{"}"} au lieu de <a>
-    .what = L'élément ressemble à un lien mais utilise {"{"}element_tag{"}"} au lieu de <a>
+    .what = L'élément <{"{"}element_tag{"}"}> est stylisé comme un lien — il devrait utiliser <a> avec un attribut href.
     .why = Les liens non sémantiques ne sont pas accessibles au clavier et non reconnus par les lecteurs d'écran
     .who = Utilisateurs de clavier, utilisateurs de lecteurs d'écran
     .remediation = Remplacez {"{"}element_tag{"}"} par un élément <a> avec un attribut href approprié
@@ -220,7 +220,7 @@ AI_ErrPageLanguageWrong =
 
 AI_ErrReadingOrderMismatch =
     .title = L'ordre de lecture visuel ne correspond pas à l'ordre DOM - le contenu peut être lu dans le désordre
-    .what = L'ordre de lecture visuel ne correspond pas à l'ordre DOM - le contenu peut être lu dans le désordre
+    .what = L'ordre de lecture visuel à l'écran diffère de l'ordre du DOM suivi par les lecteurs d'écran et les utilisateurs du clavier.
     .why = Les lecteurs d'écran suivent l'ordre DOM, qui peut ne pas correspondre à la mise en page visuelle, causant de la confusion
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Réorganisez les éléments DOM pour correspondre au flux de lecture visuel ou utilisez CSS flexbox/grid avec un ordre approprié
@@ -228,7 +228,7 @@ AI_ErrReadingOrderMismatch =
 
 AI_ErrSkippedHeading =
     .title = Niveau de titre sauté de h{"{"}current_level{"}"} à h{"{"}next_level{"}"}
-    .what = Niveau de titre sauté de h{"{"}current_level{"}"} à h{"{"}next_level{"}"}
+    .what = La hiérarchie des titres passe directement de h{"{"}current_level{"}"} à h{"{"}next_level{"}"} sans utiliser les niveaux intermédiaires.
     .why = Les niveaux de titres sautés brisent la structure logique du document et rendent la navigation difficile
     .who = Utilisateurs de lecteurs d'écran, utilisateurs qui naviguent par titres
     .remediation = Utilisez des niveaux de titres séquentiels sans sauter (h1, h2, h3, pas h1, h3)
@@ -236,7 +236,7 @@ AI_ErrSkippedHeading =
 
 AI_ErrTabsWithoutARIA =
     .title = L'interface à onglets "{"{"}element_text{"}"}" manque de balisage ARIA approprié
-    .what = L'interface à onglets "{"{"}element_text{"}"}" manque de balisage ARIA approprié
+    .what = Un composant de type onglets a été identifié visuellement, mais son balisage ne contient pas role="tablist", role="tab", role="tabpanel" ni la gestion de l'état aria-selected.
     .why = Sans role="tablist", role="tab" et les attributs aria-selected, les lecteurs d'écran ne peuvent pas transmettre les relations et états des onglets
     .who = Utilisateurs de lecteurs d'écran, utilisateurs de clavier
     .remediation = Ajoutez role="tablist" au conteneur, role="tab" aux onglets, role="tabpanel" aux panneaux, et gérez les états aria-selected
@@ -244,7 +244,7 @@ AI_ErrTabsWithoutARIA =
 
 AI_ErrToggleWithoutState =
     .title = Le bouton bascule n'indique pas son état (développé/réduit)
-    .what = Le bouton bascule n'indique pas son état (développé/réduit)
+    .what = Un bouton bascule du contenu ouvert/fermé ou activé/désactivé, mais il n'expose pas son état actuel via aria-expanded ou aria-pressed.
     .why = Les utilisateurs ne connaissent pas l'état actuel du contrôle
     .who = Utilisateurs de lecteurs d'écran, utilisateurs avec déficiences cognitives
     .remediation = Ajoutez aria-expanded="true/false" et mettez-le à jour lorsque l'état change
@@ -260,7 +260,7 @@ AI_ErrVisualGroupingBroken =
 
 AI_ErrVisualHeadingNotMarked =
     .title = Le texte "{"{"}visual_text{"}"}" apparaît visuellement comme un titre mais n'est pas balisé avec des balises de titre appropriées
-    .what = Le texte "{"{"}visual_text{"}"}" apparaît visuellement comme un titre mais n'est pas balisé avec des balises de titre appropriées
+    .what = Le texte « {"{"}visual_text{"}"} » apparaît visuellement comme un titre, mais utilise <{"{"}element_tag{"}"}> au lieu d'un balisage de titre approprié.
     .why = Les utilisateurs de lecteurs d'écran ne reconnaîtront pas ce texte comme un titre, brisant la navigation et la structure du document
     .who = Utilisateurs de lecteurs d'écran, utilisateurs qui naviguent par titres
     .remediation = Utilisez les balises de titre HTML appropriées (h1-h6) pour le texte qui sert de titres
@@ -268,7 +268,7 @@ AI_ErrVisualHeadingNotMarked =
 
 AI_ErrVisualHierarchyInconsistent =
     .title = La hiérarchie visuelle ne correspond pas à la structure sémantique
-    .what = La hiérarchie visuelle ne correspond pas à la structure sémantique
+    .what = Les niveaux de titres déclarés dans le DOM ne correspondent pas à la hiérarchie visuelle — par exemple, un titre visuellement plus grand porte un niveau de priorité inférieur à un titre visuellement plus petit.
     .why = Les utilisateurs de lecteurs d'écran percevront une structure différente de ce qui est affiché visuellement
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Alignez la structure sémantique HTML avec la présentation visuelle
@@ -276,7 +276,7 @@ AI_ErrVisualHierarchyInconsistent =
 
 AI_InfoVisualCue =
     .title = Information transmise uniquement par des indices visuels (couleur, position, taille)
-    .what = Information transmise uniquement par des indices visuels (couleur, position, taille)
+    .what = L'information semble être transmise uniquement par une propriété visuelle (couleur, position de l'icône, forme ou graisse de police) sans étiquette textuelle ni indice non visuel correspondant.
     .why = Les utilisateurs qui ne peuvent pas percevoir les indices visuels manquent des informations importantes
     .who = Utilisateurs aveugles, utilisateurs daltoniens
     .remediation = Fournissez des alternatives textuelles ou des indices supplémentaires au-delà des indices visuels
@@ -292,7 +292,7 @@ AI_WarnDialogBackgroundNotInert =
 
 AI_WarnFocusIndicatorWeak =
     .title = L'indicateur de focus semble trop subtil ou manquant
-    .what = L'indicateur de focus semble trop subtil ou manquant
+    .what = L'indicateur de focus d'un élément interactif est trop subtil ou n'est pas visible.
     .why = Les utilisateurs peuvent avoir du mal à voir quel élément a le focus
     .who = Utilisateurs de clavier, utilisateurs malvoyants
     .remediation = Augmentez la visibilité du focus avec des couleurs à contraste plus élevé ou des contours plus épais
@@ -300,7 +300,7 @@ AI_WarnFocusIndicatorWeak =
 
 AI_WarnForeignTextUnmarked =
     .title = Texte en langue étrangère possiblement sans attribut lang
-    .what = Texte en langue étrangère possiblement sans attribut lang
+    .what = Le texte « {"{"}text_sample{"}"} » en {"{"}detected_language{"}"} a été trouvé sans attribut lang="{"{"}detected_language{"}"}".
     .why = Les lecteurs d'écran peuvent mal prononcer le texte en langue étrangère
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Vérifiez et ajoutez les attributs lang appropriés au texte en langue étrangère
@@ -308,7 +308,7 @@ AI_WarnForeignTextUnmarked =
 
 AI_WarnMixedLanguage =
     .title = Contenu en langues mélangées détecté sans déclarations de langue appropriées
-    .what = Contenu en langues mélangées détecté sans déclarations de langue appropriées
+    .what = Du texte dans plus d'une langue a été détecté sur la page, mais les passages dans la langue secondaire ne sont pas encapsulés dans des éléments portant un attribut lang.
     .why = Les lecteurs d'écran peuvent prononcer le texte incorrectement sans déclarations de langue
     .who = Utilisateurs de lecteurs d'écran qui parlent plusieurs langues
     .remediation = Ajoutez des attributs lang aux éléments contenant différentes langues
@@ -316,7 +316,7 @@ AI_WarnMixedLanguage =
 
 AI_WarnModalMissingLabel =
     .title = Le dialogue modal manque de nom ou description accessible
-    .what = Le dialogue modal manque de nom ou description accessible
+    .what = Une fenêtre modale ou boîte de dialogue est ouverte, mais son élément conteneur n'a ni aria-label, ni aria-labelledby, ni autre source de nom accessible.
     .why = Les lecteurs d'écran n'annonceront pas à quoi sert le dialogue
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Ajoutez aria-label ou aria-labelledby à l'élément dialogue
@@ -324,7 +324,7 @@ AI_WarnModalMissingLabel =
 
 AI_WarnModalWithoutFocusTrap =
     .title = Le dialogue modal ne piège pas le focus dans le dialogue
-    .what = Le dialogue modal ne piège pas le focus dans le dialogue
+    .what = Appuyer sur Tab depuis une fenêtre modale ouverte permet au focus de s'échapper vers le contenu de la page sous-jacente au lieu de circuler à l'intérieur de la boîte de dialogue.
     .why = Les utilisateurs de clavier peuvent tabuler hors du modal vers la page derrière
     .who = Utilisateurs de clavier, utilisateurs de lecteurs d'écran
     .remediation = Implémentez un piège de focus qui maintient la navigation par tabulation dans le modal
@@ -332,7 +332,7 @@ AI_WarnModalWithoutFocusTrap =
 
 AI_WarnNoReducedMotion =
     .title = Les animations ne respectent pas prefers-reduced-motion
-    .what = Les animations ne respectent pas prefers-reduced-motion
+    .what = Des animations ont été détectées, mais aucune requête média @media (prefers-reduced-motion) n'a été trouvée.
     .why = Les utilisateurs qui ont demandé un mouvement réduit verront quand même les animations
     .who = Utilisateurs avec troubles vestibulaires, utilisateurs sujets aux crises
     .remediation = Ajoutez une requête média @media (prefers-reduced-motion: reduce) pour désactiver ou réduire les animations
@@ -340,7 +340,7 @@ AI_WarnNoReducedMotion =
 
 AI_WarnPotentialFlashing =
     .title = L'animation peut causer des clignotements (risque de crise)
-    .what = L'animation peut causer des clignotements (risque de crise)
+    .what = Une animation a été détectée qui peut causer des effets de clignotement ou de stroboscope rapides.
     .why = Le contenu clignotant peut déclencher des crises chez les personnes épileptiques
     .who = Utilisateurs épileptiques photosensibles
     .remediation = Supprimez ou réduisez les clignotements à moins de 3 fois par seconde
@@ -380,7 +380,7 @@ DiscoFormOnPage =
 
 DiscoFoundInlineSvg =
     .title = Élément SVG intégré détecté nécessitant une révision manuelle pour déterminer l'implémentation d'accessibilité appropriée selon son objectif et sa complexité
-    .what = Élément SVG intégré détecté nécessitant une révision manuelle pour déterminer l'implémentation d'accessibilité appropriée selon son objectif et sa complexité
+    .what = Un élément <svg> en ligne a été trouvé dans la page. Les SVG en ligne peuvent être décoratifs, informatifs ou interactifs ; chaque instance doit donc être examinée individuellement pour déterminer le balisage d'accessibilité approprié.
     .why = Les éléments SVG servent des objectifs divers, des icônes simples aux visualisations interactives complexes, chacun nécessitant des approches d'accessibilité différentes. Une bordure décorative nécessite un traitement différent d'un graphique de données, qui diffère d'une carte interactive ou d'une simulation scientifique. Les outils automatisés ne peuvent pas déterminer l'objectif du SVG, s'il est décoratif ou informatif, statique ou interactif, ou si les fonctionnalités d'accessibilité existantes soutiennent adéquatement les besoins des utilisateurs.
     .who = Utilisateurs aveugles et malvoyants utilisant des lecteurs d'écran qui ont besoin de textes alternatifs pour les graphiques ou d'un accès clavier aux éléments interactifs, utilisateurs avec des handicaps moteurs qui nécessitent une navigation au clavier pour les contrôles SVG interactifs, utilisateurs avec des handicaps cognitifs qui bénéficient d'un étiquetage clair et de modèles d'interaction prévisibles, et utilisateurs de diverses technologies d'assistance qui peuvent interpréter le contenu SVG différemment
     .remediation = Évaluez l'objectif et la complexité du SVG - pour les images simples, ajoutez <title> avec aria-labelledby ou role=\"img\" avec aria-label, pour les graphiques décoratifs utilisez aria-hidden=\"true\", pour les visualisations de données fournissez <title> et <desc> plus considérez des textes alternatifs détaillés adjacents, pour le contenu interactif assurez-vous que tous les contrôles sont accessibles au clavier avec des étiquettes ARIA appropriées et une gestion du focus, pour les simulations complexes fournissez des instructions et des annonces de changements d'état, et testez avec des lecteurs d'écran pour vérifier que l'expérience correspond à la fonctionnalité visuelle
@@ -388,7 +388,7 @@ DiscoFoundInlineSvg =
 
 DiscoFoundJS =
     .title = JavaScript détecté sur la page
-    .what = JavaScript détecté sur la page
+    .what = La page charge ou exécute un ou plusieurs éléments <script>. Vérifiez que les fonctionnalités essentielles de la page fonctionnent encore lorsque JavaScript est désactivé ou ne se charge pas.
     .why = La fonctionnalité devrait fonctionner sans JavaScript
     .who = Utilisateurs avec JavaScript désactivé
     .remediation = Assurer l'amélioration progressive
@@ -396,7 +396,7 @@ DiscoFoundJS =
 
 DiscoFoundSvgImage =
     .title = Élément SVG avec role=\"img\" détecté nécessitant une révision manuelle pour vérifier que des textes alternatifs appropriés sont fournis
-    .what = Élément SVG avec role=\"img\" détecté nécessitant une révision manuelle pour vérifier que des textes alternatifs appropriés sont fournis
+    .what = Un élément <svg> avec role="img" a été détecté. Confirmez qu'il possède un nom accessible approprié fourni via aria-label, aria-labelledby ou un élément <title> enfant.
     .why = Les éléments SVG avec role=\"img\" sont explicitement marqués comme images et traités comme un graphique unique par les technologies d'assistance, nécessitant des textes alternatifs appropriés. Bien que le role=\"img\" indique la sensibilisation du développeur aux besoins d'accessibilité, une révision manuelle est nécessaire pour vérifier que tout aria-label, aria-labelledby, ou éléments <title> internes décrivent adéquatement le contenu ou la fonction de l'image, et que la description est appropriée pour le contexte et l'objectif du SVG.
     .who = Utilisateurs aveugles et malvoyants utilisant des lecteurs d'écran qui dépendent des textes alternatifs pour comprendre le contenu des images, utilisateurs avec des handicaps cognitifs qui bénéficient de descriptions claires et concises de l'information visuelle, utilisateurs de clavier qui peuvent rencontrer le SVG dans leur flux de navigation, et utilisateurs de technologies d'assistance qui traitent les SVG avec role=\"img\" comme des éléments d'image atomiques
     .remediation = Vérifiez que le SVG avec role=\"img\" a des noms accessibles appropriés via les attributs aria-label ou aria-labelledby, assurez-vous que tous les éléments <title> ou <desc> à l'intérieur du SVG sont correctement référencés s'ils sont utilisés pour l'étiquetage, confirmez que les SVG décoratifs sont cachés avec aria-hidden=\"true\" plutôt que d'avoir role=\"img\", vérifiez que le texte alternatif décrit précisément la signification du SVG dans le contexte, et testez avec des lecteurs d'écran pour vous assurer que l'image est annoncée avec des informations significatives
@@ -412,7 +412,7 @@ DiscoHeaderFound =
 
 DiscoHeadingWithID =
     .title = L'élément de titre possède un attribut ID qui peut être utilisé pour la navigation dans la page
-    .what = L'élément de titre possède un attribut ID qui peut être utilisé pour la navigation dans la page
+    .what = Un élément de titre porte un attribut id, généralement utilisé comme cible d'ancre dans la page. Vérifiez que cet id est référencé par des liens de navigation fonctionnels et que le texte du titre a un sens en tant qu'étiquette de destination.
     .why = Les titres avec des ID sont souvent des cibles de liens pour la navigation, nécessitant une vérification qu'ils fonctionnent correctement et fournissent des points de navigation significatifs.
     .who = Tous les utilisateurs qui utilisent des liens de navigation dans la page, utilisateurs de lecteurs d'écran qui naviguent par titres, utilisateurs de clavier qui suivent les liens de fragment.
     .remediation = Vérifier que l'ID du titre est référencé par des liens de navigation, s'assurer que l'ID est descriptif et stable, vérifier que le texte du titre fournit un contexte de navigation clair.
@@ -444,7 +444,7 @@ DiscoNavFound =
 
 DiscoNoSubmitButton =
     .title = Le formulaire peut manquer d'un bouton d'envoi clair
-    .what = Le formulaire peut manquer d'un bouton d'envoi clair
+    .what = Un élément <form> a été trouvé sans contrôle de soumission évident (pas de <button type="submit">, <input type="submit"> ni <input type="image">). Vérifiez que le formulaire peut quand même être soumis de manière accessible.
     .why = Les utilisateurs peuvent ne pas savoir comment soumettre le formulaire
     .who = Utilisateurs avec des déficiences cognitives, utilisateurs de clavier
     .remediation = S'assurer que le formulaire dispose d'un mécanisme d'envoi clair
@@ -452,7 +452,7 @@ DiscoNoSubmitButton =
 
 DiscoPDFLinksFound =
     .title = Liens vers des documents PDF détectés sur la page
-    .what = Liens vers des documents PDF détectés sur la page
+    .what = Un ou plusieurs liens de la page pointent vers des fichiers .pdf. Chaque PDF lié nécessite un audit d'accessibilité distinct, car l'analyse HTML ne peut pas évaluer le contenu du PDF lui-même.
     .why = Les documents PDF présentent souvent des problèmes d'accessibilité et peuvent ne pas être accessibles à tous les utilisateurs
     .who = Utilisateurs de lecteurs d'écran, utilisateurs en situation de handicap qui ont des difficultés avec les formats PDF
     .remediation = Assurez-vous que les PDF sont accessibles (balisés, structurés, avec contenu textuel) ou fournissez des alternatives HTML
@@ -484,7 +484,7 @@ DiscoSectionFound =
 
 DiscoStyleAttrOnElements =
     .title = Styles en ligne détectés
-    .what = Styles en ligne détectés
+    .what = Un ou plusieurs éléments utilisent un attribut style="..." en ligne. Les styles en ligne remplacent les feuilles de style et peuvent interférer avec les feuilles de style utilisateur, les modes à contraste élevé, le mode sombre ou le redimensionnement du texte.
     .why = Peut affecter le design responsive et la personnalisation utilisateur
     .who = Utilisateurs avec des feuilles de style personnalisées
     .remediation = Envisagez d'utiliser des classes CSS
@@ -492,7 +492,7 @@ DiscoStyleAttrOnElements =
 
 DiscoStyleElementOnPage =
     .title = Élément style trouvé dans la page
-    .what = Élément style trouvé dans la page
+    .what = Un bloc <style> a été trouvé intégré dans la page plutôt que fourni via une feuille de style externe. Les styles intégrés ne peuvent pas être remplacés par les feuilles de style utilisateur ou les extensions de navigateur de la même manière que le CSS externe.
     .why = Styles intégrés plus difficiles à remplacer
     .who = Utilisateurs nécessitant des styles personnalisés
     .remediation = Envisagez des feuilles de style externes
@@ -500,7 +500,7 @@ DiscoStyleElementOnPage =
 
 ErrAccordionWithoutARIA =
     .title = L'élément accordéon \"%(element_text)s\" manque de balisage ARIA approprié
-    .what = L'élément accordéon \"%(element_text)s\" manque de balisage ARIA approprié
+    .what = Un widget de type accordéon (« {"{"}element_text{"}"} ») a été trouvé dans lequel les en-têtes ouvrent et ferment du contenu, mais le balisage ne contient pas aria-expanded, aria-controls ni les rôles appropriés de bouton/titre.
     .why = Sans aria-expanded et les rôles appropriés, les utilisateurs ne peuvent pas déterminer si les sections sont développées ou réduites
     .who = Utilisateurs de lecteurs d'écran, utilisateurs de clavier
     .remediation = Ajoutez le rôle button aux en-têtes, aria-expanded pour indiquer l'état, et aria-controls pour lier les en-têtes aux panneaux
@@ -508,7 +508,7 @@ ErrAccordionWithoutARIA =
 
 ErrAltOnElementThatDoesntTakeIt =
     .title = Attribut alt placé sur des éléments HTML qui ne le supportent pas (comme div, span, p, ou autres éléments non-image), rendant le texte alternatif inaccessible aux technologies d'assistance
-    .what = Attribut alt placé sur des éléments HTML qui ne le supportent pas (comme div, span, p, ou autres éléments non-image), rendant le texte alternatif inaccessible aux technologies d'assistance
+    .what = Un attribut alt a été trouvé sur un élément qui ne le prend pas en charge selon la spécification HTML (tel que <div>, <span> ou <a>), où l'attribut sera silencieusement ignoré.
     .why = L'attribut alt n'est valide que sur des éléments spécifiques (<img>, <area>, <input type=\"image\">) et est ignoré lorsqu'il est placé sur d'autres éléments. Les lecteurs d'écran n'annonceront pas ce texte alternatif mal placé, ce qui signifie que toute information importante qu'il contient est complètement perdue pour les utilisateurs qui dépendent des technologies d'assistance. Cela se produit souvent lorsque les développeurs tentent d'ajouter des fonctionnalités d'accessibilité mais utilisent des techniques incorrectes.
     .who = Utilisateurs aveugles et malvoyants utilisant des lecteurs d'écran qui ne peuvent pas accéder au contenu de texte alternatif placé dans des emplacements invalides, utilisateurs avec des handicaps cognitifs qui peuvent manquer du texte explicatif, utilisateurs de clavier qui peuvent ne pas recevoir d'informations contextuelles importantes, et utilisateurs de technologies d'assistance qui dépendent d'un balisage HTML sémantique approprié
     .remediation = Supprimer les attributs alt des éléments qui ne les supportent pas et utiliser des alternatives appropriées - pour les images d'arrière-plan en CSS utiliser role=\"img\" avec aria-label, pour les éléments cliquables utiliser aria-label ou du texte masqué visuellement, pour les éléments décoratifs s'assurer qu'ils sont correctement masqués avec aria-hidden=\"true\", et vérifier que les véritables éléments <img> sont utilisés pour les images de contenu qui nécessitent un texte alternatif
@@ -516,7 +516,7 @@ ErrAltOnElementThatDoesntTakeIt =
 
 ErrAltTooLong =
     .title = Le texte alternatif dépasse 150 caractères sans structure appropriée, rendant difficile le traitement pour les utilisateurs de lecteurs d'écran
-    .what = Le texte alternatif dépasse 150 caractères sans structure appropriée, rendant difficile le traitement pour les utilisateurs de lecteurs d'écran
+    .what = Le texte alternatif d'une image fait plus de 150 caractères sans structure environnante. Un texte alternatif long est difficile à consommer d'une seule fois via un lecteur d'écran.
     .why = Ceci échoue au WCAG 5.2.4 Prise en charge de l'accessibilité car même si la page respecte techniquement les critères de succès WCAG en fournissant un texte alternatif, elle ne fonctionne pas correctement avec les technologies d'assistance (lecteurs d'écran). Les lecteurs d'écran lisent le texte alternatif comme une chaîne continue non structurée sans la possibilité de naviguer, parcourir, ou utiliser les commandes de lecture qui fonctionnent avec du HTML correctement structuré. Un texte alternatif long supprime la capacité des utilisateurs de lecteurs d'écran à utiliser la navigation par titres, les sauts de paragraphe, la navigation par listes, et autres fonctionnalités de technologies d'assistance que les utilisateurs voyants tiennent pour acquises lors de la lecture de descriptions longues. Le contenu peut être techniquement présent mais n'est pas pris en charge par l'accessibilité car il ne peut pas être utilisé efficacement avec la technologie d'assistance de l'utilisateur.
     .who = Utilisateurs de lecteurs d'écran qui doivent écouter de longues descriptions non structurées sans balayage visuel ou sauts de paragraphe, utilisateurs avec des handicaps cognitifs qui ont des difficultés à traiter de longs blocs de texte sans structure, utilisateurs avec des difficultés d'attention qui ont besoin d'une hiérarchie d'information claire, utilisateurs avec des défis de mémoire qui ne peuvent pas retenir de longs passages de texte ininterrompus
     .remediation = Limiter le texte alternatif à 150 caractères maximum pour des descriptions concises. Pour les images complexes nécessitant des descriptions plus longues, utiliser des alternatives structurées appropriées : utiliser l'attribut longdesc ou aria-describedby pointant vers du contenu HTML structuré avec titres, paragraphes, listes, et emphase. Fournir des descriptions détaillées dans du contenu textuel visible adjacent avec un balisage sémantique approprié. Considérer l'utilisation de figure/figcaption pour les images avec légendes. Ne jamais utiliser le texte alternatif comme substitut à une documentation correctement structurée - le texte alternatif doit être bref, avec des détails complexes fournis par du contenu structuré accessible.
@@ -532,7 +532,7 @@ ErrAnchorTargetTabindex =
 
 ErrAriaLabelMayNotBeFoundByVoiceControl =
     .title = aria-label ne correspond pas au texte visible
-    .what = aria-label ne correspond pas au texte visible
+    .what = Le texte visible d'un élément diffère de son aria-label. Les utilisateurs de commande vocale prononcent généralement ce qu'ils voient — si le texte visible n'est pas contenu dans le nom accessible, les commandes vocales ne correspondront pas.
     .why = Les utilisateurs de commande vocale ne peuvent pas activer l'élément
     .who = Utilisateurs de commande vocale
     .remediation = Assurez-vous qu'aria-label inclut le texte visible
@@ -548,7 +548,7 @@ ErrAutoplayWithoutControls =
 
 ErrBannerLandmarkAccessibleNameIsBlank =
     .title = La région repère bannière a un nom accessible vide
-    .what = La région repère bannière a un nom accessible vide
+    .what = Un repère banner (<header> au niveau racine, ou role="banner") a été trouvé dont la valeur aria-label ou aria-labelledby se résout à une chaîne vide.
     .why = Plusieurs bannières nécessitent des étiquettes pour les distinguer
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Ajouter aria-label ou aria-labelledby
@@ -556,7 +556,7 @@ ErrBannerLandmarkAccessibleNameIsBlank =
 
 ErrBannerLandmarkHasAriaLabelAndAriaLabelledByAttrs =
     .title = La région repère banner possède à la fois aria-label et aria-labelledby
-    .what = La région repère banner possède à la fois aria-label et aria-labelledby
+    .what = Un élément banner possède à la fois les attributs aria-label et aria-labelledby. C'est aria-labelledby qui l'emporte, mais la présence des deux indique une intention d'étiquetage contradictoire.
     .why = Méthodes d'étiquetage conflictuelles
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Utilisez une seule méthode d'étiquetage
@@ -564,7 +564,7 @@ ErrBannerLandmarkHasAriaLabelAndAriaLabelledByAttrs =
 
 ErrBannerLandmarkMayNotBeChildOfAnotherLandmark =
     .title = Région repère bannière imbriquée dans une autre région repère
-    .what = Région repère bannière imbriquée dans une autre région repère
+    .what = Un repère banner apparaît imbriqué dans un autre repère (par exemple, à l'intérieur de <main>, <nav> ou <aside>), ce que la spécification ARIA interdit.
     .why = L'imbrication invalide brise la structure de la page
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Déplacer la bannière au niveau supérieur
@@ -644,7 +644,7 @@ ErrButtonTransparentOutline =
 
 ErrCarouselWithoutARIA =
     .title = Le carrousel ou curseur manque de balisage ARIA approprié et de contrôles
-    .what = Le carrousel ou curseur manque de balisage ARIA approprié et de contrôles
+    .what = Un carrousel ou un curseur a été détecté (diapositives défilantes, contrôles précédent/suivant), mais il ne possède pas role="region" avec un nom accessible, ni annonces de l'état des diapositives, ni contrôles étiquetés.
     .why = Les carrousels présentent des défis d'accessibilité uniques : les utilisateurs de lecteurs d'écran doivent comprendre la structure du carrousel, savoir quelle diapositive est actuellement affichée et être informés des changements. Les utilisateurs de clavier ont besoin d'un moyen de mettre en pause la rotation automatique et de naviguer entre les diapositives. Sans balisage ARIA approprié, les utilisateurs de technologies d'assistance ne peuvent pas percevoir ni utiliser le carrousel.
     .who = Utilisateurs de lecteurs d'écran qui ne peuvent pas percevoir la structure du carrousel ou les changements de diapositives, utilisateurs de clavier qui ne peuvent pas contrôler le contenu à rotation automatique, utilisateurs avec des troubles cognitifs qui ont besoin de plus de temps pour lire le contenu
     .remediation = Un carrousel accessible doit inclure : (1) role=\"region\" ou role=\"group\" sur le conteneur du carrousel avec un aria-label décrivant son objectif, (2) aria-roledescription=\"carousel\" pour aider les utilisateurs à comprendre avec quoi ils interagissent, (3) chaque diapositive doit avoir role=\"group\" avec aria-roledescription=\"slide\" et aria-label indiquant la position (ex. : « 1 sur 5 »), (4) des boutons Précédent/Suivant avec des noms accessibles clairs, (5) une région aria-live=\"polite\" pour annoncer les changements de diapositives, (6) si rotation automatique : un bouton pause/lecture et le carrousel doit se mettre en pause au survol/focus. Consultez le modèle de carrousel des pratiques de création WAI-ARIA.
@@ -652,7 +652,7 @@ ErrCarouselWithoutARIA =
 
 ErrClickableWithoutKeyboard =
     .title = L'élément avec gestionnaire onclick n'est pas accessible au clavier
-    .what = L'élément avec gestionnaire onclick n'est pas accessible au clavier
+    .what = Un élément possède un gestionnaire onclick (ou un écouteur de clic JavaScript similaire), mais aucun rôle, aucun tabindex et aucun gestionnaire d'événements clavier — il peut être cliqué mais pas activé au clavier.
     .why = Les utilisateurs de clavier ne peuvent pas activer ce contrôle
     .who = Utilisateurs de clavier, utilisateurs qui ne peuvent pas utiliser une souris
     .remediation = Ajoutez tabindex=\"0\" et implémentez des gestionnaires onkeypress/onkeydown pour les touches Entrée et Espace
@@ -676,7 +676,7 @@ ErrColorRelatedStyleDefinedExplicitlyInStyleTag =
 
 ErrComplementaryLandmarkAccessibleNameIsBlank =
     .title = La région repère complémentaire a un nom accessible vide
-    .what = La région repère complémentaire a un nom accessible vide
+    .what = Un repère complementary (<aside> ou role="complementary") a été trouvé dont l'aria-label ou aria-labelledby se résout à une chaîne vide, laissant le repère sans nom.
     .why = Les étiquettes vides ne fournissent aucune information
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Ajouter un texte d'étiquette significatif
@@ -684,7 +684,7 @@ ErrComplementaryLandmarkAccessibleNameIsBlank =
 
 ErrComplementaryLandmarkHasAriaLabelAndAriaLabelledByAttrs =
     .title = La région repère complémentaire a à la fois aria-label et aria-labelledby
-    .what = La région repère complémentaire a à la fois aria-label et aria-labelledby
+    .what = Un élément complementary possède à la fois les attributs aria-label et aria-labelledby, alors qu'une seule méthode d'étiquetage devrait être utilisée.
     .why = Les méthodes d'étiquetage conflictuelles peuvent causer de la confusion
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Utilisez une seule méthode d'étiquetage
@@ -692,7 +692,7 @@ ErrComplementaryLandmarkHasAriaLabelAndAriaLabelledByAttrs =
 
 ErrComplementaryLandmarkMayNotBeChildOfAnotherLandmark =
     .title = La région repère complémentaire est imbriquée dans une autre région repère
-    .what = La région repère complémentaire est imbriquée dans une autre région repère
+    .what = Un repère complementary est imbriqué dans un autre repère. La spécification ARIA exige que les régions complémentaires se trouvent au niveau racine du document.
     .why = L'imbrication invalide brise la structure des régions repères
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Déplacer la région repère complémentaire en dehors des autres régions repères
@@ -700,15 +700,15 @@ ErrComplementaryLandmarkMayNotBeChildOfAnotherLandmark =
 
 ErrCompletelyEmptyNavLandmark =
     .title = La région repère navigation ne contient aucun contenu
-    .what = La région repère navigation ne contient aucun contenu
+    .what = Un élément <nav> (ou role="navigation") existe dans le DOM mais ne contient aucun élément enfant, aucun lien et aucun contenu textuel.
     .why = Une navigation vide ne sert à rien
-    .who = Tous les utilisateurs
+    .who = Les utilisateurs de lecteurs d'écran qui naviguent par repères (la navigation vide apparaît dans la liste des repères sans contenu utile) et les utilisateurs du clavier qui y tabulent en s'attendant à trouver des liens
     .remediation = Ajouter du contenu de navigation ou supprimer la région repère vide
     .what-generic = La région repère navigation ne contient aucun contenu
 
 ErrContentInfoLandmarkAccessibleNameIsBlank =
     .title = La région repère contentinfo a un nom accessible vide
-    .what = La région repère contentinfo a un nom accessible vide
+    .what = Un repère contentinfo (<footer> au niveau racine, ou role="contentinfo") a un aria-label ou aria-labelledby qui se résout à une chaîne vide.
     .why = Les étiquettes vides ne fournissent aucune information
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Ajouter un texte d'étiquette significatif
@@ -716,7 +716,7 @@ ErrContentInfoLandmarkAccessibleNameIsBlank =
 
 ErrContentInfoLandmarkHasAriaLabelAndAriaLabelledByAttrs =
     .title = La région repère contentinfo a à la fois aria-label et aria-labelledby
-    .what = La région repère contentinfo a à la fois aria-label et aria-labelledby
+    .what = Un élément contentinfo possède à la fois les attributs aria-label et aria-labelledby. C'est aria-labelledby qui l'emporte, mais la duplication suggère une rédaction confuse.
     .why = Méthodes d'étiquetage conflictuelles
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Utilisez une seule méthode d'étiquetage
@@ -740,7 +740,7 @@ ErrContentOutsideLandmarks =
 
 ErrContentinfoLandmarkMayNotBeChildOfAnotherLandmark =
     .title = La région repère contentinfo est imbriquée dans une autre région repère
-    .what = La région repère contentinfo est imbriquée dans une autre région repère
+    .what = Un repère contentinfo apparaît imbriqué dans un autre repère (par exemple, à l'intérieur de <main> ou <nav>). La spécification ARIA interdit cela — contentinfo doit être au niveau racine.
     .why = L'imbrication invalide brise la structure des régions repères
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Déplacer contentinfo au niveau supérieur
@@ -756,7 +756,7 @@ ErrDialogMissingRole =
 
 ErrDivMapMissingAttributes =
     .title = Le div conteneur de carte manque d'attributs d'accessibilité requis
-    .what = Le div conteneur de carte manque d'attributs d'accessibilité requis
+    .what = Un <div> affichant un widget de carte ne possède pas le rôle, le nom accessible ou les attributs d'interaction au clavier nécessaires pour l'exposer en tant que région interactive accessible.
     .why = Les cartes sans attributs d'accessibilité appropriés sont complètement inaccessibles aux utilisateurs de lecteurs d'écran qui ne peuvent pas percevoir l'information visuelle.
     .who = Utilisateurs aveugles et malvoyants, utilisateurs qui dépendent des lecteurs d'écran pour comprendre le contenu et les fonctionnalités des cartes.
     .remediation = Ajoutez des étiquettes et descriptions ARIA appropriées, fournissez des alternatives textuelles pour les informations de carte, assurez-vous que tous les contrôles de carte sont accessibles au clavier.
@@ -788,7 +788,7 @@ ErrDocumentLinkWrongLanguage =
 
 ErrDropdownWithoutARIA =
     .title = Le menu déroulant \"%(element_text)s\" manque de balisage ARIA approprié
-    .what = Le menu déroulant \"%(element_text)s\" manque de balisage ARIA approprié
+    .what = Un widget de menu déroulant (« {"{"}element_text{"}"} ») a été trouvé dont le déclencheur et le panneau ne possèdent pas les relations aria-haspopup, aria-expanded et aria-controls nécessaires à l'utilisation par lecteur d'écran.
     .why = Sans aria-expanded, aria-haspopup, et les rôles appropriés, les utilisateurs ne peuvent pas comprendre l'état du menu déroulant ou y naviguer correctement
     .who = Utilisateurs de lecteurs d'écran, utilisateurs de clavier
     .remediation = Ajouter aria-haspopup=\"true\", l'état aria-expanded, et role=\"menu\" avec role=\"menuitem\" pour les options
@@ -796,7 +796,7 @@ ErrDropdownWithoutARIA =
 
 ErrDuplicateLabelForBannerLandmark =
     .title = Plusieurs régions repères banner ont la même étiquette
-    .what = Plusieurs régions repères banner ont la même étiquette
+    .what = Deux repères banner ou plus de la page partagent le même nom accessible ; les utilisateurs de lecteurs d'écran ne peuvent donc pas les distinguer dans la liste des repères.
     .why = Les utilisateurs ne peuvent pas distinguer entre les différentes bannières
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Une seule bannière devrait généralement exister par page
@@ -804,7 +804,7 @@ ErrDuplicateLabelForBannerLandmark =
 
 ErrDuplicateLabelForComplementaryLandmark =
     .title = Plusieurs régions repères complémentaires ont le même libellé
-    .what = Plusieurs régions repères complémentaires ont le même libellé
+    .what = Deux repères complementary ou plus de la page partagent le même nom accessible. Chaque région complémentaire a besoin d'une étiquette unique pour pouvoir être distinguée.
     .why = Les utilisateurs ne peuvent pas distinguer entre les différentes sections complémentaires
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Fournir des libellés uniques pour chaque région repère complémentaire
@@ -812,7 +812,7 @@ ErrDuplicateLabelForComplementaryLandmark =
 
 ErrDuplicateLabelForContentinfoLandmark =
     .title = Plusieurs régions repères contentinfo ont le même libellé
-    .what = Plusieurs régions repères contentinfo ont le même libellé
+    .what = Deux repères contentinfo (pied de page) ou plus de la page partagent le même nom accessible, ce qui les rend impossibles à distinguer dans la liste des repères.
     .why = Les utilisateurs ne peuvent pas distinguer entre les différentes zones de pied de page
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Généralement, une seule contentinfo devrait exister par page
@@ -820,7 +820,7 @@ ErrDuplicateLabelForContentinfoLandmark =
 
 ErrDuplicateLabelForFormLandmark =
     .title = Plusieurs régions repères de formulaire ont le même libellé
-    .what = Plusieurs régions repères de formulaire ont le même libellé
+    .what = Deux repères form ou plus de la page partagent le même nom accessible ; les utilisateurs ne peuvent donc pas distinguer les formulaires dans la liste des repères.
     .why = Les utilisateurs ne peuvent pas distinguer entre les différents formulaires
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Fournir des étiquettes uniques pour chaque formulaire
@@ -828,7 +828,7 @@ ErrDuplicateLabelForFormLandmark =
 
 ErrDuplicateLabelForNavLandmark =
     .title = Plusieurs régions repères de navigation ont la même étiquette
-    .what = Plusieurs régions repères de navigation ont la même étiquette
+    .what = Deux repères <nav> ou plus partagent le même nom accessible (par exemple, tous deux étiquetés « Navigation principale »), ce qui empêche les utilisateurs de les distinguer dans la liste des repères.
     .why = Les utilisateurs ne peuvent pas distinguer les différentes zones de navigation
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Fournir des étiquettes uniques comme « Navigation principale » et « Navigation de pied de page »
@@ -836,7 +836,7 @@ ErrDuplicateLabelForNavLandmark =
 
 ErrDuplicateLabelForRegionLandmark =
     .title = Plusieurs régions repères ont la même étiquette
-    .what = Plusieurs régions repères ont la même étiquette
+    .what = Deux repères region ou plus de la page partagent le même nom accessible, ce qui les rend indistinguables dans la liste des repères.
     .why = Les utilisateurs ne peuvent pas distinguer les différentes régions
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Fournir des étiquettes uniques pour chaque région
@@ -844,7 +844,7 @@ ErrDuplicateLabelForRegionLandmark =
 
 ErrDuplicateLabelForSearchLandmark =
     .title = Plusieurs régions repères de recherche ont la même étiquette
-    .what = Plusieurs régions repères de recherche ont la même étiquette
+    .what = Deux repères search ou plus partagent le même nom accessible. Si plusieurs zones de recherche existent, chacune a besoin d'une étiquette unique (par exemple, « Recherche du site », « Recherche de produits »).
     .why = Les utilisateurs ne peuvent pas distinguer les différentes zones de recherche
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Fournir des étiquettes uniques pour chaque région repère de recherche
@@ -860,7 +860,7 @@ ErrDuplicateLandmarkWithoutName =
 
 ErrDuplicateNavNames =
     .title = Plusieurs éléments de navigation ont des noms accessibles identiques
-    .what = Plusieurs éléments de navigation ont des noms accessibles identiques
+    .what = Deux éléments <nav> ou plus de la page se résolvent au même nom accessible calculé ; les lecteurs d'écran ne peuvent donc pas les distinguer lors de la liste des repères de navigation.
     .why = Les utilisateurs ne peuvent pas distinguer entre différentes zones de navigation lorsqu'elles ont le même nom, causant de la confusion sur la structure de la page.
     .who = Utilisateurs de lecteurs d'écran naviguant par régions repères, utilisateurs avec des handicaps cognitifs qui dépendent d'un étiquetage clair.
     .remediation = Fournir des noms accessibles uniques pour chaque élément de navigation en utilisant aria-label ou aria-labelledby.
@@ -868,7 +868,7 @@ ErrDuplicateNavNames =
 
 ErrElementNotContainedInALandmark =
     .title = Du contenu existe en dehors de toute région repère
-    .what = Du contenu existe en dehors de toute région repère
+    .what = Un élément de contenu important de la page se trouve en dehors de toute région de repère (banner, nav, main, complementary, contentinfo, region, search, form). Les utilisateurs naviguant par repères le sauteront.
     .why = Le contenu peut être manqué lors de la navigation par régions repères
     .who = Utilisateurs de lecteurs d'écran utilisant la navigation par régions repères
     .remediation = Assurez-vous que tout le contenu se trouve dans des régions repères appropriées
@@ -876,7 +876,7 @@ ErrElementNotContainedInALandmark =
 
 ErrElementPrimaryLangNotRecognized =
     .title = L'élément a un code de langue non reconnu
-    .what = L'élément a un code de langue non reconnu
+    .what = L'attribut lang d'un élément descendant utilise une sous-balise de langue principale qui n'est pas un code de langue ISO 639 reconnu.
     .why = Les changements de langue ne seront pas annoncés correctement
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Utiliser des codes de langue valides
@@ -884,7 +884,7 @@ ErrElementPrimaryLangNotRecognized =
 
 ErrElementRegionQualifierNotRecognized =
     .title = L'attribut lang de l'élément a un qualificateur de région non reconnu
-    .what = L'attribut lang de l'élément a un qualificateur de région non reconnu
+    .what = La sous-balise de région de l'attribut lang d'un élément (par exemple, le « ZZ » dans lang="en-ZZ ») n'est pas un code de pays ISO 3166-1 reconnu.
     .why = Les codes de région invalides peuvent affecter la prononciation
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Utilisez des codes de région ISO 3166-1 valides
@@ -892,7 +892,7 @@ ErrElementRegionQualifierNotRecognized =
 
 ErrEmptyAriaLabelOnField =
     .title = Le champ de formulaire a un attribut aria-label vide
-    .what = Le champ de formulaire a un attribut aria-label vide
+    .what = Un champ de formulaire possède un attribut aria-label, mais sa valeur est une chaîne vide ; le champ n'a donc aucun nom accessible bien que l'attribut soit présent.
     .why = Les étiquettes vides ne fournissent aucune information sur le champ
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Ajouter un texte descriptif à aria-label ou utiliser une étiquette visible
@@ -900,7 +900,7 @@ ErrEmptyAriaLabelOnField =
 
 ErrEmptyAriaLabelledByOnField =
     .title = Le champ de formulaire a un attribut aria-labelledby vide
-    .what = Le champ de formulaire a un attribut aria-labelledby vide
+    .what = Un champ de formulaire possède un attribut aria-labelledby, mais sa valeur est vide ; aucun élément n'est donc référencé pour fournir le nom accessible.
     .why = Un labelledby vide ne fournit aucune description du champ
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Référencer des ID d'éléments valides ou utiliser un étiquetage direct
@@ -908,7 +908,7 @@ ErrEmptyAriaLabelledByOnField =
 
 ErrEmptyHeading =
     .title = L'élément de titre contient uniquement des espaces ou des caractères spéciaux : \"%(text)s\"
-    .what = L'élément de titre contient uniquement des espaces ou des caractères spéciaux : \"%(text)s\"
+    .what = Un élément de titre (<h1>–<h6>) a été trouvé dont le texte visible est vide, ne contient que des espaces ou ne contient que des caractères non textuels tels que des symboles décoratifs.
     .why = Ce titre ne contient que \"%(text)s\" qui ne fournit aucun contenu significatif. Les titres vides perturbent la structure du document et la navigation. Les utilisateurs de lecteurs d'écran s'appuient sur les titres pour comprendre l'organisation de la page et naviguer efficacement à l'aide des raccourcis de titre. Un titre vide crée un point de navigation sans information, ce qui désoriente les utilisateurs quant à la structure de la page.
     .who = Les utilisateurs de lecteurs d'écran qui naviguent par titres et trouvent un titre ne contenant que \"%(text)s\", les utilisateurs ayant des déficiences cognitives qui s'appuient sur une structure claire pour comprendre l'organisation du contenu, et les utilisateurs de technologies d'assistance qui génèrent des plans de page
     .remediation = Soit remplacer \"%(text)s\" par un contenu textuel significatif qui décrit la section, soit supprimer entièrement l'élément de titre vide s'il ne sert aucun objectif structurel. N'utilisez jamais les titres pour l'espacement visuel - utilisez plutôt les marges/remplissages CSS.
@@ -916,7 +916,7 @@ ErrEmptyHeading =
 
 ErrEmptyLabel =
     .title = L'élément label existe mais ne contient aucun texte
-    .what = L'élément label existe mais ne contient aucun texte
+    .what = Un élément <label> est correctement associé à un champ de formulaire, mais son contenu textuel est vide ou ne contient que des espaces.
     .why = Les étiquettes vides ne fournissent aucune information sur le contrôle de formulaire associé, rendant impossible la saisie correcte des formulaires.
     .who = Utilisateurs de lecteurs d'écran qui ne peuvent pas identifier les champs de formulaire, utilisateurs avec des déficiences cognitives qui ont besoin d'étiquettes claires.
     .remediation = Ajouter un texte descriptif à tous les éléments label qui identifie clairement l'objectif du contrôle de formulaire associé.
@@ -924,7 +924,7 @@ ErrEmptyLabel =
 
 ErrEmptyLanguageAttribute =
     .title = L'élément (non-HTML) a un attribut lang présent mais sans valeur (lang=\"\"), empêchant les lecteurs d'écran de déterminer les changements de langue
-    .what = L'élément (non-HTML) a un attribut lang présent mais sans valeur (lang=\"\"), empêchant les lecteurs d'écran de déterminer les changements de langue
+    .what = Un élément (autre que <html>) possède un attribut lang présent mais sans valeur (lang=""), ce qui rend la langue ambiguë pour le contenu imbriqué.
     .why = Un attribut lang vide sur les éléments empêche les lecteurs d'écran de changer correctement les règles de prononciation pour le contenu dans différentes langues. Les lecteurs d'écran ne peuvent pas ajuster les règles de prononciation pour les sections de contenu dans différentes langues. Cela peut rendre le contenu multilingue difficile ou impossible à comprendre lorsqu'il est lu à voix haute.
     .who = Utilisateurs de lecteurs d'écran qui ont besoin d'une identification correcte de la langue pour une prononciation appropriée, utilisateurs multilingues dépendant du changement de langue, utilisateurs d'outils de traduction, et utilisateurs avec des troubles de la lecture utilisant la synthèse vocale
     .remediation = Ajouter un code de langue valide à l'attribut lang (par exemple, lang=\"fr\" pour le français, lang=\"es\" pour l'espagnol). Utiliser le code à deux lettres ISO 639-1 correct ou le code à trois lettres ISO 639-2. Si la langue correspond à la langue de la page, supprimer entièrement l'attribut lang plutôt que de le laisser vide.
@@ -932,7 +932,7 @@ ErrEmptyLanguageAttribute =
 
 ErrEmptyList =
     .title = L'élément de liste (ul, ol, dl) ne contient aucun élément de liste
-    .what = L'élément de liste (ul, ol, dl) ne contient aucun élément de liste
+    .what = Un élément <ul>, <ol> ou <dl> est présent mais ne contient aucun enfant <li> (ou <dt>/<dd>). Les listes vides sont toujours annoncées par les lecteurs d'écran comme « liste, 0 élément ».
     .why = Les listes vides créent de la confusion sur la structure du document et peuvent indiquer du contenu manquant ou des erreurs de balisage.
     .who = Utilisateurs de lecteurs d'écran qui rencontrent des annonces de listes vides, tous les utilisateurs manquant du contenu potentiellement important.
     .remediation = Supprimer les éléments de liste vides ou les remplir avec des éléments de liste appropriés, s'assurer que les listes ne sont utilisées que pour du contenu de liste réel.
@@ -948,7 +948,7 @@ ErrEmptyPageTitle =
 
 ErrEmptyTitleAttr =
     .title = Attribut title vide
-    .what = Attribut title vide
+    .what = Un élément possède un attribut title, mais sa valeur est vide, ne fournissant aucune infobulle ni nom accessible de secours.
     .why = Les titres vides ne fournissent aucune information et ajoutent un balisage inutile
     .who = Utilisateurs s'attendant à des informations d'infobulle
     .remediation = Supprimez les attributs title vides ou fournissez un texte descriptif significatif
@@ -956,7 +956,7 @@ ErrEmptyTitleAttr =
 
 ErrEmptyXmlLangAttr =
     .title = L'attribut xml:lang est vide
-    .what = L'attribut xml:lang est vide
+    .what = Un attribut xml:lang est présent mais a une valeur vide, ne fournissant aucune information de langue aux consommateurs qui lisent xml:lang.
     .why = Un xml:lang vide ne fournit aucune information de langue
     .who = Utilisateurs de lecteurs d'écran utilisant des analyseurs XML/XHTML
     .remediation = Ajouter un code de langue valide à l'attribut xml:lang
@@ -972,7 +972,7 @@ ErrFakeListImplementation =
 
 ErrFielLabelledBySomethingNotALabel =
     .title = Le champ est étiqueté par un élément qui n'est pas une étiquette appropriée
-    .what = Le champ est étiqueté par un élément qui n'est pas une étiquette appropriée
+    .what = L'aria-labelledby d'un champ pointe vers un élément qui n'est pas un <label> ni un élément de type titre (par exemple, il pointe vers un <div> sans rôle), ce qui rend la source d'étiquetage peu fiable.
     .why = Les éléments non-label peuvent ne pas fournir de relations sémantiques appropriées
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Utiliser des éléments <label> appropriés ou un étiquetage ARIA approprié
@@ -980,7 +980,7 @@ ErrFielLabelledBySomethingNotALabel =
 
 ErrFieldAriaRefDoesNotExist =
     .title = aria-labelledby fait référence à un ID d'élément inexistant '%(found)s'
-    .what = aria-labelledby fait référence à un ID d'élément inexistant '%(found)s'
+    .what = L'aria-labelledby d'un champ référence l'id « {"{"}found{"}"} », mais aucun élément portant cet id n'existe dans la page.
     .why = L'attribut aria-labelledby fait référence à '%(found)s' mais aucun élément avec id=\"%(found)s\" n'existe sur la page. Cette référence brisée signifie que le champ n'a pas d'étiquette accessible pour les lecteurs d'écran.
     .who = Utilisateurs de lecteurs d'écran qui ne reçoivent aucune étiquette pour ce champ
     .remediation = Soit créer un élément avec id=\"%(found)s\" pour servir d'étiquette, corriger la référence ID pour pointer vers un élément existant, ou utiliser une méthode d'étiquetage différente comme un élément <label>
@@ -988,7 +988,7 @@ ErrFieldAriaRefDoesNotExist =
 
 ErrFieldLabelledUsingAriaLabel =
     .title = Champ étiqueté en utilisant aria-label au lieu d'une étiquette visible
-    .what = Champ étiqueté en utilisant aria-label au lieu d'une étiquette visible
+    .what = Un champ de formulaire utilise aria-label comme nom accessible alors qu'un <label> visible serait possible. Les étiquettes visibles sont requises pour les champs qui ont une invite textuelle visible.
     .why = Les étiquettes visibles bénéficient à tous les utilisateurs, pas seulement aux utilisateurs de lecteurs d'écran
     .who = Utilisateurs avec des handicaps cognitifs, tous les utilisateurs
     .remediation = Utilisez des éléments <label> visibles au lieu d'aria-label quand c'est possible
@@ -996,7 +996,7 @@ ErrFieldLabelledUsingAriaLabel =
 
 ErrFieldReferenceDoesNotExist =
     .title = L'attribut for de l'étiquette référence un champ inexistant
-    .what = L'attribut for de l'étiquette référence un champ inexistant
+    .what = L'attribut for d'un <label> pointe vers un id qui n'existe nulle part dans la page, ce qui laisse l'étiquette détachée de tout champ.
     .why = L'étiquette n'est associée à aucun champ de formulaire
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Corrigez la relation for/id
@@ -1004,7 +1004,7 @@ ErrFieldReferenceDoesNotExist =
 
 ErrFormAriaLabelledByIsBlank =
     .title = L'aria-labelledby du formulaire référence un élément vide ou blanc
-    .what = L'aria-labelledby du formulaire référence un élément vide ou blanc
+    .what = Un élément <form> possède un attribut aria-labelledby, mais le contenu textuel de l'élément référencé (ou la valeur d'aria-labelledby elle-même) est vide.
     .why = Aucun nom accessible n'est fourni
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Référencez un élément avec un contenu textuel réel
@@ -1012,7 +1012,7 @@ ErrFormAriaLabelledByIsBlank =
 
 ErrFormAriaLabelledByReferenceDIsHidden =
     .title = L'aria-labelledby du formulaire référence un élément masqué
-    .what = L'aria-labelledby du formulaire référence un élément masqué
+    .what = L'aria-labelledby d'un élément <form> pointe vers un élément masqué via display:none, visibility:hidden ou l'attribut hidden, ne laissant aucun nom accessible annoncé.
     .why = Les éléments masqués peuvent ne pas fournir de noms accessibles
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Référencer uniquement les éléments visibles
@@ -1020,7 +1020,7 @@ ErrFormAriaLabelledByReferenceDIsHidden =
 
 ErrFormAriaLabelledByReferenceDoesNotExist =
     .title = L'aria-labelledby du formulaire référence un élément inexistant
-    .what = L'aria-labelledby du formulaire référence un élément inexistant
+    .what = L'aria-labelledby d'un élément <form> référence un id qui n'existe nulle part sur la page ; aucun nom accessible n'est donc calculé.
     .why = La référence brisée ne fournit aucun nom accessible
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Corriger la référence ID ou utiliser une méthode d'étiquetage différente
@@ -1028,7 +1028,7 @@ ErrFormAriaLabelledByReferenceDoesNotExist =
 
 ErrFormAriaLabelledByReferenceDoesNotReferenceAHeading =
     .title = L'aria-labelledby du formulaire ne référence pas un élément de titre
-    .what = L'aria-labelledby du formulaire ne référence pas un élément de titre
+    .what = Un <form> utilise aria-labelledby pour pointer vers un élément qui n'est pas un titre (<h1>–<h6>). La bonne pratique consiste à étiqueter un repère form avec le titre qui l'introduit.
     .why = La bonne pratique est de référencer des titres pour les régions repères de formulaire
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Référencer un élément de titre lorsque possible
@@ -1036,7 +1036,7 @@ ErrFormAriaLabelledByReferenceDoesNotReferenceAHeading =
 
 ErrFormEmptyHasNoChildNodes =
     .title = L'élément de formulaire est complètement vide sans nœuds enfants
-    .what = L'élément de formulaire est complètement vide sans nœuds enfants
+    .what = Un élément <form> existe dans le DOM mais n'a aucun nœud enfant — aucun champ, aucun texte, aucun balisage à l'intérieur.
     .why = Les formulaires vides ne servent à rien et perturbent les utilisateurs de technologies d'assistance
     .who = Utilisateurs de lecteurs d'écran, utilisateurs de clavier
     .remediation = Supprimer les éléments de formulaire vides ou ajouter des contrôles de formulaire appropriés
@@ -1044,15 +1044,15 @@ ErrFormEmptyHasNoChildNodes =
 
 ErrFormEmptyHasNoInteractiveElements =
     .title = Le formulaire a du contenu mais aucun élément interactif
-    .what = Le formulaire a du contenu mais aucun élément interactif
+    .what = Un élément <form> contient du texte ou du balisage mais ne possède aucun <input>, <textarea>, <select>, <button> ni autre contrôle interactif ; il ne peut donc ni collecter ni soumettre de données.
     .why = Les formulaires sans champs de saisie ne peuvent pas être utilisés pour leur usage prévu
-    .who = Tous les utilisateurs
+    .who = Tous les utilisateurs qui tentent de remplir le formulaire, mais en particulier les utilisateurs de lecteurs d'écran à qui l'on annonce qu'un formulaire existe mais qui ne trouvent aucun contrôle à l'intérieur
     .remediation = Ajouter des champs de saisie, boutons ou autres contrôles de formulaire appropriés
     .what-generic = Le formulaire a du contenu mais aucun élément interactif
 
 ErrFormLandmarkAccessibleNameIsBlank =
     .title = La région repère de formulaire a un nom accessible vide
-    .what = La région repère de formulaire a un nom accessible vide
+    .what = Un repère form (<form> avec une source de nom accessible, ou role="form") a un aria-label ou aria-labelledby qui se résout à une chaîne vide.
     .why = Les formulaires ont besoin d'une identification claire
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Ajouter une étiquette significative décrivant l'objectif du formulaire
@@ -1060,7 +1060,7 @@ ErrFormLandmarkAccessibleNameIsBlank =
 
 ErrFormLandmarkHasAriaLabelAndAriaLabelledByAttrs =
     .title = La région repère de formulaire a à la fois aria-label et aria-labelledby
-    .what = La région repère de formulaire a à la fois aria-label et aria-labelledby
+    .what = Un élément form possède à la fois les attributs aria-label et aria-labelledby. Une seule méthode d'étiquetage doit être utilisée par élément.
     .why = Méthodes d'étiquetage conflictuelles
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Utiliser une seule méthode d'étiquetage
@@ -1076,7 +1076,7 @@ ErrFormLandmarkMustHaveAccessibleName =
 
 ErrFormUsesAriaLabelInsteadOfVisibleElement =
     .title = Le formulaire utilise aria-label au lieu d'un titre ou d'une étiquette visible
-    .what = Le formulaire utilise aria-label au lieu d'un titre ou d'une étiquette visible
+    .what = Un repère form est étiqueté avec aria-label (texte uniquement visible par les technologies d'assistance) alors qu'un titre ou une étiquette visible existe à proximité et pourrait être utilisé via aria-labelledby.
     .why = Les étiquettes visibles bénéficient à tous les utilisateurs
     .who = Tous les utilisateurs, en particulier ceux avec des handicaps cognitifs
     .remediation = Utiliser un titre visible avec aria-labelledby
@@ -1084,7 +1084,7 @@ ErrFormUsesAriaLabelInsteadOfVisibleElement =
 
 ErrFormUsesTitleAttribute =
     .title = Le formulaire utilise l'attribut title pour l'étiquetage
-    .what = Le formulaire utilise l'attribut title pour l'étiquetage
+    .what = Un élément <form> s'appuie sur l'attribut title comme nom accessible. L'attribut title est exposé de manière incohérente — les lecteurs d'écran et les utilisateurs mobiles peuvent ne jamais le recevoir.
     .why = Les attributs title ne sont pas accessibles de manière fiable
     .who = Utilisateurs de lecteurs d'écran, utilisateurs mobiles
     .remediation = Utilisez aria-label ou aria-labelledby à la place
@@ -1092,7 +1092,7 @@ ErrFormUsesTitleAttribute =
 
 ErrFoundAriaLevelButNoRoleAppliedAtAll =
     .title = Attribut aria-level sans role=\"heading\"
-    .what = Attribut aria-level sans role=\"heading\"
+    .what = Un élément possède un attribut aria-level mais aucun attribut role. aria-level n'a de signification que combiné avec role="heading".
     .why = aria-level ne fonctionne qu'avec le rôle heading
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Ajouter role=\"heading\" ou utiliser un élément de titre natif
@@ -1100,7 +1100,7 @@ ErrFoundAriaLevelButNoRoleAppliedAtAll =
 
 ErrFoundAriaLevelButRoleIsNotHeading =
     .title = aria-level sur un élément sans rôle heading
-    .what = aria-level sur un élément sans rôle heading
+    .what = Un élément possède un attribut aria-level défini, mais son rôle n'est pas « heading » et il ne s'agit pas d'un élément natif <h1>–<h6>. aria-level n'a de signification que sur les éléments ayant le rôle heading.
     .why = aria-level nécessite le rôle heading pour fonctionner
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Ajouter role=\"heading\" ou supprimer aria-level
@@ -1164,7 +1164,7 @@ ErrHandlerTransparentOutline =
 
 ErrHeaderMissingScope =
     .title = Élément d'en-tête de tableau (th) manque l'attribut scope
-    .what = Élément d'en-tête de tableau (th) manque l'attribut scope
+    .what = Un élément <th> à l'intérieur d'un tableau de données n'a pas d'attribut scope, ce qui rend la relation entre les cellules d'en-tête et de données ambiguë pour les lecteurs d'écran.
     .why = Sans attributs scope, les lecteurs d'écran ne peuvent pas associer correctement les en-têtes aux cellules de données, rendant les tableaux difficiles à comprendre.
     .who = Utilisateurs de lecteurs d'écran naviguant dans des tableaux complexes, utilisateurs qui dépendent de la sémantique appropriée des tableaux pour la compréhension.
     .remediation = Ajouter scope=\"col\" pour les en-têtes de colonnes et scope=\"row\" pour les en-têtes de lignes à tous les éléments th.
@@ -1172,7 +1172,7 @@ ErrHeaderMissingScope =
 
 ErrHeadingAccessibleNameMismatch =
     .title = Le texte visible du titre ne correspond pas à son nom accessible
-    .what = Le texte visible du titre ne correspond pas à son nom accessible
+    .what = Le nom accessible calculé d'un titre (après application d'aria-label, aria-labelledby, etc.) n'inclut pas le texte visible du titre ; les utilisateurs de lecteurs d'écran et les utilisateurs voyants perçoivent donc un nom différent.
     .why = Les utilisateurs de commande vocale peuvent ne pas pouvoir référencer le titre par son texte visible
     .who = Utilisateurs de commande vocale, utilisateurs de lecteurs d'écran
     .remediation = S'assurer que le texte visible commence le nom accessible (ex. : le texte visible 'Support' doit être au début de aria-label, comme 'Support : Service Client')
@@ -1188,7 +1188,7 @@ ErrHeadingLevelsSkipped =
 
 ErrHeadingOrder =
     .title = Les titres apparaissent dans un ordre illogique - des titres de haut niveau (H1, H2) apparaissent après des titres de niveau inférieur (H3, H4, H5, H6)
-    .what = Les titres apparaissent dans un ordre illogique - des titres de haut niveau (H1, H2) apparaissent après des titres de niveau inférieur (H3, H4, H5, H6)
+    .what = Les titres de la page apparaissent dans un ordre illogique — par exemple, un titre de niveau supérieur (<h1> ou <h2>) apparaît dans le DOM après un titre de niveau inférieur (<h3> ou <h4>) dans la même section.
     .why = La structure du document doit être logique et prévisible. Quand des titres de haut niveau comme H1 ou H2 apparaissent après des titres de niveau inférieur, cela crée une hiérarchie inversée ou à l'envers. C'est comme lire un livre où les titres de chapitre apparaissent après les titres de section, ou où le titre principal apparaît à la fin. Les utilisateurs de lecteurs d'écran naviguant par titres s'attendent aux titres les plus importants en premier, suivis progressivement par des sous-sections plus détaillées. Quand les titres apparaissent dans un ordre illogique, les utilisateurs ne peuvent pas comprendre la structure du contenu, peuvent manquer d'importants repères de navigation, et ne peuvent pas construire un modèle mental précis de l'organisation de la page.
     .who = Utilisateurs de lecteurs d'écran qui s'appuient sur la navigation par titres et s'attendent à une structure de document logique, utilisateurs avec des handicaps cognitifs qui ont besoin d'une organisation de contenu prévisible, utilisateurs qui génèrent des plans de document à partir des titres, et utilisateurs qui naviguent par niveaux de titre pour comprendre la hiérarchie du contenu
     .remediation = Restructurez votre contenu pour que les titres de haut niveau (H1, H2) apparaissent avant les titres de niveau inférieur. Commencez avec H1 pour le titre principal de la page, puis H2 pour les sections majeures, puis H3 pour les sous-sections à l'intérieur de celles-ci. Les titres doivent apparaître dans une hiérarchie logique, de haut en bas, qui correspond à la façon dont les utilisateurs liraient et comprendraient naturellement la structure du contenu.
@@ -1204,7 +1204,7 @@ ErrHeadingsDontStartWithH1 =
 
 ErrHreflangAttrEmpty =
     .title = L'attribut hreflang est vide sur le lien
-    .what = L'attribut hreflang est vide sur le lien
+    .what = L'attribut hreflang d'un lien est présent mais sa valeur est une chaîne vide ; la langue de la ressource liée n'est donc pas déclarée.
     .why = Un hreflang vide ne fournit aucune information de langue pour la ressource liée
     .who = Utilisateurs de lecteurs d'écran, moteurs de recherche
     .remediation = Ajouter un code de langue valide ou supprimer l'attribut hreflang vide
@@ -1212,7 +1212,7 @@ ErrHreflangAttrEmpty =
 
 ErrHreflangNotOnLink =
     .title = Attribut hreflang sur un élément qui n'est pas un lien
-    .what = Attribut hreflang sur un élément qui n'est pas un lien
+    .what = Un attribut hreflang a été trouvé sur un élément qui n'est pas <a>, <area> ou <link>. hreflang n'a de sens que sur les éléments de lien.
     .why = hreflang ne fonctionne que sur les liens
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Déplacez hreflang uniquement sur les éléments anchor
@@ -1220,7 +1220,7 @@ ErrHreflangNotOnLink =
 
 ErrHtmlLangEmpty =
     .title = L'élément HTML a un attribut lang présent mais sans valeur (lang=\"\"), empêchant les lecteurs d'écran de déterminer la langue de la page
-    .what = L'élément HTML a un attribut lang présent mais sans valeur (lang=\"\"), empêchant les lecteurs d'écran de déterminer la langue de la page
+    .what = L'élément <html> a un attribut lang, mais sa valeur est une chaîne vide (lang=""). Les technologies d'assistance traitent cela comme « aucune langue déclarée ».
     .why = Un attribut lang vide est pire qu'aucun attribut lang car il indique explicitement aux technologies d'assistance qu'aucune langue n'est spécifiée, pouvant potentiellement causer aux lecteurs d'écran d'utiliser des règles de prononciation incorrectes ou d'échouer à changer de synthétiseur de langue. Cela peut rendre le contenu complètement inintelligible lorsqu'il est lu à haute voix.
     .who = Utilisateurs aveugles et malvoyants utilisant des lecteurs d'écran qui ont besoin d'une identification de langue appropriée pour une prononciation correcte, utilisateurs multilingues qui s'appuient sur le changement automatique de langue dans les technologies d'assistance, utilisateurs avec dyslexie utilisant des outils de lecture qui dépendent des paramètres de langue, et utilisateurs de services de traduction
     .remediation = Ajoutez un code de langue valide à l'attribut lang (par ex., lang=\"en\" pour l'anglais, lang=\"es\" pour l'espagnol, lang=\"fr\" pour le français). Utilisez le code à deux lettres ISO 639-1 correct ou le code à trois lettres ISO 639-2. Pour l'élément HTML, spécifiez toujours la langue principale du document. Si la langue est vraiment inconnue, supprimez entièrement l'attribut lang plutôt que de le laisser vide.
@@ -1228,14 +1228,14 @@ ErrHtmlLangEmpty =
 
 ErrIframeWithNoTitleAttr =
     .title = L'élément iframe ne contient pas l'attribut title requis
-    .what = L'élément iframe ne contient pas l'attribut title requis
+    .what = Un élément <iframe> n'a pas d'attribut title ; les lecteurs d'écran ne peuvent donc pas décrire le contenu du cadre intégré.
     .why = Les iframes intègrent du contenu externe comme des vidéos, cartes ou formulaires dans votre page. Sans attribut title, les utilisateurs de lecteurs d'écran n'entendent que « iframe » sans indication du contenu qu'elle contient. C'est comme avoir une porte sans étiquette - les utilisateurs ne savent pas ce qu'il y a derrière. Ils doivent entrer dans l'iframe et explorer son contenu pour comprendre son objectif, ce qui prend du temps et peut être déroutant si le contenu de l'iframe manque de contexte. Pour les pages avec plusieurs iframes, les utilisateurs ne peuvent pas les distinguer ou décider lesquelles valent la peine d'être explorées.
     .who = Utilisateurs de lecteurs d'écran qui ont besoin de comprendre ce que contient chaque iframe avant de décider d'interagir avec elle, utilisateurs de clavier naviguant à travers les iframes qui ont besoin de contexte sur le contenu intégré, utilisateurs avec des handicaps cognitifs qui ont besoin d'un étiquetage clair de toutes les régions de la page, et utilisateurs avec des connexions lentes qui peuvent subir des retards de chargement du contenu iframe
     .remediation = Ajoutez un attribut title à chaque iframe qui décrit de manière concise son contenu ou son objectif (ex. : title=\"Vidéo YouTube : Démonstration produit\", title=\"Google Maps : Localisation bureau\", title=\"Formulaire de paiement\"). Le titre doit être unique s'il y a plusieurs iframes. Gardez-le bref mais suffisamment descriptif pour que les utilisateurs comprennent ce que contient l'iframe sans avoir à y entrer. Pour les iframes décoratives (rares), vous pouvez utiliser title=\"\" et ajouter tabindex=\"-1\" pour les retirer de l'ordre de tabulation.
 
 ErrImageAltContainsHTML =
     .title = Le texte alternatif de l'image contient des balises de marquage HTML
-    .what = Le texte alternatif de l'image contient des balises de marquage HTML
+    .what = L'attribut alt d'une image contient des balises HTML littérales (par exemple, « <b>logo</b> »). alt est un attribut de texte brut — le balisage est annoncé tel quel par certains lecteurs d'écran.
     .why = Le HTML dans le texte alternatif n'est pas analysé, donc les lecteurs d'écran liront le marquage HTML comme des caractères littéraux. Les utilisateurs entendront les crochets angulaires annoncés comme \"inférieur à\" ou \"supérieur à\" et les noms de balises épelés, créant une expérience confuse. Par exemple, alt=\"<b>Photo d'équipe</b>\" serait lu comme \"inférieur à b supérieur à Photo d'équipe inférieur à barre oblique b supérieur à\".
     .who = Utilisateurs aveugles et malvoyants utilisant des lecteurs d'écran qui entendront des caractères et mots sans sens entremêlés avec le texte alternatif réel, rendant difficile ou impossible la compréhension du contenu de l'image
     .remediation = Supprimez tout marquage HTML des attributs alt et utilisez uniquement du texte brut. Si le formatage ou la structure est important à transmettre, décrivez-le en mots plutôt qu'en utilisant du marquage (ex: au lieu de \"<em>Important</em>\" utilisez \"Important, mis en emphase\").
@@ -1243,7 +1243,7 @@ ErrImageAltContainsHTML =
 
 ErrImageWithEmptyAlt =
     .title = L'attribut alt de l'image contient uniquement des caractères d'espacement (espaces, tabulations, sauts de ligne), ne fournissant aucun nom accessible
-    .what = L'attribut alt de l'image contient uniquement des caractères d'espacement (espaces, tabulations, sauts de ligne), ne fournissant aucun nom accessible
+    .what = Un élément <img> possède un attribut alt, mais sa valeur n'est composée que d'espaces (espaces, tabulations ou sauts de ligne). Ce n'est pas la même chose que alt="" et le traitement par les technologies d'assistance peut être incohérent.
     .why = Les attributs alt contenant uniquement des espaces ne parviennent pas à fournir un nom accessible pour l'image, ce qui amène les lecteurs d'écran à annoncer des informations de repli peu utiles comme le nom de fichier de l'image ou \"graphique sans étiquette\". Contrairement à un alt=\"\" correctement vide qui signale un contenu décoratif, un texte alternatif composé d'espaces crée une ambiguïté - les utilisateurs ne peuvent pas déterminer s'ils manquent des informations importantes ou si l'image est décorative.
     .who = Utilisateurs aveugles et malvoyants utilisant des lecteurs d'écran qui ne peuvent pas déterminer le but ou le contenu de l'image, utilisateurs avec des handicaps cognitifs qui dépendent d'un étiquetage clair pour comprendre le contenu de la page, et utilisateurs de logiciels de contrôle vocal qui ne peuvent pas référencer les images sans noms accessibles
     .remediation = Déterminez le but de l'image et appliquez un texte alternatif approprié - pour les images informatives, ajoutez un texte alternatif descriptif qui transmet la même information, pour les images décoratives utilisez alt=\"\" (sans espaces) pour les marquer correctement comme décoratives, pour les images fonctionnelles décrivez l'action ou la destination et non l'apparence, et supprimez tous les attributs alt contenant uniquement des espaces qui servent d'espaces réservés inefficaces
@@ -1283,7 +1283,7 @@ ErrInaccessibleFont =
 
 ErrInappropriateMenuRole =
     .title = Rôle menu utilisé de manière inappropriée pour des liens de navigation
-    .what = Rôle menu utilisé de manière inappropriée pour des liens de navigation
+    .what = role="menu" ou role="menuitem" est utilisé sur de simples liens de navigation. Le modèle de rôle menu est conçu pour les menus de type application (avec navigation par flèches), et non pour les listes de navigation de site ordinaires.
     .why = Le rôle menu est destiné aux menus d'application, pas à la navigation. Une mauvaise utilisation provoque un comportement clavier incorrect et des annonces erronées par les lecteurs d'écran.
     .who = Utilisateurs de lecteurs d'écran s'attendant au comportement d'un menu d'application, utilisateurs de clavier s'attendant à la navigation par touches fléchées.
     .remediation = Utiliser l'élément nav ou role=\"navigation\" pour la navigation du site, réserver role=\"menu\" pour les véritables menus d'application avec les motifs ARIA appropriés.
@@ -1291,7 +1291,7 @@ ErrInappropriateMenuRole =
 
 ErrIncorrectlyFormattedPrimaryLang =
     .title = Code de langue mal formaté
-    .what = Code de langue mal formaté
+    .what = Le code de langue principale de la page (par exemple, sur <html lang="...">) est structurellement mal formé — nombre de caractères incorrect, casse incorrecte d'une sous-balise de région ou séparateur invalide.
     .why = Les codes mal formés peuvent ne pas fonctionner correctement
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Utilisez le format correct : \"en-US\" ou \"en\"
@@ -1299,7 +1299,7 @@ ErrIncorrectlyFormattedPrimaryLang =
 
 ErrInfiniteAnimation =
     .title = L'animation '%(animationName)s' s'exécute indéfiniment sans contrôles de pause
-    .what = L'animation '%(animationName)s' s'exécute indéfiniment sans contrôles de pause
+    .what = L'animation CSS « {"{"}animationName{"}"} » s'exécute avec animation-iteration-count: infinite (ou équivalent) et la page ne fournit ni contrôle pause/arrêt ni prise en charge de prefers-reduced-motion.
     .why = Les animations continues peuvent déclencher des crises, causer des distractions et rendre le contenu inutilisable pour de nombreux utilisateurs. Cette animation est configurée pour se répéter indéfiniment (animation-iteration-count: infinite).
     .who = Utilisateurs avec des troubles vestibulaires, utilisateurs avec TDAH, utilisateurs avec épilepsie photosensible, utilisateurs avec des handicaps cognitifs.
     .remediation = Fournissez des contrôles de pause/arrêt pour toutes les animations, respectez les paramètres prefers-reduced-motion, ou limitez animation-iteration-count à un nombre fini. CSS actuel :\n%(animationCSS)s
@@ -1355,7 +1355,7 @@ ErrInputSingleSideBoxShadow =
 
 ErrInteractiveElementIssue =
     .title = L'élément %(element_tag)s interactif \"%(element_text)s\" présente des problèmes d'accessibilité
-    .what = L'élément %(element_tag)s interactif \"%(element_text)s\" présente des problèmes d'accessibilité
+    .what = Un élément interactif <{"{"}element_tag{"}"}> contenant le texte « {"{"}element_text{"}"} » présente un ou plusieurs problèmes d'accessibilité (par exemple, rôle manquant, nom accessible manquant ou pas de gestionnaire clavier). Les problèmes spécifiques sont listés dans la fiche complète de l'élément.
     .why = Les éléments interactifs sans balisage sémantique approprié ou support clavier créent des barrières pour les utilisateurs de technologies d'assistance
     .who = Utilisateurs de clavier, utilisateurs de lecteurs d'écran, utilisateurs de contrôle vocal
     .remediation = Utilisez des éléments HTML sémantiques ou ajoutez des rôles ARIA appropriés et un support clavier
@@ -1363,7 +1363,7 @@ ErrInteractiveElementIssue =
 
 ErrInvalidAriaLevel =
     .title = Valeur aria-level invalide (pas entre 1 et 6)
-    .what = Valeur aria-level invalide (pas entre 1 et 6)
+    .what = La valeur aria-level d'un élément est en dehors de la plage valide pour un niveau de titre — les valeurs doivent être des entiers de 1 à 6.
     .why = Les niveaux invalides brisent la hiérarchie des titres
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Utilisez uniquement les valeurs aria-level de 1 à 6
@@ -1379,7 +1379,7 @@ ErrInvalidLangChange =
 
 ErrInvalidLanguageCode =
     .title = L'attribut de langue contient un code invalide '%(found)s' qui ne se conforme pas aux normes ISO 639
-    .what = L'attribut de langue contient un code invalide '%(found)s' qui ne se conforme pas aux normes ISO 639
+    .what = Un attribut de langue contient la valeur « {"{"}found{"}"} », qui n'est pas conforme à BCP 47 / ISO 639 (par exemple, longueur incorrecte, sous-balise inconnue, structure mal formée).
     .why = Le code de langue '%(found)s' n'est pas reconnu comme un code de langue ISO 639 valide. Cela empêche les technologies d'assistance de traiter correctement le contenu, causant aux lecteurs d'écran de mal prononcer les mots, d'utiliser des modèles d'intonation incorrects, ou d'échouer à changer de moteur de langue. Cela peut rendre le contenu difficile ou impossible à comprendre lorsqu'il est lu à voix haute, surtout si le contenu est dans une langue non anglaise mais est lu avec les règles de prononciation anglaises.
     .who = Utilisateurs aveugles et malvoyants s'appuyant sur les lecteurs d'écran pour une prononciation précise, utilisateurs multilingues qui ont besoin d'une identification appropriée de la langue pour la compréhension, utilisateurs avec des troubles de la lecture utilisant des outils de synthèse vocale, et utilisateurs internationaux accédant au contenu dans plusieurs langues
     .remediation = Remplacez '%(found)s' par un code de langue ISO 639-1 ou ISO 639-2 valide. Si '%(found)s' semble être de l'anglais, utilisez \"en\". Corrections courantes : \"english\" → \"en\", \"spanish\" → \"es\", \"french\" → \"fr\", \"deutsch\" → \"de\", \"eng\" → \"en\". Pour les variantes régionales, utilisez le format BCP 47 (par ex., \"en-US\", \"en-GB\", \"es-MX\"). Consultez le registre officiel ISO 639 pour le code correct.
@@ -1387,7 +1387,7 @@ ErrInvalidLanguageCode =
 
 ErrInvalidTabindex =
     .title = L'élément a un attribut tabindex avec une valeur invalide (non numérique ou décimale)
-    .what = L'élément a un attribut tabindex avec une valeur invalide (non numérique ou décimale)
+    .what = L'attribut tabindex d'un élément a une valeur qui n'est pas un entier valide (par exemple, « true », « none », « 0.5 » ou vide).
     .why = Les valeurs tabindex invalides sont ignorées par les navigateurs, rendant potentiellement les éléments interactifs inaccessibles au clavier ou créant un comportement de focus imprévisible. Cela peut complètement bloquer les utilisateurs de clavier d'accéder aux fonctionnalités. L'élément pourrait être ignoré pendant la navigation par tabulation, recevoir le focus de manière inattendue, ou se comporter différemment selon les navigateurs.
     .who = Utilisateurs de clavier qui ne peuvent pas atteindre ou interagir avec l'élément, utilisateurs de lecteurs d'écran qui pourraient manquer des contrôles interactifs importants, utilisateurs avec des handicaps moteurs comptant sur la navigation au clavier, et utilisateurs qui ne peuvent pas utiliser une souris
     .remediation = Utilisez uniquement des valeurs entières valides pour tabindex : \"0\" pour inclure dans l'ordre de tabulation naturel, \"-1\" pour retirer de l'ordre de tabulation mais permettre le focus programmatique, ou supprimez entièrement l'attribut tabindex si l'élément ne doit pas être focalisable. N'utilisez jamais de valeurs décimales (1.5), de texte (\"first\"), ou de valeurs vides (tabindex=\"\").
@@ -1395,7 +1395,7 @@ ErrInvalidTabindex =
 
 ErrLabelContainsMultipleFields =
     .title = Une seule étiquette contient %(count)s champs de formulaire
-    .what = Une seule étiquette contient %(count)s champs de formulaire
+    .what = Un seul élément <label> englobe {"{"}count{"}"} champs de formulaire, ce qui rend ambigu le champ auquel le texte de l'étiquette s'applique.
     .why = Une étiquette contenant %(count)s champs crée une ambiguïté sur le champ qu'elle décrit. Les lecteurs d'écran associeront cette étiquette avec tous les %(count)s champs, rendant peu clair quel champ est lequel.
     .who = Utilisateurs de lecteurs d'écran qui ont besoin d'une identification claire des champs, utilisateurs avec des handicaps cognitifs qui ont besoin de relations simples
     .remediation = Divisez l'étiquette pour que chacun des %(count)s champs ait sa propre étiquette dédiée. Utilisez fieldset et legend pour les champs groupés s'ils sont liés.
@@ -1403,7 +1403,7 @@ ErrLabelContainsMultipleFields =
 
 ErrLabelMismatchOfAccessibleNameAndLabelText =
     .title = Le nom accessible ne correspond pas au libellé visible
-    .what = Le nom accessible ne correspond pas au libellé visible
+    .what = Le nom accessible calculé d'un champ ne commence pas par le texte de l'étiquette visible. Les utilisateurs de commande vocale qui prononcent le texte visible peuvent ne pas réussir à activer le champ.
     .why = Déroutant pour les utilisateurs de commande vocale
     .who = Utilisateurs de commande vocale
     .remediation = Faire correspondre le nom accessible au texte visible
@@ -1467,7 +1467,7 @@ ErrLinkImageNoFocusIndicator =
 
 ErrLinkOpensNewWindowNoWarning =
     .title = Le lien s'ouvre dans une nouvelle fenêtre/onglet sans avertir les utilisateurs
-    .what = Le lien s'ouvre dans une nouvelle fenêtre/onglet sans avertir les utilisateurs
+    .what = Un lien utilise target="_blank" (ou s'ouvre autrement dans un nouvel onglet/une nouvelle fenêtre) sans aucun texte, icône ou aria-label indiquant que le contexte de navigation va changer.
     .why = L'ouverture inattendue de nouvelles fenêtres peut désorienter les utilisateurs, en particulier ceux utilisant des lecteurs d'écran ou un grossissement. Les utilisateurs peuvent ne pas réaliser qu'une nouvelle fenêtre s'est ouverte et être confus lorsque le bouton retour ne fonctionne pas. Ceci est particulièrement problématique pour les utilisateurs avec des handicaps cognitifs ou ceux peu familiers avec les comportements des navigateurs.
     .who = Utilisateurs de lecteurs d'écran qui peuvent ne pas remarquer le changement de contexte, utilisateurs avec des handicaps cognitifs qui peuvent être désorientés, utilisateurs avec des handicaps moteurs qui ont des difficultés à gérer plusieurs fenêtres, et utilisateurs novices en informatique
     .remediation = Ajoutez du texte visible ou une icône indiquant que le lien s'ouvre dans une nouvelle fenêtre. Incluez cette information dans le nom accessible (par ex., \"Rapport annuel (s'ouvre dans une nouvelle fenêtre)\"). Considérez si l'ouverture dans une nouvelle fenêtre est nécessaire - il est souvent préférable d'ouvrir dans la même fenêtre et de laisser les utilisateurs contrôler ce comportement.
@@ -1483,7 +1483,7 @@ ErrLinkOutlineWidthInsufficient =
 
 ErrLinkTextNotDescriptive =
     .title = Le texte du lien ne décrit pas adéquatement la destination ou l'objectif du lien
-    .what = Le texte du lien ne décrit pas adéquatement la destination ou l'objectif du lien
+    .what = Le texte d'un lien (par exemple, « cliquez ici », « plus », « en savoir plus ») ne décrit pas sa destination ou son objectif lorsqu'il est lu hors contexte, ce qui est la manière dont les utilisateurs de lecteurs d'écran rencontrent généralement les liens.
     .why = Les utilisateurs doivent comprendre où un lien les mènera avant de l'activer. Un texte de lien vague comme \"cliquez ici\" ou \"lire plus\" ne fournit aucune information sur la destination. Les utilisateurs de lecteurs d'écran naviguent souvent en affichant une liste de tous les liens, où un texte non descriptif devient dénué de sens hors contexte.
     .who = Utilisateurs de lecteurs d'écran naviguant par liste de liens, utilisateurs avec des handicaps cognitifs qui ont besoin d'indices de navigation clairs, et utilisateurs avec des handicaps moteurs qui doivent prendre des décisions éclairées avant d'activer les liens
     .remediation = Rédigez un texte de lien qui décrit la destination ou l'action (ex. \"Télécharger le rapport annuel 2024\" au lieu de \"Télécharger\"). Évitez les phrases génériques. Si les contraintes de conception exigent un texte de lien court, fournissez un contexte supplémentaire via aria-label ou aria-describedby, ou assurez-vous que le texte environnant fournit le contexte.
@@ -1499,7 +1499,7 @@ ErrListitemEmpty =
 
 ErrMainLandmarkHasAriaLabelAndAriaLabelledByAttrs =
     .title = La région repère main a à la fois les attributs aria-label et aria-labelledby
-    .what = La région repère main a à la fois les attributs aria-label et aria-labelledby
+    .what = L'élément <main> (ou role="main") possède à la fois les attributs aria-label et aria-labelledby, alors qu'une seule méthode d'étiquetage est nécessaire.
     .why = Des méthodes d'étiquetage conflictuelles peuvent causer de la confusion
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Utiliser une seule méthode d'étiquetage - soit aria-label soit aria-labelledby
@@ -1507,7 +1507,7 @@ ErrMainLandmarkHasAriaLabelAndAriaLabelledByAttrs =
 
 ErrMainLandmarkHasTabindexOfZeroCanOnlyHaveMinusOneAtMost =
     .title = La région repère principale a tabindex=\"0\" ce qui est inapproprié
-    .what = La région repère principale a tabindex=\"0\" ce qui est inapproprié
+    .what = L'élément <main> a tabindex="0", ce qui l'insère dans l'ordre de tabulation du clavier. Les repères ne devraient pas être eux-mêmes des arrêts de tabulation — ils peuvent tout au plus utiliser tabindex="-1" pour recevoir le focus par programmation.
     .why = Les régions repères ne doivent pas être dans l'ordre de tabulation
     .who = Utilisateurs de clavier
     .remediation = Supprimez tabindex ou utilisez tabindex=\"-1\" si le focus programmatique est nécessaire
@@ -1515,15 +1515,15 @@ ErrMainLandmarkHasTabindexOfZeroCanOnlyHaveMinusOneAtMost =
 
 ErrMainLandmarkIsHidden =
     .title = La région repère principale est masquée
-    .what = La région repère principale est masquée
+    .what = Un élément avec role="main" ou un élément <main> existe, mais est masqué via display:none, visibility:hidden, l'attribut hidden ou aria-hidden="true".
     .why = Masquer le contenu principal va à l'encontre du but de la région repère
-    .who = Tous les utilisateurs
+    .who = Les utilisateurs de lecteurs d'écran qui s'appuient sur le repère main pour passer outre le contenu répété d'en-tête/navigation, et les utilisateurs du clavier qui utilisent des liens « aller au contenu principal » ciblant un élément masqué
     .remediation = S'assurer que la région repère principale est visible ou la supprimer si elle n'est pas nécessaire
     .what-generic = La région repère principale est masquée
 
 ErrMainLandmarkMayNotbeChildOfAnotherLandmark =
     .title = Région repère principale imbriquée dans une autre région repère
-    .what = Région repère principale imbriquée dans une autre région repère
+    .what = L'élément <main> (ou role="main") apparaît imbriqué dans un autre repère tel que <nav>, <aside> ou <header>. <main> doit être un repère de niveau racine.
     .why = L'imbrication invalide de régions repères brise la structure
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Déplacez l'élément main en dehors des autres régions repères
@@ -1531,7 +1531,7 @@ ErrMainLandmarkMayNotbeChildOfAnotherLandmark =
 
 ErrMapAriaHidden =
     .title = Élément map masqué aux technologies d'assistance avec aria-hidden
-    .what = Élément map masqué aux technologies d'assistance avec aria-hidden
+    .what = Une carte interactive avec aria-hidden="true" contient des éléments focusables que les utilisateurs du clavier peuvent atteindre mais que les utilisateurs de lecteurs d'écran ne peuvent pas percevoir — créant un « piège à focus silencieux ».
     .why = Masquer complètement les cartes supprime l'accès aux informations géographiques ou spatiales importantes pour les utilisateurs de lecteurs d'écran.
     .who = Utilisateurs aveugles et malvoyants qui ont besoin d'alternatives textuelles pour les informations de carte.
     .remediation = Supprimez aria-hidden des cartes, fournissez des alternatives textuelles appropriées et des contrôles accessibles à la place.
@@ -1547,7 +1547,7 @@ ErrMapGenericName =
 
 ErrMapMissingTitle =
     .title = Iframe de carte manque l'attribut title
-    .what = Iframe de carte manque l'attribut title
+    .what = Un <iframe> intégrant une carte (par exemple, Google Maps) n'a pas d'attribut title ; les technologies d'assistance ne peuvent donc pas décrire le but du cadre.
     .why = Sans titres, les utilisateurs de lecteurs d'écran ne savent pas ce que contient ou représente la carte intégrée.
     .who = Utilisateurs de lecteurs d'écran qui ont besoin de comprendre l'objectif du contenu intégré.
     .remediation = Ajouter un attribut title descriptif aux iframes de carte (ex. : title=\"Carte montrant l'emplacement du bureau\").
@@ -1563,7 +1563,7 @@ ErrMapRolePresentation =
 
 ErrMenuWithoutARIA =
     .title = Le menu de navigation manque de balisage ARIA approprié
-    .what = Le menu de navigation manque de balisage ARIA approprié
+    .what = Un menu de navigation (par exemple, un menu déroulant ou un méga-menu) a été détecté sans le modèle ARIA approprié — pas de structure role="menu"/role="menuitem" et pas de gestion clavier par tabindex itinérant.
     .why = Les lecteurs d'écran ne reconnaîtront pas ceci comme un menu de navigation
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Ajoutez role=\"navigation\" au conteneur et les attributs ARIA appropriés pour les éléments de menu
@@ -1571,7 +1571,7 @@ ErrMenuWithoutARIA =
 
 ErrMissingAccessibleName =
     .title = L'élément interactif n'a pas de nom accessible
-    .what = L'élément interactif n'a pas de nom accessible
+    .what = Un élément interactif (bouton, lien, widget personnalisé) n'a aucun nom accessible dérivable du texte visible, aria-label, aria-labelledby, texte alt ou élément enfant <title>.
     .why = Sans noms accessibles, les utilisateurs de lecteurs d'écran ne peuvent pas identifier ou interagir avec les contrôles.
     .who = Utilisateurs de lecteurs d'écran qui ne peuvent pas identifier les contrôles sans nom, utilisateurs de commande vocale qui ne peuvent pas cibler les éléments.
     .remediation = Ajoutez aria-label, aria-labelledby, ou des étiquettes de texte visibles à tous les éléments interactifs.
@@ -1579,7 +1579,7 @@ ErrMissingAccessibleName =
 
 ErrMissingCloseButton =
     .title = Modale ou boîte de dialogue sans bouton de fermeture
-    .what = Modale ou boîte de dialogue sans bouton de fermeture
+    .what = Une fenêtre modale ou boîte de dialogue est ouverte, mais ne possède aucun contrôle de fermeture visible (pas de bouton « X », pas de « Annuler », pas de « Fermer »).
     .why = Sans bouton de fermeture, les utilisateurs peuvent se retrouver piégés dans les modales sans moyen de retourner au contenu principal.
     .who = Utilisateurs de clavier qui ne peuvent pas utiliser la touche échap, utilisateurs de lecteurs d'écran qui ont besoin de contrôles de fermeture explicites.
     .remediation = Ajouter un bouton de fermeture visible à toutes les modales et boîtes de dialogue, s'assurer qu'il est accessible au clavier et correctement étiquetté.
@@ -1595,7 +1595,7 @@ ErrMissingDocumentType =
 
 ErrMissingInteractiveRole =
     .title = L'élément %(element_tag)s interactif manque d'un rôle ARIA approprié
-    .what = L'élément %(element_tag)s interactif manque d'un rôle ARIA approprié
+    .what = Un élément interactif <{"{"}element_tag{"}"}> (avec des gestionnaires de clic ou un autre comportement interactif) n'a aucun rôle ARIA déclarant ce qu'il est — les lecteurs d'écran ne peuvent pas indiquer aux utilisateurs s'il s'agit d'un bouton, d'un lien, d'un commutateur, etc.
     .why = Les lecteurs d'écran n'annonceront pas ceci comme un contrôle interactif
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Ajoutez un rôle ARIA approprié (button, link, checkbox, etc.) à l'élément
@@ -1603,7 +1603,7 @@ ErrMissingInteractiveRole =
 
 ErrMissingMainLandmark =
     .title = Page manquant de région repère principale pour le contenu primaire
-    .what = Page manquant de région repère principale pour le contenu primaire
+    .what = La page n'a aucun élément avec role="main" ni aucun élément <main> identifiant la région de contenu principale.
     .why = Sans région repère principale, les utilisateurs de lecteurs d'écran ne peuvent pas naviguer rapidement vers la zone de contenu primaire.
     .who = Utilisateurs de lecteurs d'écran qui naviguent par régions repères, utilisateurs de clavier utilisant la navigation par régions repères.
     .remediation = Ajouter un élément <main> ou role=\"main\" pour identifier la zone de contenu primaire de chaque page.
@@ -1619,7 +1619,7 @@ ErrMissingTabindex =
 
 ErrModalMissingClose =
     .title = La boîte de dialogue modale n'a aucun moyen de la fermer
-    .what = La boîte de dialogue modale n'a aucun moyen de la fermer
+    .what = Une fenêtre modale n'a aucun mécanisme pour la fermer — pas de bouton de fermeture, pas de gestionnaire de clic sur la superposition et pas de prise en charge de la touche Échap.
     .why = Les utilisateurs se retrouvent piégés dans la modale sans moyen de retourner au contenu principal.
     .who = Tous les utilisateurs, en particulier les utilisateurs de clavier qui ne peuvent pas cliquer à l'extérieur pour fermer.
     .remediation = Fournir au moins un moyen clair de fermer les modales (bouton fermer, touche Échap, bouton annuler).
@@ -1643,7 +1643,7 @@ ErrModalNoHeading =
 
 ErrModalWithoutEscape =
     .title = La modale ne peut pas être fermée avec la touche Échap
-    .what = La modale ne peut pas être fermée avec la touche Échap
+    .what = Une fenêtre modale ne se ferme pas lorsque la touche Échap est pressée, ce qui rompt une attente fondamentale du clavier WCAG pour les superpositions pouvant être rejetées.
     .why = La touche Échap est le raccourci clavier attendu pour fermer les modales ; sans elle, les utilisateurs de clavier peuvent se retrouver piégés.
     .who = Utilisateurs de clavier qui s'attendent au comportement standard des modales, utilisateurs expérimentés qui s'appuient sur les raccourcis clavier.
     .remediation = Implémenter un gestionnaire de touche Échap pour fermer les modales, s'assurer qu'il fonctionne même lorsque le focus est dans le contenu de la modale.
@@ -1675,7 +1675,7 @@ WarnGlobalKeyboardHandlerPresent =
 
 ErrMultipleBannerLandmarks =
     .title = Multiples régions repères bannière trouvées
-    .what = Multiples régions repères bannière trouvées
+    .what = Plus d'un repère banner a été trouvé au niveau racine de la page. La spécification ARIA n'autorise qu'un seul repère banner par page.
     .why = Multiples en-têtes confondent la structure de la page
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Utilisez une seule région repère bannière
@@ -1691,7 +1691,7 @@ ErrMultipleBannerLandmarksOnPage =
 
 ErrMultipleContentinfoLandmarks =
     .title = Plusieurs régions repères contentinfo trouvées
-    .what = Plusieurs régions repères contentinfo trouvées
+    .what = Plus d'un repère contentinfo a été trouvé au niveau racine de la page. La spécification ARIA n'autorise qu'un seul repère contentinfo (pied de page) par page.
     .why = Plusieurs pieds de page confondent la structure de la page
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Utilisez une seule région repère contentinfo
@@ -1707,7 +1707,7 @@ ErrMultipleContentinfoLandmarksOnPage =
 
 ErrMultipleH1 =
     .title = La page contient %(count)s éléments h1 au lieu d'un seul
-    .what = La page contient %(count)s éléments h1 au lieu d'un seul
+    .what = Plus d'un élément <h1> a été trouvé sur la page. Les WCAG et la bonne pratique de plan de document prévoient exactement un titre de premier niveau par page.
     .why = Avoir %(count)s éléments h1 crée une confusion sur le sujet principal de la page. Chaque h1 représente un titre primaire, et plusieurs h1 suggèrent plusieurs sujets principaux, brisant la hiérarchie du document. Les utilisateurs de lecteurs d'écran ne sauront pas quel h1 représente le véritable sujet de la page.
     .who = Utilisateurs de lecteurs d'écran qui s'attendent à un seul h1 pour identifier le sujet de la page, utilisateurs naviguant par titres qui voient plusieurs éléments de \"niveau supérieur\", SEO et moteurs de recherche qui cherchent un seul sujet principal
     .remediation = Conserver seulement un h1 qui représente le sujet principal de la page. Changer les autres éléments h1 en h2 ou niveaux inférieurs appropriés selon leur relation au sujet principal.
@@ -1723,7 +1723,7 @@ ErrMultipleH1HeadingsOnPage =
 
 ErrMultipleMainLandmarks =
     .title = Plusieurs régions repères principales trouvées sur la page
-    .what = Plusieurs régions repères principales trouvées sur la page
+    .what = Plus d'un élément <main> (ou role="main") a été trouvé sur la page. Il ne doit y avoir qu'un seul repère main identifiant le contenu principal.
     .why = La région repère principale doit contenir LE contenu principal de la page - avoir plusieurs régions repères principales revient à avoir plusieurs sections \"Chapitre 1\" dans un livre. Cela embrouille la structure de la page et annule l'objectif des régions repères. Les utilisateurs de lecteurs d'écran s'attendant à aller au contenu principal ne sauront pas quelle région repère contient le véritable contenu principal. Ils pourraient atterrir dans la mauvaise section, manquer du contenu important, ou devoir vérifier plusieurs zones \"principales\". Cette ambiguïté rend le système de régions repères peu fiable et force les utilisateurs à revenir à la navigation linéaire.
     .who = Utilisateurs de lecteurs d'écran s'appuyant sur la région repère principale pour passer au contenu principal, utilisateurs de clavier utilisant des extensions de navigation par régions repères, utilisateurs avec des handicaps cognitifs qui ont besoin d'une structure de page claire et non ambiguë, et développeurs essayant de comprendre la structure de page prévue
     .remediation = Utilisez un seul élément <main> ou role=\"main\" par page. Identifiez quel contenu est véritablement le contenu principal et unique pour cette page et enveloppez uniquement celui-ci dans la région repère principale. Si vous avez plusieurs sections importantes, utilisez d'autres régions repères appropriées (article, section) ou des en-têtes pour les structurer dans la région repère principale unique. La région principale doit contenir tout le contenu unique de la page mais exclure les éléments répétés comme les en-têtes, navigation et pieds de page.
@@ -1747,7 +1747,7 @@ ErrMultiplePageTitles =
 
 ErrNativeVideoMissingControls =
     .title = Élément vidéo HTML5 natif sans attribut controls
-    .what = Élément vidéo HTML5 natif sans attribut controls
+    .what = Un élément HTML5 <video> ne possède pas d'attribut controls ni d'interface personnalisée fournissant des contrôles de lecture/pause/volume.
     .why = Sans contrôles, les utilisateurs ne peuvent pas lire, mettre en pause ou ajuster la lecture vidéo.
     .who = Tous les utilisateurs qui ont besoin de contrôler la lecture vidéo, en particulier les utilisateurs de clavier et de lecteurs d'écran.
     .remediation = Ajouter l'attribut controls à tous les éléments vidéo, ou fournir des contrôles accessibles personnalisés.
@@ -1755,7 +1755,7 @@ ErrNativeVideoMissingControls =
 
 ErrNavLandmarkAccessibleNameIsBlank =
     .title = La région repère navigation a un nom accessible vide
-    .what = La région repère navigation a un nom accessible vide
+    .what = Un repère de navigation (<nav> ou role="navigation") a un aria-label ou aria-labelledby qui se résout à une chaîne vide ; les lecteurs d'écran ne peuvent donc pas distinguer cette navigation des autres.
     .why = Plusieurs zones nav nécessitent des étiquettes
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Ajouter aria-label comme \"Navigation principale\" ou \"Navigation pied de page\"
@@ -1763,15 +1763,15 @@ ErrNavLandmarkAccessibleNameIsBlank =
 
 ErrNavLandmarkContainsOnlyWhiteSpace =
     .title = La région repère navigation ne contient que des espaces
-    .what = La région repère navigation ne contient que des espaces
+    .what = Un élément <nav> (ou role="navigation") existe, mais son contenu n'est constitué que d'espaces (espaces, tabulations, sauts de ligne) sans liens ni texte réels.
     .why = Une navigation contenant uniquement des espaces n'est pas fonctionnelle
-    .who = Tous les utilisateurs
+    .who = Les utilisateurs de lecteurs d'écran qui entendent l'annonce d'une navigation vide, et les utilisateurs du clavier qui tabulent dans un conteneur vide sans destination
     .remediation = Ajouter des liens de navigation ou supprimer la région repère
     .what-generic = La région repère navigation ne contient que des espaces
 
 ErrNavLandmarkHasAriaLabelAndAriaLabelledByAttrs =
     .title = La région repère de navigation a à la fois aria-label et aria-labelledby
-    .what = La région repère de navigation a à la fois aria-label et aria-labelledby
+    .what = Un repère de navigation possède à la fois les attributs aria-label et aria-labelledby. Utilisez une seule méthode d'étiquetage par élément.
     .why = Méthodes d'étiquetage conflictuelles
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Utiliser une seule méthode d'étiquetage
@@ -1779,7 +1779,7 @@ ErrNavLandmarkHasAriaLabelAndAriaLabelledByAttrs =
 
 ErrNavMissingAccessibleName =
     .title = L'élément de navigation manque de nom accessible pour le distinguer
-    .what = L'élément de navigation manque de nom accessible pour le distinguer
+    .what = Un élément <nav> sur une page qui contient plusieurs repères de navigation n'a ni aria-label, ni aria-labelledby, ni aucune autre source de nom accessible pour le distinguer des autres.
     .why = Lorsque les pages ont plusieurs zones de navigation, les utilisateurs doivent pouvoir les distinguer.
     .who = Utilisateurs de lecteurs d'écran naviguant par régions repères, utilisateurs qui ont besoin de comprendre la structure de la page.
     .remediation = Ajouter aria-label ou aria-labelledby aux éléments nav pour identifier leur objectif (par ex., \"Navigation principale\", \"Fil d'Ariane\").
@@ -1795,7 +1795,7 @@ ErrNegativeTabIndex =
 
 ErrNegativeTabindex =
     .title = Tabindex négatif sur un élément interactif
-    .what = Tabindex négatif sur un élément interactif
+    .what = Un élément interactif a un tabindex négatif (par exemple, tabindex="-1"), ce qui le retire de l'ordre de tabulation au clavier alors qu'il reste visible et cliquable.
     .why = Élément retiré de l'ordre de tabulation
     .who = Utilisateurs de clavier
     .remediation = Utiliser tabindex=\"0\" pour les éléments interactifs
@@ -1803,7 +1803,7 @@ ErrNegativeTabindex =
 
 ErrNestedNavLandmarks =
     .title = Les régions repères navigation sont imbriquées
-    .what = Les régions repères navigation sont imbriquées
+    .what = Un élément <nav> (ou role="navigation") apparaît à l'intérieur d'un autre repère <nav>. L'imbrication de repères de navigation crée une structure ambiguë pour la navigation par repères.
     .why = Structure de navigation confuse
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Aplatir la structure de navigation
@@ -1811,7 +1811,7 @@ ErrNestedNavLandmarks =
 
 ErrNoAlt =
     .title = Image sans attribut alt
-    .what = Image sans attribut alt
+    .what = Un élément <img> ne possède aucun attribut alt (pas même alt="") ; les technologies d'assistance annoncent donc quelque chose comme le nom de fichier ou simplement « image » sans description.
     .why = Sans attribut alt, les lecteurs d'écran ne peuvent transmettre aucune information sur les images aux utilisateurs.
     .who = Utilisateurs aveugles et malvoyants utilisant des lecteurs d'écran, utilisateurs avec images désactivées.
     .remediation = Ajouter un attribut alt à tous les éléments img ; utiliser alt=\"\" pour les images décoratives, un texte descriptif pour les images informatives.
@@ -1819,7 +1819,7 @@ ErrNoAlt =
 
 ErrNoBannerLandmarkOnPage =
     .title = La page ne contient pas de région repère bannière pour identifier la région d'en-tête du site
-    .what = La page ne contient pas de région repère bannière pour identifier la zone d'en-tête du site
+    .what = La page ne contient aucun élément <header> au niveau racine ni aucun élément avec role="banner" ; la région d'en-tête du site n'est donc pas exposée en tant que repère.
     .why = La région repère bannière identifie l'en-tête du site qui contient généralement le logo du site, la navigation principale et la fonctionnalité de recherche. Ce contenu apparaît de manière cohérente sur toutes les pages et les utilisateurs s'attendent à le trouver en haut. Sans balisage bannière approprié, les utilisateurs de lecteurs d'écran ne peuvent pas accéder rapidement à la zone d'en-tête en utilisant les raccourcis de navigation par régions repères. Ils doivent plutôt naviguer linéairement dans tout le contenu ou deviner où commence et se termine le contenu de l'en-tête. Cela rend difficile l'accès à la navigation principale ou le retour à la page d'accueil via le lien du logo, tâches que les utilisateurs voyants peuvent effectuer instantanément en regardant le haut de la page.
     .who = Utilisateurs de lecteurs d'écran qui utilisent la navigation par régions repères pour accéder rapidement à la navigation du site et à l'image de marque, utilisateurs de clavier qui souhaitent naviguer efficacement vers les éléments d'en-tête, utilisateurs avec des handicaps cognitifs qui s'appuient sur une structure de page cohérente pour s'orienter, et utilisateurs malvoyants utilisant des loupes d'écran qui ont besoin de localiser rapidement les éléments de navigation
     .remediation = Utilisez l'élément HTML5 <header> pour l'en-tête de votre site (il a un rôle implicite de bannière lorsqu'il n'est pas imbriqué dans des éléments article, aside, main, nav ou section). Alternativement, ajoutez role=\"banner\" au conteneur contenant votre contenu d'en-tête. Il ne devrait généralement y avoir qu'une seule région repère bannière par page au niveau supérieur. Incluez le contenu à l'échelle du site comme le logo, la navigation principale et la recherche du site dans la région repère bannière.
@@ -1843,7 +1843,7 @@ ErrNoCurrentPageIndicatorScreenReader =
 
 ErrNoFocusIndicator =
     .title = L'élément interactif n'a pas d'indicateur de focus visible lorsqu'il est focalisé, rendant impossible le suivi de la navigation au clavier
-    .what = L'élément interactif n'a pas d'indicateur de focus visible lorsqu'il est focalisé, rendant impossible le suivi de la navigation au clavier
+    .what = Un élément interactif ne produit aucun changement visible lorsqu'il reçoit le focus clavier — aucun contour, bordure, fond ou ombre n'est appliqué via :focus.
     .why = Les indicateurs de focus montrent aux utilisateurs de clavier où ils se trouvent sur la page - sans eux, c'est comme naviguer dans l'obscurité. Les utilisateurs ne peuvent pas voir quel élément sera activé lorsqu'ils appuient sur Entrée ou Espace, rendant impossible une navigation confiante. Ils pourraient activer le mauvais contrôle, ignorer du contenu important, ou se perdre complètement sur la page. Ceci est particulièrement critique pour les formulaires où activer le mauvais bouton pourrait soumettre des données incomplètes ou annuler une opération.
     .who = Utilisateurs de clavier qui ont besoin de voir leur position actuelle, utilisateurs avec des troubles de l'attention ou de la mémoire qui perdent la trace de la position du focus, utilisateurs malvoyants qui ont besoin d'indicateurs visuels clairs, utilisateurs avec des handicaps moteurs qui doivent suivre attentivement la navigation, et tout utilisateur qui ne peut temporairement pas utiliser une souris
     .remediation = Assurez-vous que tous les éléments interactifs ont un indicateur de focus visible en utilisant les styles CSS :focus. Ajoutez des changements de contour, bordure, couleur d'arrière-plan ou box-shadow. Rendez les indicateurs de focus clairement visibles avec un contraste de couleur suffisant (minimum 3:1). N'utilisez jamais outline: none sans fournir un indicateur alternatif. Considérez l'utilisation de :focus-visible pour les styles de focus uniquement au clavier. Testez en naviguant avec Tab dans toute votre page pour vous assurer que chaque élément interactif montre clairement le focus.
@@ -1851,7 +1851,7 @@ ErrNoFocusIndicator =
 
 ErrNoH1 =
     .title = La page n'a pas de titre h1
-    .what = La page n'a pas de titre h1
+    .what = La page ne contient aucun élément <h1>. Sans titre de premier niveau, il n'y a aucune étiquette lisible par machine identifiant le sujet principal de la page.
     .why = Les titres H1 identifient le sujet principal d'une page et sont cruciaux pour la structure du document.
     .who = Utilisateurs de lecteurs d'écran qui naviguent par titres, utilisateurs qui s'appuient sur les plans de document.
     .remediation = Ajoutez exactement un titre h1 qui décrit le contenu principal ou l'objectif de la page.
@@ -1867,7 +1867,7 @@ ErrNoH1OnPage =
 
 ErrNoHeadingsOnPage =
     .title = Aucun élément de titre (h1-h6) trouvé sur la page
-    .what = Aucun élément de titre (h1-h6) trouvé sur la page
+    .what = Aucun élément <h1>–<h6> ni élément avec role="heading" n'a été trouvé dans le contenu de la page.
     .why = Les titres créent la structure du plan de votre contenu, comme une table des matières. Ils permettent aux utilisateurs de comprendre comment l'information est organisée et de naviguer directement vers les sections d'intérêt. Sans aucun titre, les utilisateurs de lecteurs d'écran ne peuvent pas utiliser les raccourcis de navigation par titres (l'une de leurs méthodes de navigation principales) et doivent lire tout le contenu de manière linéaire. C'est comme forcer quelqu'un à lire un livre entier sans titres de chapitres ou pauses de sections. Les utilisateurs ne peuvent pas parcourir le contenu, aller aux sections pertinentes, ou comprendre la hiérarchie de l'information. Pour les utilisateurs ayant des déficiences cognitives, l'absence de structure visuelle rend le contenu accablant et difficile à traiter.
     .who = Les utilisateurs de lecteurs d'écran qui perdent une méthode de navigation critique et ne peuvent pas comprendre la structure du contenu, les utilisateurs ayant des déficiences cognitives qui ont besoin d'une organisation visuelle claire pour traiter l'information, les utilisateurs ayant des troubles de l'attention qui s'appuient sur les titres pour se concentrer sur les sections pertinentes, et les utilisateurs ayant des difficultés de lecture qui utilisent les titres pour diviser le contenu en portions gérables
     .remediation = Ajoutez des éléments de titre sémantiques (h1-h6) pour structurer votre contenu. Commencez par un h1 qui décrit le sujet principal de la page. Utilisez h2 pour les sections principales, h3 pour les sous-sections, et ainsi de suite. Ne sautez pas de niveaux (par ex., h1 à h3). Assurez-vous que les titres décrivent le contenu qui les suit. N'utilisez jamais les titres uniquement pour le style visuel - ils doivent représenter la structure réelle du contenu. Si vous avez besoin de texte large sans signification sémantique, utilisez CSS à la place.
@@ -1875,7 +1875,7 @@ ErrNoHeadingsOnPage =
 
 ErrNoLabel =
     .title = Le champ de formulaire n'a pas d'étiquette associée
-    .what = Le champ de formulaire n'a pas d'étiquette associée
+    .what = Un champ de formulaire (<input>, <textarea> ou <select>) n'a aucun <label> associé, aucun aria-label et aucun aria-labelledby — les lecteurs d'écran n'annoncent donc que le type de champ sans information sur son objet.
     .why = Sans étiquettes, les utilisateurs ne savent pas quelles informations saisir dans les champs de formulaire.
     .who = Utilisateurs de lecteurs d'écran qui ne peuvent pas identifier les champs de formulaire, utilisateurs avec des déficiences cognitives.
     .remediation = Ajouter des éléments label avec l'attribut for, ou utiliser aria-label/aria-labelledby pour chaque champ de formulaire.
@@ -1883,7 +1883,7 @@ ErrNoLabel =
 
 ErrNoMainLandmark =
     .title = La page ne contient pas de région repère principale pour identifier la zone de contenu primaire
-    .what = La page ne contient pas de région repère principale pour identifier la zone de contenu primaire
+    .what = La page ne contient aucun élément <main> ni aucun élément avec role="main" ; il n'y a donc aucun signal lisible par machine indiquant où commence le contenu principal.
     .why = Les utilisateurs de lecteurs d'écran s'appuient sur les régions repères pour comprendre la mise en page et naviguer rapidement vers les sections importantes. La région repère principale permet aux utilisateurs d'ignorer le contenu répété comme les en-têtes et la navigation pour accéder directement au contenu unique de la page. Sans elle, les utilisateurs doivent naviguer à travers tous les éléments répétés sur chaque page, ce qui est chronophage et frustrant. La région repère principale devrait contenir tout le contenu unique à la page, y compris le titre h1.
     .who = Utilisateurs aveugles et malvoyants utilisant des lecteurs d'écran qui naviguent par régions repères, utilisateurs avec des handicaps moteurs qui ont besoin d'une navigation clavier efficace pour ignorer le contenu répété, et utilisateurs avec des handicaps cognitifs qui bénéficient d'une structure de page claire
     .remediation = Ajoutez un élément <main> autour de la zone de contenu primaire, ou utilisez role=\"main\" sur un élément conteneur approprié. Assurez-vous qu'il n'y a qu'une seule région repère principale par page, positionnez-la comme région repère de niveau supérieur (non imbriquée dans d'autres régions repères), et incluez tout le contenu unique de la page à l'intérieur, y compris le titre h1. La région repère principale ne devrait pas inclure le contenu répété comme les en-têtes de site, la navigation ou les pieds de page.
@@ -1899,7 +1899,7 @@ ErrNoMainLandmarkOnPage =
 
 ErrNoOutlineOffsetDefined =
     .title = Aucun décalage de contour défini pour le focus
-    .what = Aucun décalage de contour défini pour le focus
+    .what = Un contour de focus est fourni via CSS mais aucun outline-offset n'est défini ; le contour peut donc être masqué par l'arrière-plan ou la bordure de l'élément lui-même.
     .why = L'indicateur de focus peut être difficile à voir
     .who = Utilisateurs de clavier
     .remediation = Ajouter outline-offset pour une meilleure visibilité
@@ -1907,7 +1907,7 @@ ErrNoOutlineOffsetDefined =
 
 ErrNoPageLanguage =
     .title = L'élément HTML manque l'attribut lang, empêchant les technologies d'assistance de déterminer la langue principale de la page
-    .what = L'élément HTML manque l'attribut lang, empêchant les technologies d'assistance de déterminer la langue principale de la page
+    .what = L'élément <html> n'a aucun attribut lang ; les technologies d'assistance ne peuvent donc pas déterminer la langue principale de la page pour la prononciation et la traduction.
     .why = Sans langue déclarée, les lecteurs d'écran ne peuvent pas déterminer quelles règles de prononciation et quel synthétiseur vocal utiliser, utilisant souvent par défaut la langue système de l'utilisateur qui peut être incorrecte. Cela cause une mauvaise prononciation, une inflexion incorrecte, et peut rendre le contenu inintelligible, particulièrement pour les pages dans des langues différentes des paramètres par défaut de l'utilisateur.
     .who = Utilisateurs aveugles et malvoyants utilisant des lecteurs d'écran qui ont besoin d'une prononciation correcte pour la compréhension, utilisateurs internationaux accédant au contenu dans différentes langues, utilisateurs avec dyslexie ou troubles de la lecture utilisant des outils d'aide à la lecture, et utilisateurs de services de traduction automatique
     .remediation = Ajoutez l'attribut lang à l'élément <html> avec le code de langue approprié (par exemple, <html lang=\"en\"> pour l'anglais, <html lang=\"fr\"> pour le français). Utilisez les codes à deux lettres ISO 639-1 pour les langues modernes. Pour XHTML, incluez également xml:lang avec la même valeur. Assurez-vous que la langue déclarée correspond à la langue principale réelle de votre contenu. Pour les pages multilingues, utilisez la langue qui représente la majorité du contenu.
@@ -1915,7 +1915,7 @@ ErrNoPageLanguage =
 
 ErrNoPageTitle =
     .title = La page n'a pas d'élément <title> dans l'en-tête du document
-    .what = La page n'a pas d'élément <title> dans l'en-tête du document
+    .what = Le <head> du document ne contient aucun élément <title> ; les navigateurs, lecteurs d'écran et outils de signets n'ont donc aucun nom pour la page.
     .why = Le titre de la page est la première chose que les utilisateurs de lecteurs d'écran entendent quand une page se charge, et il apparaît dans les onglets du navigateur, les signets et les résultats de recherche. Sans titre, les utilisateurs ne peuvent pas identifier la page dans leur historique de navigation, distinguer entre plusieurs onglets ouverts, ou comprendre sur quelle page ils se trouvent en arrivant depuis un lien. Les utilisateurs de lecteurs d'écran entendant \"Document sans titre\" n'ont aucun contexte sur où ils se trouvent. C'est comme ouvrir un livre sans titre sur la couverture ou la tranche - vous ne savez pas ce que vous lisez jusqu'à ce que vous plongiez dans le contenu. Le titre est critique pour l'orientation et la navigation.
     .who = Les utilisateurs de lecteurs d'écran qui s'appuient sur les titres pour l'identification et l'orientation des pages, les utilisateurs ayant des déficiences cognitives qui ont besoin d'une identification claire des pages, les utilisateurs gérant plusieurs onglets de navigateur qui ont besoin de distinguer entre les pages, les utilisateurs ayant des problèmes de mémoire utilisant l'historique du navigateur pour retourner aux pages, et tous les utilisateurs lors de la mise en signet ou du partage de pages
     .remediation = Ajoutez un élément <title> dans la section <head> de votre HTML. Créez des titres descriptifs et uniques qui identifient à la fois le contenu de la page et le site. Utilisez un modèle cohérent comme \"Sujet de la page - Nom du site\". Mettez l'information unique de la page en premier car elle est la plus importante. Gardez les titres concis (moins de 60 caractères) mais descriptifs. Évitez les titres génériques comme \"Accueil\" ou \"Page 1\". Le titre doit avoir du sens quand lu hors contexte dans une liste de signets ou de résultats de recherche.
@@ -1923,7 +1923,7 @@ ErrNoPageTitle =
 
 ErrNoReducedMotionSupport =
     .title = Les animations ne respectent pas le paramètre prefers-reduced-motion
-    .what = Les animations ne respectent pas le paramètre prefers-reduced-motion
+    .what = La page exécute des animations ou transitions, mais aucune règle CSS ne répond à la requête média prefers-reduced-motion ; les utilisateurs ayant activé reduced-motion voient donc toujours les mouvements complets.
     .why = L'animation affecte différents utilisateurs de différentes manières. Les utilisateurs souffrant de troubles vestibulaires (oreille interne) peuvent éprouver des vertiges, des nausées, des migraines ou avoir besoin de s'allonger après une exposition à des effets de mouvement comme le défilement parallaxe ou les transitions animées. Les utilisateurs neurodivergents, y compris ceux atteints de TDAH ou d'autisme, peuvent trouver les animations distrayantes ou accablantes - la recherche montre que les utilisateurs autistes sont plus affectés par l'animation, éprouvant une frustration accrue et nécessitant un effort mental plus important. Les utilisateurs présentant des différences de traitement sensoriel peuvent subir une surcharge sensorielle à cause du contenu en mouvement. Cependant, toutes les animations ne sont pas nuisibles : des animations brèves et subtiles peuvent en fait aider les utilisateurs en attirant l'attention sur des changements importants, en fournissant un retour sur les actions ou en indiquant les états de chargement. L'essentiel est de donner aux utilisateurs le contrôle de leur expérience.
     .who = Utilisateurs souffrant de troubles vestibulaires pouvant éprouver des symptômes physiques comme des nausées et des vertiges ; utilisateurs neurodivergents (TDAH, autisme) pouvant trouver le mouvement distrayant ou accablant ; utilisateurs avec des sensibilités de traitement sensoriel pouvant subir une surcharge sensorielle ; utilisateurs avec des handicaps cognitifs ayant besoin de plus de temps pour traiter le contenu ; utilisateurs avec des difficultés d'attention qui peinent à se concentrer lorsque le contenu bouge
     .remediation = Respectez les préférences des utilisateurs en utilisant CSS @media (prefers-reduced-motion: reduce) pour désactiver ou réduire significativement les animations lorsque l'utilisateur a demandé une réduction du mouvement dans les paramètres de son système. Dans cette requête média, définissez animation-duration et transition-duration à des valeurs proches de zéro, désactivez les effets de parallaxe et arrêtez le contenu animé en lecture automatique. De plus, envisagez de fournir un contrôle de basculement visible sur votre site pour les utilisateurs qui n'ont pas défini de préférences système. Les animations essentielles (celles requises pour la fonctionnalité) sont exemptées, mais les animations décoratives comme le défilement parallaxe, les arrière-plans animés ou les effets de célébration doivent toujours pouvoir être réduites. Lorsque le mouvement réduit est actif, vous pouvez toujours utiliser des changements d'état instantanés, de simples fondus d'opacité ou des mouvements à distance réduite pour maintenir l'utilisabilité sans causer d'inconfort.
@@ -1931,7 +1931,7 @@ ErrNoReducedMotionSupport =
 
 ErrNonInteractiveZeroTabindex =
     .title = L'élément non-interactif a tabindex=\"0\" le rendant focusable au clavier
-    .what = L'élément non-interactif a tabindex=\"0\" le rendant focusable au clavier
+    .what = Un élément sans rôle interactif et sans gestionnaire d'événements a tabindex="0", de sorte que le clavier peut s'y poser mais ne peut déclencher aucune action.
     .why = Ajouter le focus clavier aux éléments non-interactifs confond les utilisateurs et encombre la navigation au clavier.
     .who = Utilisateurs de clavier rencontrant des arrêts de tabulation inattendus, utilisateurs de lecteurs d'écran entendant des éléments non-actionnables.
     .remediation = Supprimez tabindex=\"0\" des éléments non-interactifs, ne rendez les éléments focusables que s'ils ont une fonctionnalité.
@@ -1939,7 +1939,7 @@ ErrNonInteractiveZeroTabindex =
 
 ErrOrphanLabelWithNoId =
     .title = L'élément label existe mais n'a pas d'attribut for
-    .what = L'élément label existe mais n'a pas d'attribut for
+    .what = Un élément <label> existe mais n'a pas d'attribut for. Il n'enveloppe pas implicitement un champ ; l'étiquette n'est donc associée à aucun contrôle.
     .why = L'étiquette n'est pas associée programmatiquement à un champ
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Ajouter l'attribut for pointant vers l'ID du champ
@@ -1947,7 +1947,7 @@ ErrOrphanLabelWithNoId =
 
 ErrOutlineIsNoneOnInteractiveElement =
     .title = L'élément interactif a CSS outline:none supprimant l'indicateur de focus par défaut
-    .what = L'élément interactif a CSS outline:none supprimant l'indicateur de focus par défaut
+    .what = Le CSS définit outline: none sur un élément interactif sans fournir d'indicateur de focus de remplacement (pas de bordure, d'ombre, ni de changement d'arrière-plan).
     .why = Les personnes avec des handicaps moteurs utilisent le clavier ou des dispositifs alternatifs au clavier pour naviguer plutôt qu'une souris. Les indicateurs de focus visibles sont essentiels car ils remplissent la même fonction qu'un curseur de souris. Sans indicateurs de focus, les utilisateurs ne peuvent pas savoir où ils se trouvent sur la page ou quand les éléments interactifs sont focalisés. Cela rend la navigation au clavier impossible et peut complètement empêcher l'accès aux fonctionnalités.
     .who = Utilisateurs voyants avec des handicaps moteurs naviguant avec le clavier ou des dispositifs alternatifs au clavier, utilisateurs qui préfèrent la navigation au clavier pour l'efficacité, utilisateurs avec des blessures temporaires empêchant l'utilisation de la souris, et utilisateurs de technologies d'assistance qui s'appuient sur la navigation au clavier
     .remediation = Ne jamais utiliser outline:none sans fournir un indicateur de focus visible alternatif. L'indicateur de focus doit être clairement visible avec au moins un ratio de contraste de 3:1 avec l'arrière-plan, avoir au moins 2 pixels d'épaisseur, et idéalement être décalé de l'élément pour maximiser la visibilité. Considérer l'utilisation de CSS :focus-visible pour un meilleur contrôle sur quand les indicateurs de focus apparaissent.
@@ -1971,7 +1971,7 @@ ErrPartialTextContrastAAA =
 
 ErrPlaceholderAsLabel =
     .title = L'attribut placeholder utilisé comme seule étiquette pour le champ de formulaire
-    .what = L'attribut placeholder utilisé comme seule étiquette pour le champ de formulaire
+    .what = Un champ de formulaire n'a ni <label>, ni aria-label, ni aria-labelledby. Sa seule source d'étiquetage est l'attribut placeholder, qui disparaît dès que l'utilisateur commence à saisir.
     .why = Le texte de placeholder disparaît lorsque les utilisateurs commencent à saisir, ne laissant aucune étiquette persistante pour référence.
     .who = Utilisateurs avec des déficiences cognitives, utilisateurs qui ont besoin de réviser les données du formulaire, utilisateurs de lecteurs d'écran.
     .remediation = Ajouter des éléments label appropriés ou aria-label, utiliser placeholder uniquement pour des indices ou exemples supplémentaires.
@@ -1987,7 +1987,7 @@ ErrPositiveTabIndex =
 
 ErrPositiveTabindex =
     .title = L'élément utilise une valeur de tabindex positive (supérieure à 0)
-    .what = L'élément utilise une valeur de tabindex positive (supérieure à 0)
+    .what = Un élément possède un tabindex supérieur à 0 (par exemple, tabindex="5"), ce qui remplace l'ordre naturel du document et force une séquence de tabulation personnalisée qui finit presque toujours par échouer quelque part.
     .why = Les valeurs de tabindex positives remplacent l'ordre de tabulation naturel de la page, créant une expérience de navigation imprévisible. Lorsque vous utilisez tabindex=\"1\" ou plus, cet élément passe au début de l'ordre de tabulation, peu importe où il apparaît visuellement. Cela brise le flux attendu de haut en bas, de gauche à droite sur lequel les utilisateurs de clavier comptent. Les utilisateurs peuvent passer de l'en-tête directement à un champ de formulaire aléatoire au milieu de la page, puis sauter au pied de page, puis revenir à la navigation. Cet ordre confus rend facile de manquer du contenu, difficile de prédire où le focus ira ensuite, et presque impossible à maintenir à mesure que la page évolue.
     .who = Utilisateurs de clavier qui s'attendent à un ordre de navigation logique et prévisible, utilisateurs de lecteurs d'écran qui dépendent d'un flux de focus cohérent, utilisateurs avec des handicaps moteurs qui ont besoin d'une navigation au clavier efficace, utilisateurs avec des handicaps cognitifs qui sont confus par un mouvement de focus imprévisible, et développeurs maintenant le code qui doivent gérer des valeurs de tabindex complexes
     .remediation = Supprimez les valeurs de tabindex positives et utilisez uniquement tabindex=\"0\" (ajoute l'élément à l'ordre de tabulation naturel) ou tabindex=\"-1\" (retire de l'ordre de tabulation mais permet le focus programmatique). Laissez l'ordre du DOM déterminer l'ordre de tabulation - si les éléments doivent être atteints dans un ordre différent, réorganisez-les dans le HTML. Si l'ordre visuel doit différer de l'ordre du DOM pour des raisons de design, considérez l'utilisation de CSS Grid ou Flexbox avec la propriété order, mais soyez prudent car cela peut encore causer des problèmes d'accessibilité. NOTE : Un tabindex positif peut être acceptable dans les widgets SVG interactifs (cartes, diagrammes, visualisations de données) où des flux de navigation personnalisés guident les utilisateurs à travers différents parcours de contenu - ces cas génèrent des avertissements plutôt que des erreurs.
@@ -1995,7 +1995,7 @@ ErrPositiveTabindex =
 
 ErrPrimaryHrefLangNotRecognized =
     .title = Code de langue hreflang non reconnu
-    .what = Code de langue hreflang non reconnu
+    .what = L'attribut hreflang d'un lien utilise une sous-balise de langue principale qui n'est pas un code de langue ISO 639 reconnu.
     .why = Les codes hreflang invalides fournissent des informations incorrectes sur les ressources liées
     .who = Utilisateurs de lecteurs d'écran, moteurs de recherche
     .remediation = Utilisez des codes de langue ISO 639-1 valides
@@ -2003,7 +2003,7 @@ ErrPrimaryHrefLangNotRecognized =
 
 ErrPrimaryLangAndXmlLangMismatch =
     .title = Les attributs lang et xml:lang ne correspondent pas
-    .what = Les attributs lang et xml:lang ne correspondent pas
+    .what = L'élément possède à la fois un attribut lang et un attribut xml:lang, mais leurs valeurs ne concordent pas. La spécification HTML exige qu'ils soient exactement identiques lorsque les deux sont présents.
     .why = Informations de langue conflictuelles
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Assurez-vous que les deux attributs ont la même valeur
@@ -2011,7 +2011,7 @@ ErrPrimaryLangAndXmlLangMismatch =
 
 ErrPrimaryLangUnrecognized =
     .title = Code de langue non reconnu
-    .what = Code de langue non reconnu
+    .what = La sous-balise de langue principale (par exemple, le « xx » dans lang="xx-CA ») n'est pas un code de langue ISO 639 reconnu.
     .why = Les codes de langue invalides empêchent une prononciation correcte
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Utilisez des codes de langue ISO 639-1 valides
@@ -2019,7 +2019,7 @@ ErrPrimaryLangUnrecognized =
 
 ErrPrimaryXmlLangUnrecognized =
     .title = Code de langue xml:lang non reconnu
-    .what = Code de langue xml:lang non reconnu
+    .what = La sous-balise de langue principale à l'intérieur d'un attribut xml:lang n'est pas un code de langue ISO 639 reconnu.
     .why = Les codes xml:lang invalides empêchent une prononciation correcte
     .who = Utilisateurs de lecteurs d'écran dans les contextes XML/XHTML
     .remediation = Utilisez des codes de langue ISO 639-1 valides
@@ -2027,7 +2027,7 @@ ErrPrimaryXmlLangUnrecognized =
 
 ErrRedundantAlt =
     .title = Le texte alternatif contient des mots redondants comme « image de » ou « photo de »
-    .what = Le texte alternatif contient des mots redondants comme « image de » ou « photo de »
+    .what = Le texte alternatif d'une image commence par des expressions telles que « image de », « photo de » ou « graphique de ». Les lecteurs d'écran annoncent déjà l'élément comme une image, donc cette formulation est redondante.
     .why = Les lecteurs d'écran annoncent déjà les images comme des images, ces expressions créent donc des annonces redondantes.
     .who = Utilisateurs de lecteurs d'écran qui entendent des annonces répétitives « image image de ».
     .remediation = Supprimez « image de », « photo de », « graphique de » du texte alternatif ; décrivez directement le contenu.
@@ -2035,7 +2035,7 @@ ErrRedundantAlt =
 
 ErrRegionLandmarkHasAriaLabelAndAriaLabelledByAttrs =
     .title = La région repère a à la fois aria-label et aria-labelledby
-    .what = La région repère a à la fois aria-label et aria-labelledby
+    .what = Un repère region possède à la fois les attributs aria-label et aria-labelledby. Choisissez une seule méthode d'étiquetage, pas les deux.
     .why = Méthodes d'étiquetage conflictuelles
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Utilisez une seule méthode d'étiquetage
@@ -2043,7 +2043,7 @@ ErrRegionLandmarkHasAriaLabelAndAriaLabelledByAttrs =
 
 ErrRegionQualifierForHreflangUnrecognized =
     .title = Qualificateur de région hreflang non reconnu
-    .what = Qualificateur de région hreflang non reconnu
+    .what = La sous-balise de région à l'intérieur de l'attribut hreflang d'un lien n'est pas un code de pays ISO 3166-1 reconnu.
     .why = Codes de région invalides dans les attributs hreflang
     .who = Utilisateurs de lecteurs d'écran, moteurs de recherche
     .remediation = Utiliser des codes de région ISO 3166-1 valides
@@ -2059,7 +2059,7 @@ ErrRegionQualifierForPrimaryLangNotRecognized =
 
 ErrRegionQualifierForPrimaryXmlLangNotRecognized =
     .title = Qualificateur de région dans xml:lang non reconnu
-    .what = Qualificateur de région dans xml:lang non reconnu
+    .what = La sous-balise de région à l'intérieur d'un attribut xml:lang n'est pas un code de pays ISO 3166-1 reconnu.
     .why = Les codes de région invalides dans xml:lang peuvent causer des problèmes
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Utilisez des codes de région ISO 3166-1 valides
@@ -2067,7 +2067,7 @@ ErrRegionQualifierForPrimaryXmlLangNotRecognized =
 
 ErrRoleOfHeadingButNoLevelGiven =
     .title = role=\"heading\" sans aria-level
-    .what = role=\"heading\" sans aria-level
+    .what = Un élément a role="heading" mais aucun attribut aria-level. Sans aria-level, les technologies d'assistance ne peuvent pas déterminer le niveau hiérarchique du titre.
     .why = Le niveau de titre n'est pas défini
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Ajouter l'attribut aria-level avec une valeur de 1 à 6
@@ -2075,7 +2075,7 @@ ErrRoleOfHeadingButNoLevelGiven =
 
 ErrSVGNoAccessibleName =
     .title = Le SVG intégré manque de nom accessible et de gestion appropriée selon le contexte
-    .what = Le SVG intégré manque de nom accessible et de gestion appropriée selon le contexte
+    .what = Un <svg> en ligne n'a pas de nom accessible — pas d'enfant <title>, pas d'aria-label, pas d'aria-labelledby — et aucun rôle indiquant qu'il doit être ignoré en tant qu'élément décoratif.
     .why = Les éléments SVG intégrés nécessitent un traitement différent selon le contexte. Quand un SVG apparaît seul comme image, il a besoin de role=\"img\" avec aria-label ou un élément <title> avec aria-labelledby pour fournir un nom accessible. Cependant, quand un SVG apparaît dans un lien ou bouton qui contient aussi du texte (comme <a href=\"/play\"><svg>...</svg><span>Lecture</span></a>), le SVG doit être marqué comme décoratif avec aria-hidden=\"true\" puisque le texte fournit le nom accessible. Sans gestion appropriée, les lecteurs d'écran n'annoncent rien (nom manquant) ou créent une redondance en annonçant à la fois l'image et le texte. Le contexte détermine la correction appropriée : les SVG autonomes ont besoin de noms accessibles, les SVG avec texte adjacent ont besoin d'aria-hidden=\"true\".
     .who = Utilisateurs de lecteurs d'écran qui ont besoin soit de descriptions d'images appropriées pour les SVG autonomes soit d'annonces de liens/boutons claires sans redondance d'images décoratives, utilisateurs avec déficiences cognitives qui sont confus par les annonces redondantes, utilisateurs de contrôle vocal qui ont besoin de cibles de commande cohérentes
     .remediation = D'abord, vérifiez le contexte du SVG. Si le SVG est dans un lien ou bouton qui contient du texte (ex. <a><svg></svg><span>Texte</span></a>), ajoutez aria-hidden=\"true\" au SVG puisque le texte fournit le nom accessible. Si le SVG est seul comme image significative, ajoutez role=\"img\" avec aria-label pour les icônes simples, ou ajoutez un élément <title> comme premier enfant du SVG avec aria-labelledby pointant vers l'id du titre pour les images complexes. Pour les SVG décoratifs non dans des liens/boutons, utilisez aria-hidden=\"true\" et assurez-vous que focusable=\"false\". N'ajoutez jamais de noms accessibles aux SVG qui ont du texte adjacent dans le même élément interactif - cela crée de la redondance.
@@ -2083,7 +2083,7 @@ ErrSVGNoAccessibleName =
 
 ErrSkippedHeadingLevel =
     .title = Les niveaux de titres ne sont pas dans un ordre séquentiel - saut de h%(skippedFrom)s à h%(skippedTo)s, en omettant %(levelsSkipped)s niveau(x) intermédiaire(s)
-    .what = Les niveaux de titres ne sont pas dans un ordre séquentiel - saut de h%(skippedFrom)s à h%(skippedTo)s, en omettant %(levelsSkipped)s niveau(x) intermédiaire(s)
+    .what = La hiérarchie des titres saute de h{"{"}skippedFrom{"}"} directement à h{"{"}skippedTo{"}"} sans utiliser les niveaux intermédiaires, brisant le plan du document.
     .why = Les niveaux de titres créent une structure hiérarchique de votre contenu, comme des puces imbriquées. Sauter de h%(skippedFrom)s à h%(skippedTo)s brise cette structure logique. C'est comme avoir le chapitre %(skippedFrom)s, puis sauter à la section %(skippedTo)s sans la section intermédiaire. Les utilisateurs de lecteurs d'écran naviguant par titres seront confus quant à la relation entre les sections - le h%(skippedTo)s est-il une sous-section de quelque chose qui manque ? Cette hiérarchie brisée rend difficile la compréhension de l'organisation du contenu et peut amener les utilisateurs à penser que du contenu manque ou qu'ils ont accidentellement sauté quelque chose. Il s'agit d'un échec WCAG 1.3.1 Niveau A.
     .who = Utilisateurs de lecteurs d'écran naviguant par structure de titres qui s'appuient sur les niveaux pour comprendre les relations de contenu, utilisateurs avec des handicaps cognitifs qui ont besoin d'une organisation de contenu logique et prévisible, utilisateurs de technologies d'assistance qui génèrent des plans de document, et développeurs ou auteurs de contenu maintenant la page qui ont besoin de comprendre la structure prévue
     .remediation = Insérer un titre h%(expectedLevel)s entre le h%(skippedFrom)s et le h%(skippedTo)s, ou changer le h%(skippedTo)s en h%(expectedLevel)s pour maintenir l'ordre séquentiel. Après h%(skippedFrom)s, utiliser h%(expectedLevel)s pour le niveau suivant. Ne pas sauter de niveaux lors de la descente dans la hiérarchie. Si vous avez besoin qu'un titre paraisse plus petit visuellement, utilisez CSS pour le styliser plutôt que de choisir un niveau de titre inférieur. Le niveau de titre doit refléter la structure logique du contenu, pas son apparence visuelle.
@@ -2139,7 +2139,7 @@ ErrSvgStaticWithoutRole =
 
 ErrTTabindexOnNonInteractiveElement =
     .title = Attribut tabindex sur un élément non interactif
-    .what = Attribut tabindex sur un élément non interactif
+    .what = Un attribut tabindex est défini sur un élément non interactif (par exemple, <div>, <p>, <section>) sans rôle ni gestionnaire clavier associé ; le focus atterrit donc sur un élément qui ne fait rien.
     .why = Les éléments non interactifs ne doivent pas être dans l'ordre de tabulation sauf s'ils servent un objectif spécifique
     .who = Utilisateurs de clavier
     .remediation = Supprimez tabindex des éléments non interactifs ou rendez-les correctement interactifs
@@ -2195,7 +2195,7 @@ ErrTabindexNoVisibleFocus =
 
 ErrTabindexOfZeroOnNonInteractiveElement =
     .title = tabindex=\"0\" sur un élément non-interactif
-    .what = tabindex=\"0\" sur un élément non-interactif
+    .what = Un élément non interactif (par exemple, <div>, <span>, <p>) a tabindex="0", l'insérant dans l'ordre de tabulation alors qu'il n'a pas de rôle, pas de gestionnaire clavier et aucune raison apparente de recevoir le focus.
     .why = Les éléments non-interactifs dans l'ordre de tabulation perturbent la navigation au clavier et créent des attentes d'interactivité qui ne sont pas satisfaites.
     .who = Utilisateurs de clavier
     .remediation = Supprimez tabindex des éléments non-interactifs
@@ -2235,7 +2235,7 @@ ErrTabindexTransparentOutline =
 
 ErrTableMissingCaption =
     .title = Le tableau de données manque d'élément caption pour décrire son contenu
-    .what = Le tableau de données manque d'élément caption pour décrire son contenu
+    .what = Un <table> présentant des données ne possède pas d'élément <caption> pour décrire le contenu du tableau.
     .why = Sans légendes, les utilisateurs peuvent ne pas comprendre le but ou le contenu du tableau avant de naviguer à travers celui-ci.
     .who = Utilisateurs de lecteurs d'écran qui ont besoin du contexte du tableau, utilisateurs avec des handicaps cognitifs.
     .remediation = Ajouter un élément <caption> comme premier enfant du tableau décrivant quelles données le tableau contient.
@@ -2243,7 +2243,7 @@ ErrTableMissingCaption =
 
 ErrTableNoColumnHeaders =
     .title = Le tableau de données n'a pas d'en-têtes de colonnes (éléments th)
-    .what = Le tableau de données n'a pas d'en-têtes de colonnes (éléments th)
+    .what = Un <table> de données ne possède aucun élément <th> (ni cellule avec scope="col") ; aucune association d'en-tête de colonne n'est donc exposée aux technologies d'assistance.
     .why = Sans en-têtes, les utilisateurs de lecteurs d'écran ne peuvent pas comprendre ce que chaque colonne représente lors de la navigation dans les cellules.
     .who = Utilisateurs de lecteurs d'écran naviguant dans les tableaux, utilisateurs qui ont besoin de comprendre les relations de données.
     .remediation = Utiliser des éléments <th> pour les en-têtes de colonnes dans la première ligne, ajouter scope=\"col\" pour clarifier les relations d'en-têtes.
@@ -2283,7 +2283,7 @@ ErrTextContrastAAA =
 
 ErrTimersWithoutControls =
     .title = Le contenu temporisé manque de contrôles utilisateur
-    .what = Le contenu temporisé manque de contrôles utilisateur
+    .what = Du contenu basé sur le temps (compte à rebours, carrousel rotatif automatique, minuterie de session) s'exécute sur la page sans contrôles utilisateur pour le mettre en pause, l'arrêter ou le prolonger.
     .why = Les utilisateurs ont besoin de contrôler le contenu temporisé pour avoir suffisamment de temps pour lire et interagir avec celui-ci.
     .who = Utilisateurs ayant des déficiences cognitives, utilisateurs ayant des difficultés de lecture, utilisateurs de lecteurs d'écran.
     .remediation = Fournir des contrôles pour mettre en pause, arrêter ou prolonger les limites de temps ; éviter les contraintes de temps inutiles.
@@ -2291,7 +2291,7 @@ ErrTimersWithoutControls =
 
 ErrTitleAsOnlyLabel =
     .title = L'élément de formulaire utilise l'attribut title comme seule étiquette accessible, ce qui est insuffisant pour l'accessibilité
-    .what = L'élément de formulaire utilise l'attribut title comme seule étiquette accessible, ce qui est insuffisant pour l'accessibilité
+    .what = Le seul nom accessible d'un champ de formulaire provient de son attribut title. L'attribut title est délivré de manière incohérente aux technologies d'assistance et n'est pas fiable pour étiqueter un champ.
     .why = Lorsque title est le seul mécanisme d'étiquetage pour un champ de formulaire, de nombreux utilisateurs ne peuvent pas déterminer quelles informations saisir. Les attributs title ne sont pas annoncés par les lecteurs d'écran lors de la navigation dans les formulaires en mode normal, n'apparaissent pas sur les appareils mobiles, ne peuvent pas être accessibles aux utilisateurs de clavier, et disparaissent trop rapidement pour que de nombreux utilisateurs puissent les lire. Cela rend le champ de formulaire essentiellement non étiqueté pour une grande partie des utilisateurs, les empêchant de compléter les formulaires avec succès.
     .who = Utilisateurs de lecteurs d'écran qui n'entendront pas l'objectif du champ lors de la navigation dans le formulaire, utilisateurs mobiles qui ne peuvent pas voir les infobulles title du tout, utilisateurs de clavier qui ne peuvent pas survoler pour voir l'infobulle, utilisateurs avec des handicaps moteurs qui ont des difficultés avec le survol précis, utilisateurs avec des handicaps cognitifs qui ont besoin d'étiquettes persistantes comme aide-mémoire, et utilisateurs de contrôle vocal qui ne peuvent pas référencer les champs sans étiquettes visibles
     .remediation = Ajoutez un élément <label> visible approprié associé au champ de formulaire en utilisant l'attribut 'for'. Si l'espace est limité, utilisez du texte d'espace réservé en complément (et non à la place) d'une étiquette. Pour des mises en page complexes, envisagez d'utiliser aria-labelledby pour référencer du texte visible existant. Si vous devez utiliser aria-label, assurez-vous qu'il soit descriptif et envisagez d'ajouter du texte visible pour les utilisateurs voyants. Ne vous fiez jamais uniquement aux attributs title pour étiqueter les champs de formulaire - ils ne doivent que compléter les étiquettes appropriées, pas les remplacer.
@@ -2299,7 +2299,7 @@ ErrTitleAsOnlyLabel =
 
 ErrTitleAttrFound =
     .title = Attribut title utilisé - fondamentalement inaccessible aux technologies d'assistance
-    .what = Attribut title utilisé - fondamentalement inaccessible aux technologies d'assistance
+    .what = Un élément utilise l'attribut title comme principal canal d'information. title n'est pas annoncé de manière fiable par les lecteurs d'écran et est invisible pour les utilisateurs tactiles — ne l'utilisez jamais comme seule étiquette ou instruction.
     .why = Les attributs title échouent à l'exigence de conformité WCAG 5.2.4 car ils ne sont pas accessibles avec les technologies d'assistance standard. Pour les utilisateurs de loupes d'écran à fort grossissement, le contenu de l'infobulle s'étend hors écran et disparaît lorsque la souris bouge pour le lire, rendant le contenu complètement inaccessible
     .who = Utilisateurs de loupes d'écran (l'infobulle sort de l'écran à fort grossissement), utilisateurs mobiles et d'écrans tactiles (pas de survol), utilisateurs utilisant uniquement le clavier (ne peuvent pas déclencher l'infobulle), utilisateurs de lecteurs d'écran (support incohérent), utilisateurs avec des handicaps moteurs (l'infobulle disparaît quand la souris bouge), utilisateurs avec des handicaps cognitifs (l'infobulle disparaît trop rapidement)
     .remediation = N'utilisez jamais d'attributs title. Utilisez du texte visible, des éléments <label> appropriés pour les formulaires, aria-label pour les icônes, ou du texte d'aide visible. Pour les abréviations, fournissez le texte complet lors de la première utilisation ou utilisez l'élément <dfn>
@@ -2315,7 +2315,7 @@ ErrTooltipWithoutARIA =
 
 ErrTransparentFocusIndicator =
     .title = L'indicateur de focus utilise une couleur transparente ou presque transparente, le rendant effectivement invisible
-    .what = L'indicateur de focus utilise une couleur transparente ou quasi-transparente, le rendant effectivement invisible
+    .what = Les styles :focus d'un élément définissent le contour (ou autre indicateur) sur une couleur transparente ou quasi transparente ; le focus est donc techniquement présent mais visuellement indétectable.
     .why = Un indicateur de focus transparent est fonctionnellement équivalent à l'absence d'indicateur de focus - les utilisateurs ne peuvent pas voir où se trouve le focus clavier. Cela peut se produire en utilisant rgba avec des valeurs alpha nulles ou très faibles, en définissant outline-color sur transparent, ou en utilisant des couleurs qui correspondent à l'arrière-plan. L'indicateur de focus existe techniquement mais n'apporte aucun bénéfice pratique aux utilisateurs tentant de naviguer.
     .who = Utilisateurs de clavier qui ont besoin d'indicateurs de focus visibles pour naviguer, utilisateurs malvoyants qui ont besoin de repères visuels clairs, utilisateurs daltoniens qui peuvent déjà avoir des difficultés avec certaines combinaisons de couleurs, et utilisateurs avec des handicaps cognitifs qui ont besoin d'indicateurs de focus évidents
     .remediation = Utilisez des couleurs opaques avec un contraste suffisant pour les indicateurs de focus. Remplacez les contours transparents par des couleurs visibles, assurez-vous d'un ratio de contraste d'au moins 3:1 entre l'indicateur de focus et l'arrière-plan, utilisez des couleurs solides ou des valeurs alpha élevées (0,7 ou plus) pour les couleurs rgba. Testez les indicateurs de focus sur différents arrière-plans de votre site. Envisagez d'utiliser box-shadow ou des changements d'arrière-plan comme indicateurs de focus supplémentaires.
@@ -2323,7 +2323,7 @@ ErrTransparentFocusIndicator =
 
 ErrVideoIframeMissingTitle =
     .title = L'iframe vidéo manque d'attribut title
-    .what = L'iframe vidéo manque d'attribut title
+    .what = Un <iframe> intégrant un lecteur vidéo (par exemple, YouTube, Vimeo) n'a pas d'attribut title, laissant les utilisateurs de lecteurs d'écran sans nom pour la vidéo intégrée.
     .why = Sans titre, les utilisateurs de lecteurs d'écran ne savent pas quel contenu vidéo est intégré.
     .who = Utilisateurs de lecteurs d'écran qui ont besoin de comprendre le contenu intégré.
     .remediation = Ajoutez un attribut title descriptif aux iframes vidéo décrivant le contenu de la vidéo.
@@ -2331,7 +2331,7 @@ ErrVideoIframeMissingTitle =
 
 ErrWrongTabindexForInteractiveElement =
     .title = Tabindex inapproprié sur un élément interactif
-    .what = Tabindex inapproprié sur un élément interactif
+    .what = Un élément interactif (par exemple, un widget personnalisé) possède une valeur tabindex incohérente avec son rôle — par exemple, tabindex="-1" sur un élément censé être atteignable par tabulation.
     .why = L'ordre de tabulation ne correspond pas à l'ordre visuel
     .who = Utilisateurs de clavier
     .remediation = Laissez l'ordre de tabulation naturel fonctionner, évitez tabindex
@@ -2355,7 +2355,7 @@ InfoHeadingNearLengthLimit =
 
 RegionLandmarkAccessibleNameIsBlank =
     .title = La région repère a un nom accessible vide
-    .what = La région repère a un nom accessible vide
+    .what = Un élément avec role="region" (ou un <section> avec une source de nom accessible) a été trouvé dont la valeur aria-label ou aria-labelledby donne une chaîne vide, de sorte que le repère n'a aucun nom annoncé.
     .why = Les étiquettes vides ne fournissent aucune information
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Ajouter un texte d'étiquette significatif
@@ -2371,7 +2371,7 @@ WarnAmbiguousTabOrder =
 
 WarnAnchorTargetTabindex =
     .title = L'élément cible d'ancre a un tabindex inutile
-    .what = L'élément cible d'ancre a un tabindex inutile
+    .what = Un élément cible d'un lien d'ancre dans la page a un tabindex défini inutilement. Les navigateurs modernes mettent le focus sur les cibles d'ancres sans tabindex.
     .why = Les éléments qui sont des cibles de liens n'ont pas besoin de tabindex ; l'ajouter peut créer de la confusion.
     .who = Utilisateurs de clavier rencontrant des arrêts de tabulation inattendus.
     .remediation = Supprimez le tabindex des éléments qui ne sont que des cibles de liens, pas des contrôles interactifs.
@@ -2387,7 +2387,7 @@ WarnAutoStartTimers =
 
 WarnBannerLandmarkAccessibleNameUsesBanner =
     .title = La région repère banner utilise le terme générique \"banner\" dans l'étiquette
-    .what = La région repère banner utilise le terme générique \"banner\" dans l'étiquette
+    .what = Le nom accessible d'un repère banner contient le mot « banner » ou « bannière » (par exemple, « Bannière du site »). Les lecteurs d'écran annoncent déjà le rôle comme « banner », ce qui duplique l'information.
     .why = Étiquetage redondant
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Utilisez une étiquette descriptive ou fiez-vous au rôle implicite
@@ -2459,7 +2459,7 @@ WarnButtonFocusZIndexFloating =
 
 WarnButtonGenericText =
     .title = Le bouton utilise un texte générique comme « Cliquez ici », « Envoyer » ou « OK » sans contexte
-    .what = Le bouton utilise un texte générique comme « Cliquez ici », « Envoyer » ou « OK » sans contexte
+    .what = Le texte visible d'un bouton est une expression générique telle que « Cliquez ici », « Soumettre », « OK » ou « Continuer » sans contexte environnant expliquant ce qu'il fait.
     .why = Les utilisateurs de lecteurs d'écran naviguent souvent en affichant une liste de tous les boutons d'une page. Un texte de bouton générique ne fournit aucune information sur l'action du bouton lorsqu'il est entendu hors contexte. Les utilisateurs ne peuvent pas déterminer l'objectif du bouton sans exploration supplémentaire, ce qui ralentit la navigation et peut causer des erreurs.
     .who = Utilisateurs de lecteurs d'écran naviguant par liste de boutons, utilisateurs avec des déficiences cognitives qui ont besoin d'étiquettes claires, et utilisateurs de loupes d'écran qui peuvent ne pas voir le contexte environnant
     .remediation = Utilisez un texte de bouton descriptif qui explique l'action (par ex., « Envoyer le formulaire d'inscription » au lieu de « Envoyer », « Télécharger le rapport PDF » au lieu de « Télécharger »). Le texte du bouton doit avoir du sens lorsqu'il est lu de manière isolée. Si les contraintes de conception visuelle nécessitent un texte court, utilisez aria-label pour fournir un nom accessible plus descriptif.
@@ -2475,7 +2475,7 @@ WarnButtonOutlineNoneWithBoxShadow =
 
 WarnColorOnlyLink =
     .title = Lien distingué uniquement par la couleur sans soulignement ou autre indicateur
-    .what = Lien distingué uniquement par la couleur sans soulignement ou autre indicateur
+    .what = Un lien dans le corps du texte se distingue du texte environnant uniquement par la couleur — aucun soulignement, changement de graisse ou autre indicateur non coloré n'est appliqué.
     .why = Les utilisateurs qui ne peuvent pas percevoir les différences de couleur ne peuvent pas identifier les liens dans le texte.
     .who = Utilisateurs daltoniens, utilisateurs malvoyants, utilisateurs d'écrans monochromes.
     .remediation = Ajoutez des soulignements aux liens, utilisez d'autres indicateurs visuels au-delà de la couleur, assurez-vous d'un contraste de 3:1 avec le texte environnant.
@@ -2491,7 +2491,7 @@ WarnColorOnlyLinkWeakIndicator =
 
 WarnColorRelatedStyleDefinedExplicitlyInElement =
     .title = Propriétés CSS liées à la couleur trouvées dans les attributs de style en ligne sur les éléments HTML
-    .what = Propriétés CSS liées aux couleurs trouvées dans les attributs de style en ligne sur les éléments HTML
+    .what = Des propriétés CSS liées aux couleurs (color, background-color, border-color) sont appliquées via style="..." en ligne sur un élément HTML, ce qui empêche les utilisateurs de les remplacer via des feuilles de style personnalisées ou à contraste élevé.
     .why = Les styles de couleur en ligne contournent les feuilles de style utilisateur et les extensions de navigateur qui aident les utilisateurs ayant des déficiences visuelles à personnaliser les couleurs pour une meilleure lisibilité. Les utilisateurs qui ont besoin de contraste élevé, de couleurs inversées ou de schémas de couleurs spécifiques ne peuvent pas facilement remplacer les styles en ligne. Cela rend également difficile l'implémentation du mode sombre, le maintien d'une thématisation cohérente ou l'autorisation des préférences de couleur utilisateur.
     .who = Utilisateurs malvoyants qui ont besoin de contraste élevé ou de combinaisons de couleurs spécifiques, utilisateurs daltoniens qui doivent ajuster les paires de couleurs problématiques, utilisateurs dyslexiques qui bénéficient de couleurs d'arrière-plan spécifiques, utilisateurs sensibles à la lumière qui ont besoin de thèmes sombres, et utilisateurs qui dépendent d'extensions de navigateur pour la personnalisation des couleurs
     .remediation = Déplacer les styles liés aux couleurs (color, background-color, border-color, etc.) vers des fichiers CSS externes en utilisant des classes. Cela permet aux utilisateurs de remplacer les styles avec leurs propres feuilles de style, facilite le changement de thème, améliore la maintenabilité et prend en charge les requêtes média de préférence utilisateur comme prefers-color-scheme. Utiliser les propriétés personnalisées CSS (variables) pour les couleurs afin de faciliter encore plus la personnalisation.
@@ -2499,7 +2499,7 @@ WarnColorRelatedStyleDefinedExplicitlyInElement =
 
 WarnColorRelatedStyleDefinedExplicitlyInStyleTag =
     .title = CSS lié aux couleurs trouvé dans les balises <style> au sein du document HTML au lieu de feuilles de style externes
-    .what = CSS lié aux couleurs trouvé dans les balises <style> au sein du document HTML au lieu de feuilles de style externes
+    .what = Des règles CSS liées aux couleurs sont définies dans un bloc <style> intégré au document HTML plutôt que dans une feuille de style externe, ce qui rend leur remplacement par l'utilisateur plus difficile.
     .why = Les styles intégrés dans les balises <style> sont plus difficiles à remplacer par les utilisateurs que les feuilles de style externes et peuvent ne pas être mis en cache efficacement. Les utilisateurs ayant des déficiences visuelles qui ont besoin de schémas de couleurs personnalisés doivent utiliser des remplacements CSS plus agressifs. Cette approche rend également difficile le maintien d'une thématisation cohérente entre les pages et empêche les utilisateurs de désactiver complètement les styles si nécessaire.
     .who = Utilisateurs malvoyants nécessitant des schémas de couleurs personnalisés, utilisateurs photosensibles devant modifier les couleurs vives, utilisateurs daltoniens qui doivent ajuster les combinaisons de couleurs, et utilisateurs qui bénéficient d'un style cohérent et prévisible sur toutes les pages
     .remediation = Déplacer les styles de couleur vers des fichiers CSS externes liés avec des balises <link>. Organiser les couleurs en utilisant des propriétés personnalisées CSS pour une thématisation facile. Implémenter le support des préférences utilisateur avec @media (prefers-color-scheme) et des requêtes similaires. Envisager de fournir une fonctionnalité de changement de thème. S'assurer que vos feuilles de style externes sont correctement mises en cache pour les performances.
@@ -2507,7 +2507,7 @@ WarnColorRelatedStyleDefinedExplicitlyInStyleTag =
 
 WarnComplementaryLandmarkAccessibleNameUsesComplementary =
     .title = L'étiquette de la région repère complémentaire utilise le terme générique « complémentaire »
-    .what = L'étiquette de la région repère complémentaire utilise le terme générique « complémentaire »
+    .what = Le nom accessible d'un repère complementary contient le mot « complementary » ou « complémentaire ». Les lecteurs d'écran annoncent déjà le rôle, ce qui duplique l'information.
     .why = Les étiquettes génériques ne décrivent pas le contenu spécifique
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Utilisez des étiquettes descriptives comme « Articles connexes » ou « Barre latérale »
@@ -2515,7 +2515,7 @@ WarnComplementaryLandmarkAccessibleNameUsesComplementary =
 
 WarnComplementaryLandmarkHasNoLabel =
     .title = La région repère complémentaire manque d'étiquette
-    .what = La région repère complémentaire manque d'étiquette
+    .what = Un repère complementary existe sans aria-label ni aria-labelledby. Si la page comporte plusieurs régions complémentaires, les utilisateurs ne pourront pas les distinguer.
     .why = Difficile de distinguer plusieurs sections complémentaires
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Ajouter aria-label ou aria-labelledby pour identifier l'objectif
@@ -2523,7 +2523,7 @@ WarnComplementaryLandmarkHasNoLabel =
 
 WarnContentInfoLandmarkHasNoLabel =
     .title = La région repère contentinfo manque d'étiquette
-    .what = La région repère contentinfo manque d'étiquette
+    .what = Un repère contentinfo (pied de page) n'a ni aria-label ni aria-labelledby. Bien qu'il n'y ait généralement qu'un seul pied de page, une étiquette explicite aide à l'orientation des utilisateurs de lecteurs d'écran.
     .why = Peut être plus difficile d'identifier l'objectif
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Ajouter une étiquette descriptive si plusieurs contentinfo existent
@@ -2539,7 +2539,7 @@ WarnContentOutsideLandmarks =
 
 WarnContentinfoLandmarkAccessibleNameUsesContentinfo =
     .title = La région repère contentinfo utilise le terme générique « contentinfo » dans l'étiquette
-    .what = La région repère contentinfo utilise le terme générique « contentinfo » dans l'étiquette
+    .what = Le nom accessible d'un repère contentinfo contient le mot « contentinfo ». Les lecteurs d'écran annoncent déjà le rôle, ce qui duplique l'information et expose un terme technique aux utilisateurs.
     .why = Étiquetage redondant
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Utiliser une étiquette descriptive ou s'appuyer sur le rôle implicite
@@ -2555,7 +2555,7 @@ WarnCustomBulletStyling =
 
 WarnDeepListNesting =
     .title = Listes imbriquées sur plus de 3 niveaux de profondeur
-    .what = Listes imbriquées sur plus de 3 niveaux de profondeur
+    .what = Une liste (<ul>, <ol>) est imbriquée à plus de 3 niveaux. Les listes très imbriquées sont difficiles à suivre avec un lecteur d'écran, qui annonce « niveau de liste N » à chaque étape.
     .why = Les listes profondément imbriquées sont difficiles à comprendre et à naviguer.
     .who = Utilisateurs de lecteurs d'écran, utilisateurs avec des déficiences cognitives.
     .remediation = Simplifiez la structure de la liste, envisagez des présentations alternatives pour les hiérarchies complexes.
@@ -2579,7 +2579,7 @@ WarnElementLangEmpty =
 
 WarnElementNotInLandmark =
     .title = Contenu important trouvé en dehors de toute région repère, rendant plus difficile pour les utilisateurs de lecteurs d'écran de le trouver et d'y naviguer
-    .what = Contenu important trouvé en dehors de toute région repère, rendant plus difficile pour les utilisateurs de lecteurs d'écran de le trouver et d'y naviguer
+    .what = Un contenu important de la page se trouve en dehors de tout repère défini (banner, nav, main, complementary, contentinfo, region, search, form). Les utilisateurs de lecteurs d'écran naviguant par repères le sauteront.
     .why = Les régions repères créent une structure navigable pour votre page, comme une table des matières. Le contenu en dehors des régions repères est comme avoir des chapitres manquants dans la table des matières - les utilisateurs peuvent ne jamais le trouver lors de la navigation par régions repères. Les utilisateurs de lecteurs d'écran sautent souvent entre les régions repères pour analyser rapidement la structure de la page, et le contenu en dehors des régions repères les oblige à lire toute la page de manière linéaire pour le découvrir. Cela affecte particulièrement les utilisateurs qui connaissent votre site et veulent naviguer rapidement vers des zones de contenu spécifiques.
     .who = Utilisateurs de lecteurs d'écran qui naviguent par régions repères pour explorer efficacement les pages, utilisateurs de clavier utilisant des extensions de navigateur pour la navigation par régions repères, utilisateurs avec des déficiences cognitives qui s'appuient sur une structure de page cohérente, et utilisateurs expérimentés qui utilisent les régions repères pour une navigation rapide
     .remediation = Assurez-vous que tout contenu significatif est contenu dans des régions repères appropriées. Typiquement : utilisez <header> ou role=\"banner\" pour les en-têtes de site, <nav> ou role=\"navigation\" pour les menus de navigation, <main> ou role=\"main\" pour le contenu principal, <aside> ou role=\"complementary\" pour le contenu de barre latérale, <footer> ou role=\"contentinfo\" pour les pieds de page. Le contenu décoratif ou les espaceurs peuvent rester en dehors des régions repères. Examinez la structure de votre page pour vous assurer qu'aucun contenu important n'est isolé en dehors de la structure des régions repères.
@@ -2587,7 +2587,7 @@ WarnElementNotInLandmark =
 
 WarnFastInterval =
     .title = Intervalle JavaScript s'exécutant plus rapidement qu'une fois par seconde
-    .what = Intervalle JavaScript s'exécutant plus rapidement qu'une fois par seconde
+    .what = Un setInterval (ou équivalent) sur la page se déclenche plus d'une fois par seconde. Des mises à jour rapides peuvent interrompre la sortie du lecteur d'écran et déclencher des crises ou des réactions vestibulaires.
     .why = Les mises à jour rapides peuvent être distrayantes et difficiles à traiter.
     .who = Utilisateurs avec des déficiences cognitives, utilisateurs avec des troubles de l'attention.
     .remediation = Ralentissez les intervalles de mise à jour, fournissez des contrôles de pause pour les mises à jour rapides.
@@ -2619,7 +2619,7 @@ WarnFontNotInRecommenedListForA11y =
 
 WarnFormLandmarkAccessibleNameUsesForm =
     .title = Le nom accessible de la région repère de formulaire inclut le mot redondant \"formulaire\"
-    .what = Le nom accessible de la région repère de formulaire inclut le mot redondant \"formulaire\"
+    .what = Le nom accessible d'un repère form inclut le mot « formulaire » (par exemple, « Formulaire de contact »). Les lecteurs d'écran annoncent déjà le rôle comme « formulaire », ce qui duplique l'information.
     .why = Les lecteurs d'écran annoncent déjà \"formulaire\" comme rôle de l'élément, donc inclure \"formulaire\" dans le nom accessible crée des annonces redondantes comme \"formulaire de connexion formulaire\". Cela ajoute une verbosité inutile pour les utilisateurs de lecteurs d'écran et ne suit pas les bonnes pratiques pour l'étiquetage ARIA. Le nom accessible devrait être concis et décrire l'objectif du formulaire sans répéter le type d'élément.
     .who = Utilisateurs de lecteurs d'écran qui entendent des annonces redondantes lors de la navigation dans les formulaires, utilisateurs de contrôle vocal qui ont besoin de commandes efficaces
     .remediation = Supprimez le mot « formulaire » du nom accessible. Utilisez des libellés concis et descriptifs qui indiquent l'objectif sans le type d'élément. Exemples : Utilisez « Connexion » au lieu de « Formulaire de connexion », « Contact » au lieu de « Formulaire de contact », « Recherche » au lieu de « Formulaire de recherche », « Inscription newsletter » au lieu de « Formulaire d'inscription newsletter ». Le lecteur d'écran annoncera automatiquement le rôle, produisant un discours naturel comme « Formulaire de connexion » ou « Formulaire de recherche ».
@@ -2627,7 +2627,7 @@ WarnFormLandmarkAccessibleNameUsesForm =
 
 WarnGenericAccessibleName =
     .title = L'élément a un nom accessible générique qui ne décrit pas son objectif
-    .what = L'élément a un nom accessible générique qui ne décrit pas son objectif
+    .what = Le nom accessible calculé d'un élément est générique (par exemple, « lien », « bouton », « image ») au lieu de décrire l'objet ou la destination spécifique de l'élément.
     .why = Les noms génériques comme \"bouton\" ou \"lien\" n'aident pas les utilisateurs à comprendre l'objectif de l'élément.
     .who = Utilisateurs de lecteurs d'écran, utilisateurs de contrôle vocal.
     .remediation = Fournissez des noms accessibles descriptifs qui expliquent l'objectif spécifique de l'élément.
@@ -2635,7 +2635,7 @@ WarnGenericAccessibleName =
 
 WarnGenericButtonText =
     .title = Le bouton a un texte générique « %(text)s »
-    .what = Le bouton a un texte générique « %(text)s »
+    .what = Le nom accessible d'un bouton se résout en une valeur générique « {"{"}text{"}"} » (par exemple, « bouton », « action »). Le nom doit décrire ce que fait le bouton, et non ce qu'il est.
     .why = Le texte du bouton « %(text)s » ne décrit pas ce que fait le bouton. Lorsque les utilisateurs de lecteurs d'écran naviguent par boutons ou entendent des boutons hors contexte, « %(text)s » ne fournit aucune information sur l'objectif ou l'action du bouton.
     .who = Utilisateurs de lecteurs d'écran naviguant par boutons qui entendent « %(text)s » sans contexte, utilisateurs avec des handicaps cognitifs qui ont besoin de libellés d'action clairs
     .remediation = Changez « %(text)s » pour décrire l'action spécifique, comme « Soumettre l'inscription », « Enregistrer les modifications », ou « Rechercher des produits » au lieu de simplement « %(text)s »
@@ -2643,7 +2643,7 @@ WarnGenericButtonText =
 
 WarnGenericDocumentLinkText =
     .title = Le lien de document utilise un texte générique comme \"PDF\" sans décrire le contenu
-    .what = Le lien de document utilise un texte générique comme \"PDF\" sans décrire le contenu
+    .what = Un lien vers un document (par exemple, un PDF) utilise un texte générique tel que « PDF », « télécharger » ou « document » sans décrire le contenu du document.
     .why = Les utilisateurs ont besoin de savoir quel document ils téléchargent, pas seulement son format.
     .who = Tous les utilisateurs, en particulier les utilisateurs de lecteurs d'écran qui examinent les liens.
     .remediation = Inclure le titre du document et le format dans le texte du lien (par ex., « Rapport annuel 2023 (PDF, 2 Mo) »).
@@ -2667,7 +2667,7 @@ WarnHandlerNoBorderOutline =
 
 WarnHeadingFoundInLandmarkButIsLabelledByAnAriaLabelledBy =
     .title = La région repère a un titre mais utilise un élément différent pour le libellé
-    .what = La région repère a un titre mais utilise un élément différent pour le libellé
+    .what = Un repère contient un titre en début de section, mais son aria-labelledby pointe vers un autre élément au lieu d'utiliser ce titre comme étiquette.
     .why = Confus lorsque le titre ne correspond pas au libellé de la région repère
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Utilisez le titre comme libellé de la région repère
@@ -2675,7 +2675,7 @@ WarnHeadingFoundInLandmarkButIsLabelledByAnAriaLabelledBy =
 
 WarnHeadingFoundInsideLandmarkButDoesntLabelLandmark =
     .title = Le titre à l'intérieur de la région repère n'étiquette pas la région repère
-    .what = Le titre à l'intérieur de la région repère n'étiquette pas la région repère
+    .what = Un repère contient un titre qui pourrait naturellement servir d'étiquette, mais le repère n'a aucun aria-labelledby pointant vers ce titre (ni aucun autre nom accessible).
     .why = Occasion manquée pour un étiquetage clair de la région repère
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Envisagez d'utiliser un titre comme étiquette de région repère via aria-labelledby
@@ -2683,7 +2683,7 @@ WarnHeadingFoundInsideLandmarkButDoesntLabelLandmark =
 
 WarnHeadingInsideDisplayNone =
     .title = Le titre est masqué avec display:none
-    .what = Le titre est masqué avec display:none
+    .what = Un élément de titre existe dans le DOM mais est masqué par display:none. La plupart des lecteurs d'écran ignorent le contenu en display:none, de sorte que le titre n'apparaît pas dans la liste des titres.
     .why = Les titres masqués peuvent affecter la structure du document
     .who = Utilisateurs de lecteurs d'écran (varie selon l'implémentation)
     .remediation = Supprimez les titres inutilisés ou rendez-les visibles
@@ -2691,7 +2691,7 @@ WarnHeadingInsideDisplayNone =
 
 WarnHeadingOver60CharsLong =
     .title = Le texte du titre fait %(length)s caractères, dépassant la limite recommandée de %(limit)s caractères
-    .what = Le texte du titre fait %(length)s caractères, dépassant la limite recommandée de %(limit)s caractères
+    .what = Le texte d'un titre fait {"{"}length{"}"} caractères, dépassant la limite recommandée de {"{"}limit{"}"} caractères. Les titres longs sont plus difficiles à parcourir et à utiliser comme entrées dans la liste des repères.
     .why = Ce titre contient %(length)s caractères, ce qui dépasse la recommandation de %(limit)s caractères. Les titres longs sont plus difficiles à parcourir rapidement, plus difficiles à comprendre d'un coup d'œil et peuvent submerger les utilisateurs. Les utilisateurs de lecteurs d'écran qui entendent tout le texte du titre peuvent avoir du mal à saisir le point principal. Les titres longs causent également des problèmes de mise en page sur les appareils mobiles et dans les menus de navigation.
     .who = Utilisateurs avec des handicaps cognitifs qui bénéficient de titres concis et clairs, utilisateurs de lecteurs d'écran qui doivent écouter tout le titre, utilisateurs parcourant rapidement la page pour trouver des informations, et utilisateurs mobiles avec un espace d'écran limité
     .remediation = Raccourcissez le titre de %(length)s à moins de %(limit)s caractères tout en préservant son sens. Texte actuel : \"%(text)s\" - Considérez diviser en un titre plus court avec du texte explicatif en dessous, ou concentrez-vous sur le message clé. Utilisez un langage descriptif mais concis.
@@ -2699,7 +2699,7 @@ WarnHeadingOver60CharsLong =
 
 WarnHighTabindex =
     .title = Valeur tabindex très élevée utilisée (supérieure à 10)
-    .what = Valeur tabindex très élevée utilisée (supérieure à 10)
+    .what = Un élément a un tabindex supérieur à 10, indiquant un ordre de tabulation orchestré manuellement. De telles séquences sont fragiles et faciles à casser lorsque la page change.
     .why = Les valeurs tabindex élevées indiquent des tentatives de contrôler l'ordre de tabulation qui créent probablement une navigation confuse.
     .who = Utilisateurs de clavier subissant un ordre de tabulation inattendu.
     .remediation = Supprimer les valeurs tabindex positives, restructurer le DOM pour un ordre de tabulation naturel.
@@ -2771,7 +2771,7 @@ WarnInvalidLangChange =
 
 WarnItalicText =
     .title = Texte en italique utilisé de manière extensive ce qui peut réduire la lisibilité
-    .what = Texte en italique utilisé de manière extensive ce qui peut réduire la lisibilité
+    .what = Un bloc important de texte de corps est rendu en italique. Le texte de corps en italique réduit la vitesse de lecture, en particulier pour les utilisateurs dyslexiques ou malvoyants.
     .why = Le texte en italique est plus difficile à lire, surtout pour les utilisateurs avec dyslexie.
     .who = Utilisateurs avec dyslexie, utilisateurs malvoyants.
     .remediation = Limitez le texte en italique à une courte emphase, utilisez le gras pour une emphase plus forte.
@@ -2779,7 +2779,7 @@ WarnItalicText =
 
 WarnJustifiedText =
     .title = Le texte utilise la justification complète affectant la lisibilité
-    .what = Le texte utilise la justification complète, affectant la lisibilité
+    .what = Le texte de corps est rendu avec text-align: justify, ce qui crée un espacement irrégulier des mots. Les lecteurs dyslexiques et les utilisateurs ayant des troubles cognitifs perdent souvent leur place dans un texte justifié.
     .why = Le texte justifié crée un espacement irrégulier qui rend la lecture difficile.
     .who = Utilisateurs dyslexiques, utilisateurs avec des troubles cognitifs.
     .remediation = Utilisez l'alignement à gauche pour le contenu principal, évitez la justification complète.
@@ -2803,7 +2803,7 @@ WarnLinkFocusGradientBackground =
 
 WarnLinkLooksLikeButton =
     .title = Le lien est stylisé pour ressembler à un bouton mais utilise un élément anchor
-    .what = Le lien est stylisé pour ressembler à un bouton mais utilise un élément anchor
+    .what = Un élément <a> est stylisé visuellement comme un bouton (arrière-plan, marges intérieures, coins arrondis), mais utiliser un lien au lieu de <button> peut perturber les utilisateurs de lecteurs d'écran et de clavier qui s'attendent à un comportement différent entre Entrée et Espace.
     .why = Les liens et boutons ont des comportements différents - les liens naviguent vers de nouveaux emplacements tandis que les boutons déclenchent des actions. Lorsque les liens ressemblent à des boutons, les utilisateurs peuvent avoir des attentes incorrectes sur ce qui va se passer. Les utilisateurs de clavier s'attendent à ce que la touche Espace active les boutons mais cela ne fonctionne pas sur les liens.
     .who = Les utilisateurs de clavier qui s'attendent à un comportement de bouton, les utilisateurs de lecteurs d'écran qui l'entendent annoncé comme un lien mais le voient comme un bouton, et les utilisateurs ayant des déficiences cognitives qui comptent sur des interactions cohérentes
     .remediation = Si l'élément effectue une action (soumettre un formulaire, ouvrir une boîte de dialogue), utilisez un élément button. S'il navigue vers une nouvelle URL, gardez-le comme lien mais considérez si le style de bouton est approprié. Assurez-vous que le comportement du clavier correspond au type d'élément.
@@ -2827,7 +2827,7 @@ WarnLinkTransparentOutline =
 
 WarnLongAnimation =
     .title = La durée d'animation (%(duration)s) dépasse 5 secondes
-    .what = La durée d'animation (%(duration)s) dépasse 5 secondes
+    .what = Une animation a une durée de {"{"}duration{"}"}, dépassant le seuil de 5 secondes considéré comme « long » par les WCAG. Les animations longues nécessitent un mécanisme pour les mettre en pause, les arrêter ou les masquer (CS 2.2.2).
     .why = Les animations longues peuvent être distrayantes et peuvent nécessiter des contrôles utilisateur. Les durées d'animation étendues rendent plus difficile pour les utilisateurs de se concentrer sur le contenu et peuvent être accablantes pour les utilisateurs avec des troubles cognitifs.
     .who = Utilisateurs avec des troubles de l'attention (TDAH), utilisateurs avec des troubles cognitifs, utilisateurs avec des troubles vestibulaires.
     .remediation = Raccourcissez animation-duration à 5 secondes ou moins, ou fournissez des contrôles pause/arrêt. Considérez respecter la requête média prefers-reduced-motion. CSS actuel :\n%(animationCSS)s
@@ -2843,7 +2843,7 @@ WarnMapPotentialContentHiding =
 
 WarnMissingAriaLabelledby =
     .title = Le champ de formulaire pourrait bénéficier d'aria-labelledby pour un étiquetage complexe
-    .what = Le champ de formulaire pourrait bénéficier d'aria-labelledby pour un étiquetage complexe
+    .what = Un champ de formulaire possède une étiquette simple, mais le contexte environnant (instructions, messages d'erreur, unités) suggère qu'il pourrait bénéficier d'un aria-labelledby/aria-describedby pour intégrer ce contexte supplémentaire.
     .why = Les formulaires complexes peuvent nécessiter plusieurs étiquettes ou descriptions pour plus de clarté.
     .who = Utilisateurs de lecteurs d'écran nécessitant un contexte supplémentaire.
     .remediation = Utilisez aria-labelledby pour associer plusieurs étiquettes ou aria-describedby pour le texte d'aide.
@@ -2851,7 +2851,7 @@ WarnMissingAriaLabelledby =
 
 WarnMissingAriaModal =
     .title = Boîte de dialogue modale manque aria-modal=\"true\"
-    .what = Boîte de dialogue modale manque aria-modal=\"true\"
+    .what = Une boîte de dialogue a role="dialog" mais ne possède pas aria-modal="true". Certains lecteurs d'écran utilisent aria-modal pour maintenir les curseurs virtuels à l'intérieur de la boîte de dialogue tant qu'elle est ouverte.
     .why = Sans aria-modal, les lecteurs d'écran peuvent ne pas contraindre correctement la navigation à la modale.
     .who = Utilisateurs de lecteurs d'écran qui peuvent naviguer accidentellement en dehors de la modale.
     .remediation = Ajoutez aria-modal=\"true\" aux conteneurs modaux avec une gestion appropriée du focus.
@@ -2859,7 +2859,7 @@ WarnMissingAriaModal =
 
 WarnMissingBannerLandmark =
     .title = Page manque une région repère banner pour le contenu d'en-tête
-    .what = Page manque une région repère banner pour le contenu d'en-tête
+    .what = La page semble visuellement avoir une zone d'en-tête (logo, navigation supérieure), mais ne possède pas de <header> au niveau racine ni d'élément avec role="banner".
     .why = La région repère banner aide les utilisateurs à naviguer rapidement vers l'en-tête/marque de la page.
     .who = Utilisateurs de lecteurs d'écran naviguant par régions repères.
     .remediation = Utilisez l'élément <header> ou role=\"banner\" pour le contenu d'en-tête de page.
@@ -2867,7 +2867,7 @@ WarnMissingBannerLandmark =
 
 WarnMissingContentinfoLandmark =
     .title = Page manquant une région repère contentinfo pour le pied de page
-    .what = Page manquant une région repère contentinfo pour le pied de page
+    .what = La page semble visuellement avoir une zone de pied de page (mentions légales, liens secondaires), mais ne possède pas de <footer> au niveau racine ni d'élément avec role="contentinfo".
     .why = La région repère contentinfo aide les utilisateurs à trouver les informations de pied de page comme les droits d'auteur et les liens.
     .who = Utilisateurs de lecteurs d'écran naviguant par régions repères.
     .remediation = Utilisez l'élément <footer> ou role=\"contentinfo\" pour le pied de page.
@@ -2875,7 +2875,7 @@ WarnMissingContentinfoLandmark =
 
 WarnMissingDocumentMetadata =
     .title = Liens de documents manquant des métadonnées sur le type de fichier ou la taille
-    .what = Liens de documents manquant des métadonnées sur le type de fichier ou la taille
+    .what = Un lien vers un document téléchargeable (par exemple, PDF, DOCX, XLSX) n'indique pas le type ni la taille du fichier dans son texte visible ou son nom accessible.
     .why = Les utilisateurs ont besoin de connaître les détails du document avant de le télécharger.
     .who = Utilisateurs avec connexions lentes, utilisateurs mobiles avec limites de données.
     .remediation = Incluez le type de fichier et la taille dans le texte du lien ou le texte adjacent.
@@ -2883,7 +2883,7 @@ WarnMissingDocumentMetadata =
 
 WarnMissingRequiredIndication =
     .title = Champs de formulaire requis non clairement indiqués
-    .what = Champs de formulaire requis non clairement indiqués
+    .what = Un champ de formulaire possède l'attribut required (ou aria-required="true") mais aucun indicateur visible « obligatoire » à proximité de l'étiquette ; les utilisateurs voyants ne savent donc pas que le champ est obligatoire.
     .why = Les utilisateurs doivent savoir quels champs sont requis avant de soumettre les formulaires.
     .who = Tous les utilisateurs, en particulier ceux utilisant des lecteurs d'écran.
     .remediation = Marquez les champs requis avec aria-required=\"true\" et des indicateurs visuels.
@@ -2899,7 +2899,7 @@ WarnModalMissingAriaLabelledby =
 
 WarnModalMissingAriaModal =
     .title = Boîte de dialogue modale manquant l'attribut aria-modal
-    .what = Boîte de dialogue modale manquant l'attribut aria-modal
+    .what = Une superposition de fenêtre modale est affichée, mais son conteneur ne possède pas aria-modal="true". Certaines technologies d'assistance peuvent continuer à exposer le contenu en arrière-plan.
     .why = aria-modal aide les technologies d'assistance à comprendre les limites de la boîte modale.
     .who = Utilisateurs de lecteurs d'écran naviguant le contenu modal.
     .remediation = Ajoutez aria-modal=\"true\" aux conteneurs modaux.
@@ -2907,7 +2907,7 @@ WarnModalMissingAriaModal =
 
 WarnModalNoFocusableElements =
     .title = La modale n'a aucun élément focalisable
-    .what = La modale n'a aucun élément focalisable
+    .what = Une fenêtre modale ou boîte de dialogue est ouverte mais ne contient aucun élément pouvant recevoir le focus — pas de boutons, pas de liens, pas de champs. Les utilisateurs du clavier ne peuvent pas déplacer le focus dans la boîte de dialogue.
     .why = Les modales sans éléments focalisables piègent le focus clavier sans actions disponibles.
     .who = Les utilisateurs de clavier ne peuvent pas interagir avec la modale.
     .remediation = Assurez-vous que les modales contiennent au moins un élément focalisable (bouton de fermeture, champs de formulaire, etc.).
@@ -2915,7 +2915,7 @@ WarnModalNoFocusableElements =
 
 WarnMultipleBannerLandmarksButNotAllHaveLabels =
     .title = Plusieurs régions repères de bannière existent mais toutes n'ont pas d'étiquettes
-    .what = Plusieurs régions repères de bannière existent mais toutes n'ont pas d'étiquettes
+    .what = La page comporte plusieurs repères banner, mais au moins l'un d'eux n'a ni aria-label ni aria-labelledby. Tous les repères banner ont besoin d'étiquettes lorsqu'il y en a plus d'un.
     .why = Un étiquetage incohérent rend la navigation difficile
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Assurez-vous que toutes les régions repères banner ont des étiquettes ou réduisez à une seule banner
@@ -2923,7 +2923,7 @@ WarnMultipleBannerLandmarksButNotAllHaveLabels =
 
 WarnMultipleComplementaryLandmarksButNotAllHaveLabels =
     .title = Plusieurs régions repères complementary mais toutes ne sont pas étiquetées
-    .what = Plusieurs régions repères complementary mais toutes ne sont pas étiquetées
+    .what = La page comporte plusieurs repères complementary, mais au moins l'un d'eux n'a ni aria-label ni aria-labelledby.
     .why = L'étiquetage incohérent rend la navigation difficile
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Assurez-vous que toutes les régions repères complementary ont des étiquettes uniques
@@ -2931,7 +2931,7 @@ WarnMultipleComplementaryLandmarksButNotAllHaveLabels =
 
 WarnMultipleContentInfoLandmarksButNotAllHaveLabels =
     .title = Plusieurs régions repères contentinfo existent mais toutes n'ont pas d'étiquettes
-    .what = Plusieurs régions repères contentinfo existent mais toutes n'ont pas d'étiquettes
+    .what = La page comporte plusieurs repères contentinfo, mais au moins l'un d'eux n'a ni aria-label ni aria-labelledby.
     .why = L'étiquetage incohérent rend la navigation difficile
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Assurez-vous que toutes les régions repères contentinfo ont des étiquettes ou réduisez à une seule contentinfo
@@ -2939,7 +2939,7 @@ WarnMultipleContentInfoLandmarksButNotAllHaveLabels =
 
 WarnMultipleNavLandmarksButNotAllHaveLabels =
     .title = Plusieurs régions repères navigation mais toutes ne sont pas étiquetées
-    .what = Plusieurs régions repères navigation mais toutes ne sont pas étiquetées
+    .what = La page comporte plusieurs repères de navigation, mais au moins l'un d'eux n'a ni aria-label ni aria-labelledby pour le distinguer.
     .why = Les utilisateurs ne peuvent pas distinguer entre les zones de navigation
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Étiqueter toutes les régions repères de navigation de manière unique
@@ -2947,7 +2947,7 @@ WarnMultipleNavLandmarksButNotAllHaveLabels =
 
 WarnMultipleNavNeedsLabel =
     .title = Plusieurs régions repères de navigation trouvées sans étiquettes distinctives
-    .what = Plusieurs régions repères de navigation trouvées sans étiquettes distinctives
+    .what = Deux éléments <nav> ou plus ont été trouvés sur la page, et au moins l'un d'eux n'a ni aria-label ni aria-labelledby. Chaque repère de navigation a besoin d'une étiquette lorsqu'il y en a plus d'un.
     .why = Lorsqu'une page contient plusieurs zones de navigation (menu principal, liens de pied de page, fil d'Ariane, navigation latérale), les utilisateurs doivent pouvoir les distinguer. Sans étiquettes uniques, les utilisateurs de lecteurs d'écran entendent « navigation » plusieurs fois sans indication de la zone de navigation qu'ils explorent. Cela crée de la confusion sur le menu qui contient les liens recherchés et oblige les utilisateurs à explorer chaque navigation pour comprendre son objectif.
     .who = Utilisateurs de lecteurs d'écran qui doivent distinguer entre différentes zones de navigation, utilisateurs de clavier naviguant entre plusieurs menus, utilisateurs avec des déficiences cognitives qui ont besoin d'un étiquetage clair, et utilisateurs fréquents qui souhaitent accéder rapidement à des zones de navigation spécifiques
     .remediation = Ajouter des attributs aria-label uniques à chaque élément <nav> ou conteneur role=\"navigation\". Utiliser des étiquettes descriptives comme aria-label=\"Menu principal\", aria-label=\"Liens de pied de page\", aria-label=\"Fil d'Ariane\", aria-label=\"Articles connexes\". Les étiquettes doivent clairement indiquer l'objectif ou l'emplacement de chaque navigation. Tester avec des lecteurs d'écran pour s'assurer que chaque navigation est annoncée avec son étiquette unique.
@@ -2955,7 +2955,7 @@ WarnMultipleNavNeedsLabel =
 
 WarnMultipleRegionLandmarksButNotAllHaveLabels =
     .title = Plusieurs régions repères mais pas toutes étiquetées
-    .what = Plusieurs régions repères mais pas toutes étiquetées
+    .what = La page comporte plusieurs repères region, mais au moins l'un d'eux n'a ni aria-label ni aria-labelledby. Tous les repères region ont besoin d'étiquettes lorsqu'il y en a plus d'un.
     .why = Les régions sans étiquettes ne sont pas exposées comme régions repères
     .who = Utilisateurs de lecteurs d'écran
     .remediation = S'assurer que toutes les régions ont des étiquettes ou utiliser des éléments différents
@@ -2963,7 +2963,7 @@ WarnMultipleRegionLandmarksButNotAllHaveLabels =
 
 WarnMultipleTitleElements =
     .title = %(count)s éléments <title> trouvés dans l'en-tête du document, ce qui peut causer un comportement imprévisible
-    .what = %(count)s éléments <title> trouvés dans l'en-tête du document, ce qui peut causer un comportement imprévisible
+    .what = {"{"}count{"}"} éléments <title> ont été trouvés dans le <head>. La spécification HTML n'en autorise qu'un — les navigateurs et lecteurs d'écran utiliseront généralement le premier, mais la duplication signale un bogue.
     .why = Avoir %(count)s éléments title fait que les navigateurs choisissent de manière imprévisible entre eux, créant une identification de page incohérente. Différents navigateurs et technologies d'assistance peuvent choisir différents titres parmi les %(count)s disponibles, créant une expérience incohérente. Le référencement est négativement affecté car les moteurs de recherche peuvent indexer le mauvais titre.
     .who = Tous les utilisateurs voyant des titres incohérents dans les onglets du navigateur, utilisateurs de lecteurs d'écran qui peuvent entendre des titres différents de ce qui est affiché visuellement, utilisateurs mettant en signet des pages avec des titres incorrects
     .remediation = Supprimez {"{"}count-1{"}"} éléments <title> en double, en gardant seulement un dans l'en-tête du document. Vérifiez les scripts qui pourraient ajouter des titres dynamiquement. Assurez-vous que votre CMS ou framework ne crée pas de titres en double.
@@ -2971,7 +2971,7 @@ WarnMultipleTitleElements =
 
 WarnNavLandmarkAccessibleNameUsesNavigation =
     .title = La région repère de navigation utilise le terme générique « navigation » dans l'étiquette
-    .what = La région repère de navigation utilise le terme générique « navigation » dans l'étiquette
+    .what = Le nom accessible d'un repère <nav> contient le mot « navigation » (par exemple, « Navigation principale »). Les lecteurs d'écran annoncent déjà le rôle comme « navigation », ce qui est redondant.
     .why = Les étiquettes génériques ne décrivent pas l'objectif spécifique
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Utilisez des libellés plus descriptifs comme « Catégories de produits » ou « Menu de compte utilisateur »
@@ -2979,7 +2979,7 @@ WarnNavLandmarkAccessibleNameUsesNavigation =
 
 WarnNavLandmarkHasNoLabel =
     .title = La région repère de navigation manque de libellé
-    .what = La région repère de navigation manque de libellé
+    .what = Un repère <nav> n'a ni aria-label ni aria-labelledby. Si la page comporte plus d'un repère de navigation, les utilisateurs auront du mal à les distinguer.
     .why = Difficile de distinguer plusieurs zones de navigation
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Ajoutez un aria-label descriptif
@@ -2995,7 +2995,7 @@ WarnNavMissingAccessibleName =
 
 WarnNegativeTabindex =
     .title = L'élément interactif a un tabindex négatif
-    .what = L'élément interactif a un tabindex négatif
+    .what = Un élément interactif (par exemple, un lien ou un bouton) a un tabindex négatif tel que tabindex="-1". C'est intentionnel dans certains modèles (fenêtres modales, widgets personnalisés), mais cela signale souvent une erreur.
     .why = Un tabindex négatif retire les éléments de la navigation clavier, les rendant potentiellement inaccessibles.
     .who = Utilisateurs de clavier qui ne peuvent pas atteindre l'élément.
     .remediation = Utilisez tabindex=\"0\" pour les éléments accessibles au clavier, utilisez -1 uniquement pour le focus programmatique.
@@ -3003,7 +3003,7 @@ WarnNegativeTabindex =
 
 WarnNoBannerLandmark =
     .title = La page ne contient pas de région repère banner pour identifier la zone d'en-tête/masthead
-    .what = La page ne contient pas de région repère banner pour identifier la zone d'en-tête/masthead
+    .what = La page n'a pas de <header> au niveau racine ni d'élément avec role="banner". Sans repère banner, les utilisateurs de lecteurs d'écran ne peuvent pas sauter directement à l'en-tête du site.
     .why = La région repère banner identifie l'en-tête du site contenant le logo, la navigation principale et d'autres contenus à l'échelle du site. Sans elle, les utilisateurs de lecteurs d'écran ne peuvent pas accéder rapidement à la zone d'en-tête en utilisant la navigation par régions repères. Ils doivent lire le contenu de manière linéaire pour trouver les éléments de navigation et d'identité visuelle. Ceci est particulièrement frustrant lorsque les utilisateurs veulent accéder à la navigation principale ou retourner à la page d'accueil via le logo.
     .who = Utilisateurs de lecteurs d'écran qui naviguent par régions repères pour accéder rapidement au contenu d'en-tête, utilisateurs de clavier avec technologie d'assistance recherchant la navigation, utilisateurs avec déficiences cognitives qui s'appuient sur une structure de page cohérente, et utilisateurs qui ont fréquemment besoin d'accéder aux éléments d'en-tête comme la recherche ou la navigation principale
     .remediation = Utilisez l'élément HTML5 <header> au niveau de la page (pas dans article, aside, main, nav, ou section) car il a un rôle banner implicite. Alternativement, ajoutez role=\"banner\" à votre conteneur d'en-tête. Incluez les éléments à l'échelle du site comme le logo, la navigation principale, la recherche du site et la navigation utilitaire dans le banner. Assurez-vous qu'une seule région repère banner existe par page au niveau supérieur.
@@ -3019,7 +3019,7 @@ WarnNoColorSchemeSupport =
 
 WarnNoContentinfoLandmark =
     .title = La page ne contient pas de région repère contentinfo pour identifier la zone de pied de page
-    .what = La page ne contient pas de région repère contentinfo pour identifier la zone de pied de page
+    .what = La page n'a pas de <footer> au niveau racine ni d'élément avec role="contentinfo". Sans repère contentinfo, les utilisateurs de lecteurs d'écran ne peuvent pas sauter rapidement au pied de page.
     .why = La région repère contentinfo (généralement un pied de page) contient des informations importantes sur la page ou le site telles que les mentions de droits d'auteur, les politiques de confidentialité, les informations de contact et les plans de site. Les utilisateurs de lecteurs d'écran s'appuient sur les régions repères pour naviguer rapidement vers ces éléments communs sans avoir à lire toute la page. Lorsque le pied de page manque de balisage de région repère approprié, les utilisateurs doivent rechercher manuellement dans le contenu pour trouver ces informations, ce qui est inefficace et peut les faire manquer d'importantes mentions légales ou liens utiles. La région repère contentinfo fournit un moyen cohérent et prévisible d'accéder à ces informations supplémentaires sur toutes les pages.
     .who = Utilisateurs de lecteurs d'écran qui naviguent par régions repères pour trouver rapidement les informations de pied de page, utilisateurs de clavier qui veulent accéder efficacement au contenu du pied de page, utilisateurs avec déficiences cognitives qui s'appuient sur une structure de page cohérente, et utilisateurs qui ont besoin d'accéder fréquemment aux liens de pied de page comme les politiques de confidentialité ou les informations de contact
     .remediation = Utilisez l'élément HTML5 <footer> pour votre pied de page (il a un rôle implicite de contentinfo lorsqu'il n'est pas imbriqué dans les éléments article, aside, main, nav, ou section). Alternativement, ajoutez role=\"contentinfo\" au conteneur contenant votre contenu de pied de page. Assurez-vous qu'il n'y a qu'une seule région repère contentinfo par page au niveau supérieur. Le pied de page doit contenir des informations sur la page ou le site, pas du contenu principal.
@@ -3051,7 +3051,7 @@ WarnNoCurrentPageIndicator =
 
 WarnNoCursorPointer =
     .title = L'élément cliquable n'affiche pas de curseur pointeur
-    .what = L'élément cliquable n'affiche pas de curseur pointeur
+    .what = Un élément se comporte comme un contrôle cliquable (il possède un gestionnaire de clic ou un rôle interactif), mais son CSS ne définit pas cursor: pointer ; les utilisateurs de souris n'obtiennent donc aucun indice au survol.
     .why = Les changements de curseur aident les utilisateurs à identifier les éléments interactifs.
     .who = Utilisateurs de souris qui s'appuient sur les changements de curseur.
     .remediation = Ajoutez cursor: pointer en CSS à tous les éléments cliquables.
@@ -3059,7 +3059,7 @@ WarnNoCursorPointer =
 
 WarnNoFieldset =
     .title = Le groupe de boutons radio/cases à cocher manque de fieldset et de legend
-    .what = Le groupe de boutons radio/cases à cocher manque de fieldset et de legend
+    .what = Un groupe de boutons radio ou de cases à cocher liés a été trouvé, mais il n'est pas encapsulé dans un <fieldset> avec un <legend> décrivant l'objet du groupe.
     .why = La relation de groupe n'est pas claire
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Enveloppez les champs liés dans un fieldset avec une legend
@@ -3067,7 +3067,7 @@ WarnNoFieldset =
 
 WarnNoLegend =
     .title = Fieldset sans élément legend
-    .what = Fieldset sans élément legend
+    .what = Un élément <fieldset> existe mais ne possède aucun enfant <legend> ; le groupe n'a donc aucun nom accessible décrivant à quoi servent ses champs.
     .why = Les légendes fournissent un contexte pour les champs de formulaire groupés.
     .who = Utilisateurs de lecteurs d'écran qui ont besoin d'étiquettes de groupe.
     .remediation = Ajoutez legend comme premier enfant de fieldset pour étiqueter le groupe.
@@ -3083,7 +3083,7 @@ WarnNoNavLandmarksOnPage =
 
 WarnNoNavigationLandmark =
     .title = La page ne contient aucune région repère de navigation pour identifier les zones de navigation
-    .what = La page ne contient aucune région repère de navigation pour identifier les zones de navigation
+    .what = La page ne contient ni élément <nav> ni élément avec role="navigation" ; les utilisateurs de lecteurs d'écran ne peuvent donc pas utiliser la navigation par repères pour atteindre une région de navigation.
     .why = Les régions repères de navigation identifient les zones contenant des liens de navigation, permettant aux utilisateurs de naviguer rapidement vers les menus sans lire tout le contenu. La plupart des pages web ont plusieurs zones de navigation (menu principal, liens de pied de page, navigation latérale, fil d'Ariane) mais sans balisage approprié, ce ne sont que des listes de liens mélangées avec d'autre contenu. Les utilisateurs de lecteurs d'écran doivent chercher les zones de navigation ou écouter tous les liens pour trouver ce dont ils ont besoin. Les régions repères de navigation rendent ces zones immédiatement découvrables et permettent aux utilisateurs de naviguer efficacement entre différentes régions de navigation.
     .who = Utilisateurs de lecteurs d'écran qui utilisent les régions repères pour trouver rapidement les menus de navigation, utilisateurs de clavier naviguant sur des sites complexes avec plusieurs menus, utilisateurs avec des handicaps cognitifs qui ont besoin d'une identification claire des zones de navigation, et utilisateurs avec des handicaps moteurs qui ont besoin de minimiser la navigation inutile
     .remediation = Enveloppez les zones de navigation dans des éléments <nav> ou ajoutez role=\"navigation\" aux conteneurs avec des liens de navigation. Si vous avez plusieurs zones de navigation, étiquetez chacune avec aria-label pour les distinguer (par exemple, aria-label=\"Navigation principale\", aria-label=\"Liens de pied de page\", aria-label=\"Fil d'Ariane\"). Tous les groupes de liens n'ont pas besoin d'être une région repère de navigation - utilisez-la pour les blocs de navigation majeurs que les utilisateurs voudraient trouver rapidement.
@@ -3091,7 +3091,7 @@ WarnNoNavigationLandmark =
 
 WarnPageTitleTooLong =
     .title = Le titre de la page fait %(length)s caractères, dépassant la limite recommandée de %(limit)s caractères
-    .what = Le titre de la page fait %(length)s caractères, dépassant la limite recommandée de %(limit)s caractères
+    .what = Le <title> de la page fait {"{"}length{"}"} caractères, dépassant la limite recommandée de {"{"}limit{"}"}. Les titres longs sont tronqués dans les onglets du navigateur et les résultats de recherche.
     .why = Le titre \"%(found)s\" avec %(length)s caractères sera tronqué dans les onglets du navigateur (typiquement autour de 30 caractères) et les résultats des moteurs de recherche (typiquement 50-60 caractères), perdant des informations importantes. L'information la plus importante pourrait être à la fin et ne jamais être vue. Les utilisateurs de lecteurs d'écran doivent écouter des titres longs de manière répétée.
     .who = Utilisateurs avec plusieurs onglets ouverts qui voient des titres tronqués, utilisateurs recherchant du contenu qui ne peuvent pas voir les titres complets dans les résultats, utilisateurs de lecteurs d'écran qui doivent écouter des titres longs de manière répétée, utilisateurs mobiles avec encore moins d'espace pour l'affichage du titre
     .remediation = Raccourcissez le titre de %(length)s à moins de %(limit)s caractères. Placez l'information la plus importante et unique en premier. Supprimez les mots inutiles comme \"Bienvenue sur\" ou \"Cette page contient\". Testez comment les titres apparaissent dans les onglets du navigateur et les résultats de recherche pour vous assurer que l'information clé est visible.
@@ -3099,7 +3099,7 @@ WarnPageTitleTooLong =
 
 WarnPageTitleTooShort =
     .title = Le titre de page \"%(found)s\" ne fait que %(length)s caractères, potentiellement pas assez descriptif
-    .what = Le titre de page \"%(found)s\" ne fait que %(length)s caractères, potentiellement pas assez descriptif
+    .what = Le <title> de la page « {"{"}found{"}"} » ne fait que {"{"}length{"}"} caractères. Les titres très courts donnent rarement assez de contexte pour identifier la page parmi les onglets ouverts et les résultats de recherche.
     .why = Le titre \"%(found)s\" avec seulement %(length)s caractères ne fournit pas suffisamment de contexte, surtout quand les utilisateurs ont plusieurs onglets ouverts ou naviguent dans l'historique. Les utilisateurs ne peuvent pas distinguer entre différents sites avec les mêmes titres génériques. Les utilisateurs de lecteurs d'écran qui entendent les titres de page annoncés ont besoin d'informations plus descriptives pour comprendre où ils se trouvent.
     .who = Utilisateurs avec plusieurs onglets de navigateur qui doivent distinguer entre les pages, utilisateurs de lecteurs d'écran qui dépendent de titres descriptifs pour le contexte, utilisateurs naviguant dans l'historique ou les favoris, utilisateurs avec des handicaps cognitifs qui ont besoin d'une identification claire des pages
     .remediation = Étendre \"%(found)s\" pour être plus descriptif en incluant le nom du site et l'objectif de la page. Viser 20-60 caractères qui décrivent clairement le contenu de la page. S'assurer que chaque page a un titre unique et descriptif qui a du sens hors contexte.
@@ -3107,7 +3107,7 @@ WarnPageTitleTooShort =
 
 WarnProblematicAnimation =
     .title = Animation détectée qui peut causer des problèmes d'accessibilité
-    .what = Animation détectée qui peut causer des problèmes d'accessibilité
+    .what = Une animation a été détectée dont les propriétés (grande surface, fort contraste, boucle rapide, clignotement) peuvent poser des problèmes d'accessibilité tels que le déclenchement de crises ou un inconfort vestibulaire.
     .why = Les animations peuvent déclencher des crises ou rendre le contenu difficile à lire
     .who = Utilisateurs avec des troubles vestibulaires, épilepsie photosensible, ou handicaps cognitifs
     .remediation = Fournissez des contrôles de pause/arrêt et respectez la préférence prefers-reduced-motion
@@ -3123,7 +3123,7 @@ WarnRedundantTitleAttr =
 
 WarnRegionLandmarkAccessibleNameUsesNavigation =
     .title = La région repère utilise incorrectement « navigation » dans son libellé
-    .what = La région repère utilise incorrectement « navigation » dans son libellé
+    .what = Le nom accessible d'un repère region contient le mot « navigation » (par exemple, « Région de navigation du site »), ce qui prête à confusion pour les utilisateurs quant à savoir s'il s'agit d'un repère region ou d'un repère de navigation.
     .why = Type et objectif de région repère confus
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Utiliser un libellé approprié ou changer en région repère nav
@@ -3131,7 +3131,7 @@ WarnRegionLandmarkAccessibleNameUsesNavigation =
 
 WarnRegionLandmarkHasNoLabelSoIsNotConsideredALandmark =
     .title = La région repère manque du libellé requis pour être considérée comme une région repère
-    .what = La région repère manque du libellé requis pour être considérée comme une région repère
+    .what = Un élément <section> n'a ni aria-label, ni aria-labelledby, ni attribut title. Selon la spécification ARIA, un <section> sans étiquette n'est PAS exposé comme un repère region ; il n'apparaîtra donc pas dans la navigation par repères.
     .why = Les régions sans libellés ne sont pas exposées comme régions repères
     .who = Utilisateurs de lecteurs d'écran
     .remediation = Ajouter aria-label ou aria-labelledby, ou utiliser un type de région repère différent
@@ -3139,7 +3139,7 @@ WarnRegionLandmarkHasNoLabelSoIsNotConsideredALandmark =
 
 WarnRequiredNotIndicated =
     .title = Champ obligatoire non clairement indiqué
-    .what = Champ obligatoire non clairement indiqué
+    .what = Un champ est obligatoire (par exemple, la page renvoie une erreur lorsqu'il est vide), mais le balisage ne le déclare pas comme obligatoire via l'attribut required, aria-required ou un indice visible.
     .why = Les utilisateurs ne savent pas quels champs sont obligatoires
     .who = Tous les utilisateurs, en particulier ceux avec des déficiences cognitives
     .remediation = Ajouter l'attribut required et une indication visuelle
@@ -3147,7 +3147,7 @@ WarnRequiredNotIndicated =
 
 WarnRightAlignedText =
     .title = Le texte du corps est aligné à droite, affectant la lisibilité
-    .what = Le texte du corps est aligné à droite, affectant la lisibilité
+    .what = Le texte de corps d'une page principalement de gauche à droite est rendu avec text-align: right, ce qui perturbe le flux de lecture attendu.
     .why = Le texte aligné à droite est difficile à lire pour du contenu étendu.
     .who = Utilisateurs dyslexiques, utilisateurs avec des troubles de la lecture.
     .remediation = Utiliser l'alignement à gauche pour le texte du corps dans les langues de gauche à droite.
@@ -3227,7 +3227,7 @@ WarnTabindexNoVisibleFocus =
 
 WarnTableMissingThead =
     .title = Tableau sans élément thead pour les en-têtes
-    .what = Tableau sans élément thead pour les en-têtes
+    .what = Un <table> utilise des cellules <th> dans sa première ligne au lieu de les regrouper dans un élément <thead>. Les navigateurs peuvent quand même associer les en-têtes, mais la structure est plus difficile à naviguer pour les technologies d'assistance.
     .why = Thead aide les lecteurs d'écran à distinguer les en-têtes des lignes de données.
     .who = Utilisateurs de lecteurs d'écran naviguant dans les tableaux.
     .remediation = Enveloppez les lignes d'en-têtes dans l'élément thead, les lignes de données dans tbody.
@@ -3259,7 +3259,7 @@ WarnUnlabelledForm =
 
 WarnUnlabelledRegion =
     .title = La région repère manque de nom accessible
-    .what = La région repère manque de nom accessible
+    .what = Un élément avec role="region" ne possède ni aria-label ni aria-labelledby. Sans étiquette, la région ne peut pas être distinguée dans la liste des repères.
     .why = Les régions nommées aident les utilisateurs à comprendre la structure du contenu.
     .who = Utilisateurs de lecteurs d'écran naviguant par régions repères.
     .remediation = Ajoutez aria-label ou aria-labelledby aux régions repères.
@@ -3291,7 +3291,7 @@ WarnVideoMutedAutoplay =
 
 WarnVisualHierarchy =
     .title = La hiérarchie visuelle ne correspond pas à la structure sémantique
-    .what = La hiérarchie visuelle ne correspond pas à la structure sémantique
+    .what = La taille visuelle, la graisse ou le style des titres de la page ne correspond pas systématiquement aux niveaux de titres sous-jacents dans le DOM. Les utilisateurs voyants perçoivent une hiérarchie différente de celle perçue par les utilisateurs de lecteurs d'écran.
     .why = La non-correspondance entre la structure visuelle et sémantique nuit à la compréhension.
     .who = Utilisateurs de lecteurs d'écran, utilisateurs avec des déficiences cognitives.
     .remediation = Assurez-vous que la présentation visuelle correspond à la structure sémantique HTML.
@@ -3299,7 +3299,7 @@ WarnVisualHierarchy =
 
 WarnZeroOutlineOffset =
     .title = Le décalage du contour est défini à zéro
-    .what = Le décalage du contour est défini à zéro
+    .what = Un contour de focus utilise outline-offset: 0, ce qui signifie que le contour est collé contre l'élément. Selon les couleurs d'arrière-plan, le contour peut se fondre visuellement avec la bordure de l'élément.
     .why = L'indicateur de focus touche le bord de l'élément
     .who = Utilisateurs de clavier malvoyants
     .remediation = Utiliser une valeur positive pour outline-offset

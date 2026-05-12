@@ -1,7 +1,7 @@
 {
   "AI_ErrDialogWithoutARIA": {
     "title": "L'élément {element_tag} \"{element_text}\" semble être un dialogue/modal mais manque de balisage ARIA approprié",
-    "what": "L'élément {element_tag} \"{element_text}\" semble être un dialogue/modal mais manque de balisage ARIA approprié",
+    "what": "L'élément {element_tag} « {element_text} » semble être une boîte de dialogue ou un modal, mais ne possède pas le balisage ARIA approprié.",
     "why": "Sans attributs ARIA appropriés, les lecteurs d'écran ne peuvent pas annoncer l'objectif du dialogue, son état, ou fournir une navigation appropriée",
     "who": "Utilisateurs de lecteurs d'écran, utilisateurs de clavier nécessitant une gestion du focus",
     "remediation": "Ajoutez role=\"dialog\", aria-modal=\"true\", aria-label ou aria-labelledby, et implémentez le piège de focus",
@@ -12,7 +12,7 @@
   },
   "AI_ErrHeadingLevelMismatch": {
     "title": "Le niveau de titre {current_level} ne correspond pas à la hiérarchie visuelle (devrait être niveau {suggested_level})",
-    "what": "Le niveau de titre {current_level} ne correspond pas à la hiérarchie visuelle (devrait être niveau {suggested_level})",
+    "what": "Le titre « {heading_text} » est marqué comme <h{current_level}>, mais sa proéminence visuelle suggère qu'il devrait être <h{suggested_level}>.",
     "why": "Des niveaux de titres incorrects créent une structure de document confuse pour les utilisateurs de lecteurs d'écran",
     "who": "Utilisateurs de lecteurs d'écran, utilisateurs qui naviguent par titres",
     "remediation": "Ajustez le niveau de titre pour correspondre à la hiérarchie visuelle de la page",
@@ -80,7 +80,7 @@
   },
   "AI_ErrVisualHeadingNotMarked": {
     "title": "Le texte \"{visual_text}\" apparaît visuellement comme un titre mais n'est pas balisé avec des balises de titre appropriées",
-    "what": "Le texte \"{visual_text}\" apparaît visuellement comme un titre mais n'est pas balisé avec des balises de titre appropriées",
+    "what": "Le texte « {visual_text} » apparaît visuellement comme un titre, mais utilise <{element_tag}> au lieu d'un balisage de titre approprié.",
     "why": "Les utilisateurs de lecteurs d'écran ne reconnaîtront pas ce texte comme un titre, brisant la navigation et la structure du document",
     "who": "Utilisateurs de lecteurs d'écran, utilisateurs qui naviguent par titres",
     "remediation": "Utilisez les balises de titre HTML appropriées (h1-h6) pour le texte qui sert de titres",
@@ -1384,7 +1384,7 @@
   },
   "ErrMapAriaHidden": {
     "title": "Élément map masqué aux technologies d'assistance avec aria-hidden",
-    "what": "Élément map masqué aux technologies d'assistance avec aria-hidden",
+    "what": "Une carte interactive avec aria-hidden=\"true\" contient des éléments focusables que les utilisateurs du clavier peuvent atteindre mais que les utilisateurs de lecteurs d'écran ne peuvent pas percevoir — créant un « piège à focus silencieux ».",
     "why": "Masquer complètement les cartes supprime l'accès aux informations géographiques ou spatiales importantes pour les utilisateurs de lecteurs d'écran.",
     "who": "Utilisateurs aveugles et malvoyants qui ont besoin d'alternatives textuelles pour les informations de carte.",
     "remediation": "Supprimez aria-hidden des cartes, fournissez des alternatives textuelles appropriées et des contrôles accessibles à la place.",
@@ -3241,7 +3241,7 @@
   },
   "AI_ErrAccordionWithoutARIA": {
     "title": "L'élément accordéon \"{element_text}\" manque de balisage ARIA approprié",
-    "what": "L'élément accordéon \"{element_text}\" manque de balisage ARIA approprié",
+    "what": "Un widget de type accordéon (« {element_text} ») a été trouvé dans lequel les en-têtes ouvrent et ferment du contenu, mais le balisage ne contient pas aria-expanded, aria-controls ni les rôles appropriés de bouton/titre.",
     "why": "Sans aria-expanded et les rôles appropriés, les utilisateurs ne peuvent pas déterminer si les sections sont développées ou réduites",
     "who": "Utilisateurs de lecteurs d'écran, utilisateurs de clavier",
     "remediation": "Ajoutez le rôle button aux en-têtes, aria-expanded pour indiquer l'état, et aria-controls pour lier les en-têtes aux panneaux",
@@ -3249,7 +3249,7 @@
   },
   "AI_ErrAmbiguousLinkText": {
     "title": "Le texte du lien \"{element_text}\" est ambigu sans contexte environnant",
-    "what": "Le texte du lien \"{element_text}\" est ambigu sans contexte environnant",
+    "what": "Le texte du lien (« {element_text} ») ne décrit pas sa destination ou son objectif sans le contexte environnant (par exemple, « cliquez ici », « plus », « en savoir plus »).",
     "why": "Les utilisateurs de lecteurs d'écran naviguant par liens ne comprendront pas l'objectif du lien",
     "who": "Utilisateurs de lecteurs d'écran naviguant hors contexte",
     "remediation": "Utilisez un texte de lien descriptif qui a du sens sans contexte, ou ajoutez aria-label",
@@ -3257,7 +3257,7 @@
   },
   "AI_ErrCarouselWithoutARIA": {
     "title": "Le carrousel \"{element_text}\" manque de balisage ARIA et de contrôles appropriés",
-    "what": "Le carrousel \"{element_text}\" manque de balisage ARIA et de contrôles appropriés",
+    "what": "Un carrousel ou un curseur (« {element_text} ») a été détecté, mais il ne possède pas role=\"region\" avec un nom accessible, ni annonces de l'état des diapositives, ni contrôles étiquetés.",
     "why": "Sans ARIA et contrôles appropriés, les utilisateurs ne peuvent pas comprendre ou contrôler le comportement du carrousel",
     "who": "Utilisateurs de lecteurs d'écran, utilisateurs de clavier, utilisateurs avec déficiences motrices",
     "remediation": "Ajoutez role=\"region\", aria-label, aria-live pour les mises à jour, et des contrôles précédent/suivant accessibles",
@@ -3265,7 +3265,7 @@
   },
   "AI_ErrClickableWithoutKeyboard": {
     "title": "L'élément avec gestionnaire onclick n'est pas accessible au clavier",
-    "what": "L'élément avec gestionnaire onclick n'est pas accessible au clavier",
+    "what": "Un élément possède un gestionnaire onclick (ou un écouteur de clic JavaScript similaire), mais aucun rôle, aucun tabindex et aucun gestionnaire d'événements clavier — il peut être cliqué mais pas activé au clavier.",
     "why": "Les utilisateurs de clavier ne peuvent pas activer ce contrôle",
     "who": "Utilisateurs de clavier, utilisateurs qui ne peuvent pas utiliser une souris",
     "remediation": "Ajoutez tabindex=\"0\" et implémentez les gestionnaires onkeypress/onkeydown pour les touches Entrée et Espace",
@@ -3273,7 +3273,7 @@
   },
   "AI_ErrDropdownWithoutARIA": {
     "title": "Le menu déroulant \"{element_text}\" manque de balisage ARIA approprié",
-    "what": "Le menu déroulant \"{element_text}\" manque de balisage ARIA approprié",
+    "what": "Un widget de menu déroulant (« {element_text} ») a été trouvé dont le déclencheur et le panneau ne possèdent pas les relations aria-haspopup, aria-expanded et aria-controls nécessaires à l'utilisation par lecteur d'écran.",
     "why": "Sans aria-expanded, aria-haspopup et les rôles appropriés, les utilisateurs ne peuvent pas comprendre l'état du menu ou y naviguer correctement",
     "who": "Utilisateurs de lecteurs d'écran, utilisateurs de clavier",
     "remediation": "Ajoutez aria-haspopup=\"true\", l'état aria-expanded, et role=\"menu\" avec role=\"menuitem\" pour les options",
@@ -3281,7 +3281,7 @@
   },
   "AI_ErrInteractiveElementIssue": {
     "title": "L'élément interactif {element_tag} \"{element_text}\" présente des problèmes d'accessibilité",
-    "what": "L'élément interactif {element_tag} \"{element_text}\" présente des problèmes d'accessibilité",
+    "what": "Un élément interactif a été détecté qui peut présenter des problèmes d'accessibilité clavier ou ARIA.",
     "why": "Les éléments interactifs sans balisage sémantique approprié ou support clavier créent des obstacles pour les utilisateurs de technologies d'assistance",
     "who": "Utilisateurs de clavier, utilisateurs de lecteurs d'écran, utilisateurs de contrôle vocal",
     "remediation": "Utilisez des éléments HTML sémantiques ou ajoutez des rôles ARIA appropriés et le support clavier",
@@ -3289,7 +3289,7 @@
   },
   "AI_ErrLinkWithoutText": {
     "title": "L'élément lien n'a pas de texte accessible",
-    "what": "L'élément lien n'a pas de texte accessible",
+    "what": "Un élément <a> a été détecté sans texte visible, aria-label, aria-labelledby ni image enfant avec alt — il n'a donc aucun nom accessible.",
     "why": "Les lecteurs d'écran annoncent ceci comme \"lien\" sans aucun contexte",
     "who": "Utilisateurs de lecteurs d'écran",
     "remediation": "Ajoutez du texte de lien, aria-label, ou l'attribut aria-labelledby",
@@ -3297,7 +3297,7 @@
   },
   "AI_ErrMenuWithoutARIA": {
     "title": "Le menu de navigation manque de balisage ARIA approprié",
-    "what": "Le menu de navigation manque de balisage ARIA approprié",
+    "what": "Un menu de navigation (par exemple, un menu déroulant ou un méga-menu) a été détecté sans le modèle ARIA approprié — pas de structure role=\"menu\"/role=\"menuitem\" et pas de gestion clavier par tabindex itinérant.",
     "why": "Les lecteurs d'écran ne reconnaîtront pas ceci comme un menu de navigation",
     "who": "Utilisateurs de lecteurs d'écran",
     "remediation": "Ajoutez role=\"navigation\" au conteneur et les attributs ARIA appropriés pour les éléments de menu",
@@ -3305,7 +3305,7 @@
   },
   "AI_ErrMissingInteractiveRole": {
     "title": "L'élément interactif {element_tag} manque de rôle ARIA approprié",
-    "what": "L'élément interactif {element_tag} manque de rôle ARIA approprié",
+    "what": "Un élément interactif <{element_tag}> (avec des gestionnaires de clic ou un autre comportement interactif) n'a aucun rôle ARIA déclarant ce qu'il est — les lecteurs d'écran ne peuvent pas indiquer aux utilisateurs s'il s'agit d'un bouton, d'un lien, d'un commutateur, etc.",
     "why": "Les lecteurs d'écran n'annonceront pas ceci comme un contrôle interactif",
     "who": "Utilisateurs de lecteurs d'écran",
     "remediation": "Ajoutez le rôle ARIA approprié (button, link, checkbox, etc.) à l'élément",
@@ -3313,7 +3313,7 @@
   },
   "AI_ErrNonSemanticButton": {
     "title": "L'élément cliquable {element_tag} \"{element_text}\" n'est pas un bouton sémantique",
-    "what": "L'élément cliquable {element_tag} \"{element_text}\" n'est pas un bouton sémantique",
+    "what": "L'élément <{element_tag}> est stylisé comme un bouton avec onclick — il devrait utiliser <button>.",
     "why": "Les boutons non sémantiques ne sont pas accessibles au clavier et invisibles aux lecteurs d'écran",
     "who": "Utilisateurs de clavier, utilisateurs de lecteurs d'écran",
     "remediation": "Remplacez {element_tag} par un élément <button> ou ajoutez role=\"button\" et tabindex=\"0\"",
@@ -3361,7 +3361,7 @@
   },
   "AI_ErrDialogMissingLabel": {
     "title": "Le dialogue a un rôle mais pas d'aria-label ou aria-labelledby",
-    "what": "Le dialogue a un rôle mais pas d'aria-label ou aria-labelledby",
+    "what": "La boîte de dialogue possède role=\"dialog\" mais ni aria-label ni aria-labelledby.",
     "why": "Les lecteurs d'écran annonceront le dialogue sans nom, rendant son objectif inclair",
     "who": "Utilisateurs de lecteurs d'écran",
     "remediation": "Ajoutez aria-label ou aria-labelledby au dialogue pour fournir un nom accessible",
@@ -3385,7 +3385,7 @@
   },
   "AI_ErrNonSemanticLink": {
     "title": "L'élément ressemble à un lien mais utilise {element_tag} au lieu de <a>",
-    "what": "L'élément ressemble à un lien mais utilise {element_tag} au lieu de <a>",
+    "what": "L'élément <{element_tag}> est stylisé comme un lien — il devrait utiliser <a> avec un attribut href.",
     "why": "Les liens non sémantiques ne sont pas accessibles au clavier et non reconnus par les lecteurs d'écran",
     "who": "Utilisateurs de clavier, utilisateurs de lecteurs d'écran",
     "remediation": "Remplacez {element_tag} par un élément <a> avec un attribut href approprié",
@@ -3393,7 +3393,7 @@
   },
   "AI_ErrCustomControlNoARIA": {
     "title": "Le widget personnalisé (onglets, accordéon, menu déroulant) manque de rôles/états ARIA appropriés",
-    "what": "Le widget personnalisé (onglets, accordéon, menu déroulant) manque de rôles/états ARIA appropriés",
+    "what": "Un widget personnalisé (onglets, accordéon, menu déroulant) manque des rôles et états ARIA appropriés.",
     "why": "Les lecteurs d'écran ne peuvent pas transmettre l'objectif ou l'état du widget",
     "who": "Utilisateurs de lecteurs d'écran, utilisateurs de clavier",
     "remediation": "Ajoutez les rôles ARIA appropriés et gérez les attributs d'état (aria-expanded, aria-selected, etc.)",
@@ -3401,7 +3401,7 @@
   },
   "AI_ErrClickableNotFocusable": {
     "title": "L'élément a un gestionnaire de clic mais pas de tabindex (non accessible au clavier)",
-    "what": "L'élément a un gestionnaire de clic mais pas de tabindex (non accessible au clavier)",
+    "what": "L'élément possède un gestionnaire de clic mais ne peut pas recevoir le focus clavier (pas de tabindex).",
     "why": "Les utilisateurs de clavier ne peuvent pas atteindre ou activer cet élément",
     "who": "Utilisateurs de clavier",
     "remediation": "Ajoutez tabindex=\"0\" pour rendre l'élément focusable et ajoutez des gestionnaires de clavier",
@@ -3409,7 +3409,7 @@
   },
   "AI_WarnFocusIndicatorWeak": {
     "title": "L'indicateur de focus semble trop subtil ou manquant",
-    "what": "L'indicateur de focus semble trop subtil ou manquant",
+    "what": "L'indicateur de focus d'un élément interactif est trop subtil ou n'est pas visible.",
     "why": "Les utilisateurs peuvent avoir du mal à voir quel élément a le focus",
     "who": "Utilisateurs de clavier, utilisateurs malvoyants",
     "remediation": "Augmentez la visibilité du focus avec des couleurs à contraste plus élevé ou des contours plus épais",
@@ -3417,7 +3417,7 @@
   },
   "AI_ErrInfiniteAnimationNoPause": {
     "title": "Animation CSS infinie sans contrôle de pause",
-    "what": "Animation CSS infinie sans contrôle de pause",
+    "what": "L'animation CSS infinie « {animation_name} » n'a aucun mécanisme pour mettre en pause ou arrêter l'animation.",
     "why": "Le mouvement continu peut distraire ou causer de l'inconfort pour certains utilisateurs",
     "who": "Utilisateurs avec troubles vestibulaires, utilisateurs avec déficiences cognitives",
     "remediation": "Ajoutez un contrôle de pause/arrêt ou respectez prefers-reduced-motion",
@@ -3425,7 +3425,7 @@
   },
   "AI_ErrAutoPlayingMedia": {
     "title": "Vidéo/audio en lecture automatique sans contrôles",
-    "what": "Vidéo/audio en lecture automatique sans contrôles",
+    "what": "Une vidéo ou un son en lecture automatique a été détecté sans contrôle visible permettant de l'arrêter.",
     "why": "La lecture automatique peut être désorientante et interférer avec les lecteurs d'écran",
     "who": "Utilisateurs de lecteurs d'écran, utilisateurs avec déficiences cognitives",
     "remediation": "Supprimez la lecture automatique ou fournissez des contrôles visibles pour arrêter/mettre en pause",
@@ -3433,7 +3433,7 @@
   },
   "AI_WarnNoReducedMotion": {
     "title": "Les animations ne respectent pas prefers-reduced-motion",
-    "what": "Les animations ne respectent pas prefers-reduced-motion",
+    "what": "Des animations ont été détectées, mais aucune requête média @media (prefers-reduced-motion) n'a été trouvée.",
     "why": "Les utilisateurs qui ont demandé un mouvement réduit verront quand même les animations",
     "who": "Utilisateurs avec troubles vestibulaires, utilisateurs sujets aux crises",
     "remediation": "Ajoutez une requête média @media (prefers-reduced-motion: reduce) pour désactiver ou réduire les animations",
@@ -3441,7 +3441,7 @@
   },
   "AI_WarnPotentialFlashing": {
     "title": "L'animation peut causer des clignotements (risque de crise)",
-    "what": "L'animation peut causer des clignotements (risque de crise)",
+    "what": "Une animation a été détectée qui peut causer des effets de clignotement ou de stroboscope rapides.",
     "why": "Le contenu clignotant peut déclencher des crises chez les personnes épileptiques",
     "who": "Utilisateurs épileptiques photosensibles",
     "remediation": "Supprimez ou réduisez les clignotements à moins de 3 fois par seconde",
@@ -3449,7 +3449,7 @@
   },
   "AI_ErrHeadingIssue": {
     "title": "Problème de structure de titre détecté",
-    "what": "Problème de structure de titre détecté",
+    "what": "L'analyse par IA a détecté un problème d'accessibilité lié aux titres.",
     "why": "Les titres mal structurés rendent la navigation difficile pour les utilisateurs de lecteurs d'écran",
     "who": "Utilisateurs de lecteurs d'écran, utilisateurs qui naviguent par titres",
     "remediation": "Assurez-vous que les titres suivent une hiérarchie logique et utilisent les balises h1-h6 appropriées",
@@ -3457,7 +3457,7 @@
   },
   "AI_ErrAccessibilityIssue": {
     "title": "Problème d'accessibilité détecté par l'IA",
-    "what": "Problème d'accessibilité détecté par l'IA",
+    "what": "L'analyse par IA a détecté un problème d'accessibilité nécessitant une attention.",
     "why": "Ce problème peut créer des obstacles pour les utilisateurs handicapés",
     "who": "Utilisateurs handicapés",
     "remediation": "Examinez le problème spécifique et appliquez les correctifs d'accessibilité appropriés",
@@ -3473,7 +3473,7 @@
   },
   "AI_WarnForeignTextUnmarked": {
     "title": "Texte en langue étrangère possiblement sans attribut lang",
-    "what": "Texte en langue étrangère possiblement sans attribut lang",
+    "what": "Le texte « {text_sample} » en {detected_language} a été trouvé sans attribut lang=\"{detected_language}\".",
     "why": "Les lecteurs d'écran peuvent mal prononcer le texte en langue étrangère",
     "who": "Utilisateurs de lecteurs d'écran",
     "remediation": "Vérifiez et ajoutez les attributs lang appropriés au texte en langue étrangère",

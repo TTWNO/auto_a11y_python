@@ -789,6 +789,265 @@ class TestRunner:
             
             return test_result
 
+    async def test_loaded_browser_page(
+        self,
+        page: Page,
+        browser_page: Any,
+        *,
+        take_screenshot: bool = True,
+        run_ai_analysis: bool = False,
+        ai_api_key: str | None = None,
+    ) -> TestResult:
+        """Run accessibility tests against an already-loaded Playwright page.
+
+        Used by the manual-testing flow: the user has navigated themselves in a
+        visible browser, and now wants the existing JS test suite + result
+        processor + DB persistence applied to whatever is currently on screen.
+        No navigation, no automated authentication, no PDF detection, no
+        multi-state stepping; the page is taken exactly as-is.
+
+        Args:
+            page: ``Page`` model record this run is attributed to. Its URL
+                does not need to match ``browser_page.url`` — the live
+                browser state always wins for the actual test execution.
+            browser_page: Live Playwright ``Page`` owned by the manual
+                session. The caller is responsible for keeping it open.
+            take_screenshot: Capture a screenshot for the report and AI
+                analysis.
+            run_ai_analysis: Force-enable AI analysis. Project config can
+                also turn it on.
+            ai_api_key: Anthropic API key. Falls back to ``CLAUDE_API_KEY``
+                from app config.
+        """
+        start_time = time.time()
+        try:
+            wcag_level: str = "AA"
+            project_config: dict[str, Any] | None = None
+            test_config: Any = None
+            try:
+                website = self.db.get_website(page.website_id)
+                if website:
+                    project = self.db.get_project(website.project_id)
+                    if project and project.config:
+                        project_config = project.config
+                        wcag_level = project_config.get("wcag_level", "AA")
+                        from auto_a11y.config.test_config import (
+                            TestConfiguration,
+                        )
+
+                        test_config = TestConfiguration(
+                            database=self.db, debug_mode=True
+                        )
+                        if "touchpoints" in project_config:
+                            test_config.config["touchpoints"] = project_config[
+                                "touchpoints"
+                            ]
+                        test_config.config["global"]["run_ai_tests"] = (
+                            project_config.get("enable_ai_testing", False)
+                        )
+                        if "ai_tests" in project_config:
+                            for test_name in (
+                                "headings",
+                                "reading_order",
+                                "modals",
+                                "language",
+                                "animations",
+                                "interactive",
+                            ):
+                                test_config.set_ai_test_enabled(
+                                    test_name,
+                                    test_name in project_config["ai_tests"],
+                                )
+            except Exception as e:
+                logger.warning(
+                    f"Manual test: could not load project config: {e}"
+                )
+
+            if test_config:
+                self.script_injector.test_config = test_config
+            self.script_injector.project_config = project_config
+
+            await self.script_injector.inject_script_files(browser_page)
+            await browser_page.evaluate(
+                f'window.WCAG_LEVEL = "{wcag_level}";'
+            )
+
+            try:
+                document_refs = self.db.get_document_references(
+                    page.website_id
+                )
+                doc_metadata: dict[str, dict[str, Any]] = {}
+                for doc_ref in document_refs:
+                    if doc_ref.language:
+                        doc_metadata[doc_ref.document_url] = {
+                            "language": doc_ref.language,
+                            "confidence": doc_ref.language_confidence,
+                        }
+                import json
+
+                await browser_page.evaluate(
+                    f"window.DOCUMENT_METADATA = {json.dumps(doc_metadata)};"
+                )
+            except Exception as e:
+                logger.warning(
+                    f"Manual test: could not inject document metadata: {e}"
+                )
+                await browser_page.evaluate("window.DOCUMENT_METADATA = {};")
+
+            original_viewport: dict[str, int] | None = await browser_page.evaluate(
+                "() => ({ width: window.innerWidth, height: window.innerHeight })"
+            )
+
+            raw_results = await self.script_injector.run_all_tests(
+                browser_page
+            )
+
+            if original_viewport:
+                try:
+                    await browser_page.set_viewport_size(
+                        {
+                            "width": original_viewport["width"],
+                            "height": original_viewport["height"],
+                        }
+                    )
+                    await asyncio.sleep(0.1)
+                except Exception as e:
+                    logger.warning(
+                        f"Manual test: could not restore viewport: {e}"
+                    )
+
+            screenshot_path: str | None = None
+            screenshot_bytes: bytes | None = None
+            if take_screenshot:
+                screenshot_path, screenshot_bytes = (
+                    await self._take_screenshot_with_bytes(
+                        browser_page, page.id or ""
+                    )
+                )
+
+            ai_findings: list[Any] = []
+            ai_analysis_results: dict[str, Any] = {}
+            run_ai: bool = bool(run_ai_analysis)
+            ai_tests_to_run: list[str] = []
+            if project_config and project_config.get(
+                "enable_ai_testing", False
+            ):
+                run_ai = True
+                ai_tests_to_run = project_config.get("ai_tests", [])
+            if run_ai and not ai_tests_to_run:
+                ai_tests_to_run = [
+                    "headings",
+                    "reading_order",
+                    "language",
+                    "interactive",
+                ]
+
+            if not ai_api_key:
+                try:
+                    from config import config as _cfg
+
+                    ai_api_key = getattr(_cfg, "CLAUDE_API_KEY", None)
+                except Exception:
+                    ai_api_key = None
+
+            if run_ai and ai_api_key and screenshot_bytes and ai_tests_to_run:
+                analyzer = None
+                try:
+                    from auto_a11y.ai import ClaudeAnalyzer
+
+                    page_html = await browser_page.content()
+                    analyzer = ClaudeAnalyzer(ai_api_key)
+                    ai_results = await analyzer.analyze_page(
+                        screenshot=screenshot_bytes,
+                        html=page_html,
+                        analyses=ai_tests_to_run,
+                        test_config=test_config,
+                    )
+                    findings_val: list[Any] = ai_results.get("findings", [])
+                    ai_findings = findings_val
+                    raw_val: dict[str, Any] = ai_results.get("raw_results", {})
+                    ai_analysis_results = raw_val
+                except Exception as e:
+                    logger.error(f"Manual test: AI analysis failed: {e}")
+                finally:
+                    if analyzer and hasattr(analyzer, "client"):
+                        try:
+                            await analyzer.client.aclose()
+                        except Exception:
+                            pass
+
+            del screenshot_bytes
+            screenshot_bytes = None
+
+            duration_ms = int((time.time() - start_time) * 1000)
+
+            test_result = self.result_processor.process_test_results(
+                page_id=page.id or "",
+                raw_results=raw_results,
+                screenshot_path=screenshot_path,
+                duration_ms=duration_ms,
+                ai_findings=ai_findings,
+                ai_analysis_results=ai_analysis_results,
+            )
+            del raw_results
+
+            user_info: dict[str, Any] = {
+                "user_id": None,
+                "username": "manual",
+                "display_name": "Manual test",
+                "roles": [],
+            }
+            test_result.metadata["authenticated_user"] = user_info
+            test_result.metadata["manual_test"] = True
+            for violation in test_result.violations:
+                violation.metadata["authenticated_user"] = user_info
+            for warning in test_result.warnings:
+                warning.metadata["authenticated_user"] = user_info
+            for info in test_result.info:
+                info.metadata["authenticated_user"] = user_info
+            for discovery in test_result.discovery:
+                discovery.metadata["authenticated_user"] = user_info
+
+            result_id = self.db.create_test_result(test_result)
+            test_result.mongo_id = ObjectId(result_id)
+            test_result.js_test_results = {}
+            test_result.ai_analysis_results = {}
+
+            page.status = PageStatus.TESTED
+            page.last_tested = datetime.now()
+            page.violation_count = test_result.violation_count
+            page.warning_count = test_result.warning_count
+            page.info_count = test_result.info_count
+            page.discovery_count = test_result.discovery_count
+            page.pass_count = test_result.pass_count
+            page.test_duration_ms = duration_ms
+            page.screenshot_path = screenshot_path
+            self.db.update_page(page)
+
+            self.db.websites.update_one(
+                {"_id": ObjectId(page.website_id)},
+                {"$set": {"last_tested": datetime.now()}},
+            )
+
+            return test_result
+
+        except Exception as e:
+            logger.error(f"Manual test failed for {page.url}: {e}")
+            page.status = PageStatus.ERROR
+            self.db.update_page(page)
+            test_result = TestResult(
+                page_id=page.id or "",
+                test_date=datetime.now(),
+                duration_ms=int((time.time() - start_time) * 1000),
+                error=str(e),
+                violations=[],
+                warnings=[],
+                passes=[],
+            )
+            result_id = self.db.create_test_result(test_result)
+            test_result.mongo_id = ObjectId(result_id)
+            return test_result
+
     async def test_pdf(
         self,
         pdf_document_id: str,

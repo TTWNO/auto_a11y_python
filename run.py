@@ -260,17 +260,30 @@ def main() -> None:
     try:
         # Create and run Flask app
         app = create_app(config)
-        
+
         logger.info(f"\n{'='*60}")
         logger.info(f"Server starting on http://{config.HOST}:{config.PORT}")
         logger.info(f"Press Ctrl+C to stop the server")
         logger.info(f"{'='*60}\n")
-        
+
+        # Fluent bundles are loaded once at startup, so .ftl edits otherwise
+        # require a manual restart. Feed them to the Werkzeug reloader so
+        # translation changes pick up automatically in dev.
+        import glob
+        ftl_paths = glob.glob(
+            os.path.join(
+                os.path.dirname(__file__),
+                'auto_a11y', 'web', 'translations', '**', '*.ftl'
+            ),
+            recursive=True,
+        )
+
         app.run(
             host=config.HOST,
             port=config.PORT,
             debug=config.DEBUG,
-            use_reloader=config.DEBUG and not args.no_reloader
+            use_reloader=config.DEBUG and not args.no_reloader,
+            extra_files=ftl_paths,
         )
     except KeyboardInterrupt:
         logger.info("\nApplication stopped by user")

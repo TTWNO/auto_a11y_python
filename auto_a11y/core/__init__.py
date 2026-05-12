@@ -2,6 +2,7 @@
 Core functionality for Auto A11y Python
 """
 
+from . import manual_session
 from .database import Database
 from .browser_manager import BrowserManager
 from .project_manager import ProjectManager
@@ -20,4 +21,5 @@ __all__ = [
     'ScrapingJob',
     'JobManager',
     'SystemSettings',
+    'manual_session',
 ]

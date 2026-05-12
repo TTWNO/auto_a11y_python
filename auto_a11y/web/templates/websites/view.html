@@ -152,6 +152,40 @@
                 <i class="bi bi-pencil" aria-hidden="true"></i> {{ ftl('common-edit') }}
             </a>
         </div>
+
+        <!-- Manual Mode (visible browser, user-driven) -->
+        <section class="card mt-3" aria-labelledby="manualModeHeading">
+            <div class="card-body">
+                <h2 id="manualModeHeading" class="h6 mb-2">
+                    <i class="bi bi-mouse" aria-hidden="true"></i>
+                    {{ ftl('websites-manual-mode-heading') }}
+                </h2>
+                <p class="text-muted small mb-2">
+                    {{ ftl('websites-manual-mode-description') }}
+                </p>
+                <div class="d-flex flex-wrap gap-2 align-items-center" id="manualModeControls">
+                    <button type="button" class="btn btn-sm btn-brand" id="manualStartBtn">
+                        <i class="bi bi-play-fill" aria-hidden="true"></i>
+                        {{ ftl('websites-manual-start') }}
+                    </button>
+                    <button type="button" class="btn btn-sm btn-pass" id="manualCaptureBtn" disabled>
+                        <i class="bi bi-plus-circle" aria-hidden="true"></i>
+                        {{ ftl('websites-manual-capture') }}
+                    </button>
+                    <button type="button" class="btn btn-sm btn-brand" id="manualTestBtn" disabled>
+                        <i class="bi bi-play" aria-hidden="true"></i>
+                        {{ ftl('websites-manual-test') }}
+                    </button>
+                    <button type="button" class="btn btn-sm btn-high" id="manualStopBtn" disabled>
+                        <i class="bi bi-stop-circle" aria-hidden="true"></i>
+                        {{ ftl('websites-manual-stop') }}
+                    </button>
+                </div>
+                <div class="small mt-2" id="manualModeStatus" aria-live="polite">
+                    <span class="text-muted">{{ ftl('websites-manual-status-idle') }}</span>
+                </div>
+            </div>
+        </section>
     </div>
 
     <!-- Statistics -->
@@ -1779,5 +1813,192 @@ window.addEventListener('beforeunload', function() {
     stopTestingStatusPolling();
     stopDiscoveryPolling();
 });
+
+// --- Manual mode (visible browser, user-driven) ---
+(function () {
+    const websiteId = {{ website.id | tojson }};
+    const i18n = {
+        idle: {{ ftl('websites-manual-status-idle') | tojson }},
+        starting: {{ ftl('websites-manual-status-starting') | tojson }},
+        running: {{ ftl('websites-manual-status-running') | tojson }},
+        capturing: {{ ftl('websites-manual-status-capturing') | tojson }},
+        testing: {{ ftl('websites-manual-status-testing') | tojson }},
+        stopping: {{ ftl('websites-manual-status-stopping') | tojson }},
+        captureSuccess: {{ ftl('websites-manual-capture-success') | tojson }},
+        captureExisting: {{ ftl('websites-manual-page-already-exists') | tojson }},
+        testSuccess: {{ ftl('websites-manual-test-success') | tojson }},
+        error: {{ ftl('common-error') | tojson }},
+    };
+
+    const startBtn = document.getElementById('manualStartBtn');
+    const captureBtn = document.getElementById('manualCaptureBtn');
+    const testBtn = document.getElementById('manualTestBtn');
+    const stopBtn = document.getElementById('manualStopBtn');
+    const statusEl = document.getElementById('manualModeStatus');
+    let pollHandle = null;
+
+    function setStatus(text, cls) {
+        statusEl.innerHTML = '';
+        const span = document.createElement('span');
+        span.className = cls || 'text-muted';
+        span.textContent = text;
+        statusEl.appendChild(span);
+    }
+
+    function setRunning(running, info) {
+        startBtn.disabled = running;
+        captureBtn.disabled = !running;
+        testBtn.disabled = !running;
+        stopBtn.disabled = !running;
+        if (running && info && info.current_url) {
+            const safeUrl = info.current_url;
+            const safeTitle = info.current_title || '';
+            statusEl.innerHTML = '';
+            const label = document.createElement('span');
+            label.className = 'text-muted me-1';
+            label.textContent = i18n.running + ':';
+            statusEl.appendChild(label);
+            const link = document.createElement('a');
+            link.href = safeUrl;
+            link.target = '_blank';
+            link.rel = 'noopener';
+            link.className = 'text-break';
+            link.textContent = safeTitle ? safeTitle + ' (' + safeUrl + ')' : safeUrl;
+            statusEl.appendChild(link);
+        } else if (!running) {
+            setStatus(i18n.idle, 'text-muted');
+        }
+    }
+
+    function pollStatus() {
+        fetch('{{ url_for("websites.manual_session_status", website_id=website.id) }}', {
+            headers: { 'Accept': 'application/json' }
+        })
+            .then(r => r.json())
+            .then(data => {
+                if (data && data.session && data.session.is_running) {
+                    setRunning(true, data.session);
+                } else {
+                    setRunning(false, null);
+                    if (pollHandle) {
+                        clearInterval(pollHandle);
+                        pollHandle = null;
+                    }
+                }
+            })
+            .catch(() => {});
+    }
+
+    startBtn.addEventListener('click', function () {
+        setStatus(i18n.starting, 'text-info-custom');
+        startBtn.disabled = true;
+        fetch('{{ url_for("websites.manual_session_start", website_id=website.id) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({})
+        })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success && data.session) {
+                    setRunning(true, data.session);
+                    if (!pollHandle) {
+                        pollHandle = setInterval(pollStatus, 3000);
+                    }
+                } else {
+                    setStatus((data && data.message) || i18n.error, 'text-severity-high');
+                    startBtn.disabled = false;
+                }
+            })
+            .catch(() => {
+                setStatus(i18n.error, 'text-severity-high');
+                startBtn.disabled = false;
+            });
+    });
+
+    captureBtn.addEventListener('click', function () {
+        setStatus(i18n.capturing, 'text-info-custom');
+        captureBtn.disabled = true;
+        fetch('{{ url_for("websites.manual_session_capture", website_id=website.id) }}', {
+            method: 'POST',
+            headers: { 'Accept': 'application/json' }
+        })
+            .then(r => r.json())
+            .then(data => {
+                captureBtn.disabled = false;
+                if (data.success) {
+                    const msg = data.already_existed ? i18n.captureExisting : i18n.captureSuccess;
+                    setStatus(msg + ': ' + (data.url || ''), 'text-severity-pass');
+                    if (!data.already_existed) {
+                        setTimeout(() => window.location.reload(), 800);
+                    }
+                } else {
+                    setStatus((data && data.message) || i18n.error, 'text-severity-high');
+                }
+            })
+            .catch(() => {
+                captureBtn.disabled = false;
+                setStatus(i18n.error, 'text-severity-high');
+            });
+    });
+
+    testBtn.addEventListener('click', function () {
+        setStatus(i18n.testing, 'text-info-custom');
+        testBtn.disabled = true;
+        captureBtn.disabled = true;
+        fetch('{{ url_for("websites.manual_session_test", website_id=website.id) }}', {
+            method: 'POST',
+            headers: { 'Accept': 'application/json' }
+        })
+            .then(r => r.json())
+            .then(data => {
+                testBtn.disabled = false;
+                captureBtn.disabled = false;
+                if (data.success) {
+                    setStatus(
+                        i18n.testSuccess +
+                            ' — ' +
+                            (data.violations || 0) + ' / ' +
+                            (data.warnings || 0) + ' / ' +
+                            (data.info || 0),
+                        'text-severity-pass'
+                    );
+                    setTimeout(() => window.location.reload(), 1200);
+                } else {
+                    setStatus((data && data.message) || i18n.error, 'text-severity-high');
+                }
+            })
+            .catch(() => {
+                testBtn.disabled = false;
+                captureBtn.disabled = false;
+                setStatus(i18n.error, 'text-severity-high');
+            });
+    });
+
+    stopBtn.addEventListener('click', function () {
+        setStatus(i18n.stopping, 'text-info-custom');
+        stopBtn.disabled = true;
+        fetch('{{ url_for("websites.manual_session_stop", website_id=website.id) }}', {
+            method: 'POST',
+            headers: { 'Accept': 'application/json' }
+        })
+            .then(r => r.json())
+            .then(() => {
+                if (pollHandle) {
+                    clearInterval(pollHandle);
+                    pollHandle = null;
+                }
+                setRunning(false, null);
+            })
+            .catch(() => {
+                setRunning(false, null);
+            });
+    });
+
+    // Initial poll: pick up any pre-existing session
+    pollStatus();
+})();
 </script>
 {% endblock %}

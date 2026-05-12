@@ -53,7 +53,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
     descriptions: dict[str, dict[str, str | list[str]]] = {
         'ErrAccordionWithoutARIA': {
             'title': "Accordion element \"{element_text}\" lacks proper ARIA markup",
-            'what': "Accordion element \"{element_text}\" lacks proper ARIA markup",
+            'what': "An accordion-style widget (\"{element_text}\") was found in which the headers expand and collapse content, but the markup lacks aria-expanded, aria-controls, and appropriate button/heading roles.",
             'why': "Without aria-expanded and proper roles, users cannot determine if sections are expanded or collapsed",
             'who': "Screen reader users, keyboard users",
             'impact': ImpactScale.HIGH.value,
@@ -62,7 +62,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrCarouselWithoutARIA': {
             'title': "Carousel or slider lacks proper ARIA markup and controls",
-            'what': "Carousel or slider lacks proper ARIA markup and controls",
+            'what': "A carousel or slider was detected (rotating slides, prev/next controls), but it lacks role=\"region\" with an accessible name, slide-status announcements, and labelled controls.",
             'what_generic': "Carousel or slider lacks proper ARIA markup and controls",
             'why': "Carousels present unique accessibility challenges: screen reader users need to understand the carousel structure, know which slide is current, and be notified of changes. Keyboard users need a way to pause auto-rotation and navigate between slides. Without proper ARIA markup, assistive technology users cannot perceive or operate the carousel.",
             'who': "Screen reader users who cannot perceive carousel structure or slide changes, keyboard users who cannot control auto-rotating content, users with cognitive disabilities who need more time to read content",
@@ -72,7 +72,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrClickableWithoutKeyboard': {
             'title': "Element with onclick handler is not keyboard accessible",
-            'what': "Element with onclick handler is not keyboard accessible",
+            'what': "An element has an onclick handler (or similar JavaScript click listener) but no role, no tabindex, and no keyboard event handlers — so it can be clicked but not activated with a keyboard.",
             'why': "Keyboard users cannot activate this control",
             'who': "Keyboard users, users who cannot use a mouse",
             'impact': ImpactScale.HIGH.value,
@@ -91,7 +91,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrDropdownWithoutARIA': {
             'title': "Dropdown menu \"{element_text}\" lacks proper ARIA markup",
-            'what': "Dropdown menu \"{element_text}\" lacks proper ARIA markup",
+            'what': "A dropdown widget (\"{element_text}\") was found whose trigger and panel lack aria-haspopup, aria-expanded, and aria-controls relationships needed for screen reader use.",
             'why': "Without aria-expanded, aria-haspopup, and proper roles, users cannot understand the dropdown\'s state or navigate it properly",
                     'what_generic': "Dropdown menu lacks proper ARIA markup",
             'who': "Screen reader users, keyboard users",
@@ -124,14 +124,14 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'what': "AI analysis detected an accessibility issue that requires attention",
             'what_generic': "Accessibility issue detected",
             'why': "This issue may create barriers for users with disabilities",
-            'who': "Users with disabilities",
+            'who': "Users who depend on assistive technology — including blind and low-vision users using screen readers, users with motor disabilities, users with cognitive disabilities, and users with hearing impairments",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': [],
             'remediation': "Review the specific issue and apply appropriate accessibility fixes"
         },
         'ErrInteractiveElementIssue': {
             'title': "Interactive {element_tag} element \"{element_text}\" has accessibility issues",
-            'what': "Interactive {element_tag} element \"{element_text}\" has accessibility issues",
+            'what': "An interactive <{element_tag}> element with the text \"{element_text}\" has one or more accessibility problems (e.g., missing role, missing accessible name, or no keyboard handler). The specific issues are listed in the element's full record.",
             'why': "Interactive elements without proper semantic markup or keyboard support create barriers for assistive technology users",
                     'what_generic': "Interactive element has accessibility issues",
             'who': "Keyboard users, screen reader users, voice control users",
@@ -141,7 +141,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrMenuWithoutARIA': {
             'title': "Navigation menu lacks proper ARIA markup",
-            'what': "Navigation menu lacks proper ARIA markup",
+            'what': "A navigation menu (e.g., a flyout or mega-menu) was detected without the appropriate ARIA pattern — no role=\"menu\"/role=\"menuitem\" structure and no roving-tabindex keyboard handling.",
             'why': "Screen readers won\'t recognize this as a navigation menu",
             'who': "Screen reader users",
             'impact': ImpactScale.HIGH.value,
@@ -150,7 +150,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'AI_ErrMissingFocusIndicator': {
             'title': "Interactive element lacks visible focus indicator",
-            'what': "Interactive element lacks visible focus indicator",
+            'what': "When the element receives keyboard focus, no visible change occurs — no outline, border, background-colour, or box-shadow is applied.",
             'why': "Users can\'t see which element has keyboard focus",
             'who': "Keyboard users, users with attention or memory issues",
             'impact': ImpactScale.HIGH.value,
@@ -159,7 +159,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrMissingInteractiveRole': {
             'title': "Interactive {element_tag} element lacks appropriate ARIA role",
-            'what': "Interactive {element_tag} element lacks appropriate ARIA role",
+            'what': "An interactive <{element_tag}> element (with click handlers or other interactive behaviour) has no ARIA role declaring what it is — screen readers cannot tell users whether it's a button, link, switch, etc.",
             'why': "Screen readers won\'t announce this as an interactive control",
                     'what_generic': "Interactive element lacks appropriate ARIA role",
             'who': "Screen reader users",
@@ -223,7 +223,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'AI_ErrModalFocusTrap': {
             'title': "Modal/dialog \"{element_text}\" does not properly trap focus",
-            'what': "Modal/dialog \"{element_text}\" does not properly trap focus",
+            'what': "While the modal is open, Tab/Shift+Tab can move focus to elements outside the dialog instead of cycling through controls inside it.",
             'why': "Without focus trapping, keyboard users can navigate outside the modal while it\'s open, causing confusion",
                     'what_generic': "Modal or dialog does not properly trap focus",
             'who': "Keyboard users, screen reader users",
@@ -233,7 +233,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'AI_ErrReadingOrderMismatch': {
             'title': "Visual reading order doesn\'t match DOM order - content may be read out of sequence",
-            'what': "Visual reading order doesn\'t match DOM order - content may be read out of sequence",
+            'what': "The on-screen reading order produced by the visual layout differs from the DOM source order that screen readers and keyboard users follow.",
             'why': "Screen readers follow DOM order, which may not match the visual layout, causing confusion",
             'who': "Screen reader users",
             'impact': ImpactScale.HIGH.value,
@@ -242,7 +242,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'AI_ErrSkippedHeading': {
             'title': "Heading level skipped from h{current_level} to h{next_level}",
-            'what': "Heading level skipped from h{current_level} to h{next_level}",
+            'what': "The heading hierarchy jumps from h{current_level} directly to h{next_level} without using the intermediate level(s) in between.",
             'why': "Skipped heading levels break the logical document structure and make navigation difficult",
                     'what_generic': "Heading levels are skipped in the document hierarchy",
             'who': "Screen reader users, users who navigate by headings",
@@ -252,7 +252,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'AI_ErrTabsWithoutARIA': {
             'title': "Tab interface \"{element_text}\" lacks proper ARIA markup",
-            'what': "Tab interface \"{element_text}\" lacks proper ARIA markup",
+            'what': "A tab-style widget was identified visually, but its markup is missing role=\"tablist\", role=\"tab\", role=\"tabpanel\", and aria-selected state management.",
             'why': "Without role=\"tablist\", role=\"tab\", and aria-selected attributes, screen readers cannot convey tab relationships and states",
                     'what_generic': "Tab interface lacks proper ARIA markup",
             'who': "Screen reader users, keyboard users",
@@ -262,7 +262,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'AI_ErrToggleWithoutState': {
             'title': "Toggle button doesn\'t indicate its state (expanded/collapsed)",
-            'what': "Toggle button doesn\'t indicate its state (expanded/collapsed)",
+            'what': "A button toggles content open/closed or on/off, but it does not expose its current state via aria-expanded or aria-pressed.",
             'why': "Users don\'t know the current state of the control",
             'who': "Screen reader users, cognitive disability users",
             'impact': ImpactScale.HIGH.value,
@@ -291,7 +291,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'AI_InfoVisualCue': {
             'title': "Information conveyed only through visual cues (color, position, size)",
-            'what': "Information conveyed only through visual cues (color, position, size)",
+            'what': "Information appears to be conveyed only by a visual property (colour, icon position, shape, or font weight) without an accompanying text label or non-visual cue.",
             'why': "Users who can\'t perceive visual cues miss important information",
             'who': "Blind users, colorblind users",
             'impact': ImpactScale.LOW.value,
@@ -300,7 +300,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'AI_WarnMixedLanguage': {
             'title': "Mixed language content detected without proper language declarations",
-            'what': "Mixed language content detected without proper language declarations",
+            'what': "Text in more than one language was detected on the page, but the secondary-language passages are not wrapped in elements that carry a lang attribute.",
             'why': "Screen readers may pronounce text incorrectly without language declarations",
             'who': "Screen reader users who speak multiple languages",
             'impact': ImpactScale.MEDIUM.value,
@@ -309,7 +309,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'AI_WarnModalMissingLabel': {
             'title': "Modal dialog lacks accessible name or description",
-            'what': "Modal dialog lacks accessible name or description",
+            'what': "A modal/dialog is open but its container element has no aria-label, aria-labelledby, or other source of an accessible name.",
             'why': "Screen readers won\'t announce what the dialog is for",
             'who': "Screen reader users",
             'impact': ImpactScale.HIGH.value,
@@ -318,7 +318,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'AI_WarnModalWithoutFocusTrap': {
             'title': "Modal dialog doesn\'t trap focus within the dialog",
-            'what': "Modal dialog doesn\'t trap focus within the dialog",
+            'what': "Pressing Tab from within an open modal allows focus to escape back to the underlying page content instead of cycling within the dialog.",
             'why': "Keyboard users can tab out of the modal into the page behind it",
             'who': "Keyboard users, screen reader users",
             'impact': ImpactScale.HIGH.value,
@@ -327,7 +327,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'AI_ErrVisualHierarchyInconsistent': {
             'title': "Visual heading sizes don\'t follow a logical hierarchy",
-            'what': "Visual heading sizes don\'t follow a logical hierarchy",
+            'what': "Heading levels declared in the DOM do not align with the visual size hierarchy — for example, a visually larger heading carries a lower-priority level than a visually smaller one.",
             'what_generic': "Visual heading sizes are inconsistent with their importance",
             'why': "Inconsistent visual hierarchy confuses users about content organization",
             'who': "Users with cognitive disabilities, users who rely on visual hierarchy",
@@ -347,7 +347,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'AI_ErrDialogMissingRole': {
             'title': "Visible modal dialog lacks role=\"dialog\" or role=\"alertdialog\"",
-            'what': "Visible modal dialog lacks role=\"dialog\" or role=\"alertdialog\"",
+            'what': "Visual analysis identified a modal-style overlay, but the container element has no role=\"dialog\" or role=\"alertdialog\" attribute.",
             'what_generic': "Modal dialog is missing dialog role",
             'why': "Screen readers won\'t announce this as a dialog or provide appropriate navigation",
             'who': "Screen reader users",
@@ -517,7 +517,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnProblematicAnimation': {
             'title': "Animation detected that may cause accessibility issues",
-            'what': "Animation detected that may cause accessibility issues",
+            'what': "An animation was detected whose properties (large area, high contrast, fast loop, flashing) may pose accessibility concerns such as triggering seizures or vestibular discomfort.",
             'why': "Animations can trigger seizures or make content difficult to read",
             'who': "Users with vestibular disorders, photosensitive epilepsy, or cognitive disabilities",
             'impact': ImpactScale.MEDIUM.value,
@@ -546,7 +546,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'DiscoFoundInlineSvg': {
             'title': "Inline SVG element detected that requires manual review to determine appropriate accessibility implementation based on its purpose and complexity",
-            'what': "Inline SVG element detected that requires manual review to determine appropriate accessibility implementation based on its purpose and complexity",
+            'what': "An inline <svg> element was found in the page. Inline SVGs can be decorative, informative, or interactive, so each instance needs to be reviewed individually to determine the appropriate accessibility markup.",
             'why': "SVG elements serve diverse purposes from simple icons to complex interactive visualizations, each requiring different accessibility approaches. A decorative border needs different treatment than a data chart, which differs from an interactive map or scientific simulation. Automated tools cannot determine SVG purpose, whether it\'s decorative or informative, static or interactive, or if existing accessibility features adequately support user needs.",
             'who': "Blind and low vision users using screen readers who need text alternatives for graphics or keyboard access to interactive elements, users with motor disabilities who require keyboard navigation for interactive SVG controls, users with cognitive disabilities who benefit from clear labeling and predictable interaction patterns, and users of various assistive technologies that may interpret SVG content differently",
             'impact': ImpactScale.INFO.value,
@@ -555,7 +555,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'DiscoFoundJS': {
             'title': "JavaScript detected on page",
-            'what': "JavaScript detected on page",
+            'what': "The page loads or executes one or more <script> elements. Verify that the page's essential functionality still works when JavaScript is disabled or fails to load.",
             'why': "Functionality should work without JavaScript",
             'who': "Users with JavaScript disabled",
             'impact': ImpactScale.INFO.value,
@@ -624,7 +624,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'DiscoFoundSvgImage': {
             'title': "SVG element with role=\"img\" detected that requires manual review to verify appropriate text alternatives are provided",
-            'what': "SVG element with role=\"img\" detected that requires manual review to verify appropriate text alternatives are provided",
+            'what': "An <svg> element marked with role=\"img\" was detected. Confirm that it has an appropriate accessible name supplied via aria-label, aria-labelledby, or a child <title> element.",
             'why': "SVG elements with role=\"img\" are explicitly marked as images and treated as a single graphic by assistive technologies, requiring appropriate text alternatives. While the role=\"img\" indicates developer awareness of accessibility needs, manual review is needed to verify that any aria-label, aria-labelledby, or internal <title> elements adequately describe the image\'s content or function, and that the description is appropriate for the SVG\'s context and purpose.",
             'who': "Blind and low vision users using screen readers who depend on text alternatives to understand image content, users with cognitive disabilities who benefit from clear, concise descriptions of visual information, keyboard users who may encounter the SVG in their navigation flow, and users of assistive technologies that treat role=\"img\" SVGs as atomic image elements",
             'impact': ImpactScale.INFO.value,
@@ -633,7 +633,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'DiscoHeadingWithID': {
             'title': "Heading element has an ID attribute that may be used for in-page navigation",
-            'what': "Heading element has an ID attribute that may be used for in-page navigation",
+            'what': "A heading element carries an id attribute, which is typically used as an in-page anchor target. Verify the id is referenced by working navigation links and that the heading text makes sense as a destination label.",
             'why': "Headings with IDs are often link targets for navigation, requiring verification that they work correctly and provide meaningful navigation points.",
             'who': "All users who use in-page navigation links, screen reader users who navigate by headings, keyboard users who follow fragment links.",
             'impact': ImpactScale.INFO.value,
@@ -642,7 +642,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'DiscoPDFLinksFound': {
             'title': "Links to PDF documents detected on page",
-            'what': "Links to PDF documents detected on page",
+            'what': "One or more links on the page point to .pdf files. Each linked PDF requires a separate accessibility audit, since the HTML scan cannot evaluate the contents of the PDF itself.",
             'why': "PDF documents often have accessibility issues and may not be accessible to all users",
             'who': "Screen reader users, users with disabilities who have difficulty with PDF formats",
             'impact': ImpactScale.INFO.value,
@@ -651,7 +651,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'DiscoStyleAttrOnElements': {
             'title': "Inline styles detected",
-            'what': "Inline styles detected",
+            'what': "One or more elements use an inline style=\"...\" attribute. Inline styles override stylesheets and can interfere with user style sheets, high-contrast modes, dark mode, or text-resizing adjustments.",
             'why': "May affect responsive design and user customization",
             'who': "Users with custom stylesheets",
             'impact': ImpactScale.INFO.value,
@@ -660,7 +660,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'DiscoStyleElementOnPage': {
             'title': "Style element found in page",
-            'what': "Style element found in page",
+            'what': "A <style> block was found embedded in the page rather than supplied via an external stylesheet. Embedded styles cannot be overridden by user style sheets or browser extensions in the same way external CSS can.",
             'why': "Embedded styles harder to override",
             'who': "Users needing custom styles",
             'impact': ImpactScale.INFO.value,
@@ -679,7 +679,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrAltOnElementThatDoesntTakeIt': {
             'title': "Alt attribute placed on HTML elements that don\'t support it (such as div, span, p, or other non-image elements), making the alternative text inaccessible to assistive technologies",
-            'what': "Alt attribute placed on HTML elements that don\'t support it (such as div, span, p, or other non-image elements), making the alternative text inaccessible to assistive technologies",
+            'what': "An alt attribute was found on an element that does not support it per HTML spec (such as <div>, <span>, or <a>), where the attribute will be silently ignored.",
             'why': "The alt attribute is only valid on specific elements (<img>, <area>, <input type=\"image\">) and is ignored when placed on other elements. Screen readers will not announce this misplaced alt text, meaning any important information it contains is completely lost to users who rely on assistive technologies. This often occurs when developers attempt to add accessibility features but use incorrect techniques.",
             'who': "Blind and low vision users using screen readers who cannot access the alternative text content placed in invalid locations, users with cognitive disabilities who may be missing explanatory text, keyboard users who may not receive important contextual information, and users of assistive technologies that rely on proper semantic HTML markup",
             'impact': ImpactScale.LOW.value,
@@ -688,7 +688,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrAltTooLong': {
             'title': "Alt text exceeds 150 characters without proper structure, making it difficult for screen reader users to process",
-            'what': "Alt text exceeds 150 characters without proper structure, making it difficult for screen reader users to process",
+            'what': "An image's alt text is over 150 characters long with no surrounding structure. Long alt text is hard to consume in one go via a screen reader.",
             'why': "This fails WCAG 5.2.4 Accessibility Supported because even though the page technically meets WCAG success criteria by providing alt text, it does not work properly with assistive technology (screen readers). Screen readers read alt text as a continuous unstructured string without the ability to navigate, skim, or use reading commands that work with properly structured HTML. Long alt text removes screen reader users' ability to use headings navigation, paragraph jumps, list navigation, and other assistive technology features that sighted users take for granted when reading long descriptions. The content may be technically present but is not accessibility-supported because it cannot be effectively used with the user's assistive technology.",
             'who': "Screen reader users who must listen to lengthy unstructured descriptions without visual scanning or paragraph breaks, users with cognitive disabilities who struggle with processing long blocks of text without structure, users with attention difficulties who need clear information hierarchy, users with memory challenges who cannot retain long unbroken text passages",
             'impact': ImpactScale.MEDIUM.value,
@@ -697,7 +697,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrAriaLabelMayNotBeFoundByVoiceControl': {
             'title': "Element's aria-label may not match what voice control users see",
-            'what': "Element's aria-label may not match what voice control users see",
+            'what': "An element's visible text differs from its aria-label. Voice-control users typically say what they see — if the visible text is not contained in the accessible name, voice commands won't match.",
             'what_generic': "Element's aria-label may not be discoverable by voice control",
             'why': "Voice control users speak visible text to activate elements. If aria-label differs significantly from visible text, they may be unable to activate this element.",
             'who': "Voice control users who speak visible labels to interact with elements",
@@ -716,7 +716,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrBannerLandmarkAccessibleNameIsBlank': {
             'title': "Banner landmark has blank accessible name",
-            'what': "Banner landmark has blank accessible name",
+            'what': "A banner landmark (<header> at top level, or role=\"banner\") was found whose aria-label or aria-labelledby value resolves to an empty string.",
             'why': "Multiple banners need labels to distinguish them",
             'who': "Screen reader users",
             'impact': ImpactScale.MEDIUM.value,
@@ -725,7 +725,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrBannerLandmarkHasAriaLabelAndAriaLabelledByAttrs': {
             'title': "Banner landmark has both aria-label and aria-labelledby",
-            'what': "Banner landmark has both aria-label and aria-labelledby",
+            'what': "A banner landmark element has both aria-label and aria-labelledby attributes set. aria-labelledby wins, but the presence of both indicates conflicting labelling intent.",
             'why': "Conflicting labeling methods",
             'who': "Screen reader users",
             'impact': ImpactScale.MEDIUM.value,
@@ -734,7 +734,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrBannerLandmarkMayNotBeChildOfAnotherLandmark': {
             'title': "Banner landmark nested inside another landmark",
-            'what': "Banner landmark nested inside another landmark",
+            'what': "A banner landmark element appears nested inside another landmark (e.g., inside <main>, <nav>, or <aside>), which the ARIA spec disallows.",
             'why': "Invalid nesting breaks page structure",
             'who': "Screen reader users",
             'impact': ImpactScale.HIGH.value,
@@ -932,7 +932,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrComplementaryLandmarkAccessibleNameIsBlank': {
             'title': "Complementary landmark has blank accessible name",
-            'what': "Complementary landmark has blank accessible name",
+            'what': "A complementary landmark (<aside> or role=\"complementary\") was found whose aria-label or aria-labelledby resolves to an empty string, leaving the landmark unnamed.",
             'why': "Empty labels provide no information",
             'who': "Screen reader users",
             'impact': ImpactScale.MEDIUM.value,
@@ -941,7 +941,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrComplementaryLandmarkHasAriaLabelAndAriaLabelledByAttrs': {
             'title': "Complementary landmark has both aria-label and aria-labelledby",
-            'what': "Complementary landmark has both aria-label and aria-labelledby",
+            'what': "A complementary landmark element has both aria-label and aria-labelledby attributes set, even though only one labelling mechanism should be used.",
             'why': "Conflicting labeling methods may cause confusion",
             'who': "Screen reader users",
             'impact': ImpactScale.MEDIUM.value,
@@ -950,7 +950,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrComplementaryLandmarkMayNotBeChildOfAnotherLandmark': {
             'title': "Complementary landmark is nested inside another landmark",
-            'what': "Complementary landmark is nested inside another landmark",
+            'what': "A complementary landmark is nested inside another landmark element. The ARIA spec requires complementary regions to sit at the top level of the document.",
             'why': "Invalid nesting breaks landmark structure",
             'who': "Screen reader users",
             'impact': ImpactScale.HIGH.value,
@@ -959,16 +959,16 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrCompletelyEmptyNavLandmark': {
             'title': "Navigation landmark contains no content",
-            'what': "Navigation landmark contains no content",
+            'what': "A <nav> (or role=\"navigation\") element exists in the DOM but contains no child elements, no links, and no text content at all.",
             'why': "Empty navigation serves no purpose",
-            'who': "All users",
+            'who': "Screen reader users who navigate by landmarks (the empty nav appears in the landmarks list with no useful content), and keyboard users who tab into it expecting links",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['1.3.1'],
             'remediation': "Add navigation content or remove empty landmark"
         },
         'ErrContentInfoLandmarkAccessibleNameIsBlank': {
             'title': "Contentinfo landmark has blank accessible name",
-            'what': "Contentinfo landmark has blank accessible name",
+            'what': "A contentinfo landmark (<footer> at top level, or role=\"contentinfo\") has an aria-label or aria-labelledby that resolves to an empty string.",
             'why': "Blank labels provide no information",
             'who': "Screen reader users",
             'impact': ImpactScale.MEDIUM.value,
@@ -977,7 +977,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrContentInfoLandmarkHasAriaLabelAndAriaLabelledByAttrs': {
             'title': "Contentinfo landmark has both aria-label and aria-labelledby",
-            'what': "Contentinfo landmark has both aria-label and aria-labelledby",
+            'what': "A contentinfo landmark element has both aria-label and aria-labelledby attributes set. aria-labelledby wins, but the duplication suggests confused authoring.",
             'why': "Conflicting labeling methods",
             'who': "Screen reader users",
             'impact': ImpactScale.MEDIUM.value,
@@ -996,7 +996,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrContentinfoLandmarkMayNotBeChildOfAnotherLandmark': {
             'title': "Contentinfo landmark is nested inside another landmark",
-            'what': "Contentinfo landmark is nested inside another landmark",
+            'what': "A contentinfo landmark appears nested inside another landmark (e.g., inside <main> or <nav>). The ARIA spec disallows this — contentinfo must be at the top level.",
             'why': "Invalid nesting breaks landmark structure",
             'who': "Screen reader users",
             'impact': ImpactScale.HIGH.value,
@@ -1005,7 +1005,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrDivMapMissingAttributes': {
             'title': "Map container div is missing required accessibility attributes",
-            'what': "Map container div is missing required accessibility attributes",
+            'what': "A <div> rendering a map widget is missing the role, accessible name, or keyboard-interaction attributes needed to expose it as an accessible interactive region.",
             'why': "Maps without proper accessibility attributes are completely inaccessible to screen reader users who cannot perceive the visual information.",
             'who': "Blind and low vision users, users who rely on screen readers to understand map content and functionality.",
             'impact': ImpactScale.HIGH.value,
@@ -1014,7 +1014,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrDuplicateLabelForBannerLandmark': {
             'title': "Multiple banner landmarks have the same label",
-            'what': "Multiple banner landmarks have the same label",
+            'what': "Two or more banner landmarks on the page share the same accessible name, so screen reader users cannot distinguish between them in the landmarks list.",
             'why': "Users cannot distinguish between different banners",
             'who': "Screen reader users",
             'impact': ImpactScale.MEDIUM.value,
@@ -1023,7 +1023,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrDuplicateLabelForComplementaryLandmark': {
             'title': "Multiple complementary landmarks have the same label",
-            'what': "Multiple complementary landmarks have the same label",
+            'what': "Two or more complementary landmarks on the page share the same accessible name. Each complementary region needs a unique label so users can tell them apart.",
             'why': "Users cannot distinguish between different complementary sections",
             'who': "Screen reader users",
             'impact': ImpactScale.MEDIUM.value,
@@ -1032,7 +1032,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrDuplicateLabelForContentinfoLandmark': {
             'title': "Multiple contentinfo landmarks have the same label",
-            'what': "Multiple contentinfo landmarks have the same label",
+            'what': "Two or more contentinfo (footer) landmarks on the page share the same accessible name, making them indistinguishable in the landmarks list.",
             'why': "Users cannot distinguish between different footer areas",
             'who': "Screen reader users",
             'impact': ImpactScale.MEDIUM.value,
@@ -1041,7 +1041,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrDuplicateLabelForFormLandmark': {
             'title': "Multiple form landmarks have the same label",
-            'what': "Multiple form landmarks have the same label",
+            'what': "Two or more form landmarks on the page share the same accessible name, so users cannot tell from the landmarks list which form is which.",
             'why': "Users cannot distinguish between different forms",
             'who': "Screen reader users",
             'impact': ImpactScale.MEDIUM.value,
@@ -1050,7 +1050,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrDuplicateLabelForNavLandmark': {
             'title': "Multiple navigation landmarks have the same label",
-            'what': "Multiple navigation landmarks have the same label",
+            'what': "Two or more <nav> landmarks share the same accessible name (e.g., both labelled \"Main navigation\"), so users cannot distinguish them in the landmarks list.",
             'why': "Users cannot distinguish between different navigation areas",
             'who': "Screen reader users",
             'impact': ImpactScale.MEDIUM.value,
@@ -1059,7 +1059,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrDuplicateLabelForRegionLandmark': {
             'title': "Multiple region landmarks have the same label",
-            'what': "Multiple region landmarks have the same label",
+            'what': "Two or more region landmarks on the page share the same accessible name, so they cannot be told apart in the landmarks list.",
             'why': "Users cannot distinguish between different regions",
             'who': "Screen reader users",
             'impact': ImpactScale.MEDIUM.value,
@@ -1068,7 +1068,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrDuplicateLabelForSearchLandmark': {
             'title': "Multiple search landmarks have the same label",
-            'what': "Multiple search landmarks have the same label",
+            'what': "Two or more search landmarks share the same accessible name. If multiple search areas exist, each needs a unique label (e.g., \"Site search\", \"Product search\").",
             'why': "Users cannot distinguish between different search areas",
             'who': "Screen reader users",
             'impact': ImpactScale.MEDIUM.value,
@@ -1087,7 +1087,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrDuplicateNavNames': {
             'title': "Multiple navigation elements have identical accessible names",
-            'what': "Multiple navigation elements have identical accessible names",
+            'what': "Two or more <nav> elements on the page resolve to the same computed accessible name, so screen readers cannot distinguish them when listing navigation landmarks.",
             'why': "Users cannot distinguish between different navigation areas when they have the same name, causing confusion about page structure.",
             'who': "Screen reader users navigating by landmarks, users with cognitive disabilities who rely on clear labeling.",
             'impact': ImpactScale.MEDIUM.value,
@@ -1105,7 +1105,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrElementNotContainedInALandmark': {
             'title': "Content exists outside of any landmark",
-            'what': "Content exists outside of any landmark",
+            'what': "A piece of substantive page content sits outside every landmark region (banner, nav, main, complementary, contentinfo, region, search, form). Users navigating by landmarks will skip past it.",
             'why': "Content may be missed when navigating by landmarks",
             'who': "Screen reader users using landmark navigation",
             'impact': ImpactScale.MEDIUM.value,
@@ -1114,7 +1114,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrElementPrimaryLangNotRecognized': {
             'title': "Element has unrecognized language code",
-            'what': "Element has unrecognized language code",
+            'what': "A descendant element's lang attribute uses a primary language subtag that is not a recognised ISO 639 language code.",
             'why': "Language changes won\'t be announced properly",
             'who': "Screen reader users",
             'impact': ImpactScale.MEDIUM.value,
@@ -1123,7 +1123,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrElementRegionQualifierNotRecognized': {
             'title': "Element lang attribute has unrecognized region qualifier",
-            'what': "Element lang attribute has unrecognized region qualifier",
+            'what': "The region subtag of an element's lang attribute (e.g., the \"ZZ\" in lang=\"en-ZZ\") is not a recognised ISO 3166-1 country code.",
             'why': "Invalid region codes may affect pronunciation",
             'who': "Screen reader users",
             'impact': ImpactScale.LOW.value,
@@ -1132,7 +1132,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrEmptyAriaLabelOnField': {
             'title': "Form field has empty aria-label attribute",
-            'what': "Form field has empty aria-label attribute",
+            'what': "A form field has an aria-label attribute, but its value is an empty string, so the field has no accessible name even though the attribute is present.",
             'why': "Empty labels provide no information about the field",
             'who': "Screen reader users",
             'impact': ImpactScale.HIGH.value,
@@ -1141,7 +1141,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrEmptyAriaLabelledByOnField': {
             'title': "Form field has empty aria-labelledby attribute",
-            'what': "Form field has empty aria-labelledby attribute",
+            'what': "A form field has an aria-labelledby attribute, but its value is empty, so no element is being referenced for the accessible name.",
             'why': "Empty labelledby provides no field description",
             'who': "Screen reader users",
             'impact': ImpactScale.HIGH.value,
@@ -1150,7 +1150,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrEmptyHeading': {
             'title': "Heading element contains only whitespace or special characters: \"{text}\"",
-            'what': "Heading element contains only whitespace or special characters: \"{text}\"",
+            'what': "A heading element (<h1>–<h6>) was found whose visible text is empty, contains only whitespace, or contains only non-text characters such as decorative symbols.",
             'why': "This heading contains only \"{text}\" which provides no meaningful content. Empty headings disrupt document structure and navigation. Screen reader users rely on headings to understand page organization and navigate efficiently using heading shortcuts. An empty heading creates a navigation point with no information, confusing users about the page structure.",
                     'what_generic': "Heading element contains only whitespace or special characters",
             'who': "Screen reader users who navigate by headings and find a heading containing only \"{text}\", users with cognitive disabilities who rely on clear structure to understand content organization, and users of assistive technologies that generate page outlines",
@@ -1199,7 +1199,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrEmptyLabel': {
             'title': "Label element exists but contains no text",
-            'what': "Label element exists but contains no text",
+            'what': "A <label> element is correctly associated with a form field, but the label element's text content is empty or only whitespace.",
             'why': "Empty labels provide no information about the associated form control, making forms impossible to complete correctly.",
             'who': "Screen reader users who cannot identify form fields, users with cognitive disabilities who need clear labels.",
             'impact': ImpactScale.HIGH.value,
@@ -1208,7 +1208,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrHtmlLangEmpty': {
             'title': "HTML element has a lang attribute present but with no value (lang=\"\"), preventing screen readers from determining the page language",
-            'what': "HTML element has a lang attribute present but with no value (lang=\"\"), preventing screen readers from determining the page language",
+            'what': "The <html> element has a lang attribute, but its value is an empty string (lang=\"\"). Assistive tech treats this as \"no language declared\".",
             'why': "An empty lang attribute is worse than no lang attribute because it explicitly tells assistive technologies there\'s no language specified, potentially causing screen readers to use incorrect pronunciation rules or fail to switch language synthesizers. This can make content completely unintelligible when read aloud.",
             'who': "Blind and low vision users using screen readers who need proper language identification for correct pronunciation, multilingual users who rely on automatic language switching in assistive technologies, users with dyslexia using reading tools that depend on language settings, and users of translation services",
             'impact': ImpactScale.HIGH.value,
@@ -1217,7 +1217,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrEmptyList': {
             'title': "List element (ul, ol, dl) contains no list items",
-            'what': "List element (ul, ol, dl) contains no list items",
+            'what': "A <ul>, <ol>, or <dl> element is present but contains no <li> (or <dt>/<dd>) children. Empty lists are still announced by screen readers as \"list, 0 items\".",
             'why': "Empty lists create confusion about document structure and may indicate missing content or markup errors.",
             'who': "Screen reader users who encounter empty list announcements, all users missing potentially important content.",
             'impact': ImpactScale.MEDIUM.value,
@@ -1235,7 +1235,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrEmptyTitleAttr': {
             'title': "Empty title attribute",
-            'what': "Empty title attribute",
+            'what': "An element has a title attribute, but its value is empty, providing no tooltip or fallback accessible name.",
             'why': "Empty titles provide no information and add unnecessary markup",
             'who': "Users expecting tooltip information",
             'impact': ImpactScale.LOW.value,
@@ -1244,7 +1244,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrEmptyXmlLangAttr': {
             'title': "xml:lang attribute is empty",
-            'what': "xml:lang attribute is empty",
+            'what': "An xml:lang attribute is present but has an empty value, providing no language information to consumers that read xml:lang.",
             'why': "Empty xml:lang provides no language information",
             'who': "Screen reader users using XML/XHTML parsers",
             'impact': ImpactScale.HIGH.value,
@@ -1273,7 +1273,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrFielLabelledBySomethingNotALabel': {
             'title': "Field is labeled by an element that is not a proper label",
-            'what': "Field is labeled by an element that is not a proper label",
+            'what': "A field's aria-labelledby points to an element that is not a <label> and not a heading-like element (e.g., it points to a <div> with no role), making the labelling source unreliable.",
             'why': "Non-label elements may not provide appropriate semantic relationships",
             'who': "Screen reader users",
             'impact': ImpactScale.MEDIUM.value,
@@ -1282,7 +1282,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrFieldAriaRefDoesNotExist': {
             'title': "aria-labelledby references non-existent element ID \'{found}\'",
-            'what': "aria-labelledby references non-existent element ID \'{found}\'",
+            'what': "A field's aria-labelledby references the id \"{found}\", but no element with that id exists in the page.",
             'why': "The aria-labelledby attribute references \'{found}\' but no element with id=\"{found}\" exists on the page. This broken reference means the field has no accessible label for screen readers.",
                     'what_generic': "ARIA attribute references non-existent element ID",
             'who': "Screen reader users who receive no label for this field",
@@ -1292,7 +1292,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrFieldLabelledUsingAriaLabel': {
             'title': "Field labeled using aria-label instead of visible label",
-            'what': "Field labeled using aria-label instead of visible label",
+            'what': "A form field uses aria-label as its accessible name even though a visible <label> would be feasible. Visible labels are required for fields that have a visible textual prompt.",
             'why': "Visible labels benefit all users, not just screen reader users",
             'who': "Users with cognitive disabilities, all users",
             'impact': ImpactScale.MEDIUM.value,
@@ -1301,7 +1301,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrFieldReferenceDoesNotExist': {
             'title': "Label for attribute references non-existent field",
-            'what': "Label for attribute references non-existent field",
+            'what': "A <label>'s for attribute points to an id that does not exist anywhere in the page, leaving the label unattached to any field.",
             'why': "Label is not associated with any form field",
             'who': "Screen reader users",
             'impact': ImpactScale.HIGH.value,
@@ -1310,7 +1310,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrFormAriaLabelledByIsBlank': {
             'title': "Form aria-labelledby references blank or empty element",
-            'what': "Form aria-labelledby references blank or empty element",
+            'what': "A <form> element has an aria-labelledby attribute, but the referenced element's text content (or the aria-labelledby value itself) is empty.",
             'why': "No accessible name is provided",
             'who': "Screen reader users",
             'impact': ImpactScale.HIGH.value,
@@ -1319,7 +1319,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrFormAriaLabelledByReferenceDIsHidden': {
             'title': "Form aria-labelledby references hidden element",
-            'what': "Form aria-labelledby references hidden element",
+            'what': "A <form> element's aria-labelledby points to an element that is hidden via display:none, visibility:hidden, or the hidden attribute, leaving no announced accessible name.",
             'why': "Hidden elements may not provide accessible names",
             'who': "Screen reader users",
             'impact': ImpactScale.HIGH.value,
@@ -1328,7 +1328,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrFormAriaLabelledByReferenceDoesNotExist': {
             'title': "Form aria-labelledby references non-existent element",
-            'what': "Form aria-labelledby references non-existent element",
+            'what': "A <form> element's aria-labelledby references an id that does not exist anywhere on the page, so no accessible name is computed.",
             'why': "Broken reference provides no accessible name",
             'who': "Screen reader users",
             'impact': ImpactScale.HIGH.value,
@@ -1337,7 +1337,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrFormAriaLabelledByReferenceDoesNotReferenceAHeading': {
             'title': "Form aria-labelledby doesn\'t reference a heading element",
-            'what': "Form aria-labelledby doesn\'t reference a heading element",
+            'what': "A <form> uses aria-labelledby to point at an element that is not a heading (<h1>–<h6>). Best practice is to label a form landmark with the heading that introduces it.",
             'why': "Best practice is to reference headings for form landmarks",
             'who': "Screen reader users",
             'impact': ImpactScale.LOW.value,
@@ -1346,7 +1346,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrFormEmptyHasNoChildNodes': {
             'title': "Form element is completely empty with no child nodes",
-            'what': "Form element is completely empty with no child nodes",
+            'what': "A <form> element exists in the DOM but has no child nodes at all — no inputs, no text, no markup of any kind inside it.",
             'why': "Empty forms serve no purpose and confuse assistive technology users",
             'who': "Screen reader users, keyboard users",
             'impact': ImpactScale.HIGH.value,
@@ -1355,16 +1355,16 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrFormEmptyHasNoInteractiveElements': {
             'title': "Form has content but no interactive elements",
-            'what': "Form has content but no interactive elements",
+            'what': "A <form> element contains text or markup but has no <input>, <textarea>, <select>, <button>, or other interactive controls, so it cannot collect or submit data.",
             'why': "Forms without inputs cannot be used for their intended purpose",
-            'who': "All users",
+            'who': "All users trying to complete the form, but especially screen reader users who are told a form exists but cannot find any controls inside it",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['1.3.1'],
             'remediation': "Add appropriate input fields, buttons, or other form controls"
         },
         'ErrFormLandmarkAccessibleNameIsBlank': {
             'title': "Form landmark has blank accessible name",
-            'what': "Form landmark has blank accessible name",
+            'what': "A form landmark (<form> with an accessible name source, or role=\"form\") has an aria-label or aria-labelledby that resolves to an empty string.",
             'why': "Forms need clear identification",
             'who': "Screen reader users",
             'impact': ImpactScale.HIGH.value,
@@ -1373,7 +1373,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrFormLandmarkHasAriaLabelAndAriaLabelledByAttrs': {
             'title': "Form landmark has both aria-label and aria-labelledby",
-            'what': "Form landmark has both aria-label and aria-labelledby",
+            'what': "A form landmark element has both aria-label and aria-labelledby attributes set. Only one labelling method should be used per element.",
             'why': "Conflicting labeling methods",
             'who': "Screen reader users",
             'impact': ImpactScale.MEDIUM.value,
@@ -1382,7 +1382,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrFormUsesAriaLabelInsteadOfVisibleElement': {
             'title': "Form uses aria-label instead of visible heading or label",
-            'what': "Form uses aria-label instead of visible heading or label",
+            'what': "A form landmark is labelled with aria-label (text only visible to assistive tech) even though a visible heading or label exists nearby that could be used via aria-labelledby instead.",
             'why': "Visible labels benefit all users",
             'who': "All users, especially those with cognitive disabilities",
             'impact': ImpactScale.MEDIUM.value,
@@ -1391,7 +1391,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrFormUsesTitleAttribute': {
             'title': "Form uses title attribute for labeling",
-            'what': "Form uses title attribute for labeling",
+            'what': "A <form> element relies on the title attribute as its accessible name. The title attribute is exposed inconsistently — screen readers and mobile users may never receive it.",
             'why': "Title attributes are not reliably accessible",
             'who': "Screen reader users, mobile users",
             'impact': ImpactScale.MEDIUM.value,
@@ -1400,7 +1400,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrFoundAriaLevelButNoRoleAppliedAtAll': {
             'title': "aria-level attribute without role=\"heading\"",
-            'what': "aria-level attribute without role=\"heading\"",
+            'what': "An element has an aria-level attribute but no role attribute at all. aria-level is only meaningful when paired with role=\"heading\".",
             'why': "aria-level only works with heading role",
             'who': "Screen reader users",
             'impact': ImpactScale.HIGH.value,
@@ -1409,7 +1409,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrFoundAriaLevelButRoleIsNotHeading': {
             'title': "aria-level on element without heading role",
-            'what': "aria-level on element without heading role",
+            'what': "An element has an aria-level attribute set, but its role is not \"heading\" and it is not a native <h1>–<h6>. aria-level only has meaning on heading-role elements.",
             'why': "aria-level requires heading role to work",
             'who': "Screen reader users",
             'impact': ImpactScale.HIGH.value,
@@ -1418,7 +1418,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrHeaderMissingScope': {
             'title': "Table header (th) element missing scope attribute",
-            'what': "Table header (th) element missing scope attribute",
+            'what': "A <th> element inside a data table has no scope attribute, leaving the relationship between header and data cells ambiguous for screen readers.",
             'why': "Without scope attributes, screen readers cannot properly associate headers with data cells, making tables difficult to understand.",
             'who': "Screen reader users navigating complex tables, users who rely on proper table semantics for comprehension.",
             'impact': ImpactScale.MEDIUM.value,
@@ -1427,7 +1427,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrHreflangAttrEmpty': {
             'title': "hreflang attribute is empty on link",
-            'what': "hreflang attribute is empty on link",
+            'what': "A link's hreflang attribute is present but its value is an empty string, so the language of the linked resource is not declared.",
             'why': "Empty hreflang provides no language information for the linked resource",
             'who': "Screen reader users, search engines",
             'impact': ImpactScale.LOW.value,
@@ -1436,7 +1436,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrHreflangNotOnLink': {
             'title': "hreflang attribute on non-link element",
-            'what': "hreflang attribute on non-link element",
+            'what': "An hreflang attribute was found on an element that is not an <a>, <area>, or <link>. hreflang is only meaningful on link elements.",
             'why': "hreflang only works on links",
             'who': "Screen reader users",
             'impact': ImpactScale.LOW.value,
@@ -1445,7 +1445,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrIframeWithNoTitleAttr': {
             'title': "Iframe element is missing the required title attribute",
-            'what': "Iframe element is missing the required title attribute",
+            'what': "An <iframe> element has no title attribute, so screen readers cannot describe what the embedded frame contains.",
             'why': "Iframes embed external content like videos, maps, or forms within your page. Without a title attribute, screen reader users hear only \"iframe\" with no indication of what content it contains. This is like having a door with no label - users don\'t know what\'s behind it. They must enter the iframe and explore its content to understand its purpose, which is time-consuming and may be confusing if the iframe content lacks context. For pages with multiple iframes, users cannot distinguish between them or decide which ones are worth exploring.",
             'who': "Screen reader users who need to understand what each iframe contains before deciding whether to interact with it, keyboard users navigating through iframes who need context about embedded content, users with cognitive disabilities who need clear labeling of all page regions, and users on slow connections who may experience delays loading iframe content",
             'impact': ImpactScale.HIGH.value,
@@ -1454,7 +1454,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrImageAltContainsHTML': {
             'title': "Image\'s alternative text contains HTML markup tags",
-            'what': "Image\'s alternative text contains HTML markup tags",
+            'what': "An image's alt attribute contains literal HTML tags (e.g., \"<b>logo</b>\"). Alt is a plain-text attribute — markup is announced verbatim by some screen readers.",
             'why': "HTML in alt text is not parsed, so screen readers will read the HTML markup as literal characters. Users will hear angle brackets announced as \"less than\" or \"greater than\" and tag names spelled out, creating a confusing experience. For example, alt=\"<b>Team Photo</b>\" would be read as \"less than b greater than Team Photo less than slash b greater than\".",
             'who': "Blind and low vision users using screen readers who will hear nonsense characters and words interspersed with the actual alt text, making it difficult or impossible to understand the image content",
             'impact': ImpactScale.HIGH.value,
@@ -1463,7 +1463,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrImageWithEmptyAlt': {
             'title': "Image alt attribute contains only whitespace characters (spaces, tabs, line breaks), providing no accessible name",
-            'what': "Image alt attribute contains only whitespace characters (spaces, tabs, line breaks), providing no accessible name",
+            'what': "An <img> has an alt attribute, but its value is only whitespace (spaces, tabs, or line breaks). This is not the same as alt=\"\" and may be processed inconsistently by assistive tech.",
             'why': "Whitespace-only alt attributes fail to provide any accessible name for the image, causing screen readers to announce unhelpful fallback information like the image filename or \"unlabeled graphic\". Unlike properly empty alt=\"\" which signals decorative content, whitespace alt text creates ambiguity - users cannot determine if they\'re missing important information or if the image is decorative.",
             'who': "Blind and low vision users relying on screen readers who cannot determine the image\'s purpose or content, users with cognitive disabilities who depend on clear labeling to understand page content, and users of voice control software who cannot reference images without accessible names",
             'impact': ImpactScale.MEDIUM.value,
@@ -1499,7 +1499,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrInappropriateMenuRole': {
             'title': "Menu role used inappropriately for navigation links",
-            'what': "Menu role used inappropriately for navigation links",
+            'what': "role=\"menu\" or role=\"menuitem\" is used on plain navigation links. The menu role pattern is meant for application-style menus (with arrow-key navigation), not for ordinary site navigation lists.",
             'why': "Menu role is for application menus, not navigation. Misuse causes incorrect keyboard behavior and screen reader announcements.",
             'who': "Screen reader users expecting application menu behavior, keyboard users expecting arrow key navigation.",
             'impact': ImpactScale.MEDIUM.value,
@@ -1508,7 +1508,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrIncorrectlyFormattedPrimaryLang': {
             'title': "Language code incorrectly formatted",
-            'what': "Language code incorrectly formatted",
+            'what': "The primary language code on the page (e.g., on <html lang=\"...\">) is structurally malformed — wrong number of characters, wrong case for a region subtag, or an invalid separator.",
             'why': "Malformed codes may not work properly",
             'who': "Screen reader users",
             'impact': ImpactScale.MEDIUM.value,
@@ -1517,7 +1517,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrInfiniteAnimation': {
             'title': "Animation '{animationName}' runs infinitely without pause controls",
-            'what': "Animation '{animationName}' runs infinitely without pause controls",
+            'what': "The CSS animation \"{animationName}\" runs with animation-iteration-count: infinite (or equivalent) and the page provides no pause/stop control or prefers-reduced-motion handling.",
             'why': "Continuous animations can trigger seizures, cause distraction, and make content unusable for many users. This animation is set to repeat indefinitely (animation-iteration-count: infinite).",
                     'what_generic': "Animation runs infinitely without pause controls",
             'who': "Users with vestibular disorders, users with ADHD, users with photosensitive epilepsy, users with cognitive disabilities.",
@@ -1527,7 +1527,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrInvalidAriaLevel': {
             'title': "Invalid aria-level value (not 1-6)",
-            'what': "Invalid aria-level value (not 1-6)",
+            'what': "An element's aria-level value is outside the valid heading-level range — values must be integers from 1 to 6.",
             'why': "Invalid levels break heading hierarchy",
             'who': "Screen reader users",
             'impact': ImpactScale.MEDIUM.value,
@@ -1536,7 +1536,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrInvalidLanguageCode': {
             'title': "Language attribute contains invalid code \'{found}\' that doesn\'t conform to ISO 639 standards",
-            'what': "Language attribute contains invalid code \'{found}\' that doesn\'t conform to ISO 639 standards",
+            'what': "A language attribute contains the value \"{found}\", which does not conform to BCP 47 / ISO 639 (e.g., wrong length, unknown subtag, malformed structure).",
             'why': "The language code \'{found}\' is not recognized as a valid ISO 639 language code. This prevents assistive technologies from properly processing content, causing screen readers to mispronounce words, use incorrect inflection patterns, or fail to switch language engines. This can make content difficult or impossible to understand when read aloud, especially if the content is in a non-English language but gets read with English pronunciation rules.",
                     'what_generic': "Language attribute contains invalid code that doesn't conform to ISO 639 standards",
             'who': "Blind and low vision users relying on screen readers for accurate pronunciation, multilingual users who need proper language identification for comprehension, users with reading disabilities using text-to-speech tools, and international users accessing content in multiple languages",
@@ -1546,7 +1546,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrInvalidTabindex': {
             'title': "Element has a tabindex attribute with an invalid value (non-numeric or decimal)",
-            'what': "Element has a tabindex attribute with an invalid value (non-numeric or decimal)",
+            'what': "An element's tabindex attribute has a value that is not a valid integer (e.g., \"true\", \"none\", \"0.5\", or empty).",
             'why': "Invalid tabindex values are ignored by browsers, potentially making interactive elements unreachable by keyboard or creating unpredictable focus behavior. This can completely block keyboard users from accessing functionality. The element might be skipped during tabbing, receive focus unexpectedly, or behave differently across browsers.",
             'who': "Keyboard users who cannot reach or interact with the element, screen reader users who may miss important interactive controls, users with motor disabilities relying on keyboard navigation, and users who cannot use a mouse",
             'impact': ImpactScale.HIGH.value,
@@ -1555,7 +1555,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrLabelContainsMultipleFields': {
             'title': "Single label contains {count} form fields",
-            'what': "Single label contains {count} form fields",
+            'what': "A single <label> element wraps {count} form fields, which makes it ambiguous which field the label text applies to.",
             'why': "A label containing {count} fields creates ambiguity about which field it describes. Screen readers will associate this label with all {count} fields, making it unclear which field is which.",
                     'what_generic': "Single label contains multiple form fields",
             'who': "Screen reader users who need clear field identification, users with cognitive disabilities who need simple relationships",
@@ -1565,7 +1565,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrLabelMismatchOfAccessibleNameAndLabelText': {
             'title': "Accessible name doesn\'t match visible label",
-            'what': "Accessible name doesn\'t match visible label",
+            'what': "A field's computed accessible name does not start with the visible label text. Voice-control users who say the visible text may fail to activate the field.",
             'why': "Confusing for voice control users",
             'who': "Voice control users",
             'impact': ImpactScale.MEDIUM.value,
@@ -1594,7 +1594,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrLinkOpensNewWindowNoWarning': {
             'title': "Link opens in new window/tab without warning users",
-            'what': "Link opens in new window/tab without warning users",
+            'what': "A link uses target=\"_blank\" (or otherwise opens in a new tab/window) without any text, icon, or aria-label indicating that the navigation context will change.",
             'why': "Unexpectedly opening new windows can disorient users, especially those using screen readers or magnification. Users may not realize a new window opened and become confused when the back button doesn\'t work. This is particularly problematic for users with cognitive disabilities or those unfamiliar with browser behaviors.",
             'who': "Screen reader users who may not notice the context change, users with cognitive disabilities who may become disoriented, users with motor disabilities who have difficulty managing multiple windows, and novice computer users",
             'impact': ImpactScale.MEDIUM.value,
@@ -1603,7 +1603,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrLinkTextNotDescriptive': {
             'title': "Link text does not adequately describe the link\'s destination or purpose",
-            'what': "Link text does not adequately describe the link\'s destination or purpose",
+            'what': "A link's text (e.g., \"click here\", \"more\", \"read more\") does not describe its destination or purpose when read out of context, which is how screen reader users typically encounter links.",
             'why': "Users need to understand where a link will take them before activating it. Vague link text like \"click here\" or \"read more\" provides no information about the destination. Screen reader users often navigate by pulling up a list of all links, where non-descriptive text becomes meaningless out of context.",
             'who': "Screen reader users navigating by links list, users with cognitive disabilities who need clear navigation cues, and users with motor disabilities who need to make informed decisions before activating links",
             'impact': ImpactScale.HIGH.value,
@@ -1729,7 +1729,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrMainLandmarkHasAriaLabelAndAriaLabelledByAttrs': {
             'title': "Main landmark has both aria-label and aria-labelledby attributes",
-            'what': "Main landmark has both aria-label and aria-labelledby attributes",
+            'what': "The <main> (or role=\"main\") element has both aria-label and aria-labelledby attributes set, even though only one labelling mechanism is needed.",
             'why': "Conflicting labeling methods may cause confusion",
             'who': "Screen reader users",
             'impact': ImpactScale.MEDIUM.value,
@@ -1738,7 +1738,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrMainLandmarkHasTabindexOfZeroCanOnlyHaveMinusOneAtMost': {
             'title': "Main landmark has tabindex=\"0\" which is inappropriate",
-            'what': "Main landmark has tabindex=\"0\" which is inappropriate",
+            'what': "The <main> element has tabindex=\"0\", which inserts it into the keyboard tab order. Landmarks should not be tab stops themselves — at most they may use tabindex=\"-1\" to receive programmatic focus.",
             'why': "Landmarks should not be in the tab order",
             'who': "Keyboard users",
             'impact': ImpactScale.MEDIUM.value,
@@ -1747,16 +1747,16 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrMainLandmarkIsHidden': {
             'title': "Main landmark is hidden from view",
-            'what': "Main landmark is hidden from view",
+            'what': "An element with role=\"main\" or a <main> element exists but is hidden via display:none, visibility:hidden, the hidden attribute, or aria-hidden=\"true\".",
             'why': "Hidden main content defeats the purpose of the landmark",
-            'who': "All users",
+            'who': "Screen reader users who rely on the main landmark to skip past repeated header/nav content, and keyboard users using \"skip to main\" links that target a hidden element",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['1.3.1'],
             'remediation': "Ensure main landmark is visible or remove if not needed"
         },
         'ErrMainLandmarkMayNotbeChildOfAnotherLandmark': {
             'title': "Main landmark nested inside another landmark",
-            'what': "Main landmark nested inside another landmark",
+            'what': "The <main> element (or role=\"main\") appears nested inside another landmark such as <nav>, <aside>, or <header>. <main> must be a top-level landmark.",
             'why': "Invalid landmark nesting breaks structure",
             'who': "Screen reader users",
             'impact': ImpactScale.HIGH.value,
@@ -1774,7 +1774,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrMapMissingTitle': {
             'title': "Map iframe missing title attribute",
-            'what': "Map iframe missing title attribute",
+            'what': "An <iframe> that embeds a map (e.g., Google Maps) has no title attribute, so assistive tech cannot describe the frame's purpose.",
             'why': "Without titles, screen reader users don\'t know what the embedded map contains or represents.",
             'who': "Screen reader users who need to understand embedded content purpose.",
             'impact': ImpactScale.MEDIUM.value,
@@ -1846,7 +1846,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrMissingAccessibleName': {
             'title': "Interactive element has no accessible name",
-            'what': "Interactive element has no accessible name",
+            'what': "An interactive element (button, link, custom widget) has no accessible name derivable from visible text, aria-label, aria-labelledby, alt text, or a <title> child.",
             'why': "Without accessible names, screen reader users cannot identify or interact with controls.",
             'who': "Screen reader users who cannot identify unnamed controls, voice control users who cannot target elements.",
             'impact': ImpactScale.HIGH.value,
@@ -1855,7 +1855,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrMissingCloseButton': {
             'title': "Modal or dialog missing close button",
-            'what': "Modal or dialog missing close button",
+            'what': "A modal or dialog is open but has no visible close control (no \"X\" button, no \"Cancel\", no \"Close\").",
             'why': "Without a close button, users can become trapped in modals with no way to return to main content.",
             'who': "Keyboard users who cannot use escape key, screen reader users who need explicit close controls.",
             'impact': ImpactScale.HIGH.value,
@@ -1873,7 +1873,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnMissingDocumentMetadata': {
             'title': "Document link missing file size or metadata",
-            'what': "Link to downloadable document does not provide file size or other helpful metadata",
+            'what': "A link to a downloadable document (e.g., PDF, DOCX, XLSX) does not indicate the file type or file size in its visible text or accessible name.",
             'why': "Users benefit from knowing file size to make informed download decisions, especially on mobile devices or metered connections. Page count or document length helps users understand time commitment.",
             'who': "Mobile users on limited data plans, users with slow internet connections, users with limited device storage, users with cognitive disabilities who benefit from clear expectations.",
             'impact': ImpactScale.LOW.value,
@@ -1891,7 +1891,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrMissingMainLandmark': {
             'title': "Page missing main landmark for primary content",
-            'what': "Page missing main landmark for primary content",
+            'what': "The page has no element with role=\"main\" and no <main> element identifying the primary content region.",
             'why': "Without a main landmark, screen reader users cannot quickly navigate to the primary content area.",
             'who': "Screen reader users who navigate by landmarks, keyboard users using landmark navigation.",
             'impact': ImpactScale.MEDIUM.value,
@@ -1910,7 +1910,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrModalMissingClose': {
             'title': "Modal dialog has no way to close it",
-            'what': "Modal dialog has no way to close it",
+            'what': "A modal dialog has no mechanism at all to dismiss it — no close button, no overlay click handler, and no Escape key support.",
             'why': "Users become trapped in the modal with no way to return to the main content.",
             'who': "All users, especially keyboard users who cannot click outside to close.",
             'impact': ImpactScale.HIGH.value,
@@ -1939,7 +1939,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrModalWithoutEscape': {
             'title': "Modal cannot be closed using the Escape key",
-            'what': "Modal cannot be closed using the Escape key",
+            'what': "A modal dialog does not close when the Escape key is pressed, breaking a fundamental WCAG keyboard expectation for dismissible overlays.",
             'why': "Escape key is the expected keyboard shortcut for closing modals; without it, keyboard users may become trapped.",
             'who': "Keyboard users who expect standard modal behavior, power users who rely on keyboard shortcuts.",
             'impact': ImpactScale.LOW.value,
@@ -1976,7 +1976,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrMultipleBannerLandmarks': {
             'title': "Multiple banner landmarks found",
-            'what': "Multiple banner landmarks found",
+            'what': "More than one banner landmark was found at the top level of the page. The ARIA spec allows only a single banner landmark per page.",
             'why': "Multiple headers confuse page structure",
             'who': "Screen reader users",
             'impact': ImpactScale.MEDIUM.value,
@@ -1985,7 +1985,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrMultipleContentinfoLandmarks': {
             'title': "Multiple contentinfo landmarks found",
-            'what': "Multiple contentinfo landmarks found",
+            'what': "More than one contentinfo landmark was found at the top level of the page. The ARIA spec allows only a single contentinfo (footer) landmark per page.",
             'why': "Multiple footers confuse page structure",
             'who': "Screen reader users",
             'impact': ImpactScale.MEDIUM.value,
@@ -1994,7 +1994,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrMultipleH1': {
             'title': "Page contains {count} h1 elements instead of just one",
-            'what': "Page contains {count} h1 elements instead of just one",
+            'what': "More than one <h1> element was found on the page. WCAG and document-outline best practice expect exactly one top-level heading per page.",
             'why': "Having {count} h1 elements creates confusion about the page\'s main topic. Each h1 represents a primary heading, and multiple h1s suggest multiple main topics, breaking the document hierarchy. Screen readers users won\'t know which h1 represents the actual page topic.",
                     'what_generic': "Page contains multiple h1 elements instead of just one",
             'who': "Screen reader users who expect a single h1 to identify the page topic, users navigating by headings who see multiple \"top level\" items, SEO and search engines that look for a single main topic",
@@ -2004,7 +2004,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrMultipleMainLandmarks': {
             'title': "Multiple main landmark regions found on the page",
-            'what': "Multiple main landmark regions found on the page",
+            'what': "More than one <main> (or role=\"main\") element was found on the page. There must be exactly one main landmark identifying the primary content.",
             'why': "The main landmark should contain THE primary content of the page - having multiple main landmarks is like having multiple \"Chapter 1\" sections in a book. It confuses the page structure and defeats the purpose of landmarks. Screen reader users expecting to jump to the main content won\'t know which landmark contains the actual primary content. They might land in the wrong section, miss important content, or have to check multiple \"main\" areas. This ambiguity makes the landmark system unreliable and forces users back to linear navigation.",
             'who': "Screen reader users relying on the main landmark to skip to primary content, keyboard users using landmark navigation extensions, users with cognitive disabilities who need clear, unambiguous page structure, and developers trying to understand the intended page structure",
             'impact': ImpactScale.HIGH.value,
@@ -2032,7 +2032,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrNativeVideoMissingControls': {
             'title': "Native HTML5 video element missing controls attribute",
-            'what': "Native HTML5 video element missing controls attribute",
+            'what': "An HTML5 <video> element has no controls attribute and no custom UI providing play/pause/volume controls.",
             'why': "Without controls, users cannot play, pause, or adjust video playback.",
             'who': "All users who need to control video playback, especially keyboard and screen reader users.",
             'impact': ImpactScale.HIGH.value,
@@ -2041,7 +2041,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrNavLandmarkAccessibleNameIsBlank': {
             'title': "Navigation landmark has blank accessible name",
-            'what': "Navigation landmark has blank accessible name",
+            'what': "A navigation landmark (<nav> or role=\"navigation\") has an aria-label or aria-labelledby that resolves to an empty string, so screen readers cannot tell this nav apart from any others.",
             'why': "Multiple nav areas need labels",
             'who': "Screen reader users",
             'impact': ImpactScale.MEDIUM.value,
@@ -2050,16 +2050,16 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrNavLandmarkContainsOnlyWhiteSpace': {
             'title': "Navigation landmark contains only whitespace",
-            'what': "Navigation landmark contains only whitespace",
+            'what': "A <nav> (or role=\"navigation\") element exists but its content is only whitespace characters (spaces, tabs, newlines) with no actual links or text.",
             'why': "Whitespace-only navigation is not functional",
-            'who': "All users",
+            'who': "Screen reader users who hear an empty navigation announced, and keyboard users who tab into an empty container with no destination",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['1.3.1'],
             'remediation': "Add navigation links or remove the landmark"
         },
         'ErrNavLandmarkHasAriaLabelAndAriaLabelledByAttrs': {
             'title': "Navigation landmark has both aria-label and aria-labelledby",
-            'what': "Navigation landmark has both aria-label and aria-labelledby",
+            'what': "A navigation landmark element has both aria-label and aria-labelledby attributes set. Use only one labelling method per element.",
             'why': "Conflicting labeling methods",
             'who': "Screen reader users",
             'impact': ImpactScale.MEDIUM.value,
@@ -2068,7 +2068,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrNavMissingAccessibleName': {
             'title': "Navigation element lacks accessible name to distinguish it",
-            'what': "Navigation element lacks accessible name to distinguish it",
+            'what': "A <nav> element on a page that contains more than one navigation landmark has no aria-label, aria-labelledby, or other accessible name source to distinguish it from the others.",
             'why': "When pages have multiple navigation areas, users need to distinguish between them.",
             'who': "Screen reader users navigating by landmarks, users who need to understand page structure.",
             'impact': ImpactScale.MEDIUM.value,
@@ -2086,7 +2086,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrNegativeTabindex': {
             'title': "Negative tabindex on interactive element",
-            'what': "Negative tabindex on interactive element",
+            'what': "An interactive element has a negative tabindex (e.g., tabindex=\"-1\"), which removes it from the keyboard tab order even though it remains visible and clickable.",
             'why': "Element removed from tab order",
             'who': "Keyboard users",
             'impact': ImpactScale.MEDIUM.value,
@@ -2095,7 +2095,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrNestedNavLandmarks': {
             'title': "Navigation landmarks are nested",
-            'what': "Navigation landmarks are nested",
+            'what': "A <nav> (or role=\"navigation\") element appears inside another <nav> landmark. Nesting navigation landmarks creates an ambiguous structure for landmark-by-landmark navigation.",
             'why': "Confusing navigation structure",
             'who': "Screen reader users",
             'impact': ImpactScale.MEDIUM.value,
@@ -2104,7 +2104,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrNoAlt': {
             'title': "Image missing alt attribute entirely",
-            'what': "Image missing alt attribute entirely",
+            'what': "An <img> element has no alt attribute at all (not even alt=\"\"), so assistive tech announces something like the filename or simply \"image\" with no description.",
             'why': "Without alt attributes, screen readers cannot convey any information about images to users.",
             'who': "Blind and low vision users using screen readers, users with images disabled.",
             'impact': ImpactScale.HIGH.value,
@@ -2113,7 +2113,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrNoBannerLandmarkOnPage': {
             'title': "Page is missing a banner landmark to identify the site header region",
-            'what': "Page is missing a banner landmark to identify the site header region",
+            'what': "The page contains no <header> element at the top level and no element with role=\"banner\", so the site header region is not exposed as a landmark.",
             'why': "The banner landmark identifies the site header which typically contains the site logo, main navigation, and search functionality. This content appears consistently across pages and users expect to find it at the top. Without proper banner markup, screen reader users cannot quickly jump to the header area using landmark navigation shortcuts. They must instead navigate through all content linearly or guess where the header content begins and ends. This makes it difficult to access primary navigation or return to the site homepage via the logo link, tasks that sighted users can do instantly by looking at the top of the page.",
             'who': "Screen reader users who use landmark navigation to quickly access site navigation and branding, keyboard users who want to efficiently navigate to header elements, users with cognitive disabilities who rely on consistent page structure to orient themselves, and users with low vision using screen magnifiers who need to quickly locate navigation elements",
             'impact': ImpactScale.MEDIUM.value,
@@ -2122,7 +2122,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrNoFocusIndicator': {
             'title': "Interactive element has no visible focus indicator when focused, making keyboard navigation impossible to track",
-            'what': "Interactive element has no visible focus indicator when focused, making keyboard navigation impossible to track",
+            'what': "An interactive element produces no visible change when it receives keyboard focus — no outline, border, background, or box-shadow shift is applied via :focus.",
             'why': "Focus indicators show keyboard users where they are on the page - without them, it\'s like navigating in the dark. Users cannot see which element will be activated when they press Enter or Space, making it impossible to navigate confidently. They might activate the wrong control, skip important content, or become completely lost on the page. This is especially critical for forms where activating the wrong button could submit incomplete data or cancel an operation.",
             'who': "Keyboard users who need to see their current position, users with attention or memory disabilities who lose track of focus position, users with low vision who need clear visual indicators, users with motor disabilities who need to carefully track navigation, and any user who temporarily cannot use a mouse",
             'impact': ImpactScale.HIGH.value,
@@ -2131,7 +2131,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrNoH1': {
             'title': "Page has no h1 heading",
-            'what': "Page has no h1 heading",
+            'what': "The page contains no <h1> element. Without a top-level heading, there is no machine-readable label identifying the page's primary topic.",
             'why': "H1 headings identify the main topic of a page and are crucial for document structure.",
             'who': "Screen reader users who navigate by headings, users who rely on document outlines.",
             'impact': ImpactScale.MEDIUM.value,
@@ -2140,7 +2140,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrNoHeadingsOnPage': {
             'title': "No heading elements (h1-h6) found anywhere on the page",
-            'what': "No heading elements (h1-h6) found anywhere on the page",
+            'what': "No <h1>–<h6> elements and no elements with role=\"heading\" were found anywhere in the page's content.",
             'why': "Headings create the structural outline of your content, like a table of contents. They allow users to understand how information is organized and navigate directly to sections of interest. Without any headings, screen reader users cannot use heading navigation shortcuts (one of their primary navigation methods) and must read through all content linearly. This is like forcing someone to read an entire book without chapter titles or section breaks. Users cannot skim content, jump to relevant sections, or understand the information hierarchy. For users with cognitive disabilities, the lack of visual structure makes content overwhelming and hard to process.",
             'who': "Screen reader users who lose a critical navigation method and cannot understand content structure, users with cognitive disabilities who need clear visual organization to process information, users with attention disorders who rely on headings to focus on relevant sections, and users with reading disabilities who use headings to break content into manageable chunks",
             'impact': ImpactScale.HIGH.value,
@@ -2149,7 +2149,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrNoLabel': {
             'title': "Form input has no associated label",
-            'what': "Form input has no associated label",
+            'what': "A form input (<input>, <textarea>, or <select>) has no associated <label>, no aria-label, and no aria-labelledby — so screen readers announce only the field type with no purpose information.",
             'why': "Without labels, users don\'t know what information to enter in form fields.",
             'who': "Screen reader users who cannot identify form fields, users with cognitive disabilities.",
             'impact': ImpactScale.HIGH.value,
@@ -2257,7 +2257,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrNoMainLandmark': {
             'title': "Page is missing a main landmark region to identify the primary content area",
-            'what': "Page is missing a main landmark region to identify the primary content area",
+            'what': "The page contains no <main> element and no element with role=\"main\", so there is no machine-readable signal indicating where the primary content begins.",
             'why': "Screen reader users rely on landmarks to understand page layout and quickly navigate to important sections. The main landmark allows users to skip repeated content like headers and navigation to jump directly to the unique page content. Without it, users must navigate through all repeated elements on every page, which is time-consuming and frustrating. The main landmark should contain all content that is unique to the page, including the h1 heading.",
             'who': "Blind and low vision users using screen readers who navigate by landmarks, users with motor disabilities who need efficient keyboard navigation to skip repeated content, and users with cognitive disabilities who benefit from clear page structure",
             'impact': ImpactScale.HIGH.value,
@@ -2323,7 +2323,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrNoOutlineOffsetDefined': {
             'title': "No outline offset defined for focus",
-            'what': "No outline offset defined for focus",
+            'what': "A focus outline is supplied via CSS but no outline-offset is defined, so the outline may be obscured by the element's own background or border.",
             'why': "Focus indicator may be hard to see",
             'who': "Keyboard users",
             'impact': ImpactScale.MEDIUM.value,
@@ -2332,7 +2332,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrNoPageLanguage': {
             'title': "HTML element is missing the lang attribute, preventing assistive technologies from determining the primary language of the page",
-            'what': "HTML element is missing the lang attribute, preventing assistive technologies from determining the primary language of the page",
+            'what': "The <html> element has no lang attribute, so assistive tech cannot determine the page's primary language for pronunciation and translation.",
             'why': "Without a declared language, screen readers cannot determine which pronunciation rules and voice synthesizer to use, often defaulting to the user\'s system language which may be incorrect. This causes mispronunciation, incorrect inflection, and can make content unintelligible, especially for pages in languages different from the user\'s default settings.",
             'who': "Blind and low vision users using screen readers who need correct pronunciation for comprehension, international users accessing content in different languages, users with dyslexia or reading disabilities using assistive reading tools, and users of automatic translation services",
             'impact': ImpactScale.HIGH.value,
@@ -2341,7 +2341,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrNoPageTitle': {
             'title': "Page has no <title> element in the document head",
-            'what': "Page has no <title> element in the document head",
+            'what': "The document's <head> contains no <title> element, so browsers, screen readers, and bookmark tools have no name for the page.",
             'why': "The page title is the first thing screen reader users hear when a page loads, and it appears in browser tabs, bookmarks, and search results. Without a title, users cannot identify the page in their browser history, distinguish between multiple open tabs, or understand what page they\'re on when arriving from a link. Screen reader users announcing \"Untitled document\" have no context about where they are. This is like opening a book with no title on the cover or spine - you don\'t know what you\'re reading until you dive into the content. The title is critical for orientation and navigation.",
             'who': "Screen reader users who rely on titles for page identification and orientation, users with cognitive disabilities who need clear page identification, users managing multiple browser tabs who need to distinguish between pages, users with memory issues using browser history to return to pages, and all users when bookmarking or sharing pages",
             'impact': ImpactScale.HIGH.value,
@@ -2350,7 +2350,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrNoReducedMotionSupport': {
             'title': "Animations do not respect prefers-reduced-motion setting",
-            'what': "Animations do not respect prefers-reduced-motion setting",
+            'what': "The page runs animations or transitions but no CSS rules respond to the prefers-reduced-motion media query, so users who have reduced-motion enabled still see full motion.",
             'what_generic': "Animations do not respect prefers-reduced-motion setting",
             'why': "Animation affects different users in different ways. Users with vestibular (inner ear) disorders can experience dizziness, nausea, migraines, or need to lie down after exposure to motion effects like parallax scrolling or animated transitions. Neurodivergent users, including those with ADHD or autism, may find animations distracting or overwhelming - research shows autistic users are affected to a greater extent by animation, experiencing increased frustration and requiring greater mental effort. Users with sensory processing differences may experience sensory overload from moving content. However, not all animation is harmful: brief, subtle animations can actually help users by drawing attention to important changes, providing feedback on actions, or indicating loading states. The key is giving users control over their experience.",
             'who': "Users with vestibular disorders who may experience physical symptoms like nausea and dizziness; neurodivergent users (ADHD, autism) who may find motion distracting or overwhelming; users with sensory processing sensitivities who may experience sensory overload; users with cognitive disabilities who need more time to process content; users with attention difficulties who struggle to focus when content moves",
@@ -2360,7 +2360,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrNonInteractiveZeroTabindex': {
             'title': "Non-interactive element has tabindex=\"0\" making it keyboard focusable",
-            'what': "Non-interactive element has tabindex=\"0\" making it keyboard focusable",
+            'what': "An element with no interactive role and no event handlers has tabindex=\"0\", so the keyboard can land on it but cannot trigger any action from it.",
             'why': "Adding keyboard focus to non-interactive elements confuses users and clutters keyboard navigation.",
             'who': "Keyboard users encountering unexpected tab stops, screen reader users hearing non-actionable elements.",
             'impact': ImpactScale.MEDIUM.value,
@@ -2369,7 +2369,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrOrphanLabelWithNoId': {
             'title': "Label element exists but has no for attribute",
-            'what': "Label element exists but has no for attribute",
+            'what': "A <label> element exists but has no for attribute. It does not implicitly wrap a field, so the label is not associated with any control.",
             'why': "Label is not programmatically associated with any field",
             'who': "Screen reader users",
             'impact': ImpactScale.MEDIUM.value,
@@ -2378,7 +2378,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrOutlineIsNoneOnInteractiveElement': {
             'title': "Interactive element has CSS outline:none removing the default focus indicator",
-            'what': "Interactive element has CSS outline:none removing the default focus indicator",
+            'what': "CSS sets outline: none on an interactive element without supplying any replacement :focus indicator (no border, box-shadow, or background change).",
             'why': "People with mobility disabilities use keyboard or keyboard-alternate devices to navigate rather than a mouse. Visible focus indicators are essential as they perform the same function as a mouse cursor. Without focus indicators, users cannot tell where they are on the page or when interactive elements are focused. This makes keyboard navigation impossible and can completely prevent access to functionality.",
             'who': "Sighted users with motor disabilities navigating with keyboard or keyboard-alternate devices, users who prefer keyboard navigation for efficiency, users with temporary injuries preventing mouse use, and users of assistive technologies that rely on keyboard navigation",
             'impact': ImpactScale.HIGH.value,
@@ -2387,7 +2387,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrPlaceholderAsLabel': {
             'title': "Placeholder attribute used as the only label for form field",
-            'what': "Placeholder attribute used as the only label for form field",
+            'what': "A form field has no <label>, no aria-label, and no aria-labelledby. Its only labelling source is the placeholder attribute, which disappears when the user starts typing.",
             'why': "Placeholder text disappears when users start typing, leaving no persistent label for reference.",
             'who': "Users with cognitive disabilities, users who need to review form data, screen reader users.",
             'impact': ImpactScale.HIGH.value,
@@ -2396,7 +2396,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrPositiveTabindex': {
             'title': "Element uses a positive tabindex value (greater than 0)",
-            'what': "Element uses a positive tabindex value (greater than 0)",
+            'what': "An element has a tabindex greater than 0 (e.g., tabindex=\"5\"), which overrides the natural document order and forces a custom tab sequence that almost always breaks somewhere.",
             'why': "Positive tabindex values override the natural tab order of the page, creating an unpredictable navigation experience. When you use tabindex=\"1\" or higher, that element jumps to the front of the tab order, regardless of where it appears visually. This breaks the expected top-to-bottom, left-to-right flow that keyboard users rely on. Users might tab from the header straight to a random form field in the middle of the page, then jump to the footer, then back to the navigation. This confusing order makes it easy to miss content, difficult to predict where focus will go next, and nearly impossible to maintain as the page evolves.",
             'who': "Keyboard users who expect logical, predictable navigation order, screen reader users who rely on consistent focus flow, users with motor disabilities who need efficient keyboard navigation, users with cognitive disabilities who are confused by unpredictable focus movement, and developers maintaining the code who must manage complex tabindex values",
             'impact': ImpactScale.HIGH.value,
@@ -2405,7 +2405,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrPrimaryHrefLangNotRecognized': {
             'title': "hreflang language code not recognized",
-            'what': "hreflang language code not recognized",
+            'what': "A link's hreflang attribute uses a primary language subtag that is not a recognised ISO 639 language code.",
             'why': "Invalid hreflang codes provide incorrect information about linked resources",
             'who': "Screen reader users, search engines",
             'impact': ImpactScale.LOW.value,
@@ -2414,7 +2414,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrPrimaryLangAndXmlLangMismatch': {
             'title': "lang and xml:lang attributes don\'t match",
-            'what': "lang and xml:lang attributes don\'t match",
+            'what': "The element has both a lang and an xml:lang attribute, but their values disagree. The HTML spec requires them to match exactly when both are present.",
             'why': "Conflicting language information",
             'who': "Screen reader users",
             'impact': ImpactScale.LOW.value,
@@ -2423,7 +2423,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrPrimaryLangUnrecognized': {
             'title': "Language code not recognized",
-            'what': "Language code not recognized",
+            'what': "The primary language subtag (e.g., the \"xx\" in lang=\"xx-CA\") is not a recognised ISO 639 language code.",
             'why': "Invalid language codes prevent proper pronunciation",
             'who': "Screen reader users",
             'impact': ImpactScale.HIGH.value,
@@ -2432,7 +2432,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrPrimaryXmlLangUnrecognized': {
             'title': "xml:lang language code not recognized",
-            'what': "xml:lang language code not recognized",
+            'what': "The primary language subtag inside an xml:lang attribute is not a recognised ISO 639 language code.",
             'why': "Invalid xml:lang codes prevent proper pronunciation",
             'who': "Screen reader users in XML/XHTML contexts",
             'impact': ImpactScale.HIGH.value,
@@ -2441,7 +2441,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrRedundantAlt': {
             'title': "Alt text contains redundant words like \"image of\" or \"picture of\"",
-            'what': "Alt text contains redundant words like \"image of\" or \"picture of\"",
+            'what': "An image's alt text starts with phrases such as \"image of\", \"picture of\", or \"graphic of\". Screen readers already announce the element as an image, so this wording is redundant.",
             'why': "Screen readers already announce images as images, so these phrases create redundant announcements.",
             'who': "Screen reader users who hear repetitive \"image image of\" announcements.",
             'impact': ImpactScale.LOW.value,
@@ -2450,7 +2450,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrRegionLandmarkHasAriaLabelAndAriaLabelledByAttrs': {
             'title': "Region landmark has both aria-label and aria-labelledby",
-            'what': "Region landmark has both aria-label and aria-labelledby",
+            'what': "A region landmark element has both aria-label and aria-labelledby attributes set. Choose one labelling method, not both.",
             'why': "Conflicting labeling methods",
             'who': "Screen reader users",
             'impact': ImpactScale.MEDIUM.value,
@@ -2459,7 +2459,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrRegionQualifierForHreflangUnrecognized': {
             'title': "hreflang region qualifier not recognized",
-            'what': "hreflang region qualifier not recognized",
+            'what': "The region subtag inside a link's hreflang attribute is not a recognised ISO 3166-1 country code.",
             'why': "Invalid region codes in hreflang attributes",
             'who': "Screen reader users, search engines",
             'impact': ImpactScale.LOW.value,
@@ -2477,7 +2477,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrRegionQualifierForPrimaryXmlLangNotRecognized': {
             'title': "Region qualifier in xml:lang not recognized",
-            'what': "Region qualifier in xml:lang not recognized",
+            'what': "The region subtag inside an xml:lang attribute is not a recognised ISO 3166-1 country code.",
             'why': "Invalid region codes in xml:lang may cause issues",
             'who': "Screen reader users",
             'impact': ImpactScale.MEDIUM.value,
@@ -2486,7 +2486,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrRoleOfHeadingButNoLevelGiven': {
             'title': "role=\"heading\" without aria-level",
-            'what': "role=\"heading\" without aria-level",
+            'what': "An element has role=\"heading\" but no aria-level attribute. Without aria-level, assistive tech cannot determine the heading's hierarchy level.",
             'why': "Heading level is undefined",
             'who': "Screen reader users",
             'impact': ImpactScale.MEDIUM.value,
@@ -2495,7 +2495,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrSVGNoAccessibleName': {
             'title': "Inline SVG lacks accessible name and proper context-specific handling",
-            'what': "Inline SVG lacks accessible name and proper context-specific handling",
+            'what': "An inline <svg> has no accessible name — no <title> child, no aria-label, and no aria-labelledby — and no role indicating it should be ignored as decorative.",
             'why': "Inline SVG elements require different treatment based on context. When an SVG appears alone as an image, it needs role=\"img\" with aria-label or a <title> element with aria-labelledby to provide an accessible name. However, when an SVG appears inside a link or button that also contains text (like <a href=\"/play\"><svg>...</svg><span>Play</span></a>), the SVG should be marked as decorative with aria-hidden=\"true\" since the text provides the accessible name. Without proper handling, screen readers either announce nothing (missing name) or create redundancy by announcing both the image and text. The context determines the correct fix: standalone SVGs need accessible names, SVGs with adjacent text need aria-hidden=\"true\".",
             'who': "Screen reader users who need either proper image descriptions for standalone SVGs or clean link/button announcements without decorative image redundancy, users with cognitive disabilities who are confused by redundant announcements, voice control users who need consistent command targets",
             'impact': ImpactScale.HIGH.value,
@@ -2504,7 +2504,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrHeadingOrder': {
             'title': "Headings appear in illogical order - high-level headings (H1, H2) appear after lower-level headings (H3, H4, H5, H6)",
-            'what': "Headings appear in illogical order - high-level headings (H1, H2) appear after lower-level headings (H3, H4, H5, H6)",
+            'what': "Headings on the page appear in an illogical sequence — for example, a higher-level heading (<h1> or <h2>) appears in the DOM after a lower-level one (<h3> or <h4>) under the same section.",
             'why': "Document structure should be logical and predictable. When high-level headings like H1 or H2 appear after lower-level headings, it creates a backwards or inverted hierarchy. This is like reading a book where chapter titles appear after section headings, or where the main title appears at the end. Screen reader users navigating by headings expect the most important headings first, followed by progressively more detailed subsections. When headings appear out of logical order, users cannot understand the content structure, may miss important navigation landmarks, and cannot build an accurate mental model of how the page is organized.",
             'who': "Screen reader users who rely on heading navigation and expect logical document structure, users with cognitive disabilities who need predictable content organization, users who generate document outlines from headings, and users who navigate by heading levels to understand content hierarchy",
             'impact': ImpactScale.HIGH.value,
@@ -2513,7 +2513,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrSkippedHeadingLevel': {
             'title': "Heading levels are not in sequential order - jumped from h{skippedFrom} to h{skippedTo}, skipping {levelsSkipped} intermediate level(s)",
-            'what': "Heading levels are not in sequential order - jumped from h{skippedFrom} to h{skippedTo}, skipping {levelsSkipped} intermediate level(s)",
+            'what': "The heading hierarchy jumps from h{skippedFrom} directly to h{skippedTo} without using the intermediate level(s), breaking the document outline.",
             'why': "Heading levels create a hierarchical outline of your content, like nested bullet points. Jumping from h{skippedFrom} to h{skippedTo} breaks this logical structure. It\'s like having chapter {skippedFrom}, then jumping to section {skippedTo} without the intermediate section. Screen reader users navigating by headings will be confused about the relationship between sections - is the h{skippedTo} a subsection of something that\'s missing? This broken hierarchy makes it hard to understand how content is organized and can cause users to think content is missing or that they've accidentally skipped something. This is a WCAG 1.3.1 Level A failure.",
                     'what_generic': "Heading levels are not in sequential order",
             'who': "Screen reader users navigating by heading structure who rely on levels to understand content relationships, users with cognitive disabilities who need logical, predictable content organization, users of assistive technology that generates document outlines, and developers or content authors maintaining the page who need to understand the intended structure",
@@ -2551,7 +2551,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrTTabindexOnNonInteractiveElement': {
             'title': "Tabindex attribute on non-interactive element",
-            'what': "Tabindex attribute on non-interactive element",
+            'what': "A tabindex attribute is set on a non-interactive element (e.g., <div>, <p>, <section>) without an accompanying role or keyboard handler, so focus lands on an element that does nothing.",
             'why': "Non-interactive elements should not be in tab order unless they serve a specific purpose",
             'who': "Keyboard users",
             'impact': ImpactScale.MEDIUM.value,
@@ -2580,7 +2580,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrTabindexOfZeroOnNonInteractiveElement': {
             'title': "tabindex=\"0\" on non-interactive element",
-            'what': "tabindex=\"0\" on non-interactive element",
+            'what': "A non-interactive element (e.g., <div>, <span>, <p>) has tabindex=\"0\", inserting it into the tab order even though it has no role, keyboard handlers, or apparent reason to receive focus.",
             'why': "Non-interactive elements in tab order",
             'who': "Keyboard users",
             'impact': ImpactScale.LOW.value,
@@ -2779,7 +2779,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrTableMissingCaption': {
             'title': "Data table lacks caption element to describe its content",
-            'what': "Data table lacks caption element to describe its content",
+            'what': "A <table> presenting data has no <caption> element to describe what the table contains.",
             'why': "Without captions, users may not understand the table\'s purpose or content before navigating through it.",
             'who': "Screen reader users who need table context, users with cognitive disabilities.",
             'impact': ImpactScale.MEDIUM.value,
@@ -2788,7 +2788,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrTableNoColumnHeaders': {
             'title': "Data table has no column headers (th elements)",
-            'what': "Data table has no column headers (th elements)",
+            'what': "A data <table> has no <th> elements (or cells with scope=\"col\"), so no column-header associations are exposed to assistive tech.",
             'why': "Without headers, screen reader users cannot understand what each column represents when navigating cells.",
             'who': "Screen reader users navigating tables, users who need to understand data relationships.",
             'impact': ImpactScale.HIGH.value,
@@ -2847,7 +2847,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrTimersWithoutControls': {
             'title': "Time-based content lacks user controls",
-            'what': "Time-based content lacks user controls",
+            'what': "Time-based content (countdown, auto-rotating carousel, session timer) is running on the page without user controls to pause, stop, or extend it.",
             'why': "Users need control over timed content to have enough time to read and interact with it.",
             'who': "Users with cognitive disabilities, users with reading disabilities, screen reader users.",
             'impact': ImpactScale.HIGH.value,
@@ -2856,7 +2856,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrTitleAsOnlyLabel': {
             'title': "Form element is using title attribute as its only accessible label, which is insufficient for accessibility",
-            'what': "Form element is using title attribute as its only accessible label, which is insufficient for accessibility",
+            'what': "A form field's only accessible name comes from its title attribute. The title attribute is delivered inconsistently to assistive tech and is not reliable for labelling.",
             'why': "When title is the only labeling mechanism for a form field, many users cannot determine what information to enter. Title attributes are not announced by screen readers when navigating forms in normal mode, don\'t appear on mobile devices, cannot be accessed by keyboard users, and disappear too quickly for many users to read. This makes the form field essentially unlabeled for a large portion of users, preventing them from completing forms successfully.",
             'who': "Screen reader users who won\'t hear the field\'s purpose when navigating the form, mobile users who cannot see title tooltips at all, keyboard users who cannot hover to see the tooltip, users with motor disabilities who struggle with precise hovering, users with cognitive disabilities who need persistent labels as memory aids, and voice control users who cannot reference fields without visible labels",
             'impact': ImpactScale.HIGH.value,
@@ -2865,7 +2865,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrTitleAttrFound': {
             'title': "Title attribute used - fundamentally inaccessible to assistive technology",
-            'what': "Title attribute used - fundamentally inaccessible to assistive technology",
+            'what': "An element uses the title attribute as a primary information channel. Title is not reliably announced by screen readers and is invisible to touch users — never use it as the only label or instruction.",
             'why': "Title attributes fail WCAG Conformance requirement 5.2.4 as they are not accessible with regular assistive technology. For screen magnifier users at high magnification, tooltip content extends off-screen and disappears when mouse moves to read it, making content completely inaccessible",
             'who': "Screen magnifier users (tooltip goes off-screen at high magnification), mobile and touch screen users (no hover), keyboard-only users (cannot trigger tooltip), screen reader users (inconsistent support), users with motor disabilities (tooltip disappears when mouse moves), users with cognitive disabilities (tooltip disappears too quickly)",
             'impact': ImpactScale.MEDIUM.value,
@@ -2874,7 +2874,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrTransparentFocusIndicator': {
             'title': "Focus indicator uses transparent or nearly transparent color, making it effectively invisible",
-            'what': "Focus indicator uses transparent or nearly transparent color, making it effectively invisible",
+            'what': "The :focus styles for an element set the outline (or other indicator) to a transparent or near-transparent colour, so focus is technically present but visually undetectable.",
             'why': "A transparent focus indicator is functionally the same as no focus indicator - users cannot see where keyboard focus is located. This might occur from using rgba with 0 or very low alpha values, setting outline-color to transparent, or using colors that match the background. The focus indicator exists technically but provides no practical benefit to users trying to navigate.",
             'who': "Keyboard users who need visible focus indicators to navigate, users with low vision who need clear visual cues, users with color blindness who may already struggle with certain color combinations, and users with cognitive disabilities who need obvious focus indicators",
             'impact': ImpactScale.HIGH.value,
@@ -2883,7 +2883,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrVideoIframeMissingTitle': {
             'title': "Video iframe lacks title attribute",
-            'what': "Video iframe lacks title attribute",
+            'what': "An <iframe> that embeds a video player (e.g., YouTube, Vimeo) has no title attribute, leaving screen reader users without a name for the embedded video.",
             'why': "Without titles, screen reader users don\'t know what video content is embedded.",
             'who': "Screen reader users who need to understand embedded content.",
             'impact': ImpactScale.MEDIUM.value,
@@ -2892,7 +2892,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrWrongTabindexForInteractiveElement': {
             'title': "Inappropriate tabindex on interactive element",
-            'what': "Inappropriate tabindex on interactive element",
+            'what': "An interactive element (e.g., a custom widget) has a tabindex value inconsistent with its role — for example, tabindex=\"-1\" on something the user is supposed to be able to tab to.",
             'why': "Tab order doesn\'t match visual order",
             'who': "Keyboard users",
             'impact': ImpactScale.MEDIUM.value,
@@ -2939,7 +2939,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'RegionLandmarkAccessibleNameIsBlank': {
             'title': "Region landmark has blank accessible name",
-            'what': "Region landmark has blank accessible name",
+            'what': "An element with role=\"region\" (or a <section> with an accessible name source) was found whose aria-label or aria-labelledby value resolves to an empty string, so the landmark has no announced name.",
             'why': "Blank labels provide no information",
             'who': "Screen reader users",
             'impact': ImpactScale.MEDIUM.value,
@@ -2948,7 +2948,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrHeadingAccessibleNameMismatch': {
             'title': "Visible heading text doesn\'t match its accessible name",
-            'what': "Visible heading text doesn\'t match its accessible name",
+            'what': "A heading's computed accessible name (after applying aria-label, aria-labelledby, etc.) does not include the visible text of the heading, so screen reader users and sighted users perceive a different name.",
             'why': "Voice control users may not be able to reference the heading by its visible text",
             'who': "Voice control users, screen reader users",
             'impact': ImpactScale.HIGH.value,
@@ -2957,7 +2957,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnAnchorTargetTabindex': {
             'title': "Anchor target element has unnecessary tabindex",
-            'what': "Anchor target element has unnecessary tabindex",
+            'what': "An element that is the target of an in-page anchor link has tabindex set unnecessarily. Modern browsers focus anchor targets without tabindex.",
             'why': "Elements that are link targets don\'t need tabindex; adding it may create confusion.",
             'who': "Keyboard users encountering unexpected tab stops.",
             'impact': ImpactScale.LOW.value,
@@ -2966,7 +2966,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnBannerLandmarkAccessibleNameUsesBanner': {
             'title': "Banner landmark uses generic term \"banner\" in label",
-            'what': "Banner landmark uses generic term \"banner\" in label",
+            'what': "A banner landmark's accessible name contains the word \"banner\" (e.g., \"Site banner\"). Screen readers already announce the role as \"banner\", so this duplicates information.",
             'why': "Redundant labeling",
             'who': "Screen reader users",
             'impact': ImpactScale.LOW.value,
@@ -2975,7 +2975,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnButtonGenericText': {
             'title': "Button uses generic text like \"Click here\", \"Submit\", or \"OK\" without context",
-            'what': "Button uses generic text like \"Click here\", \"Submit\", or \"OK\" without context",
+            'what': "A button's visible text is a generic phrase like \"Click here\", \"Submit\", \"OK\", or \"Continue\" with no surrounding context explaining what it does.",
             'why': "Screen reader users often navigate by pulling up a list of all buttons on a page. Generic button text provides no information about what the button does when heard out of context. Users cannot determine the button\'s purpose without additional exploration, slowing navigation and potentially causing errors.",
             'who': "Screen reader users navigating by buttons list, users with cognitive disabilities who need clear labels, and screen magnifier users who may not see surrounding context",
             'impact': ImpactScale.MEDIUM.value,
@@ -2984,7 +2984,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnColorOnlyLink': {
             'title': "Link distinguished only by color without underline or other indicator",
-            'what': "Link distinguished only by color without underline or other indicator",
+            'what': "A link inside body text is distinguished from surrounding text by colour alone — no underline, weight change, or other non-colour indicator is applied.",
             'why': "Users who cannot perceive color differences cannot identify links in text.",
             'who': "Colorblind users, users with low vision, users of monochrome displays.",
             'impact': ImpactScale.MEDIUM.value,
@@ -2993,7 +2993,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnColorRelatedStyleDefinedExplicitlyInElement': {
             'title': "Color-related CSS properties found in inline style attributes on HTML elements",
-            'what': "Color-related CSS properties found in inline style attributes on HTML elements",
+            'what': "Colour-related CSS properties (color, background-color, border-color) are applied via inline style=\"...\" on an HTML element, making it hard for users to override via custom or high-contrast stylesheets.",
             'why': "Inline color styles bypass user stylesheets and browser extensions that help users with visual disabilities customize colors for better readability. Users who need high contrast, inverted colors, or specific color schemes cannot easily override inline styles. This also makes it difficult to implement dark mode, maintain consistent theming, or allow user color preferences.",
             'who': "Users with low vision who need high contrast or specific color combinations, users with color blindness who need to adjust problematic color pairs, users with dyslexia who benefit from specific background colors, users with light sensitivity who need dark themes, and users who rely on browser extensions for color customization",
             'impact': ImpactScale.LOW.value,
@@ -3002,7 +3002,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnColorRelatedStyleDefinedExplicitlyInStyleTag': {
             'title': "Color-related CSS found in <style> tags within the HTML document instead of external stylesheets",
-            'what': "Color-related CSS found in <style> tags within the HTML document instead of external stylesheets",
+            'what': "Colour-related CSS rules are defined in an embedded <style> block inside the HTML document rather than in an external stylesheet, making them harder for users to override.",
             'why': "Embedded styles in <style> tags are harder for users to override than external stylesheets and may not be cached efficiently. Users with visual disabilities who need custom color schemes must use more aggressive CSS overrides. This approach also makes it difficult to maintain consistent theming across pages and prevents users from disabling styles entirely if needed.",
             'who': "Users with low vision requiring custom color schemes, users with photosensitivity needing to modify bright colors, users with color blindness who need to adjust color combinations, and users who benefit from consistent, predictable styling across pages",
             'impact': ImpactScale.LOW.value,
@@ -3011,7 +3011,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnComplementaryLandmarkAccessibleNameUsesComplementary': {
             'title': "Complementary landmark label uses generic term \"complementary\"",
-            'what': "Complementary landmark label uses generic term \"complementary\"",
+            'what': "A complementary landmark's accessible name contains the word \"complementary\". Screen readers already announce the role, so this duplicates information.",
             'why': "Generic labels don\'t describe specific content",
             'who': "Screen reader users",
             'impact': ImpactScale.LOW.value,
@@ -3020,7 +3020,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnComplementaryLandmarkHasNoLabel': {
             'title': "Complementary landmark lacks a label",
-            'what': "Complementary landmark lacks a label",
+            'what': "A complementary landmark exists without an aria-label or aria-labelledby. If the page has multiple complementary regions, users won't be able to tell them apart.",
             'why': "Hard to distinguish multiple complementary sections",
             'who': "Screen reader users",
             'impact': ImpactScale.LOW.value,
@@ -3029,7 +3029,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnContentInfoLandmarkHasNoLabel': {
             'title': "Contentinfo landmark lacks a label",
-            'what': "Contentinfo landmark lacks a label",
+            'what': "A contentinfo (footer) landmark has no aria-label or aria-labelledby. While usually there is only one footer, an explicit label still helps screen reader users orient.",
             'why': "May be harder to identify purpose",
             'who': "Screen reader users",
             'impact': ImpactScale.LOW.value,
@@ -3056,7 +3056,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnContentinfoLandmarkAccessibleNameUsesContentinfo': {
             'title': "Contentinfo landmark uses generic term \"contentinfo\" in label",
-            'what': "Contentinfo landmark uses generic term \"contentinfo\" in label",
+            'what': "A contentinfo landmark's accessible name contains the word \"contentinfo\". Screen readers already announce the role, so this duplicates information and exposes a technical term to users.",
             'why': "Redundant labeling",
             'who': "Screen reader users",
             'impact': ImpactScale.LOW.value,
@@ -3075,7 +3075,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnDeepListNesting': {
             'title': "Lists nested more than 3 levels deep",
-            'what': "Lists nested more than 3 levels deep",
+            'what': "A list (<ul>, <ol>) is nested more than 3 levels deep. Deeply nested lists are hard to track audibly with a screen reader, which announces \"list level N\" at each step.",
             'why': "Deeply nested lists are difficult to understand and navigate.",
             'who': "Screen reader users, users with cognitive disabilities.",
             'impact': ImpactScale.MEDIUM.value,
@@ -3084,7 +3084,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnElementNotInLandmark': {
             'title': "Important content found outside of any landmark region, making it harder for screen reader users to find and navigate to",
-            'what': "Important content found outside of any landmark region, making it harder for screen reader users to find and navigate to",
+            'what': "Substantive page content sits outside every defined landmark (banner, nav, main, complementary, contentinfo, region, search, form). Screen reader users navigating by landmarks will skip past it.",
             'why': "Landmarks create a navigable structure for your page, like a table of contents. Content outside landmarks is like having chapters missing from the table of contents - users may never find it when navigating by landmarks. Screen reader users often jump between landmarks to quickly scan page structure, and content outside landmarks requires them to read through the entire page linearly to discover it. This particularly affects users who are familiar with your site and want to quickly navigate to specific content areas.",
             'who': "Screen reader users who navigate by landmarks to efficiently explore pages, keyboard users using browser extensions for landmark navigation, users with cognitive disabilities who rely on consistent page structure, and power users who use landmarks for quick navigation",
             'impact': ImpactScale.MEDIUM.value,
@@ -3093,7 +3093,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrEmptyLanguageAttribute': {
             'title': "Element (non-HTML) has a lang attribute present but with no value (lang=\"\"), preventing screen readers from determining language changes",
-            'what': "Element (non-HTML) has a lang attribute present but with no value (lang=\"\"), preventing screen readers from determining language changes",
+            'what': "An element (other than <html>) has a lang attribute present but no value (lang=\"\"), which leaves the language ambiguous for the nested content.",
             'why': "An empty lang attribute on elements prevents screen readers from properly switching pronunciation rules for content in different languages. Screen readers cannot adjust pronunciation rules for content sections in different languages. This can make multilingual content difficult or impossible to understand when read aloud.",
             'who': "Screen reader users who need proper language identification for correct pronunciation, multilingual users relying on language switching, users of translation tools, and users with reading disabilities using text-to-speech",
             'impact': ImpactScale.HIGH.value,
@@ -3102,7 +3102,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnFastInterval': {
             'title': "JavaScript interval running faster than once per second",
-            'what': "JavaScript interval running faster than once per second",
+            'what': "A setInterval (or equivalent) on the page fires more frequently than once per second. Rapid updates can interrupt screen reader output and trigger seizures or vestibular reactions.",
             'why': "Rapid updates can be distracting and difficult to process.",
             'who': "Users with cognitive disabilities, users with attention disorders.",
             'impact': ImpactScale.MEDIUM.value,
@@ -3131,7 +3131,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnFormLandmarkAccessibleNameUsesForm': {
             'title': "Form landmark accessible name includes redundant word \"form\"",
-            'what': "Form landmark accessible name includes redundant word \"form\"",
+            'what': "A form landmark's accessible name includes the word \"form\" (e.g., \"Contact form\"). Screen readers already announce the role as \"form\", so this duplicates information.",
             'why': "Screen readers already announce \"form\" as the element role, so including \"form\" in the accessible name creates redundant announcements like \"Login form form\". This adds unnecessary verbosity for screen reader users and doesn't follow best practices for ARIA labeling. The accessible name should be concise and describe the form's purpose without repeating the element type.",
             'what_generic': "Form landmark accessible name includes redundant word \"form\"",
             'who': "Screen reader users who hear redundant announcements when navigating forms, voice control users who need efficient commands",
@@ -3141,7 +3141,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnGenericAccessibleName': {
             'title': "Element has generic accessible name that doesn\'t describe its purpose",
-            'what': "Element has generic accessible name that doesn\'t describe its purpose",
+            'what': "An element's computed accessible name is generic (e.g., \"link\", \"button\", \"image\") rather than describing the element's specific purpose or destination.",
             'why': "Generic names like \"button\" or \"link\" don\'t help users understand element purpose.",
             'who': "Screen reader users, voice control users.",
             'impact': ImpactScale.MEDIUM.value,
@@ -3150,7 +3150,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnGenericDocumentLinkText': {
             'title': "Document link uses generic text like \"PDF\" without describing content",
-            'what': "Document link uses generic text like \"PDF\" without describing content",
+            'what': "A link to a document (e.g., a PDF) uses generic text such as \"PDF\", \"download\", or \"document\" without describing the document's contents.",
             'why': "Users need to know what document they\'re downloading, not just its format.",
             'who': "All users, especially screen reader users reviewing links.",
             'impact': ImpactScale.MEDIUM.value,
@@ -3159,7 +3159,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnHeadingFoundInLandmarkButIsLabelledByAnAriaLabelledBy': {
             'title': "Landmark has heading but uses different element for label",
-            'what': "Landmark has heading but uses different element for label",
+            'what': "A landmark contains a heading at the start, but the landmark's aria-labelledby points to a different element instead of using that heading as its label.",
             'why': "Confusing when heading doesn\'t match landmark label",
             'who': "Screen reader users",
             'impact': ImpactScale.MEDIUM.value,
@@ -3168,7 +3168,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnHeadingFoundInsideLandmarkButDoesntLabelLandmark': {
             'title': "Heading inside landmark doesn\'t label the landmark",
-            'what': "Heading inside landmark doesn\'t label the landmark",
+            'what': "A landmark contains a heading that could naturally serve as its label, but the landmark has no aria-labelledby pointing to it (and no other accessible name).",
             'why': "Missed opportunity for clear landmark labeling",
             'who': "Screen reader users",
             'impact': ImpactScale.LOW.value,
@@ -3177,7 +3177,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnHeadingInsideDisplayNone': {
             'title': "Heading is hidden with display:none",
-            'what': "Heading is hidden with display:none",
+            'what': "A heading element exists in the DOM but is hidden via display:none. Most screen readers skip display:none content, so the heading does not appear in the headings list.",
             'why': "Hidden headings may affect document structure",
             'who': "Screen reader users (varies by implementation)",
             'impact': ImpactScale.LOW.value,
@@ -3186,7 +3186,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnHeadingOver60CharsLong': {
             'title': "Heading text is {length} characters long, exceeding the recommended {limit} character limit",
-            'what': "Heading text is {length} characters long, exceeding the recommended {limit} character limit",
+            'what': "A heading's text is {length} characters long, exceeding the recommended limit of {limit} characters. Long headings are harder to scan and harder to use as landmarks-list entries.",
             'why': "This heading has {length} characters which exceeds the {limit} character recommendation. Long headings are harder to scan quickly, more difficult to understand at a glance, and can overwhelm users. Screen reader users hearing the full heading text may struggle to grasp the main point. Long headings also cause layout issues on mobile devices and in navigation menus.",
                     'what_generic': "Heading text exceeds the recommended character limit",
             'who': "Users with cognitive disabilities who benefit from concise, clear headings, screen reader users who must listen to the entire heading, users scanning the page quickly for information, and mobile users with limited screen space",
@@ -3196,7 +3196,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnHighTabindex': {
             'title': "Very high tabindex value used (over 10)",
-            'what': "Very high tabindex value used (over 10)",
+            'what': "An element has a tabindex greater than 10, indicating a manually orchestrated tab order. Such sequences are fragile and easy to break when the page changes.",
             'why': "High tabindex values indicate attempts to control tab order that likely create confusing navigation.",
             'who': "Keyboard users experiencing unexpected tab order.",
             'impact': ImpactScale.MEDIUM.value,
@@ -3234,7 +3234,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnItalicText': {
             'title': "Italic text used extensively which can reduce readability",
-            'what': "Italic text used extensively which can reduce readability",
+            'what': "A substantial block of body text is rendered in italics. Italic body text reduces reading speed, particularly for users with dyslexia or low vision.",
             'why': "Italic text is harder to read, especially for users with dyslexia.",
             'who': "Users with dyslexia, users with low vision.",
             'impact': ImpactScale.LOW.value,
@@ -3243,7 +3243,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnJustifiedText': {
             'title': "Text uses full justification affecting readability",
-            'what': "Text uses full justification affecting readability",
+            'what': "Body text is rendered with text-align: justify, which creates uneven word spacing. Dyslexic readers and users with cognitive disabilities often lose their place in justified text.",
             'why': "Justified text creates uneven spacing that makes reading difficult.",
             'who': "Users with dyslexia, users with cognitive disabilities.",
             'impact': ImpactScale.MEDIUM.value,
@@ -3252,7 +3252,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnLinkLooksLikeButton': {
             'title': "Link is styled to look like a button but uses anchor element",
-            'what': "Link is styled to look like a button but uses anchor element",
+            'what': "An <a> element is styled visually like a button (background, padding, border-radius), but using a link instead of <button> can confuse screen reader and keyboard users who expect Enter vs. Space behaviour.",
             'why': "Links and buttons have different behaviors - links navigate to new locations while buttons trigger actions. When links look like buttons, users may have incorrect expectations about what will happen. Keyboard users expect Space key to activate buttons but it doesn\'t work on links.",
             'who': "Keyboard users who expect button behavior, screen reader users who hear it announced as a link but see it as a button, and users with cognitive disabilities who rely on consistent interactions",
             'impact': ImpactScale.LOW.value,
@@ -3271,7 +3271,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnLongAnimation': {
             'title': "Animation duration ({duration}) exceeds 5 seconds",
-            'what': "Animation duration ({duration}) exceeds 5 seconds",
+            'what': "An animation has a duration of {duration}, exceeding the 5-second threshold WCAG considers \"long\". Long animations need a mechanism to pause, stop, or hide them (SC 2.2.2).",
             'why': "Long animations can be distracting and may need user controls. Extended animation durations make it harder for users to focus on content and can be overwhelming for users with cognitive disabilities.",
                     'what_generic': "Animation duration exceeds recommended time limit",
             'who': "Users with attention disorders (ADHD), users with cognitive disabilities, users with vestibular disorders.",
@@ -3281,7 +3281,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnMissingAriaLabelledby': {
             'title': "Form field could benefit from aria-labelledby for complex labeling",
-            'what': "Form field could benefit from aria-labelledby for complex labeling",
+            'what': "A form field has a simple label, but the surrounding context (instructions, error messages, units) suggests it could benefit from aria-labelledby/aria-describedby to bring in the additional context.",
             'why': "Complex forms may need multiple labels or descriptions for clarity.",
             'who': "Screen reader users needing additional context.",
             'impact': ImpactScale.LOW.value,
@@ -3290,7 +3290,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnMissingAriaModal': {
             'title': "Modal dialog missing aria-modal=\"true\"",
-            'what': "Modal dialog missing aria-modal=\"true\"",
+            'what': "A dialog has role=\"dialog\" but lacks aria-modal=\"true\". Some screen readers use aria-modal to keep virtual cursors inside the dialog while it's open.",
             'why': "Without aria-modal, screen readers may not properly constrain navigation to the modal.",
             'who': "Screen reader users who may navigate outside the modal accidentally.",
             'impact': ImpactScale.MEDIUM.value,
@@ -3299,7 +3299,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnMissingBannerLandmark': {
             'title': "Page missing banner landmark for header content",
-            'what': "Page missing banner landmark for header content",
+            'what': "The page appears to have a header area visually (logo, top navigation) but no <header> at the top level and no element with role=\"banner\".",
             'why': "Banner landmark helps users quickly navigate to page header/branding.",
             'who': "Screen reader users navigating by landmarks.",
             'impact': ImpactScale.LOW.value,
@@ -3308,7 +3308,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnMissingContentinfoLandmark': {
             'title': "Page missing contentinfo landmark for footer",
-            'what': "Page missing contentinfo landmark for footer",
+            'what': "The page appears to have a footer area visually (copyright, secondary links) but no <footer> at the top level and no element with role=\"contentinfo\".",
             'why': "Contentinfo landmark helps users find footer information like copyright and links.",
             'who': "Screen reader users navigating by landmarks.",
             'impact': ImpactScale.LOW.value,
@@ -3326,7 +3326,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnMissingRequiredIndication': {
             'title': "Required form fields not clearly indicated",
-            'what': "Required form fields not clearly indicated",
+            'what': "A form field has the required attribute (or aria-required=\"true\") but no visible \"required\" indicator near the label, so sighted users do not know the field is mandatory.",
             'why': "Users need to know which fields are required before submitting forms.",
             'who': "All users, especially those using screen readers.",
             'impact': ImpactScale.MEDIUM.value,
@@ -3344,7 +3344,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnModalMissingAriaModal': {
             'title': "Modal dialog missing aria-modal attribute",
-            'what': "Modal dialog missing aria-modal attribute",
+            'what': "A modal dialog overlay is showing but its container is missing aria-modal=\"true\". Some assistive tech may continue to surface background content as a result.",
             'why': "aria-modal helps assistive technologies understand modal boundaries.",
             'who': "Screen reader users navigating modal content.",
             'impact': ImpactScale.MEDIUM.value,
@@ -3353,7 +3353,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnModalNoFocusableElements': {
             'title': "Modal has no focusable elements",
-            'what': "Modal has no focusable elements",
+            'what': "A modal/dialog is open but contains no focusable elements at all — no buttons, no links, no inputs. Keyboard users cannot move focus inside the dialog.",
             'why': "Modals without focusable elements trap keyboard focus with no actions available.",
             'who': "Keyboard users unable to interact with modal.",
             'impact': ImpactScale.HIGH.value,
@@ -3362,7 +3362,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnMultipleBannerLandmarksButNotAllHaveLabels': {
             'title': "Multiple banner landmarks exist but not all have labels",
-            'what': "Multiple banner landmarks exist but not all have labels",
+            'what': "The page has more than one banner landmark, but at least one of them has no aria-label or aria-labelledby. All banners need labels when more than one exists.",
             'why': "Inconsistent labeling makes navigation difficult",
             'who': "Screen reader users",
             'impact': ImpactScale.MEDIUM.value,
@@ -3371,7 +3371,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnMultipleComplementaryLandmarksButNotAllHaveLabels': {
             'title': "Multiple complementary landmarks but not all labeled",
-            'what': "Multiple complementary landmarks but not all labeled",
+            'what': "The page has more than one complementary landmark, but at least one of them has no aria-label or aria-labelledby.",
             'why': "Inconsistent labeling makes navigation difficult",
             'who': "Screen reader users",
             'impact': ImpactScale.MEDIUM.value,
@@ -3380,7 +3380,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnMultipleContentInfoLandmarksButNotAllHaveLabels': {
             'title': "Multiple contentinfo landmarks exist but not all have labels",
-            'what': "Multiple contentinfo landmarks exist but not all have labels",
+            'what': "The page has more than one contentinfo landmark, but at least one of them has no aria-label or aria-labelledby.",
             'why': "Inconsistent labeling makes navigation difficult",
             'who': "Screen reader users",
             'impact': ImpactScale.MEDIUM.value,
@@ -3389,7 +3389,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnMultipleNavLandmarksButNotAllHaveLabels': {
             'title': "Multiple navigation landmarks but not all labeled",
-            'what': "Multiple navigation landmarks but not all labeled",
+            'what': "The page has more than one navigation landmark, but at least one of them has no aria-label or aria-labelledby to distinguish it.",
             'why': "Users cannot distinguish between navigation areas",
             'who': "Screen reader users",
             'impact': ImpactScale.MEDIUM.value,
@@ -3398,7 +3398,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnMultipleNavNeedsLabel': {
             'title': "Multiple navigation landmarks found without distinguishing labels",
-            'what': "Multiple navigation landmarks found without distinguishing labels",
+            'what': "Two or more <nav> elements were found on the page, and at least one of them has no aria-label or aria-labelledby. Each nav landmark needs a label when there is more than one.",
             'why': "When a page has multiple navigation areas (main menu, footer links, breadcrumbs, sidebar navigation), users need to distinguish between them. Without unique labels, screen reader users hear \"navigation\" multiple times with no indication of which navigation area they\'re entering. This creates confusion about which menu contains the desired links and requires users to explore each navigation to understand its purpose.",
             'who': "Screen reader users who need to distinguish between different navigation areas, keyboard users navigating between multiple menus, users with cognitive disabilities who need clear labeling, and frequent users who want to quickly access specific navigation areas",
             'impact': ImpactScale.MEDIUM.value,
@@ -3407,7 +3407,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnMultipleRegionLandmarksButNotAllHaveLabels': {
             'title': "Multiple region landmarks but not all labeled",
-            'what': "Multiple region landmarks but not all labeled",
+            'what': "The page has more than one region landmark, but at least one of them has no aria-label or aria-labelledby. All regions need labels when more than one exists.",
             'why': "Regions without labels are not exposed as landmarks",
             'who': "Screen reader users",
             'impact': ImpactScale.MEDIUM.value,
@@ -3416,7 +3416,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnMultipleTitleElements': {
             'title': "{count} <title> elements found in the document head, which may cause unpredictable behavior",
-            'what': "{count} <title> elements found in the document head, which may cause unpredictable behavior",
+            'what': "{count} <title> elements were found in the <head>. The HTML spec allows only one — browsers and screen readers will typically use the first, but the duplication signals a bug.",
             'why': "Having {count} title elements causes browsers to choose unpredictably between them, creating inconsistent page identification. Different browsers and assistive technologies may choose different titles from the {count} available, creating an inconsistent experience. SEO is negatively affected as search engines may index the wrong title.",
                     'what_generic': "Multiple title elements found in the document head, which may cause unpredictable behavior",
             'who': "All users seeing inconsistent titles in browser tabs, screen reader users who may hear different titles than what\'s visually displayed, users bookmarking pages with incorrect titles",
@@ -3426,7 +3426,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnNavLandmarkAccessibleNameUsesNavigation': {
             'title': "Navigation landmark uses generic term \"navigation\" in label",
-            'what': "Navigation landmark uses generic term \"navigation\" in label",
+            'what': "A <nav> landmark's accessible name contains the word \"navigation\" (e.g., \"Main navigation\"). Screen readers already announce the role as \"navigation\", so this is redundant.",
             'why': "Generic labels don\'t describe specific purpose",
             'who': "Screen reader users",
             'impact': ImpactScale.LOW.value,
@@ -3435,7 +3435,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnNavLandmarkHasNoLabel': {
             'title': "Navigation landmark lacks label",
-            'what': "Navigation landmark lacks label",
+            'what': "A <nav> landmark has no aria-label or aria-labelledby. If the page has more than one nav, users will have trouble distinguishing it.",
             'why': "Hard to distinguish multiple navigation areas",
             'who': "Screen reader users",
             'impact': ImpactScale.LOW.value,
@@ -3444,7 +3444,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnNegativeTabindex': {
             'title': "Interactive element has negative tabindex",
-            'what': "Interactive element has negative tabindex",
+            'what': "An interactive element (e.g., a link or button) has a negative tabindex such as tabindex=\"-1\". This is intentional in some patterns (modals, custom widgets) but often signals a mistake.",
             'why': "Negative tabindex removes elements from keyboard navigation, potentially making them inaccessible.",
             'who': "Keyboard users who cannot reach the element.",
             'impact': ImpactScale.LOW.value,
@@ -3480,7 +3480,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnNoBannerLandmark': {
             'title': "Page is missing a banner landmark to identify the header/masthead region",
-            'what': "Page is missing a banner landmark to identify the header/masthead region",
+            'what': "The page has no <header> at the top level and no element with role=\"banner\". Without a banner landmark, screen reader users cannot jump straight to the site header.",
             'why': "The banner landmark identifies the site header containing the logo, primary navigation, and other site-wide content. Without it, screen reader users cannot quickly jump to the header area using landmark navigation. They must read through content linearly to find navigation and branding elements. This is especially frustrating when users want to access the main navigation or return to the homepage via the logo.",
             'who': "Screen reader users who navigate by landmarks to quickly access header content, keyboard users with assistive technology looking for navigation, users with cognitive disabilities who rely on consistent page structure, and users who frequently need to access header elements like search or main navigation",
             'impact': ImpactScale.LOW.value,
@@ -3489,7 +3489,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnNoContentinfoLandmark': {
             'title': "Page is missing a contentinfo landmark to identify the footer region",
-            'what': "Page is missing a contentinfo landmark to identify the footer region",
+            'what': "The page has no <footer> at the top level and no element with role=\"contentinfo\". Without a contentinfo landmark, screen reader users cannot quickly jump to the page footer.",
             'why': "The contentinfo landmark (typically a footer) contains important information about the page or site such as copyright notices, privacy policies, contact information, and site maps. Screen reader users rely on landmarks to quickly navigate to these common elements without having to read through the entire page. When the footer lacks proper landmark markup, users must search manually through the content to find this information, which is inefficient and may cause them to miss important legal notices or helpful links. The contentinfo landmark provides a consistent, predictable way to access this supplementary information across all pages.",
             'who': "Screen reader users who navigate by landmarks to quickly find footer information, keyboard users who want to efficiently skip to footer content, users with cognitive disabilities who rely on consistent page structure, and users who need to frequently access footer links like privacy policies or contact information",
             'impact': ImpactScale.LOW.value,
@@ -3525,7 +3525,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnNoCursorPointer': {
             'title': "Clickable element doesn\'t show pointer cursor",
-            'what': "Clickable element doesn\'t show pointer cursor",
+            'what': "An element behaves like a clickable control (has a click handler or interactive role) but its CSS does not set cursor: pointer, so mouse users get no hover affordance.",
             'why': "Cursor changes help users identify interactive elements.",
             'who': "Mouse users who rely on cursor changes.",
             'impact': ImpactScale.LOW.value,
@@ -3534,7 +3534,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnNoFieldset': {
             'title': "Related form fields not grouped with fieldset",
-            'what': "Related form fields not grouped with fieldset",
+            'what': "A group of related radio buttons or checkboxes was found, but they are not wrapped in a <fieldset> with a <legend> describing the group's purpose.",
             'why': "Fieldsets help users understand relationships between form controls.",
             'who': "Screen reader users, users with cognitive disabilities.",
             'impact': ImpactScale.MEDIUM.value,
@@ -3543,7 +3543,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnNoLegend': {
             'title': "Fieldset missing legend element",
-            'what': "Fieldset missing legend element",
+            'what': "A <fieldset> element exists but has no <legend> child, so the group has no accessible name describing what its fields are for.",
             'why': "Legends provide context for grouped form fields.",
             'who': "Screen reader users who need group labels.",
             'impact': ImpactScale.MEDIUM.value,
@@ -3552,7 +3552,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnNoNavigationLandmark': {
             'title': "Page has no navigation landmarks to identify navigation regions",
-            'what': "Page has no navigation landmarks to identify navigation regions",
+            'what': "The page contains no <nav> elements and no elements with role=\"navigation\", so screen reader users cannot use landmark navigation to jump to a navigation region.",
             'why': "Navigation landmarks identify areas containing navigation links, allowing users to quickly jump to menus without reading through other content. Most web pages have multiple navigation areas (main menu, footer links, sidebar navigation, breadcrumbs) but without proper markup, these are just lists of links mixed with other content. Screen reader users must hunt for navigation areas or listen to all links to find what they need. Navigation landmarks make these areas immediately discoverable and allow users to skip between different navigation regions efficiently.",
             'who': "Screen reader users who use landmarks to find navigation menus quickly, keyboard users navigating complex sites with multiple menus, users with cognitive disabilities who need clear identification of navigation areas, and users with motor disabilities who need to minimize unnecessary navigation",
             'impact': ImpactScale.LOW.value,
@@ -3561,7 +3561,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnPageTitleTooLong': {
             'title': "Page title is {length} characters long, exceeding the recommended {limit} character limit",
-            'what': "Page title is {length} characters long, exceeding the recommended {limit} character limit",
+            'what': "The page <title> is {length} characters long, exceeding the recommended limit of {limit}. Long titles get truncated in browser tabs and search results.",
             'why': "The title \"{found}\" with {length} characters will get cut off in browser tabs (typically around 30 characters) and search engine results (typically 50-60 characters), losing important information. The most important information might be at the end and never seen. Screen reader users have to listen to lengthy titles repeatedly.",
                     'what_generic': "Page title exceeds the recommended character limit",
             'who': "Users with multiple tabs open who see truncated titles, users searching for content who can\'t see full titles in results, screen reader users who must listen to long titles repeatedly, mobile users with even less space for title display",
@@ -3571,7 +3571,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnPageTitleTooShort': {
             'title': "Page title \"{found}\" is only {length} characters, potentially not descriptive enough",
-            'what': "Page title \"{found}\" is only {length} characters, potentially not descriptive enough",
+            'what': "The page <title> \"{found}\" is only {length} characters long. Very short titles rarely give enough context to identify the page among open tabs and search results.",
             'why': "The title \"{found}\" with only {length} characters doesn\'t provide enough context, especially when users have multiple tabs open or are browsing history. Users can\'t distinguish between different sites with the same generic titles. Screen reader users hearing page titles announced need more descriptive information to understand where they are.",
                     'what_generic': "Page title is potentially not descriptive enough",
             'who': "Users with multiple browser tabs who need to distinguish between pages, screen reader users who rely on descriptive titles for context, users browsing history or bookmarks, users with cognitive disabilities who need clear page identification",
@@ -3581,7 +3581,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnRegionLandmarkAccessibleNameUsesNavigation': {
             'title': "Region landmark incorrectly uses \"navigation\" in its label",
-            'what': "Region landmark incorrectly uses \"navigation\" in its label",
+            'what': "A region landmark's accessible name contains the word \"navigation\" (e.g., \"Site navigation region\"), confusing users about whether this is a region or a nav landmark.",
             'why': "Confusing landmark type and purpose",
             'who': "Screen reader users",
             'impact': ImpactScale.LOW.value,
@@ -3590,7 +3590,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnRegionLandmarkHasNoLabelSoIsNotConsideredALandmark': {
             'title': "Region landmark lacks required label to be considered a landmark",
-            'what': "Region landmark lacks required label to be considered a landmark",
+            'what': "A <section> element has no aria-label, aria-labelledby, or title attribute. Per the ARIA spec, an unlabeled <section> is NOT exposed as a region landmark, so it won't appear in landmark navigation.",
             'why': "Regions without labels are not exposed as landmarks",
             'who': "Screen reader users",
             'impact': ImpactScale.MEDIUM.value,
@@ -3599,7 +3599,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnRightAlignedText': {
             'title': "Body text is right-aligned affecting readability",
-            'what': "Body text is right-aligned affecting readability",
+            'what': "Body text in a primarily left-to-right page is rendered with text-align: right, which disrupts the expected reading flow.",
             'why': "Right-aligned text is difficult to read for extended content.",
             'who': "Users with dyslexia, users with reading disabilities.",
             'impact': ImpactScale.LOW.value,
@@ -3627,7 +3627,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnTableMissingThead': {
             'title': "Table missing thead element for headers",
-            'what': "Table missing thead element for headers",
+            'what': "A <table> uses <th> cells in its first row instead of grouping them inside a <thead> element. Browsers can still associate headers, but the structure is harder for assistive tech to navigate.",
             'why': "Thead helps screen readers distinguish headers from data rows.",
             'who': "Screen reader users navigating tables.",
             'impact': ImpactScale.LOW.value,
@@ -3664,7 +3664,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnUnlabelledRegion': {
             'title': "Region landmark lacks accessible name",
-            'what': "Region landmark lacks accessible name",
+            'what': "An element with role=\"region\" is missing an aria-label or aria-labelledby. Without a label, the region cannot be distinguished in the landmarks list.",
             'why': "Named regions help users understand content structure.",
             'who': "Screen reader users navigating by landmarks.",
             'impact': ImpactScale.LOW.value,
@@ -3700,7 +3700,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnVisualHierarchy': {
             'title': "Visual hierarchy doesn\'t match semantic structure",
-            'what': "Visual hierarchy doesn\'t match semantic structure",
+            'what': "The visual size, weight, or styling of headings on the page does not consistently match the underlying heading levels in the DOM. Sighted users perceive a different hierarchy than screen reader users do.",
             'why': "Mismatch between visual and semantic structure confuses understanding.",
             'who': "Screen reader users, users with cognitive disabilities.",
             'impact': ImpactScale.LOW.value,
@@ -3709,7 +3709,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnZeroOutlineOffset': {
             'title': "Outline offset is set to zero",
-            'what': "Outline offset is set to zero",
+            'what': "A focus outline uses outline-offset: 0, meaning the outline sits flush against the element. Depending on background colours, the outline may visually merge with the element's border.",
             'why': "Focus indicator touches element edge",
             'who': "Keyboard users with low vision",
             'impact': ImpactScale.MEDIUM.value,
@@ -3727,7 +3727,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'DiscoNoSubmitButton': {
             'title': "Form may lack clear submit button",
-            'what': "Form may lack clear submit button",
+            'what': "A <form> was found that does not contain an obvious submit control (no <button type=\"submit\">, <input type=\"submit\">, or <input type=\"image\">). Verify that the form can still be submitted in an accessible way.",
             'why': "Users may not know how to submit the form",
             'who': "Users with cognitive disabilities, keyboard users",
             'impact': ImpactScale.INFO.value,
@@ -3745,7 +3745,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnGenericButtonText': {
             'title': "Button has generic text \"{text}\"",
-            'what': "Button has generic text \"{text}\"",
+            'what': "A button's accessible name resolves to a generic value \"{text}\" (e.g., \"button\", \"action\"). The name should describe what the button does, not what it is.",
             'why': "The button text \"{text}\" doesn\'t describe what the button does. When screen reader users navigate by buttons or hear buttons out of context, \"{text}\" provides no information about the button\'s purpose or action.",
             'who': "Screen reader users navigating by buttons who hear \"{text}\" without context, users with cognitive disabilities who need clear action labels",
             'impact': ImpactScale.LOW.value,
@@ -3763,7 +3763,7 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'WarnRequiredNotIndicated': {
             'title': "Required field not clearly indicated",
-            'what': "Required field not clearly indicated",
+            'what': "A field is required (e.g., the page submits an error when it is empty), but the markup does not declare it as required via the required attribute, aria-required, or a visible cue.",
             'why': "Users don\'t know which fields are mandatory",
             'who': "All users, especially those with cognitive disabilities",
             'impact': ImpactScale.MEDIUM.value,

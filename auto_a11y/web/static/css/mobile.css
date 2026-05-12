@@ -130,6 +130,11 @@ input[type="radio"],
     
     .navbar .dropdown-item:hover,
     .navbar .dropdown-item:focus {
+        /* @a11y-ignore: this hover state sits inside .navbar which paints
+           --color-bg-header (the dark brand colour) underneath, so the
+           rgba(255,255,255,0.1) hover tint composites to a slightly lighter
+           dark blue — white text still clears 4.5:1. The linter assumes
+           white as the canvas (worst case) and can't see the parent. */
         background: rgba(255, 255, 255, 0.1);
         color: var(--color-text-inverse);
     }

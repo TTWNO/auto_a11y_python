@@ -3212,7 +3212,7 @@ class DiscoveryReportGenerator:
             background: white;
             padding: 20px;
             border-radius: 8px;
-            border-left: 4px solid #3498db;
+            border-left: 4px solid #1a5276;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
@@ -3226,7 +3226,7 @@ class DiscoveryReportGenerator:
 
         .issue-breakdown { margin-top: 30px; }
 
-        .breakdown-section { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #3498db; }
+        .breakdown-section { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #1a5276; }
         .breakdown-section.disco { border-left-color: #6f42c1; }
         .breakdown-section.info { border-left-color: #0e7490; }
         .breakdown-section.accessible-names { border-left-color: #b38600; }
@@ -3237,7 +3237,7 @@ class DiscoveryReportGenerator:
         .common-issues-section { margin-top: 30px; background: #fff8dc; padding: 25px; border-radius: 8px; border: 2px solid #b38600; }
         .common-issues-section h2 { color: #856404; margin-top: 0; }
 
-        .common-section { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #3498db; }
+        .common-section { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #1a5276; }
         .common-section.disco { border-left-color: #6f42c1; }
         .common-section.info { border-left-color: #0e7490; }
         .common-section.accessible-names { border-left-color: #b38600; }
@@ -3278,7 +3278,7 @@ class DiscoveryReportGenerator:
 
         .issue-category { margin-bottom: 25px; }
         .issue-category.discovery h4 { color: #6f42c1; }
-        .issue-category.informational h4 { color: #3498db; }
+        .issue-category.informational h4 { color: #1a5276; }
         .issue-category.accessible-names h4 { color: #b38600; }
 
         .issue-list { margin-top: 10px; }
@@ -3303,10 +3303,10 @@ class DiscoveryReportGenerator:
         /* Fonts section */
         .fonts-section { margin: 40px 0; }
         .fonts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-top: 20px; }
-        .font-item { background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #3498db; }
+        .font-item { background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #1a5276; }
         .font-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
         .font-name { font-family: var(--font-family, inherit); font-size: 1.3em; color: #2c3e50; margin: 0; }
-        .font-pages-count { background: #3498db; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.85em; font-weight: 500; }
+        .font-pages-count { background: #1a5276; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.85em; font-weight: 500; }
         .font-sizes { color: #555; font-size: 0.95em; line-height: 1.6; }
         .font-sizes strong { color: #34495e; }
 
@@ -3316,7 +3316,7 @@ class DiscoveryReportGenerator:
         .form-item { background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #6f42c1; }
         .form-header { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; flex-wrap: wrap; }
         .form-signature { font-size: 1.2em; color: #2c3e50; margin: 0; font-family: 'Courier New', monospace; }
-        .search-badge { background: #27ae60; color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.85em; font-weight: 500; }
+        .search-badge { background: #1e8449; color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.85em; font-weight: 500; }
         .form-pages-count { background: #6f42c1; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.85em; font-weight: 500; margin-left: auto; }
         .form-details { display: flex; flex-direction: column; gap: 8px; }
         .form-detail-row { color: #555; font-size: 0.95em; line-height: 1.6; }
@@ -3327,10 +3327,10 @@ class DiscoveryReportGenerator:
         /* Navigation section */
         .navs-section { margin: 40px 0; }
         .navs-list { display: flex; flex-direction: column; gap: 20px; margin-top: 20px; }
-        .nav-item { background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #e67e22; }
+        .nav-item { background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #b85700; }
         .nav-header { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; flex-wrap: wrap; }
         .nav-signature { font-size: 1.2em; color: #2c3e50; margin: 0; font-family: 'Courier New', monospace; }
-        .nav-pages-count { background: #e67e22; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.85em; font-weight: 500; margin-left: auto; }
+        .nav-pages-count { background: #b85700; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.85em; font-weight: 500; margin-left: auto; }
         .nav-details { display: flex; flex-direction: column; gap: 8px; }
         .nav-detail-row { color: #555; font-size: 0.95em; line-height: 1.6; }
         .nav-detail-row strong { color: #34495e; margin-right: 5px; }
@@ -3339,10 +3339,10 @@ class DiscoveryReportGenerator:
         /* Asides section styles */
         .asides-section { margin: 40px 0; }
         .asides-list { display: flex; flex-direction: column; gap: 20px; margin-top: 20px; }
-        .aside-item { background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #3498db; }
+        .aside-item { background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #1a5276; }
         .aside-header { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; flex-wrap: wrap; }
         .aside-signature { font-size: 1.2em; color: #2c3e50; margin: 0; font-family: 'Courier New', monospace; }
-        .aside-pages-count { background: #3498db; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.85em; font-weight: 500; margin-left: auto; }
+        .aside-pages-count { background: #1a5276; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.85em; font-weight: 500; margin-left: auto; }
         .aside-details { display: flex; flex-direction: column; gap: 8px; }
         .aside-detail-row { color: #555; font-size: 0.95em; line-height: 1.6; }
         .aside-detail-row strong { color: #34495e; margin-right: 5px; }
@@ -3351,10 +3351,10 @@ class DiscoveryReportGenerator:
         /* Sections section styles */
         .sections-section { margin: 40px 0; }
         .sections-list { display: flex; flex-direction: column; gap: 20px; margin-top: 20px; }
-        .section-item { background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #16a085; }
+        .section-item { background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #0e7490; }
         .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; flex-wrap: wrap; }
         .section-signature { font-size: 1.2em; color: #2c3e50; margin: 0; font-family: 'Courier New', monospace; }
-        .section-pages-count { background: #16a085; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.85em; font-weight: 500; margin-left: auto; }
+        .section-pages-count { background: #0e7490; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.85em; font-weight: 500; margin-left: auto; }
         .section-details { display: flex; flex-direction: column; gap: 8px; }
         .section-detail-row { color: #555; font-size: 0.95em; line-height: 1.6; }
         .section-detail-row strong { color: #34495e; margin-right: 5px; }
@@ -3363,10 +3363,10 @@ class DiscoveryReportGenerator:
         /* Headers section styles */
         .headers-section { margin: 40px 0; }
         .headers-list { display: flex; flex-direction: column; gap: 20px; margin-top: 20px; }
-        .header-item { background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #e74c3c; }
+        .header-item { background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #922b21; }
         .header-header { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; flex-wrap: wrap; }
         .header-signature { font-size: 1.2em; color: #2c3e50; margin: 0; font-family: 'Courier New', monospace; }
-        .header-pages-count { background: #e74c3c; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.85em; font-weight: 500; margin-left: auto; }
+        .header-pages-count { background: #922b21; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.85em; font-weight: 500; margin-left: auto; }
         .header-details { display: flex; flex-direction: column; gap: 8px; }
         .header-detail-row { color: #555; font-size: 0.95em; line-height: 1.6; }
         .header-detail-row strong { color: #34495e; margin-right: 5px; }
@@ -3387,10 +3387,10 @@ class DiscoveryReportGenerator:
         /* Searches section styles */
         .searches-section { margin: 40px 0; }
         .searches-list { display: flex; flex-direction: column; gap: 20px; margin-top: 20px; }
-        .search-item { background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #27ae60; }
+        .search-item { background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #1e8449; }
         .search-header { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; flex-wrap: wrap; }
         .search-signature { font-size: 1.2em; color: #2c3e50; margin: 0; font-family: 'Courier New', monospace; }
-        .search-pages-count { background: #27ae60; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.85em; font-weight: 500; margin-left: auto; }
+        .search-pages-count { background: #1e8449; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.85em; font-weight: 500; margin-left: auto; }
         .search-details { display: flex; flex-direction: column; gap: 8px; }
         .search-detail-row { color: #555; font-size: 0.95em; line-height: 1.6; }
         .search-detail-row strong { color: #34495e; margin-right: 5px; }
@@ -3405,12 +3405,12 @@ class DiscoveryReportGenerator:
         .document-type-section h4 { color: #34495e; margin: 15px 0 10px 0; font-size: 1.1em; }
         .documents-list { list-style: none; padding: 0; margin: 0; }
         .document-item { padding: 12px; margin-bottom: 8px; background: white; border-radius: 4px; border-left: 3px solid #b38600; }
-        .document-link { color: #3498db; text-decoration: none; font-weight: 500; }
+        .document-link { color: #1a5276; text-decoration: none; font-weight: 500; }
         .document-link:hover { text-decoration: underline; }
-        .lang-badge { display: inline-block; background: #95a5a6; color: white; padding: 2px 8px; border-radius: 3px; font-size: 0.75em; margin-left: 8px; }
+        .lang-badge { display: inline-block; background: #4a4a4a; color: white; padding: 2px 8px; border-radius: 3px; font-size: 0.75em; margin-left: 8px; }
         .document-meta { margin-top: 5px; font-size: 0.85em; color: #4a4a4a; }
         .document-referring a { color: #4a4a4a; text-decoration: none; }
-        .document-referring a:hover { color: #3498db; text-decoration: underline; }
+        .document-referring a:hover { color: #1a5276; text-decoration: underline; }
         .document-link-source-note { display: block; margin-top: 3px; font-style: italic; }
     </style>
         """

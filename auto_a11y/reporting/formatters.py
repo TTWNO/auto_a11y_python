@@ -857,7 +857,7 @@ class HTMLFormatter(BaseFormatter):
             margin-left: 10px;
         }
         .impact.critical { background: #dc3545; color: white; }
-        .impact.serious { background: #fd7e14; color: white; }
+        .impact.serious { background: #b85700; color: white; }
         .impact.moderate { background: #ffc107; color: #333; }
         .impact.minor { background: #6c757d; color: white; }
         

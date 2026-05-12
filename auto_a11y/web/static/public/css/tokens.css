@@ -61,9 +61,9 @@
     --color-severity-medium-bg: #fff3cd;
     --color-severity-medium-border: #b38600;
     --color-severity-low: #2c3e50;
-    --color-severity-pass: #1e8449;
+    --color-severity-pass: #1a7a3e;
     --color-severity-pass-bg: #f0fcf5;
-    --color-severity-pass-border: #1e8449;
+    --color-severity-pass-border: #1a7a3e;
     --color-info: #0e7490;
     --color-info-bg: #e0f3f8;
     --color-info-border: #0e7490;
@@ -106,8 +106,8 @@
     --color-pulse-ring: rgba(25, 135, 84, 0.4);
 
     /* Help System */
-    --color-help-icon: #3498db;
-    --color-help-icon-hover: #2980b9;
+    --color-help-icon: #1a5276;
+    --color-help-icon-hover: #0e2f44;
     --color-help-heading: #2c3e50;
 
     /* SSO Buttons (brand-mandated, same in both modes) */
@@ -397,9 +397,9 @@
         --color-severity-medium-bg: #fff3cd;
         --color-severity-medium-border: #b38600;
         --color-severity-low: #2c3e50;
-        --color-severity-pass: #1e8449;
+        --color-severity-pass: #1a7a3e;
         --color-severity-pass-bg: #f0fcf5;
-        --color-severity-pass-border: #1e8449;
+        --color-severity-pass-border: #1a7a3e;
         --color-info: #0e7490;
         --color-info-bg: #e0f3f8;
         --color-info-border: #0e7490;
@@ -435,8 +435,8 @@
         --color-spinner-overlay: rgba(255, 255, 255, 0.8);
         --color-pulse-ring: rgba(25, 135, 84, 0.4);
 
-        --color-help-icon: #3498db;
-        --color-help-icon-hover: #2980b9;
+        --color-help-icon: #1a5276;
+        --color-help-icon-hover: #0e2f44;
         --color-help-heading: #2c3e50;
 
         --color-demo-brand: #004d99;

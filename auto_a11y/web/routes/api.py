@@ -5805,6 +5805,332 @@ def delete_pdf_document_rest(pdf_id: str) -> tuple[Response, int]:
 
 
 # ---------------------------------------------------------------------------
+# PDF audit action endpoints — §5.9 of REST_API_ROADMAP.md.
+#
+# Replaces the legacy POST /pdfs/<id>/audit, GET /pdfs/<id>/audit-status,
+# and POST /pdfs/<id>/cancel HTML/JSON-mix routes. The legacy ones stay
+# alive on `pdf_bp` until the issue #21 frontend migration; these emit
+# RFC 7807 errors and use the canonical /pdf-documents path.
+#
+# A PdfDocument can have *many* audit jobs over time. The
+# ``/audits/latest`` segment selects which one the read/cancel apply
+# to: most-recent ACTIVE job for that document (PENDING / RUNNING /
+# CANCELLING), falling back to the absolute most-recent record so the
+# UI can still surface "the last run" after it ends.
+# ---------------------------------------------------------------------------
+
+
+def _find_latest_pdf_audit_job(
+    pdf_document_id: str, *, active_only: bool = False,
+) -> dict[str, Any] | None:
+    """Locate the most relevant PDF_AUDIT job for a document.
+
+    When ``active_only`` is true, return only jobs in
+    ``{PENDING, RUNNING, CANCELLING}``. Otherwise prefer active, fall
+    back to absolute most-recent. Mirrors the legacy ``audit_status``
+    handler's lookup so the new and old surfaces show the same job.
+    """
+    job_manager = JobManager.get_instance(get_db())
+    active_statuses = [
+        JobStatus.PENDING.value,
+        JobStatus.RUNNING.value,
+        JobStatus.CANCELLING.value,
+    ]
+    active_query: dict[str, Any] = {
+        "job_type": JobType.PDF_AUDIT.value,
+        "metadata.pdf_document_id": pdf_document_id,
+        "status": {"$in": active_statuses},
+    }
+    active_doc = job_manager.collection.find_one(
+        active_query, sort=[("created_at", -1)],
+    )
+    if active_doc is not None:
+        return active_doc
+    if active_only:
+        return None
+    return job_manager.collection.find_one(
+        {
+            "job_type": JobType.PDF_AUDIT.value,
+            "metadata.pdf_document_id": pdf_document_id,
+        },
+        sort=[("created_at", -1)],
+    )
+
+
+def _serialize_pdf_audit_job(record: dict[str, Any]) -> dict[str, Any]:
+    """Shape a PDF_AUDIT job document for the REST progress poll.
+
+    Surfaces the same nested ``progress.{current,total,message,
+    stage,fraction}`` shape the legacy ``audit_status`` produces so
+    clients that move from the old URL only need to swap the path,
+    not the parser. Reads progress fields via ``Any``-typed locals to
+    avoid widening nested dict types.
+    """
+    progress_raw: Any = record.get("progress")
+    progress_obj: dict[str, Any] = (
+        cast(dict[str, Any], progress_raw)
+        if isinstance(progress_raw, dict) else {}
+    )
+    details_raw: Any = progress_obj.get("details")
+    details_obj: dict[str, Any] = (
+        cast(dict[str, Any], details_raw)
+        if isinstance(details_raw, dict) else {}
+    )
+
+    return {
+        "job_id": record.get("job_id"),
+        "status": record.get("status"),
+        "created_at": _iso_or_none(record.get("created_at")),
+        "completed_at": _iso_or_none(record.get("completed_at")),
+        "progress": {
+            "current": progress_obj.get("current"),
+            "total": progress_obj.get("total"),
+            "message": progress_obj.get("message"),
+            "stage": details_obj.get("stage"),
+            "fraction": details_obj.get("fraction"),
+        },
+    }
+
+
+def _parse_pdf_audit_body(body: dict[str, Any]) -> dict[str, Any]:
+    """Validate the audit-start body. Returns the kwargs for PdfAuditJob."""
+    run_ai_raw = body.get("run_ai")
+    run_ai: bool = run_ai_raw if isinstance(run_ai_raw, bool) else False
+
+    wcag_level_raw = body.get("wcag_level", "AA")
+    if not isinstance(wcag_level_raw, str) or wcag_level_raw not in ("AA", "AAA"):
+        raise ValidationError(
+            "wcag_level must be 'AA' or 'AAA'",
+            errors=(
+                _FieldError(
+                    field="wcag_level", code="invalid_value",
+                    message="must be 'AA' or 'AAA'",
+                ),
+            ),
+        )
+
+    locale_raw = body.get("locale", "en")
+    if not isinstance(locale_raw, str):
+        raise ValidationError(
+            "locale must be a string",
+            errors=(
+                _FieldError(
+                    field="locale", code="invalid_type", message="must be string"
+                ),
+            ),
+        )
+
+    return {
+        "run_ai": run_ai,
+        "wcag_level": wcag_level_raw,
+        "locale": locale_raw,
+    }
+
+
+@api_bp.route("/pdf-documents/<pdf_id>/audits", methods=["POST"])
+@api_endpoint
+def start_pdf_audit(pdf_id: str) -> tuple[Response, int] | Response:
+    """Queue a fresh audit for a PDF document.
+
+    Body (all optional):
+
+        {
+          "run_ai":     bool,           // default false
+          "wcag_level": "AA"|"AAA",     // default AA
+          "locale":     "en"|"fr"|...   // default en
+        }
+
+    Returns 202 with the new ``job_id``. The audit runs in the
+    background via :class:`auto_a11y.core.pdf_audit_job.PdfAuditJob`;
+    poll ``GET /pdf-documents/<id>/audits/latest`` for progress.
+
+    Errors:
+
+    - **404** — pdf document does not exist
+    - **409** — an audit is already in flight for this document (a
+      second start would compete for the same on-disk artefacts)
+    - **503** — the server has no ``PdfRunner`` configured (the audit
+      pipeline is optional; deployments without the playwright/poppler
+      stack run with ``pdf_runner=None``)
+    """
+    from auto_a11y.core.pdf_audit_job import PdfAuditJob
+    from auto_a11y.web.typed_app import get_pdf_runner
+
+    pdf = get_db().get_pdf_document(pdf_id)
+    if pdf is None:
+        raise NotFoundError(f"pdf document {pdf_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, project_id=pdf.project_id
+    )
+
+    runner = get_pdf_runner()
+    if runner is None:
+        raise ConflictError(
+            "PDF audit runner is not configured on this server"
+        )
+
+    if pdf.status == PdfDocumentStatus.AUDITING:
+        raise ConflictError(
+            f"pdf document {pdf_id} already has an audit in progress"
+        )
+
+    body = _require_dict_body() if request.data else {}
+    kwargs = _parse_pdf_audit_body(body)
+
+    user_id_str: str
+    if current_user.is_authenticated:
+        raw_uid: Any = current_user.get_id()
+        user_id_str = str(raw_uid) if raw_uid is not None else "anonymous"
+    else:
+        user_id_str = "anonymous"
+
+    job = PdfAuditJob(
+        runner=runner,
+        db=get_db(),
+        pdf_document_id=pdf_id,
+        run_ai=kwargs["run_ai"],
+        ai_api_key=None,
+        wcag_level=kwargs["wcag_level"],
+        locale=kwargs["locale"],
+        user_id=user_id_str,
+    )
+    job_id = job.start()
+
+    return jsonify({
+        "job_id": job_id,
+        "pdf_document_id": pdf_id,
+        "run_ai": kwargs["run_ai"],
+        "wcag_level": kwargs["wcag_level"],
+        "locale": kwargs["locale"],
+        "status": "queued",
+    }), 202
+
+
+@api_bp.route(
+    "/pdf-documents/<pdf_id>/audits/latest", methods=["GET"]
+)
+@api_endpoint
+def get_latest_pdf_audit(pdf_id: str) -> tuple[Response, int] | Response:
+    """Read the most-recent (or in-flight) audit's status + progress.
+
+    Returns:
+
+        {
+          "pdf_document_id":    "...",
+          "doc_status":         "auditing|audited|audit_failed|...",
+          "error_reason":       null | "...",
+          "last_audit_result_id": null | "...",
+          "job":                null | {...job shape...}
+        }
+
+    ``job`` is ``null`` only when the document has *never* had an
+    audit job recorded. After at least one run the latest job stays
+    in the response so clients can render "last audit failed at X"
+    even when no fresh job is in flight.
+    """
+    pdf = get_db().get_pdf_document(pdf_id)
+    if pdf is None:
+        raise NotFoundError(f"pdf document {pdf_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT,
+        project_id=pdf.project_id,
+    )
+
+    job_doc = _find_latest_pdf_audit_job(pdf_id)
+    job_payload: dict[str, Any] | None = (
+        _serialize_pdf_audit_job(job_doc) if job_doc is not None else None
+    )
+
+    return jsonify({
+        "pdf_document_id": pdf_id,
+        "doc_status": pdf.status.value,
+        "error_reason": pdf.error_reason,
+        "last_audit_result_id": pdf.last_audit_result_id,
+        "job": job_payload,
+    })
+
+
+@api_bp.route(
+    "/pdf-documents/<pdf_id>/audits/latest/cancel", methods=["POST"]
+)
+@api_endpoint
+def cancel_latest_pdf_audit(
+    pdf_id: str,
+) -> tuple[Response, int] | Response:
+    """Request cancellation of every in-flight audit for this PDF.
+
+    Iterates over every PDF_AUDIT job for this document in
+    ``{PENDING, RUNNING, CANCELLING}`` and calls
+    :meth:`JobManager.request_cancellation` on each. The worker reads
+    the flag at its next checkpoint and exits cleanly.
+
+    The PDF's ``status`` is forcibly reset to ``AUDIT_FAILED`` with
+    ``error_reason='Audit cancelled by user'``. This unblocks the user
+    even when no live job exists (e.g. the previous run crashed and
+    left the document stuck in ``AUDITING``) — the regular start
+    endpoint refuses to re-audit a document already in ``AUDITING``,
+    so this manual reset is the escape hatch.
+
+    Returns 202 with the new doc status and how many active jobs were
+    flagged. A document with no live job that is also not stuck in
+    AUDITING returns 409 — the cancel verb implies there's something
+    to cancel.
+    """
+    pdf = get_db().get_pdf_document(pdf_id)
+    if pdf is None:
+        raise NotFoundError(f"pdf document {pdf_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, project_id=pdf.project_id
+    )
+
+    job_manager = JobManager.get_instance(get_db())
+
+    user_id_str: str
+    if current_user.is_authenticated:
+        raw_uid: Any = current_user.get_id()
+        user_id_str = str(raw_uid) if raw_uid is not None else "anonymous"
+    else:
+        user_id_str = "anonymous"
+
+    active_statuses = [
+        JobStatus.PENDING.value,
+        JobStatus.RUNNING.value,
+        JobStatus.CANCELLING.value,
+    ]
+    cancelled = 0
+    for raw_doc in job_manager.collection.find({
+        "job_type": JobType.PDF_AUDIT.value,
+        "metadata.pdf_document_id": pdf_id,
+        "status": {"$in": active_statuses},
+    }):
+        doc_any: Any = raw_doc
+        job_id_value: Any = doc_any.get("job_id")
+        if not isinstance(job_id_value, str):
+            continue
+        if job_manager.request_cancellation(
+            job_id_value, requested_by=user_id_str
+        ):
+            cancelled += 1
+
+    # 409 when nothing to cancel — but allow forcing through if the
+    # document is stuck in AUDITING (the legacy escape hatch).
+    if cancelled == 0 and pdf.status != PdfDocumentStatus.AUDITING:
+        raise ConflictError(
+            f"pdf document {pdf_id} has no audit in progress"
+        )
+
+    pdf.status = PdfDocumentStatus.AUDIT_FAILED
+    pdf.error_reason = "Audit cancelled by user"
+    get_db().update_pdf_document(pdf)
+
+    return jsonify({
+        "pdf_document_id": pdf_id,
+        "cancellation_requested_count": cancelled,
+        "doc_status": pdf.status.value,
+    }), 202
+
+
+# ---------------------------------------------------------------------------
 # Permission groups (REST shape — uses the @api_endpoint scaffolding).
 #
 # Sits alongside the existing groups_bp HTML routes at /groups/* (still

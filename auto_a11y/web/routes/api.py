@@ -13,6 +13,13 @@ from auto_a11y.models.app_user import UserRole
 from auto_a11y.pdf.storage import PdfStorage
 from auto_a11y.web.routes.auth import project_role_required
 from auto_a11y.core.job_manager import JobManager, JobStatus
+from auto_a11y.web.api import (
+    NotFoundError,
+    ValidationError,
+    api_endpoint,
+    require_authenticated,
+)
+from auto_a11y.web.api.errors import FieldError as _FieldError
 from auto_a11y.web.typed_app import get_db, get_app_config, get_test_config
 from datetime import datetime
 import logging
@@ -743,90 +750,83 @@ def get_page_test_sessions(page_id: str) -> tuple[Response, int] | Response:
         return jsonify({'error': f'Failed to get page test sessions: {str(e)}'}), 500
 
 
-@api_bp.route('/test-results/compare', methods=['POST'])
+@api_bp.route('/test-results/compare', methods=['GET'])
+@api_endpoint
 def compare_test_results() -> tuple[Response, int] | Response:
+    """Compare two test results (typically from different page states).
+
+    Two id query params, ``a`` and ``b``, identify the test results to
+    diff. The response separates violations into ``new`` (in ``b`` but
+    not ``a``), ``fixed`` (in ``a`` but not ``b``), and ``persistent``
+    (in both), with a summary count block.
+
+    GET — not POST — because the endpoint is a pure read; no resource
+    is mutated. Per docs/REST_API_ROADMAP.md §5.4. The legacy
+    POST-with-body shape is replaced; nothing in the frontend or tests
+    calls it.
     """
-    Compare two test results (typically from different states)
+    require_authenticated()
 
-    Request body:
-    {
-        "result_id_1": "...",
-        "result_id_2": "..."
-    }
+    a_id = request.args.get("a", "").strip()
+    b_id = request.args.get("b", "").strip()
+    missing: list[str] = []
+    if not a_id:
+        missing.append("a")
+    if not b_id:
+        missing.append("b")
+    if missing:
+        raise ValidationError(
+            f"both ?a=<id>&b=<id> are required (missing: {', '.join(missing)})",
+            errors=tuple(
+                _FieldError(field=name, code="required", message="required")
+                for name in missing
+            ),
+        )
 
-    Returns:
-    - Violations that appeared in result_2 (new violations)
-    - Violations that disappeared from result_1 (fixed violations)
-    - Violations that exist in both (persistent violations)
-    """
-    try:
-        data = request.get_json()
-        result_id_1 = data.get('result_id_1')
-        result_id_2 = data.get('result_id_2')
+    a_result = get_db().get_test_result(a_id)
+    b_result = get_db().get_test_result(b_id)
+    if a_result is None or b_result is None:
+        raise NotFoundError("one or both test results not found")
 
-        if not result_id_1 or not result_id_2:
-            return jsonify({'error': 'Both result_id_1 and result_id_2 are required'}), 400
+    a_ids = {v.id for v in a_result.violations}
+    b_ids = {v.id for v in b_result.violations}
+    new_violations = [v for v in b_result.violations if v.id not in a_ids]
+    fixed_violations = [v for v in a_result.violations if v.id not in b_ids]
+    persistent_violations = [v for v in b_result.violations if v.id in a_ids]
 
-        # Get results
-        result1 = get_db().get_test_result(result_id_1)
-        result2 = get_db().get_test_result(result_id_2)
-
-        if not result1 or not result2:
-            return jsonify({'error': 'One or both test results not found'}), 404
-
-        # Get violation IDs (using issue_id for comparison)
-        violations1_ids = {v.id for v in result1.violations}
-        violations2_ids = {v.id for v in result2.violations}
-
-        # Calculate differences
-        new_violations = [v for v in result2.violations if v.id not in violations1_ids]
-        fixed_violations = [v for v in result1.violations if v.id not in violations2_ids]
-        persistent_violations = [v for v in result2.violations if v.id in violations1_ids]
-
-        # Serialize violations
-        def serialize_violation(v: Any) -> dict[str, Any]:
-            return {
-                'id': v.id,
-                'impact': v.impact.value if hasattr(v.impact, 'value') else v.impact,
-                'touchpoint': v.touchpoint,
-                'description': v.description,
-                'element': v.element
-            }
-
-        comparison = {
-            'result_1': {
-                'id': result_id_1,
-                'state_sequence': result1.state_sequence,
-                'state_description': result1.page_state.get('description') if result1.page_state else None,
-                'violation_count': result1.violation_count,
-                'test_date': result1.test_date.isoformat() if result1.test_date else None
-            },
-            'result_2': {
-                'id': result_id_2,
-                'state_sequence': result2.state_sequence,
-                'state_description': result2.page_state.get('description') if result2.page_state else None,
-                'violation_count': result2.violation_count,
-                'test_date': result2.test_date.isoformat() if result2.test_date else None
-            },
-            'new_violations': [serialize_violation(v) for v in new_violations],
-            'fixed_violations': [serialize_violation(v) for v in fixed_violations],
-            'persistent_violations': [serialize_violation(v) for v in persistent_violations],
-            'summary': {
-                'new_count': len(new_violations),
-                'fixed_count': len(fixed_violations),
-                'persistent_count': len(persistent_violations),
-                'net_change': result2.violation_count - result1.violation_count
-            }
+    def _serialize_violation(v: Any) -> dict[str, Any]:
+        return {
+            "id": v.id,
+            "impact": v.impact.value if hasattr(v.impact, "value") else v.impact,
+            "touchpoint": v.touchpoint,
+            "description": v.description,
+            "element": v.element,
         }
 
-        return jsonify({
-            'success': True,
-            'comparison': comparison
-        })
+    def _result_summary(rid: str, result: Any) -> dict[str, Any]:
+        return {
+            "id": rid,
+            "state_sequence": result.state_sequence,
+            "state_description": (
+                result.page_state.get("description") if result.page_state else None
+            ),
+            "violation_count": result.violation_count,
+            "test_date": result.test_date.isoformat() if result.test_date else None,
+        }
 
-    except Exception as e:
-        logger.error(f"Error comparing test results: {e}")
-        return jsonify({'error': f'Failed to compare test results: {str(e)}'}), 500
+    return jsonify({
+        "a": _result_summary(a_id, a_result),
+        "b": _result_summary(b_id, b_result),
+        "new_violations": [_serialize_violation(v) for v in new_violations],
+        "fixed_violations": [_serialize_violation(v) for v in fixed_violations],
+        "persistent_violations": [_serialize_violation(v) for v in persistent_violations],
+        "summary": {
+            "new_count": len(new_violations),
+            "fixed_count": len(fixed_violations),
+            "persistent_count": len(persistent_violations),
+            "net_change": b_result.violation_count - a_result.violation_count,
+        },
+    })
 
 
 @api_bp.route('/health/pdf', methods=['GET'])

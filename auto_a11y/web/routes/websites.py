@@ -264,159 +264,90 @@ def clear_test_results(website_id: str) -> Response:
 
 @websites_bp.route('/<website_id>/discover', methods=['POST'])
 def discover_pages(website_id: str) -> Response | tuple[Response, int]:
-    """Start page discovery for website with optional max pages limit"""
-    from auto_a11y.core.website_manager import WebsiteManager
-    from auto_a11y.core.task_runner import task_runner
-    
-    website = get_db().get_website(website_id)
-    if not website:
-        return jsonify({'error': ftl('common-website-not-found')}), 404
+    """Start page discovery for a website (with optional max-pages cap)."""
+    from auto_a11y.core.test_run_service import (
+        WebsiteNotFoundError,
+        start_website_discovery,
+    )
 
-    # Get parameters from request
     data: dict[str, Any] = request.get_json() if request.is_json else {}
-    max_pages_raw: str | None = data.get('max_pages') if request.is_json else request.form.get('max_pages')
+    max_pages_raw: str | int | None = (
+        data.get('max_pages') if request.is_json
+        else request.form.get('max_pages')
+    )
 
-    # Get project_user_ids (project-level test users)
-    # Still accept 'website_user_ids' key name for backward compatibility with JavaScript
-    user_ids_raw: list[str] | str = data.get('project_user_ids') or data.get('website_user_ids', [])
-
-    # Convert to list if single value provided
-    if isinstance(user_ids_raw, str):
-        user_ids_list: list[str] = [user_ids_raw]
-    else:
-        user_ids_list = user_ids_raw
-
-    # Default to guest only if no users specified
-    if not user_ids_list:
-        user_ids_list = ['']  # empty string represents guest/no login
-
-    # Keep the old variable name for compatibility with existing code paths
-    website_user_ids: list[str] = user_ids_list
+    # Still accept the legacy `website_user_ids` form key from the
+    # in-flight admin frontend; both are normalised inside the service.
+    user_ids_raw: list[str] | str = (
+        data.get('project_user_ids') or data.get('website_user_ids', [])
+    )
 
     max_pages: int | None = None
-    if max_pages_raw:
+    if max_pages_raw is not None and max_pages_raw != '':
         try:
             max_pages = int(max_pages_raw)
             if max_pages <= 0:
                 max_pages = None
-            else:
-                logger.info(f"Discovery will be limited to {max_pages} pages")
         except (ValueError, TypeError):
             max_pages = None
-    
+
+    session_user_id = session.get('user_id') if session else None
+    session_id_value = session.get('session_id') if session else None
+
     try:
-        # Browser availability is checked at launch time by BrowserManager,
-        # which auto-detects the executable and can install it at runtime.
-
-        # Get project to access stealth_mode setting
-        project = get_db().get_project(website.project_id)
-
-        # Create browser config with project-specific stealth_mode and headless settings
-        browser_config = get_app_config().__dict__.copy()
-        if project and project.config:
-            browser_config['stealth_mode'] = project.config.get('stealth_mode', False)
-
-            # Apply project-specific headless browser setting
-            headless_setting = project.config.get('headless_browser', 'true')
-            browser_config['BROWSER_HEADLESS'] = (headless_setting == 'true')
-        else:
-            browser_config['stealth_mode'] = False
-
-        # Create website manager (with pdf_runner so PDFs found during the
-        # crawl are auto-fetched and surfaced in the PDFs UI)
-        website_manager = WebsiteManager(
-            get_db(), browser_config, pdf_runner=get_pdf_runner()
+        handle = start_website_discovery(
+            get_db(),
+            get_app_config(),
+            website_id,
+            max_pages=max_pages,
+            project_user_ids=user_ids_raw,
+            user_id=session_user_id,
+            session_id=session_id_value,
+            pdf_runner=get_pdf_runner(),
         )
-
-        # Get user info from session if available
-        session_user_id = session.get('user_id') if session else None
-        session_id_value = session.get('session_id') if session else None
-
-        # Submit a single combined discovery task that will scrape with all users
-        import uuid
-        task_id = f'discovery_{website_id}_{uuid.uuid4().hex[:8]}'
-        logger.info(f"Submitting discovery task with ID: {task_id} for {len(website_user_ids)} users")
-
-        # Create a wrapper that handles the async execution properly
-        def discovery_wrapper() -> object:
-            import asyncio
-            import nest_asyncio
-            nest_asyncio.apply()
-
-            logger.info(f"Discovery wrapper starting for website {website_id}, task_id: {task_id}, users: {len(website_user_ids)}")
-
-            # Try to get the running loop, or create a new one
-            try:
-                loop = asyncio.get_running_loop()
-                logger.info("Using existing event loop for discovery")
-            except RuntimeError:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                logger.info("Created new event loop for discovery")
-
-            try:
-                result = loop.run_until_complete(
-                    website_manager.discover_pages(
-                        website_id,
-                        max_pages=max_pages,
-                        job_id=task_id,
-                        user_id=session_user_id,
-                        session_id=session_id_value,
-                        website_user_ids=website_user_ids
-                    )
-                )
-                logger.info(f"Discovery wrapper completed, result job_id: {result.job_id if result else 'None'}")
-                return result
-            except Exception as e:
-                logger.error(f"Error in discovery wrapper: {e}")
-                raise
-            finally:
-                # Don't close the loop immediately - let it complete tasks
-                try:
-                    if not loop.is_running():
-                        loop.close()
-                        logger.info("Closed discovery event loop")
-                except:
-                    pass
-
-        submitted_id = task_runner.submit_task(
-            func=discovery_wrapper,
-            args=(),
-            task_id=task_id
-        )
-
-        logger.info(f"Discovery task submitted successfully with ID: {submitted_id}")
-
-        # Build message
-        user_count = len(website_user_ids)
-        if user_count == 1:
-            if website_user_ids[0]:
-                user_info = get_db().get_project_user(website_user_ids[0])
-                message = f'Page discovery started as {user_info.name_display if user_info else "user"}'
-            else:
-                message = f'Page discovery started as guest'
-        else:
-            message = f'Page discovery started with {user_count} users'
-
-        if max_pages:
-            message += f' (limited to {max_pages} pages)'
-
-        return jsonify({
-            'success': True,
-            'message': message,
-            'job_id': submitted_id,
-            'max_pages': max_pages,
-            'user_count': user_count,
-            'status_url': url_for('websites.discovery_status', website_id=website_id, job_id=submitted_id)
-        })
-        
+    except WebsiteNotFoundError:
+        return jsonify({'error': ftl('common-website-not-found')}), 404
     except Exception as e:
         logger.error(f"Failed to start discovery: {e}")
         return jsonify({
             'success': False,
             'error': str(e),
-            'message': ftl('common-failed-to-start-page-discovery')
+            'message': ftl('common-failed-to-start-page-discovery'),
         }), 500
+
+    # Re-derive the user-facing message from the handle so the legacy
+    # response shape stays byte-identical for the in-flight frontend.
+    normalized_user_ids = (
+        [user_ids_raw] if isinstance(user_ids_raw, str)
+        else (user_ids_raw or [''])
+    )
+    if handle.user_count == 1:
+        first_id = normalized_user_ids[0] if normalized_user_ids else ''
+        if first_id:
+            user_info = get_db().get_project_user(first_id)
+            message = (
+                f'Page discovery started as '
+                f'{user_info.name_display if user_info else "user"}'
+            )
+        else:
+            message = 'Page discovery started as guest'
+    else:
+        message = f'Page discovery started with {handle.user_count} users'
+    if handle.max_pages:
+        message += f' (limited to {handle.max_pages} pages)'
+
+    return jsonify({
+        'success': True,
+        'message': message,
+        'job_id': handle.job_id,
+        'max_pages': handle.max_pages,
+        'user_count': handle.user_count,
+        'status_url': url_for(
+            'websites.discovery_status',
+            website_id=website_id,
+            job_id=handle.job_id,
+        ),
+    })
 
 
 @websites_bp.route('/<website_id>/discovery-status')

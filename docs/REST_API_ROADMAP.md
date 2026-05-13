@@ -158,7 +158,7 @@ Symbols:
 | `POST /websites/<id>/edit` | `PUT /api/v1/websites/<id>`, `PATCH /api/v1/websites/<id>` | ✅ |
 | `POST /websites/<id>/delete` | `DELETE /api/v1/websites/<id>` | ✅ |
 | `POST /websites/<id>/clear-test-results` | `DELETE /api/v1/websites/<id>/test-results` | ❌ |
-| `POST /websites/<id>/discover` | `POST /api/v1/websites/<id>/discoveries` | ✅ |
+| `POST /websites/<id>/discover` | `POST /api/v1/websites/<id>/discoveries` | ✅ (canonical `/discoveries` URL now wraps `auto_a11y.core.test_run_service.start_website_discovery`; legacy `/discover` URL still mapped to the same handler; HTML route in websites.py also dispatches through the service) |
 | `GET /websites/<id>/discovery-status` | `GET /api/v1/websites/<id>/discoveries/latest` | ❌ |
 | `POST /websites/<id>/cancel-discovery` | `POST /api/v1/websites/<id>/discoveries/latest/cancel` | ❌ |
 | `POST /websites/<id>/add-page` | `POST /api/v1/websites/<id>/pages` | ✅ |

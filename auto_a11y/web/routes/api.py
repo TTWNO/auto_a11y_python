@@ -337,24 +337,79 @@ def get_page_test_results(page_id: str) -> tuple[Response, int] | Response:
 # Batch Operations
 
 @api_bp.route('/websites/<website_id>/discover', methods=['POST'])
+@api_bp.route('/websites/<website_id>/discoveries', methods=['POST'])
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def discover_pages(website_id: str) -> tuple[Response, int]:
-    """Start page discovery for website"""
-    website = get_db().get_website(website_id)
-    if not website:
-        return jsonify({'error': 'Website not found'}), 404
-    
-    data: dict[str, Any] = request.get_json() or {}
-    _strategy: str = data.get('strategy', 'crawl')
-    _config: dict[str, Any] = data.get('config', {})
+    """Queue a page-discovery crawl for a website.
 
-    # Queue discovery job
-    job_id = f'discovery_{website_id}_{datetime.now().timestamp()}'
-    
+    Both the legacy ``/discover`` URL and the canonical
+    ``/discoveries`` URL share this handler; they emit the same
+    response shape until the frontend migration retires the legacy
+    name.
+
+    The actual orchestration (browser-config merge, async wrapping,
+    task-runner submission) lives in
+    :mod:`auto_a11y.core.test_run_service` so the HTML route in
+    ``websites.py`` and this REST endpoint dispatch through the same
+    code path.
+    """
+    from auto_a11y.core.test_run_service import (
+        WebsiteNotFoundError,
+        start_website_discovery,
+    )
+    from auto_a11y.web.typed_app import get_pdf_runner as _get_pdf_runner
+
+    data: dict[str, Any] = request.get_json() or {}
+    max_pages_raw = data.get('max_pages')
+    max_pages: int | None = None
+    if max_pages_raw is not None and max_pages_raw != '':
+        try:
+            max_pages = int(max_pages_raw)
+            if max_pages <= 0:
+                max_pages = None
+        except (ValueError, TypeError):
+            max_pages = None
+
+    def _widen_to_str_list(value: Any) -> list[str]:
+        # Routing ``value`` through an ``Any``-typed parameter drops
+        # pyright's ``list[Unknown]`` narrowing from the outer
+        # isinstance check, so iteration yields properly-typed items.
+        # Same trick as ``_iter_to_any_list`` further down this file.
+        items: list[Any] = []
+        for item in value:
+            items.append(item)
+        return [str(item) for item in items]
+
+    user_ids_raw_value: Any = (
+        data.get('project_user_ids') or data.get('website_user_ids')
+    )
+    user_ids_raw: list[str] | str | None
+    if isinstance(user_ids_raw_value, list):
+        user_ids_raw = _widen_to_str_list(user_ids_raw_value)
+    elif isinstance(user_ids_raw_value, str):
+        user_ids_raw = user_ids_raw_value
+    else:
+        user_ids_raw = None
+
+    try:
+        handle = start_website_discovery(
+            get_db(),
+            get_app_config(),
+            website_id,
+            max_pages=max_pages,
+            project_user_ids=user_ids_raw,
+            pdf_runner=_get_pdf_runner(),
+        )
+    except WebsiteNotFoundError:
+        return jsonify({'error': 'Website not found'}), 404
+
     return jsonify({
-        'job_id': job_id,
+        'job_id': handle.job_id,
+        'website_id': handle.website_id,
+        'max_pages': handle.max_pages,
+        'user_count': handle.user_count,
         'status': 'started',
-        'message': 'Page discovery started'
+        'message': 'Page discovery started',
     }), 202
 
 

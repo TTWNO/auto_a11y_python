@@ -9381,6 +9381,7 @@ def delete_supervisor_rest(
 # ---------------------------------------------------------------------------
 
 from auto_a11y.models.discovered_page import DiscoveredPage  # noqa: E402
+from auto_a11y.models.page import DrupalSyncStatus  # noqa: E402
 
 
 def _serialize_discovered_page(page: DiscoveredPage) -> dict[str, Any]:
@@ -10378,6 +10379,906 @@ def auth_sso_url_rest(provider: str) -> tuple[Response, int] | Response:
         url = get_google_auth_url(redirect_uri)
 
     return jsonify({"provider": provider, "url": url})
+
+
+# ---------------------------------------------------------------------------
+# Drupal sync API (§5.12) — REST shapes around the legacy
+# drupal_sync_bp. The legacy blueprint stays alive for the in-flight
+# admin UI (which uses NDJSON streaming progress); these REST routes
+# return aggregate summaries instead so non-streaming clients have a
+# single response to parse. The shared Drupal client / exporter /
+# importer classes are reused so both surfaces talk to Drupal the
+# same way.
+#
+# Auth: ADMIN/AUDITOR on the project for all action routes;
+# ADMIN/AUDITOR/CLIENT on the read-only listings.
+# ---------------------------------------------------------------------------
+
+
+def _drupal_audit_uuid_or_400(project: Any) -> str:
+    """Look up the Drupal audit UUID for a project, raising 400 on miss.
+
+    The legacy flow flashes an error and redirects; the REST equivalent
+    is a ValidationError pointing at ``drupal_audit_name``.
+    """
+    from auto_a11y.drupal.config import get_drupal_config
+
+    db = get_db()
+    config = get_drupal_config(db=db)
+    if not config.enabled:
+        raise ConflictError("Drupal integration is not enabled")
+
+    import base64
+    import requests as _req
+
+    credentials = f"{config.username}:{config.password}"
+    b64_creds = base64.b64encode(credentials.encode()).decode()
+    headers = {
+        "Accept": "application/json",
+        "Authorization": f"Basic {b64_creds}",
+    }
+    try:
+        response = _req.get(
+            f"{config.base_url}/rest/open_audits?_format=json",
+            headers=headers, timeout=10,
+        )
+        response.raise_for_status()
+        audits = response.json()
+    except Exception as exc:  # noqa: BLE001
+        raise ConflictError(f"Could not query Drupal audits: {exc}") from exc
+
+    audit_name = project.drupal_audit_name or project.name
+    for audit in audits:
+        if audit.get("title", "").lower() == audit_name.lower():
+            uuid_value = audit.get("uuid") or audit.get("uuId")
+            if isinstance(uuid_value, str) and uuid_value:
+                return uuid_value
+    raise ValidationError(
+        f"No Drupal audit named {audit_name!r}",
+        errors=(
+            _FieldError(
+                field="drupal_audit_name", code="not_found",
+                message="no matching Drupal audit",
+            ),
+        ),
+    )
+
+
+def _drupal_client_or_503() -> Any:
+    """Build a configured :class:`DrupalJSONAPIClient` or raise 503-ish.
+
+    503 is the conventional shape for an unconfigured dependency, but
+    we don't have a 503 helper — :class:`ConflictError` (mapped to
+    409) is the closest thing in the existing API surface.
+    """
+    from auto_a11y.drupal import DrupalJSONAPIClient
+    from auto_a11y.drupal.config import get_drupal_config
+
+    config = get_drupal_config(db=get_db())
+    if not config.enabled:
+        raise ConflictError("Drupal integration is not enabled")
+    return DrupalJSONAPIClient(
+        base_url=config.base_url,
+        username=config.username,
+        password=config.password,
+    )
+
+
+@api_bp.route("/drupal/audits", methods=["GET"])
+@api_endpoint
+def drupal_list_audits_rest() -> tuple[Response, int] | Response:
+    """List every audit visible in the configured Drupal instance.
+
+    Replaces the legacy ``/drupal/audits/list`` JSON route. Authenticated;
+    no project scope because the caller may be picking a Drupal audit
+    to *link* to a project that doesn't yet have ``drupal_audit_name``
+    set.
+
+    Errors:
+
+    - **409** — Drupal integration is not enabled
+    - **502** — upstream Drupal returned a non-2xx (mapped to
+      :class:`ConflictError` since the API doesn't have a 502 helper)
+    """
+    require_authenticated()
+    from auto_a11y.drupal.config import get_drupal_config
+
+    config = get_drupal_config(db=get_db())
+    if not config.enabled:
+        raise ConflictError("Drupal integration is not enabled")
+
+    import base64
+    import requests as _req
+
+    credentials = f"{config.username}:{config.password}"
+    b64_creds = base64.b64encode(credentials.encode()).decode()
+    try:
+        response = _req.get(
+            f"{config.base_url}/rest/open_audits?_format=json",
+            headers={
+                "Accept": "application/json",
+                "Authorization": f"Basic {b64_creds}",
+            },
+            timeout=10,
+        )
+        response.raise_for_status()
+        audits = response.json()
+    except Exception as exc:  # noqa: BLE001
+        raise ConflictError(f"Drupal upstream error: {exc}") from exc
+
+    return jsonify({
+        "audits": sorted(
+            [
+                {
+                    "title": a.get("title", ""),
+                    "uuid": a.get("uuid") or a.get("uuId"),
+                    "nid": a.get("nid"),
+                }
+                for a in audits
+            ],
+            key=lambda r: (r["title"] or "").lower(),
+        ),
+    })
+
+
+@api_bp.route("/drupal/projects/<project_id>/sync-status", methods=["GET"])
+@api_endpoint
+def drupal_sync_status_rest(
+    project_id: str,
+) -> tuple[Response, int] | Response:
+    """Return per-project sync counts: pages, recordings, errors.
+
+    Replaces the legacy ``/drupal/projects/<id>/sync/status``. Returns
+    aggregates over the project's ``discovered_pages`` and
+    ``recordings`` collections — synced/pending/failed counts plus the
+    most-recent sync timestamp across both. Up to 5 most-recent error
+    messages are included for surfacing in a sync-status banner.
+    """
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT,
+        project_id=project_id,
+    )
+    project = get_db().get_project(project_id)
+    if project is None:
+        raise NotFoundError(f"project {project_id} not found")
+
+    from auto_a11y.drupal.config import get_drupal_config
+
+    try:
+        drupal_enabled = get_drupal_config(db=get_db()).enabled
+    except Exception:  # noqa: BLE001
+        drupal_enabled = False
+
+    pages = list(get_db().discovered_pages.find({"project_id": project_id}))
+    recordings = list(get_db().recordings.find({"project_id": project_id}))
+
+    def _count(items: list[dict[str, Any]], status: str) -> int:
+        return sum(
+            1 for it in items if it.get("drupal_sync_status") == status
+        )
+
+    last_sync_times: list[datetime] = []
+    for it in pages + recordings:
+        when = it.get("drupal_last_synced")
+        if isinstance(when, datetime):
+            last_sync_times.append(when)
+    last_sync_time = max(last_sync_times) if last_sync_times else None
+
+    sync_errors: list[str] = []
+    for p in pages:
+        err = p.get("drupal_error_message")
+        if isinstance(err, str) and err:
+            sync_errors.append(f"Page '{p.get('title')}': {err}")
+    for r in recordings:
+        err = r.get("drupal_error_message")
+        if isinstance(err, str) and err:
+            sync_errors.append(f"Recording '{r.get('title')}': {err}")
+
+    return jsonify({
+        "drupal_enabled": drupal_enabled,
+        "project_name": project.name,
+        "discovered_pages": {
+            "total": len(pages),
+            "synced": _count(pages, "synced"),
+            "pending": _count(pages, "not_synced") + _count(pages, "pending"),
+            "failed": _count(pages, "sync_failed"),
+        },
+        "recordings": {
+            "total": len(recordings),
+            "synced": _count(recordings, "synced"),
+            "pending": _count(recordings, "not_synced") + _count(recordings, "pending"),
+            "failed": _count(recordings, "sync_failed"),
+        },
+        "last_sync_time": (
+            last_sync_time.isoformat() if last_sync_time else None
+        ),
+        "sync_errors": sync_errors[:5],
+    })
+
+
+@api_bp.route(
+    "/drupal/projects/<project_id>/discovered-pages", methods=["GET"]
+)
+@api_endpoint
+def drupal_list_discovered_pages_rest(
+    project_id: str,
+) -> tuple[Response, int] | Response:
+    """List discovered pages with their Drupal-sync state.
+
+    Distinct from :func:`list_discovered_pages_for_project_rest` (the
+    §5.1 / §5.3 endpoint) — that one returns the page's structural
+    fields; this one surfaces the ``drupal_*`` sync fields used by the
+    Drupal sync UI.
+    """
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT,
+        project_id=project_id,
+    )
+    if get_db().get_project(project_id) is None:
+        raise NotFoundError(f"project {project_id} not found")
+
+    pages = list(get_db().discovered_pages.find({"project_id": project_id}))
+    items: list[dict[str, Any]] = []
+    for doc in pages:
+        page = DiscoveredPage.from_dict(doc)
+        items.append({
+            "id": page.id,
+            "title": page.title,
+            "url": page.url,
+            "interested_because": page.interested_because,
+            "page_elements": page.page_elements,
+            "drupal_uuid": page.drupal_uuid,
+            "drupal_sync_status": page.drupal_sync_status.value,
+            "drupal_last_synced": (
+                page.drupal_last_synced.isoformat()
+                if page.drupal_last_synced else None
+            ),
+            "is_synced": page.is_synced,
+            "needs_sync": page.needs_sync,
+        })
+    return jsonify({"discovered_pages": items})
+
+
+@api_bp.route(
+    "/drupal/projects/<project_id>/recordings", methods=["GET"]
+)
+@api_endpoint
+def drupal_list_recordings_rest(
+    project_id: str,
+) -> tuple[Response, int] | Response:
+    """List the project's recordings with their Drupal-sync state."""
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT,
+        project_id=project_id,
+    )
+    if get_db().get_project(project_id) is None:
+        raise NotFoundError(f"project {project_id} not found")
+
+    docs = list(get_db().recordings.find({"project_id": project_id}))
+    items: list[dict[str, Any]] = []
+    for doc in docs:
+        rec = Recording.from_dict(doc)
+        items.append({
+            "id": rec.id,
+            "title": rec.title,
+            "duration": rec.duration,
+            "auditor_name": rec.auditor_name,
+            "recording_type": rec.recording_type.value,
+            "total_issues": rec.total_issues,
+            "component_names": rec.component_names,
+            "drupal_video_uuid": rec.drupal_video_uuid,
+            "drupal_video_nid": rec.drupal_video_nid,
+            "drupal_sync_status": rec.drupal_sync_status.value,
+            "drupal_last_synced": (
+                rec.drupal_last_synced.isoformat()
+                if rec.drupal_last_synced else None
+            ),
+            "is_synced": rec.is_synced,
+            "needs_sync": rec.needs_sync,
+        })
+    return jsonify({"recordings": items})
+
+
+@api_bp.route("/drupal/projects/<project_id>/issues", methods=["GET"])
+@api_endpoint
+def drupal_list_issues_rest(
+    project_id: str,
+) -> tuple[Response, int] | Response:
+    """List the project's Drupal-bound issues with their sync state."""
+    from auto_a11y.models import Issue
+
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT,
+        project_id=project_id,
+    )
+    if get_db().get_project(project_id) is None:
+        raise NotFoundError(f"project {project_id} not found")
+
+    docs = list(get_db().issues.find({"project_id": project_id}))
+    items: list[dict[str, Any]] = []
+    for doc in docs:
+        issue = Issue.from_dict(doc)
+        items.append({
+            "id": issue.id,
+            "title": issue.title,
+            "impact": issue.impact.value,
+            "issue_type": issue.issue_type,
+            "location_on_page": issue.location_on_page,
+            "wcag_criteria": issue.wcag_criteria,
+            "source_type": issue.source_type,
+            "detection_method": issue.detection_method,
+            "status": issue.status,
+            "drupal_uuid": issue.drupal_uuid,
+            "drupal_nid": issue.drupal_nid,
+            "drupal_sync_status": issue.drupal_sync_status.value,
+            "drupal_last_synced": (
+                issue.drupal_last_synced.isoformat()
+                if issue.drupal_last_synced else None
+            ),
+            "is_synced": issue.is_synced,
+            "needs_sync": issue.needs_sync,
+        })
+    return jsonify({"issues": items})
+
+
+def _aggregate_result() -> dict[str, Any]:
+    """Empty aggregate-result envelope the action routes return."""
+    return {
+        "success_count": 0,
+        "failure_count": 0,
+        "skipped_count": 0,
+        "errors": [],  # list[{item, error}]
+    }
+
+
+@api_bp.route(
+    "/drupal/projects/<project_id>/upload", methods=["POST"]
+)
+@api_endpoint
+def drupal_upload_rest(
+    project_id: str,
+) -> tuple[Response, int] | Response:
+    """Push selected discovered-pages / recordings / issues to Drupal.
+
+    Body:
+
+        {
+          "discovered_page_ids": ["...", ...],   // optional
+          "recording_ids":       ["...", ...],   // optional
+          "issue_ids":           ["...", ...],   // optional
+          "options": {"include_french": bool}    // optional
+        }
+
+    The action runs synchronously and returns an aggregate summary
+    once the loop finishes. Unlike the legacy NDJSON streaming
+    counterpart, there is no per-item progress channel — clients that
+    need real-time feedback should keep using ``/drupal/projects/<id>/
+    sync/upload`` on the HTML blueprint.
+    """
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id,
+    )
+    project = get_db().get_project(project_id)
+    if project is None:
+        raise NotFoundError(f"project {project_id} not found")
+
+    from auto_a11y.drupal import (
+        DiscoveredPageExporter,
+        DiscoveredPageTaxonomies,
+        IssueExporter,
+        RecordingExporter,
+        WCAGChapterCache,
+    )
+    from auto_a11y.models import RecordingIssue
+
+    body = _require_dict_body() if request.data else {}
+    page_ids = _coerce_str_list(body.get("discovered_page_ids") or [])
+    recording_ids = _coerce_str_list(body.get("recording_ids") or [])
+    issue_ids = _coerce_str_list(body.get("issue_ids") or [])
+    options_any: Any = body.get("options", {})
+    options: dict[str, Any] = (
+        cast(dict[str, Any], options_any)
+        if isinstance(options_any, dict) else {}
+    )
+    include_french = bool(options.get("include_french", False))
+
+    client = _drupal_client_or_503()
+    audit_uuid = _drupal_audit_uuid_or_400(project)
+
+    taxonomies = DiscoveredPageTaxonomies(client)
+    wcag_cache = WCAGChapterCache(client)
+    taxonomies.cache.get_terms("issue_type")
+    taxonomies.cache.get_terms("issue_category")
+    wcag_cache.get_chapters()
+
+    page_exporter = DiscoveredPageExporter(client, taxonomies)
+    recording_exporter = RecordingExporter(client)
+    issue_exporter = IssueExporter(client, taxonomies.cache, wcag_cache)
+
+    result = _aggregate_result()
+    db = get_db()
+
+    # Pages
+    for page_id in page_ids:
+        try:
+            from bson import ObjectId
+            page_doc = db.discovered_pages.find_one({"_id": ObjectId(page_id)})
+            if not page_doc:
+                result["failure_count"] += 1
+                result["errors"].append({"item": page_id, "error": "page not found"})
+                continue
+            page = DiscoveredPage.from_dict(page_doc)
+            res = page_exporter.export_from_discovered_page_model(page, audit_uuid)
+            if res.get("success"):
+                db.discovered_pages.update_one(
+                    {"_id": page_doc["_id"]},
+                    {"$set": {
+                        "drupal_uuid": res["uuid"],
+                        "drupal_sync_status": "synced",
+                        "drupal_last_synced": datetime.now(),
+                        "drupal_error_message": None,
+                    }},
+                )
+                result["success_count"] += 1
+            else:
+                db.discovered_pages.update_one(
+                    {"_id": page_doc["_id"]},
+                    {"$set": {
+                        "drupal_sync_status": "sync_failed",
+                        "drupal_error_message": res.get("error"),
+                    }},
+                )
+                result["failure_count"] += 1
+                result["errors"].append(
+                    {"item": page.title, "error": res.get("error")}
+                )
+        except Exception as exc:  # noqa: BLE001
+            result["failure_count"] += 1
+            result["errors"].append({"item": page_id, "error": str(exc)})
+
+    # Recordings (cascade includes their RecordingIssues)
+    for recording_id in recording_ids:
+        try:
+            from bson import ObjectId
+            rec_doc = db.recordings.find_one({"_id": ObjectId(recording_id)})
+            if not rec_doc:
+                result["failure_count"] += 1
+                result["errors"].append({"item": recording_id, "error": "recording not found"})
+                continue
+            recording = Recording.from_dict(rec_doc)
+
+            discovered_page_uuids: list[str] = []
+            for pid in recording.discovered_page_ids:
+                try:
+                    p_doc = db.discovered_pages.find_one({"_id": ObjectId(pid)})
+                    if p_doc and isinstance(p_doc.get("drupal_uuid"), str):
+                        discovered_page_uuids.append(p_doc["drupal_uuid"])
+                except Exception:  # noqa: BLE001
+                    pass
+
+            rec_res = recording_exporter.export_from_recording_model(
+                recording, audit_uuid, discovered_page_uuids,
+                include_french=include_french,
+            )
+            if rec_res.get("success"):
+                video_uuid = rec_res["uuid"]
+                db.recordings.update_one(
+                    {"_id": rec_doc["_id"]},
+                    {"$set": {
+                        "drupal_video_uuid": video_uuid,
+                        "drupal_video_nid": rec_res.get("nid"),
+                        "drupal_sync_status": "synced",
+                        "drupal_last_synced": datetime.now(),
+                        "drupal_error_message": None,
+                    }},
+                )
+                result["success_count"] += 1
+
+                # Cascade RecordingIssues for this recording.
+                for ri_doc in db.recording_issues.find(
+                    {"recording_id": recording.recording_id}
+                ):
+                    try:
+                        ri = RecordingIssue.from_dict(ri_doc)
+                        ri_res = issue_exporter.export_from_recording_issue(
+                            ri, audit_uuid, video_uuid,
+                        )
+                        if ri_res.get("success"):
+                            db.recording_issues.update_one(
+                                {"_id": ri_doc["_id"]},
+                                {"$set": {
+                                    "drupal_uuid": ri_res["uuid"],
+                                    "drupal_nid": ri_res.get("nid"),
+                                    "drupal_sync_status": "synced",
+                                    "drupal_last_synced": datetime.now(),
+                                    "drupal_error_message": None,
+                                }},
+                            )
+                        else:
+                            db.recording_issues.update_one(
+                                {"_id": ri_doc["_id"]},
+                                {"$set": {
+                                    "drupal_sync_status": "sync_failed",
+                                    "drupal_error_message": ri_res.get("error"),
+                                }},
+                            )
+                    except Exception:  # noqa: BLE001
+                        pass
+            else:
+                db.recordings.update_one(
+                    {"_id": rec_doc["_id"]},
+                    {"$set": {
+                        "drupal_sync_status": "sync_failed",
+                        "drupal_error_message": rec_res.get("error"),
+                    }},
+                )
+                result["failure_count"] += 1
+                result["errors"].append(
+                    {"item": recording.title, "error": rec_res.get("error")}
+                )
+        except Exception as exc:  # noqa: BLE001
+            result["failure_count"] += 1
+            result["errors"].append({"item": recording_id, "error": str(exc)})
+
+    # Standalone issues
+    for issue_id in issue_ids:
+        try:
+            from auto_a11y.models import Issue
+            from bson import ObjectId
+            issue_doc = db.issues.find_one({"_id": ObjectId(issue_id)})
+            if not issue_doc:
+                result["failure_count"] += 1
+                result["errors"].append({"item": issue_id, "error": "issue not found"})
+                continue
+            issue = Issue.from_dict(issue_doc)
+            i_res = issue_exporter.export_from_issue_model(issue, audit_uuid)
+            if i_res.get("success"):
+                db.issues.update_one(
+                    {"_id": issue_doc["_id"]},
+                    {"$set": {
+                        "drupal_uuid": i_res["uuid"],
+                        "drupal_nid": i_res.get("nid"),
+                        "drupal_sync_status": "synced",
+                        "drupal_last_synced": datetime.now(),
+                        "drupal_error_message": None,
+                    }},
+                )
+                result["success_count"] += 1
+            else:
+                db.issues.update_one(
+                    {"_id": issue_doc["_id"]},
+                    {"$set": {
+                        "drupal_sync_status": "sync_failed",
+                        "drupal_error_message": i_res.get("error"),
+                    }},
+                )
+                result["failure_count"] += 1
+                result["errors"].append(
+                    {"item": issue.title, "error": i_res.get("error")}
+                )
+        except Exception as exc:  # noqa: BLE001
+            result["failure_count"] += 1
+            result["errors"].append({"item": issue_id, "error": str(exc)})
+
+    return jsonify({
+        "project_id": project_id,
+        "audit_uuid": audit_uuid,
+        **result,
+    })
+
+
+@api_bp.route(
+    "/drupal/projects/<project_id>/import-pages", methods=["POST"]
+)
+@api_endpoint
+def drupal_import_pages_rest(
+    project_id: str,
+) -> tuple[Response, int] | Response:
+    """Pull discovered pages from Drupal into the local database.
+
+    Aggregate-summary REST form of the legacy NDJSON
+    ``/drupal/projects/<id>/sync/import-pages``. Counts are
+    ``imported`` (new local row), ``updated`` (existing local row
+    keyed on ``drupal_uuid``), and ``skipped`` (failed on any page).
+    """
+    from auto_a11y.drupal import (
+        DiscoveredPageImporter,
+        DiscoveredPageTaxonomies,
+    )
+
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id,
+    )
+    project = get_db().get_project(project_id)
+    if project is None:
+        raise NotFoundError(f"project {project_id} not found")
+
+    client = _drupal_client_or_503()
+    audit_uuid = _drupal_audit_uuid_or_400(project)
+
+    taxonomies = DiscoveredPageTaxonomies(client)
+    importer = DiscoveredPageImporter(client, taxonomies)
+    drupal_pages = importer.fetch_discovered_pages_for_audit(audit_uuid)
+
+    db = get_db()
+    imported_count = 0
+    updated_count = 0
+    skipped_count = 0
+    errors: list[dict[str, Any]] = []
+
+    for drupal_page in drupal_pages:
+        try:
+            existing = db.discovered_pages.find_one(
+                {"drupal_uuid": drupal_page["uuid"]}
+            )
+            if existing:
+                page_model = DiscoveredPage.from_dict(existing)
+                page_model.title = drupal_page["title"]
+                page_model.url = drupal_page["url"]
+                page_model.interested_because = drupal_page["interested_because"]
+                page_model.page_elements = drupal_page["page_elements"]
+                page_model.private_notes = drupal_page["private_notes"]
+                page_model.public_notes = drupal_page["public_notes"]
+                page_model.include_in_report = drupal_page["include_in_report"]
+                page_model.audited = drupal_page["audited"]
+                page_model.manual_audit = drupal_page["manual_audit"]
+                page_model.document_links = drupal_page["document_links"]
+                page_model.drupal_sync_status = DrupalSyncStatus.SYNCED
+                page_model.drupal_last_synced = datetime.now()
+                page_model.drupal_error_message = None
+                db.discovered_pages.update_one(
+                    {"_id": existing["_id"]}, {"$set": page_model.to_dict()},
+                )
+                updated_count += 1
+            else:
+                page_data = importer.import_to_discovered_page_model(
+                    drupal_page, project_id,
+                )
+                page_model = DiscoveredPage(**page_data)
+                db.discovered_pages.insert_one(page_model.to_dict())
+                imported_count += 1
+        except Exception as exc:  # noqa: BLE001
+            skipped_count += 1
+            errors.append(
+                {"item": drupal_page.get("title", "unknown"), "error": str(exc)}
+            )
+
+    return jsonify({
+        "project_id": project_id,
+        "audit_uuid": audit_uuid,
+        "fetched": len(drupal_pages),
+        "imported": imported_count,
+        "updated": updated_count,
+        "skipped": skipped_count,
+        "errors": errors,
+    })
+
+
+@api_bp.route(
+    "/drupal/projects/<project_id>/import-issues", methods=["POST"]
+)
+@api_endpoint
+def drupal_import_issues_rest(
+    project_id: str,
+) -> tuple[Response, int] | Response:
+    """Pull issues from Drupal into the local database. Aggregate summary.
+
+    Companion to :func:`drupal_import_pages_rest` for the Issue model.
+    """
+    from auto_a11y.drupal import IssueImporter
+
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id,
+    )
+    project = get_db().get_project(project_id)
+    if project is None:
+        raise NotFoundError(f"project {project_id} not found")
+
+    client = _drupal_client_or_503()
+    audit_uuid = _drupal_audit_uuid_or_400(project)
+
+    importer = IssueImporter(client)
+    drupal_issues = importer.fetch_issues_for_audit(audit_uuid)
+
+    db = get_db()
+    imported_count = 0
+    updated_count = 0
+    skipped_count = 0
+    errors: list[dict[str, Any]] = []
+
+    for drupal_issue in drupal_issues:
+        try:
+            existing = db.issues.find_one({"drupal_uuid": drupal_issue["uuid"]})
+            if existing:
+                issue_dict = importer.to_database_dict(drupal_issue, project_id)
+                issue_dict["_id"] = existing["_id"]
+                db.issues.update_one(
+                    {"_id": existing["_id"]}, {"$set": issue_dict},
+                )
+                updated_count += 1
+            else:
+                issue_dict = importer.to_database_dict(drupal_issue, project_id)
+                db.issues.insert_one(issue_dict)
+                imported_count += 1
+        except Exception as exc:  # noqa: BLE001
+            skipped_count += 1
+            errors.append(
+                {"item": drupal_issue.get("title", "unknown"), "error": str(exc)}
+            )
+
+    return jsonify({
+        "project_id": project_id,
+        "audit_uuid": audit_uuid,
+        "fetched": len(drupal_issues),
+        "imported": imported_count,
+        "updated": updated_count,
+        "skipped": skipped_count,
+        "errors": errors,
+    })
+
+
+@api_bp.route(
+    "/drupal/projects/<project_id>/upload-automated-results",
+    methods=["POST"],
+)
+@api_endpoint
+def drupal_upload_automated_results_rest(
+    project_id: str,
+) -> tuple[Response, int] | Response:
+    """Upload deduplicated automated-test issues to Drupal.
+
+    Body (all optional):
+
+        {
+          "options": {
+            "min_component_pages": 2,            // pages a component must
+                                                  // appear on to count as
+                                                  // "common"
+            "mark_pages_for_inspection": false   // mark URL-only pages for
+                                                  // manual inspection
+          }
+        }
+
+    The pipeline:
+    1. Generates the project's comprehensive automated-test report
+    2. Deduplicates issues by common component (XPath-based)
+    3. Creates :class:`DiscoveredPage` rows for components and URLs
+    4. Uploads each of those pages to Drupal via
+       :class:`DiscoveredPageExporter`
+
+    Returns the aggregate result — total discovered pages created and
+    per-item upload outcomes.
+    """
+    from auto_a11y.drupal import (
+        DiscoveredPageExporter, DiscoveredPageTaxonomies,
+    )
+    from auto_a11y.reporting.deduplication_service import (
+        AutomatedTestDeduplicationService,
+    )
+    from auto_a11y.reporting.report_generator import ReportGenerator
+
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id,
+    )
+    project = get_db().get_project(project_id)
+    if project is None:
+        raise NotFoundError(f"project {project_id} not found")
+
+    body = _require_dict_body() if request.data else {}
+    options_any: Any = body.get("options", {})
+    options: dict[str, Any] = (
+        cast(dict[str, Any], options_any)
+        if isinstance(options_any, dict) else {}
+    )
+    min_component_pages_raw = options.get("min_component_pages", 2)
+    min_component_pages = (
+        min_component_pages_raw
+        if isinstance(min_component_pages_raw, int) else 2
+    )
+    mark_pages_for_inspection = bool(
+        options.get("mark_pages_for_inspection", False)
+    )
+
+    db = get_db()
+    client = _drupal_client_or_503()
+    audit_uuid = _drupal_audit_uuid_or_400(project)
+
+    # Step 1: build the comprehensive project report data (same shape
+    # the legacy NDJSON route assembles, just inline rather than
+    # streamed).
+    report_gen = ReportGenerator(db, config={})
+    websites = db.get_websites(project_id)
+    website_data_list: list[dict[str, Any]] = []
+    for website in websites:
+        if not website.id:
+            continue
+        pages = db.get_pages(website.id)
+        page_results_list: list[dict[str, Any]] = []
+        for page in pages:
+            if not page.id:
+                continue
+            tr = db.get_latest_test_result(page.id)
+            if tr is not None:
+                page_results_list.append({"page": page, "test_result": tr})
+        website_data_list.append(
+            {"website": website, "pages": page_results_list}
+        )
+    report_data = report_gen.prepare_project_report_data(
+        project, website_data_list,
+    )
+
+    # Step 2: deduplicate via the existing service.
+    dedup_service = AutomatedTestDeduplicationService(db)
+    dedup_result = dedup_service.process_automated_test_results(
+        project_id=project_id,
+        project_data=report_data,
+        min_component_pages=min_component_pages,
+        mark_pages_for_inspection=mark_pages_for_inspection,
+    )
+
+    component_page_ids = dedup_result["component_page_ids"]
+    page_url_ids = dedup_result["page_url_ids"]
+    all_page_ids: list[str] = (
+        list(component_page_ids) + list(page_url_ids)
+    )
+
+    # Step 3 + 4: upload each created DiscoveredPage to Drupal.
+    taxonomies = DiscoveredPageTaxonomies(client)
+    page_exporter = DiscoveredPageExporter(client, taxonomies)
+
+    success_count = 0
+    failure_count = 0
+    errors: list[dict[str, Any]] = []
+    from bson import ObjectId
+    for page_id in all_page_ids:
+        try:
+            page_doc = db.discovered_pages.find_one({"_id": ObjectId(page_id)})
+            if not page_doc:
+                failure_count += 1
+                errors.append({"item": page_id, "error": "page not found"})
+                continue
+            disc_page = DiscoveredPage.from_dict(page_doc)
+            res = page_exporter.export_from_discovered_page_model(
+                disc_page, audit_uuid,
+            )
+            if res.get("success"):
+                db.discovered_pages.update_one(
+                    {"_id": page_doc["_id"]},
+                    {"$set": {
+                        "drupal_uuid": res["uuid"],
+                        "drupal_sync_status": "synced",
+                        "drupal_last_synced": datetime.now(),
+                        "drupal_error_message": None,
+                    }},
+                )
+                success_count += 1
+            else:
+                db.discovered_pages.update_one(
+                    {"_id": page_doc["_id"]},
+                    {"$set": {
+                        "drupal_sync_status": "sync_failed",
+                        "drupal_error_message": res.get("error"),
+                    }},
+                )
+                failure_count += 1
+                errors.append({
+                    "item": disc_page.title, "error": res.get("error"),
+                })
+        except Exception as exc:  # noqa: BLE001
+            failure_count += 1
+            errors.append({"item": page_id, "error": str(exc)})
+
+    return jsonify({
+        "project_id": project_id,
+        "audit_uuid": audit_uuid,
+        "upload_id": dedup_result.get("upload_id"),
+        "discovered_pages_created": len(all_page_ids),
+        "common_components": len(component_page_ids),
+        "page_urls": len(page_url_ids),
+        "success_count": success_count,
+        "failure_count": failure_count,
+        "errors": errors,
+    })
 
 
 @api_bp.route("/auth/sso/<provider>/callback", methods=["GET"])

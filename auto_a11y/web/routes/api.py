@@ -1108,6 +1108,7 @@ from auto_a11y.models.schedule import (  # noqa: E402
 from auto_a11y.web.api import (  # noqa: E402
     ConflictError,
     NotFoundError,
+    UnauthorizedError,
     ValidationError,
     api_endpoint,
     paginate,
@@ -8104,12 +8105,13 @@ def get_current_user() -> tuple[Response, int] | Response:
     intentionally minimal — full AppUser CRUD is out of scope (auth
     flows are owned by the legacy auth.py blueprint per roadmap §5.13).
     """
-    require_authenticated()
+    user = require_authenticated()
+    user_id = getattr(user, "get_id", lambda: None)() or getattr(user, "id", None)
     return jsonify({
-        "user_id": str(current_user.get_id()),
-        "email": getattr(current_user, "email", None),
-        "display_name": getattr(current_user, "display_name", None),
-        "is_superadmin": bool(getattr(current_user, "is_superadmin", False)),
+        "user_id": str(user_id) if user_id is not None else None,
+        "email": getattr(user, "email", None),
+        "display_name": getattr(user, "display_name", None),
+        "is_superadmin": bool(getattr(user, "is_superadmin", False)),
     })
 
 
@@ -9692,3 +9694,751 @@ def delete_discovered_page_rest(page_id: str) -> tuple[Response, int]:
     )
     get_db().delete_discovered_page(page_id)
     return Response(status=204), 204
+
+
+# ---------------------------------------------------------------------------
+# Auth API (§5.13) — login/logout/register/password-reset/profile + admin
+# user CRUD + Microsoft/Google SSO.
+#
+# The legacy /auth/* HTML blueprint stays alive for the browser-form
+# UX (session cookie auth, email-link reset flow, OAuth callbacks
+# pointing at template-rendered redirects). This REST surface mints
+# Bearer tokens via auto_a11y.models.api_token.ApiToken and is the
+# authentication path for SPAs and CLI clients on /api/v1.
+#
+# Tokens are returned **once** at create time; subsequent requests
+# carry ``Authorization: Bearer <raw>``. The require_authenticated
+# helper in auto_a11y.web.api.auth accepts either the session cookie
+# or a Bearer token — see that module's docstring for the merge
+# semantic.
+# ---------------------------------------------------------------------------
+
+from auto_a11y.models.api_token import ApiToken  # noqa: E402
+from auto_a11y.web.api.tokens import (  # noqa: E402
+    extract_bearer,
+    mint_token,
+    revoke_token_by_hash,
+)
+
+
+def _serialize_app_user(user: AppUser) -> dict[str, Any]:
+    """Project an :class:`AppUser` to a JSON-safe dict.
+
+    Hides ``password_hash`` and any internal SSO fields. ``role`` is
+    the enum's string value; the timestamps are ISO 8601.
+    """
+
+    def _iso(dt: Any) -> str | None:
+        return dt.isoformat() if isinstance(dt, datetime) else None
+
+    return {
+        "id": user.id,
+        "email": user.email,
+        "display_name": user.display_name,
+        "role": user.role.value,
+        "is_active": user.is_active,
+        "is_superadmin": bool(user.is_superadmin),
+        "created_at": _iso(user.created_at),
+        "updated_at": _iso(user.updated_at),
+        "last_login": _iso(getattr(user, "last_login", None)),
+    }
+
+
+def _serialize_token(token: ApiToken) -> dict[str, Any]:
+    return {
+        "id": token.id,
+        "user_id": token.user_id,
+        "description": token.description,
+        "created_at": (
+            token.created_at.isoformat() if token.created_at else None
+        ),
+        "last_used_at": (
+            token.last_used_at.isoformat() if token.last_used_at else None
+        ),
+        "expires_at": (
+            token.expires_at.isoformat() if token.expires_at else None
+        ),
+    }
+
+
+@api_bp.route("/auth/login", methods=["POST"])
+@api_endpoint
+def auth_login_rest() -> tuple[Response, int] | Response:
+    """Exchange email + password for an API Bearer token.
+
+    Body:
+
+        {"email": "...", "password": "...", "description": "..."?}
+
+    On success returns:
+
+        {
+          "token":        "a11y_…",          // raw token, returned ONCE
+          "token_record": {id, ...},          // persisted metadata
+          "user":         {id, email, role, ...}
+        }
+
+    On any failure (unknown email, wrong password, deactivated user)
+    returns 401 with an opaque ``invalid_credentials`` message so the
+    caller can't distinguish which case fired. The legacy HTML route
+    records the attempt for rate-limiting; we keep that bookkeeping
+    by calling ``record_login`` on success.
+    """
+    body = _require_dict_body()
+    email = body.get("email")
+    password = body.get("password")
+    if not isinstance(email, str) or not isinstance(password, str):
+        raise UnauthorizedError("invalid credentials")
+    description_raw = body.get("description")
+    description = (
+        description_raw if isinstance(description_raw, str) else None
+    )
+
+    user = get_db().get_app_user_by_email(email)
+    if user is None or not user.is_active or not user.check_password(password):
+        raise UnauthorizedError("invalid credentials")
+
+    user.record_login(success=True)
+    get_db().update_app_user(user)
+
+    assert user.id is not None
+    raw_token, token = mint_token(
+        get_db(), user_id=user.id, description=description,
+    )
+    return jsonify({
+        "token": raw_token,
+        "token_record": _serialize_token(token),
+        "user": _serialize_app_user(user),
+    })
+
+
+@api_bp.route("/auth/logout", methods=["POST"])
+@api_endpoint
+def auth_logout_rest() -> tuple[Response, int] | Response:
+    """Revoke the Bearer token used to authorize the call.
+
+    Idempotent — a request with no token or an already-revoked token
+    still returns 204. The motivation is a "log out" button on the
+    client that should always succeed even if the session expired
+    between the user clicking and the server seeing the request.
+
+    Returns 204. Session-cookie callers still need to hit the legacy
+    ``/auth/logout`` HTML route to clear the cookie — this endpoint
+    only touches the Bearer side.
+    """
+    raw = extract_bearer(request.headers.get("Authorization"))
+    if raw:
+        revoke_token_by_hash(get_db(), raw)
+    return Response(status=204), 204
+
+
+_REGISTER_FIELDS = ("email", "password", "display_name")
+
+
+@api_bp.route("/auth/register", methods=["POST"])
+@api_endpoint
+def auth_register_rest() -> tuple[Response, int] | Response:
+    """Create a new :class:`AppUser` and return a token.
+
+    Body: ``{email, password, display_name?}``.
+
+    Returns 201 with the same envelope as ``/auth/login`` — a freshly
+    minted token plus the user record — so a client can register and
+    immediately make authenticated requests without a second roundtrip.
+
+    Errors:
+
+    - **400** — missing email/password, or email already registered
+      (the dedup check is case-insensitive)
+    """
+    body = _require_dict_body()
+    email = body.get("email")
+    password = body.get("password")
+    if not isinstance(email, str) or not email:
+        raise ValidationError(
+            "email is required",
+            errors=(
+                _FieldError(field="email", code="required", message="required"),
+            ),
+        )
+    if not isinstance(password, str) or len(password) < 6:
+        raise ValidationError(
+            "password must be at least 6 characters",
+            errors=(
+                _FieldError(
+                    field="password", code="too_short",
+                    message="min 6 characters",
+                ),
+            ),
+        )
+
+    display_name_raw = body.get("display_name")
+    display_name = (
+        display_name_raw if isinstance(display_name_raw, str) else None
+    )
+
+    existing = get_db().get_app_user_by_email(email)
+    if existing is not None:
+        raise ValidationError(
+            f"email {email!r} is already registered",
+            errors=(
+                _FieldError(
+                    field="email", code="duplicate",
+                    message="already registered",
+                ),
+            ),
+        )
+
+    new_user = AppUser.create(
+        email=email, password=password, display_name=display_name,
+    )
+    new_user_id = get_db().create_app_user(new_user)
+    persisted = get_db().get_app_user(new_user_id)
+    if persisted is None:
+        raise ConflictError("user failed to persist")
+
+    raw_token, token = mint_token(get_db(), user_id=new_user_id)
+
+    response = jsonify({
+        "token": raw_token,
+        "token_record": _serialize_token(token),
+        "user": _serialize_app_user(persisted),
+    })
+    response.headers["Location"] = f"/api/v1/users/{new_user_id}"
+    return response, 201
+
+
+@api_bp.route("/auth/forgot-password", methods=["POST"])
+@api_endpoint
+def auth_forgot_password_rest() -> tuple[Response, int] | Response:
+    """Request a password-reset email.
+
+    Body: ``{email}``.
+
+    Always returns 202 — even if the email is unknown — so an
+    attacker can't probe which addresses are registered. The legacy
+    HTML route does the same. When the email matches a real user,
+    we generate a signed reset token and dispatch the standard
+    auth.py email template.
+    """
+    from auto_a11y.web.routes.auth import send_password_reset_email
+
+    body = _require_dict_body()
+    email = body.get("email")
+    if isinstance(email, str) and email:
+        user = get_db().get_app_user_by_email(email)
+        if user is not None and user.is_active:
+            try:
+                send_password_reset_email(user)
+            except Exception as exc:  # noqa: BLE001
+                # Don't leak SMTP/template failures to the caller —
+                # the legacy HTML route swallows them with a flash;
+                # we log and return 202 the same.
+                logger.warning(
+                    "password reset email failed for %s: %s", email, exc,
+                )
+    return Response(status=202), 202
+
+
+@api_bp.route("/auth/reset-password", methods=["POST"])
+@api_endpoint
+def auth_reset_password_rest() -> tuple[Response, int] | Response:
+    """Complete a password reset using the token from the email link.
+
+    Body: ``{token, password}``. Token is the signed value emitted
+    by ``generate_reset_token``; ``password`` must be at least 6
+    characters. On success returns 200 with a freshly-minted Bearer
+    token so the caller can land on the app authenticated.
+
+    Errors:
+
+    - **400** — token is invalid/expired, or password too short
+    - **404** — token decodes but the email no longer maps to a user
+      (e.g. the account was deleted between request and completion)
+    """
+    from auto_a11y.web.routes.auth import verify_reset_token
+
+    body = _require_dict_body()
+    token = body.get("token")
+    password = body.get("password")
+    if not isinstance(token, str) or not token:
+        raise ValidationError(
+            "token is required",
+            errors=(
+                _FieldError(field="token", code="required", message="required"),
+            ),
+        )
+    if not isinstance(password, str) or len(password) < 6:
+        raise ValidationError(
+            "password must be at least 6 characters",
+            errors=(
+                _FieldError(
+                    field="password", code="too_short",
+                    message="min 6 characters",
+                ),
+            ),
+        )
+
+    email = verify_reset_token(token)
+    if email is None:
+        raise ValidationError(
+            "reset token is invalid or expired",
+            errors=(
+                _FieldError(
+                    field="token", code="invalid_value",
+                    message="invalid or expired",
+                ),
+            ),
+        )
+
+    user = get_db().get_app_user_by_email(email)
+    if user is None:
+        raise NotFoundError(f"no user found for token {token!r}")
+
+    user.set_password(password)
+    get_db().update_app_user(user)
+
+    assert user.id is not None
+    raw_token, persisted_token = mint_token(get_db(), user_id=user.id)
+    return jsonify({
+        "token": raw_token,
+        "token_record": _serialize_token(persisted_token),
+        "user": _serialize_app_user(user),
+    })
+
+
+@api_bp.route("/auth/me", methods=["GET"])
+@api_endpoint
+def auth_me_rest() -> tuple[Response, int] | Response:
+    """Return the authenticated user — session cookie or Bearer.
+
+    The richer counterpart of ``/users/me`` (which is intentionally
+    minimal). Surfaces ``role``, ``is_active``, ``is_superadmin``,
+    and the user's timestamps so SPAs can render an authenticated
+    profile without a separate `/users/<id>` GET.
+    """
+    user = require_authenticated()
+    user_id = getattr(user, "id", None) or getattr(user, "get_id", lambda: None)()
+    if not isinstance(user_id, str):
+        raise UnauthorizedError("Authentication required")
+    refreshed = get_db().get_app_user(user_id)
+    if refreshed is None:
+        raise NotFoundError(f"user {user_id} not found")
+    return jsonify(_serialize_app_user(refreshed))
+
+
+@api_bp.route("/auth/me", methods=["PATCH"])
+@api_endpoint
+def auth_me_patch_rest() -> tuple[Response, int] | Response:
+    """Partial-update the authenticated user's editable profile fields.
+
+    Body fields (all optional):
+
+    - ``display_name``: string or null
+    - ``password``: string (≥6 chars) — old password not required for
+      Bearer-authenticated calls because the bearer is itself proof
+      of identity; clients should re-prompt the user UI-side if they
+      want a "current password" gate.
+
+    Email and role are deliberately not patchable here — email is the
+    natural key for SSO matching and the role/superadmin flags are
+    admin-only mutations (use ``PATCH /users/<id>``).
+    """
+    user = require_authenticated()
+    user_id = getattr(user, "id", None) or getattr(user, "get_id", lambda: None)()
+    if not isinstance(user_id, str):
+        raise UnauthorizedError("Authentication required")
+
+    fresh = get_db().get_app_user(user_id)
+    if fresh is None:
+        raise NotFoundError(f"user {user_id} not found")
+
+    body = _require_dict_body()
+    if "display_name" in body:
+        dn = body["display_name"]
+        if dn is not None and not isinstance(dn, str):
+            raise ValidationError(
+                "display_name must be a string or null",
+                errors=(
+                    _FieldError(
+                        field="display_name", code="invalid_type",
+                        message="must be string",
+                    ),
+                ),
+            )
+        fresh.display_name = dn if isinstance(dn, str) else None
+    if "password" in body:
+        password = body["password"]
+        if not isinstance(password, str) or len(password) < 6:
+            raise ValidationError(
+                "password must be at least 6 characters",
+                errors=(
+                    _FieldError(
+                        field="password", code="too_short",
+                        message="min 6 characters",
+                    ),
+                ),
+            )
+        fresh.set_password(password)
+
+    if not get_db().update_app_user(fresh):
+        # update_app_user returns False when nothing actually changed —
+        # treat as success since the user's view of the world is correct.
+        pass
+    return jsonify(_serialize_app_user(fresh))
+
+
+# --- Admin user CRUD --------------------------------------------------------
+#
+# The /users/me + /users/search endpoints are LIVE-MAIN. The roadmap §5.13
+# also calls for full user CRUD; the routes below complete that surface.
+# All require superadmin.
+
+
+_VALID_USER_ROLES: frozenset[str] = frozenset(
+    {role.value for role in UserRole}
+)
+
+
+@api_bp.route("/users", methods=["GET"])
+@api_endpoint
+def list_users_rest() -> tuple[Response, int] | Response:
+    """List all :class:`AppUser` accounts. Superadmin-only.
+
+    Returns the full list with no pagination — the legacy admin UI
+    rendered all users on one page; the production database has a
+    small enough user count for that to be fine. Add cursor
+    pagination here later if the user count grows.
+    """
+    require_superadmin()
+    cursor = get_db().app_users.find({}).sort("email", 1)
+    users = [AppUser.from_dict(doc) for doc in cursor]
+    return jsonify({"users": [_serialize_app_user(u) for u in users]})
+
+
+@api_bp.route("/users", methods=["POST"])
+@api_endpoint
+def create_user_rest() -> tuple[Response, int] | Response:
+    """Admin-create a new user. Superadmin-only.
+
+    Body: ``{email, password, display_name?, role?, is_superadmin?}``.
+    ``role`` must be one of the :class:`UserRole` string values;
+    defaults to ``client``. ``is_superadmin`` defaults to false.
+
+    Distinct from :func:`auth_register_rest` because the admin path
+    can set role + superadmin flag at create time and doesn't issue
+    a Bearer token (the admin doesn't need to become the new user).
+    """
+    require_superadmin()
+    body = _require_dict_body()
+    email = body.get("email")
+    password = body.get("password")
+    if not isinstance(email, str) or not email:
+        raise ValidationError(
+            "email is required",
+            errors=(_FieldError(field="email", code="required", message="required"),),
+        )
+    if not isinstance(password, str) or len(password) < 6:
+        raise ValidationError(
+            "password must be at least 6 characters",
+            errors=(
+                _FieldError(
+                    field="password", code="too_short",
+                    message="min 6 characters",
+                ),
+            ),
+        )
+
+    role_raw = body.get("role", UserRole.CLIENT.value)
+    if not isinstance(role_raw, str) or role_raw not in _VALID_USER_ROLES:
+        raise ValidationError(
+            f"role must be one of {sorted(_VALID_USER_ROLES)}",
+            errors=(
+                _FieldError(
+                    field="role", code="invalid_value",
+                    message=f"must be one of {sorted(_VALID_USER_ROLES)}",
+                ),
+            ),
+        )
+    role = UserRole(role_raw)
+
+    display_name_raw = body.get("display_name")
+    display_name = (
+        display_name_raw if isinstance(display_name_raw, str) else None
+    )
+
+    if get_db().get_app_user_by_email(email) is not None:
+        raise ValidationError(
+            f"email {email!r} is already registered",
+            errors=(
+                _FieldError(
+                    field="email", code="duplicate",
+                    message="already registered",
+                ),
+            ),
+        )
+
+    new_user = AppUser.create(
+        email=email, password=password, role=role, display_name=display_name,
+    )
+    if body.get("is_superadmin") is True:
+        new_user.is_superadmin = True
+    new_user_id = get_db().create_app_user(new_user)
+    persisted = get_db().get_app_user(new_user_id)
+    if persisted is None:
+        raise ConflictError("user failed to persist")
+
+    response = jsonify(_serialize_app_user(persisted))
+    response.headers["Location"] = f"/api/v1/users/{new_user_id}"
+    return response, 201
+
+
+@api_bp.route("/users/<user_id>", methods=["GET"])
+@api_endpoint
+def get_user_rest(user_id: str) -> tuple[Response, int] | Response:
+    """Read a single user by id. Superadmin-only."""
+    require_superadmin()
+    user = get_db().get_app_user(user_id)
+    if user is None:
+        raise NotFoundError(f"user {user_id} not found")
+    return jsonify(_serialize_app_user(user))
+
+
+@api_bp.route("/users/<user_id>", methods=["PATCH"])
+@api_endpoint
+def patch_user_rest(user_id: str) -> tuple[Response, int] | Response:
+    """Admin-patch a user. Superadmin-only.
+
+    Body fields (all optional):
+
+    - ``display_name``: str | null
+    - ``password``: string (≥6 chars)
+    - ``role``: one of the :class:`UserRole` values
+    - ``is_active``: bool — deactivate without deleting
+    - ``is_superadmin``: bool — superadmins can grant/revoke this
+      flag on any user including themselves; the API does not gate
+      against self-demotion (the operator can recover by editing the
+      DB directly if they lock themselves out).
+
+    Email is deliberately not editable through this endpoint — email
+    is the natural key for SSO matching and changing it can orphan
+    OAuth-linked sessions.
+    """
+    require_superadmin()
+    user = get_db().get_app_user(user_id)
+    if user is None:
+        raise NotFoundError(f"user {user_id} not found")
+
+    body = _require_dict_body()
+    if "display_name" in body:
+        dn = body["display_name"]
+        if dn is not None and not isinstance(dn, str):
+            raise ValidationError(
+                "display_name must be a string or null",
+                errors=(
+                    _FieldError(
+                        field="display_name", code="invalid_type",
+                        message="must be string",
+                    ),
+                ),
+            )
+        user.display_name = dn if isinstance(dn, str) else None
+    if "password" in body:
+        password = body["password"]
+        if not isinstance(password, str) or len(password) < 6:
+            raise ValidationError(
+                "password must be at least 6 characters",
+                errors=(
+                    _FieldError(
+                        field="password", code="too_short",
+                        message="min 6 characters",
+                    ),
+                ),
+            )
+        user.set_password(password)
+    if "role" in body:
+        role_raw = body["role"]
+        if not isinstance(role_raw, str) or role_raw not in _VALID_USER_ROLES:
+            raise ValidationError(
+                f"role must be one of {sorted(_VALID_USER_ROLES)}",
+                errors=(
+                    _FieldError(
+                        field="role", code="invalid_value",
+                        message="not a known role",
+                    ),
+                ),
+            )
+        user.role = UserRole(role_raw)
+    if "is_active" in body:
+        if not isinstance(body["is_active"], bool):
+            raise ValidationError(
+                "is_active must be a boolean",
+                errors=(
+                    _FieldError(
+                        field="is_active", code="invalid_type",
+                        message="must be bool",
+                    ),
+                ),
+            )
+        user.is_active = body["is_active"]
+    if "is_superadmin" in body:
+        if not isinstance(body["is_superadmin"], bool):
+            raise ValidationError(
+                "is_superadmin must be a boolean",
+                errors=(
+                    _FieldError(
+                        field="is_superadmin", code="invalid_type",
+                        message="must be bool",
+                    ),
+                ),
+            )
+        user.is_superadmin = body["is_superadmin"]
+
+    get_db().update_app_user(user)
+    refreshed = get_db().get_app_user(user_id)
+    if refreshed is None:
+        raise ConflictError(f"user {user_id} disappeared during update")
+    return jsonify(_serialize_app_user(refreshed))
+
+
+@api_bp.route("/users/<user_id>", methods=["DELETE"])
+@api_endpoint
+def delete_user_rest(user_id: str) -> tuple[Response, int]:
+    """Admin-delete a user. Superadmin-only."""
+    require_superadmin()
+    user = get_db().get_app_user(user_id)
+    if user is None:
+        raise NotFoundError(f"user {user_id} not found")
+    get_db().delete_app_user(user_id)
+    return Response(status=204), 204
+
+
+# --- SSO endpoints ----------------------------------------------------------
+#
+# The OAuth state for Microsoft (MSAL flow) and Google (Authlib) lives in
+# the Flask session — the legacy callbacks read it back. To keep that
+# working over the REST surface we expose:
+#
+#   GET  /api/v1/auth/sso/<provider>/url       — start the dance
+#   GET  /api/v1/auth/sso/<provider>/callback  — JSON callback
+#
+# Browsers / SPAs / CLI cookiejars carry the session cookie through the
+# redirect chain, so the state survives. The callback URL pattern matches
+# the legacy /auth/<provider>/callback shape — sites that registered the
+# legacy URL with Microsoft/Google keep working; sites that want the JSON
+# response register the /api/v1 variant separately.
+
+
+_SSO_PROVIDERS = frozenset({"microsoft", "google"})
+
+
+def _sso_enabled(provider: str) -> bool:
+    cfg = get_app_config()
+    if provider == "microsoft":
+        return bool(getattr(cfg, "MICROSOFT_SSO_ENABLED", False))
+    if provider == "google":
+        return bool(getattr(cfg, "GOOGLE_SSO_ENABLED", False))
+    return False
+
+
+@api_bp.route("/auth/sso/<provider>/url", methods=["GET"])
+@api_endpoint
+def auth_sso_url_rest(provider: str) -> tuple[Response, int] | Response:
+    """Build the OAuth authorization URL for the named provider.
+
+    Returns ``{"url": "https://login.microsoftonline.com/…"}`` — the
+    client is responsible for redirecting the user to it (e.g.
+    ``window.location.href = response.url``). The accompanying state
+    (MSAL flow or Google session info) is written to the Flask
+    session so the callback can complete the exchange.
+
+    Errors:
+
+    - **404** — unknown provider or provider not enabled in config
+    """
+    from auto_a11y.web.routes.auth import (
+        get_google_auth_url, get_microsoft_auth_url,
+    )
+
+    if provider not in _SSO_PROVIDERS:
+        raise NotFoundError(f"unknown SSO provider: {provider}")
+    if not _sso_enabled(provider):
+        raise NotFoundError(f"SSO provider {provider} is not enabled")
+
+    cfg = get_app_config()
+    if provider == "microsoft":
+        redirect_uri = (
+            request.url_root.rstrip("/") + cfg.MICROSOFT_REDIRECT_PATH
+        )
+        url = get_microsoft_auth_url(redirect_uri)
+    else:
+        redirect_uri = (
+            request.url_root.rstrip("/") + cfg.GOOGLE_REDIRECT_PATH
+        )
+        url = get_google_auth_url(redirect_uri)
+
+    return jsonify({"provider": provider, "url": url})
+
+
+@api_bp.route("/auth/sso/<provider>/callback", methods=["GET"])
+@api_endpoint
+def auth_sso_callback_rest(
+    provider: str,
+) -> tuple[Response, int] | Response:
+    """Complete the OAuth dance for the named provider; mint a token.
+
+    The provider redirects the user here with ``?code=…`` and
+    matching state. We exchange that for ID-token claims, look up
+    the matching :class:`AppUser` by email (no auto-provisioning —
+    same as the legacy callbacks), and mint a Bearer token.
+
+    Errors:
+
+    - **404** — unknown provider or provider not enabled
+    - **401** — OAuth failure / no matching user / deactivated user
+    """
+    from auto_a11y.web.routes.auth import (
+        complete_google_auth, complete_microsoft_auth, find_sso_user,
+    )
+
+    if provider not in _SSO_PROVIDERS:
+        raise NotFoundError(f"unknown SSO provider: {provider}")
+    if not _sso_enabled(provider):
+        raise NotFoundError(f"SSO provider {provider} is not enabled")
+
+    cfg = get_app_config()
+    if provider == "microsoft":
+        redirect_uri = (
+            request.url_root.rstrip("/") + cfg.MICROSOFT_REDIRECT_PATH
+        )
+        claims = complete_microsoft_auth(request, redirect_uri)
+    else:
+        redirect_uri = (
+            request.url_root.rstrip("/") + cfg.GOOGLE_REDIRECT_PATH
+        )
+        claims = complete_google_auth(request, redirect_uri)
+
+    if claims is None:
+        raise UnauthorizedError("SSO authentication failed")
+
+    user = find_sso_user(claims)
+    if user is None:
+        raise UnauthorizedError(
+            "no account found for the SSO-provided email"
+        )
+    if not user.is_active:
+        raise UnauthorizedError("account is deactivated")
+
+    user.record_login(success=True)
+    get_db().update_app_user(user)
+
+    assert user.id is not None
+    raw_token, token = mint_token(
+        get_db(), user_id=user.id, description=f"sso/{provider}",
+    )
+    return jsonify({
+        "provider": provider,
+        "token": raw_token,
+        "token_record": _serialize_token(token),
+        "user": _serialize_app_user(user),
+    })

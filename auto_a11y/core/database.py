@@ -25,6 +25,7 @@ from auto_a11y.models import (
     TestSchedule, ScheduleRunStatus,
     ShareToken, TokenScope
 )
+from auto_a11y.models.api_token import ApiToken
 from auto_a11y.models.pdf_document import PdfDocument, PdfDocumentStatus
 from auto_a11y.models.permission_group import PermissionGroup
 
@@ -78,6 +79,7 @@ class Database:
         self.pdf_documents: Collection[dict[str, Any]] = self.db.pdf_documents  # Downloaded auditable PDFs
         self.system_settings: Collection[dict[str, Any]] = self.db.system_settings  # Singleton doc with admin-managed config (Drupal, SMTP, SSO, etc.)
         self.idempotency_keys: Collection[dict[str, Any]] = self.db.idempotency_keys  # REST API Idempotency-Key store (TTL index, see auto_a11y/web/api/idempotency.py)
+        self.api_tokens: Collection[dict[str, Any]] = self.db.api_tokens  # Bearer-auth tokens for /api/v1 (see auto_a11y/models/api_token.py)
 
         # Create indexes
         self._create_indexes()
@@ -2926,6 +2928,48 @@ class Database:
             logger.info(f"Updated app user: {user.email}")
             return True
         return False
+
+    # --- API tokens (§5.13) --------------------------------------------------
+
+    def create_api_token(self, token: ApiToken) -> str:
+        """Persist a new :class:`ApiToken` and return the inserted id."""
+        result = self.api_tokens.insert_one(token.to_dict())
+        token.mongo_id = result.inserted_id
+        return str(result.inserted_id)
+
+    def get_api_token_by_hash(self, token_hash: str) -> ApiToken | None:
+        """Look up a token by its SHA-256 hash.
+
+        Returned regardless of expiry / revocation — callers should
+        consult :attr:`ApiToken.is_valid` before trusting it.
+        """
+        doc = self.api_tokens.find_one({"token_hash": token_hash})
+        return ApiToken.from_dict(doc) if doc else None
+
+    def update_api_token(self, token: ApiToken) -> bool:
+        """Persist mutations to ``last_used_at`` / ``revoked_at``."""
+        if not token.mongo_id:
+            return False
+        data = token.to_dict()
+        data.pop("_id", None)
+        result = self.api_tokens.update_one(
+            {"_id": token.mongo_id}, {"$set": data}
+        )
+        return result.matched_count > 0
+
+    def list_api_tokens_for_user(
+        self, user_id: str, *, include_revoked: bool = False,
+    ) -> list[ApiToken]:
+        """Return every token for ``user_id``, newest first.
+
+        ``include_revoked=False`` filters out revoked tokens for the
+        "active sessions" admin view; pass ``True`` for full audit.
+        """
+        query: dict[str, Any] = {"user_id": user_id}
+        if not include_revoked:
+            query["revoked_at"] = None
+        cursor = self.api_tokens.find(query).sort("created_at", -1)
+        return [ApiToken.from_dict(doc) for doc in cursor]
 
     def delete_app_user(self, user_id: str) -> bool:
         """Delete app user"""

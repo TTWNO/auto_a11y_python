@@ -9,6 +9,7 @@ from flask import (
     Blueprint, Response, render_template, request, redirect,
     url_for, flash, jsonify, session
 )
+from auto_a11y.web.api.deprecation import deprecated
 from auto_a11y.web.fluent import ftl
 from auto_a11y.web.typed_app import get_db
 from werkzeug.wrappers import Response as WerkzeugResponse
@@ -574,6 +575,7 @@ def delete_recording(recording_id: str) -> WerkzeugResponse:
 # API endpoints
 
 @recordings_bp.route('/api/list')
+@deprecated(successor="/api/v1/recordings", sunset="2026-09-01")
 def api_list_recordings() -> Response | tuple[Response, int]:
     """API endpoint to list recordings"""
     try:
@@ -605,6 +607,7 @@ def api_list_recordings() -> Response | tuple[Response, int]:
 
 
 @recordings_bp.route('/api/<recording_id>/issues')
+@deprecated(successor="/api/v1/recordings/<recording_id>/issues", sunset="2026-09-01")
 def api_recording_issues(recording_id: str) -> Response | tuple[Response, int]:
     """API endpoint to get issues for a recording"""
     try:
@@ -639,6 +642,7 @@ def api_recording_issues(recording_id: str) -> Response | tuple[Response, int]:
 
 
 @recordings_bp.route('/api/issue/<issue_id>/status', methods=['POST'])
+@deprecated(successor="/api/v1/recording-issues/<issue_id>", sunset="2026-09-01")
 def api_update_issue_status(issue_id: str) -> Response | tuple[Response, int]:
     """API endpoint to update issue status"""
     try:

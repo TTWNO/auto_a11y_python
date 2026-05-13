@@ -12,6 +12,7 @@ from flask_login import login_required, current_user
 from auto_a11y.models import PageStatus, Page, Website, Project
 from auto_a11y.models.app_user import UserRole
 from auto_a11y.pdf.storage import PdfStorage
+from auto_a11y.web.api.deprecation import deprecated
 from auto_a11y.web.routes.auth import get_effective_role
 from auto_a11y.core.database import Database
 from auto_a11y.core.job_manager import JobType, JobStatus
@@ -1410,6 +1411,7 @@ def configure_testing() -> str | tuple[Response, int] | Response:
 
 @testing_bp.route('/api/stats')
 @login_required
+@deprecated(sunset="2026-09-01")  # successor TBD — pending #53 (/api/v1/testing/stats)
 def api_stats() -> tuple[Response, int] | Response:
     """API endpoint for real-time stats (for polling)"""
     db = get_db()
@@ -1502,6 +1504,7 @@ def api_stats() -> tuple[Response, int] | Response:
 
 @testing_bp.route('/api/active-tests')
 @login_required
+@deprecated(sunset="2026-09-01")  # successor TBD — pending #54 (/api/v1/test-runs?status=active)
 def api_active_tests() -> Response:
     """API endpoint for active test progress (for polling)"""
     active_jobs: list[dict[str, Any]] = []
@@ -1545,6 +1548,7 @@ def api_active_tests() -> Response:
 
 @testing_bp.route('/api/run-tests', methods=['POST'])
 @login_required
+@deprecated(successor="/api/v1/test-runs", sunset="2026-09-01")
 def api_run_tests() -> tuple[Response, int] | Response:
     """API endpoint to start testing (enhanced version)"""
     data: dict[str, Any] = request.get_json() or {}
@@ -1662,6 +1666,7 @@ def api_run_tests() -> tuple[Response, int] | Response:
 
 @testing_bp.route('/api/trends')
 @login_required
+@deprecated(sunset="2026-09-01")  # successor TBD — pending #53 (/api/v1/test-runs/trends)
 def api_trends() -> tuple[Response, int] | Response:
     """API endpoint for trend data"""
     db = get_db()
@@ -1691,6 +1696,7 @@ def api_trends() -> tuple[Response, int] | Response:
 
 @testing_bp.route('/api/trends/detailed')
 @login_required
+@deprecated(sunset="2026-09-01")  # successor TBD — pending #54 (/api/v1/test-runs/trends/detailed)
 def api_trends_detailed() -> tuple[Response, int] | Response:
     """API endpoint for detailed trend data with breakdowns and statistics"""
     db = get_db()
@@ -1783,6 +1789,7 @@ def api_trends_detailed() -> tuple[Response, int] | Response:
 
 @testing_bp.route('/api/trends/compare')
 @login_required
+@deprecated(sunset="2026-09-01")  # successor TBD — pending #54 (/api/v1/test-runs/trends/compare)
 def api_trends_compare() -> tuple[Response, int] | Response:
     """API endpoint for comparing time periods"""
     db = get_db()
@@ -1895,6 +1902,7 @@ def api_trends_compare() -> tuple[Response, int] | Response:
 
 @testing_bp.route('/api/trends/progress')
 @login_required
+@deprecated(sunset="2026-09-01")  # successor TBD — pending #53 (/api/v1/test-runs/trends/progress)
 def api_trends_progress() -> tuple[Response, int] | Response:
     """API endpoint for progress/compliance metrics"""
     db = get_db()
@@ -1966,6 +1974,7 @@ def trends_page() -> str:
 
 @testing_bp.route('/api/websites/<project_id>')
 @login_required
+@deprecated(successor="/api/v1/projects/<project_id>/websites", sunset="2026-09-01")
 def api_project_websites(project_id: str) -> tuple[Response, int] | Response:
     """API endpoint to get websites for a project (for dynamic dropdown)"""
     db = get_db()

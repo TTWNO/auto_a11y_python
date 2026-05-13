@@ -9,6 +9,7 @@ from typing import Any
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
 from werkzeug.wrappers import Response
+from auto_a11y.web.api.deprecation import deprecated
 from auto_a11y.web.fluent import ftl, lazy_ftl, get_current_locale as get_locale
 from auto_a11y.web.typed_app import get_db, get_app_config, get_test_config
 from flask_login import login_required
@@ -50,6 +51,7 @@ projects_bp = Blueprint('projects', __name__)
 
 @projects_bp.route('/api/list')
 @login_required
+@deprecated(successor="/api/v1/projects", sunset="2026-09-01")
 def api_list_projects() -> Response | tuple[Response, int]:
     """API endpoint to list projects the current user can access"""
     try:
@@ -75,6 +77,7 @@ def api_list_projects() -> Response | tuple[Response, int]:
 @projects_bp.route('/api/<project_id>/websites')
 @login_required
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
+@deprecated(successor="/api/v1/projects/<project_id>/websites", sunset="2026-09-01")
 def api_project_websites(project_id: str) -> Response | tuple[Response, int]:
     """API endpoint to list websites in a project"""
     try:
@@ -95,6 +98,7 @@ def api_project_websites(project_id: str) -> Response | tuple[Response, int]:
 
 
 @projects_bp.route('/api/test-details/<test_id>')
+@deprecated(successor="/api/v1/test-results/<test_id>", sunset="2026-09-01")
 def api_test_details(test_id: str) -> Response | tuple[Response, int]:
     """API endpoint to get detailed information about a test"""
     try:
@@ -154,6 +158,7 @@ def api_test_details(test_id: str) -> Response | tuple[Response, int]:
 
 
 @projects_bp.route('/api/test-details/<test_id>/production-ready', methods=['POST'])
+@deprecated(sunset="2026-09-01")  # successor TBD — pending #51 (PATCH /api/v1/issues/<code>)
 def api_set_test_production_ready(test_id: str) -> Response | tuple[Response, int]:
     """API endpoint to toggle production_ready flag for a test"""
     try:
@@ -199,6 +204,7 @@ def api_set_test_production_ready(test_id: str) -> Response | tuple[Response, in
 
 
 @projects_bp.route('/api/issue-documentation-stats')
+@deprecated(sunset="2026-09-01")  # successor TBD — pending #51 (/api/v1/issues/documentation-stats)
 def api_issue_documentation_stats() -> Response | tuple[Response, int]:
     """API endpoint to get statistics about issue documentation status"""
     try:
@@ -936,6 +942,7 @@ def generate_project_report(project_id: str) -> Response:
 
 
 @projects_bp.route('/api/<project_id>/users')
+@deprecated(successor="/api/v1/projects/<project_id>/users", sunset="2026-09-01")
 def api_get_project_users(project_id: str) -> Response | tuple[Response, int]:
     """API endpoint to get project users"""
     try:
@@ -958,6 +965,7 @@ def api_get_project_users(project_id: str) -> Response | tuple[Response, int]:
 
 
 @projects_bp.route('/api/<project_id>/details')
+@deprecated(successor="/api/v1/projects/<project_id>", sunset="2026-09-01")
 def api_get_project(project_id: str) -> Response | tuple[Response, int]:
     """API endpoint to get project details including testers and supervisors"""
     try:
@@ -982,6 +990,7 @@ def api_get_project(project_id: str) -> Response | tuple[Response, int]:
 
 
 @projects_bp.route('/api/<project_id>/discovered-pages')
+@deprecated(successor="/api/v1/projects/<project_id>/discovered-pages", sunset="2026-09-01")
 def api_get_discovered_pages(project_id: str) -> Response | tuple[Response, int]:
     """API endpoint to get discovered pages for a project"""
     try:

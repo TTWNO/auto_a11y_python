@@ -23,6 +23,10 @@ from auto_a11y.web.api.auth import (
     require_superadmin,
 )
 from auto_a11y.web.api.decorators import api_endpoint
+from auto_a11y.web.api.deprecation import (
+    apply_deprecation_headers,
+    deprecated,
+)
 from auto_a11y.web.api.errors import (
     ApiError,
     ConflictError,
@@ -49,7 +53,9 @@ __all__ = [
     "UnauthorizedError",
     "ValidationError",
     "api_endpoint",
+    "apply_deprecation_headers",
     "created",
+    "deprecated",
     "json_response",
     "no_content",
     "paginate",

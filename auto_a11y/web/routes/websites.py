@@ -9,6 +9,7 @@ from typing import Any
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session
 from werkzeug.wrappers import Response
+from auto_a11y.web.api.deprecation import deprecated
 from auto_a11y.web.fluent import ftl
 from auto_a11y.web.typed_app import get_db, get_app_config, get_pdf_runner
 from auto_a11y.models import Page, PageStatus
@@ -22,6 +23,7 @@ websites_bp = Blueprint('websites', __name__)
 
 
 @websites_bp.route('/api/list')
+@deprecated(sunset="2026-09-01")  # successor TBD — pending #54 (/api/v1/websites?project_id=)
 def api_list_websites() -> Response | tuple[Response, int]:
     """API endpoint to list all websites"""
     try:

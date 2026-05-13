@@ -8,7 +8,14 @@ from typing import Any, cast
 
 from flask import Blueprint, Response, jsonify, request
 from flask_login import current_user
-from auto_a11y.models import Project, Page, ProjectStatus, PageStatus
+from auto_a11y.models import (
+    Page,
+    PageStatus,
+    Project,
+    ProjectStatus,
+    ScriptStateDefinition,
+    TestStateMatrix,
+)
 from auto_a11y.models.app_user import UserRole
 from auto_a11y.pdf.storage import PdfStorage
 from auto_a11y.web.routes.auth import project_role_required
@@ -2222,6 +2229,428 @@ def delete_page_resource(page_id: str) -> tuple[Response, int]:
     )
     get_db().delete_page(page_id)
     return Response(status=204), 204
+
+
+# ---------------------------------------------------------------------------
+# Page sub-resources (REST shape — §5.3 of docs/REST_API_ROADMAP.md).
+#
+# Replaces the legacy HTML routes on `pages_bp`:
+#   - GET /pages/<id>/violations  → just redirected to the page view
+#   - GET/POST /pages/<id>/matrix → server-rendered form
+#   - POST /pages/<id>/cancel-test → ad-hoc `success` envelope
+#
+# The HTML routes stay alive until the issue #21 frontend migration —
+# they keep their old shapes; this surface returns RFC 7807 problems.
+# ---------------------------------------------------------------------------
+
+
+@api_bp.route("/pages/<page_id>/violations", methods=["GET"])
+@api_endpoint
+def get_page_violations(page_id: str) -> tuple[Response, int] | Response:
+    """Return the latest test result's issue buckets for a page.
+
+    Unlike :func:`get_page_test_results` (which lists every historical
+    result), this endpoint flattens the *latest* result down to just the
+    issue arrays a UI needs to render a violations table:
+
+    - ``violations`` — high-severity issues (the things that fail WCAG)
+    - ``warnings`` — medium-severity issues
+    - ``info`` — informational notes
+    - ``discovery`` — discovery items (elements that need a human review)
+    - ``ai_findings`` — AI-detected issues, when Claude analysis ran
+
+    Each issue is serialized via :meth:`Violation.to_dict` /
+    :meth:`AIFinding.to_dict` so the shape matches what
+    ``/test-results/<id>`` already returns inside its ``violations`` etc.
+    fields.
+
+    When the page has never been tested, the buckets are all empty and
+    ``test_result_id`` / ``tested_at`` are ``null`` — clients can still
+    render an empty-state table without a second request.
+    """
+    page = get_db().get_page(page_id)
+    if page is None:
+        raise NotFoundError(f"page {page_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, website_id=page.website_id
+    )
+
+    result = get_db().get_latest_test_result(page_id)
+
+    def _iso(dt: datetime | None) -> str | None:
+        return dt.isoformat() if dt is not None else None
+
+    if result is None:
+        return jsonify({
+            "page_id": page_id,
+            "test_result_id": None,
+            "tested_at": None,
+            "violations": [],
+            "warnings": [],
+            "info": [],
+            "discovery": [],
+            "ai_findings": [],
+        })
+
+    return jsonify({
+        "page_id": page_id,
+        "test_result_id": result.id,
+        "tested_at": _iso(result.test_date),
+        "violations": [v.to_dict() for v in result.violations],
+        "warnings": [v.to_dict() for v in result.warnings],
+        "info": [v.to_dict() for v in result.info],
+        "discovery": [v.to_dict() for v in result.discovery],
+        "ai_findings": [f.to_dict() for f in result.ai_findings],
+    })
+
+
+def _serialize_test_state_matrix(
+    matrix: TestStateMatrix, *, page_id: str, website_id: str
+) -> dict[str, Any]:
+    """Project a :class:`TestStateMatrix` to a JSON-safe dict.
+
+    Datetimes emit as ISO 8601; the legacy ``matrix`` (row/column
+    boolean grid) is omitted because the canonical storage is
+    ``combinations`` — clients reading this endpoint should never need
+    to know the legacy shape. ``id`` is ``None`` for an unsaved default
+    matrix (when no row existed yet for this page).
+    """
+
+    def _iso(dt: datetime | None) -> str | None:
+        return dt.isoformat() if dt is not None else None
+
+    return {
+        "id": matrix.id,
+        "page_id": page_id,
+        "website_id": website_id,
+        "scripts": [s.to_dict() for s in matrix.scripts],
+        "combinations": list(matrix.combinations),
+        "created_date": _iso(matrix.created_date),
+        "last_modified": _iso(matrix.last_modified),
+        "created_by": matrix.created_by,
+    }
+
+
+@api_bp.route("/pages/<page_id>/matrix", methods=["GET"])
+@api_endpoint
+def get_page_matrix(page_id: str) -> tuple[Response, int] | Response:
+    """Read the test-state matrix for a page.
+
+    A page can have at most one matrix. If none has been saved yet, the
+    handler returns a *default* in-memory matrix derived from the page's
+    currently-enabled multi-state scripts, with sequential combinations
+    initialised the same way the legacy HTML form would render them.
+    ``id`` is ``null`` in that case so clients can tell the matrix has
+    not yet been persisted.
+    """
+    page = get_db().get_page(page_id)
+    if page is None:
+        raise NotFoundError(f"page {page_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, website_id=page.website_id
+    )
+
+    matrix = get_db().get_test_state_matrix_by_page(page_id)
+    if matrix is None:
+        matrix = TestStateMatrix(page_id=page_id, website_id=page.website_id)
+        scripts = get_db().get_scripts_for_page_v2(
+            page_id=page_id, website_id=page.website_id, enabled_only=False
+        )
+        testable_scripts = [
+            s for s in scripts
+            if s.enabled and (s.test_before_execution or s.test_after_execution)
+        ]
+        for script in testable_scripts:
+            if not script.id:
+                continue
+            matrix.scripts.append(ScriptStateDefinition(
+                script_id=script.id,
+                script_name=script.name,
+                test_before=script.test_before_execution,
+                test_after=script.test_after_execution,
+                execution_order=len(matrix.scripts),
+            ))
+        if matrix.scripts:
+            matrix.initialize_matrix()
+
+    return jsonify(_serialize_test_state_matrix(
+        matrix, page_id=page_id, website_id=page.website_id
+    ))
+
+
+def _parse_matrix_combinations(raw: Any, *, field: str) -> list[dict[str, str]]:
+    if not isinstance(raw, list):
+        raise ValidationError(
+            f"{field} must be a list of state combinations",
+            errors=(
+                _FieldError(field=field, code="invalid_type", message="must be list"),
+            ),
+        )
+    raw_list = _iter_to_any_list(raw)
+    parsed: list[dict[str, str]] = []
+    for idx, item in enumerate(raw_list):
+        if not isinstance(item, dict):
+            raise ValidationError(
+                f"{field}[{idx}] must be an object mapping script_id → state",
+                errors=(
+                    _FieldError(
+                        field=f"{field}[{idx}]",
+                        code="invalid_type",
+                        message="must be object",
+                    ),
+                ),
+            )
+        item_dict = cast(dict[str, Any], item)
+        normalized: dict[str, str] = {}
+        for sid, state in item_dict.items():
+            if not isinstance(state, str):
+                raise ValidationError(
+                    f"{field}[{idx}].{sid} must be a string",
+                    errors=(
+                        _FieldError(
+                            field=f"{field}[{idx}].{sid}",
+                            code="invalid_type",
+                            message="must be string",
+                        ),
+                    ),
+                )
+            if state not in ("before", "after", "none"):
+                raise ValidationError(
+                    f"{field}[{idx}].{sid} must be one of before|after|none",
+                    errors=(
+                        _FieldError(
+                            field=f"{field}[{idx}].{sid}",
+                            code="invalid_value",
+                            message="must be before|after|none",
+                        ),
+                    ),
+                )
+            normalized[sid] = state
+        parsed.append(normalized)
+    return parsed
+
+
+def _parse_script_order(raw: Any, *, field: str) -> dict[str, int]:
+    if not isinstance(raw, list):
+        raise ValidationError(
+            f"{field} must be a list of {{script_id, execution_order}} objects",
+            errors=(
+                _FieldError(field=field, code="invalid_type", message="must be list"),
+            ),
+        )
+    raw_list = _iter_to_any_list(raw)
+    order_map: dict[str, int] = {}
+    for idx, item in enumerate(raw_list):
+        if not isinstance(item, dict):
+            raise ValidationError(
+                f"{field}[{idx}] must be an object",
+                errors=(
+                    _FieldError(
+                        field=f"{field}[{idx}]",
+                        code="invalid_type",
+                        message="must be object",
+                    ),
+                ),
+            )
+        item_dict = cast(dict[str, Any], item)
+        sid = item_dict.get("script_id")
+        order = item_dict.get("execution_order")
+        if not isinstance(sid, str):
+            raise ValidationError(
+                f"{field}[{idx}].script_id must be a string",
+                errors=(
+                    _FieldError(
+                        field=f"{field}[{idx}].script_id",
+                        code="invalid_type",
+                        message="must be string",
+                    ),
+                ),
+            )
+        if not isinstance(order, int) or isinstance(order, bool):
+            raise ValidationError(
+                f"{field}[{idx}].execution_order must be an integer",
+                errors=(
+                    _FieldError(
+                        field=f"{field}[{idx}].execution_order",
+                        code="invalid_type",
+                        message="must be int",
+                    ),
+                ),
+            )
+        order_map[sid] = order
+    return order_map
+
+
+@api_bp.route("/pages/<page_id>/matrix", methods=["PUT"])
+@api_endpoint
+def replace_page_matrix(page_id: str) -> tuple[Response, int] | Response:
+    """Full replace of the page's test-state matrix.
+
+    Body shape:
+
+        {
+          "combinations": [
+            {"script_id_1": "before", "script_id_2": "before"},
+            {"script_id_1": "after",  "script_id_2": "after"},
+            ...
+          ],
+          "script_order": [          // optional
+            {"script_id": "...", "execution_order": 0},
+            ...
+          ]
+        }
+
+    The ``scripts`` array on the matrix is always rebuilt from the page's
+    currently-enabled multi-state scripts at save time — clients don't
+    have to (and can't) submit it. This matches the legacy HTML form's
+    POST handler, which re-derives ``scripts`` from
+    :meth:`Database.get_scripts_for_page_v2` on every save.
+
+    ``combinations`` is **required**; ``script_order`` is optional and
+    only repositions scripts already present on the page.
+
+    On success, returns ``200`` with the persisted matrix. The verb is
+    PUT because the matrix is an idempotent 1:1 sub-resource of the
+    page — there is no PATCH and no DELETE; clearing it means PUTing an
+    empty ``combinations`` array.
+    """
+    page = get_db().get_page(page_id)
+    if page is None:
+        raise NotFoundError(f"page {page_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, website_id=page.website_id
+    )
+
+    body = _require_dict_body()
+    if "combinations" not in body:
+        raise ValidationError(
+            "combinations is required",
+            errors=(
+                _FieldError(
+                    field="combinations", code="required", message="required"
+                ),
+            ),
+        )
+    combinations = _parse_matrix_combinations(
+        body["combinations"], field="combinations"
+    )
+    order_map = (
+        _parse_script_order(body["script_order"], field="script_order")
+        if "script_order" in body
+        else {}
+    )
+
+    scripts = get_db().get_scripts_for_page_v2(
+        page_id=page_id, website_id=page.website_id, enabled_only=False
+    )
+    testable_scripts = [
+        s for s in scripts
+        if s.enabled and (s.test_before_execution or s.test_after_execution)
+    ]
+
+    matrix = get_db().get_test_state_matrix_by_page(page_id)
+    if matrix is None:
+        matrix = TestStateMatrix(page_id=page_id, website_id=page.website_id)
+
+    matrix.scripts = []
+    for idx, script in enumerate(testable_scripts):
+        if not script.id:
+            continue
+        matrix.scripts.append(ScriptStateDefinition(
+            script_id=script.id,
+            script_name=script.name,
+            test_before=script.test_before_execution,
+            test_after=script.test_after_execution,
+            execution_order=order_map.get(script.id, idx),
+        ))
+    matrix.scripts.sort(key=lambda s: s.execution_order)
+    matrix.combinations = combinations
+    matrix.matrix = {}
+
+    if matrix.mongo_id:
+        get_db().update_test_state_matrix(matrix)
+    else:
+        new_id = get_db().create_test_state_matrix(matrix)
+        refreshed = get_db().get_test_state_matrix(new_id)
+        if refreshed is None:
+            raise ConflictError("matrix failed to persist")
+        matrix = refreshed
+
+    return jsonify(_serialize_test_state_matrix(
+        matrix, page_id=page_id, website_id=page.website_id
+    ))
+
+
+@api_bp.route("/pages/<page_id>/test-runs/latest/cancel", methods=["POST"])
+@api_endpoint
+def cancel_page_test_run_latest(page_id: str) -> tuple[Response, int] | Response:
+    """Request cancellation of the page's in-flight test run.
+
+    Returns 202 because cancellation is asynchronous — the test worker
+    polls the task's cancellation flag and exits at its next checkpoint.
+    The page status flips to ``DISCOVERED`` (never tested) or ``TESTED``
+    (has prior results) immediately so the UI can update without
+    waiting for the worker to actually unwind.
+
+    Errors:
+
+    - **404** — page does not exist
+    - **409** — page is not in QUEUED/TESTING (legacy /cancel-test
+      returned 200 with ``{success: false}``; the REST surface uses 409
+      so callers can branch on status_code alone)
+
+    Unlike :func:`cancel_job_rest`, this endpoint targets the task
+    runner directly: single-page tests run as bare ``test_page_<id>_*``
+    tasks without a JobManager record. The lookup mirrors the legacy
+    ``/cancel-test`` handler.
+    """
+    from auto_a11y.core.task_runner import task_runner
+
+    page = get_db().get_page(page_id)
+    if page is None:
+        raise NotFoundError(f"page {page_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, website_id=page.website_id
+    )
+
+    if page.status not in (PageStatus.QUEUED, PageStatus.TESTING):
+        raise ConflictError(
+            f"page {page_id} is not being tested (current status: {page.status.value})"
+        )
+
+    task_pattern = f"test_page_{page_id}_"
+    target_task_id: str | None = None
+    for active_task_id in task_runner.get_active_tasks():
+        if active_task_id.startswith(task_pattern):
+            target_task_id = active_task_id
+            break
+
+    cancelled = False
+    if target_task_id is not None:
+        try:
+            cancelled = task_runner.cancel_task(target_task_id)
+        except Exception as exc:
+            logger.error(f"Error cancelling page task {target_task_id}: {exc}")
+
+    # Even if the task was already past the cancel checkpoint or had
+    # never been spawned (status set to QUEUED by an earlier failed
+    # path), flip the page back to a non-running state so the UI
+    # doesn't lock up on a phantom in-flight run.
+    if cancelled or page.status == PageStatus.QUEUED:
+        test_history = get_db().get_test_results(page_id=page_id, limit=1)
+        page.status = PageStatus.TESTED if test_history else PageStatus.DISCOVERED
+        get_db().update_page(page)
+
+    refreshed = get_db().get_page(page_id)
+    if refreshed is None:
+        raise ConflictError(f"page {page_id} disappeared after cancel")
+
+    return jsonify({
+        "page_id": page_id,
+        "task_id": target_task_id,
+        "cancellation_requested": cancelled,
+        "status": refreshed.status.value,
+    }), 202
 
 
 # ---------------------------------------------------------------------------

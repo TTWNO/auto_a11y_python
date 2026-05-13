@@ -286,3 +286,11 @@ def test_websites_legacy_routes_carry_decorator() -> None:
     api_route_count = source.count("@websites_bp.route('/api/")
     decorator_count = source.count("@deprecated(")
     assert decorator_count >= api_route_count
+
+
+def test_members_legacy_routes_carry_decorator() -> None:
+    import auto_a11y.web.routes.members as members_mod
+    source = open(members_mod.__file__, "r", encoding="utf-8").read()
+    api_route_count = source.count("@members_bp.route('/members/api/")
+    decorator_count = source.count("@deprecated(")
+    assert decorator_count >= api_route_count

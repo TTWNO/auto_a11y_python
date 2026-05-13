@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from flask import Blueprint, Response, request, jsonify
+from auto_a11y.web.api.deprecation import deprecated
 from auto_a11y.web.fluent import ftl
 from auto_a11y.web.typed_app import get_db
 from flask_login import current_user
@@ -109,6 +110,7 @@ def remove_project_member(project_id: str, user_id: str) -> Response | tuple[Res
 
 
 @members_bp.route('/members/api/search-users', methods=['GET'])
+@deprecated(successor="/api/v1/users/search", sunset="2026-09-01")
 def search_users() -> Response:
     """Search app users by email or display name for member autocomplete."""
     q = request.args.get('q', '').strip()

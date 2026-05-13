@@ -6131,6 +6131,318 @@ def cancel_latest_pdf_audit(
 
 
 # ---------------------------------------------------------------------------
+# PDF artefact serving — §5.9 of REST_API_ROADMAP.md.
+#
+# Five binary/JSON read endpoints that close out the §5.9 cluster:
+# stored PDF bytes, extracted images, derived export reports
+# (Markdown/HTML), the cached pdfMax issue-map JSON, and the cached
+# pdfMax accessibility markdown report. The legacy ``pdf_bp`` routes
+# still serve the admin frontend until the issue #21 migration; these
+# REST equivalents emit RFC 7807 errors instead of flash + redirect
+# and use the canonical /pdf-documents path.
+# ---------------------------------------------------------------------------
+
+
+def _resolve_pdf_or_404(pdf_id: str) -> PdfDocument:
+    pdf = get_db().get_pdf_document(pdf_id)
+    if pdf is None:
+        raise NotFoundError(f"pdf document {pdf_id} not found")
+    return pdf
+
+
+@api_bp.route("/pdf-documents/<pdf_id>/file", methods=["GET"])
+@api_endpoint
+def get_pdf_file(pdf_id: str) -> Response | tuple[Response, int]:
+    """Stream the stored PDF bytes.
+
+    Returns ``application/pdf`` with ``Content-Disposition: inline`` so
+    clients can embed the file in an ``<iframe>`` or render with a
+    PDF.js viewer. ``X-Frame-Options: SAMEORIGIN`` and a same-origin
+    CSP mirror the legacy route's iframe-friendly defaults.
+
+    ``download_name`` falls back to ``document.pdf`` when the source
+    record has no ``original_filename``; for uploads we keep the
+    user-supplied filename so the browser's "Save As" prefill is
+    useful.
+    """
+    from flask import send_file
+
+    pdf = _resolve_pdf_or_404(pdf_id)
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT,
+        project_id=pdf.project_id,
+    )
+
+    pdf_path = _pdf_storage().local_path(pdf)
+    if not pdf_path.exists():
+        raise NotFoundError(f"pdf document {pdf_id} file no longer on disk")
+
+    download_name = pdf.original_filename or "document.pdf"
+    response = send_file(
+        str(pdf_path),
+        mimetype="application/pdf",
+        as_attachment=False,
+        download_name=download_name,
+    )
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    # Explicit CSP override so the global after_request hook (if any)
+    # leaves this iframe-embed surface alone. Same value as the legacy
+    # /pdfs/<id>/file route.
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; frame-ancestors 'self'"
+    )
+    response.headers["Content-Disposition"] = (
+        f'inline; filename="{download_name}"'
+    )
+    return response
+
+
+@api_bp.route(
+    "/pdf-documents/<pdf_id>/images/<image_name>", methods=["GET"]
+)
+@api_endpoint
+def get_pdf_image(
+    pdf_id: str, image_name: str,
+) -> Response | tuple[Response, int]:
+    """Stream one extracted image (e.g. ``page_001.png``).
+
+    The audit pipeline rasterises each PDF page into the document's
+    ``images_dir_for`` directory; this endpoint serves any of those
+    bytes back. Path traversal guard rejects ``..``, ``/``, and ``\\``
+    in the image name so the URL cannot escape the per-document image
+    directory. Any extracted image is returned as ``image/png`` — the
+    pipeline only writes PNGs.
+    """
+    from flask import send_file
+
+    if ".." in image_name or "/" in image_name or "\\" in image_name:
+        raise ValidationError(
+            "image_name must not traverse directories",
+            errors=(
+                _FieldError(
+                    field="image_name", code="invalid_value",
+                    message="must not contain '..' or path separators",
+                ),
+            ),
+        )
+
+    pdf = _resolve_pdf_or_404(pdf_id)
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT,
+        project_id=pdf.project_id,
+    )
+
+    image_path = _pdf_storage().images_dir_for(pdf) / image_name
+    if not image_path.exists():
+        raise NotFoundError(
+            f"image {image_name} not found for pdf document {pdf_id}"
+        )
+
+    return send_file(str(image_path), mimetype="image/png")
+
+
+_PDF_EXPORT_FORMATS: frozenset[str] = frozenset({"md", "html"})
+_PDF_EXPORT_LOCALES: frozenset[str] = frozenset({"en", "fr"})
+
+
+@api_bp.route(
+    "/pdf-documents/<pdf_id>/export", methods=["GET"]
+)
+@api_endpoint
+def export_pdf_audit(pdf_id: str) -> Response | tuple[Response, int]:
+    """Stream a self-contained audit report (Markdown or HTML).
+
+    Replaces the legacy ``/pdfs/<id>/export.<fmt>`` URL with a
+    ``?format=<fmt>`` query string per the roadmap.
+
+    Query:
+
+    - ``format=md|html`` — required
+    - ``locale=en|fr``   — optional, default ``en``; unrecognised
+      values silently fall back to ``en``
+
+    The report body is derived purely from the persisted
+    :class:`TestResult` referenced by ``pdf.last_audit_result_id``, so
+    an in-flight audit returns the *previous* report, not a partial
+    one. When the document has never been audited the export is still
+    served but contains the "no findings" stub the report builders
+    emit for an empty result — clients can detect this via the empty
+    ``finding`` list in the body rather than a separate 404 branch.
+
+    ``Cache-Control: private, no-cache`` matches the legacy route —
+    derived content is safe to cache locally but a shared cache could
+    leak between users.
+    """
+    fmt_raw = request.args.get("format")
+    if not isinstance(fmt_raw, str) or fmt_raw not in _PDF_EXPORT_FORMATS:
+        raise ValidationError(
+            "format must be 'md' or 'html'",
+            errors=(
+                _FieldError(
+                    field="format", code="invalid_value",
+                    message="must be 'md' or 'html'",
+                ),
+            ),
+        )
+
+    pdf = _resolve_pdf_or_404(pdf_id)
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT,
+        project_id=pdf.project_id,
+    )
+
+    test_result = None
+    if pdf.last_audit_result_id:
+        test_result = get_db().get_test_result(pdf.last_audit_result_id)
+
+    locale = request.args.get("locale", "en")
+    if locale not in _PDF_EXPORT_LOCALES:
+        locale = "en"
+
+    # Local import — keeps Fluent-aware report_export off the import
+    # graph for every PDF read until an export is actually requested.
+    from auto_a11y.pdf.report_export import (
+        build_html_report,
+        build_markdown_report,
+    )
+
+    base_name = (
+        pdf.original_filename.removesuffix(".pdf")
+        if pdf.original_filename
+        and pdf.original_filename.lower().endswith(".pdf")
+        else (pdf.original_filename or "audit-report")
+    )
+
+    if fmt_raw == "md":
+        body = build_markdown_report(pdf, test_result, locale=locale)
+        mimetype = "text/markdown; charset=utf-8"
+        filename = f"{base_name}_accessibility_report.md"
+    else:
+        body = build_html_report(pdf, test_result, locale=locale)
+        mimetype = "text/html; charset=utf-8"
+        filename = f"{base_name}_accessibility_report.html"
+
+    response = Response(body.encode("utf-8"), mimetype=mimetype)
+    response.headers["Content-Disposition"] = (
+        f'attachment; filename="{filename}"'
+    )
+    response.headers["Cache-Control"] = "private, no-cache"
+    return response
+
+
+@api_bp.route(
+    "/pdf-documents/<pdf_id>/issue-map", methods=["GET"]
+)
+@api_endpoint
+def get_pdf_issue_map(pdf_id: str) -> Response | tuple[Response, int]:
+    """Serve the cached pdfMax ``*_issue_map.json`` for viewer overlays.
+
+    The pdfMax subprocess writes one issue-map JSON per audit run
+    alongside the Markdown report. Viewer UIs fetch this to position
+    issue overlays on each page and highlight the matching sidebar
+    card.
+
+    Returns 404 (with a Problem-Details body) when:
+
+    - the document doesn't exist
+    - the document's status isn't ``AUDITED`` (clearing test results
+      flips status back to PENDING but the cache files may linger;
+      gating on status avoids leaking stale overlays into a fresh UI)
+    - no ``pdfmax-report`` cache directory exists
+    - no ``*_issue_map.json`` file is inside it
+
+    ``Cache-Control: private, max-age=60`` matches the legacy route —
+    cheap to re-render within a session, never via a shared cache.
+    """
+    from flask import send_file
+
+    pdf = _resolve_pdf_or_404(pdf_id)
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT,
+        project_id=pdf.project_id,
+    )
+
+    if pdf.status is not PdfDocumentStatus.AUDITED:
+        raise NotFoundError(
+            f"pdf document {pdf_id} has no current audit issue-map"
+        )
+
+    pdf_path = _pdf_storage().local_path(pdf)
+    cache_dir = pdf_path.parent / "pdfmax-report"
+    if not cache_dir.is_dir():
+        raise NotFoundError(
+            f"pdf document {pdf_id} issue-map cache not present"
+        )
+
+    candidates = sorted(cache_dir.glob("*_issue_map.json"))
+    if not candidates:
+        raise NotFoundError(
+            f"pdf document {pdf_id} issue-map cache file missing"
+        )
+
+    response = send_file(str(candidates[0]), mimetype="application/json")
+    response.headers["Cache-Control"] = "private, max-age=60"
+    return response
+
+
+@api_bp.route(
+    "/pdf-documents/<pdf_id>/reports/pdfmax", methods=["GET"]
+)
+@api_endpoint
+def get_pdfmax_report(pdf_id: str) -> Response | tuple[Response, int]:
+    """Return the cached pdfMax accessibility Markdown report.
+
+    Pure cache lookup — the pdfMax subprocess only runs as part of
+    the audit job (:class:`PdfAuditJob`), so this endpoint never
+    blocks on the 10-30s audit pipeline.
+
+    Status is the gate: only ``AUDITED`` documents return content.
+    PENDING / FETCHING / AUDITING / FETCH_FAILED / AUDIT_FAILED all
+    return 404 even when stale cache files happen to exist on disk —
+    keeps the response semantically aligned with what the audit
+    pipeline considers "current".
+
+    Body is ``text/markdown; charset=utf-8`` (the raw report text).
+    HTML rendering of the markdown is the legacy ``pdf_bp`` route's
+    job; this REST surface returns the source.
+    """
+    pdf = _resolve_pdf_or_404(pdf_id)
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT,
+        project_id=pdf.project_id,
+    )
+
+    if pdf.status is not PdfDocumentStatus.AUDITED:
+        raise NotFoundError(
+            f"pdf document {pdf_id} has no current pdfmax report"
+        )
+
+    pdf_path = _pdf_storage().local_path(pdf)
+    cache_dir = pdf_path.parent / "pdfmax-report"
+    if not cache_dir.is_dir():
+        raise NotFoundError(
+            f"pdf document {pdf_id} pdfmax report cache not present"
+        )
+
+    candidates = sorted(cache_dir.glob("*_accessibility_report.md"))
+    if not candidates:
+        raise NotFoundError(
+            f"pdf document {pdf_id} pdfmax report cache file missing"
+        )
+
+    try:
+        text = candidates[0].read_text(encoding="utf-8")
+    except OSError as exc:
+        raise NotFoundError(
+            f"failed to read pdfmax report: {exc}"
+        ) from exc
+
+    response = Response(text.encode("utf-8"), mimetype="text/markdown; charset=utf-8")
+    response.headers["Cache-Control"] = "private, max-age=60"
+    return response
+
+
+# ---------------------------------------------------------------------------
 # Permission groups (REST shape — uses the @api_endpoint scaffolding).
 #
 # Sits alongside the existing groups_bp HTML routes at /groups/* (still

@@ -12,7 +12,6 @@ from auto_a11y.web.typed_app import get_db, get_app_config
 from auto_a11y.models import PageStatus
 from auto_a11y.reporting.issue_catalog import IssueCatalog
 from auto_a11y.models.test_result import Violation
-from datetime import datetime
 import logging
 
 logger = logging.getLogger(__name__)
@@ -313,103 +312,43 @@ def edit_page(page_id: str) -> str | Response:
 
 @pages_bp.route('/<page_id>/test', methods=['POST'])
 def test_page(page_id: str) -> Response | tuple[Response, int]:
-    """Run accessibility test on page"""
-    from auto_a11y.testing import TestRunner
-    from auto_a11y.core.task_runner import task_runner
-    import asyncio
-
-    browser_mode = getattr(get_app_config(), 'BROWSER_MODE', 'local')
-    if browser_mode == 'disabled':
-        return jsonify({'error': ftl('pages-browser-testing-is-disabled-on-this-server')}), 503
-    if browser_mode == 'remote':
-        return jsonify({'error': ftl('pages-this-server-is-configured-for-remote-browser')}), 503
-
-    page = get_db().get_page(page_id)
-    if not page:
-        return jsonify({'error': ftl('common-page-not-found')}), 404
-
-    # Check if multi-state testing requested
-    data: dict[str, Any] = request.get_json() if request.is_json else {}
-    enable_multi_state: bool = data.get('enable_multi_state', True)  # Default: enabled
-    website_user_id: str | None = data.get('website_user_id')  # Optional authenticated user
-
-    # Update page status
-    page.status = PageStatus.QUEUED
-    get_db().update_page(page)
-
-    # Get project config to apply project-specific browser settings
-    website = get_db().get_website(page.website_id)
-    project = get_db().get_project(website.project_id) if website else None
-
-    # Create browser config with project-specific settings
-    browser_config = get_app_config().__dict__.copy()
-    if project and project.config:
-        browser_config['stealth_mode'] = project.config.get('stealth_mode', False)
-
-        # Apply project-specific headless browser setting
-        headless_setting = project.config.get('headless_browser', 'true')
-        browser_config['BROWSER_HEADLESS'] = (headless_setting == 'true')
-
-    # Get AI API key from config (if available)
-    ai_key = getattr(get_app_config(), 'CLAUDE_API_KEY', None)
-
-    # Store references needed in async context
-    db = get_db()
-
-    # Define sync wrapper that creates a clean event loop
-    def run_test_sync() -> list[Any]:
-        # Create a fresh event loop for this task
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            # Define async function inside the new loop context
-            async def run_test_with_cleanup() -> list[Any]:
-                # Create test runner inside the async context with new event loop
-                test_runner_instance = TestRunner(db, browser_config)
-                try:
-                    # Use multi-state testing if enabled
-                    if enable_multi_state:
-                        results = await test_runner_instance.test_page_multi_state(
-                            page,
-                            enable_multi_state=True,
-                            take_screenshot=True,
-                            run_ai_analysis=False,  # Let test_runner decide based on project config
-                            ai_api_key=ai_key,
-                            website_user_id=website_user_id
-                        )
-                        # Return list of results
-                        return results
-                    else:
-                        # Single-state testing (backward compatible)
-                        result = await test_runner_instance.test_page(
-                            page,
-                            take_screenshot=True,
-                            run_ai_analysis=False,
-                            ai_api_key=ai_key,
-                            website_user_id=website_user_id
-                        )
-                        return [result]  # Wrap in list for consistency
-                finally:
-                    await test_runner_instance.cleanup()
-
-            # Run the async function in the new loop
-            return loop.run_until_complete(run_test_with_cleanup())
-        finally:
-            loop.close()
-
-    # Submit test task
-    job_id = task_runner.submit_task(
-        func=run_test_sync,
-        args=(),
-        task_id=f'test_page_{page_id}_{datetime.now().timestamp()}'
+    """Run accessibility test on page."""
+    from auto_a11y.core.test_run_service import (
+        BrowserDisabledError,
+        BrowserRemoteError,
+        PageNotFoundError,
+        start_page_test_run,
     )
+
+    data: dict[str, Any] = request.get_json() if request.is_json else {}
+    enable_multi_state: bool = data.get('enable_multi_state', True)
+    website_user_id: str | None = data.get('website_user_id')
+
+    try:
+        handle = start_page_test_run(
+            get_db(),
+            get_app_config(),
+            page_id,
+            enable_multi_state=enable_multi_state,
+            website_user_id=website_user_id,
+        )
+    except BrowserDisabledError:
+        return jsonify({'error': ftl('pages-browser-testing-is-disabled-on-this-server')}), 503
+    except BrowserRemoteError:
+        return jsonify({'error': ftl('pages-this-server-is-configured-for-remote-browser')}), 503
+    except PageNotFoundError:
+        return jsonify({'error': ftl('common-page-not-found')}), 404
 
     return jsonify({
         'success': True,
-        'message': ftl('pages-page-queued-for-testing-multi-state-enabled') if enable_multi_state else ftl('common-page-queued-for-testing'),
-        'job_id': job_id,
-        'multi_state': enable_multi_state,
-        'status_url': url_for('pages.test_status', page_id=page_id)
+        'message': (
+            ftl('pages-page-queued-for-testing-multi-state-enabled')
+            if handle.multi_state
+            else ftl('common-page-queued-for-testing')
+        ),
+        'job_id': handle.job_id,
+        'multi_state': handle.multi_state,
+        'status_url': url_for('pages.test_status', page_id=page_id),
     })
 
 

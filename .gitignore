@@ -99,6 +99,7 @@ ai_response_*.txt
 test_*.py
 # But include production files in auto_a11y that happen to start with test_
 !auto_a11y/config/test_*.py
+!auto_a11y/core/test_*.py
 !auto_a11y/models/test_*.py
 !auto_a11y/testing/test_*.py
 !auto_a11y/testing/touchpoint_tests/test_*.py

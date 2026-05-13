@@ -175,7 +175,7 @@ Symbols:
 |---|---|---|
 | `GET /pages/<id>` | `GET /api/v1/pages/<id>` | ✅ |
 | `POST /pages/<id>/edit` | `PUT /api/v1/pages/<id>`, `PATCH /api/v1/pages/<id>` | ✅ |
-| `POST /pages/<id>/test` | `POST /api/v1/pages/<id>/test-runs` | 🟡 (`POST /api/v1/pages/<id>/test` exists; rename) |
+| `POST /pages/<id>/test` | `POST /api/v1/pages/<id>/test-runs` | ✅ (canonical `/test-runs` now wraps `auto_a11y.core.test_run_service.start_page_test_run`; the legacy `/test` URL is kept as an alias on the same handler until the frontend migration retires it) |
 | `GET /pages/<id>/test-status` | `GET /api/v1/pages/<id>/test-runs/latest` | 🟡 (`GET /api/v1/pages/<id>/test-results` exists but lists results, not run status) |
 | `POST /pages/<id>/cancel-test` | `POST /api/v1/pages/<id>/test-runs/latest/cancel` | ❌ |
 | `POST /pages/<id>/delete` | `DELETE /api/v1/pages/<id>` | ✅ |

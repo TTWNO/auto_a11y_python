@@ -254,27 +254,56 @@ def delete_project(project_id: str) -> tuple[Response, int]:
 
 
 @api_bp.route('/pages/<page_id>/test', methods=['POST'])
+@api_bp.route('/pages/<page_id>/test-runs', methods=['POST'])
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def test_page(page_id: str) -> tuple[Response, int]:
-    """Run test on page"""
-    page = get_db().get_page(page_id)
-    if not page:
-        return jsonify({'error': 'Page not found'}), 404
-    
-    data: dict[str, Any] = request.get_json() or {}
-    _config: dict[str, Any] = data.get('config', {})
+    """Queue an accessibility test run for a page.
 
-    # Queue test job
-    job_id = f'test_{page_id}_{datetime.now().timestamp()}'
-    
-    # Update page status
-    page.status = PageStatus.QUEUED
-    get_db().update_page(page)
-    
+    Both ``POST /api/v1/pages/<id>/test`` (legacy, kept for the
+    in-flight admin frontend) and the canonical
+    ``POST /api/v1/pages/<id>/test-runs`` route here. They share a
+    handler so the response shape stays identical until the frontend
+    migration retires the old URL.
+
+    The actual orchestration lives in
+    :mod:`auto_a11y.core.test_run_service` so the legacy HTML route
+    and this REST endpoint dispatch through the same code path.
+    """
+    from auto_a11y.core.test_run_service import (
+        BrowserDisabledError,
+        BrowserRemoteError,
+        PageNotFoundError,
+        start_page_test_run,
+    )
+
+    data: dict[str, Any] = request.get_json() or {}
+    enable_multi_state: bool = bool(data.get('enable_multi_state', True))
+    website_user_id_raw = data.get('website_user_id')
+    website_user_id: str | None = (
+        website_user_id_raw if isinstance(website_user_id_raw, str) else None
+    )
+
+    try:
+        handle = start_page_test_run(
+            get_db(),
+            get_app_config(),
+            page_id,
+            enable_multi_state=enable_multi_state,
+            website_user_id=website_user_id,
+        )
+    except BrowserDisabledError as exc:
+        return jsonify({'error': str(exc)}), 503
+    except BrowserRemoteError as exc:
+        return jsonify({'error': str(exc)}), 503
+    except PageNotFoundError:
+        return jsonify({'error': 'Page not found'}), 404
+
     return jsonify({
-        'job_id': job_id,
+        'job_id': handle.job_id,
+        'page_id': handle.page_id,
+        'multi_state': handle.multi_state,
         'status': 'queued',
-        'message': 'Test job queued successfully'
+        'message': 'Test job queued successfully',
     }), 202
 
 

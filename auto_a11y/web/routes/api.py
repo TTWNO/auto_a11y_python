@@ -8151,6 +8151,281 @@ def delete_project_test_user_rest(user_id: str) -> tuple[Response, int]:
     return Response(status=204), 204
 
 
+# --- Test-login action endpoints (§5.11) -------------------------------------
+#
+# Synchronous — run the login automation against the live site and
+# return the result inline (like /scripts/<id>/test-runs and unlike
+# /test-runs, which queue a JobManager job). Status 200 (not 202)
+# signals "done synchronously" so callers don't poll a non-existent
+# job. The unhappy-path envelope is the same shape as the happy-path
+# so clients have a single parser.
+
+
+def _build_login_browser_config(
+    project_stealth: bool | None, project_headless: str | None,
+) -> dict[str, Any]:
+    """Snapshot the app config + project overrides for a fresh browser.
+
+    Mirrors the legacy ``test_login`` handlers — project-level
+    ``stealth_mode`` and ``headless_browser`` win when present;
+    otherwise the runtime defaults apply.
+    """
+    browser_config: dict[str, Any] = get_app_config().__dict__.copy()
+    if project_stealth is not None:
+        browser_config["stealth_mode"] = project_stealth
+    else:
+        browser_config["stealth_mode"] = False
+    if project_headless is not None:
+        browser_config["BROWSER_HEADLESS"] = project_headless == "true"
+    return browser_config
+
+
+async def _run_login_test(
+    browser_config: dict[str, Any], user_obj: Any, timeout_ms: int,
+) -> dict[str, Any]:
+    """Spin a fresh browser, attempt the user's login, return the result.
+
+    Imported lazily because :class:`BrowserManager` and
+    :class:`LoginAutomation` pull Playwright at module load — keeping
+    them out of the route's import path makes ``api.py`` cheap to
+    import even when the test-login endpoint is never called.
+    """
+    from auto_a11y.core.browser_manager import BrowserManager
+    from auto_a11y.testing.login_automation import LoginAutomation
+
+    bm = BrowserManager(browser_config)
+    try:
+        await bm.start()
+        context = await bm.create_context()
+        page_obj = await context.new_page()
+        login_automation = LoginAutomation(get_db())
+        result = await login_automation.perform_login(
+            page_obj, user_obj, timeout=timeout_ms,
+        )
+        return result
+    finally:
+        await bm.stop()
+
+
+@api_bp.route(
+    "/project-test-users/<user_id>/test-login", methods=["POST"]
+)
+@api_endpoint
+def test_project_user_login(
+    user_id: str,
+) -> tuple[Response, int] | Response:
+    """Run the project test-user's login automation against the live site.
+
+    Synchronous; the response is the same envelope shape regardless of
+    success or failure so clients have a single parser. The fresh
+    browser is closed before returning even when login fails or
+    raises — no leaked Playwright instances.
+
+    Response shape:
+
+        {
+          "user_id":      "...",
+          "scope":        "project",
+          "success":      true|false,
+          "duration_ms":  int,
+          "error":        null | "...",
+          "manual_login": bool,
+          "wait_seconds": int | null
+        }
+
+    Errors:
+
+    - **404** — user does not exist
+    - **400** — login_url is not configured AND authentication_method
+      is not ``manual_login`` (manual login doesn't need a URL — it
+      pops a visible browser for the operator to drive)
+    - **409** — server-side BROWSER_MODE rules out a local browser
+      (``disabled`` / ``remote`` — the endpoint has no queueable
+      fallback)
+    - **500** — login_automation raises; the body still carries the
+      ``success: false`` envelope plus the error message
+    """
+    import asyncio
+
+    user = get_db().get_project_user(user_id)
+    if user is None:
+        raise NotFoundError(f"project test user {user_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, project_id=user.project_id,
+    )
+
+    login_config = user.login_config
+    is_manual = login_config.authentication_method.value == "manual_login"
+    if not login_config.login_url and not is_manual:
+        raise ValidationError(
+            f"login_url is not configured for user {user_id}",
+            errors=(
+                _FieldError(
+                    field="login_config.login_url", code="required",
+                    message="required for non-manual authentication methods",
+                ),
+            ),
+        )
+
+    browser_mode = getattr(get_app_config(), "BROWSER_MODE", "local")
+    if browser_mode in ("disabled", "remote"):
+        raise ConflictError(
+            f"test-login requires local browser; BROWSER_MODE={browser_mode!r}"
+        )
+
+    project = get_db().get_project(user.project_id)
+    project_stealth = (
+        bool(project.config.get("stealth_mode", False))
+        if project is not None and project.config else None
+    )
+    project_headless = (
+        str(project.config.get("headless_browser", "true"))
+        if project is not None and project.config else None
+    )
+    browser_config = _build_login_browser_config(
+        project_stealth, project_headless,
+    )
+
+    wait_seconds = (
+        login_config.manual_login_wait_seconds if is_manual else 30
+    )
+    timeout_ms = max(30000, (wait_seconds + 30) * 1000)
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        result = loop.run_until_complete(
+            _run_login_test(browser_config, user, timeout_ms),
+        )
+    except Exception as exc:
+        logger.error(
+            "Error testing login for project user %s: %s", user_id, exc,
+        )
+        return jsonify({
+            "user_id": user_id,
+            "scope": "project",
+            "success": False,
+            "duration_ms": 0,
+            "error": str(exc),
+            "manual_login": is_manual,
+            "wait_seconds": wait_seconds if is_manual else None,
+        }), 500
+    finally:
+        loop.close()
+
+    return jsonify({
+        "user_id": user_id,
+        "scope": "project",
+        "success": bool(result.get("success", False)),
+        "duration_ms": int(result.get("duration_ms", 0) or 0),
+        "error": result.get("error"),
+        "manual_login": is_manual,
+        "wait_seconds": wait_seconds if is_manual else None,
+    })
+
+
+@api_bp.route(
+    "/website-test-users/<user_id>/test-login", methods=["POST"]
+)
+@api_endpoint
+def test_website_user_login(
+    user_id: str,
+) -> tuple[Response, int] | Response:
+    """Run the website test-user's login automation against the live site.
+
+    Companion to :func:`test_project_user_login`. The two share the
+    same response envelope and synchronous semantics — the difference
+    is which collection the user record lives in and which target
+    (website's project) the role check runs against.
+    """
+    import asyncio
+
+    user = get_db().get_website_user(user_id)
+    if user is None:
+        raise NotFoundError(f"website test user {user_id} not found")
+
+    website = get_db().get_website(user.website_id)
+    if website is None:
+        raise NotFoundError(
+            f"website {user.website_id} for user {user_id} not found"
+        )
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, website_id=user.website_id,
+    )
+
+    login_config = user.login_config
+    is_manual = login_config.authentication_method.value == "manual_login"
+    if not login_config.login_url and not is_manual:
+        raise ValidationError(
+            f"login_url is not configured for user {user_id}",
+            errors=(
+                _FieldError(
+                    field="login_config.login_url", code="required",
+                    message="required for non-manual authentication methods",
+                ),
+            ),
+        )
+
+    browser_mode = getattr(get_app_config(), "BROWSER_MODE", "local")
+    if browser_mode in ("disabled", "remote"):
+        raise ConflictError(
+            f"test-login requires local browser; BROWSER_MODE={browser_mode!r}"
+        )
+
+    project = (
+        get_db().get_project(website.project_id)
+        if website.project_id else None
+    )
+    project_stealth = (
+        bool(project.config.get("stealth_mode", False))
+        if project is not None and project.config else None
+    )
+    project_headless = (
+        str(project.config.get("headless_browser", "true"))
+        if project is not None and project.config else None
+    )
+    browser_config = _build_login_browser_config(
+        project_stealth, project_headless,
+    )
+
+    wait_seconds = (
+        login_config.manual_login_wait_seconds if is_manual else 30
+    )
+    timeout_ms = max(30000, (wait_seconds + 30) * 1000)
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        result = loop.run_until_complete(
+            _run_login_test(browser_config, user, timeout_ms),
+        )
+    except Exception as exc:
+        logger.error(
+            "Error testing login for website user %s: %s", user_id, exc,
+        )
+        return jsonify({
+            "user_id": user_id,
+            "scope": "website",
+            "success": False,
+            "duration_ms": 0,
+            "error": str(exc),
+            "manual_login": is_manual,
+            "wait_seconds": wait_seconds if is_manual else None,
+        }), 500
+    finally:
+        loop.close()
+
+    return jsonify({
+        "user_id": user_id,
+        "scope": "website",
+        "success": bool(result.get("success", False)),
+        "duration_ms": int(result.get("duration_ms", 0) or 0),
+        "error": result.get("error"),
+        "manual_login": is_manual,
+        "wait_seconds": wait_seconds if is_manual else None,
+    })
+
+
 # --- Website-scoped test users ------------------------------------------------
 
 

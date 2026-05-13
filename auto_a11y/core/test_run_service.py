@@ -35,7 +35,7 @@ import asyncio
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from auto_a11y.core.task_runner import task_runner
 from auto_a11y.models import PageStatus
@@ -56,6 +56,20 @@ class PageNotFoundError(TestRunServiceError):
 
 class WebsiteNotFoundError(TestRunServiceError):
     """Raised when the requested website id does not exist."""
+
+
+class NoPagesToTestError(TestRunServiceError):
+    """Raised when a website has no pages eligible for a test run.
+
+    Carries the requested ``untested_only`` flag so callers can render
+    different messages for "no pages discovered yet" vs "all already
+    tested".
+    """
+
+    def __init__(self, website_id: str, *, untested_only: bool) -> None:
+        super().__init__(f"website {website_id} has no testable pages")
+        self.website_id = website_id
+        self.untested_only = untested_only
 
 
 class BrowserDisabledError(TestRunServiceError):
@@ -91,6 +105,27 @@ class PageTestRunHandle:
     job_id: str
     page_id: str
     multi_state: bool
+
+
+@dataclass(frozen=True)
+class WebsiteTestRunHandle:
+    """Result of :func:`start_website_test_run`.
+
+    Attributes:
+        job_id: The task-runner id of the queued background test job.
+        website_id: Echoed for caller convenience.
+        pages_queued: Number of pages that will be tested per user.
+        user_count: Number of distinct project users the run will
+            test as (``[''] guest`` counts as 1).
+        total_tests: ``pages_queued * user_count`` — the aggregate
+            test count the UI shows.
+    """
+
+    job_id: str
+    website_id: str
+    pages_queued: int
+    user_count: int
+    total_tests: int
 
 
 @dataclass(frozen=True)
@@ -358,4 +393,252 @@ def start_website_discovery(
         website_id=website_id,
         max_pages=capped_max_pages,
         user_count=len(user_ids_list),
+    )
+
+
+def start_website_test_run(
+    database: Database,
+    app_config: Config,
+    website_id: str,
+    *,
+    project_user_ids: list[str] | str | None = None,
+    max_pages: int | None = None,
+    untested_only: bool = False,
+    user_id: str | None = None,
+    session_id: str | None = None,
+    pdf_runner: PdfRunner | None = None,
+) -> WebsiteTestRunHandle:
+    """Queue a batch accessibility test run for every page on a website.
+
+    The submitted task processes the configured project-users
+    *sequentially* (concurrent browser sessions corrupt each other),
+    then queues PDF audits *after* the HTML tests finish (running
+    them concurrently with Playwright deadlocks on the per-request
+    ``nest_asyncio`` patched loop). Combined progress is streamed
+    into the same JobManager record so the UI's existing poller sees
+    a single percentage.
+
+    Args:
+        database: The shared :class:`Database` instance.
+        app_config: The shared :class:`Config`.
+        website_id: The website to test.
+        project_user_ids: Project users to test as. ``None`` / empty
+            collapses to ``[''] guest``.
+        max_pages: Optional cap on number of pages per user.
+        untested_only: When true, skip pages already in the TESTED
+            state — useful for "retry the rest" flows.
+        user_id / session_id: Optional ids for JobManager attribution.
+        pdf_runner: Optional :class:`PdfRunner` — when present, PDF
+            audits are queued after the HTML page tests complete and
+            their progress is folded into the same job's totals.
+
+    Returns:
+        :class:`WebsiteTestRunHandle` carrying the queued job id.
+
+    Raises:
+        WebsiteNotFoundError: when ``website_id`` does not resolve.
+        NoPagesToTestError: when the website has no eligible pages.
+    """
+    website = database.get_website(website_id)
+    if website is None:
+        raise WebsiteNotFoundError(f"website {website_id} not found")
+
+    project = database.get_project(website.project_id)
+    project_config = project.config if project is not None else None
+    browser_config = _build_browser_config(app_config, project_config)
+    if project_config is None:
+        browser_config["stealth_mode"] = False
+    ai_key = getattr(app_config, "CLAUDE_API_KEY", None)
+
+    user_ids_list = _normalize_user_ids(project_user_ids)
+
+    pages = database.get_pages(website_id, latest_only=False, limit=0)
+    testable_pages = [p for p in pages if p.status != PageStatus.TESTING]
+    if untested_only:
+        testable_pages = [
+            p for p in testable_pages if p.status != PageStatus.TESTED
+        ]
+    if max_pages is not None and max_pages > 0:
+        testable_pages = testable_pages[:max_pages]
+    if not testable_pages:
+        raise NoPagesToTestError(website_id, untested_only=untested_only)
+
+    page_ids = [p.id for p in testable_pages if p.id is not None]
+    pages_queued = len(testable_pages)
+    user_count = len(user_ids_list)
+    total_tests = pages_queued * user_count
+    job_id = f"testing_{website_id}_{uuid.uuid4().hex[:8]}"
+
+    def testing_wrapper() -> object:
+        # Lazy imports — see :func:`start_page_test_run` rationale.
+        from auto_a11y.core.job_manager import JobStatus
+        from auto_a11y.core.website_manager import WebsiteManager
+        import nest_asyncio
+
+        nest_asyncio.apply()
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+        website_manager = WebsiteManager(database, browser_config)
+        last_result: Any = None
+        try:
+            for current_user_id in user_ids_list:
+                user_arg = current_user_id if current_user_id else None
+                try:
+                    last_result = loop.run_until_complete(
+                        website_manager.test_website(
+                            website_id=website_id,
+                            page_ids=page_ids,
+                            job_id=job_id,
+                            user_id=user_id,
+                            session_id=session_id,
+                            test_all=False,
+                            take_screenshot=True,
+                            run_ai_analysis=None,
+                            ai_api_key=ai_key,
+                            website_user_id=user_arg,
+                            skip_completion=True,
+                        )
+                    )
+                except Exception as user_error:
+                    # Continue with the next user even if one fails —
+                    # matches the legacy behaviour.
+                    import logging
+                    logging.getLogger(__name__).error(
+                        "Error testing user %s: %s",
+                        current_user_id or "guest",
+                        user_error,
+                    )
+
+            pdf_audit_job_ids: list[str] = []
+            if pdf_runner is not None:
+                from auto_a11y.core.pdf_audit_job import (
+                    queue_audits_for_website,
+                )
+
+                try:
+                    pdf_audit_job_ids = queue_audits_for_website(
+                        runner=pdf_runner,
+                        db=database,
+                        website_id=website_id,
+                        user_id=str(user_id) if user_id else "anonymous",
+                        session_id=str(session_id) if session_id else None,
+                    )
+                except Exception as audit_err:
+                    import logging
+                    logging.getLogger(__name__).warning(
+                        "Failed to queue PDF audits for website %s: %s",
+                        website_id,
+                        audit_err,
+                    )
+
+            jm = website_manager.job_manager
+
+            def _read_int(
+                record: dict[str, Any] | None, key: str, default: int
+            ) -> int:
+                if record is None:
+                    return default
+                progress_obj: Any = record.get("progress")
+                if not isinstance(progress_obj, dict):
+                    return default
+                progress_dict = cast(dict[str, Any], progress_obj)
+                details_obj: Any = progress_dict.get("details")
+                if not isinstance(details_obj, dict):
+                    return default
+                details_dict = cast(dict[str, Any], details_obj)
+                value: Any = details_dict.get(key, default)
+                if isinstance(value, int):
+                    return value
+                if isinstance(value, str):
+                    try:
+                        return int(value)
+                    except ValueError:
+                        return default
+                return default
+
+            page_record = jm.get_job(job_id)
+            pages_tested_final = _read_int(
+                page_record, "pages_tested", len(page_ids)
+            )
+            pages_total_final = _read_int(
+                page_record, "total_pages", len(page_ids)
+            )
+            page_details: dict[str, Any] = {
+                "pages_tested": pages_tested_final,
+                "total_pages": pages_total_final,
+            }
+            pdf_total = len(pdf_audit_job_ids)
+            combined_total = pages_total_final + pdf_total
+            terminal_states = {"completed", "failed", "cancelled"}
+
+            if pdf_audit_job_ids:
+                import time
+
+                while True:
+                    done = 0
+                    for aid in pdf_audit_job_ids:
+                        rec = jm.get_job(aid)
+                        if rec and rec.get("status") in terminal_states:
+                            done += 1
+                    combined_done = pages_tested_final + done
+                    jm.update_job_status(
+                        job_id=job_id,
+                        status=JobStatus.RUNNING,
+                        progress={
+                            "current": combined_done,
+                            "total": combined_total,
+                            "message": f"Auditing PDFs: {done}/{pdf_total}",
+                            "details": {
+                                **page_details,
+                                "pages_tested": combined_done,
+                                "total_pages": combined_total,
+                                "pdf_audits_done": done,
+                                "pdf_audits_total": pdf_total,
+                            },
+                        },
+                    )
+                    if done >= pdf_total:
+                        break
+                    time.sleep(2)
+
+            jm.update_job_status(
+                job_id=job_id,
+                status=JobStatus.COMPLETED,
+                progress={
+                    "current": combined_total,
+                    "total": combined_total,
+                    "message": (
+                        f"Testing complete: {pages_total_final} "
+                        f"page(s), {pdf_total} PDF(s)"
+                    ),
+                    "details": {
+                        **page_details,
+                        "pages_tested": combined_total,
+                        "total_pages": combined_total,
+                        "pdf_audits_done": pdf_total,
+                        "pdf_audits_total": pdf_total,
+                    },
+                },
+            )
+            return last_result
+        finally:
+            try:
+                if not loop.is_running():
+                    loop.close()
+            except Exception:
+                pass
+
+    submitted_id = task_runner.submit_task(
+        func=testing_wrapper, args=(), task_id=job_id
+    )
+    return WebsiteTestRunHandle(
+        job_id=submitted_id,
+        website_id=website_id,
+        pages_queued=pages_queued,
+        user_count=user_count,
+        total_tests=total_tests,
     )

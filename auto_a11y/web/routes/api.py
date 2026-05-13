@@ -414,34 +414,82 @@ def discover_pages(website_id: str) -> tuple[Response, int]:
 
 
 @api_bp.route('/websites/<website_id>/test', methods=['POST'])
+@api_bp.route('/websites/<website_id>/test-runs', methods=['POST'])
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def test_website(website_id: str) -> tuple[Response, int]:
-    """Run tests on all pages in website"""
-    website = get_db().get_website(website_id)
-    if not website:
-        return jsonify({'error': 'Website not found'}), 404
-    
+    """Queue a batch test run for every page on a website.
+
+    Both the legacy ``/test`` URL and the canonical ``/test-runs`` URL
+    share this handler so the response shape stays identical until
+    the frontend migration retires the legacy name.
+
+    The orchestration (sequential per-user page tests, PDF audit
+    queueing, combined progress reporting) lives in
+    :mod:`auto_a11y.core.test_run_service` so both the HTML route in
+    ``websites.py`` and this REST endpoint dispatch through the same
+    code path.
+    """
+    from auto_a11y.core.test_run_service import (
+        NoPagesToTestError,
+        WebsiteNotFoundError,
+        start_website_test_run,
+    )
+    from auto_a11y.web.typed_app import get_pdf_runner as _get_pdf_runner
+
     data: dict[str, Any] = request.get_json() or {}
-    page_ids: list[str] | str = data.get('page_ids', 'all')
-    _config: dict[str, Any] = data.get('config', {})
-    
-    if page_ids == 'all':
-        pages = get_db().get_pages(website_id)
+
+    max_pages_raw = data.get('max_pages')
+    max_pages: int | None = None
+    if max_pages_raw is not None and max_pages_raw != '':
+        try:
+            max_pages = int(max_pages_raw)
+            if max_pages <= 0:
+                max_pages = None
+        except (ValueError, TypeError):
+            max_pages = None
+
+    untested_only: bool = bool(data.get('untested_only', False))
+
+    def _widen_to_str_list(value: Any) -> list[str]:
+        items: list[Any] = []
+        for item in value:
+            items.append(item)
+        return [str(item) for item in items]
+
+    user_ids_raw_value: Any = (
+        data.get('project_user_ids') or data.get('website_user_ids')
+    )
+    user_ids_raw: list[str] | str | None
+    if isinstance(user_ids_raw_value, list):
+        user_ids_raw = _widen_to_str_list(user_ids_raw_value)
+    elif isinstance(user_ids_raw_value, str):
+        user_ids_raw = user_ids_raw_value
     else:
-        pages_raw = [get_db().get_page(pid) for pid in page_ids]
-        pages = [p for p in pages_raw if p is not None]
-    
-    if not pages:
+        user_ids_raw = None
+
+    try:
+        handle = start_website_test_run(
+            get_db(),
+            get_app_config(),
+            website_id,
+            project_user_ids=user_ids_raw,
+            max_pages=max_pages,
+            untested_only=untested_only,
+            pdf_runner=_get_pdf_runner(),
+        )
+    except WebsiteNotFoundError:
+        return jsonify({'error': 'Website not found'}), 404
+    except NoPagesToTestError:
         return jsonify({'error': 'No pages to test'}), 400
-    
-    # Queue batch test job
-    job_id = f'batch_test_{website_id}_{datetime.now().timestamp()}'
-    
+
     return jsonify({
-        'job_id': job_id,
+        'job_id': handle.job_id,
+        'website_id': handle.website_id,
+        'pages_queued': handle.pages_queued,
+        'user_count': handle.user_count,
+        'total_tests': handle.total_tests,
         'status': 'queued',
-        'pages_queued': len(pages),
-        'message': f'Batch testing queued for {len(pages)} pages'
+        'message': f'Batch testing queued for {handle.pages_queued} pages',
     }), 202
 
 

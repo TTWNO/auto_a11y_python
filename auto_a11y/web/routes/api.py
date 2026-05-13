@@ -3584,6 +3584,330 @@ def restart_job_rest(job_id: str) -> tuple[Response, int] | Response:
         "status": "queued",
     }), 202
 
+
+# ---------------------------------------------------------------------------
+# Reports retrieval (§5.5 of REST_API_ROADMAP.md — the three routes
+# deferred from the generation slice).
+#
+# Report id = the JobManager job_id of the completed report job. The
+# job record already carries (project_id, website_id, created_at,
+# metadata.scope, metadata.report_type, result.filename, result.path),
+# so we don't need a separate `reports` collection — the opaque id
+# maps back to the on-disk filename via job.result.filename.
+#
+# - GET    /api/v1/reports/<id>/file          download (200 + Content-Disposition)
+# - DELETE /api/v1/reports/<id>               delete file + job record (204)
+# - GET    /api/v1/projects/<id>/report-summary
+# ---------------------------------------------------------------------------
+
+
+def _resolve_report_job(job_id: str) -> dict[str, Any]:
+    """Return the JobManager record for a report job, or raise 404.
+
+    A job is considered a "report" for this surface iff its
+    ``job_type`` is ``REPORT_GENERATION``. Other job types living
+    under the same JobManager (testing / discovery / pdf_audit) are
+    intentionally hidden from this URL space so callers can't use a
+    test-run id with the report endpoints.
+    """
+    job_manager = JobManager(get_db())
+    record = job_manager.get_job(job_id)
+    if record is None:
+        raise NotFoundError(f"report {job_id} not found")
+    if record.get("job_type") != JobType.REPORT_GENERATION.value:
+        raise NotFoundError(f"report {job_id} not found")
+    return record
+
+
+def _authorize_report_record(record: dict[str, Any]) -> None:
+    """Run the project-role auth check that matches the report's scope.
+
+    Reports inherit their access policy from whichever resource the
+    underlying job was scoped to:
+
+    - ``project_id`` set → check the project
+    - ``website_id`` set → check the website
+    - metadata.``page_id`` set → check the page's website
+    - none of the above → "all projects" roll-up → must be superadmin
+
+    The check covers ADMIN, AUDITOR, and CLIENT for reads. Mutations
+    (DELETE) raise the bar to ADMIN/AUDITOR — see
+    :func:`_authorize_report_mutation`.
+    """
+    project_id_any: Any = record.get("project_id")
+    website_id_any: Any = record.get("website_id")
+    metadata_any: Any = record.get("metadata") or {}
+    metadata = cast(dict[str, Any], metadata_any) if isinstance(metadata_any, dict) else {}
+    page_id_any: Any = metadata.get("page_id")
+
+    project_id = project_id_any if isinstance(project_id_any, str) else None
+    website_id = website_id_any if isinstance(website_id_any, str) else None
+    page_id = page_id_any if isinstance(page_id_any, str) else None
+
+    if page_id:
+        page = get_db().get_page(page_id)
+        if page is None:
+            # Page was deleted after the report was generated — fall
+            # back to the website that's still on the job record.
+            if website_id is None:
+                require_superadmin()
+                return
+        else:
+            require_project_role(
+                UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT,
+                website_id=page.website_id,
+            )
+            return
+
+    if website_id:
+        require_project_role(
+            UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT,
+            website_id=website_id,
+        )
+        return
+    if project_id:
+        require_project_role(
+            UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT,
+            project_id=project_id,
+        )
+        return
+
+    # "all projects" roll-up — the only scope with no id on the job.
+    require_superadmin()
+
+
+def _authorize_report_mutation(record: dict[str, Any]) -> None:
+    """ADMIN/AUDITOR variant of :func:`_authorize_report_record` for DELETE."""
+    project_id_any: Any = record.get("project_id")
+    website_id_any: Any = record.get("website_id")
+    metadata_any: Any = record.get("metadata") or {}
+    metadata = cast(dict[str, Any], metadata_any) if isinstance(metadata_any, dict) else {}
+    page_id_any: Any = metadata.get("page_id")
+
+    project_id = project_id_any if isinstance(project_id_any, str) else None
+    website_id = website_id_any if isinstance(website_id_any, str) else None
+    page_id = page_id_any if isinstance(page_id_any, str) else None
+
+    if page_id:
+        page = get_db().get_page(page_id)
+        if page is not None:
+            require_project_role(
+                UserRole.ADMIN, UserRole.AUDITOR, website_id=page.website_id,
+            )
+            return
+
+    if website_id:
+        require_project_role(
+            UserRole.ADMIN, UserRole.AUDITOR, website_id=website_id,
+        )
+        return
+    if project_id:
+        require_project_role(
+            UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id,
+        )
+        return
+
+    require_superadmin()
+
+
+def _resolve_report_file_path(record: dict[str, Any]) -> Path:
+    """Return the on-disk path of a completed report, raising 404 if the
+    job isn't completed yet or the file is missing.
+
+    The reports directory is enforced to be the configured
+    ``REPORTS_DIR``: even though the job's ``result.path`` is
+    server-controlled (not user input), we re-resolve under
+    ``REPORTS_DIR`` and check ``is_relative_to`` so a stray absolute
+    path can't escape the directory.
+    """
+    status = record.get("status")
+    if status != JobStatus.COMPLETED.value:
+        raise NotFoundError(
+            f"report not ready (status: {status})"
+        )
+
+    result_any: Any = record.get("result") or {}
+    if not isinstance(result_any, dict):
+        raise NotFoundError("report result missing")
+    result = cast(dict[str, Any], result_any)
+    filename_any: Any = result.get("filename")
+    if not isinstance(filename_any, str) or not filename_any:
+        raise NotFoundError("report filename missing")
+
+    reports_dir = Path(get_app_config().REPORTS_DIR).resolve()
+    candidate = (reports_dir / filename_any).resolve()
+    # Guard against absolute or traversing filenames just in case the
+    # generator ever wrote one — the report record is not user input
+    # but defence-in-depth is cheap here.
+    try:
+        candidate.relative_to(reports_dir)
+    except ValueError as exc:
+        raise NotFoundError("report path outside reports dir") from exc
+    if not candidate.exists():
+        raise NotFoundError("report file no longer on disk")
+    return candidate
+
+
+@api_bp.route("/reports/<report_id>/file", methods=["GET"])
+@api_endpoint
+def download_report_file(report_id: str) -> Response | tuple[Response, int]:
+    """Stream the completed report file with Content-Disposition.
+
+    The opaque ``report_id`` is the underlying job id. Status 404 is
+    returned for any of: job missing, job not a report-generation
+    job, job not yet COMPLETED, result/filename missing, file removed
+    from disk after generation.
+
+    Authorization mirrors the report's scope:
+
+    - project-scoped → ADMIN/AUDITOR/CLIENT on the project
+    - website-scoped → ADMIN/AUDITOR/CLIENT on the website
+    - page-scoped    → ADMIN/AUDITOR/CLIENT on the page's website
+    - cross-project  → superadmin
+    """
+    from flask import send_file
+
+    record = _resolve_report_job(report_id)
+    _authorize_report_record(record)
+    file_path = _resolve_report_file_path(record)
+
+    download_name = file_path.name
+    return send_file(
+        str(file_path), as_attachment=True, download_name=download_name,
+    )
+
+
+@api_bp.route("/reports/<report_id>", methods=["DELETE"])
+@api_endpoint
+def delete_report(report_id: str) -> tuple[Response, int]:
+    """Delete the report file and the underlying job record.
+
+    Idempotent at the file level — a missing on-disk file still
+    yields 204 as long as the job record exists and gets deleted. A
+    missing job record raises 404.
+
+    Requires ADMIN or AUDITOR on the report's scope (or superadmin
+    for cross-project rollups).
+    """
+    record = _resolve_report_job(report_id)
+    _authorize_report_mutation(record)
+
+    # Best-effort file removal — proceed to the job-record delete
+    # even if the file is gone or unreadable. Log so an oncall can
+    # spot a leaked file later.
+    result_any: Any = record.get("result") or {}
+    if isinstance(result_any, dict):
+        result_dict = cast(dict[str, Any], result_any)
+        filename_any: Any = result_dict.get("filename")
+        if isinstance(filename_any, str) and filename_any:
+            reports_dir = Path(get_app_config().REPORTS_DIR).resolve()
+            try:
+                candidate = (reports_dir / filename_any).resolve()
+                candidate.relative_to(reports_dir)
+                if candidate.exists():
+                    candidate.unlink()
+            except (ValueError, OSError) as exc:
+                logger.warning(
+                    "report %s: file removal skipped (%s)", report_id, exc,
+                )
+
+    JobManager(get_db()).collection.delete_one({"job_id": report_id})
+    return Response(status=204), 204
+
+
+def _iso_or_none(value: Any) -> str | None:
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value.isoformat()
+    if isinstance(value, str):
+        return value
+    return None
+
+
+def _summarize_record(record: dict[str, Any]) -> dict[str, Any]:
+    """Shape a completed-report job into the summary list-item form."""
+    metadata_any: Any = record.get("metadata") or {}
+    metadata = cast(dict[str, Any], metadata_any) if isinstance(metadata_any, dict) else {}
+    result_any: Any = record.get("result") or {}
+    result = cast(dict[str, Any], result_any) if isinstance(result_any, dict) else {}
+    return {
+        "id": record.get("job_id"),
+        "scope": metadata.get("scope"),
+        "report_type": metadata.get("report_type"),
+        "display_name": metadata.get("display_name"),
+        "filename": result.get("filename"),
+        "created_at": _iso_or_none(record.get("created_at")),
+        "completed_at": _iso_or_none(record.get("completed_at")),
+    }
+
+
+@api_bp.route(
+    "/projects/<project_id>/report-summary", methods=["GET"]
+)
+@api_endpoint
+def get_project_report_summary(
+    project_id: str,
+) -> tuple[Response, int] | Response:
+    """Aggregate the project's completed report-generation jobs.
+
+    Returns:
+
+        {
+          "project_id": "...",
+          "total_completed": 7,
+          "by_scope":      {"project": 4, "discovery_project": 3},
+          "by_report_type": {"html": 2, "xlsx": 4, "csv": 1},
+          "recent": [<latest 10, newest first, summary shape>]
+        }
+
+    Counts and the ``recent`` list both filter to
+    ``status=COMPLETED`` — failed/cancelled jobs are intentionally
+    omitted because the summary is a "what reports are available to
+    download right now" view. Use ``GET /jobs?status=...`` (and the
+    forthcoming :doc:`/jobs` filters from #54) for the broader job
+    history.
+    """
+    project = get_db().get_project(project_id)
+    if project is None:
+        raise NotFoundError(f"project {project_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT,
+        project_id=project_id,
+    )
+
+    job_manager = JobManager(get_db())
+    cursor = job_manager.collection.find({
+        "job_type": JobType.REPORT_GENERATION.value,
+        "project_id": project_id,
+        "status": JobStatus.COMPLETED.value,
+    }).sort("completed_at", -1)
+
+    records = list(cursor)
+    by_scope: dict[str, int] = {}
+    by_report_type: dict[str, int] = {}
+    for record in records:
+        metadata_any: Any = record.get("metadata") or {}
+        metadata = (
+            cast(dict[str, Any], metadata_any)
+            if isinstance(metadata_any, dict) else {}
+        )
+        scope = metadata.get("scope")
+        report_type = metadata.get("report_type")
+        if isinstance(scope, str):
+            by_scope[scope] = by_scope.get(scope, 0) + 1
+        if isinstance(report_type, str):
+            by_report_type[report_type] = by_report_type.get(report_type, 0) + 1
+
+    return jsonify({
+        "project_id": project_id,
+        "total_completed": len(records),
+        "by_scope": by_scope,
+        "by_report_type": by_report_type,
+        "recent": [_summarize_record(r) for r in records[:10]],
+    })
+
+
 # ---------------------------------------------------------------------------
 # Share tokens (REST shape — uses the @api_endpoint scaffolding).
 #

@@ -5550,6 +5550,242 @@ def delete_recording_rest(recording_id: str) -> tuple[Response, int]:
     return Response(status=204), 204
 
 
+# --- Recording supplementary content (§5.6 deferred slot) ---------------------
+#
+# The legacy upload form accepts up to 6 optional content files
+# (key_takeaways / user_painpoints / user_assertions × en/fr) in
+# either HTML or JSON. These were called out as deferred in 38cdc2ac
+# — they're not required for a recording to exist, and clients can
+# add them after the initial upload.
+#
+# Shape: GET returns ``{key_takeaways, user_painpoints, user_assertions}``,
+# each a per-language dict. PATCH accepts multipart with up to 6
+# optional file parts; each present file updates that
+# ``(content_type, language)`` slot on the recording — absent slots
+# are preserved. Format (HTML vs JSON) is inferred from the file
+# extension; ``.html``/``.htm`` parse as HTML, ``.json`` as JSON,
+# anything else returns 400.
+
+
+# Maps the multipart file part name → ``(recording attribute, language)``.
+# A flat lookup keeps the loop body small and avoids three almost-
+# identical inner functions.
+_RECORDING_CONTENT_PARTS: tuple[tuple[str, str, str], ...] = (
+    ("key_takeaways_file_en", "key_takeaways", "en"),
+    ("key_takeaways_file_fr", "key_takeaways", "fr"),
+    ("user_painpoints_file_en", "user_painpoints", "en"),
+    ("user_painpoints_file_fr", "user_painpoints", "fr"),
+    ("user_assertions_file_en", "user_assertions", "en"),
+    ("user_assertions_file_fr", "user_assertions", "fr"),
+)
+
+
+def _parse_recording_content_file(
+    filename: str, content_text: str, *, content_type: str, field: str,
+) -> list[dict[str, Any]]:
+    """Parse an uploaded content file as either HTML or JSON.
+
+    Format dispatch is by extension:
+
+    - ``.json`` → JSON parser for the given ``content_type``
+    - ``.html`` / ``.htm`` → HTML parser
+
+    Anything else raises :class:`ValidationError`. Invalid JSON or
+    HTML also raises so the route surfaces a 400 with a field path
+    pointing at the bad part.
+    """
+    import json
+
+    from auto_a11y.parsers import (
+        parse_key_takeaways_html,
+        parse_key_takeaways_json,
+        parse_user_assertions_html,
+        parse_user_assertions_json,
+        parse_user_painpoints_html,
+        parse_user_painpoints_json,
+    )
+
+    lower = filename.lower()
+    is_json = lower.endswith(".json")
+    is_html = lower.endswith(".html") or lower.endswith(".htm")
+    if not (is_json or is_html):
+        raise ValidationError(
+            f"{field} must be a .json, .html, or .htm file",
+            errors=(
+                _FieldError(
+                    field=field, code="invalid_value",
+                    message="extension must be .json/.html/.htm",
+                ),
+            ),
+        )
+
+    try:
+        if is_json:
+            data = json.loads(content_text)
+            if content_type == "key_takeaways":
+                return parse_key_takeaways_json(data)
+            if content_type == "user_painpoints":
+                return parse_user_painpoints_json(data)
+            return parse_user_assertions_json(data)
+        if content_type == "key_takeaways":
+            return parse_key_takeaways_html(content_text)
+        if content_type == "user_painpoints":
+            return parse_user_painpoints_html(content_text)
+        return parse_user_assertions_html(content_text)
+    except json.JSONDecodeError as exc:
+        raise ValidationError(
+            f"{field} is not valid JSON: {exc}",
+            errors=(
+                _FieldError(
+                    field=field, code="invalid_format", message=str(exc),
+                ),
+            ),
+        ) from exc
+    except Exception as exc:  # parser raises ValueError on malformed input
+        raise ValidationError(
+            f"{field} could not be parsed: {exc}",
+            errors=(
+                _FieldError(
+                    field=field, code="invalid_format", message=str(exc),
+                ),
+            ),
+        ) from exc
+
+
+def _serialize_recording_content(recording: Recording) -> dict[str, Any]:
+    """Shape the three per-language content fields for the GET response."""
+    return {
+        "key_takeaways": dict(recording.key_takeaways),
+        "user_painpoints": dict(recording.user_painpoints),
+        "user_assertions": dict(recording.user_assertions),
+    }
+
+
+@api_bp.route("/recordings/<recording_id>/content", methods=["GET"])
+@api_endpoint
+def get_recording_content(
+    recording_id: str,
+) -> tuple[Response, int] | Response:
+    """Read the recording's supplementary content fields.
+
+    Returns ``{key_takeaways, user_painpoints, user_assertions}``,
+    each a ``{lang: [items]}`` dict. Empty dicts when no content has
+    been uploaded for that field — never ``null``, so clients have
+    one parser.
+
+    Kept off the main :func:`get_recording_rest` response so the
+    common case (list / single-read of a recording) doesn't carry
+    potentially-large content payloads.
+    """
+    recording = get_db().get_recording(recording_id)
+    if recording is None:
+        raise NotFoundError(f"recording {recording_id} not found")
+    project_id = _resolve_recording_project_id(recording)
+    if project_id is None:
+        raise NotFoundError(f"recording {recording_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, project_id=project_id,
+    )
+    return jsonify(_serialize_recording_content(recording))
+
+
+@api_bp.route("/recordings/<recording_id>/content", methods=["PATCH"])
+@api_endpoint
+def patch_recording_content(
+    recording_id: str,
+) -> tuple[Response, int] | Response:
+    """Merge in supplementary content for a recording.
+
+    Multipart/form-data with any of these six optional file parts:
+
+    - ``key_takeaways_file_en`` / ``key_takeaways_file_fr``
+    - ``user_painpoints_file_en`` / ``user_painpoints_file_fr``
+    - ``user_assertions_file_en`` / ``user_assertions_file_fr``
+
+    Each present file is parsed (HTML or JSON by extension) and stored
+    in that ``(content_type, language)`` slot. Absent slots are
+    preserved — this is a partial update, not a replace. Sending zero
+    files is a valid no-op and returns the current content.
+
+    Empty filename → treated as absent (the legacy form did the same
+    for browser parts that the user left unselected).
+
+    Returns 200 with the post-update content. ADMIN/AUDITOR on the
+    project. PATCH was chosen over PUT because the merge-by-language
+    semantic is partial — a PUT here would have to also accept
+    "delete this slot" sentinels, which multipart doesn't model well.
+    """
+    if not request.content_type or not request.content_type.startswith(
+        "multipart/form-data"
+    ):
+        raise ValidationError(
+            "request must be multipart/form-data",
+            errors=(
+                _FieldError(
+                    field="<content-type>", code="invalid_type",
+                    message="must be multipart/form-data",
+                ),
+            ),
+        )
+
+    recording = get_db().get_recording(recording_id)
+    if recording is None:
+        raise NotFoundError(f"recording {recording_id} not found")
+    project_id = _resolve_recording_project_id(recording)
+    if project_id is None:
+        raise NotFoundError(f"recording {recording_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id,
+    )
+
+    any_changes = False
+    for part_name, attr_name, lang_code in _RECORDING_CONTENT_PARTS:
+        uploaded = request.files.get(part_name)
+        if uploaded is None or not uploaded.filename:
+            continue
+        content_bytes = uploaded.read()
+        try:
+            content_text = content_bytes.decode("utf-8")
+        except UnicodeDecodeError as exc:
+            raise ValidationError(
+                f"{part_name} must be valid UTF-8",
+                errors=(
+                    _FieldError(
+                        field=part_name, code="invalid_format",
+                        message=str(exc),
+                    ),
+                ),
+            ) from exc
+        parsed = _parse_recording_content_file(
+            uploaded.filename, content_text,
+            content_type=attr_name, field=part_name,
+        )
+        # ``getattr(recording, attr_name)`` is the per-language dict;
+        # we write a fresh dict-copy with the new slot so the model's
+        # default-factory ``{}`` isn't mutated under us across requests.
+        current: dict[str, list[dict[str, Any]]] = dict(
+            getattr(recording, attr_name)
+        )
+        current[lang_code] = parsed
+        setattr(recording, attr_name, current)
+        any_changes = True
+
+    if any_changes:
+        recording.updated_at = datetime.now()
+        if not get_db().update_recording(recording):
+            raise ConflictError(
+                f"recording {recording_id} could not be updated"
+            )
+        refreshed = get_db().get_recording(recording_id)
+        if refreshed is None:
+            raise ConflictError(
+                f"recording {recording_id} disappeared after update"
+            )
+        recording = refreshed
+
+    return jsonify(_serialize_recording_content(recording))
+
+
 @api_bp.route("/recordings/<recording_id>/issues", methods=["GET"])
 @api_endpoint
 def list_recording_issues_rest(

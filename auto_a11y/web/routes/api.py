@@ -500,6 +500,128 @@ def test_website(website_id: str) -> tuple[Response, int]:
     }), 202
 
 
+@api_bp.route('/projects/<project_id>/test-runs', methods=['POST'])
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
+def test_project(project_id: str) -> tuple[Response, int]:
+    """Queue a batch test run for every website in a project.
+
+    Each website is queued as its own test run via
+    ``start_website_test_run`` — the project-level endpoint is a thin
+    fan-out over the website-level batch endpoint. This gives clients
+    a single REST entry point for "test the whole project" without
+    forcing them to iterate over websites client-side, while keeping
+    the per-website queueing semantics (per-user sequential execution,
+    PDF audit folding) identical to the existing
+    ``POST /websites/<id>/test-runs``.
+
+    Body (all optional, applied uniformly to every website):
+
+    - ``project_user_ids`` / ``website_user_ids``: project test-users
+      to run as (forwarded to each website's queue)
+    - ``max_pages``: cap per website
+    - ``untested_only``: skip pages already TESTED
+
+    Returns 202 with a list of handles, one per website that had at
+    least one testable page. Websites with no eligible pages are
+    silently skipped — the response's ``websites_queued`` reflects
+    only the websites that actually queued a job. If *no* website in
+    the project has eligible pages, returns 400.
+
+    Errors:
+
+    - **404** — project does not exist
+    - **400** — project has no websites or no eligible pages anywhere
+    """
+    from auto_a11y.core.test_run_service import (
+        NoPagesToTestError,
+        WebsiteNotFoundError,
+        start_website_test_run,
+    )
+    from auto_a11y.web.typed_app import get_pdf_runner as _get_pdf_runner
+
+    project = get_db().get_project(project_id)
+    if not project:
+        return jsonify({'error': 'Project not found'}), 404
+
+    data: dict[str, Any] = request.get_json() or {}
+
+    max_pages_raw = data.get('max_pages')
+    max_pages: int | None = None
+    if max_pages_raw is not None and max_pages_raw != '':
+        try:
+            max_pages = int(max_pages_raw)
+            if max_pages <= 0:
+                max_pages = None
+        except (ValueError, TypeError):
+            max_pages = None
+
+    untested_only: bool = bool(data.get('untested_only', False))
+
+    def _widen_to_str_list(value: Any) -> list[str]:
+        items: list[Any] = []
+        for item in value:
+            items.append(item)
+        return [str(item) for item in items]
+
+    user_ids_raw_value: Any = (
+        data.get('project_user_ids') or data.get('website_user_ids')
+    )
+    user_ids_raw: list[str] | str | None
+    if isinstance(user_ids_raw_value, list):
+        user_ids_raw = _widen_to_str_list(user_ids_raw_value)
+    elif isinstance(user_ids_raw_value, str):
+        user_ids_raw = user_ids_raw_value
+    else:
+        user_ids_raw = None
+
+    websites = get_db().get_websites(project_id)
+    if not websites:
+        return jsonify({'error': 'Project has no websites'}), 400
+
+    pdf_runner = _get_pdf_runner()
+    test_runs: list[dict[str, Any]] = []
+    for website in websites:
+        if website.id is None:
+            continue
+        try:
+            handle = start_website_test_run(
+                get_db(),
+                get_app_config(),
+                website.id,
+                project_user_ids=user_ids_raw,
+                max_pages=max_pages,
+                untested_only=untested_only,
+                pdf_runner=pdf_runner,
+            )
+        except WebsiteNotFoundError:
+            # Race: website disappeared between list and start —
+            # skip it rather than fail the whole batch.
+            continue
+        except NoPagesToTestError:
+            # No eligible pages for this website; carry on with the rest.
+            continue
+        test_runs.append({
+            'job_id': handle.job_id,
+            'website_id': handle.website_id,
+            'pages_queued': handle.pages_queued,
+            'user_count': handle.user_count,
+            'total_tests': handle.total_tests,
+        })
+
+    if not test_runs:
+        return jsonify({'error': 'No pages to test in any website'}), 400
+
+    pages_queued_total = sum(t['pages_queued'] for t in test_runs)
+    total_tests_sum = sum(t['total_tests'] for t in test_runs)
+
+    return jsonify({
+        'project_id': project_id,
+        'websites_queued': len(test_runs),
+        'pages_queued': pages_queued_total,
+        'total_tests': total_tests_sum,
+        'test_runs': test_runs,
+        'status': 'queued',
+    }), 202
 
 
 # Health Check
@@ -2557,6 +2679,75 @@ def replace_page_matrix(page_id: str) -> tuple[Response, int] | Response:
     return jsonify(_serialize_test_state_matrix(
         matrix, page_id=page_id, website_id=page.website_id
     ))
+
+
+@api_bp.route("/pages/<page_id>/test-runs/latest", methods=["GET"])
+@api_endpoint
+def get_page_test_run_latest(
+    page_id: str,
+) -> tuple[Response, int] | Response:
+    """Read the page's current/most-recent test-run status.
+
+    Unlike :func:`get_page_test_results` (which lists every historical
+    test result), this endpoint surfaces *just* the run-level state so
+    UIs can drive a "test in flight" indicator without fetching the
+    whole result history:
+
+        {
+          "page_id":             "...",
+          "status":               "discovered|queued|testing|tested|error|skipped|...",
+          "last_tested":          "ISO-8601" | null,
+          "last_test_result_id":  "..." | null,
+          "active_task_id":       "..." | null
+        }
+
+    ``active_task_id`` is the ``task_runner`` task id (pattern
+    ``test_page_<page_id>_<timestamp>``) when the worker is still
+    running, otherwise ``null``. Single-page tests don't create
+    JobManager records, so this endpoint can't surface a richer "job"
+    payload the way the website / pdf-audit latest endpoints do —
+    the page's own ``status`` is the source of truth.
+
+    ``last_test_result_id`` points at the most recent TestResult
+    document for the page, regardless of run outcome, so clients can
+    deep-link to the historical view.
+
+    Auth: ADMIN/AUDITOR/CLIENT on the page's website (read-only;
+    matches the existing /pages/<id> GET).
+    """
+    from auto_a11y.core.task_runner import task_runner
+
+    page = get_db().get_page(page_id)
+    if page is None:
+        raise NotFoundError(f"page {page_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT,
+        website_id=page.website_id,
+    )
+
+    task_pattern = f"test_page_{page_id}_"
+    active_task_id: str | None = None
+    for active in task_runner.get_active_tasks():
+        if active.startswith(task_pattern):
+            active_task_id = active
+            break
+
+    # Latest TestResult — limit=1 so we don't pay to hydrate a long
+    # history just to read the id.
+    latest_results = get_db().get_test_results(page_id=page_id, limit=1)
+    last_test_result_id = (
+        latest_results[0].id if latest_results else None
+    )
+
+    return jsonify({
+        "page_id": page_id,
+        "status": page.status.value,
+        "last_tested": (
+            page.last_tested.isoformat() if page.last_tested else None
+        ),
+        "last_test_result_id": last_test_result_id,
+        "active_task_id": active_task_id,
+    })
 
 
 @api_bp.route("/pages/<page_id>/test-runs/latest/cancel", methods=["POST"])

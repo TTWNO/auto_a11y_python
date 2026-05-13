@@ -5136,6 +5136,306 @@ def _resolve_recording_project_id(recording: Recording) -> str | None:
     return recording.project_id
 
 
+def _parse_multiline_form_field(value: str | None) -> list[str]:
+    """Split a textarea-style form field (one item per line) to a list.
+
+    Empty input yields an empty list; whitespace-only lines are
+    dropped. Used by the recordings upload route for the page_urls /
+    component_names / app_screens / device_sections fields the legacy
+    multipart form accepts.
+    """
+    if not value:
+        return []
+    return [line.strip() for line in value.split("\n") if line.strip()]
+
+
+@api_bp.route("/recordings", methods=["POST"])
+@api_endpoint
+def create_recording_rest() -> tuple[Response, int] | Response:
+    """Upload a Dictaphone JSON recording.
+
+    Multipart/form-data shape:
+
+    - ``project_id`` (form, required)
+    - ``recording_json_en`` (file, required) — Dictaphone JSON
+    - ``recording_json_fr`` (file, optional) — second-language file;
+      its ``recording`` id must match the English file's
+    - Optional form fields: ``title``, ``description``,
+      ``auditor_name``, ``auditor_role``, ``recording_type``,
+      ``task_description``, ``test_user_account``,
+      ``lived_experience_tester_id``, ``test_supervisor_id``,
+      ``media_file_path``, ``page_urls``, ``component_names``,
+      ``app_screens``, ``device_sections``, ``discovered_page_ids``
+      (the last 5 are newline-separated lists)
+    - Testing scope checkboxes (``scope_forms`` through
+      ``scope_drag_drop``) are accepted with ``"on"`` for true (the
+      browser idiom); any other value is false.
+
+    Returns 201 with the new Recording on success.
+
+    Out of scope for this commit (deferred to follow-up PATCH):
+      supplementary content files for key-takeaways, painpoints, and
+      assertions — those land via separate endpoints once the storage
+      shape is settled.
+
+    Errors:
+
+    - **400** — required field/file missing, non-JSON file, language
+      mismatch between en/fr files, invalid ``recording_type``
+    - **404** — project does not exist
+    - **409** — recording id from the file already exists (Dictaphone's
+      ``recording`` field is the dedup key)
+    """
+    import json
+    import tempfile
+    from pathlib import Path
+
+    from auto_a11y.importers import DictaphoneImporter
+
+    if not request.content_type or not request.content_type.startswith(
+        "multipart/form-data"
+    ):
+        raise ValidationError(
+            "request must be multipart/form-data",
+            errors=(
+                _FieldError(
+                    field="<content-type>", code="invalid_type",
+                    message="must be multipart/form-data",
+                ),
+            ),
+        )
+
+    project_id_raw = request.form.get("project_id")
+    if not project_id_raw:
+        raise ValidationError(
+            "project_id is required",
+            errors=(
+                _FieldError(
+                    field="project_id", code="required", message="required",
+                ),
+            ),
+        )
+    project = get_db().get_project(project_id_raw)
+    if project is None:
+        raise NotFoundError(f"project {project_id_raw} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id_raw,
+    )
+
+    file_en = request.files.get("recording_json_en")
+    if file_en is None or not file_en.filename:
+        raise ValidationError(
+            "recording_json_en part is required",
+            errors=(
+                _FieldError(
+                    field="recording_json_en", code="required",
+                    message="required",
+                ),
+            ),
+        )
+    if not file_en.filename.endswith(".json"):
+        raise ValidationError(
+            "recording_json_en must be a .json file",
+            errors=(
+                _FieldError(
+                    field="recording_json_en", code="invalid_value",
+                    message="must end with .json",
+                ),
+            ),
+        )
+
+    file_fr = request.files.get("recording_json_fr")
+    has_french = file_fr is not None and file_fr.filename and file_fr.filename.endswith(".json")
+
+    recording_type_raw = request.form.get("recording_type", "audit")
+    try:
+        RecordingType(recording_type_raw)
+    except ValueError as exc:
+        raise ValidationError(
+            f"recording_type {recording_type_raw!r} is not recognized",
+            errors=(
+                _FieldError(
+                    field="recording_type", code="invalid_value",
+                    message=str(exc),
+                ),
+            ),
+        ) from exc
+
+    # Read both files now so a parse error reports as 400, not 500.
+    content_en = file_en.read().decode("utf-8")
+    try:
+        data_en = json.loads(content_en)
+    except json.JSONDecodeError as exc:
+        raise ValidationError(
+            f"recording_json_en is not valid JSON: {exc}",
+            errors=(
+                _FieldError(
+                    field="recording_json_en", code="invalid_format",
+                    message=str(exc),
+                ),
+            ),
+        ) from exc
+
+    recording_id_value: str = str(data_en.get("recording", "")).strip()
+    if not recording_id_value:
+        raise ValidationError(
+            "recording_json_en is missing the 'recording' id field",
+            errors=(
+                _FieldError(
+                    field="recording_json_en.recording", code="required",
+                    message="required",
+                ),
+            ),
+        )
+
+    content_fr: str | None = None
+    if has_french and file_fr is not None:
+        # Use a local non-Optional ``content_fr_text`` for the
+        # ``json.loads`` call so pyright keeps the narrowing.
+        content_fr_text = file_fr.read().decode("utf-8")
+        content_fr = content_fr_text
+        try:
+            data_fr = json.loads(content_fr_text)
+        except json.JSONDecodeError as exc:
+            raise ValidationError(
+                f"recording_json_fr is not valid JSON: {exc}",
+                errors=(
+                    _FieldError(
+                        field="recording_json_fr", code="invalid_format",
+                        message=str(exc),
+                    ),
+                ),
+            ) from exc
+        recording_id_fr = str(data_fr.get("recording", "")).strip()
+        if recording_id_fr != recording_id_value:
+            raise ValidationError(
+                f"recording id mismatch: en={recording_id_value!r}, fr={recording_id_fr!r}",
+                errors=(
+                    _FieldError(
+                        field="recording_json_fr.recording",
+                        code="invalid_value",
+                        message="must match recording_json_en.recording",
+                    ),
+                ),
+            )
+
+    existing = get_db().get_recording_by_recording_id(recording_id_value)
+    if existing is not None:
+        raise ConflictError(
+            f"recording {recording_id_value!r} already exists"
+        )
+
+    auditor_info: dict[str, Any] = {
+        "title": request.form.get("title", ""),
+        "description": request.form.get("description", ""),
+        "auditor_name": request.form.get("auditor_name", ""),
+        "auditor_role": request.form.get("auditor_role", ""),
+        "test_user_account": (
+            request.form.get("test_user_account", "").strip() or None
+        ),
+        "lived_experience_tester_id": (
+            request.form.get("lived_experience_tester_id", "").strip() or None
+        ),
+        "test_supervisor_id": (
+            request.form.get("test_supervisor_id", "").strip() or None
+        ),
+        "media_file_path": request.form.get("media_file_path", ""),
+    }
+    testing_scope: dict[str, bool] = {
+        "forms": request.form.get("scope_forms") == "on",
+        "video": request.form.get("scope_video") == "on",
+        "live_multimedia": request.form.get("scope_live_multimedia") == "on",
+        "multilingual": request.form.get("scope_multilingual") == "on",
+        "orientation": request.form.get("scope_orientation") == "on",
+        "zoom": request.form.get("scope_zoom") == "on",
+        "timeouts": request.form.get("scope_timeouts") == "on",
+        "motion_actuation": request.form.get("scope_motion_actuation") == "on",
+        "drag_drop": request.form.get("scope_drag_drop") == "on",
+    }
+
+    page_urls = _parse_multiline_form_field(request.form.get("page_urls"))
+    component_names = _parse_multiline_form_field(
+        request.form.get("component_names")
+    )
+    app_screens = _parse_multiline_form_field(
+        request.form.get("app_screens")
+    )
+    device_sections = _parse_multiline_form_field(
+        request.form.get("device_sections")
+    )
+    discovered_page_ids = request.form.getlist("discovered_page_ids")
+    task_description = (
+        request.form.get("task_description", "").strip() or None
+    )
+
+    importer = DictaphoneImporter()
+    tmp_paths: list[Path] = []
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix="_en.json", delete=False, encoding="utf-8",
+        ) as tmp_en:
+            tmp_en.write(content_en)
+            tmp_paths.append(Path(tmp_en.name))
+
+        recording, issues_en = importer.import_from_file(
+            str(tmp_paths[0]),
+            project_id=project_id_raw,
+            page_urls=page_urls,
+            discovered_page_ids=discovered_page_ids,
+            component_names=component_names,
+            app_screens=app_screens,
+            device_sections=device_sections,
+            task_description=task_description,
+            auditor_info=auditor_info,
+            recording_type=recording_type_raw,
+            testing_scope=testing_scope,
+            language="en",
+        )
+
+        all_issues: list[RecordingIssue] = list(issues_en)
+        if content_fr is not None:
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix="_fr.json", delete=False, encoding="utf-8",
+            ) as tmp_fr:
+                tmp_fr.write(content_fr)
+                tmp_paths.append(Path(tmp_fr.name))
+            _, issues_fr = importer.import_from_file(
+                str(tmp_paths[1]),
+                project_id=project_id_raw,
+                page_urls=page_urls,
+                discovered_page_ids=discovered_page_ids,
+                component_names=component_names,
+                app_screens=app_screens,
+                device_sections=device_sections,
+                task_description=task_description,
+                auditor_info=auditor_info,
+                recording_type=recording_type_raw,
+                testing_scope=testing_scope,
+                language="fr",
+            )
+            all_issues.extend(issues_fr)
+
+        created_id = get_db().create_recording(recording)
+        get_db().create_recording_issues_bulk(all_issues)
+
+        # Mirror the legacy form: append the new recording id to
+        # ``project.recording_ids`` so the project view sees it.
+        if created_id not in project.recording_ids:
+            project.recording_ids.append(created_id)
+            get_db().update_project(project)
+
+        refreshed = get_db().get_recording(created_id)
+        if refreshed is None:
+            raise ConflictError("recording failed to persist")
+    finally:
+        for path in tmp_paths:
+            path.unlink(missing_ok=True)
+
+    response = jsonify(_serialize_recording(refreshed))
+    response.headers["Location"] = f"/api/v1/recordings/{created_id}"
+    return response, 201
+
+
 @api_bp.route("/recordings", methods=["GET"])
 @api_endpoint
 def list_recordings_rest() -> tuple[Response, int] | Response:
@@ -5934,6 +6234,274 @@ def list_pdfs_for_website(website_id: str) -> tuple[Response, int] | Response:
     if get_db().get_website(website_id) is None:
         raise NotFoundError(f"website {website_id} not found")
     return _list_pdfs_with_query({"website_id": website_id})
+
+
+@api_bp.route("/projects/<project_id>/pdfs", methods=["POST"])
+@api_endpoint
+def create_pdf_for_project(
+    project_id: str,
+) -> tuple[Response, int] | Response:
+    """Add a PDF to a project — multipart upload OR remote URL fetch.
+
+    Two request shapes share this handler:
+
+    1. **multipart/form-data**: ``pdf_file`` part with the raw PDF
+       bytes plus a ``website_id`` form field selecting which website
+       in the project to attach the document to. Optional
+       ``original_filename`` form field overrides the part's
+       ``filename`` attribute.
+
+    2. **application/json**: ``{"website_id": "...", "source_url":
+       "https://..."}``. The server fetches the URL with
+       :meth:`PdfRunner.fetch_pdf_from_url`. Optional ``website_user_id``
+       supplies a project test-user credential for sites that require
+       auth.
+
+    The two paths converge on
+    :meth:`PdfRunner.create_or_find_pdf_document` which dedupes by
+    ``(website_id, sha256)``. A dedup hit returns the *existing*
+    document with **status 200**; a new document persists and returns
+    **201** with a ``Location`` header pointing at
+    ``/api/v1/pdf-documents/<id>``.
+
+    Errors:
+
+    - **400** — body missing required fields, ``website_id`` not in
+      ``project_id``, JSON body without ``source_url``, multipart
+      without ``pdf_file``, fetch failure (4xx/5xx from source url),
+      file not a PDF (magic-byte check), or file exceeds the
+      ``PDF_MAX_SIZE`` cap.
+    - **404** — project or website does not exist.
+    - **409** — server has no :class:`PdfRunner` configured.
+
+    Auth: ADMIN/AUDITOR on the project — same as the legacy
+    ``POST /projects/<id>/pdfs`` form.
+    """
+    import asyncio
+
+    from auto_a11y.pdf.errors import FetchFailed, NotAPdf, PdfTooLarge
+    from auto_a11y.web.typed_app import get_pdf_runner
+
+    project = get_db().get_project(project_id)
+    if project is None:
+        raise NotFoundError(f"project {project_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id,
+    )
+
+    runner = get_pdf_runner()
+    if runner is None:
+        raise ConflictError(
+            "PDF runner is not configured on this server"
+        )
+
+    user_id_str: str | None = None
+    if current_user.is_authenticated:
+        raw_uid: Any = current_user.get_id()
+        user_id_str = str(raw_uid) if raw_uid is not None else None
+
+    # Branch on Content-Type. Browser-submitted multipart from the
+    # legacy form and a curl-style JSON POST both end up here; the
+    # handler routes by the body shape rather than separate URLs to
+    # keep the upload-or-link choice client-side.
+    is_multipart = request.content_type and request.content_type.startswith(
+        "multipart/form-data"
+    )
+
+    if is_multipart:
+        website_id_raw: str | None = request.form.get("website_id")
+        if not website_id_raw:
+            raise ValidationError(
+                "website_id is required",
+                errors=(
+                    _FieldError(
+                        field="website_id", code="required",
+                        message="required",
+                    ),
+                ),
+            )
+        website = get_db().get_website(website_id_raw)
+        if website is None or website.project_id != project_id:
+            raise NotFoundError(
+                f"website {website_id_raw} not in project {project_id}"
+            )
+
+        uploaded = request.files.get("pdf_file")
+        if uploaded is None or not uploaded.filename:
+            raise ValidationError(
+                "pdf_file part is required",
+                errors=(
+                    _FieldError(
+                        field="pdf_file", code="required",
+                        message="required",
+                    ),
+                ),
+            )
+
+        original_filename = (
+            request.form.get("original_filename")
+            or uploaded.filename
+            or "document.pdf"
+        )
+        pdf_bytes = uploaded.read()
+
+        try:
+            doc = asyncio.run(
+                runner.create_or_find_pdf_document(
+                    pdf_bytes,
+                    website_id=website_id_raw,
+                    project_id=project_id,
+                    source_type="uploaded",
+                    discovered_from_page_id=None,
+                    discovered_from_user_id=user_id_str,
+                    original_filename=original_filename,
+                    source_url=None,
+                )
+            )
+        except NotAPdf as exc:
+            raise ValidationError(
+                "uploaded bytes are not a PDF",
+                errors=(
+                    _FieldError(
+                        field="pdf_file", code="invalid_value",
+                        message=str(exc),
+                    ),
+                ),
+            ) from exc
+        except PdfTooLarge as exc:
+            raise ValidationError(
+                f"PDF exceeds max size ({exc.size_bytes} > {exc.limit_bytes})",
+                errors=(
+                    _FieldError(
+                        field="pdf_file", code="too_large",
+                        message=f"{exc.size_bytes} > {exc.limit_bytes}",
+                    ),
+                ),
+            ) from exc
+    else:
+        body = _require_dict_body()
+        website_id_body = body.get("website_id")
+        if not isinstance(website_id_body, str) or not website_id_body:
+            raise ValidationError(
+                "website_id is required",
+                errors=(
+                    _FieldError(
+                        field="website_id", code="required",
+                        message="required",
+                    ),
+                ),
+            )
+        website = get_db().get_website(website_id_body)
+        if website is None or website.project_id != project_id:
+            raise NotFoundError(
+                f"website {website_id_body} not in project {project_id}"
+            )
+
+        source_url_raw = body.get("source_url")
+        if not isinstance(source_url_raw, str) or not source_url_raw:
+            raise ValidationError(
+                "source_url is required when not uploading a file",
+                errors=(
+                    _FieldError(
+                        field="source_url", code="required",
+                        message="required",
+                    ),
+                ),
+            )
+        website_user_id_raw = body.get("website_user_id")
+        website_user_id = (
+            website_user_id_raw
+            if isinstance(website_user_id_raw, str) and website_user_id_raw
+            else None
+        )
+
+        try:
+            pdf_bytes = asyncio.run(
+                runner.fetch_pdf_from_url(
+                    source_url_raw, website_user_id=website_user_id,
+                )
+            )
+        except FetchFailed as exc:
+            raise ValidationError(
+                f"fetch failed: {exc.reason}",
+                errors=(
+                    _FieldError(
+                        field="source_url", code="fetch_failed",
+                        message=exc.reason,
+                    ),
+                ),
+            ) from exc
+        except PdfTooLarge as exc:
+            raise ValidationError(
+                f"remote PDF exceeds max size ({exc.size_bytes} > {exc.limit_bytes})",
+                errors=(
+                    _FieldError(
+                        field="source_url", code="too_large",
+                        message=f"{exc.size_bytes} > {exc.limit_bytes}",
+                    ),
+                ),
+            ) from exc
+        except NotAPdf as exc:
+            raise ValidationError(
+                "fetched bytes are not a PDF",
+                errors=(
+                    _FieldError(
+                        field="source_url", code="invalid_value",
+                        message=str(exc),
+                    ),
+                ),
+            ) from exc
+
+        derived_filename = (
+            source_url_raw.rsplit("/", 1)[-1] or "document.pdf"
+        )
+        try:
+            doc = asyncio.run(
+                runner.create_or_find_pdf_document(
+                    pdf_bytes,
+                    website_id=website_id_body,
+                    project_id=project_id,
+                    source_type="manual_url",
+                    discovered_from_page_id=None,
+                    discovered_from_user_id=user_id_str,
+                    original_filename=derived_filename,
+                    source_url=source_url_raw,
+                )
+            )
+        except NotAPdf as exc:
+            raise ValidationError(
+                "fetched bytes are not a PDF",
+                errors=(
+                    _FieldError(
+                        field="source_url", code="invalid_value",
+                        message=str(exc),
+                    ),
+                ),
+            ) from exc
+        except PdfTooLarge as exc:
+            raise ValidationError(
+                f"remote PDF exceeds max size ({exc.size_bytes} > {exc.limit_bytes})",
+                errors=(
+                    _FieldError(
+                        field="source_url", code="too_large",
+                        message=f"{exc.size_bytes} > {exc.limit_bytes}",
+                    ),
+                ),
+            ) from exc
+
+    # Dedup behaviour: ``create_or_find_pdf_document`` returns the
+    # existing record on a (website_id, sha256) hit. We can't tell new
+    # vs hit from the doc alone, so we infer: a freshly-created doc
+    # has its ``discovered_at`` within the last second of "now". This
+    # is sound because the legacy form returned the same redirect on
+    # both paths — we just want clients to distinguish 200 (hit) from
+    # 201 (created) when they care.
+    # PdfDocument.discovered_at is non-Optional, so the comparison
+    # alone is enough to infer "just created" vs dedup hit.
+    is_new = (datetime.now() - doc.discovered_at).total_seconds() < 2.0
+    response = jsonify(_serialize_pdf_document(doc))
+    response.headers["Location"] = f"/api/v1/pdf-documents/{doc.id}"
+    return response, (201 if is_new else 200)
 
 
 @api_bp.route("/pdf-documents/<pdf_id>", methods=["GET"])

@@ -1013,6 +1013,7 @@ from auto_a11y.web.api import (  # noqa: E402
     api_endpoint,
     paginate,
     require_project_role,
+    require_superadmin,
 )
 from auto_a11y.web.api.errors import FieldError as _FieldError  # noqa: E402
 from auto_a11y.web.api.pagination import Cursor as _Cursor  # noqa: E402
@@ -2651,6 +2652,408 @@ def cancel_page_test_run_latest(page_id: str) -> tuple[Response, int] | Response
         "cancellation_requested": cancelled,
         "status": refreshed.status.value,
     }), 202
+
+
+# ---------------------------------------------------------------------------
+# Top-level test-runs + testing config (REST shape — §5.4 of
+# docs/REST_API_ROADMAP.md).
+#
+# Replaces the hollow legacy routes on `testing_bp`:
+#   - POST /testing/run-test    → only updated page.status (no real queue)
+#   - POST /testing/batch-test  → only returned a fake batch_id
+#   - GET/POST /testing/configure → HTML form
+#
+# The new routes delegate to :mod:`auto_a11y.core.test_run_service`
+# (the same helper the per-page and per-website routes call) so the
+# generic top-level URL actually queues work instead of just flipping
+# status flags.
+# ---------------------------------------------------------------------------
+
+
+def _parse_optional_bool(raw: Any, *, field: str) -> bool | None:
+    if raw is None:
+        return None
+    if isinstance(raw, bool):
+        return raw
+    raise ValidationError(
+        f"{field} must be a boolean",
+        errors=(
+            _FieldError(field=field, code="invalid_type", message="must be bool"),
+        ),
+    )
+
+
+def _parse_optional_str(raw: Any, *, field: str) -> str | None:
+    if raw is None:
+        return None
+    if isinstance(raw, str):
+        return raw
+    raise ValidationError(
+        f"{field} must be a string",
+        errors=(
+            _FieldError(field=field, code="invalid_type", message="must be string"),
+        ),
+    )
+
+
+def _parse_required_str(raw: Any, *, field: str) -> str:
+    if not isinstance(raw, str) or not raw:
+        raise ValidationError(
+            f"{field} is required",
+            errors=(
+                _FieldError(field=field, code="required", message="required"),
+            ),
+        )
+    return raw
+
+
+def _parse_str_list(raw: Any, *, field: str) -> list[str]:
+    if not isinstance(raw, list):
+        raise ValidationError(
+            f"{field} must be a list of strings",
+            errors=(
+                _FieldError(field=field, code="invalid_type", message="must be list"),
+            ),
+        )
+    raw_list = _iter_to_any_list(raw)
+    result: list[str] = []
+    for idx, item in enumerate(raw_list):
+        if not isinstance(item, str):
+            raise ValidationError(
+                f"{field}[{idx}] must be a string",
+                errors=(
+                    _FieldError(
+                        field=f"{field}[{idx}]",
+                        code="invalid_type",
+                        message="must be string",
+                    ),
+                ),
+            )
+        result.append(item)
+    return result
+
+
+@api_bp.route("/test-runs", methods=["POST"])
+@api_endpoint
+def create_test_run(
+) -> tuple[Response, int] | Response:
+    """Queue a single-page accessibility test run.
+
+    Body:
+
+        {
+          "page_id": "...",                // required
+          "enable_multi_state": bool,      // optional, default true
+          "website_user_id": "..."         // optional
+        }
+
+    Returns 202 with the same handle shape as
+    ``POST /api/v1/pages/<id>/test-runs`` — both call
+    :func:`auto_a11y.core.test_run_service.start_page_test_run`. The
+    per-page URL stays alive for clients that already know the page id
+    in the path; this top-level form is for callers who already have
+    the page id in their request body (e.g. a "test this page"
+    bookmark service or a queue worker).
+
+    Use :func:`create_test_runs_batch` for multiple pages — looping
+    this endpoint client-side is fine but the batch shape is more
+    convenient.
+    """
+    from auto_a11y.core.test_run_service import (
+        BrowserDisabledError,
+        BrowserRemoteError,
+        PageNotFoundError,
+        start_page_test_run,
+    )
+
+    body = _require_dict_body()
+    page_id = _parse_required_str(body.get("page_id"), field="page_id")
+    enable_multi_state = _parse_optional_bool(
+        body.get("enable_multi_state"), field="enable_multi_state"
+    )
+    if enable_multi_state is None:
+        enable_multi_state = True
+    website_user_id = _parse_optional_str(
+        body.get("website_user_id"), field="website_user_id"
+    )
+
+    page = get_db().get_page(page_id)
+    if page is None:
+        raise NotFoundError(f"page {page_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, website_id=page.website_id
+    )
+
+    try:
+        handle = start_page_test_run(
+            get_db(),
+            get_app_config(),
+            page_id,
+            enable_multi_state=enable_multi_state,
+            website_user_id=website_user_id,
+        )
+    except BrowserDisabledError as exc:
+        raise ConflictError(str(exc)) from exc
+    except BrowserRemoteError as exc:
+        raise ConflictError(str(exc)) from exc
+    except PageNotFoundError as exc:
+        # Race: the page existed at the auth check but disappeared
+        # between then and the service call. Treat as a fresh 404.
+        raise NotFoundError(str(exc)) from exc
+
+    return jsonify({
+        "job_id": handle.job_id,
+        "page_id": handle.page_id,
+        "multi_state": handle.multi_state,
+        "status": "queued",
+    }), 202
+
+
+@api_bp.route("/test-runs/batch", methods=["POST"])
+@api_endpoint
+def create_test_runs_batch(
+) -> tuple[Response, int] | Response:
+    """Queue accessibility test runs for several pages.
+
+    Body:
+
+        {
+          "page_ids": ["...", "..."],      // required, 1..N entries
+          "enable_multi_state": bool,      // optional, default true
+          "website_user_id": "..."         // optional, applied to every run
+        }
+
+    Each page is queued through
+    :func:`auto_a11y.core.test_run_service.start_page_test_run`, the
+    same helper :func:`create_test_run` and the per-page endpoint use.
+    Pages from different websites can be mixed — auth is enforced
+    per-page so a non-admin caller will fail on the first page they
+    don't have access to.
+
+    On success returns 202 with a list of handles, one per queued
+    page, in the same order as the input. If ``page_ids`` contains an
+    unknown id, the request fails with 404 *before* anything is queued,
+    so the operation is all-or-nothing.
+
+    Use :func:`test_website` (``POST /websites/<id>/test-runs``) when
+    you want to test every page on a website — it handles the
+    per-user sequential execution and PDF audit folding that this
+    endpoint deliberately doesn't.
+    """
+    from auto_a11y.core.test_run_service import (
+        BrowserDisabledError,
+        BrowserRemoteError,
+        PageNotFoundError,
+        start_page_test_run,
+    )
+
+    body = _require_dict_body()
+    page_ids = _parse_str_list(body.get("page_ids"), field="page_ids")
+    if not page_ids:
+        raise ValidationError(
+            "page_ids must contain at least one entry",
+            errors=(
+                _FieldError(
+                    field="page_ids", code="too_short", message="min 1 entry"
+                ),
+            ),
+        )
+    enable_multi_state = _parse_optional_bool(
+        body.get("enable_multi_state"), field="enable_multi_state"
+    )
+    if enable_multi_state is None:
+        enable_multi_state = True
+    website_user_id = _parse_optional_str(
+        body.get("website_user_id"), field="website_user_id"
+    )
+
+    # Validate every page up front so we don't half-queue on a typo.
+    pages: list[Page] = []
+    for page_id in page_ids:
+        page = get_db().get_page(page_id)
+        if page is None:
+            raise NotFoundError(f"page {page_id} not found")
+        require_project_role(
+            UserRole.ADMIN, UserRole.AUDITOR, website_id=page.website_id
+        )
+        pages.append(page)
+
+    handles: list[dict[str, Any]] = []
+    for page in pages:
+        assert page.id is not None
+        try:
+            handle = start_page_test_run(
+                get_db(),
+                get_app_config(),
+                page.id,
+                enable_multi_state=enable_multi_state,
+                website_user_id=website_user_id,
+            )
+        except BrowserDisabledError as exc:
+            raise ConflictError(str(exc)) from exc
+        except BrowserRemoteError as exc:
+            raise ConflictError(str(exc)) from exc
+        except PageNotFoundError as exc:
+            raise NotFoundError(str(exc)) from exc
+        handles.append({
+            "job_id": handle.job_id,
+            "page_id": handle.page_id,
+            "multi_state": handle.multi_state,
+        })
+
+    return jsonify({
+        "status": "queued",
+        "pages_queued": len(handles),
+        "runs": handles,
+    }), 202
+
+
+# Runtime config keys the testing config endpoint exposes.
+# Tuple form keeps ordering deterministic across GET/PUT.
+_TESTING_CONFIG_FIELDS: tuple[tuple[str, str, type[Any]], ...] = (
+    # (json_field, Config attribute name, expected python type)
+    ("parallel_tests", "PARALLEL_TESTS", int),
+    ("test_timeout", "TEST_TIMEOUT", int),
+    ("run_ai_analysis", "RUN_AI_ANALYSIS", bool),
+    ("browser_headless", "BROWSER_HEADLESS", bool),
+    ("viewport_width", "BROWSER_VIEWPORT_WIDTH", int),
+    ("viewport_height", "BROWSER_VIEWPORT_HEIGHT", int),
+    ("pages_per_page", "PAGES_PER_PAGE", int),
+    ("max_pages_per_page", "MAX_PAGES_PER_PAGE", int),
+    ("show_error_codes", "SHOW_ERROR_CODES", bool),
+)
+
+
+def _read_testing_config_field(
+    cfg: Any, *, attr: str, py_type: type[Any]
+) -> Any:
+    """Read a single config attribute with a sensible per-type default.
+
+    Several fields are optional on the Config dataclass (``getattr`` in
+    the legacy route uses defaults like ``100`` / ``500`` / ``False``).
+    Returning a typed default — instead of letting ``None`` leak into
+    the JSON — keeps the response schema stable across deployments
+    that haven't set every flag in ``.env``.
+    """
+    if py_type is bool:
+        return bool(getattr(cfg, attr, False))
+    if py_type is int:
+        return int(getattr(cfg, attr, 0))
+    return getattr(cfg, attr)
+
+
+def _serialize_testing_config(cfg: Any) -> dict[str, Any]:
+    return {
+        field: _read_testing_config_field(cfg, attr=attr, py_type=py_type)
+        for field, attr, py_type in _TESTING_CONFIG_FIELDS
+    }
+
+
+@api_bp.route("/testing/config", methods=["GET"])
+@api_endpoint
+def get_testing_config() -> tuple[Response, int] | Response:
+    """Read the runtime testing config.
+
+    Mirrors the legacy GET ``/testing/configure`` form view, but emits
+    JSON only (the HTML form has been retained on ``testing_bp`` for
+    the admin UI). Fields:
+
+    - ``parallel_tests`` (int)
+    - ``test_timeout`` (int, ms)
+    - ``run_ai_analysis`` (bool)
+    - ``browser_headless`` (bool)
+    - ``viewport_width`` / ``viewport_height`` (int)
+    - ``pages_per_page`` / ``max_pages_per_page`` (int — pagination defaults)
+    - ``show_error_codes`` (bool — developer/debug toggle)
+
+    Superadmin-only because this surface also gates the PUT writer
+    and we don't want two role checks to drift.
+    """
+    require_superadmin()
+    return jsonify(_serialize_testing_config(get_app_config()))
+
+
+@api_bp.route("/testing/config", methods=["PUT"])
+@api_endpoint
+def replace_testing_config() -> tuple[Response, int] | Response:
+    """Update runtime testing config keys.
+
+    Body shape:
+
+        {
+          "parallel_tests": 4,
+          "browser_headless": false,
+          ...
+        }
+
+    Any subset of :data:`_TESTING_CONFIG_FIELDS` is accepted; missing
+    keys are left untouched (PUT here is a *full-update-or-no-change*,
+    matching the legacy POST handler that only wrote the keys present
+    in the body). Unknown keys raise 400 so typos surface immediately
+    instead of silently dropping.
+
+    Type-validates each present key — pyright/mypy strict mode wants
+    real ``bool`` / ``int`` values, not the JSON-coerced ``Any`` the
+    legacy route happily passed straight into the Config attributes.
+
+    Returns the full post-update config so callers can confirm the
+    effective values without a follow-up GET.
+
+    **In-process only:** writes go to the live :class:`Config` object,
+    not to ``.env`` or a database — the changes survive until the
+    process restarts. Persisting these settings is out of scope for
+    #27; an admin-settings PR (#36) covers the persistent equivalents.
+    """
+    require_superadmin()
+    body = _require_dict_body()
+
+    known_fields = {f for f, _, _ in _TESTING_CONFIG_FIELDS}
+    unknown = set(body) - known_fields
+    if unknown:
+        sorted_unknown = sorted(unknown)
+        raise ValidationError(
+            f"unknown config keys: {sorted_unknown}",
+            errors=tuple(
+                _FieldError(
+                    field=key, code="unknown_field", message="unknown config key"
+                )
+                for key in sorted_unknown
+            ),
+        )
+
+    cfg = get_app_config()
+    for field, attr, py_type in _TESTING_CONFIG_FIELDS:
+        if field not in body:
+            continue
+        value: Any = body[field]
+        if py_type is bool:
+            if not isinstance(value, bool):
+                raise ValidationError(
+                    f"{field} must be a boolean",
+                    errors=(
+                        _FieldError(
+                            field=field, code="invalid_type", message="must be bool"
+                        ),
+                    ),
+                )
+            setattr(cfg, attr, value)
+        elif py_type is int:
+            # ``isinstance(True, int)`` is True in Python — exclude bools
+            # so a stray ``true`` in the JSON isn't coerced to 1.
+            if not isinstance(value, int) or isinstance(value, bool):
+                raise ValidationError(
+                    f"{field} must be an integer",
+                    errors=(
+                        _FieldError(
+                            field=field, code="invalid_type", message="must be int"
+                        ),
+                    ),
+                )
+            setattr(cfg, attr, value)
+        else:
+            setattr(cfg, attr, value)
+
+    return jsonify(_serialize_testing_config(cfg))
 
 
 # ---------------------------------------------------------------------------

@@ -4750,6 +4750,176 @@ def delete_script_rest(script_id: str) -> tuple[Response, int]:
     return Response(status=204), 204
 
 
+@api_bp.route("/scripts/<script_id>/test-runs", methods=["POST"])
+@api_endpoint
+def run_script_test(
+    script_id: str,
+) -> tuple[Response, int] | Response:
+    """Execute a setup script against its target URL and return the result.
+
+    **Synchronous** — distinct from every other ``/test-runs`` endpoint
+    on this surface. The legacy ``POST /scripts/<id>/test`` blocks the
+    request thread until the browser executes the script, and clients
+    rely on the inline result; this REST shape preserves that semantic
+    even though the URL implies async by convention. The 200 status
+    code (rather than the usual 202) signals "done synchronously" so
+    callers don't poll a non-existent job.
+
+    Target URL resolution:
+
+    - PAGE-scoped scripts run against the linked page's URL
+    - WEBSITE-scoped scripts run against the website's root URL
+    - TEST_RUN-scoped scripts are runtime-internal and surface as 404
+      from this endpoint (matching the rest of the scripts REST API)
+
+    Body fields are accepted but currently ignored — the script's
+    persisted ``steps`` are the authoritative input. Accepting the
+    body shape keeps the door open for per-run overrides (e.g.
+    ``environment_vars``) without an API version bump.
+
+    Response shape:
+
+        {
+          "script_id":      "...",
+          "success":        true|false,
+          "duration_ms":    1234,
+          "steps_executed": 7,
+          "error":          null | "...",
+          "target_url":     "https://..."
+        }
+
+    Errors:
+
+    - **404** — script doesn't exist, is TEST_RUN-scoped, or its
+      target (page / website) can't be resolved
+    - **409** — server has no browser configured (BROWSER_MODE='disabled'
+      or 'remote' — the browser pipeline is local-only for this endpoint)
+    - **500** — script raises during execution; the body carries the
+      error message so the operator can debug without polling logs
+    """
+    import asyncio
+
+    from auto_a11y.core.browser_manager import BrowserManager
+    from auto_a11y.testing.script_executor import ScriptExecutor
+
+    script = get_db().get_page_setup_script(script_id)
+    if script is None:
+        raise NotFoundError(f"script {script_id} not found")
+    if script.scope is ScriptScope.TEST_RUN:
+        # TEST_RUN-scoped scripts are runtime-internal and not exposed.
+        raise NotFoundError(f"script {script_id} not found")
+
+    website_id, page_id = _resolve_script_auth_context(script)
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR,
+        website_id=website_id, page_id=page_id,
+    )
+
+    if not script.website_id:
+        raise NotFoundError(
+            f"script {script_id} has no website target"
+        )
+    website = get_db().get_website(script.website_id)
+    if website is None:
+        raise NotFoundError(
+            f"website {script.website_id} for script {script_id} not found"
+        )
+
+    target_url: str
+    if script.scope is ScriptScope.PAGE:
+        if not script.page_id:
+            raise NotFoundError(
+                f"page-scoped script {script_id} has no page target"
+            )
+        target_page = get_db().get_page(script.page_id)
+        if target_page is None:
+            raise NotFoundError(
+                f"page {script.page_id} for script {script_id} not found"
+            )
+        target_url = target_page.url
+    else:
+        target_url = website.url
+
+    # Reject deployments that don't run a local browser. The script
+    # test endpoint is *not* implemented as a queued job, so it can't
+    # transparently fall back to a remote runner the way test-runs
+    # can — surface the misconfiguration as 409 instead of pretending
+    # the test ran with zero steps.
+    browser_mode = getattr(get_app_config(), "BROWSER_MODE", "local")
+    if browser_mode in ("disabled", "remote"):
+        raise ConflictError(
+            f"script test requires local browser; BROWSER_MODE={browser_mode!r}"
+        )
+
+    # Body is currently a no-op but parsed for the validation 400 shape.
+    _ = _require_dict_body() if request.data else {}
+
+    project = (
+        get_db().get_project(website.project_id) if website.project_id else None
+    )
+    browser_config: dict[str, Any] = get_app_config().__dict__.copy()
+    if project is not None and project.config:
+        browser_config["stealth_mode"] = project.config.get(
+            "stealth_mode", False
+        )
+        headless_setting = project.config.get("headless_browser", "true")
+        browser_config["BROWSER_HEADLESS"] = headless_setting == "true"
+    else:
+        browser_config["stealth_mode"] = False
+
+    async def _run_test() -> dict[str, Any]:
+        # Local async coroutine — instantiates a fresh browser per
+        # request. Matches the legacy handler: no pooling, no reuse;
+        # the test endpoint is rare enough that the per-request
+        # browser-launch cost is acceptable.
+        manager = BrowserManager(browser_config)
+        try:
+            await manager.start()
+            context = await manager.create_context()
+            page_obj = await context.new_page()
+            await page_obj.goto(
+                target_url, wait_until="networkidle", timeout=30000,
+            )
+            executor = ScriptExecutor()
+            return await executor.execute_script(page_obj, script)
+        finally:
+            await manager.stop()
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        result = loop.run_until_complete(_run_test())
+    except Exception as exc:
+        logger.error(
+            "Error running script %s against %s: %s",
+            script_id, target_url, exc,
+        )
+        # Mirror the legacy route's 500 shape but emit a stable
+        # JSON envelope rather than a raw error string. The
+        # @api_endpoint wrapper would intercept ApiError subclasses;
+        # here we want the *test result*, not the route, to be the
+        # thing reporting failure.
+        return jsonify({
+            "script_id": script_id,
+            "success": False,
+            "duration_ms": 0,
+            "steps_executed": 0,
+            "error": str(exc),
+            "target_url": target_url,
+        }), 500
+    finally:
+        loop.close()
+
+    return jsonify({
+        "script_id": script_id,
+        "success": bool(result.get("success", False)),
+        "duration_ms": int(result.get("duration_ms", 0) or 0),
+        "steps_executed": int(result.get("steps_executed", 0) or 0),
+        "error": result.get("error"),
+        "target_url": target_url,
+    })
+
+
 # ---------------------------------------------------------------------------
 # Recordings (REST shape — uses the @api_endpoint scaffolding).
 #

@@ -74,6 +74,16 @@ from auto_a11y.web.api.schemas.reports import (
     ReportIn,
     WebsiteReportIn,
 )
+from auto_a11y.web.api.schemas.schedules import (
+    PresetConfigOut,
+    ScheduleIn,
+    ScheduleListOut,
+    ScheduleOut,
+    SchedulePatch,
+    SchedulePreviewOut,
+    ScheduleRunOut,
+    ScheduleTestConfigOut,
+)
 from auto_a11y.web.api.schemas.test_runs import (
     PageTestRunCancelOut,
     PageTestRunIn,
@@ -1329,42 +1339,56 @@ from auto_a11y.web.api.pagination import parse_limit  # noqa: E402
 from auto_a11y.web.typed_app import get_idempotency_store  # noqa: E402
 
 
-def _serialize_schedule(schedule: TestSchedule) -> dict[str, Any]:
-    """Project a :class:`TestSchedule` to a JSON-safe dict.
+def _schedule_to_out(schedule: TestSchedule) -> ScheduleOut:
+    """Project a :class:`TestSchedule` to its :class:`ScheduleOut` model.
 
-    ``TestSchedule.to_dict`` keeps datetimes as ``datetime`` objects for
-    Mongo. The REST API surfaces them as ISO 8601 UTC strings and drops
-    the Mongo ``_id`` field in favor of the string ``id`` property.
+    Mirrors the legacy ``_serialize_schedule`` shape byte-for-byte:
+    datetimes are emitted as ISO 8601 strings, enum values are
+    stringified, and the Mongo ``_id`` is dropped in favor of the
+    ``id`` property.
     """
 
     def _iso(dt: datetime | None) -> str | None:
         return dt.isoformat() if dt is not None else None
 
-    return {
-        "id": schedule.id,
-        "website_id": schedule.website_id,
-        "name": schedule.name,
-        "description": schedule.description,
-        "schedule_type": schedule.schedule_type.value,
-        "scheduled_datetime": _iso(schedule.scheduled_datetime),
-        "cron_expression": schedule.cron_expression,
-        "preset_config": schedule.preset_config.to_dict(),
-        "test_config": schedule.test_config.to_dict(),
-        "project_user_ids": list(schedule.project_user_ids),
-        "enabled": schedule.enabled,
-        "created_by": schedule.created_by,
-        "last_run_at": _iso(schedule.last_run_at),
-        "last_run_job_id": schedule.last_run_job_id,
-        "last_run_status": (
+    return ScheduleOut(
+        id=schedule.id,
+        website_id=schedule.website_id,
+        name=schedule.name,
+        description=schedule.description,
+        schedule_type=schedule.schedule_type.value,
+        scheduled_datetime=_iso(schedule.scheduled_datetime),
+        cron_expression=schedule.cron_expression,
+        preset_config=PresetConfigOut(
+            time=schedule.preset_config.time,
+            day_of_week=schedule.preset_config.day_of_week,
+            day_of_month=schedule.preset_config.day_of_month,
+            timezone=schedule.preset_config.timezone,
+        ),
+        test_config=ScheduleTestConfigOut(
+            run_ai_tests=schedule.test_config.run_ai_tests,
+            run_javascript_tests=schedule.test_config.run_javascript_tests,
+            run_python_tests=schedule.test_config.run_python_tests,
+            enabled_touchpoints=list(schedule.test_config.enabled_touchpoints),
+            ai_pages_mode=schedule.test_config.ai_pages_mode.value,
+            ai_page_ids=list(schedule.test_config.ai_page_ids),
+            take_screenshots=schedule.test_config.take_screenshots,
+        ),
+        project_user_ids=list(schedule.project_user_ids),
+        enabled=schedule.enabled,
+        created_by=schedule.created_by,
+        last_run_at=_iso(schedule.last_run_at),
+        last_run_job_id=schedule.last_run_job_id,
+        last_run_status=(
             schedule.last_run_status.value
             if schedule.last_run_status is not None
             else None
         ),
-        "next_run_at": _iso(schedule.next_run_at),
-        "run_count": schedule.run_count,
-        "created_at": _iso(schedule.created_at),
-        "updated_at": _iso(schedule.updated_at),
-    }
+        next_run_at=_iso(schedule.next_run_at),
+        run_count=schedule.run_count,
+        created_at=_iso(schedule.created_at),
+        updated_at=_iso(schedule.updated_at),
+    )
 
 
 def _coerce_str_list(value: Any) -> list[str]:
@@ -1628,6 +1652,23 @@ def _apply_patch_to_schedule(
     return schedule
 
 
+def _schedule_body_to_dict(body: ScheduleIn | SchedulePatch) -> dict[str, Any]:
+    """Convert a Pydantic schedule body to the legacy ``dict[str, Any]`` shape.
+
+    The legacy parsers ``_build_schedule_from_body`` and
+    ``_apply_patch_to_schedule`` distinguish "absent" from "explicit
+    ``null``" using ``key in body`` checks against a raw request dict.
+    Pydantic's ``model_dump(exclude_unset=True)`` preserves that exact
+    distinction: only keys the client explicitly sent appear in the
+    output dict.
+
+    Nested config blocks (``preset_config``, ``test_config``) are
+    dumped as nested dicts so the legacy ``_parse_preset_config`` /
+    ``_parse_test_config`` parsers receive the shapes they expect.
+    """
+    return body.model_dump(exclude_unset=True, by_alias=False)
+
+
 def _resync_with_scheduler(schedule: TestSchedule) -> None:
     """Mirror the legacy register/remove dance against the scheduler.
 
@@ -1647,7 +1688,20 @@ def _resync_with_scheduler(schedule: TestSchedule) -> None:
 
 @api_bp.route("/websites/<website_id>/scheduled-tests", methods=["GET"])
 @api_endpoint
-def list_scheduled_tests(website_id: str) -> tuple[Response, int] | Response:
+@document(
+    response_200=ScheduleListOut,
+    errors=[400, 401, 403, 404],
+    tags=["Schedules"],
+    summary="List scheduled tests for a website",
+    description=(
+        "Returns the scheduled tests configured on the given website. "
+        "Cursor-paginated using the legacy ``{items, next_cursor}`` "
+        "shape shared by every v1 list endpoint."
+    ),
+)
+def list_scheduled_tests(
+    website_id: str,
+) -> tuple[ScheduleListOut, int] | tuple[Response, int] | Response:
     """List scheduled tests for a website with cursor pagination."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, website_id=website_id
@@ -1684,17 +1738,30 @@ def list_scheduled_tests(website_id: str) -> tuple[Response, int] | Response:
     page = paginate(
         schedules, limit=limit, get_id=lambda s: str(s.mongo_id) if s.mongo_id else ""
     )
-    return jsonify(
-        {
-            "items": [_serialize_schedule(s) for s in page["items"]],
-            "next_cursor": page["next_cursor"],
-        }
-    )
+    return ScheduleListOut(
+        items=[_schedule_to_out(s) for s in page["items"]],
+        next_cursor=page["next_cursor"],
+    ), 200
 
 
 @api_bp.route("/websites/<website_id>/scheduled-tests", methods=["POST"])
 @api_endpoint
-def create_scheduled_test(website_id: str) -> tuple[Response, int]:
+@document(
+    request=ScheduleIn,
+    response_201=ScheduleOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["Schedules"],
+    summary="Create a scheduled test on a website",
+    description=(
+        "Creates a scheduled test and registers it with the APScheduler "
+        "service when ``enabled`` is true. Returns 201 with the persisted "
+        "``ScheduleOut`` resource plus a ``Location`` header pointing at "
+        "``/api/v1/scheduled-tests/<id>``."
+    ),
+)
+def create_scheduled_test(
+    website_id: str, body: ScheduleIn,
+) -> tuple[Response, int]:
     """Create a scheduled test on a website."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, website_id=website_id
@@ -1702,22 +1769,37 @@ def create_scheduled_test(website_id: str) -> tuple[Response, int]:
     if get_db().get_website(website_id) is None:
         raise NotFoundError(f"website {website_id} not found")
 
-    body = _require_dict_body()
-    schedule = _build_schedule_from_body(website_id, body)
+    legacy_body = _schedule_body_to_dict(body)
+    schedule = _build_schedule_from_body(website_id, legacy_body)
     schedule_id = get_db().create_test_schedule(schedule)
     refreshed = get_db().get_test_schedule(schedule_id)
     if refreshed is None:
         raise ConflictError("schedule failed to persist")
     if refreshed.enabled:
         _resync_with_scheduler(refreshed)
-    response = jsonify(_serialize_schedule(refreshed))
+    # The @document decorator serialises BaseModel returns through
+    # ``jsonify``, but we need a ``Location`` header on the new resource,
+    # so we pre-build the Response here and attach the header.
+    payload = _schedule_to_out(refreshed)
+    response = jsonify(
+        payload.model_dump(mode="json", by_alias=True, exclude_none=True)
+    )
     response.headers["Location"] = f"/api/v1/scheduled-tests/{schedule_id}"
     return response, 201
 
 
 @api_bp.route("/scheduled-tests/<schedule_id>", methods=["GET"])
 @api_endpoint
-def get_scheduled_test(schedule_id: str) -> tuple[Response, int] | Response:
+@document(
+    response_200=ScheduleOut,
+    errors=[401, 403, 404],
+    tags=["Schedules"],
+    summary="Get a scheduled test by ID",
+    description="Returns the scheduled-test resource (``ScheduleOut``).",
+)
+def get_scheduled_test(
+    schedule_id: str,
+) -> tuple[ScheduleOut, int] | tuple[Response, int] | Response:
     """Get a scheduled test by id."""
     schedule = get_db().get_test_schedule(schedule_id)
     if schedule is None:
@@ -1725,12 +1807,27 @@ def get_scheduled_test(schedule_id: str) -> tuple[Response, int] | Response:
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, website_id=schedule.website_id
     )
-    return jsonify(_serialize_schedule(schedule))
+    return _schedule_to_out(schedule), 200
 
 
 @api_bp.route("/scheduled-tests/<schedule_id>", methods=["PUT"])
 @api_endpoint
-def replace_scheduled_test(schedule_id: str) -> tuple[Response, int] | Response:
+@document(
+    request=ScheduleIn,
+    response_200=ScheduleOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["Schedules"],
+    summary="Replace a scheduled test",
+    description=(
+        "Full replacement of the user-editable fields. Server-managed "
+        "bookkeeping (``run_count``, ``last_run_*``, ``next_run_at``, "
+        "``apscheduler_job_id``, ``created_at``, ``created_by``) is "
+        "preserved from the prior version."
+    ),
+)
+def replace_scheduled_test(
+    schedule_id: str, body: ScheduleIn,
+) -> tuple[ScheduleOut, int] | tuple[Response, int] | Response:
     """Full replace of a scheduled test."""
     schedule = get_db().get_test_schedule(schedule_id)
     if schedule is None:
@@ -1738,8 +1835,8 @@ def replace_scheduled_test(schedule_id: str) -> tuple[Response, int] | Response:
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, website_id=schedule.website_id
     )
-    body = _require_dict_body()
-    replaced = _build_schedule_from_body(schedule.website_id, body)
+    legacy_body = _schedule_body_to_dict(body)
+    replaced = _build_schedule_from_body(schedule.website_id, legacy_body)
     replaced.mongo_id = schedule.mongo_id
     replaced.created_at = schedule.created_at
     replaced.created_by = schedule.created_by
@@ -1753,30 +1850,57 @@ def replace_scheduled_test(schedule_id: str) -> tuple[Response, int] | Response:
     if not get_db().update_test_schedule(replaced):
         raise ConflictError("schedule could not be updated")
     _resync_with_scheduler(replaced)
-    return jsonify(_serialize_schedule(replaced))
+    return _schedule_to_out(replaced), 200
 
 
 @api_bp.route("/scheduled-tests/<schedule_id>", methods=["PATCH"])
 @api_endpoint
-def patch_scheduled_test(schedule_id: str) -> tuple[Response, int] | Response:
-    """Partial update — used for toggle (``{"enabled": true}``) and similar edits."""
+@document(
+    request=SchedulePatch,
+    response_200=ScheduleOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["Schedules"],
+    summary="Partially update a scheduled test",
+    description=(
+        "Partial update -- only fields present in the request body are "
+        "applied. Commonly used for the enable/disable toggle "
+        "(``{\"enabled\": true}``) and similar narrow edits."
+    ),
+)
+def patch_scheduled_test(
+    schedule_id: str, body: SchedulePatch,
+) -> tuple[ScheduleOut, int] | tuple[Response, int] | Response:
+    """Partial update -- used for toggle (``{"enabled": true}``) and similar edits."""
     schedule = get_db().get_test_schedule(schedule_id)
     if schedule is None:
         raise NotFoundError(f"scheduled test {schedule_id} not found")
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, website_id=schedule.website_id
     )
-    body = _require_dict_body()
-    patched = _apply_patch_to_schedule(schedule, body)
+    legacy_body = _schedule_body_to_dict(body)
+    patched = _apply_patch_to_schedule(schedule, legacy_body)
     if not get_db().update_test_schedule(patched):
         raise ConflictError("schedule could not be updated")
     _resync_with_scheduler(patched)
-    return jsonify(_serialize_schedule(patched))
+    return _schedule_to_out(patched), 200
 
 
 @api_bp.route("/scheduled-tests/<schedule_id>", methods=["DELETE"])
 @api_endpoint
-def delete_scheduled_test(schedule_id: str) -> tuple[Response, int]:
+@document(
+    response_204=Empty,
+    errors=[401, 403, 404],
+    tags=["Schedules"],
+    summary="Delete a scheduled test",
+    description=(
+        "Removes the schedule from the APScheduler service and deletes "
+        "the persisted resource. Returns ``204 No Content`` with an "
+        "empty body."
+    ),
+)
+def delete_scheduled_test(
+    schedule_id: str,
+) -> tuple[Empty, int] | tuple[Response, int]:
     """Delete a scheduled test."""
     schedule = get_db().get_test_schedule(schedule_id)
     if schedule is None:
@@ -1789,11 +1913,22 @@ def delete_scheduled_test(schedule_id: str) -> tuple[Response, int]:
     if scheduler is not None:
         scheduler.remove_from_apscheduler(schedule_id)
     get_db().delete_test_schedule(schedule_id)
-    return Response(status=204), 204
+    return Empty(), 204
 
 
 @api_bp.route("/scheduled-tests/<schedule_id>/runs", methods=["POST"])
 @api_endpoint
+@document(
+    response_202=ScheduleRunOut,
+    errors=[401, 403, 404, 409],
+    tags=["Schedules"],
+    summary="Trigger an immediate run of a scheduled test",
+    description=(
+        "Honors the ``Idempotency-Key`` header per §4.9 of the "
+        "REST API roadmap. A repeated POST with the same key returns "
+        "the recorded ``job_id`` without enqueuing a second job."
+    ),
+)
 def run_scheduled_test_now(
     schedule_id: str,
 ) -> tuple[Response, int] | Response:
@@ -1834,14 +1969,31 @@ def run_scheduled_test_now(
     else:
         status_code, body = _run()
 
-    return jsonify(body), status_code
+    # The idempotency store caches the legacy ``dict`` shape; re-validate
+    # through ``ScheduleRunOut`` so the wire output exactly matches the
+    # advertised schema (and so a cached miss-shaped value would surface
+    # as a 500 rather than silently drifting from the spec).
+    payload = ScheduleRunOut.model_validate(body)
+    return jsonify(
+        payload.model_dump(mode="json", by_alias=True, exclude_none=True)
+    ), status_code
 
 
 @api_bp.route("/scheduled-tests/<schedule_id>/preview", methods=["GET"])
 @api_endpoint
+@document(
+    response_200=SchedulePreviewOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["Schedules"],
+    summary="Preview the next upcoming run times for a scheduled test",
+    description=(
+        "Returns the next ``?count=N`` upcoming run times (default 5, "
+        "clamped to ``[1, 50]``) as ISO 8601 datetime strings."
+    ),
+)
 def preview_scheduled_test(
     schedule_id: str,
-) -> tuple[Response, int] | Response:
+) -> tuple[SchedulePreviewOut, int] | tuple[Response, int] | Response:
     """Return the next N upcoming run times for a schedule."""
     schedule = get_db().get_test_schedule(schedule_id)
     if schedule is None:
@@ -1864,12 +2016,10 @@ def preview_scheduled_test(
         ) from exc
 
     next_runs = scheduler.get_next_run_times(schedule_id, count)
-    return jsonify(
-        {
-            "schedule_id": schedule_id,
-            "next_runs": [dt.isoformat() for dt in next_runs],
-        }
-    )
+    return SchedulePreviewOut(
+        schedule_id=schedule_id,
+        next_runs=[dt.isoformat() for dt in next_runs],
+    ), 200
 
 
 # ---------------------------------------------------------------------------

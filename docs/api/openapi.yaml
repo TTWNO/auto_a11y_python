@@ -1291,6 +1291,73 @@ components:
       - ai_findings
       title: PageViolationsOut
       type: object
+    PresetConfigIn:
+      additionalProperties: false
+      description: 'Request-body preset config for daily/weekly/monthly schedules.
+
+
+        All fields are optional in the wire form because the legacy parser
+
+        supplied defaults for missing keys. ``time`` is an ``HH:MM`` string
+
+        in 24-hour format; ``day_of_week`` is 0=Monday..6=Sunday;
+
+        ``day_of_month`` is 1..31; ``timezone`` is an IANA tz name.'
+      properties:
+        day_of_month:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          default: null
+          title: Day Of Month
+        day_of_week:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          default: null
+          title: Day Of Week
+        time:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Time
+        timezone:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Timezone
+      title: PresetConfigIn
+      type: object
+    PresetConfigOut:
+      additionalProperties: false
+      description: 'Response-body preset config.
+
+
+        Always fully populated because :class:`PresetConfig` is a dataclass
+
+        with default values for every field.'
+      properties:
+        day_of_month:
+          title: Day Of Month
+          type: integer
+        day_of_week:
+          title: Day Of Week
+          type: integer
+        time:
+          title: Time
+          type: string
+        timezone:
+          title: Timezone
+          type: string
+      required:
+      - time
+      - day_of_week
+      - day_of_month
+      - timezone
+      title: PresetConfigOut
+      type: object
     Problem:
       additionalProperties: false
       description: RFC 7807 Problem Details for HTTP APIs.
@@ -2532,6 +2599,439 @@ components:
           default: null
           title: Website Id
       title: ReportIn
+      type: object
+    ScheduleIn:
+      additionalProperties: false
+      description: 'POST/PUT body for creating or fully replacing a schedule.
+
+
+        Mirrors the legacy ``_build_schedule_from_body`` parser shape.
+
+        ``name`` is required at the semantic level (the handler rejects
+
+        empty/whitespace-only values) but typed as ``Optional[str]`` here
+
+        because the legacy parser permitted ``request.json`` to omit it
+
+        (it then surfaces a 400 with field path ``name``). Centralising
+
+        presence checks in the handler keeps error codes consistent across
+
+        POST and PUT.'
+      properties:
+        cron_expression:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Cron Expression
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Description
+        enabled:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Enabled
+        name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Name
+        preset_config:
+          anyOf:
+          - $ref: '#/components/schemas/PresetConfigIn'
+          - type: 'null'
+          default: null
+        project_user_ids:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          default: null
+          title: Project User Ids
+        schedule_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Schedule Type
+        scheduled_datetime:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Scheduled Datetime
+        test_config:
+          anyOf:
+          - $ref: '#/components/schemas/ScheduleTestConfigIn'
+          - type: 'null'
+          default: null
+      title: ScheduleIn
+      type: object
+    ScheduleListOut:
+      additionalProperties: false
+      description: 'Response body for ``GET /api/v1/websites/<id>/scheduled-tests``.
+
+
+        Cursor-paginated; same ``{items, next_cursor}`` shape as the other
+
+        v1 list endpoints.'
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/ScheduleOut'
+          title: Items
+          type: array
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Next Cursor
+      required:
+      - items
+      title: ScheduleListOut
+      type: object
+    ScheduleOut:
+      additionalProperties: false
+      description: 'Response body for single-schedule GET / POST / PUT / PATCH.
+
+
+        Mirrors ``_serialize_schedule`` byte-for-byte. ``id`` is the
+
+        stringified Mongo ``_id`` (``None`` only on transient unsaved
+
+        schedules, which never appear over the wire). ``schedule_type``
+
+        and ``last_run_status`` are stringified enum values; timestamps
+
+        are ISO 8601.'
+      properties:
+        created_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Created At
+        created_by:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Created By
+        cron_expression:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Cron Expression
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Description
+        enabled:
+          title: Enabled
+          type: boolean
+        id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Id
+        last_run_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Last Run At
+        last_run_job_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Last Run Job Id
+        last_run_status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Last Run Status
+        name:
+          title: Name
+          type: string
+        next_run_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Next Run At
+        preset_config:
+          $ref: '#/components/schemas/PresetConfigOut'
+        project_user_ids:
+          items:
+            type: string
+          title: Project User Ids
+          type: array
+        run_count:
+          title: Run Count
+          type: integer
+        schedule_type:
+          title: Schedule Type
+          type: string
+        scheduled_datetime:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Scheduled Datetime
+        test_config:
+          $ref: '#/components/schemas/ScheduleTestConfigOut'
+        updated_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Updated At
+        website_id:
+          title: Website Id
+          type: string
+      required:
+      - website_id
+      - name
+      - schedule_type
+      - preset_config
+      - test_config
+      - project_user_ids
+      - enabled
+      - run_count
+      title: ScheduleOut
+      type: object
+    SchedulePatch:
+      additionalProperties: false
+      description: 'PATCH body for partial schedule updates.
+
+
+        Every field is ``Optional[...]``; the handler uses
+
+        ``model_fields_set`` to apply only fields the client sent. This is
+
+        how the legacy ``_apply_patch_to_schedule`` distinguished "absent"
+
+        from "explicit ``null``".'
+      properties:
+        cron_expression:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Cron Expression
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Description
+        enabled:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Enabled
+        name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Name
+        preset_config:
+          anyOf:
+          - $ref: '#/components/schemas/PresetConfigIn'
+          - type: 'null'
+          default: null
+        project_user_ids:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          default: null
+          title: Project User Ids
+        schedule_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Schedule Type
+        scheduled_datetime:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Scheduled Datetime
+        test_config:
+          anyOf:
+          - $ref: '#/components/schemas/ScheduleTestConfigIn'
+          - type: 'null'
+          default: null
+      title: SchedulePatch
+      type: object
+    SchedulePreviewOut:
+      additionalProperties: false
+      description: 'Response body for ``GET /api/v1/scheduled-tests/<id>/preview``.
+
+
+        ``next_runs`` is a list of ISO 8601 datetime strings produced by
+
+        ``datetime.isoformat()``. The handler clamps ``?count`` to
+
+        ``[1, 50]``; the typical default is 5.'
+      properties:
+        next_runs:
+          items:
+            type: string
+          title: Next Runs
+          type: array
+        schedule_id:
+          title: Schedule Id
+          type: string
+      required:
+      - schedule_id
+      - next_runs
+      title: SchedulePreviewOut
+      type: object
+    ScheduleRunOut:
+      additionalProperties: false
+      description: 'Response body for ``POST /api/v1/scheduled-tests/<id>/runs``.
+
+
+        Returned with status 202 (Accepted). ``job_id`` is the APScheduler
+
+        job identifier; ``schedule_id`` is echoed so clients don''t have to
+
+        track the request-side schedule id separately.'
+      properties:
+        job_id:
+          title: Job Id
+          type: string
+        schedule_id:
+          title: Schedule Id
+          type: string
+      required:
+      - job_id
+      - schedule_id
+      title: ScheduleRunOut
+      type: object
+    ScheduleTestConfigIn:
+      additionalProperties: false
+      description: 'Request-body test-config block.
+
+
+        ``ai_pages_mode`` is accepted as an arbitrary string; the handler
+
+        runs ``AITestMode(value)`` itself so invalid values surface as 400
+
+        with an ``ai_pages_mode`` field path.'
+      properties:
+        ai_page_ids:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          default: null
+          title: Ai Page Ids
+        ai_pages_mode:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Ai Pages Mode
+        enabled_touchpoints:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          default: null
+          title: Enabled Touchpoints
+        run_ai_tests:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Run Ai Tests
+        run_javascript_tests:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Run Javascript Tests
+        run_python_tests:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Run Python Tests
+        take_screenshots:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Take Screenshots
+      title: ScheduleTestConfigIn
+      type: object
+    ScheduleTestConfigOut:
+      additionalProperties: false
+      description: 'Response-body test-config block.
+
+
+        ``ai_pages_mode`` is always the stringified enum value
+
+        (e.g. ``"all"``, ``"selected"``, ``"none"``).'
+      properties:
+        ai_page_ids:
+          items:
+            type: string
+          title: Ai Page Ids
+          type: array
+        ai_pages_mode:
+          title: Ai Pages Mode
+          type: string
+        enabled_touchpoints:
+          items:
+            type: string
+          title: Enabled Touchpoints
+          type: array
+        run_ai_tests:
+          title: Run Ai Tests
+          type: boolean
+        run_javascript_tests:
+          title: Run Javascript Tests
+          type: boolean
+        run_python_tests:
+          title: Run Python Tests
+          type: boolean
+        take_screenshots:
+          title: Take Screenshots
+          type: boolean
+      required:
+      - run_ai_tests
+      - run_javascript_tests
+      - run_python_tests
+      - enabled_touchpoints
+      - ai_pages_mode
+      - ai_page_ids
+      - take_screenshots
+      title: ScheduleTestConfigOut
       type: object
     ScrapingConfigModel:
       additionalProperties: false
@@ -5382,6 +5882,299 @@ paths:
       summary: Download a completed report file
       tags:
       - Reports
+  /scheduled-tests/{schedule_id}:
+    delete:
+      description: Removes the schedule from the APScheduler service and deletes the
+        persisted resource. Returns ``204 No Content`` with an empty body.
+      parameters:
+      - in: path
+        name: schedule_id
+        required: true
+        schema: *id001
+      responses:
+        '204':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Empty'
+          description: No Content
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Delete a scheduled test
+      tags:
+      - Schedules
+    get:
+      description: Returns the scheduled-test resource (``ScheduleOut``).
+      parameters:
+      - in: path
+        name: schedule_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduleOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Get a scheduled test by ID
+      tags:
+      - Schedules
+    patch:
+      description: 'Partial update -- only fields present in the request body are
+        applied. Commonly used for the enable/disable toggle (``{"enabled": true}``)
+        and similar narrow edits.'
+      parameters:
+      - in: path
+        name: schedule_id
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SchedulePatch'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduleOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Partially update a scheduled test
+      tags:
+      - Schedules
+    put:
+      description: Full replacement of the user-editable fields. Server-managed bookkeeping
+        (``run_count``, ``last_run_*``, ``next_run_at``, ``apscheduler_job_id``, ``created_at``,
+        ``created_by``) is preserved from the prior version.
+      parameters:
+      - in: path
+        name: schedule_id
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleIn'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduleOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Replace a scheduled test
+      tags:
+      - Schedules
+  /scheduled-tests/{schedule_id}/preview:
+    get:
+      description: Returns the next ``?count=N`` upcoming run times (default 5, clamped
+        to ``[1, 50]``) as ISO 8601 datetime strings.
+      parameters:
+      - in: path
+        name: schedule_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchedulePreviewOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Preview the next upcoming run times for a scheduled test
+      tags:
+      - Schedules
+  /scheduled-tests/{schedule_id}/runs:
+    post:
+      description: Honors the ``Idempotency-Key`` header per §4.9 of the REST API
+        roadmap. A repeated POST with the same key returns the recorded ``job_id``
+        without enqueuing a second job.
+      parameters:
+      - in: path
+        name: schedule_id
+        required: true
+        schema: *id001
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduleRunOut'
+          description: Accepted
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Trigger an immediate run of a scheduled test
+      tags:
+      - Schedules
   /test-results/compare:
     post:
       description: 'Returns a diff of two test results, typically from different states
@@ -5952,6 +6745,110 @@ paths:
       summary: Queue a website-scoped report
       tags:
       - Reports
+  /websites/{website_id}/scheduled-tests:
+    get:
+      description: Returns the scheduled tests configured on the given website. Cursor-paginated
+        using the legacy ``{items, next_cursor}`` shape shared by every v1 list endpoint.
+      parameters:
+      - in: path
+        name: website_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduleListOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: List scheduled tests for a website
+      tags:
+      - Schedules
+    post:
+      description: Creates a scheduled test and registers it with the APScheduler
+        service when ``enabled`` is true. Returns 201 with the persisted ``ScheduleOut``
+        resource plus a ``Location`` header pointing at ``/api/v1/scheduled-tests/<id>``.
+      parameters:
+      - in: path
+        name: website_id
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleIn'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduleOut'
+          description: Created
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Create a scheduled test on a website
+      tags:
+      - Schedules
   /websites/{website_id}/test:
     post:
       description: Queues a batch accessibility test run for every page on a website.

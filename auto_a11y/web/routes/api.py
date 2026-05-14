@@ -20,6 +20,16 @@ from auto_a11y.models.app_user import UserRole
 from auto_a11y.pdf.storage import PdfStorage
 from auto_a11y.web.routes.auth import project_role_required
 from auto_a11y.core.job_manager import JobManager, JobStatus, JobType
+from auto_a11y.web.api.openapi.document import document
+from auto_a11y.web.api.schemas.common import Empty
+from auto_a11y.web.api.schemas.projects import (
+    MessageOut,
+    ProjectCreatedOut,
+    ProjectDictOut,
+    ProjectIn,
+    ProjectListOut,
+    ProjectPatch,
+)
 from auto_a11y.web.typed_app import get_db, get_app_config, get_test_config
 from datetime import datetime
 import logging
@@ -112,8 +122,37 @@ def check_test_availability(error_code: str) -> tuple[Response, int] | Response:
 
 # Projects API
 
+def _project_to_jsonable_dict(project: Project) -> dict[str, object]:
+    """Convert ``project.to_dict()`` into a JSON-serializable dict.
+
+    ``Project.to_dict()`` returns an ``ObjectId`` for the ``_id`` key and
+    ``datetime`` objects for timestamps. ``ObjectId`` is not natively
+    JSON-serialisable (neither in Pydantic's ``model_dump(mode='json')``
+    nor in stdlib ``json``); the legacy handler relied on whatever the
+    frontend tolerated. We stringify the ``ObjectId`` here so the
+    Pydantic models can serialise the payload without ad-hoc encoders.
+    Timestamps stay as ``datetime`` -- Pydantic emits them as ISO 8601
+    strings on dump.
+    """
+    raw = project.to_dict()
+    if '_id' in raw and raw['_id'] is not None:
+        raw['_id'] = str(raw['_id'])
+    return raw
+
+
 @api_bp.route('/projects', methods=['GET'])
-def get_projects() -> tuple[Response, int] | Response:
+@document(
+    response_200=ProjectListOut,
+    errors=[400, 401],
+    tags=["Projects"],
+    summary="List projects",
+    description=(
+        "Returns the projects visible to the caller (member-of-project "
+        "filtering for non-superadmins). Pagination uses page/limit; "
+        "``total`` reflects the unfiltered project count."
+    ),
+)
+def get_projects() -> tuple[ProjectListOut, int] | tuple[Response, int] | Response:
     """Get all projects"""
     page = int(request.args.get('page', 1))
     limit = int(request.args.get('limit', 20))
@@ -137,37 +176,44 @@ def get_projects() -> tuple[Response, int] | Response:
             return jsonify({'error': 'Invalid status value'}), 400
     else:
         projects = get_db().get_projects(limit=limit, skip=skip)
-    
-    return jsonify({
-        'projects': [p.to_dict() for p in projects],
+
+    return ProjectListOut.model_validate({
+        'projects': [_project_to_jsonable_dict(p) for p in projects],
         'pagination': {
             'page': page,
             'limit': limit,
-            'total': get_db().projects.count_documents({})
-        }
-    })
+            'total': get_db().projects.count_documents({}),
+        },
+    }), 200
 
 
 @api_bp.route('/projects', methods=['POST'])
-def create_project() -> tuple[Response, int]:
+@document(
+    request=ProjectIn,
+    response_201=ProjectCreatedOut,
+    errors=[400, 401, 409],
+    tags=["Projects"],
+    summary="Create a project",
+    description=(
+        "Creates a new project. The caller is auto-added as a project "
+        "admin if authenticated. Returns ``{id, message}`` -- not the "
+        "full project resource (wire-compat with the legacy handler)."
+    ),
+)
+def create_project(body: ProjectIn) -> tuple[ProjectCreatedOut, int] | tuple[Response, int]:
     """Create new project"""
-    data = request.get_json()
-    
-    if not data or 'name' not in data:
-        return jsonify({'error': 'Project name is required'}), 400
-    
     # Check if project exists
-    existing = get_db().projects.find_one({'name': data['name']})
+    existing = get_db().projects.find_one({'name': body.name})
     if existing:
-        return jsonify({'error': f'Project {data["name"]} already exists'}), 409
-    
+        return jsonify({'error': f'Project {body.name} already exists'}), 409
+
     project = Project(
-        name=data['name'],
-        description=data.get('description', ''),
+        name=body.name,
+        description=body.description if body.description is not None else '',
         status=ProjectStatus.ACTIVE,
-        config=data.get('config', {})
+        config=dict(body.config) if body.config is not None else {},
     )
-    
+
     project_id = get_db().create_project(project)
     # Auto-add creator as project admin
     if current_user.is_authenticated:
@@ -176,69 +222,102 @@ def create_project() -> tuple[Response, int]:
             project_id, str(current_user.get_id()), [admin_group.id] if admin_group and admin_group.id else []
         )
 
-    return jsonify({
-        'id': project_id,
-        'message': f'Project created successfully'
-    }), 201
+    return ProjectCreatedOut(
+        id=project_id,
+        message='Project created successfully',
+    ), 201
 
 
 @api_bp.route('/projects/<project_id>', methods=['GET'])
+@document(
+    response_200=ProjectDictOut,
+    errors=[401, 403, 404],
+    tags=["Projects"],
+    summary="Get a project by ID",
+    description=(
+        "Returns the project payload (mirroring ``Project.to_dict()``) "
+        "with a top-level ``statistics`` block from "
+        "``Database.get_project_stats``."
+    ),
+)
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
-def get_project(project_id: str) -> tuple[Response, int] | Response:
+def get_project(project_id: str) -> tuple[ProjectDictOut, int] | tuple[Response, int]:
     """Get project by ID"""
     project = get_db().get_project(project_id)
     if not project:
         return jsonify({'error': 'Project not found'}), 404
-    
+
     storage = PdfStorage(base_dir=Path(get_app_config().PDF_STORAGE_DIR))
     stats = get_db().get_project_stats(project_id, pdf_storage=storage)
 
-    response = project.to_dict()
-    response['statistics'] = stats
-    
-    return jsonify(response)
+    payload: dict[str, object] = _project_to_jsonable_dict(project)
+    payload['statistics'] = stats
+
+    return ProjectDictOut.model_validate(payload), 200
 
 
 @api_bp.route('/projects/<project_id>', methods=['PUT'])
+@document(
+    request=ProjectPatch,
+    response_200=MessageOut,
+    errors=[400, 401, 403, 404, 500],
+    tags=["Projects"],
+    summary="Update a project",
+    description=(
+        "Partial update -- only fields present in the body are applied. "
+        "Returns ``{message}`` (wire-compat with the legacy handler)."
+    ),
+)
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
-def update_project(project_id: str) -> tuple[Response, int] | Response:
+def update_project(
+    project_id: str, body: ProjectPatch
+) -> tuple[MessageOut, int] | tuple[Response, int]:
     """Update project"""
     project = get_db().get_project(project_id)
     if not project:
         return jsonify({'error': 'Project not found'}), 404
-    
-    data = request.get_json()
-    
-    if 'name' in data:
-        project.name = data['name']
-    if 'description' in data:
-        project.description = data['description']
-    if 'status' in data:
+
+    if body.name is not None:
+        project.name = body.name
+    if body.description is not None:
+        project.description = body.description
+    if body.status is not None:
         try:
-            project.status = ProjectStatus(data['status'])
+            project.status = ProjectStatus(body.status)
         except ValueError:
             return jsonify({'error': 'Invalid status value'}), 400
-    if 'config' in data:
-        project.config.update(data['config'])
-    
+    if body.config is not None:
+        project.config.update(body.config)
+
     if get_db().update_project(project):
-        return jsonify({'message': 'Project updated successfully'})
-    else:
-        return jsonify({'error': 'Failed to update project'}), 500
+        return MessageOut(message='Project updated successfully'), 200
+    return jsonify({'error': 'Failed to update project'}), 500
 
 
 @api_bp.route('/projects/<project_id>', methods=['DELETE'])
+@document(
+    response_204=Empty,
+    errors=[401, 403, 404, 500],
+    tags=["Projects"],
+    summary="Delete a project",
+    description=(
+        "Deletes the project. The legacy handler returned status 204 "
+        "with a message body; per HTTP semantics 204 has no body so "
+        "the message was silently dropped. This handler returns "
+        "``204 No Content`` with an empty body -- byte-identical on the "
+        "wire."
+    ),
+)
 @project_role_required(UserRole.ADMIN)
-def delete_project(project_id: str) -> tuple[Response, int]:
+def delete_project(project_id: str) -> tuple[Empty, int] | tuple[Response, int]:
     """Delete project"""
     project = get_db().get_project(project_id)
     if not project:
         return jsonify({'error': 'Project not found'}), 404
-    
+
     if get_db().delete_project(project_id):
-        return jsonify({'message': 'Project deleted successfully'}), 204
-    else:
-        return jsonify({'error': 'Failed to delete project'}), 500
+        return Empty(), 204
+    return jsonify({'error': 'Failed to delete project'}), 500
 
 
 # Websites API

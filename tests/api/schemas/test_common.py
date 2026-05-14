@@ -10,7 +10,7 @@ from auto_a11y.web.api.schemas.common import (
     PaginationMeta,
     Problem,
 )
-from auto_a11y.web.api.schemas.projects import ProjectOut  # forward-ref OK
+from auto_a11y.web.api.schemas.projects import ProjectCreatedOut  # forward-ref OK
 
 
 def test_problem_minimal_fields() -> None:
@@ -30,7 +30,7 @@ def test_pagination_meta_round_trip() -> None:
 
 
 def test_list_envelope_is_generic() -> None:
-    env = ListEnvelope[ProjectOut](
+    env = ListEnvelope[ProjectCreatedOut](
         data=[],
         pagination=PaginationMeta(total=0, page=1, per_page=20, total_pages=0),
     )

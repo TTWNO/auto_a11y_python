@@ -84,6 +84,18 @@ from auto_a11y.web.api.schemas.schedules import (
     ScheduleRunOut,
     ScheduleTestConfigOut,
 )
+from auto_a11y.web.api.schemas.scripts import (
+    ExecutionStatsOut,
+    ScriptIn,
+    ScriptListOut,
+    ScriptOut,
+    ScriptPatch,
+    ScriptPut,
+    ScriptStepOut,
+    ScriptTestRunIn,
+    ScriptTestRunOut,
+    ScriptValidationOut,
+)
 from auto_a11y.web.api.schemas.test_runs import (
     PageTestRunCancelOut,
     PageTestRunIn,
@@ -4578,69 +4590,97 @@ from auto_a11y.models.page_setup_script import (  # noqa: E402
 )
 
 
-def _serialize_script_step(step: ScriptStep) -> dict[str, Any]:
-    return {
-        "step_number": step.step_number,
-        "action_type": step.action_type.value,
-        "description": step.description,
-        "selector": step.selector,
-        "value": step.value,
-        "timeout": step.timeout,
-        "wait_after": step.wait_after,
-        "screenshot_after": step.screenshot_after,
-    }
+def _script_step_to_out(step: ScriptStep) -> ScriptStepOut:
+    return ScriptStepOut(
+        step_number=step.step_number,
+        action_type=step.action_type.value,
+        description=step.description,
+        selector=step.selector,
+        value=step.value,
+        timeout=step.timeout,
+        wait_after=step.wait_after,
+        screenshot_after=step.screenshot_after,
+    )
 
 
-def _serialize_script_validation(validation: ScriptValidation | None) -> dict[str, Any] | None:
+def _script_validation_to_out(
+    validation: ScriptValidation | None,
+) -> ScriptValidationOut | None:
     if validation is None:
         return None
-    return {
-        "success_selector": validation.success_selector,
-        "success_text": validation.success_text,
-        "failure_selectors": list(validation.failure_selectors),
-    }
+    return ScriptValidationOut(
+        success_selector=validation.success_selector,
+        success_text=validation.success_text,
+        failure_selectors=list(validation.failure_selectors),
+    )
 
 
-def _serialize_script(script: PageSetupScript) -> dict[str, Any]:
-    """Project a :class:`PageSetupScript` to a JSON-safe dict."""
+def _script_to_out(script: PageSetupScript) -> ScriptOut:
+    """Project a :class:`PageSetupScript` to its :class:`ScriptOut` model.
+
+    Mirrors the legacy ``_serialize_script`` shape byte-for-byte:
+    datetimes are emitted as ISO 8601 strings, enum values are
+    stringified, and the Mongo ``_id`` is dropped in favor of the
+    ``id`` property.
+    """
 
     def _iso(dt: datetime | None) -> str | None:
         return dt.isoformat() if dt is not None else None
 
     stats = script.execution_stats
-    return {
-        "id": script.id,
-        "name": script.name,
-        "description": script.description,
-        "scope": script.scope.value,
-        "website_id": script.website_id,
-        "page_id": script.page_id,
-        "trigger": script.trigger.value,
-        "condition_selector": script.condition_selector,
-        "report_violation_if_condition_met": script.report_violation_if_condition_met,
-        "violation_message": script.violation_message,
-        "violation_code": script.violation_code,
-        "test_before_execution": script.test_before_execution,
-        "test_after_execution": script.test_after_execution,
-        "expect_visible_after": list(script.expect_visible_after),
-        "expect_hidden_after": list(script.expect_hidden_after),
-        "clear_cookies_before": script.clear_cookies_before,
-        "clear_local_storage_before": script.clear_local_storage_before,
-        "wait_for_selector": script.wait_for_selector,
-        "wait_timeout": script.wait_timeout,
-        "enabled": script.enabled,
-        "steps": [_serialize_script_step(s) for s in script.steps],
-        "validation": _serialize_script_validation(script.validation),
-        "created_by": script.created_by,
-        "created_date": _iso(script.created_date),
-        "last_modified": _iso(script.last_modified),
-        "execution_stats": {
-            "last_executed": _iso(stats.last_executed),
-            "success_count": stats.success_count,
-            "failure_count": stats.failure_count,
-            "average_duration_ms": stats.average_duration_ms,
-        },
-    }
+    return ScriptOut(
+        id=script.id,
+        name=script.name,
+        description=script.description,
+        scope=script.scope.value,
+        website_id=script.website_id,
+        page_id=script.page_id,
+        trigger=script.trigger.value,
+        condition_selector=script.condition_selector,
+        report_violation_if_condition_met=script.report_violation_if_condition_met,
+        violation_message=script.violation_message,
+        violation_code=script.violation_code,
+        test_before_execution=script.test_before_execution,
+        test_after_execution=script.test_after_execution,
+        expect_visible_after=list(script.expect_visible_after),
+        expect_hidden_after=list(script.expect_hidden_after),
+        clear_cookies_before=script.clear_cookies_before,
+        clear_local_storage_before=script.clear_local_storage_before,
+        wait_for_selector=script.wait_for_selector,
+        wait_timeout=script.wait_timeout,
+        enabled=script.enabled,
+        steps=[_script_step_to_out(s) for s in script.steps],
+        validation=_script_validation_to_out(script.validation),
+        created_by=script.created_by,
+        created_date=_iso(script.created_date),
+        last_modified=_iso(script.last_modified),
+        execution_stats=ExecutionStatsOut(
+            last_executed=_iso(stats.last_executed),
+            success_count=stats.success_count,
+            failure_count=stats.failure_count,
+            average_duration_ms=stats.average_duration_ms,
+        ),
+    )
+
+
+def _script_body_to_dict(
+    body: ScriptIn | ScriptPut | ScriptPatch,
+) -> dict[str, Any]:
+    """Convert a Pydantic script body to the legacy ``dict[str, Any]`` shape.
+
+    The legacy parsers ``_build_script_from_body`` and
+    ``_apply_patch_to_script`` distinguish "absent" from "explicit
+    ``null``" using ``key in body`` checks against a raw request dict.
+    Pydantic's ``model_dump(exclude_unset=True)`` preserves that exact
+    distinction: only keys the client explicitly sent appear in the
+    output dict.
+
+    Nested ``steps`` and ``validation`` blocks are dumped as nested
+    dicts so the legacy ``_parse_script_steps`` and
+    ``_parse_script_validation`` parsers receive the shapes they
+    expect.
+    """
+    return body.model_dump(exclude_unset=True, by_alias=False)
 
 
 def _parse_action_type(raw: Any, *, field: str) -> ActionType:
@@ -4953,7 +4993,7 @@ def _resolve_script_auth_context(script: PageSetupScript) -> tuple[str | None, s
 
 def _list_scripts_for_scope(
     scope: ScriptScope, scope_id: str, *, scope_field: str
-) -> Response:
+) -> ScriptListOut:
     limit = parse_limit(request.args.get("limit"))
     cursor_raw = request.args.get("cursor")
     cursor = _Cursor.decode(cursor_raw) if cursor_raw else None
@@ -4974,29 +5014,56 @@ def _list_scripts_for_scope(
     page = paginate(
         scripts, limit=limit, get_id=lambda s: str(s.mongo_id) if s.mongo_id else ""
     )
-    return jsonify(
-        {
-            "items": [_serialize_script(s) for s in page["items"]],
-            "next_cursor": page["next_cursor"],
-        }
+    return ScriptListOut(
+        items=[_script_to_out(s) for s in page["items"]],
+        next_cursor=page["next_cursor"],
     )
 
 
 @api_bp.route("/pages/<page_id>/scripts", methods=["GET"])
 @api_endpoint
-def list_page_scripts_rest(page_id: str) -> tuple[Response, int] | Response:
+@document(
+    response_200=ScriptListOut,
+    errors=[400, 401, 403, 404],
+    tags=["Scripts"],
+    summary="List page-scoped setup scripts",
+    description=(
+        "Returns the setup scripts configured against the given page. "
+        "Cursor-paginated using the legacy ``{items, next_cursor}`` "
+        "shape shared by every v1 list endpoint."
+    ),
+)
+def list_page_scripts_rest(
+    page_id: str,
+) -> tuple[ScriptListOut, int] | tuple[Response, int] | Response:
     """List page-scoped setup scripts."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, page_id=page_id
     )
     if get_db().get_page(page_id) is None:
         raise NotFoundError(f"page {page_id} not found")
-    return _list_scripts_for_scope(ScriptScope.PAGE, page_id, scope_field="page_id")
+    return _list_scripts_for_scope(
+        ScriptScope.PAGE, page_id, scope_field="page_id",
+    ), 200
 
 
 @api_bp.route("/pages/<page_id>/scripts", methods=["POST"])
 @api_endpoint
-def create_page_script_rest(page_id: str) -> tuple[Response, int]:
+@document(
+    request=ScriptIn,
+    response_201=ScriptOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["Scripts"],
+    summary="Create a page-scoped setup script",
+    description=(
+        "Creates a setup script bound to the given page. Returns 201 "
+        "with the persisted ``ScriptOut`` resource plus a ``Location`` "
+        "header pointing at ``/api/v1/scripts/<id>``."
+    ),
+)
+def create_page_script_rest(
+    page_id: str, body: ScriptIn,
+) -> tuple[Response, int]:
     """Create a page-scoped setup script."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, page_id=page_id
@@ -5004,32 +5071,69 @@ def create_page_script_rest(page_id: str) -> tuple[Response, int]:
     if get_db().get_page(page_id) is None:
         raise NotFoundError(f"page {page_id} not found")
 
-    body = _require_dict_body()
-    script = _build_script_from_body(body, scope=ScriptScope.PAGE, scope_id=page_id)
+    legacy_body = _script_body_to_dict(body)
+    script = _build_script_from_body(
+        legacy_body, scope=ScriptScope.PAGE, scope_id=page_id,
+    )
     script_id = get_db().create_page_setup_script(script)
     refreshed = get_db().get_page_setup_script(script_id)
     if refreshed is None:
         raise ConflictError("script failed to persist")
-    response = jsonify(_serialize_script(refreshed))
+    # The @document decorator serialises BaseModel returns through
+    # ``jsonify``, but we need a ``Location`` header on the new resource,
+    # so we pre-build the Response here and attach the header.
+    payload = _script_to_out(refreshed)
+    response = jsonify(
+        payload.model_dump(mode="json", by_alias=True, exclude_none=True)
+    )
     response.headers["Location"] = f"/api/v1/scripts/{script_id}"
     return response, 201
 
 
 @api_bp.route("/websites/<website_id>/scripts", methods=["GET"])
 @api_endpoint
-def list_website_scripts_rest(website_id: str) -> tuple[Response, int] | Response:
+@document(
+    response_200=ScriptListOut,
+    errors=[400, 401, 403, 404],
+    tags=["Scripts"],
+    summary="List website-scoped setup scripts",
+    description=(
+        "Returns the setup scripts configured against the given website. "
+        "Cursor-paginated using the legacy ``{items, next_cursor}`` "
+        "shape shared by every v1 list endpoint."
+    ),
+)
+def list_website_scripts_rest(
+    website_id: str,
+) -> tuple[ScriptListOut, int] | tuple[Response, int] | Response:
     """List website-scoped setup scripts."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, website_id=website_id
     )
     if get_db().get_website(website_id) is None:
         raise NotFoundError(f"website {website_id} not found")
-    return _list_scripts_for_scope(ScriptScope.WEBSITE, website_id, scope_field="website_id")
+    return _list_scripts_for_scope(
+        ScriptScope.WEBSITE, website_id, scope_field="website_id",
+    ), 200
 
 
 @api_bp.route("/websites/<website_id>/scripts", methods=["POST"])
 @api_endpoint
-def create_website_script_rest(website_id: str) -> tuple[Response, int]:
+@document(
+    request=ScriptIn,
+    response_201=ScriptOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["Scripts"],
+    summary="Create a website-scoped setup script",
+    description=(
+        "Creates a setup script bound to the given website. Returns 201 "
+        "with the persisted ``ScriptOut`` resource plus a ``Location`` "
+        "header pointing at ``/api/v1/scripts/<id>``."
+    ),
+)
+def create_website_script_rest(
+    website_id: str, body: ScriptIn,
+) -> tuple[Response, int]:
     """Create a website-scoped setup script."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, website_id=website_id
@@ -5037,20 +5141,38 @@ def create_website_script_rest(website_id: str) -> tuple[Response, int]:
     if get_db().get_website(website_id) is None:
         raise NotFoundError(f"website {website_id} not found")
 
-    body = _require_dict_body()
-    script = _build_script_from_body(body, scope=ScriptScope.WEBSITE, scope_id=website_id)
+    legacy_body = _script_body_to_dict(body)
+    script = _build_script_from_body(
+        legacy_body, scope=ScriptScope.WEBSITE, scope_id=website_id,
+    )
     script_id = get_db().create_page_setup_script(script)
     refreshed = get_db().get_page_setup_script(script_id)
     if refreshed is None:
         raise ConflictError("script failed to persist")
-    response = jsonify(_serialize_script(refreshed))
+    payload = _script_to_out(refreshed)
+    response = jsonify(
+        payload.model_dump(mode="json", by_alias=True, exclude_none=True)
+    )
     response.headers["Location"] = f"/api/v1/scripts/{script_id}"
     return response, 201
 
 
 @api_bp.route("/scripts/<script_id>", methods=["GET"])
 @api_endpoint
-def get_script_rest(script_id: str) -> tuple[Response, int] | Response:
+@document(
+    response_200=ScriptOut,
+    errors=[401, 403, 404],
+    tags=["Scripts"],
+    summary="Get a setup script by ID",
+    description=(
+        "Returns the setup-script resource (``ScriptOut``). "
+        "``TEST_RUN``-scoped scripts are runtime-internal and surface "
+        "as 404."
+    ),
+)
+def get_script_rest(
+    script_id: str,
+) -> tuple[ScriptOut, int] | tuple[Response, int] | Response:
     """Get a setup script by id."""
     script = get_db().get_page_setup_script(script_id)
     if script is None:
@@ -5064,12 +5186,28 @@ def get_script_rest(script_id: str) -> tuple[Response, int] | Response:
         UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT,
         website_id=website_id, page_id=page_id,
     )
-    return jsonify(_serialize_script(script))
+    return _script_to_out(script), 200
 
 
 @api_bp.route("/scripts/<script_id>", methods=["PUT"])
 @api_endpoint
-def replace_script_rest(script_id: str) -> tuple[Response, int] | Response:
+@document(
+    request=ScriptPut,
+    response_200=ScriptOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["Scripts"],
+    summary="Replace a setup script",
+    description=(
+        "Full replacement of the user-editable fields. Server-managed "
+        "bookkeeping (``created_date``, ``created_by``, "
+        "``execution_stats``, ``scope`` and the matching ``page_id`` / "
+        "``website_id``) is preserved from the prior version. "
+        "``TEST_RUN``-scoped scripts surface as 404."
+    ),
+)
+def replace_script_rest(
+    script_id: str, body: ScriptPut,
+) -> tuple[ScriptOut, int] | tuple[Response, int] | Response:
     """Full replace of a setup script's editable fields.
 
     Server-managed fields (created_date, created_by, execution_stats,
@@ -5085,11 +5223,15 @@ def replace_script_rest(script_id: str) -> tuple[Response, int] | Response:
         UserRole.ADMIN, UserRole.AUDITOR,
         website_id=website_id, page_id=page_id,
     )
-    body = _require_dict_body()
-    scope_id = existing.page_id if existing.scope is ScriptScope.PAGE else existing.website_id
+    legacy_body = _script_body_to_dict(body)
+    scope_id = (
+        existing.page_id if existing.scope is ScriptScope.PAGE else existing.website_id
+    )
     if scope_id is None:
         raise ConflictError("existing script has no scope id")
-    replaced = _build_script_from_body(body, scope=existing.scope, scope_id=scope_id)
+    replaced = _build_script_from_body(
+        legacy_body, scope=existing.scope, scope_id=scope_id,
+    )
     replaced.mongo_id = existing.mongo_id
     replaced.created_by = existing.created_by
     replaced.created_date = existing.created_date
@@ -5097,13 +5239,28 @@ def replace_script_rest(script_id: str) -> tuple[Response, int] | Response:
     replaced.update_timestamp()
     if not get_db().update_page_setup_script(replaced):
         raise ConflictError("script could not be updated")
-    return jsonify(_serialize_script(replaced))
+    return _script_to_out(replaced), 200
 
 
 @api_bp.route("/scripts/<script_id>", methods=["PATCH"])
 @api_endpoint
-def patch_script_rest(script_id: str) -> tuple[Response, int] | Response:
-    """Partial update — covers the legacy enable/disable toggle (``{"enabled": false}``)
+@document(
+    request=ScriptPatch,
+    response_200=ScriptOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["Scripts"],
+    summary="Partially update a setup script",
+    description=(
+        "Partial update -- only fields present in the request body are "
+        "applied. Commonly used for the enable/disable toggle "
+        "(``{\"enabled\": false}``) and similar narrow edits. "
+        "``TEST_RUN``-scoped scripts surface as 404."
+    ),
+)
+def patch_script_rest(
+    script_id: str, body: ScriptPatch,
+) -> tuple[ScriptOut, int] | tuple[Response, int] | Response:
+    """Partial update -- covers the legacy enable/disable toggle (``{"enabled": false}``)
     plus any other field-level edit."""
     script = get_db().get_page_setup_script(script_id)
     if script is None:
@@ -5115,16 +5272,28 @@ def patch_script_rest(script_id: str) -> tuple[Response, int] | Response:
         UserRole.ADMIN, UserRole.AUDITOR,
         website_id=website_id, page_id=page_id,
     )
-    body = _require_dict_body()
-    patched = _apply_patch_to_script(script, body)
+    legacy_body = _script_body_to_dict(body)
+    patched = _apply_patch_to_script(script, legacy_body)
     if not get_db().update_page_setup_script(patched):
         raise ConflictError("script could not be updated")
-    return jsonify(_serialize_script(patched))
+    return _script_to_out(patched), 200
 
 
 @api_bp.route("/scripts/<script_id>", methods=["DELETE"])
 @api_endpoint
-def delete_script_rest(script_id: str) -> tuple[Response, int]:
+@document(
+    response_204=Empty,
+    errors=[401, 403, 404],
+    tags=["Scripts"],
+    summary="Delete a setup script",
+    description=(
+        "Removes the setup script. ``TEST_RUN``-scoped scripts surface "
+        "as 404. Returns ``204 No Content`` with an empty body."
+    ),
+)
+def delete_script_rest(
+    script_id: str,
+) -> tuple[Empty, int] | tuple[Response, int]:
     """Delete a setup script."""
     script = get_db().get_page_setup_script(script_id)
     if script is None:
@@ -5137,17 +5306,42 @@ def delete_script_rest(script_id: str) -> tuple[Response, int]:
         website_id=website_id, page_id=page_id,
     )
     get_db().delete_page_setup_script(script_id)
-    return Response(status=204), 204
+    return Empty(), 204
 
 
 @api_bp.route("/scripts/<script_id>/test-runs", methods=["POST"])
 @api_endpoint
+@document(
+    request=ScriptTestRunIn,
+    response_200=ScriptTestRunOut,
+    errors=[400, 401, 403, 404, 409, 500],
+    tags=["Scripts"],
+    summary="Execute a setup script synchronously",
+    description=(
+        "Runs the script against its target URL (page-scoped scripts "
+        "use the linked page's URL; website-scoped scripts use the "
+        "website's root URL). **Synchronous** -- the legacy "
+        "``POST /scripts/<id>/test`` blocks the request thread until "
+        "the browser executes the script and clients rely on the "
+        "inline result; this REST shape preserves that semantic even "
+        "though the URL implies async by convention. The 200 status "
+        "code (rather than the usual 202) signals \"done synchronously\". "
+        "If the script raises during execution the same JSON envelope "
+        "is returned with ``success=false`` and a populated ``error`` "
+        "field, but with status 500 so monitoring tooling can flag the "
+        "failure. ``TEST_RUN``-scoped scripts surface as 404; "
+        "``BROWSER_MODE`` set to ``disabled`` or ``remote`` surfaces as "
+        "409. The request body is currently a no-op (the script's "
+        "persisted ``steps`` are the authoritative input); accepting "
+        "the body shape keeps the door open for per-run overrides."
+    ),
+)
 def run_script_test(
-    script_id: str,
-) -> tuple[Response, int] | Response:
+    script_id: str, body: ScriptTestRunIn,
+) -> tuple[ScriptTestRunOut, int] | tuple[Response, int] | Response:
     """Execute a setup script against its target URL and return the result.
 
-    **Synchronous** — distinct from every other ``/test-runs`` endpoint
+    **Synchronous** -- distinct from every other ``/test-runs`` endpoint
     on this surface. The legacy ``POST /scripts/<id>/test`` blocks the
     request thread until the browser executes the script, and clients
     rely on the inline result; this REST shape preserves that semantic
@@ -5162,7 +5356,7 @@ def run_script_test(
     - TEST_RUN-scoped scripts are runtime-internal and surface as 404
       from this endpoint (matching the rest of the scripts REST API)
 
-    Body fields are accepted but currently ignored — the script's
+    Body fields are accepted but currently ignored -- the script's
     persisted ``steps`` are the authoritative input. Accepting the
     body shape keeps the door open for per-run overrides (e.g.
     ``environment_vars``) without an API version bump.
@@ -5180,17 +5374,23 @@ def run_script_test(
 
     Errors:
 
-    - **404** — script doesn't exist, is TEST_RUN-scoped, or its
+    - **404** -- script doesn't exist, is TEST_RUN-scoped, or its
       target (page / website) can't be resolved
-    - **409** — server has no browser configured (BROWSER_MODE='disabled'
-      or 'remote' — the browser pipeline is local-only for this endpoint)
-    - **500** — script raises during execution; the body carries the
+    - **409** -- server has no browser configured (BROWSER_MODE='disabled'
+      or 'remote' -- the browser pipeline is local-only for this endpoint)
+    - **500** -- script raises during execution; the body carries the
       error message so the operator can debug without polling logs
     """
     import asyncio
 
     from auto_a11y.core.browser_manager import BrowserManager
     from auto_a11y.testing.script_executor import ScriptExecutor
+
+    # ``body`` is parsed by @document but intentionally unused: the
+    # script's persisted ``steps`` are the authoritative input. Naming
+    # the kwarg keeps the decorator contract intact while letting the
+    # value be discarded.
+    del body
 
     script = get_db().get_page_setup_script(script_id)
     if script is None:
@@ -5233,16 +5433,13 @@ def run_script_test(
     # Reject deployments that don't run a local browser. The script
     # test endpoint is *not* implemented as a queued job, so it can't
     # transparently fall back to a remote runner the way test-runs
-    # can — surface the misconfiguration as 409 instead of pretending
+    # can -- surface the misconfiguration as 409 instead of pretending
     # the test ran with zero steps.
     browser_mode = getattr(get_app_config(), "BROWSER_MODE", "local")
     if browser_mode in ("disabled", "remote"):
         raise ConflictError(
             f"script test requires local browser; BROWSER_MODE={browser_mode!r}"
         )
-
-    # Body is currently a no-op but parsed for the validation 400 shape.
-    _ = _require_dict_body() if request.data else {}
 
     project = (
         get_db().get_project(website.project_id) if website.project_id else None
@@ -5258,7 +5455,7 @@ def run_script_test(
         browser_config["stealth_mode"] = False
 
     async def _run_test() -> dict[str, Any]:
-        # Local async coroutine — instantiates a fresh browser per
+        # Local async coroutine -- instantiates a fresh browser per
         # request. Matches the legacy handler: no pooling, no reuse;
         # the test endpoint is rare enough that the per-request
         # browser-launch cost is acceptable.
@@ -5288,26 +5485,30 @@ def run_script_test(
         # JSON envelope rather than a raw error string. The
         # @api_endpoint wrapper would intercept ApiError subclasses;
         # here we want the *test result*, not the route, to be the
-        # thing reporting failure.
-        return jsonify({
-            "script_id": script_id,
-            "success": False,
-            "duration_ms": 0,
-            "steps_executed": 0,
-            "error": str(exc),
-            "target_url": target_url,
-        }), 500
+        # thing reporting failure. We validate through ScriptTestRunOut
+        # so the 500-path payload exactly matches the advertised schema.
+        failure_payload = ScriptTestRunOut(
+            script_id=script_id,
+            success=False,
+            duration_ms=0,
+            steps_executed=0,
+            error=str(exc),
+            target_url=target_url,
+        )
+        return jsonify(
+            failure_payload.model_dump(mode="json", by_alias=True)
+        ), 500
     finally:
         loop.close()
 
-    return jsonify({
-        "script_id": script_id,
-        "success": bool(result.get("success", False)),
-        "duration_ms": int(result.get("duration_ms", 0) or 0),
-        "steps_executed": int(result.get("steps_executed", 0) or 0),
-        "error": result.get("error"),
-        "target_url": target_url,
-    })
+    return ScriptTestRunOut(
+        script_id=script_id,
+        success=bool(result.get("success", False)),
+        duration_ms=int(result.get("duration_ms", 0) or 0),
+        steps_executed=int(result.get("steps_executed", 0) or 0),
+        error=result.get("error"),
+        target_url=target_url,
+    ), 200
 
 
 # ---------------------------------------------------------------------------

@@ -459,6 +459,38 @@ components:
       properties: {}
       title: Empty
       type: object
+    ExecutionStatsOut:
+      additionalProperties: false
+      description: 'Execution stats block in a response body.
+
+
+        Always fully populated because :class:`ExecutionStats` is a
+
+        dataclass with default values. ``last_executed`` is ``None`` for
+
+        scripts that have never run; otherwise it''s an ISO 8601 timestamp.'
+      properties:
+        average_duration_ms:
+          title: Average Duration Ms
+          type: integer
+        failure_count:
+          title: Failure Count
+          type: integer
+        last_executed:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Last Executed
+        success_count:
+          title: Success Count
+          type: integer
+      required:
+      - success_count
+      - failure_count
+      - average_duration_ms
+      title: ExecutionStatsOut
+      type: object
     JobRestartOut:
       additionalProperties: false
       description: 'Response body (202) for ``POST /jobs/<id>/restart``.
@@ -3110,6 +3142,169 @@ components:
           title: Respect Robots
       title: ScrapingConfigModel
       type: object
+    ScriptIn:
+      additionalProperties: false
+      description: 'POST body for creating a setup script.
+
+
+        Wire shape is the same for the page-scoped and website-scoped
+
+        collection endpoints; ``scope`` and the matching id are injected
+
+        by the handler from the URL path.
+
+
+        ``name`` is required at the semantic level (the handler rejects
+
+        empty/whitespace-only values) but typed as ``Optional[str]`` here
+
+        because the legacy parser permitted ``request.json`` to omit it
+
+        (it then surfaces a 400 with field path ``name``).'
+      properties:
+        clear_cookies_before:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Clear Cookies Before
+        clear_local_storage_before:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Clear Local Storage Before
+        condition_selector:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Condition Selector
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Description
+        enabled:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Enabled
+        expect_hidden_after:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          default: null
+          title: Expect Hidden After
+        expect_visible_after:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          default: null
+          title: Expect Visible After
+        name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Name
+        report_violation_if_condition_met:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Report Violation If Condition Met
+        steps:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/ScriptStepIn'
+            type: array
+          - type: 'null'
+          default: null
+          title: Steps
+        test_after_execution:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Test After Execution
+        test_before_execution:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Test Before Execution
+        trigger:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Trigger
+        validation:
+          anyOf:
+          - $ref: '#/components/schemas/ScriptValidationIn'
+          - type: 'null'
+          default: null
+        violation_code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Violation Code
+        violation_message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Violation Message
+        wait_for_selector:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Wait For Selector
+        wait_timeout:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          default: null
+          title: Wait Timeout
+      title: ScriptIn
+      type: object
+    ScriptListOut:
+      additionalProperties: false
+      description: 'Response body for the script-list endpoints.
+
+
+        Cursor-paginated; same ``{items, next_cursor}`` shape as the other
+
+        v1 list endpoints. Used by both
+
+        ``GET /api/v1/pages/<id>/scripts`` and
+
+        ``GET /api/v1/websites/<id>/scripts``.'
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/ScriptOut'
+          title: Items
+          type: array
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Next Cursor
+      required:
+      - items
+      title: ScriptListOut
+      type: object
     ScriptOrderEntry:
       additionalProperties: false
       description: 'One ``{script_id, execution_order}`` row in the PUT body''s
@@ -3132,6 +3327,413 @@ components:
       - script_id
       - execution_order
       title: ScriptOrderEntry
+      type: object
+    ScriptOut:
+      additionalProperties: false
+      description: 'Response body for single-script GET / POST / PUT / PATCH.
+
+
+        Mirrors ``_serialize_script`` byte-for-byte. ``id`` is the
+
+        stringified Mongo ``_id`` (``None`` only on transient unsaved
+
+        scripts, which never appear over the wire). ``scope`` and
+
+        ``trigger`` are stringified enum values; timestamps are ISO 8601.
+
+
+        TEST_RUN-scoped scripts are runtime-internal and never appear in
+
+        this shape over the wire — every REST endpoint surfaces them as
+
+        404 instead.'
+      properties:
+        clear_cookies_before:
+          title: Clear Cookies Before
+          type: boolean
+        clear_local_storage_before:
+          title: Clear Local Storage Before
+          type: boolean
+        condition_selector:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Condition Selector
+        created_by:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Created By
+        created_date:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Created Date
+        description:
+          title: Description
+          type: string
+        enabled:
+          title: Enabled
+          type: boolean
+        execution_stats:
+          $ref: '#/components/schemas/ExecutionStatsOut'
+        expect_hidden_after:
+          items:
+            type: string
+          title: Expect Hidden After
+          type: array
+        expect_visible_after:
+          items:
+            type: string
+          title: Expect Visible After
+          type: array
+        id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Id
+        last_modified:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Last Modified
+        name:
+          title: Name
+          type: string
+        page_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Page Id
+        report_violation_if_condition_met:
+          title: Report Violation If Condition Met
+          type: boolean
+        scope:
+          title: Scope
+          type: string
+        steps:
+          items:
+            $ref: '#/components/schemas/ScriptStepOut'
+          title: Steps
+          type: array
+        test_after_execution:
+          title: Test After Execution
+          type: boolean
+        test_before_execution:
+          title: Test Before Execution
+          type: boolean
+        trigger:
+          title: Trigger
+          type: string
+        validation:
+          anyOf:
+          - $ref: '#/components/schemas/ScriptValidationOut'
+          - type: 'null'
+          default: null
+        violation_code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Violation Code
+        violation_message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Violation Message
+        wait_for_selector:
+          title: Wait For Selector
+          type: boolean
+        wait_timeout:
+          title: Wait Timeout
+          type: integer
+        website_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Website Id
+      required:
+      - name
+      - description
+      - scope
+      - trigger
+      - report_violation_if_condition_met
+      - test_before_execution
+      - test_after_execution
+      - expect_visible_after
+      - expect_hidden_after
+      - clear_cookies_before
+      - clear_local_storage_before
+      - wait_for_selector
+      - wait_timeout
+      - enabled
+      - steps
+      - execution_stats
+      title: ScriptOut
+      type: object
+    ScriptPatch:
+      additionalProperties: false
+      description: 'PATCH body for partial setup-script updates.
+
+
+        Every field is ``Optional[...]``; the handler uses
+
+        ``model_fields_set`` to apply only fields the client sent. This is
+
+        how the legacy ``_apply_patch_to_script`` distinguished "absent"
+
+        from "explicit ``null``".'
+      properties:
+        clear_cookies_before:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Clear Cookies Before
+        clear_local_storage_before:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Clear Local Storage Before
+        condition_selector:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Condition Selector
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Description
+        enabled:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Enabled
+        expect_hidden_after:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          default: null
+          title: Expect Hidden After
+        expect_visible_after:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          default: null
+          title: Expect Visible After
+        name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Name
+        report_violation_if_condition_met:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Report Violation If Condition Met
+        steps:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/ScriptStepIn'
+            type: array
+          - type: 'null'
+          default: null
+          title: Steps
+        test_after_execution:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Test After Execution
+        test_before_execution:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Test Before Execution
+        trigger:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Trigger
+        validation:
+          anyOf:
+          - $ref: '#/components/schemas/ScriptValidationIn'
+          - type: 'null'
+          default: null
+        violation_code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Violation Code
+        violation_message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Violation Message
+        wait_for_selector:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Wait For Selector
+        wait_timeout:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          default: null
+          title: Wait Timeout
+      title: ScriptPatch
+      type: object
+    ScriptPut:
+      additionalProperties: false
+      description: 'PUT body for full replacement of a setup script.
+
+
+        Same wire shape as :class:`ScriptIn` but declared separately so
+
+        the spec emits distinct request bodies for the POST and PUT
+
+        operations. Scope and scope id are preserved from the existing
+
+        resource — the body must not attempt to change them.'
+      properties:
+        clear_cookies_before:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Clear Cookies Before
+        clear_local_storage_before:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Clear Local Storage Before
+        condition_selector:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Condition Selector
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Description
+        enabled:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Enabled
+        expect_hidden_after:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          default: null
+          title: Expect Hidden After
+        expect_visible_after:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          default: null
+          title: Expect Visible After
+        name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Name
+        report_violation_if_condition_met:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Report Violation If Condition Met
+        steps:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/ScriptStepIn'
+            type: array
+          - type: 'null'
+          default: null
+          title: Steps
+        test_after_execution:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Test After Execution
+        test_before_execution:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Test Before Execution
+        trigger:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Trigger
+        validation:
+          anyOf:
+          - $ref: '#/components/schemas/ScriptValidationIn'
+          - type: 'null'
+          default: null
+        violation_code:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Violation Code
+        violation_message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Violation Message
+        wait_for_selector:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Wait For Selector
+        wait_timeout:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          default: null
+          title: Wait Timeout
+      title: ScriptPut
       type: object
     ScriptStateDefinitionOut:
       additionalProperties: false
@@ -3162,6 +3764,254 @@ components:
       - test_after
       - execution_order
       title: ScriptStateDefinitionOut
+      type: object
+    ScriptStepIn:
+      additionalProperties: false
+      description: 'Single step entry in a request body.
+
+
+        The legacy parser assigns ``step_number = index + 1`` based on the
+
+        position in the ``steps`` array, so the wire body''s entries don''t
+
+        carry an explicit number. ``action_type`` is accepted as an
+
+        arbitrary string and validated by the handler against
+
+        :class:`ActionType`; integer fields default to the legacy values
+
+        (``timeout=5000``, ``wait_after=0``).'
+      properties:
+        action_type:
+          title: Action Type
+          type: string
+        description:
+          title: Description
+          type: string
+        screenshot_after:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Screenshot After
+        selector:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Selector
+        timeout:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          default: null
+          title: Timeout
+        value:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Value
+        wait_after:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          default: null
+          title: Wait After
+      required:
+      - action_type
+      - description
+      title: ScriptStepIn
+      type: object
+    ScriptStepOut:
+      additionalProperties: false
+      description: 'Single step entry in a response body.
+
+
+        Mirrors ``_serialize_script_step`` byte-for-byte. ``action_type``
+
+        is the enum''s string value (e.g. ``"click"``, ``"type"``).'
+      properties:
+        action_type:
+          title: Action Type
+          type: string
+        description:
+          title: Description
+          type: string
+        screenshot_after:
+          title: Screenshot After
+          type: boolean
+        selector:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Selector
+        step_number:
+          title: Step Number
+          type: integer
+        timeout:
+          title: Timeout
+          type: integer
+        value:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Value
+        wait_after:
+          title: Wait After
+          type: integer
+      required:
+      - step_number
+      - action_type
+      - description
+      - timeout
+      - wait_after
+      - screenshot_after
+      title: ScriptStepOut
+      type: object
+    ScriptTestRunIn:
+      additionalProperties: false
+      description: 'Request body for ``POST /scripts/<id>/test-runs``.
+
+
+        Empty in the current surface — the legacy handler parses the body
+
+        for the validation 400 shape but ignores its contents (the script''s
+
+        persisted ``steps`` are the authoritative input). Accepting an
+
+        empty :class:`StrictModel` keeps the door open for per-run
+
+        overrides (e.g. ``environment_vars``) without an API version bump,
+
+        and ``extra=''forbid''`` still rejects stray fields a misbehaving
+
+        client might send.'
+      properties: {}
+      title: ScriptTestRunIn
+      type: object
+    ScriptTestRunOut:
+      additionalProperties: false
+      description: 'Response body for ``POST /api/v1/scripts/<id>/test-runs``.
+
+
+        Returned with status 200 (Synchronous done) rather than the usual
+
+        202 because the legacy handler blocks on the browser execution.
+
+        ``target_url`` is resolved by the handler from scope:
+
+
+        - PAGE-scoped scripts: the linked page''s URL
+
+        - WEBSITE-scoped scripts: the website''s root URL
+
+
+        ``error`` is non-null only when the script raised during
+
+        execution; in that case ``success`` is false and ``steps_executed``
+
+        is zero. The handler returns a 500 in that path but with the same
+
+        JSON envelope, so clients can read the failure inline without
+
+        polling logs.'
+      properties:
+        duration_ms:
+          title: Duration Ms
+          type: integer
+        error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Error
+        script_id:
+          title: Script Id
+          type: string
+        steps_executed:
+          title: Steps Executed
+          type: integer
+        success:
+          title: Success
+          type: boolean
+        target_url:
+          title: Target Url
+          type: string
+      required:
+      - script_id
+      - success
+      - duration_ms
+      - steps_executed
+      - target_url
+      title: ScriptTestRunOut
+      type: object
+    ScriptValidationIn:
+      additionalProperties: false
+      description: 'Optional validation block in a request body.
+
+
+        All fields are optional; the legacy parser used ``data.get(...)``
+
+        for every key. ``failure_selectors`` defaults to an empty list
+
+        server-side.'
+      properties:
+        failure_selectors:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          default: null
+          title: Failure Selectors
+        success_selector:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Success Selector
+        success_text:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Success Text
+      title: ScriptValidationIn
+      type: object
+    ScriptValidationOut:
+      additionalProperties: false
+      description: 'Optional validation block in a response body.
+
+
+        Mirrors ``_serialize_script_validation``. The parent field on
+
+        :class:`ScriptOut` is ``Optional[ScriptValidationOut]`` because the
+
+        legacy serializer emits ``None`` when no validation is configured.'
+      properties:
+        failure_selectors:
+          items:
+            type: string
+          title: Failure Selectors
+          type: array
+        success_selector:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Success Selector
+        success_text:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Success Text
+      required:
+      - failure_selectors
+      title: ScriptValidationOut
       type: object
     TestResultCompareIn:
       additionalProperties: false
@@ -4406,6 +5256,110 @@ paths:
       summary: Queue a single-page accessibility report
       tags:
       - Reports
+  /pages/{page_id}/scripts:
+    get:
+      description: Returns the setup scripts configured against the given page. Cursor-paginated
+        using the legacy ``{items, next_cursor}`` shape shared by every v1 list endpoint.
+      parameters:
+      - in: path
+        name: page_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScriptListOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: List page-scoped setup scripts
+      tags:
+      - Scripts
+    post:
+      description: Creates a setup script bound to the given page. Returns 201 with
+        the persisted ``ScriptOut`` resource plus a ``Location`` header pointing at
+        ``/api/v1/scripts/<id>``.
+      parameters:
+      - in: path
+        name: page_id
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScriptIn'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScriptOut'
+          description: Created
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Create a page-scoped setup script
+      tags:
+      - Scripts
   /pages/{page_id}/test:
     post:
       description: Queues an accessibility test run for a single page. Both ``POST
@@ -6175,6 +7129,277 @@ paths:
       summary: Trigger an immediate run of a scheduled test
       tags:
       - Schedules
+  /scripts/{script_id}:
+    delete:
+      description: Removes the setup script. ``TEST_RUN``-scoped scripts surface as
+        404. Returns ``204 No Content`` with an empty body.
+      parameters:
+      - in: path
+        name: script_id
+        required: true
+        schema: *id001
+      responses:
+        '204':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Empty'
+          description: No Content
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Delete a setup script
+      tags:
+      - Scripts
+    get:
+      description: Returns the setup-script resource (``ScriptOut``). ``TEST_RUN``-scoped
+        scripts are runtime-internal and surface as 404.
+      parameters:
+      - in: path
+        name: script_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScriptOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Get a setup script by ID
+      tags:
+      - Scripts
+    patch:
+      description: 'Partial update -- only fields present in the request body are
+        applied. Commonly used for the enable/disable toggle (``{"enabled": false}``)
+        and similar narrow edits. ``TEST_RUN``-scoped scripts surface as 404.'
+      parameters:
+      - in: path
+        name: script_id
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScriptPatch'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScriptOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Partially update a setup script
+      tags:
+      - Scripts
+    put:
+      description: Full replacement of the user-editable fields. Server-managed bookkeeping
+        (``created_date``, ``created_by``, ``execution_stats``, ``scope`` and the
+        matching ``page_id`` / ``website_id``) is preserved from the prior version.
+        ``TEST_RUN``-scoped scripts surface as 404.
+      parameters:
+      - in: path
+        name: script_id
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScriptPut'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScriptOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Replace a setup script
+      tags:
+      - Scripts
+  /scripts/{script_id}/test-runs:
+    post:
+      description: Runs the script against its target URL (page-scoped scripts use
+        the linked page's URL; website-scoped scripts use the website's root URL).
+        **Synchronous** -- the legacy ``POST /scripts/<id>/test`` blocks the request
+        thread until the browser executes the script and clients rely on the inline
+        result; this REST shape preserves that semantic even though the URL implies
+        async by convention. The 200 status code (rather than the usual 202) signals
+        "done synchronously". If the script raises during execution the same JSON
+        envelope is returned with ``success=false`` and a populated ``error`` field,
+        but with status 500 so monitoring tooling can flag the failure. ``TEST_RUN``-scoped
+        scripts surface as 404; ``BROWSER_MODE`` set to ``disabled`` or ``remote``
+        surfaces as 409. The request body is currently a no-op (the script's persisted
+        ``steps`` are the authoritative input); accepting the body shape keeps the
+        door open for per-run overrides.
+      parameters:
+      - in: path
+        name: script_id
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScriptTestRunIn'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScriptTestRunOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+        '500':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Internal Server Error
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Execute a setup script synchronously
+      tags:
+      - Scripts
   /test-results/compare:
     post:
       description: 'Returns a diff of two test results, typically from different states
@@ -6849,6 +8074,111 @@ paths:
       summary: Create a scheduled test on a website
       tags:
       - Schedules
+  /websites/{website_id}/scripts:
+    get:
+      description: Returns the setup scripts configured against the given website.
+        Cursor-paginated using the legacy ``{items, next_cursor}`` shape shared by
+        every v1 list endpoint.
+      parameters:
+      - in: path
+        name: website_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScriptListOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: List website-scoped setup scripts
+      tags:
+      - Scripts
+    post:
+      description: Creates a setup script bound to the given website. Returns 201
+        with the persisted ``ScriptOut`` resource plus a ``Location`` header pointing
+        at ``/api/v1/scripts/<id>``.
+      parameters:
+      - in: path
+        name: website_id
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScriptIn'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScriptOut'
+          description: Created
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Create a website-scoped setup script
+      tags:
+      - Scripts
   /websites/{website_id}/test:
     post:
       description: Queues a batch accessibility test run for every page on a website.

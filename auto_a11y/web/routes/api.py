@@ -30,6 +30,14 @@ from auto_a11y.web.api.schemas.projects import (
     ProjectListOut,
     ProjectPatch,
 )
+from auto_a11y.web.api.schemas.websites import (
+    ScrapingConfigModel,
+    WebsiteIn,
+    WebsiteListOut,
+    WebsiteOut,
+    WebsitePatch,
+    WebsitePut,
+)
 from auto_a11y.web.typed_app import get_db, get_app_config, get_test_config
 from datetime import datetime
 import logging
@@ -1756,126 +1764,6 @@ def preview_scheduled_test(
 from auto_a11y.models.website import ScrapingConfig, Website  # noqa: E402
 
 
-def _serialize_website(website: Website) -> dict[str, Any]:
-    """Project a :class:`Website` to a JSON-safe dict.
-
-    Datetimes are emitted as ISO 8601 strings; the Mongo ``_id`` is
-    surfaced as the string ``id`` field. ``members`` is intentionally
-    omitted — the legacy field is unused and the project members API
-    is the authoritative surface for that data.
-    """
-
-    def _iso(dt: datetime | None) -> str | None:
-        return dt.isoformat() if dt is not None else None
-
-    return {
-        "id": website.id,
-        "project_id": website.project_id,
-        "url": website.url,
-        "name": website.name,
-        "display_name": website.display_name,
-        "page_count": website.page_count,
-        "scraping_config": website.scraping_config.to_dict(),
-        "created_at": _iso(website.created_at),
-        "last_scraped": _iso(website.last_scraped),
-        "last_tested": _iso(website.last_tested),
-    }
-
-
-def _parse_scraping_config(raw: Any, *, field: str) -> ScrapingConfig:
-    """Validate and project a JSON object into a :class:`ScrapingConfig`.
-
-    Unknown keys are dropped (ScrapingConfig.from_dict already does this).
-    Type coercion for primitives is intentionally light: callers send
-    whatever JSON parses produce, and ScrapingConfig's defaults absorb
-    most omissions.
-    """
-    if not isinstance(raw, dict):
-        raise ValidationError(
-            f"{field} must be an object",
-            errors=(_FieldError(field=field, code="invalid_type", message="must be object"),),
-        )
-    raw_dict = cast(dict[str, Any], raw)
-
-    def _int(value: Any, *, key: str) -> int:
-        if isinstance(value, bool) or not isinstance(value, int):
-            raise ValidationError(
-                f"{field}.{key} must be an integer",
-                errors=(
-                    _FieldError(
-                        field=f"{field}.{key}",
-                        code="invalid_type",
-                        message="must be integer",
-                    ),
-                ),
-            )
-        return int(value)
-
-    def _float(value: Any, *, key: str) -> float:
-        if isinstance(value, bool) or not isinstance(value, (int, float)):
-            raise ValidationError(
-                f"{field}.{key} must be a number",
-                errors=(
-                    _FieldError(
-                        field=f"{field}.{key}",
-                        code="invalid_type",
-                        message="must be number",
-                    ),
-                ),
-            )
-        return float(value)
-
-    def _bool(value: Any, *, key: str) -> bool:
-        if not isinstance(value, bool):
-            raise ValidationError(
-                f"{field}.{key} must be a boolean",
-                errors=(
-                    _FieldError(
-                        field=f"{field}.{key}",
-                        code="invalid_type",
-                        message="must be boolean",
-                    ),
-                ),
-            )
-        return value
-
-    def _str_list(value: Any, *, key: str) -> list[str]:
-        if not isinstance(value, list):
-            raise ValidationError(
-                f"{field}.{key} must be an array",
-                errors=(
-                    _FieldError(
-                        field=f"{field}.{key}",
-                        code="invalid_type",
-                        message="must be array",
-                    ),
-                ),
-            )
-        return _coerce_str_list(value)
-
-    defaults = ScrapingConfig()
-    return ScrapingConfig(
-        max_pages=_int(raw_dict["max_pages"], key="max_pages")
-            if "max_pages" in raw_dict else defaults.max_pages,
-        max_depth=_int(raw_dict["max_depth"], key="max_depth")
-            if "max_depth" in raw_dict else defaults.max_depth,
-        follow_external=_bool(raw_dict["follow_external"], key="follow_external")
-            if "follow_external" in raw_dict else defaults.follow_external,
-        include_subdomains=_bool(raw_dict["include_subdomains"], key="include_subdomains")
-            if "include_subdomains" in raw_dict else defaults.include_subdomains,
-        respect_robots=_bool(raw_dict["respect_robots"], key="respect_robots")
-            if "respect_robots" in raw_dict else defaults.respect_robots,
-        request_delay=_float(raw_dict["request_delay"], key="request_delay")
-            if "request_delay" in raw_dict else defaults.request_delay,
-        allowed_paths=_str_list(raw_dict["allowed_paths"], key="allowed_paths")
-            if "allowed_paths" in raw_dict else list(defaults.allowed_paths),
-        excluded_paths=_str_list(raw_dict["excluded_paths"], key="excluded_paths")
-            if "excluded_paths" in raw_dict else list(defaults.excluded_paths),
-        auto_fetch_pdfs=_bool(raw_dict["auto_fetch_pdfs"], key="auto_fetch_pdfs")
-            if "auto_fetch_pdfs" in raw_dict else defaults.auto_fetch_pdfs,
-    )
-
-
 def _validate_url(raw: Any, *, field: str) -> str:
     """Require ``raw`` to be a non-empty http(s) URL string."""
     if not isinstance(raw, str):
@@ -1897,56 +1785,105 @@ def _validate_url(raw: Any, *, field: str) -> str:
     return value
 
 
-def _build_website_from_body(project_id: str, body: dict[str, Any]) -> Website:
-    """Construct a :class:`Website` from a POST/PUT body, validating fields."""
-    url = _validate_url(body.get("url"), field="url")
-    name_raw = body.get("name")
-    if name_raw is not None and not isinstance(name_raw, str):
-        raise ValidationError(
-            "name must be a string or null",
-            errors=(_FieldError(field="name", code="invalid_type", message="must be string"),),
-        )
-    name = name_raw.strip() if isinstance(name_raw, str) and name_raw.strip() else None
-    scraping_config = (
-        _parse_scraping_config(body["scraping_config"], field="scraping_config")
-        if "scraping_config" in body and body["scraping_config"] is not None
-        else ScrapingConfig()
+def _website_to_out(website: Website) -> WebsiteOut:
+    """Project a :class:`Website` to a :class:`WebsiteOut` model.
+
+    Mirrors the legacy ``_serialize_website()`` shape byte-for-byte:
+    datetimes are emitted as ISO 8601 strings, the Mongo ``_id`` surfaces
+    via the ``id`` property (already stringified), and ``members`` is
+    intentionally dropped (the project-members API is the authoritative
+    surface for that data).
+    """
+
+    def _iso(dt: datetime | None) -> str | None:
+        return dt.isoformat() if dt is not None else None
+
+    return WebsiteOut(
+        id=website.id,
+        project_id=website.project_id,
+        url=website.url,
+        name=website.name,
+        display_name=website.display_name,
+        page_count=website.page_count,
+        scraping_config=ScrapingConfigModel.model_validate(
+            website.scraping_config.to_dict()
+        ),
+        created_at=_iso(website.created_at),
+        last_scraped=_iso(website.last_scraped),
+        last_tested=_iso(website.last_tested),
     )
+
+
+def _scraping_config_from_model(
+    model: ScrapingConfigModel | None,
+) -> ScrapingConfig:
+    """Build a :class:`ScrapingConfig` dataclass from a Pydantic model.
+
+    None-valued fields fall back to the dataclass's defaults, matching
+    the legacy ``ScrapingConfig.from_dict`` behaviour (unknown keys are
+    impossible here because ``StrictModel`` already rejected them).
+    """
+    if model is None:
+        return ScrapingConfig()
+    return ScrapingConfig.from_dict(model.model_dump(exclude_none=True))
+
+
+def _website_from_in(project_id: str, body: WebsiteIn | WebsitePut) -> Website:
+    """Construct a new :class:`Website` from a POST or PUT body.
+
+    The URL gets the same ``http(s)://`` prefix check the legacy handler
+    applied (Pydantic's built-in ``HttpUrl`` is intentionally not used
+    here so the v1 error envelope stays identical for invalid URLs).
+    ``name`` is normalized: whitespace-only strings collapse to ``None``.
+    """
+    url = _validate_url(body.url, field="url")
+    name = body.name.strip() if body.name is not None and body.name.strip() else None
     return Website(
         project_id=project_id,
         url=url,
         name=name,
-        scraping_config=scraping_config,
+        scraping_config=_scraping_config_from_model(body.scraping_config),
     )
 
 
-def _apply_patch_to_website(website: Website, body: dict[str, Any]) -> Website:
-    """Apply only the keys present in ``body`` to ``website`` in place."""
-    if "url" in body:
-        website.url = _validate_url(body["url"], field="url")
-    if "name" in body:
-        name_raw = body["name"]
-        if name_raw is not None and not isinstance(name_raw, str):
-            raise ValidationError(
-                "name must be a string or null",
-                errors=(_FieldError(field="name", code="invalid_type", message="must be string"),),
-            )
+def _apply_patch_pyd(website: Website, body: WebsitePatch) -> Website:
+    """Apply a :class:`WebsitePatch` to ``website`` in place.
+
+    Only fields that were *present* on the wire are applied. Pydantic
+    distinguishes "field omitted" from "field set to null" via
+    ``model_fields_set``; this preserves the legacy "patch only the
+    keys the client sent" contract.
+    """
+    fields_set = body.model_fields_set
+    if "url" in fields_set and body.url is not None:
+        website.url = _validate_url(body.url, field="url")
+    if "name" in fields_set:
         website.name = (
-            name_raw.strip() if isinstance(name_raw, str) and name_raw.strip() else None
+            body.name.strip()
+            if body.name is not None and body.name.strip()
+            else None
         )
-    if "scraping_config" in body:
-        if body["scraping_config"] is None:
-            website.scraping_config = ScrapingConfig()
-        else:
-            website.scraping_config = _parse_scraping_config(
-                body["scraping_config"], field="scraping_config"
-            )
+    if "scraping_config" in fields_set:
+        website.scraping_config = _scraping_config_from_model(body.scraping_config)
     return website
 
 
 @api_bp.route("/projects/<project_id>/websites", methods=["GET"])
 @api_endpoint
-def list_websites_for_project(project_id: str) -> tuple[Response, int] | Response:
+@document(
+    response_200=WebsiteListOut,
+    errors=[400, 401, 403, 404],
+    tags=["Websites"],
+    summary="List websites in a project",
+    description=(
+        "Returns the websites belonging to ``project_id`` with cursor "
+        "pagination. The response shape is ``{items, next_cursor}`` -- "
+        "NOT the page/limit/total envelope used by ``GET /projects``."
+    ),
+)
+def list_websites_for_project(
+    project_id: str,
+) -> tuple[WebsiteListOut, int] | tuple[Response, int] | Response:
     """List websites in a project with cursor pagination."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, project_id=project_id
@@ -1980,17 +1917,31 @@ def list_websites_for_project(project_id: str) -> tuple[Response, int] | Respons
     page = paginate(
         websites, limit=limit, get_id=lambda w: str(w.mongo_id) if w.mongo_id else ""
     )
-    return jsonify(
-        {
-            "items": [_serialize_website(w) for w in page["items"]],
-            "next_cursor": page["next_cursor"],
-        }
-    )
+    return WebsiteListOut(
+        items=[_website_to_out(w) for w in page["items"]],
+        next_cursor=page["next_cursor"],
+    ), 200
 
 
 @api_bp.route("/projects/<project_id>/websites", methods=["POST"])
 @api_endpoint
-def create_website(project_id: str) -> tuple[Response, int]:
+@document(
+    request=WebsiteIn,
+    response_201=WebsiteOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["Websites"],
+    summary="Create a website",
+    description=(
+        "Creates a website inside ``project_id``. Returns the full "
+        "website resource (``WebsiteOut``) plus a ``Location`` header "
+        "pointing at ``/api/v1/websites/<id>``. The ``url`` must start "
+        "with ``http://`` or ``https://``; unknown JSON keys are "
+        "rejected with 400."
+    ),
+)
+def create_website(
+    project_id: str, body: WebsiteIn
+) -> tuple[WebsiteOut, int] | tuple[Response, int]:
     """Create a website inside a project."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id
@@ -1998,20 +1949,35 @@ def create_website(project_id: str) -> tuple[Response, int]:
     if get_db().get_project(project_id) is None:
         raise NotFoundError(f"project {project_id} not found")
 
-    body = _require_dict_body()
-    website = _build_website_from_body(project_id, body)
+    website = _website_from_in(project_id, body)
     website_id = get_db().create_website(website)
     refreshed = get_db().get_website(website_id)
     if refreshed is None:
         raise ConflictError("website failed to persist")
-    response = jsonify(_serialize_website(refreshed))
+
+    # The legacy handler attached a ``Location`` header to the response.
+    # ``@document`` serialises BaseModel returns via ``jsonify``, which
+    # builds a fresh Response object, so the header must be applied to
+    # *that* response -- not the model. We pre-build a Response here
+    # to preserve the header.
+    payload = _website_to_out(refreshed)
+    response = jsonify(payload.model_dump(mode="json", by_alias=True, exclude_none=True))
     response.headers["Location"] = f"/api/v1/websites/{website_id}"
     return response, 201
 
 
 @api_bp.route("/websites/<website_id>", methods=["GET"])
 @api_endpoint
-def get_website(website_id: str) -> tuple[Response, int] | Response:
+@document(
+    response_200=WebsiteOut,
+    errors=[401, 403, 404],
+    tags=["Websites"],
+    summary="Get a website by ID",
+    description="Returns the website resource (``WebsiteOut``).",
+)
+def get_website(
+    website_id: str,
+) -> tuple[WebsiteOut, int] | tuple[Response, int] | Response:
     """Get a website by id."""
     website = get_db().get_website(website_id)
     if website is None:
@@ -2019,12 +1985,29 @@ def get_website(website_id: str) -> tuple[Response, int] | Response:
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, website_id=website_id
     )
-    return jsonify(_serialize_website(website))
+    return _website_to_out(website), 200
 
 
 @api_bp.route("/websites/<website_id>", methods=["PUT"])
 @api_endpoint
-def replace_website(website_id: str) -> tuple[Response, int] | Response:
+@document(
+    request=WebsitePut,
+    response_200=WebsiteOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["Websites"],
+    summary="Replace a website",
+    description=(
+        "Full replace of a website's editable fields. Server-managed "
+        "fields (``created_at``, ``last_scraped``, ``last_tested``, "
+        "``page_count``, ``project_id``, ``members``, "
+        "``discovery_history``) are preserved from the existing record; "
+        "clients cannot reassign a website to a different project via "
+        "PUT."
+    ),
+)
+def replace_website(
+    website_id: str, body: WebsitePut
+) -> tuple[WebsiteOut, int] | tuple[Response, int] | Response:
     """Full replace of a website's editable fields.
 
     Server-managed fields (created_at, last_scraped, last_tested,
@@ -2038,8 +2021,7 @@ def replace_website(website_id: str) -> tuple[Response, int] | Response:
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, website_id=website_id
     )
-    body = _require_dict_body()
-    replaced = _build_website_from_body(existing.project_id, body)
+    replaced = _website_from_in(existing.project_id, body)
     replaced.mongo_id = existing.mongo_id
     replaced.created_at = existing.created_at
     replaced.last_scraped = existing.last_scraped
@@ -2049,12 +2031,25 @@ def replace_website(website_id: str) -> tuple[Response, int] | Response:
     replaced.members = list(existing.members)
     if not get_db().update_website(replaced):
         raise ConflictError("website could not be updated")
-    return jsonify(_serialize_website(replaced))
+    return _website_to_out(replaced), 200
 
 
 @api_bp.route("/websites/<website_id>", methods=["PATCH"])
 @api_endpoint
-def patch_website(website_id: str) -> tuple[Response, int] | Response:
+@document(
+    request=WebsitePatch,
+    response_200=WebsiteOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["Websites"],
+    summary="Partially update a website",
+    description=(
+        "Partial update -- only fields present in the request body are "
+        "applied. Returns the full updated ``WebsiteOut``."
+    ),
+)
+def patch_website(
+    website_id: str, body: WebsitePatch
+) -> tuple[WebsiteOut, int] | tuple[Response, int] | Response:
     """Partial update — only fields present in the request body are changed."""
     website = get_db().get_website(website_id)
     if website is None:
@@ -2062,16 +2057,25 @@ def patch_website(website_id: str) -> tuple[Response, int] | Response:
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, website_id=website_id
     )
-    body = _require_dict_body()
-    patched = _apply_patch_to_website(website, body)
+    patched = _apply_patch_pyd(website, body)
     if not get_db().update_website(patched):
         raise ConflictError("website could not be updated")
-    return jsonify(_serialize_website(patched))
+    return _website_to_out(patched), 200
 
 
 @api_bp.route("/websites/<website_id>", methods=["DELETE"])
 @api_endpoint
-def delete_website(website_id: str) -> tuple[Response, int]:
+@document(
+    response_204=Empty,
+    errors=[401, 403, 404],
+    tags=["Websites"],
+    summary="Delete a website",
+    description=(
+        "Deletes the website and cascades to its pages, PDFs, and test "
+        "results. Returns ``204 No Content`` with an empty body."
+    ),
+)
+def delete_website(website_id: str) -> tuple[Empty, int] | tuple[Response, int]:
     """Delete a website. Cascades to pages, PDFs, and test results."""
     website = get_db().get_website(website_id)
     if website is None:
@@ -2080,7 +2084,7 @@ def delete_website(website_id: str) -> tuple[Response, int]:
         UserRole.ADMIN, website_id=website_id
     )
     get_db().delete_website(website_id)
-    return Response(status=204), 204
+    return Empty(), 204
 
 
 # ---------------------------------------------------------------------------

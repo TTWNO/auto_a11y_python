@@ -304,6 +304,280 @@ components:
           title: Status
       title: ProjectPatch
       type: object
+    ScrapingConfigModel:
+      additionalProperties: false
+      description: 'Schema for ``ScrapingConfig`` — used in both request and response
+        bodies.
+
+
+        Mirrors the dataclass in ``auto_a11y.models.website.ScrapingConfig``.
+
+        All fields are optional on input (defaults fill in missing values via
+
+        ``ScrapingConfig()`` in the handler); on output every field is always
+
+        populated because ``ScrapingConfig.to_dict()`` emits all of them.'
+      properties:
+        allowed_paths:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          default: null
+          title: Allowed Paths
+        auto_fetch_pdfs:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Auto Fetch Pdfs
+        excluded_paths:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          default: null
+          title: Excluded Paths
+        follow_external:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Follow External
+        include_subdomains:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Include Subdomains
+        max_depth:
+          anyOf:
+          - minimum: 0
+            type: integer
+          - type: 'null'
+          default: null
+          title: Max Depth
+        max_pages:
+          anyOf:
+          - minimum: 0
+            type: integer
+          - type: 'null'
+          default: null
+          title: Max Pages
+        request_delay:
+          anyOf:
+          - minimum: 0
+            type: number
+          - type: 'null'
+          default: null
+          title: Request Delay
+        respect_robots:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Respect Robots
+      title: ScrapingConfigModel
+      type: object
+    WebsiteIn:
+      additionalProperties: false
+      description: 'Request body for ``POST /api/v1/projects/<id>/websites``.
+
+
+        ``url`` is required; ``name`` and ``scraping_config`` are optional.
+
+        URL is validated for ``http(s)://`` prefix in the handler (Pydantic''s
+
+        built-in ``HttpUrl`` is not used here to keep the validation rule
+
+        byte-identical to the legacy ``_validate_url`` helper).'
+      properties:
+        name:
+          anyOf:
+          - maxLength: 200
+            type: string
+          - type: 'null'
+          default: null
+          title: Name
+        scraping_config:
+          anyOf:
+          - $ref: '#/components/schemas/ScrapingConfigModel'
+          - type: 'null'
+          default: null
+        url:
+          maxLength: 2048
+          minLength: 1
+          title: Url
+          type: string
+      required:
+      - url
+      title: WebsiteIn
+      type: object
+    WebsiteListOut:
+      additionalProperties: false
+      description: 'Response body for ``GET /api/v1/projects/<id>/websites``.
+
+
+        Uses cursor pagination with the legacy ``items`` / ``next_cursor``
+
+        shape — NOT the generic ``ListEnvelope[T]`` (which uses ``data`` and
+
+        a page/limit pagination block). This matches what the existing
+
+        handler returns and what the frontend reads today.'
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/WebsiteOut'
+          title: Items
+          type: array
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Next Cursor
+      required:
+      - items
+      title: WebsiteListOut
+      type: object
+    WebsiteOut:
+      additionalProperties: false
+      description: 'Response body for single-website GET / POST / PUT / PATCH.
+
+
+        Mirrors ``_serialize_website()`` byte-for-byte. ``id`` is the
+
+        stringified Mongo ``_id``; ``last_scraped`` and ``last_tested`` may be
+
+        null. ``scraping_config`` is the nested dict produced by
+
+        ``ScrapingConfig.to_dict()``.
+
+
+        Timestamps are emitted as ISO 8601 strings (Pydantic default), which
+
+        matches the legacy handler''s behaviour for this resource.'
+      properties:
+        created_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Created At
+        display_name:
+          title: Display Name
+          type: string
+        id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Id
+        last_scraped:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Last Scraped
+        last_tested:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Last Tested
+        name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Name
+        page_count:
+          title: Page Count
+          type: integer
+        project_id:
+          title: Project Id
+          type: string
+        scraping_config:
+          $ref: '#/components/schemas/ScrapingConfigModel'
+        url:
+          title: Url
+          type: string
+      required:
+      - project_id
+      - url
+      - display_name
+      - page_count
+      - scraping_config
+      title: WebsiteOut
+      type: object
+    WebsitePatch:
+      additionalProperties: false
+      description: 'Request body for ``PATCH /api/v1/websites/<id>``.
+
+
+        Every field is optional; only fields present in the body are applied.
+
+        ``url`` validation runs only when ``url`` is provided.'
+      properties:
+        name:
+          anyOf:
+          - maxLength: 200
+            type: string
+          - type: 'null'
+          default: null
+          title: Name
+        scraping_config:
+          anyOf:
+          - $ref: '#/components/schemas/ScrapingConfigModel'
+          - type: 'null'
+          default: null
+        url:
+          anyOf:
+          - maxLength: 2048
+            minLength: 1
+            type: string
+          - type: 'null'
+          default: null
+          title: Url
+      title: WebsitePatch
+      type: object
+    WebsitePut:
+      additionalProperties: false
+      description: 'Request body for ``PUT /api/v1/websites/<id>``.
+
+
+        PUT is a full replace of editable fields. Server-managed fields
+
+        (``project_id``, ``created_at``, ``last_scraped``, ``last_tested``,
+
+        ``page_count``, ``members``, ``discovery_history``) are preserved
+
+        from the existing record and cannot be set via this endpoint.'
+      properties:
+        name:
+          anyOf:
+          - maxLength: 200
+            type: string
+          - type: 'null'
+          default: null
+          title: Name
+        scraping_config:
+          anyOf:
+          - $ref: '#/components/schemas/ScrapingConfigModel'
+          - type: 'null'
+          default: null
+        url:
+          maxLength: 2048
+          minLength: 1
+          title: Url
+          type: string
+      required:
+      - url
+      title: WebsitePut
+      type: object
     _PaginationOldShape:
       additionalProperties: false
       description: 'Pagination block for ``GET /projects`` -- legacy shape.
@@ -563,6 +837,306 @@ paths:
       summary: Update a project
       tags:
       - Projects
+  /projects/{project_id}/websites:
+    get:
+      description: Returns the websites belonging to ``project_id`` with cursor pagination.
+        The response shape is ``{items, next_cursor}`` -- NOT the page/limit/total
+        envelope used by ``GET /projects``.
+      parameters:
+      - in: path
+        name: project_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebsiteListOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: List websites in a project
+      tags:
+      - Websites
+    post:
+      description: Creates a website inside ``project_id``. Returns the full website
+        resource (``WebsiteOut``) plus a ``Location`` header pointing at ``/api/v1/websites/<id>``.
+        The ``url`` must start with ``http://`` or ``https://``; unknown JSON keys
+        are rejected with 400.
+      parameters:
+      - in: path
+        name: project_id
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebsiteIn'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebsiteOut'
+          description: Created
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Create a website
+      tags:
+      - Websites
+  /websites/{website_id}:
+    delete:
+      description: Deletes the website and cascades to its pages, PDFs, and test results.
+        Returns ``204 No Content`` with an empty body.
+      parameters:
+      - in: path
+        name: website_id
+        required: true
+        schema: *id001
+      responses:
+        '204':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Empty'
+          description: No Content
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Delete a website
+      tags:
+      - Websites
+    get:
+      description: Returns the website resource (``WebsiteOut``).
+      parameters:
+      - in: path
+        name: website_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebsiteOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Get a website by ID
+      tags:
+      - Websites
+    patch:
+      description: Partial update -- only fields present in the request body are applied.
+        Returns the full updated ``WebsiteOut``.
+      parameters:
+      - in: path
+        name: website_id
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebsitePatch'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebsiteOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Partially update a website
+      tags:
+      - Websites
+    put:
+      description: Full replace of a website's editable fields. Server-managed fields
+        (``created_at``, ``last_scraped``, ``last_tested``, ``page_count``, ``project_id``,
+        ``members``, ``discovery_history``) are preserved from the existing record;
+        clients cannot reassign a website to a different project via PUT.
+      parameters:
+      - in: path
+        name: website_id
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebsitePut'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebsiteOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Replace a website
+      tags:
+      - Websites
 servers:
 - description: Live
   url: /api/v1

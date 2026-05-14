@@ -1323,6 +1323,450 @@ components:
       - ai_findings
       title: PageViolationsOut
       type: object
+    PdfAuditCancelOut:
+      additionalProperties: false
+      description: 'Response body (202) for ``POST /pdf-documents/<id>/audits/latest/cancel``.
+
+
+        Echoes the new document status and how many active jobs were
+
+        flagged for cancellation. ``cancellation_requested_count`` is 0
+
+        when the document was stuck in ``AUDITING`` with no live worker
+
+        (the escape-hatch path) — in that case the doc status is still
+
+        forced to ``AUDIT_FAILED`` so the user can start a new audit.'
+      properties:
+        cancellation_requested_count:
+          title: Cancellation Requested Count
+          type: integer
+        doc_status:
+          title: Doc Status
+          type: string
+        pdf_document_id:
+          title: Pdf Document Id
+          type: string
+      required:
+      - pdf_document_id
+      - cancellation_requested_count
+      - doc_status
+      title: PdfAuditCancelOut
+      type: object
+    PdfAuditJobOut:
+      additionalProperties: false
+      description: 'Nested job shape inside :class:`PdfAuditLatestOut`.
+
+
+        Mirrors :func:`_serialize_pdf_audit_job` byte-for-byte. Surfaces
+
+        only the four flat fields plus the ``progress`` sub-object so
+
+        clients that move from the legacy ``audit_status`` HTML route only
+
+        need to swap the URL, not the parser.'
+      properties:
+        completed_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Completed At
+        created_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Created At
+        job_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Job Id
+        progress:
+          $ref: '#/components/schemas/PdfAuditProgressOut'
+        status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Status
+      required:
+      - progress
+      title: PdfAuditJobOut
+      type: object
+    PdfAuditLatestOut:
+      additionalProperties: false
+      description: 'Response body for ``GET /pdf-documents/<id>/audits/latest``.
+
+
+        ``job`` is ``null`` only when the document has *never* had an audit
+
+        job recorded. After at least one run the latest job stays in the
+
+        response so clients can render "last audit failed at X" even when
+
+        no fresh job is in flight.'
+      properties:
+        doc_status:
+          title: Doc Status
+          type: string
+        error_reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Error Reason
+        job:
+          anyOf:
+          - $ref: '#/components/schemas/PdfAuditJobOut'
+          - type: 'null'
+          default: null
+        last_audit_result_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Last Audit Result Id
+        pdf_document_id:
+          title: Pdf Document Id
+          type: string
+      required:
+      - pdf_document_id
+      - doc_status
+      title: PdfAuditLatestOut
+      type: object
+    PdfAuditProgressOut:
+      additionalProperties: false
+      description: 'Progress sub-object inside :class:`PdfAuditJobOut`.
+
+
+        Mirrors the legacy ``_serialize_pdf_audit_job`` progress block.
+
+        Every field may be ``None`` mid-flight: the worker reports
+
+        ``current``/``total`` as soon as it sees a unit count, and
+
+        ``stage``/``fraction`` from the audit pipeline''s progress hooks.
+
+        The ``message`` is a human-readable string the UI surfaces during
+
+        a long run.'
+      properties:
+        current:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          default: null
+          title: Current
+        fraction:
+          anyOf:
+          - type: number
+          - type: 'null'
+          default: null
+          title: Fraction
+        message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Message
+        stage:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Stage
+        total:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          default: null
+          title: Total
+      title: PdfAuditProgressOut
+      type: object
+    PdfAuditStartIn:
+      additionalProperties: false
+      description: 'Request body for ``POST /pdf-documents/<id>/audits``.
+
+
+        All fields are optional. The legacy handler tolerates a fully
+
+        empty body (no JSON at all, or ``{}``) and falls back to
+
+        ``run_ai=False, wcag_level="AA", locale="en"``. We accept
+
+        ``wcag_level`` as ``str`` rather than ``Literal["AA", "AAA"]`` so
+
+        invalid values surface as a 400 with a structured ``field``/``code``
+
+        rather than Pydantic''s generic ``literal_error``. The same handler
+
+        logic produces a 400 with code ``invalid_value`` either way; this
+
+        keeps the existing frontend''s error-display contract.'
+      properties:
+        locale:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Locale
+        run_ai:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Run Ai
+        wcag_level:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Wcag Level
+      title: PdfAuditStartIn
+      type: object
+    PdfAuditStartOut:
+      additionalProperties: false
+      description: 'Response body (202) for ``POST /pdf-documents/<id>/audits``.
+
+
+        Mirrors the legacy start-audit handler''s JSON shape exactly. The
+
+        ``status`` field is always the literal ``"queued"`` — the real
+
+        progress comes from polling ``GET /pdf-documents/<id>/audits/latest``.'
+      properties:
+        job_id:
+          title: Job Id
+          type: string
+        locale:
+          title: Locale
+          type: string
+        pdf_document_id:
+          title: Pdf Document Id
+          type: string
+        run_ai:
+          title: Run Ai
+          type: boolean
+        status:
+          const: queued
+          title: Status
+          type: string
+        wcag_level:
+          title: Wcag Level
+          type: string
+      required:
+      - job_id
+      - pdf_document_id
+      - run_ai
+      - wcag_level
+      - locale
+      - status
+      title: PdfAuditStartOut
+      type: object
+    PdfListOut:
+      additionalProperties: false
+      description: 'Response body for ``GET /api/v1/{projects,websites}/<id>/pdfs``.
+
+
+        Cursor-paginated; same ``{items, next_cursor}`` shape as the other
+
+        v1 list endpoints.'
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/PdfOut'
+          title: Items
+          type: array
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Next Cursor
+      required:
+      - items
+      title: PdfListOut
+      type: object
+    PdfOut:
+      additionalProperties: false
+      description: "Response body for a single PDF document.\n\nMirrors :func:`_serialize_pdf_document`\
+        \ byte-for-byte:\n\n- ``id`` is the stringified Mongo ``_id``;\n- ``status``\
+        \ is the enum's string value\n  (e.g. ``\"audited\"``, ``\"auditing\"``);\n\
+        - ``source_type`` is a string (``\"uploaded\"``, ``\"manual_url\"``,\n  ``\"\
+        opportunistic\"``, or ``\"discovered\"``); kept as ``str`` rather\n  than\
+        \ a Literal so future source kinds don't break older clients;\n- ``discovered_at``\
+        \ and ``last_audited_at`` are ISO 8601 strings;\n- ``storage_relpath`` / ``images_relpath``\
+        \ are server-side relative\n  paths under the configured PDF storage base\
+        \ directory."
+      properties:
+        declared_lang:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Declared Lang
+        detected_lang:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Detected Lang
+        discovered_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Discovered At
+        discovered_from_page_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Discovered From Page Id
+        discovered_from_user_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Discovered From User Id
+        error_reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Error Reason
+        file_size_bytes:
+          title: File Size Bytes
+          type: integer
+        id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Id
+        images_relpath:
+          title: Images Relpath
+          type: string
+        lang_confidence:
+          anyOf:
+          - type: number
+          - type: 'null'
+          default: null
+          title: Lang Confidence
+        last_audit_result_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Last Audit Result Id
+        last_audited_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Last Audited At
+        original_filename:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Original Filename
+        page_count:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          default: null
+          title: Page Count
+        pdf_version:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Pdf Version
+        project_id:
+          title: Project Id
+          type: string
+        sha256:
+          title: Sha256
+          type: string
+        source_type:
+          title: Source Type
+          type: string
+        source_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Source Url
+        status:
+          title: Status
+          type: string
+        storage_relpath:
+          title: Storage Relpath
+          type: string
+        website_id:
+          title: Website Id
+          type: string
+      required:
+      - website_id
+      - project_id
+      - source_type
+      - sha256
+      - file_size_bytes
+      - storage_relpath
+      - images_relpath
+      - status
+      title: PdfOut
+      type: object
+    PdfUploadIn:
+      additionalProperties: false
+      description: "Form fields for the multipart upload of a PDF document.\n\nThe\
+        \ file part ``pdf_file`` is declared via\n``@document(request_files=[\"pdf_file\"\
+        ])`` and arrives in the handler\nas a :class:`werkzeug.datastructures.FileStorage`\
+        \ kwarg.\n\nTwo request shapes share the underlying endpoint:\n\n1. **multipart/form-data**\
+        \ — ``pdf_file`` part with the raw PDF\n   bytes plus ``website_id`` selecting\
+        \ which website in the project\n   to attach the document to. ``original_filename``\
+        \ is optional and\n   overrides the file part's ``filename`` attribute.\n\
+        2. **application/json** — ``{website_id, source_url[, website_user_id]}``.\n\
+        \   The server fetches the URL and creates a PDF document from the\n   response\
+        \ body.\n\nBecause OpenAPI describes one request body media type per operation\n\
+        and ``@document`` only takes one of ``request=``/``request_form=``,\nwe model\
+        \ the multipart shape here and let the handler dispatch by\n``Content-Type``\
+        \ at runtime. Every field is ``Optional`` so the JSON\nrequest path — which\
+        \ posts no form fields at all — still passes the\ndecorator's ``request_form``\
+        \ validation against an empty form dict.\nThe handler enforces the real per-content-type\
+        \ requireds in its own\nlogic and surfaces them as 400 with a structured ``field``\
+        \ errors\nlist."
+      properties:
+        original_filename: &id002
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Original Filename
+        source_url: &id003
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Source Url
+        website_id: &id004
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Website Id
+        website_user_id: &id005
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Website User Id
+      title: PdfUploadIn
+      type: object
     PresetConfigIn:
       additionalProperties: false
       description: 'Request-body preset config for daily/weekly/monthly schedules.
@@ -2382,148 +2826,148 @@ components:
         on\"`` for true and\n  omits the field entirely for false; we accept ``Optional[str]``\n\
         \  to preserve that wire and let the handler interpret it."
       properties:
-        app_screens: &id002
+        app_screens: &id006
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: App Screens
-        auditor_name: &id003
+        auditor_name: &id007
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Auditor Name
-        auditor_role: &id004
+        auditor_role: &id008
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Auditor Role
-        component_names: &id005
+        component_names: &id009
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Component Names
-        description: &id006
+        description: &id010
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Description
-        device_sections: &id007
+        device_sections: &id011
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Device Sections
-        discovered_page_ids: &id008
+        discovered_page_ids: &id012
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Discovered Page Ids
-        lived_experience_tester_id: &id009
+        lived_experience_tester_id: &id013
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Lived Experience Tester Id
-        media_file_path: &id010
+        media_file_path: &id014
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Media File Path
-        page_urls: &id011
+        page_urls: &id015
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Page Urls
-        project_id: &id012
+        project_id: &id016
           title: Project Id
           type: string
-        recording_type: &id013
+        recording_type: &id017
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Recording Type
-        scope_drag_drop: &id014
+        scope_drag_drop: &id018
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Scope Drag Drop
-        scope_forms: &id015
+        scope_forms: &id019
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Scope Forms
-        scope_live_multimedia: &id016
+        scope_live_multimedia: &id020
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Scope Live Multimedia
-        scope_motion_actuation: &id017
+        scope_motion_actuation: &id021
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Scope Motion Actuation
-        scope_multilingual: &id018
+        scope_multilingual: &id022
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Scope Multilingual
-        scope_orientation: &id019
+        scope_orientation: &id023
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Scope Orientation
-        scope_timeouts: &id020
+        scope_timeouts: &id024
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Scope Timeouts
-        scope_video: &id021
+        scope_video: &id025
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Scope Video
-        scope_zoom: &id022
+        scope_zoom: &id026
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Scope Zoom
-        task_description: &id023
+        task_description: &id027
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Task Description
-        test_supervisor_id: &id024
+        test_supervisor_id: &id028
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Test Supervisor Id
-        test_user_account: &id025
+        test_user_account: &id029
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Test User Account
-        title: &id026
+        title: &id030
           anyOf:
           - type: string
           - type: 'null'
@@ -5717,6 +6161,455 @@ paths:
       summary: Get the latest violations for a page
       tags:
       - Pages
+  /pdf-documents/{pdf_id}:
+    delete:
+      description: Removes the PDF document and every on-disk artefact (stored PDF
+        bytes, extracted images, cached pdfMax outputs). ADMIN/AUDITOR only — CLIENT
+        readers cannot tear down audit artefacts.
+      parameters:
+      - in: path
+        name: pdf_id
+        required: true
+        schema: *id001
+      responses:
+        '204':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Empty'
+          description: No Content
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Delete a PDF document
+      tags:
+      - PDFs
+    get:
+      description: Returns the PDF document's metadata. The PDF *bytes* and extracted
+        images live behind separate endpoints (``/file``, ``/images/<name>``, ``/export``,
+        ``/issue-map``, ``/reports/pdfmax``).
+      parameters:
+      - in: path
+        name: pdf_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PdfOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Read a PDF document's metadata
+      tags:
+      - PDFs
+  /pdf-documents/{pdf_id}/audits:
+    post:
+      description: 'Queues a fresh audit run. Body fields are all optional: ``run_ai``
+        (default ``false``), ``wcag_level`` (``''AA''``/``''AAA''``, default ``''AA''``),
+        ``locale`` (default ``''en''``). Returns 202 with the new ``job_id``; the
+        audit runs in the background via ``auto_a11y.core.pdf_audit_job.PdfAuditJob``.
+        Poll ``GET /pdf-documents/<id>/audits/latest`` for progress. Returns 409 if
+        an audit is already in flight for this document (a second start would compete
+        for the same on-disk artefacts), or if the server has no ``PdfRunner`` configured.'
+      parameters:
+      - in: path
+        name: pdf_id
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PdfAuditStartIn'
+        required: true
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PdfAuditStartOut'
+          description: Accepted
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Start a new audit for a PDF document
+      tags:
+      - PDFs
+  /pdf-documents/{pdf_id}/audits/latest:
+    get:
+      description: Returns the document's audit status plus the latest ``PDF_AUDIT``
+        job (or ``null`` when no audit has ever been queued for this document). After
+        at least one run the latest job stays in the response so clients can render
+        "last audit failed at X" even when no fresh job is in flight.
+      parameters:
+      - in: path
+        name: pdf_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PdfAuditLatestOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Read the most-recent audit status for a PDF
+      tags:
+      - PDFs
+  /pdf-documents/{pdf_id}/audits/latest/cancel:
+    post:
+      description: Requests cancellation of every PDF_AUDIT job for this document
+        in ``{PENDING, RUNNING, CANCELLING}``. The worker reads the flag at its next
+        checkpoint and exits cleanly. The PDF's ``status`` is forcibly reset to ``AUDIT_FAILED``
+        with ``error_reason='Audit cancelled by user'`` — this unblocks the user even
+        when no live worker exists (e.g. the previous run crashed and left the document
+        stuck in ``AUDITING``); the regular start endpoint refuses to re-audit a document
+        already in ``AUDITING``, so this manual reset is the escape hatch. Returns
+        409 when there's no live job *and* the document isn't stuck in ``AUDITING``
+        — the cancel verb implies there's something to cancel.
+      parameters:
+      - in: path
+        name: pdf_id
+        required: true
+        schema: *id001
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PdfAuditCancelOut'
+          description: Accepted
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Cancel an in-flight PDF audit
+      tags:
+      - PDFs
+  /pdf-documents/{pdf_id}/export:
+    get:
+      description: 'Returns a derived audit report for the PDF. Required query ``?format=md|html``;
+        optional ``?locale=en|fr`` (default ``en``; unrecognised values silently fall
+        back to ``en``). The body is derived purely from the persisted ``TestResult``
+        referenced by ``pdf.last_audit_result_id``, so an in-flight audit returns
+        the *previous* report, not a partial one. Documents that have never been audited
+        still get a response but the body is the "no findings" stub. ``Cache-Control:
+        private, no-cache`` matches the legacy route. Response body is raw bytes;
+        ``@document`` passes the Flask Response through unchanged.'
+      parameters:
+      - in: path
+        name: pdf_id
+        required: true
+        schema: *id001
+      responses:
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Stream a self-contained audit report (Markdown or HTML)
+      tags:
+      - PDFs
+  /pdf-documents/{pdf_id}/file:
+    get:
+      description: 'Returns ``application/pdf`` with ``Content-Disposition: inline``
+        so clients can embed the file in an ``<iframe>`` or render with a PDF.js viewer.
+        ``X-Frame-Options: SAMEORIGIN`` and a same-origin CSP mirror the legacy route''s
+        iframe-friendly defaults. ``download_name`` falls back to ``document.pdf``
+        when the source record has no ``original_filename``. The response body is
+        raw PDF bytes and is not modelled as JSON -- ``@document`` passes the Flask
+        Response through unchanged.'
+      parameters:
+      - in: path
+        name: pdf_id
+        required: true
+        schema: *id001
+      responses:
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Stream the stored PDF bytes
+      tags:
+      - PDFs
+  /pdf-documents/{pdf_id}/images/{image_name}:
+    get:
+      description: The audit pipeline rasterises each PDF page into the document's
+        ``images_dir_for`` directory; this endpoint serves any of those bytes back.
+        Path traversal guard rejects ``..``, ``/``, and ``\`` in the image name so
+        the URL cannot escape the per-document image directory. Returns ``image/png``
+        — the pipeline only writes PNGs.
+      parameters:
+      - in: path
+        name: pdf_id
+        required: true
+        schema: *id001
+      - in: path
+        name: image_name
+        required: true
+        schema: *id001
+      responses:
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Stream one extracted PDF page image
+      tags:
+      - PDFs
+  /pdf-documents/{pdf_id}/issue-map:
+    get:
+      description: 'Serves the cached ``*_issue_map.json`` written alongside the Markdown
+        report by the pdfMax subprocess. Viewer UIs fetch this to position issue overlays
+        on each page and highlight the matching sidebar card. Returns 404 when the
+        document doesn''t exist, its status isn''t ``AUDITED``, the ``pdfmax-report``
+        cache directory doesn''t exist, or no ``*_issue_map.json`` file is inside
+        it. ``Cache-Control: private, max-age=60`` matches the legacy route. Body
+        is raw ``application/json`` bytes; ``@document`` passes the Flask Response
+        through unchanged.'
+      parameters:
+      - in: path
+        name: pdf_id
+        required: true
+        schema: *id001
+      responses:
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Serve the cached pdfMax issue-map JSON
+      tags:
+      - PDFs
+  /pdf-documents/{pdf_id}/reports/pdfmax:
+    get:
+      description: Pure cache lookup — the pdfMax subprocess only runs as part of
+        the audit job (``PdfAuditJob``), so this endpoint never blocks on the 10-30s
+        audit pipeline. Returns 404 when the document doesn't exist, its status isn't
+        ``AUDITED``, the ``pdfmax-report`` cache directory doesn't exist, or no ``*_accessibility_report.md``
+        file is inside it. Body is ``text/markdown; charset=utf-8`` (the raw report
+        text); ``@document`` passes the Flask Response through unchanged.
+      parameters:
+      - in: path
+        name: pdf_id
+        required: true
+        schema: *id001
+      responses:
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Return the cached pdfMax accessibility Markdown report
+      tags:
+      - PDFs
   /projects:
     get:
       description: Returns the projects visible to the caller (member-of-project filtering
@@ -6037,6 +6930,142 @@ paths:
       summary: Create a discovered page
       tags:
       - DiscoveredPages
+  /projects/{project_id}/pdfs:
+    get:
+      description: Cursor-paginates the PDF documents attached to every website in
+        ``project_id``. Optional ``?status=<value>`` filters by ``PdfDocumentStatus``
+        (``pending``, ``fetching``, ``fetch_failed``, ``auditing``, ``audited``, ``audit_failed``).
+      parameters:
+      - in: path
+        name: project_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PdfListOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: List PDF documents for a project
+      tags:
+      - PDFs
+    post:
+      description: 'Adds a PDF to a project. Accepts two request shapes:
+
+
+        1. **multipart/form-data** — ``pdf_file`` part with the raw PDF bytes plus
+        a ``website_id`` form field selecting which website in the project to attach
+        the document to. Optional ``original_filename`` form field overrides the part''s
+        ``filename`` attribute.
+
+
+        2. **application/json** — ``{"website_id": "...", "source_url": "https://..."}``.
+        The server fetches the URL. Optional ``website_user_id`` supplies a project
+        test-user credential for sites that require auth.
+
+
+        Dedup behaviour: both paths converge on ``create_or_find_pdf_document``, which
+        dedupes by ``(website_id, sha256)``. A dedup hit returns the *existing* document
+        with **status 200**; a new document persists and returns **201** with a ``Location``
+        header pointing at ``/api/v1/pdf-documents/<id>``.'
+      parameters:
+      - in: path
+        name: project_id
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              properties:
+                original_filename: *id002
+                pdf_file:
+                  format: binary
+                  type: string
+                source_url: *id003
+                website_id: *id004
+                website_user_id: *id005
+              required:
+              - pdf_file
+              type: object
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PdfOut'
+          description: OK
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PdfOut'
+          description: Created
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Upload or fetch a PDF document for a project
+      tags:
+      - PDFs
   /projects/{project_id}/reports:
     post:
       description: Queues a background job to generate one of four project-scoped
@@ -6310,37 +7339,37 @@ paths:
           multipart/form-data:
             schema:
               properties:
-                app_screens: *id002
-                auditor_name: *id003
-                auditor_role: *id004
-                component_names: *id005
-                description: *id006
-                device_sections: *id007
-                discovered_page_ids: *id008
-                lived_experience_tester_id: *id009
-                media_file_path: *id010
-                page_urls: *id011
-                project_id: *id012
+                app_screens: *id006
+                auditor_name: *id007
+                auditor_role: *id008
+                component_names: *id009
+                description: *id010
+                device_sections: *id011
+                discovered_page_ids: *id012
+                lived_experience_tester_id: *id013
+                media_file_path: *id014
+                page_urls: *id015
+                project_id: *id016
                 recording_json_en:
                   format: binary
                   type: string
                 recording_json_fr:
                   format: binary
                   type: string
-                recording_type: *id013
-                scope_drag_drop: *id014
-                scope_forms: *id015
-                scope_live_multimedia: *id016
-                scope_motion_actuation: *id017
-                scope_multilingual: *id018
-                scope_orientation: *id019
-                scope_timeouts: *id020
-                scope_video: *id021
-                scope_zoom: *id022
-                task_description: *id023
-                test_supervisor_id: *id024
-                test_user_account: *id025
-                title: *id026
+                recording_type: *id017
+                scope_drag_drop: *id018
+                scope_forms: *id019
+                scope_live_multimedia: *id020
+                scope_motion_actuation: *id021
+                scope_multilingual: *id022
+                scope_orientation: *id023
+                scope_timeouts: *id024
+                scope_video: *id025
+                scope_zoom: *id026
+                task_description: *id027
+                test_supervisor_id: *id028
+                test_user_account: *id029
+                title: *id030
               required:
               - project_id
               - recording_json_en
@@ -7914,6 +8943,52 @@ paths:
       summary: Create a page
       tags:
       - Pages
+  /websites/{website_id}/pdfs:
+    get:
+      description: Cursor-paginates the PDF documents attached to one website. Optional
+        ``?status=<value>`` filters by ``PdfDocumentStatus``.
+      parameters:
+      - in: path
+        name: website_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PdfListOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: List PDF documents for a website
+      tags:
+      - PDFs
   /websites/{website_id}/reports:
     post:
       description: Queues a background job to generate one of three website-scoped

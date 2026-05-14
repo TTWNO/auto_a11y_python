@@ -4,7 +4,7 @@ RESTful API routes
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Literal, cast
 
 from flask import Blueprint, Response, jsonify, request
 from flask_login import current_user
@@ -55,6 +55,17 @@ from auto_a11y.web.api.schemas.pages import (
     PagePut,
     PageViolationsOut,
     ScriptStateDefinitionOut,
+)
+from auto_a11y.web.api.schemas.pdfs import (
+    PdfAuditCancelOut,
+    PdfAuditJobOut,
+    PdfAuditLatestOut,
+    PdfAuditProgressOut,
+    PdfAuditStartIn,
+    PdfAuditStartOut,
+    PdfListOut,
+    PdfOut,
+    PdfUploadIn,
 )
 from auto_a11y.web.api.schemas.recordings import (
     RecordingContentOut,
@@ -7103,7 +7114,7 @@ def _serialize_pdf_document(pdf: PdfDocument) -> dict[str, Any]:
     }
 
 
-def _list_pdfs_with_query(query: dict[str, Any]) -> Response:
+def _list_pdfs_with_query(query: dict[str, Any]) -> PdfListOut:
     """Cursor-paginate ``query`` against the pdf_documents collection."""
     limit = parse_limit(request.args.get("limit"))
     cursor_raw = request.args.get("cursor")
@@ -7134,7 +7145,7 @@ def _list_pdfs_with_query(query: dict[str, Any]) -> Response:
     page = paginate(
         pdfs, limit=limit, get_id=lambda p: str(p.mongo_id) if p.mongo_id else ""
     )
-    return jsonify(
+    return PdfListOut.model_validate(
         {
             "items": [_serialize_pdf_document(p) for p in page["items"]],
             "next_cursor": page["next_cursor"],
@@ -7144,7 +7155,20 @@ def _list_pdfs_with_query(query: dict[str, Any]) -> Response:
 
 @api_bp.route("/projects/<project_id>/pdfs", methods=["GET"])
 @api_endpoint
-def list_pdfs_for_project(project_id: str) -> tuple[Response, int] | Response:
+@document(
+    response_200=PdfListOut,
+    errors=[400, 401, 403, 404],
+    tags=["PDFs"],
+    summary="List PDF documents for a project",
+    description=(
+        "Cursor-paginates the PDF documents attached to every website "
+        "in ``project_id``. Optional ``?status=<value>`` filters by "
+        "``PdfDocumentStatus`` (``pending``, ``fetching``, "
+        "``fetch_failed``, ``auditing``, ``audited``, "
+        "``audit_failed``)."
+    ),
+)
+def list_pdfs_for_project(project_id: str) -> PdfListOut:
     """List PDF documents across every website in a project."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, project_id=project_id
@@ -7156,7 +7180,18 @@ def list_pdfs_for_project(project_id: str) -> tuple[Response, int] | Response:
 
 @api_bp.route("/websites/<website_id>/pdfs", methods=["GET"])
 @api_endpoint
-def list_pdfs_for_website(website_id: str) -> tuple[Response, int] | Response:
+@document(
+    response_200=PdfListOut,
+    errors=[400, 401, 403, 404],
+    tags=["PDFs"],
+    summary="List PDF documents for a website",
+    description=(
+        "Cursor-paginates the PDF documents attached to one website. "
+        "Optional ``?status=<value>`` filters by "
+        "``PdfDocumentStatus``."
+    ),
+)
+def list_pdfs_for_website(website_id: str) -> PdfListOut:
     """List PDF documents attached to one website."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, website_id=website_id
@@ -7168,44 +7203,46 @@ def list_pdfs_for_website(website_id: str) -> tuple[Response, int] | Response:
 
 @api_bp.route("/projects/<project_id>/pdfs", methods=["POST"])
 @api_endpoint
+@document(
+    request_form=PdfUploadIn,
+    request_files=["pdf_file"],
+    response_200=PdfOut,
+    response_201=PdfOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["PDFs"],
+    summary="Upload or fetch a PDF document for a project",
+    description=(
+        "Adds a PDF to a project. Accepts two request shapes:\n\n"
+        "1. **multipart/form-data** — ``pdf_file`` part with the raw "
+        "PDF bytes plus a ``website_id`` form field selecting which "
+        "website in the project to attach the document to. Optional "
+        "``original_filename`` form field overrides the part's "
+        "``filename`` attribute.\n\n"
+        "2. **application/json** — ``{\"website_id\": \"...\", "
+        "\"source_url\": \"https://...\"}``. The server fetches the "
+        "URL. Optional ``website_user_id`` supplies a project test-user "
+        "credential for sites that require auth.\n\n"
+        "Dedup behaviour: both paths converge on "
+        "``create_or_find_pdf_document``, which dedupes by "
+        "``(website_id, sha256)``. A dedup hit returns the *existing* "
+        "document with **status 200**; a new document persists and "
+        "returns **201** with a ``Location`` header pointing at "
+        "``/api/v1/pdf-documents/<id>``."
+    ),
+)
 def create_pdf_for_project(
     project_id: str,
-) -> tuple[Response, int] | Response:
+    form: PdfUploadIn,
+    pdf_file: FileStorage | None = None,
+) -> tuple[Response, int]:
     """Add a PDF to a project — multipart upload OR remote URL fetch.
 
-    Two request shapes share this handler:
-
-    1. **multipart/form-data**: ``pdf_file`` part with the raw PDF
-       bytes plus a ``website_id`` form field selecting which website
-       in the project to attach the document to. Optional
-       ``original_filename`` form field overrides the part's
-       ``filename`` attribute.
-
-    2. **application/json**: ``{"website_id": "...", "source_url":
-       "https://..."}``. The server fetches the URL with
-       :meth:`PdfRunner.fetch_pdf_from_url`. Optional ``website_user_id``
-       supplies a project test-user credential for sites that require
-       auth.
-
-    The two paths converge on
-    :meth:`PdfRunner.create_or_find_pdf_document` which dedupes by
-    ``(website_id, sha256)``. A dedup hit returns the *existing*
-    document with **status 200**; a new document persists and returns
-    **201** with a ``Location`` header pointing at
-    ``/api/v1/pdf-documents/<id>``.
-
-    Errors:
-
-    - **400** — body missing required fields, ``website_id`` not in
-      ``project_id``, JSON body without ``source_url``, multipart
-      without ``pdf_file``, fetch failure (4xx/5xx from source url),
-      file not a PDF (magic-byte check), or file exceeds the
-      ``PDF_MAX_SIZE`` cap.
-    - **404** — project or website does not exist.
-    - **409** — server has no :class:`PdfRunner` configured.
-
-    Auth: ADMIN/AUDITOR on the project — same as the legacy
-    ``POST /projects/<id>/pdfs`` form.
+    The decorator validates and passes the multipart ``form`` fields and
+    optional ``pdf_file`` part to this handler. JSON-body requests
+    arrive with an empty ``form`` (no form fields and the decorator
+    passed validation against an empty model) and a ``None`` ``pdf_file``
+    — those clients are dispatched by ``request.content_type`` and the
+    handler reads the JSON body via ``_require_dict_body`` below.
     """
     import asyncio
 
@@ -7239,7 +7276,7 @@ def create_pdf_for_project(
     )
 
     if is_multipart:
-        website_id_raw: str | None = request.form.get("website_id")
+        website_id_raw: str | None = form.website_id
         if not website_id_raw:
             raise ValidationError(
                 "website_id is required",
@@ -7256,7 +7293,7 @@ def create_pdf_for_project(
                 f"website {website_id_raw} not in project {project_id}"
             )
 
-        uploaded = request.files.get("pdf_file")
+        uploaded = pdf_file
         if uploaded is None or not uploaded.filename:
             raise ValidationError(
                 "pdf_file part is required",
@@ -7269,7 +7306,7 @@ def create_pdf_for_project(
             )
 
         original_filename = (
-            request.form.get("original_filename")
+            form.original_filename
             or uploaded.filename
             or "document.pdf"
         )
@@ -7429,30 +7466,54 @@ def create_pdf_for_project(
     # PdfDocument.discovered_at is non-Optional, so the comparison
     # alone is enough to infer "just created" vs dedup hit.
     is_new = (datetime.now() - doc.discovered_at).total_seconds() < 2.0
-    response = jsonify(_serialize_pdf_document(doc))
+    # ``@document`` will jsonify the model itself when we return it as
+    # the body of a (BaseModel, int) tuple, but we need to add a
+    # ``Location`` header — so build the Response explicitly here.
+    payload = PdfOut.model_validate(_serialize_pdf_document(doc))
+    response = jsonify(payload.model_dump(mode="json", exclude_none=True))
     response.headers["Location"] = f"/api/v1/pdf-documents/{doc.id}"
     return response, (201 if is_new else 200)
 
 
 @api_bp.route("/pdf-documents/<pdf_id>", methods=["GET"])
 @api_endpoint
-def get_pdf_document_rest(pdf_id: str) -> tuple[Response, int] | Response:
-    """Read a PDF document's metadata.
-
-    The PDF *bytes* and extracted images live behind separate endpoints
-    that are deferred to a follow-up PR — this endpoint is metadata-only.
-    """
+@document(
+    response_200=PdfOut,
+    errors=[401, 403, 404],
+    tags=["PDFs"],
+    summary="Read a PDF document's metadata",
+    description=(
+        "Returns the PDF document's metadata. The PDF *bytes* and "
+        "extracted images live behind separate endpoints (``/file``, "
+        "``/images/<name>``, ``/export``, ``/issue-map``, "
+        "``/reports/pdfmax``)."
+    ),
+)
+def get_pdf_document_rest(pdf_id: str) -> PdfOut:
+    """Read a PDF document's metadata."""
     pdf = get_db().get_pdf_document(pdf_id)
     if pdf is None:
         raise NotFoundError(f"pdf document {pdf_id} not found")
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, project_id=pdf.project_id
     )
-    return jsonify(_serialize_pdf_document(pdf))
+    return PdfOut.model_validate(_serialize_pdf_document(pdf))
 
 
 @api_bp.route("/pdf-documents/<pdf_id>", methods=["DELETE"])
 @api_endpoint
+@document(
+    response_204=Empty,
+    errors=[401, 403, 404],
+    tags=["PDFs"],
+    summary="Delete a PDF document",
+    description=(
+        "Removes the PDF document and every on-disk artefact "
+        "(stored PDF bytes, extracted images, cached pdfMax outputs). "
+        "ADMIN/AUDITOR only — CLIENT readers cannot tear down audit "
+        "artefacts."
+    ),
+)
 def delete_pdf_document_rest(pdf_id: str) -> tuple[Response, int]:
     """Delete a PDF document — DB record + filesystem artefacts.
 
@@ -7560,13 +7621,26 @@ def _serialize_pdf_audit_job(record: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _parse_pdf_audit_body(body: dict[str, Any]) -> dict[str, Any]:
-    """Validate the audit-start body. Returns the kwargs for PdfAuditJob."""
-    run_ai_raw = body.get("run_ai")
-    run_ai: bool = run_ai_raw if isinstance(run_ai_raw, bool) else False
+def _resolve_pdf_audit_kwargs(
+    body: PdfAuditStartIn,
+) -> tuple[bool, Literal["AA", "AAA"], str]:
+    """Validate :class:`PdfAuditStartIn` into PdfAuditJob kwargs.
 
-    wcag_level_raw = body.get("wcag_level", "AA")
-    if not isinstance(wcag_level_raw, str) or wcag_level_raw not in ("AA", "AAA"):
+    Returns ``(run_ai, wcag_level, locale)``. Defaults: ``run_ai=False``,
+    ``wcag_level="AA"``, ``locale="en"``. Narrows ``wcag_level`` to the
+    ``Literal["AA", "AAA"]`` that ``PdfAuditJob`` requires via explicit
+    literal-assignment branches rather than ``cast`` — keeps mypy +
+    pyright + ty all satisfied.
+    """
+    run_ai: bool = body.run_ai if body.run_ai is not None else False
+
+    wcag_level_raw = body.wcag_level if body.wcag_level is not None else "AA"
+    wcag_level: Literal["AA", "AAA"]
+    if wcag_level_raw == "AA":
+        wcag_level = "AA"
+    elif wcag_level_raw == "AAA":
+        wcag_level = "AAA"
+    else:
         raise ValidationError(
             "wcag_level must be 'AA' or 'AAA'",
             errors=(
@@ -7577,50 +7651,35 @@ def _parse_pdf_audit_body(body: dict[str, Any]) -> dict[str, Any]:
             ),
         )
 
-    locale_raw = body.get("locale", "en")
-    if not isinstance(locale_raw, str):
-        raise ValidationError(
-            "locale must be a string",
-            errors=(
-                _FieldError(
-                    field="locale", code="invalid_type", message="must be string"
-                ),
-            ),
-        )
-
-    return {
-        "run_ai": run_ai,
-        "wcag_level": wcag_level_raw,
-        "locale": locale_raw,
-    }
+    locale = body.locale if body.locale is not None else "en"
+    return run_ai, wcag_level, locale
 
 
 @api_bp.route("/pdf-documents/<pdf_id>/audits", methods=["POST"])
 @api_endpoint
-def start_pdf_audit(pdf_id: str) -> tuple[Response, int] | Response:
-    """Queue a fresh audit for a PDF document.
-
-    Body (all optional):
-
-        {
-          "run_ai":     bool,           // default false
-          "wcag_level": "AA"|"AAA",     // default AA
-          "locale":     "en"|"fr"|...   // default en
-        }
-
-    Returns 202 with the new ``job_id``. The audit runs in the
-    background via :class:`auto_a11y.core.pdf_audit_job.PdfAuditJob`;
-    poll ``GET /pdf-documents/<id>/audits/latest`` for progress.
-
-    Errors:
-
-    - **404** — pdf document does not exist
-    - **409** — an audit is already in flight for this document (a
-      second start would compete for the same on-disk artefacts)
-    - **503** — the server has no ``PdfRunner`` configured (the audit
-      pipeline is optional; deployments without the playwright/poppler
-      stack run with ``pdf_runner=None``)
-    """
+@document(
+    request=PdfAuditStartIn,
+    response_202=PdfAuditStartOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["PDFs"],
+    summary="Start a new audit for a PDF document",
+    description=(
+        "Queues a fresh audit run. Body fields are all optional: "
+        "``run_ai`` (default ``false``), ``wcag_level`` "
+        "(``'AA'``/``'AAA'``, default ``'AA'``), ``locale`` (default "
+        "``'en'``). Returns 202 with the new ``job_id``; the audit "
+        "runs in the background via "
+        "``auto_a11y.core.pdf_audit_job.PdfAuditJob``. Poll "
+        "``GET /pdf-documents/<id>/audits/latest`` for progress. "
+        "Returns 409 if an audit is already in flight for this "
+        "document (a second start would compete for the same on-disk "
+        "artefacts), or if the server has no ``PdfRunner`` configured."
+    ),
+)
+def start_pdf_audit(
+    pdf_id: str, body: PdfAuditStartIn,
+) -> tuple[PdfAuditStartOut, int]:
+    """Queue a fresh audit for a PDF document."""
     from auto_a11y.core.pdf_audit_job import PdfAuditJob
     from auto_a11y.web.typed_app import get_pdf_runner
 
@@ -7642,8 +7701,7 @@ def start_pdf_audit(pdf_id: str) -> tuple[Response, int] | Response:
             f"pdf document {pdf_id} already has an audit in progress"
         )
 
-    body = _require_dict_body() if request.data else {}
-    kwargs = _parse_pdf_audit_body(body)
+    run_ai, wcag_level, locale = _resolve_pdf_audit_kwargs(body)
 
     user_id_str: str
     if current_user.is_authenticated:
@@ -7656,46 +7714,43 @@ def start_pdf_audit(pdf_id: str) -> tuple[Response, int] | Response:
         runner=runner,
         db=get_db(),
         pdf_document_id=pdf_id,
-        run_ai=kwargs["run_ai"],
+        run_ai=run_ai,
         ai_api_key=None,
-        wcag_level=kwargs["wcag_level"],
-        locale=kwargs["locale"],
+        wcag_level=wcag_level,
+        locale=locale,
         user_id=user_id_str,
     )
     job_id = job.start()
 
-    return jsonify({
-        "job_id": job_id,
-        "pdf_document_id": pdf_id,
-        "run_ai": kwargs["run_ai"],
-        "wcag_level": kwargs["wcag_level"],
-        "locale": kwargs["locale"],
-        "status": "queued",
-    }), 202
+    return PdfAuditStartOut(
+        job_id=job_id,
+        pdf_document_id=pdf_id,
+        run_ai=run_ai,
+        wcag_level=wcag_level,
+        locale=locale,
+        status="queued",
+    ), 202
 
 
 @api_bp.route(
     "/pdf-documents/<pdf_id>/audits/latest", methods=["GET"]
 )
 @api_endpoint
-def get_latest_pdf_audit(pdf_id: str) -> tuple[Response, int] | Response:
-    """Read the most-recent (or in-flight) audit's status + progress.
-
-    Returns:
-
-        {
-          "pdf_document_id":    "...",
-          "doc_status":         "auditing|audited|audit_failed|...",
-          "error_reason":       null | "...",
-          "last_audit_result_id": null | "...",
-          "job":                null | {...job shape...}
-        }
-
-    ``job`` is ``null`` only when the document has *never* had an
-    audit job recorded. After at least one run the latest job stays
-    in the response so clients can render "last audit failed at X"
-    even when no fresh job is in flight.
-    """
+@document(
+    response_200=PdfAuditLatestOut,
+    errors=[401, 403, 404],
+    tags=["PDFs"],
+    summary="Read the most-recent audit status for a PDF",
+    description=(
+        "Returns the document's audit status plus the latest "
+        "``PDF_AUDIT`` job (or ``null`` when no audit has ever been "
+        "queued for this document). After at least one run the latest "
+        "job stays in the response so clients can render \"last audit "
+        "failed at X\" even when no fresh job is in flight."
+    ),
+)
+def get_latest_pdf_audit(pdf_id: str) -> PdfAuditLatestOut:
+    """Read the most-recent (or in-flight) audit's status + progress."""
     pdf = get_db().get_pdf_document(pdf_id)
     if pdf is None:
         raise NotFoundError(f"pdf document {pdf_id} not found")
@@ -7705,45 +7760,65 @@ def get_latest_pdf_audit(pdf_id: str) -> tuple[Response, int] | Response:
     )
 
     job_doc = _find_latest_pdf_audit_job(pdf_id)
-    job_payload: dict[str, Any] | None = (
-        _serialize_pdf_audit_job(job_doc) if job_doc is not None else None
-    )
+    job_payload: PdfAuditJobOut | None = None
+    if job_doc is not None:
+        raw = _serialize_pdf_audit_job(job_doc)
+        progress_any: Any = raw.get("progress") or {}
+        progress = (
+            cast(dict[str, Any], progress_any)
+            if isinstance(progress_any, dict) else {}
+        )
+        job_payload = PdfAuditJobOut(
+            job_id=raw.get("job_id"),
+            status=raw.get("status"),
+            created_at=raw.get("created_at"),
+            completed_at=raw.get("completed_at"),
+            progress=PdfAuditProgressOut(
+                current=progress.get("current"),
+                total=progress.get("total"),
+                message=progress.get("message"),
+                stage=progress.get("stage"),
+                fraction=progress.get("fraction"),
+            ),
+        )
 
-    return jsonify({
-        "pdf_document_id": pdf_id,
-        "doc_status": pdf.status.value,
-        "error_reason": pdf.error_reason,
-        "last_audit_result_id": pdf.last_audit_result_id,
-        "job": job_payload,
-    })
+    return PdfAuditLatestOut(
+        pdf_document_id=pdf_id,
+        doc_status=pdf.status.value,
+        error_reason=pdf.error_reason,
+        last_audit_result_id=pdf.last_audit_result_id,
+        job=job_payload,
+    )
 
 
 @api_bp.route(
     "/pdf-documents/<pdf_id>/audits/latest/cancel", methods=["POST"]
 )
 @api_endpoint
+@document(
+    response_202=PdfAuditCancelOut,
+    errors=[401, 403, 404, 409],
+    tags=["PDFs"],
+    summary="Cancel an in-flight PDF audit",
+    description=(
+        "Requests cancellation of every PDF_AUDIT job for this "
+        "document in ``{PENDING, RUNNING, CANCELLING}``. The worker "
+        "reads the flag at its next checkpoint and exits cleanly. "
+        "The PDF's ``status`` is forcibly reset to ``AUDIT_FAILED`` "
+        "with ``error_reason='Audit cancelled by user'`` — this "
+        "unblocks the user even when no live worker exists (e.g. the "
+        "previous run crashed and left the document stuck in "
+        "``AUDITING``); the regular start endpoint refuses to "
+        "re-audit a document already in ``AUDITING``, so this manual "
+        "reset is the escape hatch. Returns 409 when there's no live "
+        "job *and* the document isn't stuck in ``AUDITING`` — the "
+        "cancel verb implies there's something to cancel."
+    ),
+)
 def cancel_latest_pdf_audit(
     pdf_id: str,
-) -> tuple[Response, int] | Response:
-    """Request cancellation of every in-flight audit for this PDF.
-
-    Iterates over every PDF_AUDIT job for this document in
-    ``{PENDING, RUNNING, CANCELLING}`` and calls
-    :meth:`JobManager.request_cancellation` on each. The worker reads
-    the flag at its next checkpoint and exits cleanly.
-
-    The PDF's ``status`` is forcibly reset to ``AUDIT_FAILED`` with
-    ``error_reason='Audit cancelled by user'``. This unblocks the user
-    even when no live job exists (e.g. the previous run crashed and
-    left the document stuck in ``AUDITING``) — the regular start
-    endpoint refuses to re-audit a document already in ``AUDITING``,
-    so this manual reset is the escape hatch.
-
-    Returns 202 with the new doc status and how many active jobs were
-    flagged. A document with no live job that is also not stuck in
-    AUDITING returns 409 — the cancel verb implies there's something
-    to cancel.
-    """
+) -> tuple[PdfAuditCancelOut, int]:
+    """Request cancellation of every in-flight audit for this PDF."""
     pdf = get_db().get_pdf_document(pdf_id)
     if pdf is None:
         raise NotFoundError(f"pdf document {pdf_id} not found")
@@ -7791,11 +7866,11 @@ def cancel_latest_pdf_audit(
     pdf.error_reason = "Audit cancelled by user"
     get_db().update_pdf_document(pdf)
 
-    return jsonify({
-        "pdf_document_id": pdf_id,
-        "cancellation_requested_count": cancelled,
-        "doc_status": pdf.status.value,
-    }), 202
+    return PdfAuditCancelOut(
+        pdf_document_id=pdf_id,
+        cancellation_requested_count=cancelled,
+        doc_status=pdf.status.value,
+    ), 202
 
 
 # ---------------------------------------------------------------------------
@@ -7820,19 +7895,24 @@ def _resolve_pdf_or_404(pdf_id: str) -> PdfDocument:
 
 @api_bp.route("/pdf-documents/<pdf_id>/file", methods=["GET"])
 @api_endpoint
+@document(
+    errors=[401, 403, 404],
+    tags=["PDFs"],
+    summary="Stream the stored PDF bytes",
+    description=(
+        "Returns ``application/pdf`` with "
+        "``Content-Disposition: inline`` so clients can embed the "
+        "file in an ``<iframe>`` or render with a PDF.js viewer. "
+        "``X-Frame-Options: SAMEORIGIN`` and a same-origin CSP mirror "
+        "the legacy route's iframe-friendly defaults. ``download_name`` "
+        "falls back to ``document.pdf`` when the source record has no "
+        "``original_filename``. The response body is raw PDF bytes and "
+        "is not modelled as JSON -- ``@document`` passes the Flask "
+        "Response through unchanged."
+    ),
+)
 def get_pdf_file(pdf_id: str) -> Response | tuple[Response, int]:
-    """Stream the stored PDF bytes.
-
-    Returns ``application/pdf`` with ``Content-Disposition: inline`` so
-    clients can embed the file in an ``<iframe>`` or render with a
-    PDF.js viewer. ``X-Frame-Options: SAMEORIGIN`` and a same-origin
-    CSP mirror the legacy route's iframe-friendly defaults.
-
-    ``download_name`` falls back to ``document.pdf`` when the source
-    record has no ``original_filename``; for uploads we keep the
-    user-supplied filename so the browser's "Save As" prefill is
-    useful.
-    """
+    """Stream the stored PDF bytes."""
     from flask import send_file
 
     pdf = _resolve_pdf_or_404(pdf_id)
@@ -7869,18 +7949,23 @@ def get_pdf_file(pdf_id: str) -> Response | tuple[Response, int]:
     "/pdf-documents/<pdf_id>/images/<image_name>", methods=["GET"]
 )
 @api_endpoint
+@document(
+    errors=[400, 401, 403, 404],
+    tags=["PDFs"],
+    summary="Stream one extracted PDF page image",
+    description=(
+        "The audit pipeline rasterises each PDF page into the "
+        "document's ``images_dir_for`` directory; this endpoint serves "
+        "any of those bytes back. Path traversal guard rejects "
+        "``..``, ``/``, and ``\\`` in the image name so the URL cannot "
+        "escape the per-document image directory. Returns "
+        "``image/png`` — the pipeline only writes PNGs."
+    ),
+)
 def get_pdf_image(
     pdf_id: str, image_name: str,
 ) -> Response | tuple[Response, int]:
-    """Stream one extracted image (e.g. ``page_001.png``).
-
-    The audit pipeline rasterises each PDF page into the document's
-    ``images_dir_for`` directory; this endpoint serves any of those
-    bytes back. Path traversal guard rejects ``..``, ``/``, and ``\\``
-    in the image name so the URL cannot escape the per-document image
-    directory. Any extracted image is returned as ``image/png`` — the
-    pipeline only writes PNGs.
-    """
+    """Stream one extracted image (e.g. ``page_001.png``)."""
     from flask import send_file
 
     if ".." in image_name or "/" in image_name or "\\" in image_name:
@@ -7917,6 +8002,24 @@ _PDF_EXPORT_LOCALES: frozenset[str] = frozenset({"en", "fr"})
     "/pdf-documents/<pdf_id>/export", methods=["GET"]
 )
 @api_endpoint
+@document(
+    errors=[400, 401, 403, 404],
+    tags=["PDFs"],
+    summary="Stream a self-contained audit report (Markdown or HTML)",
+    description=(
+        "Returns a derived audit report for the PDF. Required query "
+        "``?format=md|html``; optional ``?locale=en|fr`` (default "
+        "``en``; unrecognised values silently fall back to ``en``). "
+        "The body is derived purely from the persisted ``TestResult`` "
+        "referenced by ``pdf.last_audit_result_id``, so an in-flight "
+        "audit returns the *previous* report, not a partial one. "
+        "Documents that have never been audited still get a response "
+        "but the body is the \"no findings\" stub. "
+        "``Cache-Control: private, no-cache`` matches the legacy "
+        "route. Response body is raw bytes; "
+        "``@document`` passes the Flask Response through unchanged."
+    ),
+)
 def export_pdf_audit(pdf_id: str) -> Response | tuple[Response, int]:
     """Stream a self-contained audit report (Markdown or HTML).
 
@@ -8002,6 +8105,23 @@ def export_pdf_audit(pdf_id: str) -> Response | tuple[Response, int]:
     "/pdf-documents/<pdf_id>/issue-map", methods=["GET"]
 )
 @api_endpoint
+@document(
+    errors=[401, 403, 404],
+    tags=["PDFs"],
+    summary="Serve the cached pdfMax issue-map JSON",
+    description=(
+        "Serves the cached ``*_issue_map.json`` written alongside the "
+        "Markdown report by the pdfMax subprocess. Viewer UIs fetch "
+        "this to position issue overlays on each page and highlight "
+        "the matching sidebar card. Returns 404 when the document "
+        "doesn't exist, its status isn't ``AUDITED``, the "
+        "``pdfmax-report`` cache directory doesn't exist, or no "
+        "``*_issue_map.json`` file is inside it. "
+        "``Cache-Control: private, max-age=60`` matches the legacy "
+        "route. Body is raw ``application/json`` bytes; ``@document`` "
+        "passes the Flask Response through unchanged."
+    ),
+)
 def get_pdf_issue_map(pdf_id: str) -> Response | tuple[Response, int]:
     """Serve the cached pdfMax ``*_issue_map.json`` for viewer overlays.
 
@@ -8057,6 +8177,21 @@ def get_pdf_issue_map(pdf_id: str) -> Response | tuple[Response, int]:
     "/pdf-documents/<pdf_id>/reports/pdfmax", methods=["GET"]
 )
 @api_endpoint
+@document(
+    errors=[401, 403, 404],
+    tags=["PDFs"],
+    summary="Return the cached pdfMax accessibility Markdown report",
+    description=(
+        "Pure cache lookup — the pdfMax subprocess only runs as part "
+        "of the audit job (``PdfAuditJob``), so this endpoint never "
+        "blocks on the 10-30s audit pipeline. Returns 404 when the "
+        "document doesn't exist, its status isn't ``AUDITED``, the "
+        "``pdfmax-report`` cache directory doesn't exist, or no "
+        "``*_accessibility_report.md`` file is inside it. Body is "
+        "``text/markdown; charset=utf-8`` (the raw report text); "
+        "``@document`` passes the Flask Response through unchanged."
+    ),
+)
 def get_pdfmax_report(pdf_id: str) -> Response | tuple[Response, int]:
     """Return the cached pdfMax accessibility Markdown report.
 

@@ -15,6 +15,7 @@ from auto_a11y.models import (
     ProjectStatus,
     ScriptStateDefinition,
     TestStateMatrix,
+    Violation,
 )
 from auto_a11y.models.app_user import UserRole
 from auto_a11y.pdf.storage import PdfStorage
@@ -53,6 +54,29 @@ from auto_a11y.web.api.schemas.pages import (
     PagePut,
     PageViolationsOut,
     ScriptStateDefinitionOut,
+)
+from auto_a11y.web.api.schemas.test_runs import (
+    PageTestRunCancelOut,
+    PageTestRunIn,
+    PageTestRunLatestOut,
+    PageTestRunStartedOut,
+    PageTestSessionOut,
+    PageTestSessionStateOut,
+    PageTestSessionsOut,
+    PageTestStatesOut,
+    ProjectTestRunIn,
+    ProjectTestRunStartedOut,
+    ProjectTestRunWebsiteHandleOut,
+    TestResultCompareIn,
+    TestResultCompareOut,
+    TestResultListOut,
+    TestResultOut,
+    TestResultStatesOut,
+    TestStateEntryOut,
+    WebsiteDiscoveryIn,
+    WebsiteDiscoveryStartedOut,
+    WebsiteTestRunIn,
+    WebsiteTestRunStartedOut,
 )
 from auto_a11y.web.typed_app import get_db, get_app_config, get_test_config
 from datetime import datetime
@@ -365,20 +389,27 @@ def delete_project(project_id: str) -> tuple[Empty, int] | tuple[Response, int]:
 
 @api_bp.route('/pages/<page_id>/test', methods=['POST'])
 @api_bp.route('/pages/<page_id>/test-runs', methods=['POST'])
+@document(
+    request=PageTestRunIn,
+    response_202=PageTestRunStartedOut,
+    errors=[401, 403, 404, 503],
+    tags=["Test runs"],
+    summary="Queue a single-page test run",
+    description=(
+        "Queues an accessibility test run for a single page. Both "
+        "``POST /api/v1/pages/<id>/test`` (legacy alias) and the "
+        "canonical ``POST /api/v1/pages/<id>/test-runs`` route here. "
+        "Returns 202 with the queued task's id; the worker runs the "
+        "test in the background. 503 is returned when "
+        "``BROWSER_MODE='disabled'`` or ``'remote'`` rejects the "
+        "request at the server."
+    ),
+)
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
-def test_page(page_id: str) -> tuple[Response, int]:
-    """Queue an accessibility test run for a page.
-
-    Both ``POST /api/v1/pages/<id>/test`` (legacy, kept for the
-    in-flight admin frontend) and the canonical
-    ``POST /api/v1/pages/<id>/test-runs`` route here. They share a
-    handler so the response shape stays identical until the frontend
-    migration retires the old URL.
-
-    The actual orchestration lives in
-    :mod:`auto_a11y.core.test_run_service` so the legacy HTML route
-    and this REST endpoint dispatch through the same code path.
-    """
+def test_page(
+    page_id: str, body: PageTestRunIn
+) -> tuple[PageTestRunStartedOut, int] | tuple[Response, int]:
+    """Queue an accessibility test run for a page."""
     from auto_a11y.core.test_run_service import (
         BrowserDisabledError,
         BrowserRemoteError,
@@ -386,11 +417,8 @@ def test_page(page_id: str) -> tuple[Response, int]:
         start_page_test_run,
     )
 
-    data: dict[str, Any] = request.get_json() or {}
-    enable_multi_state: bool = bool(data.get('enable_multi_state', True))
-    website_user_id_raw = data.get('website_user_id')
-    website_user_id: str | None = (
-        website_user_id_raw if isinstance(website_user_id_raw, str) else None
+    enable_multi_state: bool = (
+        body.enable_multi_state if body.enable_multi_state is not None else True
     )
 
     try:
@@ -399,7 +427,7 @@ def test_page(page_id: str) -> tuple[Response, int]:
             get_app_config(),
             page_id,
             enable_multi_state=enable_multi_state,
-            website_user_id=website_user_id,
+            website_user_id=body.website_user_id,
         )
     except BrowserDisabledError as exc:
         return jsonify({'error': str(exc)}), 503
@@ -408,98 +436,115 @@ def test_page(page_id: str) -> tuple[Response, int]:
     except PageNotFoundError:
         return jsonify({'error': 'Page not found'}), 404
 
-    return jsonify({
-        'job_id': handle.job_id,
-        'page_id': handle.page_id,
-        'multi_state': handle.multi_state,
-        'status': 'queued',
-        'message': 'Test job queued successfully',
-    }), 202
+    return PageTestRunStartedOut(
+        job_id=handle.job_id,
+        page_id=handle.page_id,
+        multi_state=handle.multi_state,
+        status='queued',
+        message='Test job queued successfully',
+    ), 202
 
 
 # Test Results API
 
 @api_bp.route('/test-results/<result_id>', methods=['GET'])
-def get_test_result(result_id: str) -> tuple[Response, int] | Response:
+@document(
+    response_200=TestResultOut,
+    errors=[404],
+    tags=["Test results"],
+    summary="Get a single test result by ID",
+    description=(
+        "Returns the test result document for ``result_id``. The body "
+        "is the full :meth:`TestResult.to_dict` payload — nested "
+        "violation / AI-finding / page-state objects are emitted "
+        "as the dataclass dumps them; downstream §5.x work will model "
+        "those nested types."
+    ),
+)
+def get_test_result(
+    result_id: str,
+) -> tuple[Response, int] | Response:
     """Get test result by ID"""
     result = get_db().get_test_result(result_id)
     if not result:
         return jsonify({'error': 'Test result not found'}), 404
-    
+
+    # The @document decorator serialises BaseModel returns via jsonify;
+    # this endpoint returns the raw dict directly (the payload IS the
+    # body, not nested under a "payload" key) to preserve the legacy
+    # wire shape byte-for-byte.
     return jsonify(result.to_dict())
 
 
 @api_bp.route('/pages/<page_id>/test-results', methods=['GET'])
+@document(
+    response_200=TestResultListOut,
+    errors=[401, 403, 404],
+    tags=["Test results"],
+    summary="List a page's test results",
+    description=(
+        "Returns every stored test result for ``page_id`` in a "
+        "``{results: [...]}`` envelope. Each item is the full "
+        ":meth:`TestResult.to_dict` payload."
+    ),
+)
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
-def get_page_test_results(page_id: str) -> tuple[Response, int] | Response:
+def get_page_test_results(
+    page_id: str,
+) -> tuple[TestResultListOut, int] | tuple[Response, int] | Response:
     """Get test results for page"""
     page = get_db().get_page(page_id)
     if not page:
         return jsonify({'error': 'Page not found'}), 404
-    
+
     results = get_db().get_test_results(page_id=page_id)
-    
-    return jsonify({
-        'results': [r.to_dict() for r in results]
-    })
+
+    return TestResultListOut(
+        results=[r.to_dict() for r in results],
+    ), 200
 
 
 # Batch Operations
 
 @api_bp.route('/websites/<website_id>/discover', methods=['POST'])
 @api_bp.route('/websites/<website_id>/discoveries', methods=['POST'])
+@document(
+    request=WebsiteDiscoveryIn,
+    response_202=WebsiteDiscoveryStartedOut,
+    errors=[401, 403, 404],
+    tags=["Test runs"],
+    summary="Queue a website discovery crawl",
+    description=(
+        "Queues a page-discovery crawl for a website. Both the legacy "
+        "``/discover`` URL and the canonical ``/discoveries`` URL "
+        "route here. ``max_pages`` is coerced to a positive integer "
+        "by the server (non-positive or non-int values silently "
+        "degrade to unbounded). Both ``project_user_ids`` and "
+        "``website_user_ids`` are accepted for backwards-compat; the "
+        "handler reads ``project_user_ids`` first."
+    ),
+)
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
-def discover_pages(website_id: str) -> tuple[Response, int]:
-    """Queue a page-discovery crawl for a website.
-
-    Both the legacy ``/discover`` URL and the canonical
-    ``/discoveries`` URL share this handler; they emit the same
-    response shape until the frontend migration retires the legacy
-    name.
-
-    The actual orchestration (browser-config merge, async wrapping,
-    task-runner submission) lives in
-    :mod:`auto_a11y.core.test_run_service` so the HTML route in
-    ``websites.py`` and this REST endpoint dispatch through the same
-    code path.
-    """
+def discover_pages(
+    website_id: str, body: WebsiteDiscoveryIn
+) -> tuple[WebsiteDiscoveryStartedOut, int] | tuple[Response, int]:
+    """Queue a page-discovery crawl for a website."""
     from auto_a11y.core.test_run_service import (
         WebsiteNotFoundError,
         start_website_discovery,
     )
     from auto_a11y.web.typed_app import get_pdf_runner as _get_pdf_runner
 
-    data: dict[str, Any] = request.get_json() or {}
-    max_pages_raw = data.get('max_pages')
-    max_pages: int | None = None
-    if max_pages_raw is not None and max_pages_raw != '':
-        try:
-            max_pages = int(max_pages_raw)
-            if max_pages <= 0:
-                max_pages = None
-        except (ValueError, TypeError):
-            max_pages = None
+    max_pages: int | None = body.max_pages
+    if max_pages is not None and max_pages <= 0:
+        max_pages = None
 
-    def _widen_to_str_list(value: Any) -> list[str]:
-        # Routing ``value`` through an ``Any``-typed parameter drops
-        # pyright's ``list[Unknown]`` narrowing from the outer
-        # isinstance check, so iteration yields properly-typed items.
-        # Same trick as ``_iter_to_any_list`` further down this file.
-        items: list[Any] = []
-        for item in value:
-            items.append(item)
-        return [str(item) for item in items]
-
-    user_ids_raw_value: Any = (
-        data.get('project_user_ids') or data.get('website_user_ids')
+    # ``project_user_ids`` wins over ``website_user_ids`` (legacy
+    # behavior). ``None`` flows through to ``start_website_discovery``
+    # which means "guest crawl only".
+    user_ids_raw: list[str] | str | None = (
+        body.project_user_ids if body.project_user_ids is not None else body.website_user_ids
     )
-    user_ids_raw: list[str] | str | None
-    if isinstance(user_ids_raw_value, list):
-        user_ids_raw = _widen_to_str_list(user_ids_raw_value)
-    elif isinstance(user_ids_raw_value, str):
-        user_ids_raw = user_ids_raw_value
-    else:
-        user_ids_raw = None
 
     try:
         handle = start_website_discovery(
@@ -513,32 +558,37 @@ def discover_pages(website_id: str) -> tuple[Response, int]:
     except WebsiteNotFoundError:
         return jsonify({'error': 'Website not found'}), 404
 
-    return jsonify({
-        'job_id': handle.job_id,
-        'website_id': handle.website_id,
-        'max_pages': handle.max_pages,
-        'user_count': handle.user_count,
-        'status': 'started',
-        'message': 'Page discovery started',
-    }), 202
+    return WebsiteDiscoveryStartedOut(
+        job_id=handle.job_id,
+        website_id=handle.website_id,
+        max_pages=handle.max_pages,
+        user_count=handle.user_count,
+        status='started',
+        message='Page discovery started',
+    ), 202
 
 
 @api_bp.route('/websites/<website_id>/test', methods=['POST'])
 @api_bp.route('/websites/<website_id>/test-runs', methods=['POST'])
+@document(
+    request=WebsiteTestRunIn,
+    response_202=WebsiteTestRunStartedOut,
+    errors=[400, 401, 403, 404],
+    tags=["Test runs"],
+    summary="Queue a website-wide batch test",
+    description=(
+        "Queues a batch accessibility test run for every page on a "
+        "website. Both the legacy ``/test`` URL and the canonical "
+        "``/test-runs`` URL route here. Returns 400 when no eligible "
+        "pages exist (``untested_only`` filters to DISCOVERED-status "
+        "pages only)."
+    ),
+)
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
-def test_website(website_id: str) -> tuple[Response, int]:
-    """Queue a batch test run for every page on a website.
-
-    Both the legacy ``/test`` URL and the canonical ``/test-runs`` URL
-    share this handler so the response shape stays identical until
-    the frontend migration retires the legacy name.
-
-    The orchestration (sequential per-user page tests, PDF audit
-    queueing, combined progress reporting) lives in
-    :mod:`auto_a11y.core.test_run_service` so both the HTML route in
-    ``websites.py`` and this REST endpoint dispatch through the same
-    code path.
-    """
+def test_website(
+    website_id: str, body: WebsiteTestRunIn
+) -> tuple[WebsiteTestRunStartedOut, int] | tuple[Response, int]:
+    """Queue a batch test run for every page on a website."""
     from auto_a11y.core.test_run_service import (
         NoPagesToTestError,
         WebsiteNotFoundError,
@@ -546,36 +596,15 @@ def test_website(website_id: str) -> tuple[Response, int]:
     )
     from auto_a11y.web.typed_app import get_pdf_runner as _get_pdf_runner
 
-    data: dict[str, Any] = request.get_json() or {}
+    max_pages: int | None = body.max_pages
+    if max_pages is not None and max_pages <= 0:
+        max_pages = None
 
-    max_pages_raw = data.get('max_pages')
-    max_pages: int | None = None
-    if max_pages_raw is not None and max_pages_raw != '':
-        try:
-            max_pages = int(max_pages_raw)
-            if max_pages <= 0:
-                max_pages = None
-        except (ValueError, TypeError):
-            max_pages = None
+    untested_only: bool = bool(body.untested_only)
 
-    untested_only: bool = bool(data.get('untested_only', False))
-
-    def _widen_to_str_list(value: Any) -> list[str]:
-        items: list[Any] = []
-        for item in value:
-            items.append(item)
-        return [str(item) for item in items]
-
-    user_ids_raw_value: Any = (
-        data.get('project_user_ids') or data.get('website_user_ids')
+    user_ids_raw: list[str] | str | None = (
+        body.project_user_ids if body.project_user_ids is not None else body.website_user_ids
     )
-    user_ids_raw: list[str] | str | None
-    if isinstance(user_ids_raw_value, list):
-        user_ids_raw = _widen_to_str_list(user_ids_raw_value)
-    elif isinstance(user_ids_raw_value, str):
-        user_ids_raw = user_ids_raw_value
-    else:
-        user_ids_raw = None
 
     try:
         handle = start_website_test_run(
@@ -592,20 +621,38 @@ def test_website(website_id: str) -> tuple[Response, int]:
     except NoPagesToTestError:
         return jsonify({'error': 'No pages to test'}), 400
 
-    return jsonify({
-        'job_id': handle.job_id,
-        'website_id': handle.website_id,
-        'pages_queued': handle.pages_queued,
-        'user_count': handle.user_count,
-        'total_tests': handle.total_tests,
-        'status': 'queued',
-        'message': f'Batch testing queued for {handle.pages_queued} pages',
-    }), 202
+    return WebsiteTestRunStartedOut(
+        job_id=handle.job_id,
+        website_id=handle.website_id,
+        pages_queued=handle.pages_queued,
+        user_count=handle.user_count,
+        total_tests=handle.total_tests,
+        status='queued',
+        message=f'Batch testing queued for {handle.pages_queued} pages',
+    ), 202
 
 
 @api_bp.route('/projects/<project_id>/test-runs', methods=['POST'])
+@document(
+    request=ProjectTestRunIn,
+    response_202=ProjectTestRunStartedOut,
+    errors=[400, 401, 403, 404],
+    tags=["Test runs"],
+    summary="Queue a project-wide batch test",
+    description=(
+        "Fan-out batch test across every website in a project. Each "
+        "website is queued as its own test run via the same code path "
+        "as ``POST /websites/<id>/test-runs``. Websites with no "
+        "eligible pages are silently skipped — they don't appear in "
+        "``test_runs`` and ``websites_queued`` reflects only the "
+        "websites that actually queued work. Returns 400 when no "
+        "website in the project has eligible pages."
+    ),
+)
 @project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
-def test_project(project_id: str) -> tuple[Response, int]:
+def test_project(
+    project_id: str, body: ProjectTestRunIn
+) -> tuple[ProjectTestRunStartedOut, int] | tuple[Response, int]:
     """Queue a batch test run for every website in a project.
 
     Each website is queued as its own test run via
@@ -646,43 +693,22 @@ def test_project(project_id: str) -> tuple[Response, int]:
     if not project:
         return jsonify({'error': 'Project not found'}), 404
 
-    data: dict[str, Any] = request.get_json() or {}
+    max_pages: int | None = body.max_pages
+    if max_pages is not None and max_pages <= 0:
+        max_pages = None
 
-    max_pages_raw = data.get('max_pages')
-    max_pages: int | None = None
-    if max_pages_raw is not None and max_pages_raw != '':
-        try:
-            max_pages = int(max_pages_raw)
-            if max_pages <= 0:
-                max_pages = None
-        except (ValueError, TypeError):
-            max_pages = None
+    untested_only: bool = bool(body.untested_only)
 
-    untested_only: bool = bool(data.get('untested_only', False))
-
-    def _widen_to_str_list(value: Any) -> list[str]:
-        items: list[Any] = []
-        for item in value:
-            items.append(item)
-        return [str(item) for item in items]
-
-    user_ids_raw_value: Any = (
-        data.get('project_user_ids') or data.get('website_user_ids')
+    user_ids_raw: list[str] | str | None = (
+        body.project_user_ids if body.project_user_ids is not None else body.website_user_ids
     )
-    user_ids_raw: list[str] | str | None
-    if isinstance(user_ids_raw_value, list):
-        user_ids_raw = _widen_to_str_list(user_ids_raw_value)
-    elif isinstance(user_ids_raw_value, str):
-        user_ids_raw = user_ids_raw_value
-    else:
-        user_ids_raw = None
 
     websites = get_db().get_websites(project_id)
     if not websites:
         return jsonify({'error': 'Project has no websites'}), 400
 
     pdf_runner = _get_pdf_runner()
-    test_runs: list[dict[str, Any]] = []
+    test_runs: list[ProjectTestRunWebsiteHandleOut] = []
     for website in websites:
         if website.id is None:
             continue
@@ -703,28 +729,28 @@ def test_project(project_id: str) -> tuple[Response, int]:
         except NoPagesToTestError:
             # No eligible pages for this website; carry on with the rest.
             continue
-        test_runs.append({
-            'job_id': handle.job_id,
-            'website_id': handle.website_id,
-            'pages_queued': handle.pages_queued,
-            'user_count': handle.user_count,
-            'total_tests': handle.total_tests,
-        })
+        test_runs.append(ProjectTestRunWebsiteHandleOut(
+            job_id=handle.job_id,
+            website_id=handle.website_id,
+            pages_queued=handle.pages_queued,
+            user_count=handle.user_count,
+            total_tests=handle.total_tests,
+        ))
 
     if not test_runs:
         return jsonify({'error': 'No pages to test in any website'}), 400
 
-    pages_queued_total = sum(t['pages_queued'] for t in test_runs)
-    total_tests_sum = sum(t['total_tests'] for t in test_runs)
+    pages_queued_total = sum(t.pages_queued for t in test_runs)
+    total_tests_sum = sum(t.total_tests for t in test_runs)
 
-    return jsonify({
-        'project_id': project_id,
-        'websites_queued': len(test_runs),
-        'pages_queued': pages_queued_total,
-        'total_tests': total_tests_sum,
-        'test_runs': test_runs,
-        'status': 'queued',
-    }), 202
+    return ProjectTestRunStartedOut(
+        project_id=project_id,
+        websites_queued=len(test_runs),
+        pages_queued=pages_queued_total,
+        total_tests=total_tests_sum,
+        test_runs=test_runs,
+        status='queued',
+    ), 202
 
 
 # Health Check
@@ -923,13 +949,24 @@ def cleanup_page_counts() -> tuple[Response, int] | Response:
 # Multi-State Testing API Endpoints
 
 @api_bp.route('/test-results/<result_id>/states', methods=['GET'])
-def get_test_result_states(result_id: str) -> tuple[Response, int] | Response:
-    """
-    Get all related state test results for a given result
-
-    Returns all test results from the same testing session, showing different
-    page states (before/after scripts, button states, etc.)
-    """
+@document(
+    response_200=TestResultStatesOut,
+    errors=[404, 500],
+    tags=["Test results"],
+    summary="List sibling state test results",
+    description=(
+        "Returns every test result from the same multi-state testing "
+        "session as ``result_id``, sorted by ``state_sequence`` "
+        "ascending. The seed result is included in the list. "
+        "``page_state`` is the producer-supplied state metadata (button "
+        "name, script name, etc.) — free-form because the runner emits "
+        "records whose keys depend on the trigger."
+    ),
+)
+def get_test_result_states(
+    result_id: str,
+) -> tuple[TestResultStatesOut, int] | tuple[Response, int] | Response:
+    """Get all related state test results for a given result."""
     try:
         # Get the result
         result = get_db().get_test_result(result_id)
@@ -946,28 +983,27 @@ def get_test_result_states(result_id: str) -> tuple[Response, int] | Response:
         all_results.sort(key=lambda r: r.state_sequence)
 
         # Serialize results
-        results_data: list[dict[str, Any]] = []
+        results_data: list[TestStateEntryOut] = []
         for r in all_results:
-            state_info = {
-                'result_id': str(r.mongo_id) if r.mongo_id else None,
-                'state_sequence': r.state_sequence,
-                'page_state': r.page_state,
-                'session_id': r.session_id,
-                'test_date': r.test_date.isoformat() if r.test_date else None,
-                'violation_count': r.violation_count,
-                'warning_count': r.warning_count,
-                'info_count': r.info_count,
-                'pass_count': r.pass_count,
-                'duration_ms': r.duration_ms
-            }
-            results_data.append(state_info)
+            results_data.append(TestStateEntryOut(
+                result_id=str(r.mongo_id) if r.mongo_id else None,
+                state_sequence=r.state_sequence,
+                page_state=r.page_state,
+                session_id=r.session_id,
+                test_date=r.test_date.isoformat() if r.test_date else None,
+                violation_count=r.violation_count,
+                warning_count=r.warning_count,
+                info_count=r.info_count,
+                pass_count=r.pass_count,
+                duration_ms=r.duration_ms,
+            ))
 
-        return jsonify({
-            'success': True,
-            'result_id': result_id,
-            'total_states': len(results_data),
-            'states': results_data
-        })
+        return TestResultStatesOut(
+            success=True,
+            result_id=result_id,
+            total_states=len(results_data),
+            states=results_data,
+        ), 200
 
     except Exception as e:
         logger.error(f"Error getting test result states: {e}")
@@ -975,12 +1011,21 @@ def get_test_result_states(result_id: str) -> tuple[Response, int] | Response:
 
 
 @api_bp.route('/pages/<page_id>/test-states', methods=['GET'])
-def get_page_test_states(page_id: str) -> tuple[Response, int] | Response:
-    """
-    Get latest test results per state for a page
-
-    Shows the most recent test result for each state (initial, after script, etc.)
-    """
+@document(
+    response_200=PageTestStatesOut,
+    errors=[404, 500],
+    tags=["Test results"],
+    summary="Get latest test results per page state",
+    description=(
+        "Returns the most recent test result for each multi-state "
+        "test position (initial, after script, after button A, etc.) "
+        "as a dict keyed by stringified ``state_sequence`` integers."
+    ),
+)
+def get_page_test_states(
+    page_id: str,
+) -> tuple[PageTestStatesOut, int] | tuple[Response, int] | Response:
+    """Get latest test results per state for a page."""
     try:
         # Check page exists
         page = get_db().get_page(page_id)
@@ -990,29 +1035,31 @@ def get_page_test_states(page_id: str) -> tuple[Response, int] | Response:
         # Get latest results per state
         state_results = get_db().get_latest_test_results_per_state(page_id)
 
-        # Serialize results
-        states_data: dict[int, dict[str, Any]] = {}
+        # Serialize results. Flask's JSON encoder coerces int keys to
+        # strings on the wire, so the model uses str keys here too —
+        # the actual emitted body matches byte-for-byte.
+        states_data: dict[str, TestStateEntryOut] = {}
         for state_seq, result in state_results.items():
-            states_data[state_seq] = {
-                'result_id': str(result.mongo_id) if result.mongo_id else None,
-                'state_sequence': state_seq,
-                'page_state': result.page_state,
-                'session_id': result.session_id,
-                'test_date': result.test_date.isoformat() if result.test_date else None,
-                'violation_count': result.violation_count,
-                'warning_count': result.warning_count,
-                'info_count': result.info_count,
-                'pass_count': result.pass_count,
-                'duration_ms': result.duration_ms
-            }
+            states_data[str(state_seq)] = TestStateEntryOut(
+                result_id=str(result.mongo_id) if result.mongo_id else None,
+                state_sequence=state_seq,
+                page_state=result.page_state,
+                session_id=result.session_id,
+                test_date=result.test_date.isoformat() if result.test_date else None,
+                violation_count=result.violation_count,
+                warning_count=result.warning_count,
+                info_count=result.info_count,
+                pass_count=result.pass_count,
+                duration_ms=result.duration_ms,
+            )
 
-        return jsonify({
-            'success': True,
-            'page_id': page_id,
-            'page_url': page.url,
-            'total_states': len(states_data),
-            'states': states_data
-        })
+        return PageTestStatesOut(
+            success=True,
+            page_id=page_id,
+            page_url=page.url,
+            total_states=len(states_data),
+            states=states_data,
+        ), 200
 
     except Exception as e:
         logger.error(f"Error getting page test states: {e}")
@@ -1020,12 +1067,23 @@ def get_page_test_states(page_id: str) -> tuple[Response, int] | Response:
 
 
 @api_bp.route('/pages/<page_id>/test-sessions', methods=['GET'])
-def get_page_test_sessions(page_id: str) -> tuple[Response, int] | Response:
-    """
-    Get all test sessions for a page with their state counts
-
-    Shows all testing sessions and how many states were tested in each
-    """
+@document(
+    response_200=PageTestSessionsOut,
+    errors=[404, 500],
+    tags=["Test results"],
+    summary="List a page's test sessions",
+    description=(
+        "Groups every stored test result for the page by ``session_id`` "
+        "(``single_state`` is the bucket for results with no session) "
+        "and returns one entry per session, sorted by ``test_date`` "
+        "descending. Each session lists its states and rolls up the "
+        "violation/warning totals."
+    ),
+)
+def get_page_test_sessions(
+    page_id: str,
+) -> tuple[PageTestSessionsOut, int] | tuple[Response, int] | Response:
+    """Get all test sessions for a page with their state counts."""
     try:
         # Check page exists
         page = get_db().get_page(page_id)
@@ -1035,49 +1093,69 @@ def get_page_test_sessions(page_id: str) -> tuple[Response, int] | Response:
         # Get all test results for page
         all_results = get_db().get_test_results(page_id=page_id)
 
-        # Group by session
-        sessions: dict[str, dict[str, Any]] = {}
+        # Group by session. We accumulate in a typed-builder dict and
+        # assemble the response models at the end so per-iteration
+        # mutation paths remain straightforward.
+        session_test_dates: dict[str, datetime | None] = {}
+        session_states: dict[str, list[PageTestSessionStateOut]] = {}
+        session_totals_violations: dict[str, int] = {}
+        session_totals_warnings: dict[str, int] = {}
+
         for result in all_results:
             session_id = result.session_id or 'single_state'
 
-            if session_id not in sessions:
-                sessions[session_id] = {
-                    'session_id': session_id,
-                    'test_date': result.test_date,
-                    'states': [],
-                    'total_violations': 0,
-                    'total_warnings': 0
-                }
+            if session_id not in session_test_dates:
+                session_test_dates[session_id] = result.test_date
+                session_states[session_id] = []
+                session_totals_violations[session_id] = 0
+                session_totals_warnings[session_id] = 0
 
-            sessions[session_id]['states'].append({
-                'result_id': str(result.mongo_id) if result.mongo_id else None,
-                'state_sequence': result.state_sequence,
-                'state_description': result.page_state.get('description') if result.page_state else None,
-                'violation_count': result.violation_count,
-                'warning_count': result.warning_count
-            })
+            page_state = result.page_state
+            state_description: str | None = None
+            if page_state is not None:
+                desc_value = page_state.get('description')
+                if isinstance(desc_value, str):
+                    state_description = desc_value
 
-            sessions[session_id]['total_violations'] += result.violation_count
-            sessions[session_id]['total_warnings'] += result.warning_count
+            session_states[session_id].append(PageTestSessionStateOut(
+                result_id=str(result.mongo_id) if result.mongo_id else None,
+                state_sequence=result.state_sequence,
+                state_description=state_description,
+                violation_count=result.violation_count,
+                warning_count=result.warning_count,
+            ))
 
-        # Convert to list and sort by date
-        sessions_list = list(sessions.values())
-        sessions_list.sort(key=lambda s: s['test_date'], reverse=True)
+            session_totals_violations[session_id] += result.violation_count
+            session_totals_warnings[session_id] += result.warning_count
 
-        # Sort states within each session
-        for session in sessions_list:
-            states_list: list[dict[str, Any]] = session['states']
-            states_list.sort(key=lambda s: s['state_sequence'])
-            session['state_count'] = len(session['states'])
-            session['test_date'] = session['test_date'].isoformat() if session['test_date'] else None
+        # Sort sessions by date (descending), then states inside each
+        # session by state_sequence ascending.
+        ordered_session_ids = sorted(
+            session_test_dates.keys(),
+            key=lambda sid: session_test_dates[sid] or datetime.min,
+            reverse=True,
+        )
 
-        return jsonify({
-            'success': True,
-            'page_id': page_id,
-            'page_url': page.url,
-            'total_sessions': len(sessions_list),
-            'sessions': sessions_list
-        })
+        sessions_list: list[PageTestSessionOut] = []
+        for session_id in ordered_session_ids:
+            sorted_states = sorted(session_states[session_id], key=lambda s: s.state_sequence)
+            test_date_dt = session_test_dates[session_id]
+            sessions_list.append(PageTestSessionOut(
+                session_id=session_id,
+                test_date=test_date_dt.isoformat() if test_date_dt else None,
+                states=sorted_states,
+                total_violations=session_totals_violations[session_id],
+                total_warnings=session_totals_warnings[session_id],
+                state_count=len(sorted_states),
+            ))
+
+        return PageTestSessionsOut(
+            success=True,
+            page_id=page_id,
+            page_url=page.url,
+            total_sessions=len(sessions_list),
+            sessions=sessions_list,
+        ), 200
 
     except Exception as e:
         logger.error(f"Error getting page test sessions: {e}")
@@ -1085,25 +1163,29 @@ def get_page_test_sessions(page_id: str) -> tuple[Response, int] | Response:
 
 
 @api_bp.route('/test-results/compare', methods=['POST'])
-def compare_test_results() -> tuple[Response, int] | Response:
-    """
-    Compare two test results (typically from different states)
-
-    Request body:
-    {
-        "result_id_1": "...",
-        "result_id_2": "..."
-    }
-
-    Returns:
-    - Violations that appeared in result_2 (new violations)
-    - Violations that disappeared from result_1 (fixed violations)
-    - Violations that exist in both (persistent violations)
-    """
+@document(
+    request=TestResultCompareIn,
+    response_200=TestResultCompareOut,
+    errors=[400, 404, 500],
+    tags=["Test results"],
+    summary="Compare two test results",
+    description=(
+        "Returns a diff of two test results, typically from different "
+        "states or runs: violations newly introduced in ``result_2``, "
+        "violations that disappeared from ``result_1``, and violations "
+        "present in both. The ``comparison`` payload is deeply nested "
+        "and emitted as a free-form object (the legacy handler builds "
+        "it inline; modelling each leaf would inflate this surface "
+        "without changing the wire — §5.x downstream work will revisit)."
+    ),
+)
+def compare_test_results(
+    body: TestResultCompareIn,
+) -> tuple[TestResultCompareOut, int] | tuple[Response, int] | Response:
+    """Compare two test results (typically from different states)."""
     try:
-        data = request.get_json()
-        result_id_1 = data.get('result_id_1')
-        result_id_2 = data.get('result_id_2')
+        result_id_1 = body.result_id_1
+        result_id_2 = body.result_id_2
 
         if not result_id_1 or not result_id_2:
             return jsonify({'error': 'Both result_id_1 and result_id_2 are required'}), 400
@@ -1124,30 +1206,34 @@ def compare_test_results() -> tuple[Response, int] | Response:
         fixed_violations = [v for v in result1.violations if v.id not in violations2_ids]
         persistent_violations = [v for v in result2.violations if v.id in violations1_ids]
 
-        # Serialize violations
-        def serialize_violation(v: Any) -> dict[str, Any]:
+        # Serialize violations. ``Violation.impact`` is typed
+        # :class:`ImpactLevel`; the legacy handler had a
+        # ``hasattr(v.impact, 'value')`` guard for old records that
+        # stored a raw string, but the dataclass always coerces on
+        # ``from_dict``, so the guard is dead code.
+        def serialize_violation(v: Violation) -> dict[str, object]:
             return {
                 'id': v.id,
-                'impact': v.impact.value if hasattr(v.impact, 'value') else v.impact,
+                'impact': v.impact.value,
                 'touchpoint': v.touchpoint,
                 'description': v.description,
-                'element': v.element
+                'element': v.element,
             }
 
-        comparison = {
+        comparison: dict[str, object] = {
             'result_1': {
                 'id': result_id_1,
                 'state_sequence': result1.state_sequence,
                 'state_description': result1.page_state.get('description') if result1.page_state else None,
                 'violation_count': result1.violation_count,
-                'test_date': result1.test_date.isoformat() if result1.test_date else None
+                'test_date': result1.test_date.isoformat() if result1.test_date else None,
             },
             'result_2': {
                 'id': result_id_2,
                 'state_sequence': result2.state_sequence,
                 'state_description': result2.page_state.get('description') if result2.page_state else None,
                 'violation_count': result2.violation_count,
-                'test_date': result2.test_date.isoformat() if result2.test_date else None
+                'test_date': result2.test_date.isoformat() if result2.test_date else None,
             },
             'new_violations': [serialize_violation(v) for v in new_violations],
             'fixed_violations': [serialize_violation(v) for v in fixed_violations],
@@ -1156,14 +1242,14 @@ def compare_test_results() -> tuple[Response, int] | Response:
                 'new_count': len(new_violations),
                 'fixed_count': len(fixed_violations),
                 'persistent_count': len(persistent_violations),
-                'net_change': result2.violation_count - result1.violation_count
-            }
+                'net_change': result2.violation_count - result1.violation_count,
+            },
         }
 
-        return jsonify({
-            'success': True,
-            'comparison': comparison
-        })
+        return TestResultCompareOut(
+            success=True,
+            comparison=comparison,
+        ), 200
 
     except Exception as e:
         logger.error(f"Error comparing test results: {e}")
@@ -2712,38 +2798,24 @@ def replace_page_matrix(
 
 @api_bp.route("/pages/<page_id>/test-runs/latest", methods=["GET"])
 @api_endpoint
+@document(
+    response_200=PageTestRunLatestOut,
+    errors=[401, 403, 404],
+    tags=["Test runs"],
+    summary="Get the page's current/most-recent test-run status",
+    description=(
+        "Surfaces just the run-level state so a UI can drive a 'test "
+        "in flight' indicator without paging the whole result history. "
+        "``active_task_id`` is the task-runner id when the worker is "
+        "still running, otherwise null. ``last_test_result_id`` points "
+        "at the most recent stored result regardless of outcome, so "
+        "clients can deep-link to the historical view."
+    ),
+)
 def get_page_test_run_latest(
     page_id: str,
-) -> tuple[Response, int] | Response:
-    """Read the page's current/most-recent test-run status.
-
-    Unlike :func:`get_page_test_results` (which lists every historical
-    test result), this endpoint surfaces *just* the run-level state so
-    UIs can drive a "test in flight" indicator without fetching the
-    whole result history:
-
-        {
-          "page_id":             "...",
-          "status":               "discovered|queued|testing|tested|error|skipped|...",
-          "last_tested":          "ISO-8601" | null,
-          "last_test_result_id":  "..." | null,
-          "active_task_id":       "..." | null
-        }
-
-    ``active_task_id`` is the ``task_runner`` task id (pattern
-    ``test_page_<page_id>_<timestamp>``) when the worker is still
-    running, otherwise ``null``. Single-page tests don't create
-    JobManager records, so this endpoint can't surface a richer "job"
-    payload the way the website / pdf-audit latest endpoints do —
-    the page's own ``status`` is the source of truth.
-
-    ``last_test_result_id`` points at the most recent TestResult
-    document for the page, regardless of run outcome, so clients can
-    deep-link to the historical view.
-
-    Auth: ADMIN/AUDITOR/CLIENT on the page's website (read-only;
-    matches the existing /pages/<id> GET).
-    """
+) -> tuple[PageTestRunLatestOut, int] | tuple[Response, int] | Response:
+    """Read the page's current/most-recent test-run status."""
     from auto_a11y.core.task_runner import task_runner
 
     page = get_db().get_page(page_id)
@@ -2768,40 +2840,39 @@ def get_page_test_run_latest(
         latest_results[0].id if latest_results else None
     )
 
-    return jsonify({
-        "page_id": page_id,
-        "status": page.status.value,
-        "last_tested": (
+    return PageTestRunLatestOut(
+        page_id=page_id,
+        status=page.status.value,
+        last_tested=(
             page.last_tested.isoformat() if page.last_tested else None
         ),
-        "last_test_result_id": last_test_result_id,
-        "active_task_id": active_task_id,
-    })
+        last_test_result_id=last_test_result_id,
+        active_task_id=active_task_id,
+    ), 200
 
 
 @api_bp.route("/pages/<page_id>/test-runs/latest/cancel", methods=["POST"])
 @api_endpoint
-def cancel_page_test_run_latest(page_id: str) -> tuple[Response, int] | Response:
-    """Request cancellation of the page's in-flight test run.
-
-    Returns 202 because cancellation is asynchronous — the test worker
-    polls the task's cancellation flag and exits at its next checkpoint.
-    The page status flips to ``DISCOVERED`` (never tested) or ``TESTED``
-    (has prior results) immediately so the UI can update without
-    waiting for the worker to actually unwind.
-
-    Errors:
-
-    - **404** — page does not exist
-    - **409** — page is not in QUEUED/TESTING (legacy /cancel-test
-      returned 200 with ``{success: false}``; the REST surface uses 409
-      so callers can branch on status_code alone)
-
-    Unlike :func:`cancel_job_rest`, this endpoint targets the task
-    runner directly: single-page tests run as bare ``test_page_<id>_*``
-    tasks without a JobManager record. The lookup mirrors the legacy
-    ``/cancel-test`` handler.
-    """
+@document(
+    response_202=PageTestRunCancelOut,
+    errors=[401, 403, 404, 409],
+    tags=["Test runs"],
+    summary="Cancel the page's in-flight test run",
+    description=(
+        "Cancellation is asynchronous: the worker polls the task's "
+        "cancellation flag and exits at its next checkpoint. The "
+        "page status flips immediately to ``DISCOVERED`` (never "
+        "tested) or ``TESTED`` (has prior results) so the UI does "
+        "not lock up on a phantom run. Returns 409 when the page is "
+        "not in QUEUED or TESTING (legacy ``/cancel-test`` returned "
+        "200 with ``success: false`` for this; the REST surface uses "
+        "409 so callers can branch on status_code alone)."
+    ),
+)
+def cancel_page_test_run_latest(
+    page_id: str,
+) -> tuple[PageTestRunCancelOut, int] | tuple[Response, int] | Response:
+    """Request cancellation of the page's in-flight test run."""
     from auto_a11y.core.task_runner import task_runner
 
     page = get_db().get_page(page_id)
@@ -2843,12 +2914,12 @@ def cancel_page_test_run_latest(page_id: str) -> tuple[Response, int] | Response
     if refreshed is None:
         raise ConflictError(f"page {page_id} disappeared after cancel")
 
-    return jsonify({
-        "page_id": page_id,
-        "task_id": target_task_id,
-        "cancellation_requested": cancelled,
-        "status": refreshed.status.value,
-    }), 202
+    return PageTestRunCancelOut(
+        page_id=page_id,
+        task_id=target_task_id,
+        cancellation_requested=cancelled,
+        status=refreshed.status.value,
+    ), 202
 
 
 # ---------------------------------------------------------------------------

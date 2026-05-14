@@ -69,7 +69,7 @@ Conventions enforced on every model:
 - All fields are concretely typed. **No `Any`, no `dict[str, Any]`, no `object` placeholders** in schema field types.
 - Three families of models per resource:
   - `<Resource>In` — request body for `POST`. Server-controlled fields (`id`, `created_at`, `updated_at`) excluded.
-  - `<Resource>Patch` — request body for `PATCH`. All fields `Optional[...]`; uses Pydantic's "model_construct" semantics for explicit-null vs unset.
+  - `<Resource>Patch` — request body for `PATCH`. All fields `Optional[...]`; `model_fields_set` distinguishes "field omitted" from "field explicitly set to null". `*Patch` models never appear in responses — `PATCH /resource/<id>` returns the full `<Resource>Out` after applying the patch.
   - `<Resource>Out` — full output shape, including server-controlled fields. Has a `@classmethod from_db(cls, model: <DBModel>) -> <Resource>Out` adapter — the **one** place DB-to-API conversion is permitted.
 - Listing endpoints return `ListEnvelope[<Resource>Out]` from `common.py`, which carries `data: list[T]`, `pagination: PaginationMeta`. No bare arrays.
 
@@ -96,6 +96,15 @@ Runtime behaviour:
 1. **Request side.** When `request=Model` is set, the wrapper reads `request.get_json(silent=True)`, calls `Model.model_validate(payload or {})`, and injects the resulting model as the `body` keyword argument to the handler. On `pydantic.ValidationError`, control flow jumps to the central error mapper (§3.3) which returns a **400 Problem** — matching what the current hand-rolled validation returns today.
 2. **Response side.** If the handler returns a `BaseModel`, the wrapper calls `.model_dump(mode='json', by_alias=True, exclude_none=True)` and `jsonify()`s. If it returns `(BaseModel, int)`, the int becomes the HTTP status. If it returns a Flask `Response` or `(Response, int)`, the wrapper passes it through unchanged (escape hatch for file downloads, NDJSON, redirects).
 3. **Documentation side.** The decorator stores an `EndpointDoc(view_function, request_model, response_models_by_status, errors, tags, summary, description, security)` record in a module-level registry keyed by `(method, rule)`. The runtime path never reads the registry; only the spec builder (§3.4) does.
+
+The decorator's overload set covers exactly four return-type shapes from the wrapped view, all expressed without `Any`:
+
+- `BaseModel` — serialized with HTTP 200.
+- `tuple[BaseModel, int]` — serialized with the supplied status.
+- `flask.Response` — passed through.
+- `tuple[flask.Response, int]` — passed through with the supplied status.
+
+Any other return type is a type-check error at handler definition time.
 
 The decorator is type-generic over the request and response model classes; type checkers see real Pydantic types on both sides. The only escape hatch is the `Response` passthrough, which is encoded as a `Union[BaseModel, tuple[BaseModel, int], Response, tuple[Response, int]]` return type on the wrapped view — no `Any`, no `cast(Any, ...)`.
 
@@ -126,7 +135,7 @@ def build_spec(app: Flask) -> dict[str, object]: ...
 
 Walks `app.url_map.iter_rules()` joined with the `EndpointDoc` registry. For each documented rule:
 
-- Translates Flask path params `<project_id>`, `<int:page_id>`, `<uuid:token>` to OpenAPI `{project_id}`, `{page_id}`, `{token}` plus an inline path-parameter schema.
+- Translates Flask path params `<project_id>`, `<int:page_id>`, `<uuid:token>` to OpenAPI `{project_id}`, `{page_id}`, `{token}` plus an inline path-parameter schema. The Flask converter type drives the OpenAPI schema: `<int:...>` → `{type: integer}`, `<float:...>` → `{type: number}`, `<uuid:...>` → `{type: string, format: uuid}`, the default (string) and `<path:...>` → `{type: string}`. Custom converters fall back to `{type: string}` with a TODO log emitted at build time so they're not silently dropped.
 - Emits `summary`, `description`, `tags`, `security` from the decorator.
 - For each `(status, model)` in the response map, emits `responses.<status>.content.application/json.schema` as a `$ref` into `components.schemas`.
 - For each error status in `errors=`, emits a Problem reference (`{"$ref": "#/components/schemas/Problem"}`).
@@ -142,7 +151,7 @@ Per-operation security: `security: [{bearerAuth: []}, {sessionAuth: []}]` (logic
 
 ### 3.5 Dynamic endpoint — `GET /api/v1/openapi.json` + `GET /api/v1/openapi.yaml`
 
-Registered on `api_bp`. Calls `build_spec(current_app)` per request — never cached, so it cannot drift. The endpoint is public (no auth required); the spec describes only the existence and shape of endpoints, not data. Both `.json` and `.yaml` URLs are served; content negotiation via path suffix.
+Implemented as a small new module `auto_a11y/web/routes/v1_openapi.py` that defines two view functions (`openapi_json` and `openapi_yaml`) and attaches them to the existing `api_bp` via `api_bp.add_url_rule(...)` at module load time. **No new blueprint** — keeping the `/api/v1` URL prefix consistent and avoiding a second registration site. Both views call `build_spec(current_app)` per request — never cached, so they cannot drift. Public (no auth required); the spec describes only the existence and shape of endpoints, not data. Content negotiation is via path suffix.
 
 ### 3.6 Static file — `docs/api/openapi.yaml`
 
@@ -175,7 +184,9 @@ Pytest module that programmatically iterates every entry in the `EndpointDoc` re
 3. Validates the response body against the documented Pydantic model.
 4. On failure: emits `POST /api/v1/projects returned 201 but body failed ProjectOut.model_validate: ...`.
 
-Endpoints requiring elaborate setup (file uploads, multi-step state) are marked `@pytest.mark.skip("contract test requires …")` with the reason captured in the skip message — surfaced in the test report so we can't lose track. A counter in the test suite tracks `documented_endpoints / contract_tested_endpoints / skipped_endpoints`; a regression below 80% contract coverage fails the suite.
+Endpoints requiring elaborate setup (file uploads, multi-step state) are marked `@pytest.mark.skip("contract test requires …")` with the reason captured in the skip message — surfaced in the test report so we can't lose track. A counter in the test suite tracks `documented_endpoints / contract_tested_endpoints / skipped_endpoints`.
+
+**Coverage denominator clarification.** The 80% gate is computed as `contract_tested_endpoints / contract_eligible_endpoints`, where `contract_eligible_endpoints` is the count of registry entries that have **at least one `BaseModel`-typed response model** (i.e., the handler returns a documented model rather than a raw `Response`). The drift gate is separate and harsher: every entry in `api_bp.url_map` lacking a registry entry fails the suite, regardless of response type. The two gates together mean (a) every v1 route is documented, and (b) at least 80% of model-returning routes have a passing contract test against real wire bytes.
 
 ### 3.9 CI integration
 
@@ -244,7 +255,7 @@ Rules:
 | `auto_a11y/web/api/openapi/` (new) | `document.py`, `errors.py`, `builder.py`, `registry.py`, `__init__.py`. |
 | `auto_a11y/web/routes/api.py` | All 177 handlers converted to the new pattern. |
 | `auto_a11y/web/routes/recordings.py` etc. | Any v1-mounted handlers converted likewise. |
-| `auto_a11y/web/routes/v1_openapi.py` (new) | Dynamic `GET /api/v1/openapi.json` and `.yaml` endpoints. |
+| `auto_a11y/web/routes/v1_openapi.py` (new) | View functions for dynamic `GET /api/v1/openapi.json` and `.yaml`; attaches to existing `api_bp`. |
 | `scripts/generate_openapi.py` (new) | CLI wrapper around `build_spec()` with `--check`. |
 | `docs/api/openapi.yaml` (new) | Initial generated artifact, committed. |
 | `.githooks/pre-commit` | Add `scripts/generate_openapi.py --check` step. |

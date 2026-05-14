@@ -4,7 +4,7 @@ RESTful API routes
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Literal, cast
+from typing import Any, Literal, Mapping, Optional, TypeGuard, cast
 
 from flask import Blueprint, Response, jsonify, request
 from flask_login import current_user
@@ -145,6 +145,19 @@ from auto_a11y.web.api.schemas.admin import (
     DrupalSettingsValuesOut,
     GenericSectionPatchIn,
     SettingsSectionOut,
+)
+from auto_a11y.web.api.schemas.health import (
+    GhostscriptHealthOut,
+    HealthOut,
+    HealthPdfOut,
+    JobCancelOut,
+    JobListOut,
+    JobOut,
+    JobsCleanupOut,
+    JobsClearAllOut,
+    JobsClearStaleOut,
+    JobStatsOut,
+    StorageHealthOut,
 )
 from auto_a11y.web.api.schemas.drupal import (
     DrupalAuditListOut,
@@ -872,45 +885,128 @@ def test_project(
 # Health Check
 
 @api_bp.route('/health', methods=['GET'])
-def health_check() -> Response:
+@document(
+    response_200=HealthOut,
+    tags=["Health"],
+    summary="API health probe",
+    description=(
+        "Unauthenticated liveness probe. Returns "
+        "``status='healthy'`` when the database ping succeeds, "
+        "``status='degraded'`` when the ping fails (the Flask app is "
+        "still up; the DB connection is not). Intended for load "
+        "balancers, container orchestrators, and operator scripts — "
+        "no credentials required."
+    ),
+    security="public",
+)
+def health_check() -> tuple[HealthOut, int]:
     """API health check"""
     try:
         # Check database connection
         get_db().client.server_info()
         db_status = 'healthy'
-    except:
+    except Exception:
         db_status = 'unhealthy'
-    
-    return jsonify({
-        'status': 'healthy' if db_status == 'healthy' else 'degraded',
-        'database': db_status,
-        'timestamp': datetime.now().isoformat()
-    })
+
+    return HealthOut(
+        status='healthy' if db_status == 'healthy' else 'degraded',
+        database=db_status,
+        timestamp=datetime.now().isoformat(),
+    ), 200
 
 
 # Jobs API
 
+
+def _is_object_mapping(value: object) -> TypeGuard[Mapping[object, object]]:
+    """Narrow an ``object`` to a generic mapping for pyright strict mode.
+
+    ``isinstance(value, dict)`` narrows to ``dict[Unknown, Unknown]``
+    under pyright strict, which then poisons every ``.items()`` /
+    ``[key]`` access downstream. This wrapper narrows to
+    ``Mapping[object, object]`` so the iteration is fully typed
+    without resorting to ``cast(Any, ...)``.
+    """
+    return isinstance(value, dict)
+
+
 @api_bp.route('/jobs/stats', methods=['GET'])
-def get_job_stats() -> tuple[Response, int] | Response:
+@document(
+    response_200=JobStatsOut,
+    errors=[500],
+    tags=["Jobs"],
+    summary="Job statistics over the past 24 hours",
+    description=(
+        "Aggregates jobs created in the past 24 hours by "
+        "``job_type`` and ``status``. ``total_jobs`` is the overall "
+        "count; ``by_type`` is keyed by job-type enum value with a "
+        "nested ``{status: count}`` dict; ``by_status`` rolls up the "
+        "per-type counts into a single bucket per status. The keys "
+        "are dynamic (driven by the ``JobType``/``JobStatus`` enums) "
+        "so consumers should treat them as opaque labels."
+    ),
+)
+def get_job_stats() -> tuple[JobStatsOut, int] | tuple[Response, int] | Response:
     """Get job statistics"""
     try:
         job_manager = JobManager(get_db())
-        
+
         # Get overall statistics
         stats = job_manager.get_job_statistics(hours=24)
-        
-        return jsonify(stats)
+
+        total_jobs_raw: object = stats.get('total_jobs', 0)
+        by_type_raw: object = stats.get('by_type', {}) or {}
+        by_status_raw: object = stats.get('by_status', {}) or {}
+
+        def _coerce_inner_counts(raw: object) -> dict[str, int]:
+            if not _is_object_mapping(raw):
+                return {}
+            inner: dict[str, int] = {}
+            for inner_key in raw:
+                inner_value = raw[inner_key]
+                if isinstance(inner_value, int):
+                    inner[str(inner_key)] = inner_value
+            return inner
+
+        by_type: dict[str, dict[str, int]] = {}
+        if _is_object_mapping(by_type_raw):
+            for type_key in by_type_raw:
+                bucket = by_type_raw[type_key]
+                by_type[str(type_key)] = _coerce_inner_counts(bucket)
+
+        by_status: dict[str, int] = _coerce_inner_counts(by_status_raw)
+
+        return JobStatsOut(
+            total_jobs=total_jobs_raw if isinstance(total_jobs_raw, int) else 0,
+            by_type=by_type,
+            by_status=by_status,
+        ), 200
     except Exception as e:
         logger.error(f"Error getting job stats: {e}")
         return jsonify({'error': 'Failed to get job statistics'}), 500
 
 
 @api_bp.route('/jobs/clear-all', methods=['POST'])
-def clear_all_jobs() -> tuple[Response, int] | Response:
+@document(
+    response_200=JobsClearAllOut,
+    errors=[500],
+    tags=["Jobs"],
+    summary="Clear all running and pending jobs",
+    description=(
+        "Emergency reset: transitions every RUNNING / CANCELLING / "
+        "PENDING job to CANCELLED and stamps a "
+        "``'Job cleared by administrator'`` error. Also resets every "
+        "page stuck in QUEUED or TESTING back to DISCOVERED. Returns "
+        "the per-bucket counts and a human-readable message. "
+        "Idempotent — calling this with no active jobs is a no-op "
+        "and returns zero counts."
+    ),
+)
+def clear_all_jobs() -> tuple[JobsClearAllOut, int] | tuple[Response, int] | Response:
     """Clear all running and pending jobs - emergency reset"""
     try:
         job_manager = JobManager(get_db())
-        
+
         # Clear all running jobs
         running_result = job_manager.collection.update_many(
             {'status': {'$in': [JobStatus.RUNNING.value, JobStatus.CANCELLING.value]}},
@@ -922,7 +1018,7 @@ def clear_all_jobs() -> tuple[Response, int] | Response:
                 }
             }
         )
-        
+
         # Clear all pending jobs
         pending_result = job_manager.collection.update_many(
             {'status': JobStatus.PENDING.value},
@@ -934,7 +1030,7 @@ def clear_all_jobs() -> tuple[Response, int] | Response:
                 }
             }
         )
-        
+
         # Also reset page statuses that are stuck in QUEUED or TESTING states
         pages_result = get_db().pages.update_many(
             {'status': {'$in': [PageStatus.QUEUED.value, PageStatus.TESTING.value]}},
@@ -945,35 +1041,50 @@ def clear_all_jobs() -> tuple[Response, int] | Response:
                 }
             }
         )
-        
+
         total_cleared = running_result.modified_count + pending_result.modified_count
-        
+
         logger.info(f"Cleared {total_cleared} jobs (running: {running_result.modified_count}, pending: {pending_result.modified_count})")
         logger.info(f"Reset {pages_result.modified_count} pages from queued/testing to discovered status")
-        
-        return jsonify({
-            'success': True,
-            'cleared_count': total_cleared,
-            'running_cleared': running_result.modified_count,
-            'pending_cleared': pending_result.modified_count,
-            'pages_reset': pages_result.modified_count,
-            'message': f'Successfully cleared {total_cleared} jobs and reset {pages_result.modified_count} pages'
-        })
-        
+
+        return JobsClearAllOut(
+            success=True,
+            cleared_count=total_cleared,
+            running_cleared=running_result.modified_count,
+            pending_cleared=pending_result.modified_count,
+            pages_reset=pages_result.modified_count,
+            message=f'Successfully cleared {total_cleared} jobs and reset {pages_result.modified_count} pages',
+        ), 200
+
     except Exception as e:
         logger.error(f"Error clearing all jobs: {e}")
         return jsonify({'error': f'Failed to clear jobs: {str(e)}'}), 500
 
 
 @api_bp.route('/jobs/clear-stale', methods=['POST'])
-def clear_stale_jobs() -> tuple[Response, int] | Response:
+@document(
+    response_200=JobsClearStaleOut,
+    errors=[500],
+    tags=["Jobs"],
+    summary="Clear stale jobs older than 24 hours",
+    description=(
+        "Transitions any job in RUNNING / PENDING / CANCELLING for "
+        "more than 24 hours to a terminal state via "
+        "``JobManager.cleanup_stale_jobs``. Also resets pages "
+        "stuck in QUEUED or TESTING with a ``last_tested`` (or "
+        "``discovered_at`` fallback) older than 24 hours back to "
+        "DISCOVERED. Returns the per-bucket counts and a "
+        "human-readable message."
+    ),
+)
+def clear_stale_jobs() -> tuple[JobsClearStaleOut, int] | tuple[Response, int] | Response:
     """Clear stale jobs that have been running for too long"""
     try:
         job_manager = JobManager(get_db())
-        
+
         # Clear jobs running for more than 24 hours
         cleared_count = job_manager.cleanup_stale_jobs(stale_after_hours=24)
-        
+
         # Also reset old pages stuck in QUEUED or TESTING states for more than 24 hours
         from datetime import timedelta
         stale_time = datetime.now() - timedelta(hours=24)
@@ -992,46 +1103,78 @@ def clear_stale_jobs() -> tuple[Response, int] | Response:
                 }
             }
         )
-        
+
         logger.info(f"Cleared {cleared_count} stale jobs")
         logger.info(f"Reset {pages_result.modified_count} stale pages")
-        
-        return jsonify({
-            'success': True,
-            'cleared_count': cleared_count,
-            'pages_reset': pages_result.modified_count,
-            'message': f'Successfully cleared {cleared_count} stale jobs and reset {pages_result.modified_count} pages'
-        })
-        
+
+        return JobsClearStaleOut(
+            success=True,
+            cleared_count=cleared_count,
+            pages_reset=pages_result.modified_count,
+            message=f'Successfully cleared {cleared_count} stale jobs and reset {pages_result.modified_count} pages',
+        ), 200
+
     except Exception as e:
         logger.error(f"Error clearing stale jobs: {e}")
         return jsonify({'error': f'Failed to clear stale jobs: {str(e)}'}), 500
 
 
 @api_bp.route('/jobs/active', methods=['GET'])
-def get_active_jobs() -> tuple[Response, int] | Response:
+@document(
+    response_200=JobListOut,
+    errors=[500],
+    tags=["Jobs"],
+    summary="List currently active jobs",
+    description=(
+        "Returns up to 100 jobs in RUNNING / PENDING / CANCELLING "
+        "status, newest first by ``created_at``. Each entry mirrors "
+        "the :class:`JobOut` projection (datetimes as ISO 8601, "
+        "Mongo ``_id`` dropped, ``progress`` / ``metadata`` as "
+        "free-form objects keyed by ``job_type``). The list is "
+        "server-bounded at 100 entries and is NOT paginated — the "
+        "legacy shape predates the cursor-pagination convention."
+    ),
+)
+def get_active_jobs() -> tuple[JobListOut, int] | tuple[Response, int] | Response:
     """Get list of active jobs"""
     try:
         job_manager = JobManager(get_db())
-        
+
         # Get active jobs
         active_jobs = list(job_manager.collection.find(
             {'status': {'$in': [JobStatus.RUNNING.value, JobStatus.PENDING.value, JobStatus.CANCELLING.value]}},
             {'_id': 0}  # Exclude MongoDB _id from response
         ).sort('created_at', -1).limit(100))
-        
-        return jsonify({
-            'jobs': active_jobs,
-            'count': len(active_jobs)
-        })
-        
+
+        jobs_out = [_job_doc_to_out(doc) for doc in active_jobs]
+
+        return JobListOut(
+            jobs=jobs_out,
+            count=len(jobs_out),
+        ), 200
+
     except Exception as e:
         logger.error(f"Error getting active jobs: {e}")
         return jsonify({'error': 'Failed to get active jobs'}), 500
 
 
 @api_bp.route('/jobs/cleanup-page-counts', methods=['POST'])
-def cleanup_page_counts() -> tuple[Response, int] | Response:
+@document(
+    response_200=JobsCleanupOut,
+    errors=[500],
+    tags=["Jobs"],
+    summary="Reset violation counts on untested pages",
+    description=(
+        "Zeroes the ``violation_count``, ``warning_count``, "
+        "``info_count``, ``discovery_count``, ``pass_count``, and "
+        "``test_duration_ms`` fields on every page whose status is "
+        "NOT ``TESTED`` (i.e. DISCOVERED, QUEUED, TESTING, ERROR, "
+        "etc.). Useful when a previous run left stale counts on "
+        "pages that were never actually tested. Returns the count "
+        "of pages updated."
+    ),
+)
+def cleanup_page_counts() -> tuple[JobsCleanupOut, int] | tuple[Response, int] | Response:
     """Clean up violation counts for pages that haven't been tested"""
     try:
         # Reset violation/warning/info counts for all pages that aren't in TESTED status
@@ -1048,14 +1191,14 @@ def cleanup_page_counts() -> tuple[Response, int] | Response:
                 }
             }
         )
-        
+
         logger.info(f"Cleaned up counts for {result.modified_count} untested pages")
-        
-        return jsonify({
-            'success': True,
-            'pages_cleaned': result.modified_count,
-            'message': f'Reset counts for {result.modified_count} untested pages'
-        })
+
+        return JobsCleanupOut(
+            success=True,
+            pages_cleaned=result.modified_count,
+            message=f'Reset counts for {result.modified_count} untested pages',
+        ), 200
         
     except Exception as e:
         logger.error(f"Error cleaning up page counts: {e}")
@@ -1373,9 +1516,24 @@ def compare_test_results(
 
 
 @api_bp.route('/health/pdf', methods=['GET'])
-def pdf_health() -> tuple[Response, int]:
+@document(
+    response_200=HealthPdfOut,
+    errors=[503],
+    tags=["Health"],
+    summary="PDF subsystem health probe",
+    description=(
+        "Unauthenticated health probe for the PDF audit subsystem. "
+        "Returns the Ghostscript detection result (``found``, "
+        "``path``) and the storage directory writability "
+        "(``dir``, ``writable``). HTTP status is 200 when both "
+        "checks pass and 503 when either fails — the body shape is "
+        "the same regardless of status so a 503 still surfaces "
+        "actionable diagnostics."
+    ),
+    security="public",
+)
+def pdf_health() -> tuple[HealthPdfOut, int]:
     """Report PDF-audit subsystem health."""
-    from pathlib import Path
     from auto_a11y.pdf.health import check_pdf_health
     from auto_a11y.web.typed_app import get_app_config
 
@@ -1384,12 +1542,18 @@ def pdf_health() -> tuple[Response, int]:
         gs_override=cfg.GHOSTSCRIPT_PATH,
         storage_dir=Path(cfg.PDF_STORAGE_DIR),
     )
-    payload = {
-        "ghostscript": {"found": health.ghostscript.found, "path": health.ghostscript.path},
-        "storage": {"dir": health.storage.dir, "writable": health.storage.writable},
-    }
+    payload = HealthPdfOut(
+        ghostscript=GhostscriptHealthOut(
+            found=health.ghostscript.found,
+            path=health.ghostscript.path,
+        ),
+        storage=StorageHealthOut(
+            dir=health.storage.dir,
+            writable=health.storage.writable,
+        ),
+    )
     status = 200 if health.ok else 503
-    return jsonify(payload), status
+    return payload, status
 
 
 # ---------------------------------------------------------------------------
@@ -7220,40 +7384,105 @@ def delete_settings_section(section_id: str) -> tuple[Empty, int]:
 from auto_a11y.web.api import require_authenticated  # noqa: E402
 
 
-def _serialize_job(doc: dict[str, Any]) -> dict[str, Any]:
-    """Project a raw job Mongo doc to a JSON-safe dict.
+def _job_doc_to_out(doc: dict[str, Any]) -> JobOut:
+    """Project a raw job Mongo doc to its :class:`JobOut` wire model.
 
-    Datetimes go to ISO 8601, the Mongo ``_id`` is dropped (the public
+    Mirrors the legacy ``_serialize_job`` helper byte-for-byte:
+    datetimes go to ISO 8601, the Mongo ``_id`` is dropped (the public
     identifier is ``job_id``), and the nested ``progress``/``metadata``
     dicts are passed through as-is so callers can render whatever the
     individual job_type recorded there.
+
+    Note: ``@document`` serializes the returned model with
+    ``model_dump(exclude_none=True)``, so fields whose value is ``None``
+    will not appear on the wire. This is a deliberate departure from
+    the legacy ``jsonify(dict)`` shape (which emitted ``"key": null``
+    for every missing field) — the §5.x conversion has accepted this
+    drop consistently across prior tasks.
     """
 
-    def _iso(value: Any) -> Any:
+    def _iso(value: object) -> Optional[str]:
         if isinstance(value, datetime):
             return value.isoformat()
-        return value
+        if value is None:
+            return None
+        if isinstance(value, str):
+            return value
+        return str(value)
 
-    return {
-        "job_id": doc.get("job_id"),
-        "job_type": doc.get("job_type"),
-        "status": doc.get("status"),
-        "website_id": doc.get("website_id"),
-        "project_id": doc.get("project_id"),
-        "user_id": doc.get("user_id"),
-        "session_id": doc.get("session_id"),
-        "created_at": _iso(doc.get("created_at")),
-        "updated_at": _iso(doc.get("updated_at")),
-        "started_at": _iso(doc.get("started_at")),
-        "completed_at": _iso(doc.get("completed_at")),
-        "progress": doc.get("progress") or {},
-        "metadata": doc.get("metadata") or {},
-        "error": doc.get("error"),
-        "result": doc.get("result"),
-        "cancellation_requested": doc.get("cancellation_requested", False),
-        "cancellation_requested_at": _iso(doc.get("cancellation_requested_at")),
-        "cancellation_requested_by": doc.get("cancellation_requested_by"),
-    }
+    def _opt_str(value: object) -> Optional[str]:
+        if value is None:
+            return None
+        if isinstance(value, str):
+            return value
+        return str(value)
+
+    def _opt_dict(value: object) -> dict[str, object]:
+        if not _is_object_mapping(value):
+            return {}
+        coerced: dict[str, object] = {}
+        for key in value:
+            coerced[str(key)] = value[key]
+        return coerced
+
+    progress: dict[str, object] = _opt_dict(doc.get("progress"))
+    metadata: dict[str, object] = _opt_dict(doc.get("metadata"))
+
+    cancellation_requested_raw = doc.get("cancellation_requested", False)
+    cancellation_requested = bool(cancellation_requested_raw)
+
+    return JobOut(
+        job_id=_opt_str(doc.get("job_id")),
+        job_type=_opt_str(doc.get("job_type")),
+        status=_opt_str(doc.get("status")),
+        website_id=_opt_str(doc.get("website_id")),
+        project_id=_opt_str(doc.get("project_id")),
+        user_id=_opt_str(doc.get("user_id")),
+        session_id=_opt_str(doc.get("session_id")),
+        created_at=_iso(doc.get("created_at")),
+        updated_at=_iso(doc.get("updated_at")),
+        started_at=_iso(doc.get("started_at")),
+        completed_at=_iso(doc.get("completed_at")),
+        progress=progress,
+        metadata=metadata,
+        error=doc.get("error"),
+        result=doc.get("result"),
+        cancellation_requested=cancellation_requested,
+        cancellation_requested_at=_iso(doc.get("cancellation_requested_at")),
+        cancellation_requested_by=_opt_str(doc.get("cancellation_requested_by")),
+    )
+
+
+def _job_doc_to_cancel_out(doc: dict[str, Any]) -> JobCancelOut:
+    """Project a raw job Mongo doc to :class:`JobCancelOut`.
+
+    Same shape as :func:`_job_doc_to_out` — :class:`JobCancelOut`
+    subclasses :class:`JobOut`. Kept as a separate function so the
+    cancel-endpoint response type is statically distinct from the
+    read-endpoint response type even though the wire bytes are
+    identical today.
+    """
+    base = _job_doc_to_out(doc)
+    return JobCancelOut(
+        job_id=base.job_id,
+        job_type=base.job_type,
+        status=base.status,
+        website_id=base.website_id,
+        project_id=base.project_id,
+        user_id=base.user_id,
+        session_id=base.session_id,
+        created_at=base.created_at,
+        updated_at=base.updated_at,
+        started_at=base.started_at,
+        completed_at=base.completed_at,
+        progress=base.progress,
+        metadata=base.metadata,
+        error=base.error,
+        result=base.result,
+        cancellation_requested=base.cancellation_requested,
+        cancellation_requested_at=base.cancellation_requested_at,
+        cancellation_requested_by=base.cancellation_requested_by,
+    )
 
 
 def _resolve_job_or_404(job_id: str) -> dict[str, Any]:
@@ -7266,28 +7495,48 @@ def _resolve_job_or_404(job_id: str) -> dict[str, Any]:
 
 @api_bp.route("/jobs/<job_id>", methods=["GET"])
 @api_endpoint
-def get_job_rest(job_id: str) -> tuple[Response, int] | Response:
+@document(
+    response_200=JobOut,
+    errors=[401, 403, 404],
+    tags=["Jobs"],
+    summary="Read a single job",
+    description=(
+        "Returns the full job projection: identifiers, status, "
+        "timestamps (ISO 8601), the ``progress`` and ``metadata`` "
+        "blocks recorded by the worker (free-form, keyed by "
+        "``job_type``), and the cancellation-tracking fields. The "
+        "Mongo ``_id`` is dropped — the public identifier is "
+        "``job_id``. Requires authentication."
+    ),
+)
+def get_job_rest(job_id: str) -> tuple[JobOut, int]:
     """Read a single job's status, progress, and metadata."""
     require_authenticated()
     doc = _resolve_job_or_404(job_id)
-    return jsonify(_serialize_job(doc))
+    return _job_doc_to_out(doc), 200
 
 
 @api_bp.route("/jobs/<job_id>/cancel", methods=["POST"])
 @api_endpoint
-def cancel_job_rest(job_id: str) -> tuple[Response, int] | Response:
-    """Request cancellation of a pending or running job.
-
-    Returns 202 because cancellation is asynchronous — the worker
-    thread polls the ``cancellation_requested`` flag and transitions to
-    CANCELLED on its next checkpoint. The response shape mirrors GET so
-    callers can immediately observe the new ``CANCELLING`` status.
-
-    Idempotent: a second POST against an already-cancelling job returns
-    409, since the request_cancellation underlying call rejects the
-    transition once the status has already moved past
-    ``pending``/``running``.
-    """
+@document(
+    response_202=JobCancelOut,
+    errors=[401, 403, 404, 409],
+    tags=["Jobs"],
+    summary="Request job cancellation",
+    description=(
+        "Requests cancellation of a pending or running job. Returns "
+        "202 because cancellation is asynchronous — the worker "
+        "thread polls the ``cancellation_requested`` flag and "
+        "transitions to CANCELLED on its next checkpoint. The "
+        "response body mirrors :class:`JobOut` so callers can "
+        "immediately observe the new ``CANCELLING`` status. A "
+        "second POST against an already-cancelling, completed, "
+        "cancelled, or failed job returns 409. Requires "
+        "authentication."
+    ),
+)
+def cancel_job_rest(job_id: str) -> tuple[JobCancelOut, int]:
+    """Request cancellation of a pending or running job."""
     require_authenticated()
     doc = _resolve_job_or_404(job_id)
 
@@ -7308,7 +7557,7 @@ def cancel_job_rest(job_id: str) -> tuple[Response, int] | Response:
     refreshed = job_manager.get_job(job_id)
     if refreshed is None:
         raise ConflictError(f"job {job_id} disappeared after cancel")
-    return jsonify(_serialize_job(refreshed)), 202
+    return _job_doc_to_cancel_out(refreshed), 202
 
 
 # ---------------------------------------------------------------------------

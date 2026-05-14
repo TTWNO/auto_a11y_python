@@ -1792,6 +1792,32 @@ components:
         schema before patching.'
       title: GenericSectionPatchIn
       type: object
+    GhostscriptHealthOut:
+      additionalProperties: false
+      description: 'Ghostscript-detection sub-block of :class:`HealthPdfOut`.
+
+
+        Mirrors the dataclass ``GhostscriptHealth`` from
+
+        ``auto_a11y.pdf.health``: ``found`` reports whether the binary
+
+        was detected and ``path`` is the resolved absolute path (or
+
+        ``null`` when not found).'
+      properties:
+        found:
+          title: Found
+          type: boolean
+        path:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Path
+      required:
+      - found
+      title: GhostscriptHealthOut
+      type: object
     GroupIn:
       additionalProperties: false
       description: 'POST/PUT body for creating or replacing a permission group.
@@ -1950,6 +1976,354 @@ components:
           title: Permissions
       title: GroupPatch
       type: object
+    HealthOut:
+      additionalProperties: false
+      description: "Response body for ``GET /health``.\n\nMirrors the legacy ``health_check``\
+        \ projection byte-for-byte:\n\n- ``status`` — overall app health. ``\"healthy\"\
+        `` when the DB\n  ping succeeded, ``\"degraded\"`` when it failed. Typed loosely\n\
+        \  as ``str`` so a future check can grow new values without a\n  schema bump.\n\
+        - ``database`` — ``\"healthy\"`` / ``\"unhealthy\"``. Same loose\n  typing\
+        \ rationale.\n- ``timestamp`` — ISO 8601 string from ``datetime.now()``. Not\n\
+        \  timezone-aware (the legacy call is naive); consumers should\n  treat it\
+        \ as server local time."
+      properties:
+        database:
+          title: Database
+          type: string
+        status:
+          title: Status
+          type: string
+        timestamp:
+          title: Timestamp
+          type: string
+      required:
+      - status
+      - database
+      - timestamp
+      title: HealthOut
+      type: object
+    HealthPdfOut:
+      additionalProperties: false
+      description: 'Response body for ``GET /health/pdf``.
+
+
+        Mirrors the legacy ``pdf_health`` projection byte-for-byte:
+
+        nested ``ghostscript`` and ``storage`` sub-blocks. The HTTP
+
+        status code (200 vs 503) reflects ``PdfHealth.ok`` — the body
+
+        itself is the same shape regardless of status so a 503 still
+
+        surfaces actionable diagnostics.'
+      properties:
+        ghostscript:
+          $ref: '#/components/schemas/GhostscriptHealthOut'
+        storage:
+          $ref: '#/components/schemas/StorageHealthOut'
+      required:
+      - ghostscript
+      - storage
+      title: HealthPdfOut
+      type: object
+    JobCancelOut:
+      additionalProperties: false
+      description: 'Response body for ``POST /jobs/<job_id>/cancel``.
+
+
+        The legacy handler returns the refreshed :class:`JobOut`
+
+        projection (so the SPA can immediately observe the new
+
+        ``CANCELLING`` status) with HTTP 202 to signal that the
+
+        cancellation is asynchronous — the worker thread still has to
+
+        notice the flag and transition to ``CANCELLED`` on its next
+
+        checkpoint.
+
+
+        Subclassing :class:`JobOut` keeps the wire shape identical while
+
+        giving the OpenAPI spec a distinct operation-response name. Two
+
+        schemas for the same shape sounds redundant but means future
+
+        divergence (e.g. adding a ``cancel_acknowledged_at`` field that
+
+        only the cancel response needs) doesn''t force a schema bump on
+
+        the read path.'
+      properties:
+        cancellation_requested:
+          title: Cancellation Requested
+          type: boolean
+        cancellation_requested_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Cancellation Requested At
+        cancellation_requested_by:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Cancellation Requested By
+        completed_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Completed At
+        created_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Created At
+        error:
+          anyOf:
+          - {}
+          - type: 'null'
+          default: null
+          title: Error
+        job_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Job Id
+        job_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Job Type
+        metadata:
+          additionalProperties: true
+          title: Metadata
+          type: object
+        progress:
+          additionalProperties: true
+          title: Progress
+          type: object
+        project_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Project Id
+        result:
+          anyOf:
+          - {}
+          - type: 'null'
+          default: null
+          title: Result
+        session_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Session Id
+        started_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Started At
+        status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Status
+        updated_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Updated At
+        user_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: User Id
+        website_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Website Id
+      required:
+      - progress
+      - metadata
+      - cancellation_requested
+      title: JobCancelOut
+      type: object
+    JobListOut:
+      additionalProperties: false
+      description: 'Response body for ``GET /jobs/active``.
+
+
+        Mirrors the legacy ``get_active_jobs`` envelope: ``{jobs: [...],
+
+        count: int}``. Not paginated — the server bounds the list at
+
+        100 entries via the ``limit(100)`` call in the handler. The
+
+        legacy shape predates the cursor-pagination convention so we
+
+        keep it as-is rather than aligning with :class:`ListEnvelope`.'
+      properties:
+        count:
+          title: Count
+          type: integer
+        jobs:
+          items:
+            $ref: '#/components/schemas/JobOut'
+          title: Jobs
+          type: array
+      required:
+      - jobs
+      - count
+      title: JobListOut
+      type: object
+    JobOut:
+      additionalProperties: false
+      description: 'Projection of a single job document.
+
+
+        Mirrors the legacy ``_serialize_job`` helper field-for-field.
+
+        Datetimes are ISO 8601 strings (the helper calls ``_iso(...)``
+
+        on every datetime); the Mongo ``_id`` is not surfaced — the
+
+        public identifier is ``job_id``.
+
+
+        ``progress`` / ``metadata`` are free-form ``dict[str, object]``
+
+        because each ``job_type`` records its own shape there. Callers
+
+        should switch on ``job_type`` before interpreting them.
+
+        ``result`` / ``error`` are ``Optional[object]`` for the same
+
+        reason (worker-specific payloads on success; loose error
+
+        strings/dicts on failure).'
+      properties:
+        cancellation_requested:
+          title: Cancellation Requested
+          type: boolean
+        cancellation_requested_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Cancellation Requested At
+        cancellation_requested_by:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Cancellation Requested By
+        completed_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Completed At
+        created_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Created At
+        error:
+          anyOf:
+          - {}
+          - type: 'null'
+          default: null
+          title: Error
+        job_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Job Id
+        job_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Job Type
+        metadata:
+          additionalProperties: true
+          title: Metadata
+          type: object
+        progress:
+          additionalProperties: true
+          title: Progress
+          type: object
+        project_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Project Id
+        result:
+          anyOf:
+          - {}
+          - type: 'null'
+          default: null
+          title: Result
+        session_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Session Id
+        started_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Started At
+        status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Status
+        updated_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Updated At
+        user_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: User Id
+        website_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Website Id
+      required:
+      - progress
+      - metadata
+      - cancellation_requested
+      title: JobOut
+      type: object
     JobRestartOut:
       additionalProperties: false
       description: 'Response body (202) for ``POST /jobs/<id>/restart``.
@@ -1986,6 +2360,132 @@ components:
       - display_name
       - status
       title: JobRestartOut
+      type: object
+    JobStatsOut:
+      additionalProperties: false
+      description: "Response body for ``GET /jobs/stats``.\n\nMirrors the legacy ``get_job_statistics``\
+        \ shape byte-for-byte:\n\n- ``total_jobs`` — count of all jobs in the window.\n\
+        - ``by_type`` — ``{<job_type>: {<status>: count}}``. The outer\n  key is a\
+        \ ``JobType`` enum value (string); the inner key is a\n  ``JobStatus`` enum\
+        \ value. Both are typed loosely as ``str``\n  because the runtime enums grow\
+        \ without coordinating with the\n  schema layer.\n- ``by_status`` — ``{<status>:\
+        \ count}``. Aggregates the per-type\n  counts up to a single bucket per status."
+      properties:
+        by_status:
+          additionalProperties:
+            type: integer
+          title: By Status
+          type: object
+        by_type:
+          additionalProperties:
+            additionalProperties:
+              type: integer
+            type: object
+          title: By Type
+          type: object
+        total_jobs:
+          title: Total Jobs
+          type: integer
+      required:
+      - total_jobs
+      - by_type
+      - by_status
+      title: JobStatsOut
+      type: object
+    JobsCleanupOut:
+      additionalProperties: false
+      description: 'Response body for ``POST /jobs/cleanup-page-counts``.
+
+
+        Mirrors the legacy ``cleanup_page_counts`` envelope byte-for-byte.
+
+        ``pages_cleaned`` is the number of non-TESTED pages whose
+
+        violation/warning/info/discovery/pass counts were zeroed.'
+      properties:
+        message:
+          title: Message
+          type: string
+        pages_cleaned:
+          title: Pages Cleaned
+          type: integer
+        success:
+          title: Success
+          type: boolean
+      required:
+      - success
+      - pages_cleaned
+      - message
+      title: JobsCleanupOut
+      type: object
+    JobsClearAllOut:
+      additionalProperties: false
+      description: "Response body for ``POST /jobs/clear-all``.\n\nMirrors the legacy\
+        \ ``clear_all_jobs`` envelope byte-for-byte.\nFields:\n\n- ``success`` — always\
+        \ ``true`` on the success path.\n- ``cleared_count`` — total jobs transitioned\
+        \ to CANCELLED\n  (running + pending).\n- ``running_cleared`` / ``pending_cleared``\
+        \ — per-bucket counts.\n- ``pages_reset`` — pages whose status was reset from\n\
+        \  QUEUED/TESTING back to DISCOVERED.\n- ``message`` — human-readable summary\
+        \ string."
+      properties:
+        cleared_count:
+          title: Cleared Count
+          type: integer
+        message:
+          title: Message
+          type: string
+        pages_reset:
+          title: Pages Reset
+          type: integer
+        pending_cleared:
+          title: Pending Cleared
+          type: integer
+        running_cleared:
+          title: Running Cleared
+          type: integer
+        success:
+          title: Success
+          type: boolean
+      required:
+      - success
+      - cleared_count
+      - running_cleared
+      - pending_cleared
+      - pages_reset
+      - message
+      title: JobsClearAllOut
+      type: object
+    JobsClearStaleOut:
+      additionalProperties: false
+      description: 'Response body for ``POST /jobs/clear-stale``.
+
+
+        Mirrors the legacy ``clear_stale_jobs`` envelope byte-for-byte.
+
+        ``cleared_count`` is the number of stale jobs the JobManager
+
+        transitioned out of RUNNING/PENDING; ``pages_reset`` is the
+
+        parallel page-status reset count.'
+      properties:
+        cleared_count:
+          title: Cleared Count
+          type: integer
+        message:
+          title: Message
+          type: string
+        pages_reset:
+          title: Pages Reset
+          type: integer
+        success:
+          title: Success
+          type: boolean
+      required:
+      - success
+      - cleared_count
+      - pages_reset
+      - message
+      title: JobsClearStaleOut
       type: object
     LoginIn:
       additionalProperties: false
@@ -6546,6 +7046,30 @@ components:
       - url
       title: SsoUrlOut
       type: object
+    StorageHealthOut:
+      additionalProperties: false
+      description: 'Storage-writability sub-block of :class:`HealthPdfOut`.
+
+
+        Mirrors the dataclass ``StorageHealth`` from
+
+        ``auto_a11y.pdf.health``: ``dir`` is the configured PDF storage
+
+        directory and ``writable`` is the result of the probe-file
+
+        create/delete test.'
+      properties:
+        dir:
+          title: Dir
+          type: string
+        writable:
+          title: Writable
+          type: boolean
+      required:
+      - dir
+      - writable
+      title: StorageHealthOut
+      type: object
     TestResultCompareIn:
       additionalProperties: false
       description: 'Request body for ``POST /api/v1/test-results/compare``.
@@ -8705,6 +9229,279 @@ paths:
       summary: Replace a permission group
       tags:
       - Groups
+  /health:
+    get:
+      description: Unauthenticated liveness probe. Returns ``status='healthy'`` when
+        the database ping succeeds, ``status='degraded'`` when the ping fails (the
+        Flask app is still up; the DB connection is not). Intended for load balancers,
+        container orchestrators, and operator scripts — no credentials required.
+      parameters: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthOut'
+          description: OK
+      security: []
+      summary: API health probe
+      tags:
+      - Health
+  /health/pdf:
+    get:
+      description: Unauthenticated health probe for the PDF audit subsystem. Returns
+        the Ghostscript detection result (``found``, ``path``) and the storage directory
+        writability (``dir``, ``writable``). HTTP status is 200 when both checks pass
+        and 503 when either fails — the body shape is the same regardless of status
+        so a 503 still surfaces actionable diagnostics.
+      parameters: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthPdfOut'
+          description: OK
+        '503':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Service Unavailable
+      security: []
+      summary: PDF subsystem health probe
+      tags:
+      - Health
+  /jobs/active:
+    get:
+      description: Returns up to 100 jobs in RUNNING / PENDING / CANCELLING status,
+        newest first by ``created_at``. Each entry mirrors the :class:`JobOut` projection
+        (datetimes as ISO 8601, Mongo ``_id`` dropped, ``progress`` / ``metadata``
+        as free-form objects keyed by ``job_type``). The list is server-bounded at
+        100 entries and is NOT paginated — the legacy shape predates the cursor-pagination
+        convention.
+      parameters: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobListOut'
+          description: OK
+        '500':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Internal Server Error
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: List currently active jobs
+      tags:
+      - Jobs
+  /jobs/cleanup-page-counts:
+    post:
+      description: Zeroes the ``violation_count``, ``warning_count``, ``info_count``,
+        ``discovery_count``, ``pass_count``, and ``test_duration_ms`` fields on every
+        page whose status is NOT ``TESTED`` (i.e. DISCOVERED, QUEUED, TESTING, ERROR,
+        etc.). Useful when a previous run left stale counts on pages that were never
+        actually tested. Returns the count of pages updated.
+      parameters: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobsCleanupOut'
+          description: OK
+        '500':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Internal Server Error
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Reset violation counts on untested pages
+      tags:
+      - Jobs
+  /jobs/clear-all:
+    post:
+      description: 'Emergency reset: transitions every RUNNING / CANCELLING / PENDING
+        job to CANCELLED and stamps a ``''Job cleared by administrator''`` error.
+        Also resets every page stuck in QUEUED or TESTING back to DISCOVERED. Returns
+        the per-bucket counts and a human-readable message. Idempotent — calling this
+        with no active jobs is a no-op and returns zero counts.'
+      parameters: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobsClearAllOut'
+          description: OK
+        '500':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Internal Server Error
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Clear all running and pending jobs
+      tags:
+      - Jobs
+  /jobs/clear-stale:
+    post:
+      description: Transitions any job in RUNNING / PENDING / CANCELLING for more
+        than 24 hours to a terminal state via ``JobManager.cleanup_stale_jobs``. Also
+        resets pages stuck in QUEUED or TESTING with a ``last_tested`` (or ``discovered_at``
+        fallback) older than 24 hours back to DISCOVERED. Returns the per-bucket counts
+        and a human-readable message.
+      parameters: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobsClearStaleOut'
+          description: OK
+        '500':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Internal Server Error
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Clear stale jobs older than 24 hours
+      tags:
+      - Jobs
+  /jobs/stats:
+    get:
+      description: 'Aggregates jobs created in the past 24 hours by ``job_type`` and
+        ``status``. ``total_jobs`` is the overall count; ``by_type`` is keyed by job-type
+        enum value with a nested ``{status: count}`` dict; ``by_status`` rolls up
+        the per-type counts into a single bucket per status. The keys are dynamic
+        (driven by the ``JobType``/``JobStatus`` enums) so consumers should treat
+        them as opaque labels.'
+      parameters: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobStatsOut'
+          description: OK
+        '500':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Internal Server Error
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Job statistics over the past 24 hours
+      tags:
+      - Jobs
+  /jobs/{job_id}:
+    get:
+      description: 'Returns the full job projection: identifiers, status, timestamps
+        (ISO 8601), the ``progress`` and ``metadata`` blocks recorded by the worker
+        (free-form, keyed by ``job_type``), and the cancellation-tracking fields.
+        The Mongo ``_id`` is dropped — the public identifier is ``job_id``. Requires
+        authentication.'
+      parameters:
+      - in: path
+        name: job_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Read a single job
+      tags:
+      - Jobs
+  /jobs/{job_id}/cancel:
+    post:
+      description: Requests cancellation of a pending or running job. Returns 202
+        because cancellation is asynchronous — the worker thread polls the ``cancellation_requested``
+        flag and transitions to CANCELLED on its next checkpoint. The response body
+        mirrors :class:`JobOut` so callers can immediately observe the new ``CANCELLING``
+        status. A second POST against an already-cancelling, completed, cancelled,
+        or failed job returns 409. Requires authentication.
+      parameters:
+      - in: path
+        name: job_id
+        required: true
+        schema: *id001
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobCancelOut'
+          description: Accepted
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Request job cancellation
+      tags:
+      - Jobs
   /jobs/{job_id}/restart:
     post:
       description: Re-queues a (typically failed or cancelled) report-generation job.

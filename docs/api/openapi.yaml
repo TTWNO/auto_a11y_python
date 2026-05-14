@@ -459,6 +459,43 @@ components:
       properties: {}
       title: Empty
       type: object
+    JobRestartOut:
+      additionalProperties: false
+      description: 'Response body (202) for ``POST /jobs/<id>/restart``.
+
+
+        Same shape as :class:`ReportCreatedOut` plus ``old_job_id`` so the
+
+        caller can tie the new run to the original. The new ``job_id`` is
+
+        the freshly-queued worker''s id — the old job is left in place (its
+
+        cancellation flag is set so its worker exits cleanly).'
+      properties:
+        display_name:
+          title: Display Name
+          type: string
+        job_id:
+          title: Job Id
+          type: string
+        old_job_id:
+          title: Old Job Id
+          type: string
+        scope:
+          title: Scope
+          type: string
+        status:
+          const: queued
+          title: Status
+          type: string
+      required:
+      - old_job_id
+      - job_id
+      - scope
+      - display_name
+      - status
+      title: JobRestartOut
+      type: object
     MessageOut:
       additionalProperties: false
       description: Generic single-message response (used by the PUT handler).
@@ -844,6 +881,37 @@ components:
       required:
       - url
       title: PagePut
+      type: object
+    PageReportIn:
+      additionalProperties: false
+      description: 'Request body for queueing a single-page report.
+
+
+        Both fields are optional. ``format`` defaults to ``xlsx`` on the
+
+        server; ``include_ai`` defaults to ``true``. Unknown keys are
+
+        rejected by ``extra=''forbid''`` to keep the surface tight.'
+      properties:
+        format:
+          anyOf:
+          - enum:
+            - xlsx
+            - html
+            - csv
+            - pdf
+            - excel
+            type: string
+          - type: 'null'
+          default: null
+          title: Format
+        include_ai:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Include Ai
+      title: PageReportIn
       type: object
     PageTestRunCancelOut:
       additionalProperties: false
@@ -1510,6 +1578,44 @@ components:
           title: Status
       title: ProjectPatch
       type: object
+    ProjectReportIn:
+      additionalProperties: false
+      description: 'Request body for queueing a project-scoped report.
+
+
+        ``type`` selects one of four project-level generators. Project
+
+        accessibility reports do not currently honour ``include_ai``
+
+        (the legacy handler never read it), so the field is omitted from
+
+        this schema rather than accepted-and-discarded.'
+      properties:
+        format:
+          anyOf:
+          - enum:
+            - xlsx
+            - html
+            - csv
+            - pdf
+            - excel
+            type: string
+          - type: 'null'
+          default: null
+          title: Format
+        type:
+          anyOf:
+          - enum:
+            - accessibility
+            - discovery
+            - recordings
+            - deduplicated
+            type: string
+          - type: 'null'
+          default: null
+          title: Type
+      title: ProjectReportIn
+      type: object
     ProjectTestRunIn:
       additionalProperties: false
       description: 'Request body for queueing a project-wide batch test.
@@ -1625,6 +1731,105 @@ components:
       - user_count
       - total_tests
       title: ProjectTestRunWebsiteHandleOut
+      type: object
+    ReportCreatedOut:
+      additionalProperties: false
+      description: 'Response body (202) for every report-generation POST.
+
+
+        Mirrors :func:`_serialize_report_handle` byte-for-byte.
+
+        ``status`` is always ``"queued"``; ``scope`` is the canonical
+
+        scope name (``page``, ``website``, ``project``, ``page_structure``,
+
+        ``discovery_website``, ``discovery_project``, ``static_html``,
+
+        ``deduplicated``, ``recordings``, ``all``).'
+      properties:
+        display_name:
+          title: Display Name
+          type: string
+        job_id:
+          title: Job Id
+          type: string
+        scope:
+          title: Scope
+          type: string
+        status:
+          const: queued
+          title: Status
+          type: string
+      required:
+      - job_id
+      - scope
+      - display_name
+      - status
+      title: ReportCreatedOut
+      type: object
+    ReportIn:
+      additionalProperties: false
+      description: 'Request body for the generic ``POST /reports`` entry point.
+
+
+        A single body that accepts every report type plus optional ids;
+
+        the handler picks the scope from ``(type, ids)``. ``project_id``,
+
+        ``website_id``, and ``page_id`` are mutually optional — supplying
+
+        none asks for the "all projects" roll-up (superadmin only).'
+      properties:
+        format:
+          anyOf:
+          - enum:
+            - xlsx
+            - html
+            - csv
+            - pdf
+            - excel
+            type: string
+          - type: 'null'
+          default: null
+          title: Format
+        include_ai:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Include Ai
+        page_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Page Id
+        project_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Project Id
+        type:
+          anyOf:
+          - enum:
+            - accessibility
+            - page-structure
+            - discovery
+            - static-html
+            - deduplicated
+            - recordings
+            type: string
+          - type: 'null'
+          default: null
+          title: Type
+        website_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Website Id
+      title: ReportIn
       type: object
     ScrapingConfigModel:
       additionalProperties: false
@@ -2227,6 +2432,49 @@ components:
       - url
       title: WebsitePut
       type: object
+    WebsiteReportIn:
+      additionalProperties: false
+      description: 'Request body for queueing a website-scoped report.
+
+
+        The ``type`` discriminator picks the legacy generator (page-
+
+        structure and discovery are sibling generators of the main
+
+        accessibility report). Only the ``accessibility`` type reads
+
+        ``include_ai`` — the others ignore it.'
+      properties:
+        format:
+          anyOf:
+          - enum:
+            - xlsx
+            - html
+            - csv
+            - pdf
+            - excel
+            type: string
+          - type: 'null'
+          default: null
+          title: Format
+        include_ai:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Include Ai
+        type:
+          anyOf:
+          - enum:
+            - accessibility
+            - page-structure
+            - discovery
+            type: string
+          - type: 'null'
+          default: null
+          title: Type
+      title: WebsiteReportIn
+      type: object
     WebsiteTestRunIn:
       additionalProperties: false
       description: 'Request body for queueing a website-wide batch test.
@@ -2550,6 +2798,57 @@ paths:
       summary: Replace a discovered page
       tags:
       - DiscoveredPages
+  /jobs/{job_id}/restart:
+    post:
+      description: Re-queues a (typically failed or cancelled) report-generation job.
+        Reads the old job's metadata, files a cancellation request if it is still
+        pending/running (the worker thread reads the flag and exits cleanly), and
+        submits a fresh job with the same scope/type/format. Currently only ``REPORT_GENERATION``
+        jobs are restartable -- other job types either auto-restart (discovery) or
+        have side effects that do not make sense to replay (test runs, PDF audits);
+        restart of a non-report job returns 400.
+      parameters:
+      - in: path
+        name: job_id
+        required: true
+        schema: *id001
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobRestartOut'
+          description: Accepted
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Restart a report-generation job
+      tags:
+      - Reports
   /pages/{page_id}:
     delete:
       description: Deletes the page and cascades to its test results. Returns ``204
@@ -2850,6 +3149,61 @@ paths:
       summary: Replace the test-state matrix for a page
       tags:
       - Pages
+  /pages/{page_id}/reports:
+    post:
+      description: Queues a background job to generate an accessibility report for
+        a single page. Returns 202 with the job handle. ``format`` defaults to ``xlsx``;
+        ``include_ai`` defaults to true. The page's existence is validated up front
+        so the response is a clean 404 (Problem Details) rather than a 202 followed
+        by a job that fails on the first generator call.
+      parameters:
+      - in: path
+        name: page_id
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PageReportIn'
+        required: true
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportCreatedOut'
+          description: Accepted
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Queue a single-page accessibility report
+      tags:
+      - Reports
   /pages/{page_id}/test:
     post:
       description: Queues an accessibility test run for a single page. Both ``POST
@@ -3527,6 +3881,62 @@ paths:
       summary: Create a discovered page
       tags:
       - DiscoveredPages
+  /projects/{project_id}/reports:
+    post:
+      description: Queues a background job to generate one of four project-scoped
+        reports, selected by the ``type`` discriminator. ``type`` defaults to ``accessibility``;
+        ``format`` defaults to ``xlsx``. The ``type`` discriminator collapses four
+        legacy URLs (``/generate/project/<id>`` -> ``accessibility``, ``/generate/discovery/project/<id>``
+        -> ``discovery``, ``/generate/recordings/<id>`` -> ``recordings``, ``/generate/deduplicated``
+        -> ``deduplicated``).
+      parameters:
+      - in: path
+        name: project_id
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectReportIn'
+        required: true
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportCreatedOut'
+          description: Accepted
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Queue a project-scoped report
+      tags:
+      - Reports
   /projects/{project_id}/test-runs:
     post:
       description: Fan-out batch test across every website in a project. Each website
@@ -3688,6 +4098,141 @@ paths:
       summary: Create a website
       tags:
       - Websites
+  /reports:
+    post:
+      description: Generic top-level report-generation endpoint. Picks the scope from
+        ``(type, ids)`` -- e.g. ``type=accessibility`` with ``page_id`` queues a page-scoped
+        run, with ``website_id`` a website-scoped run, etc. Most clients should prefer
+        the scope-specific routes (``/pages/<id>/reports``, ``/websites/<id>/reports``,
+        ``/projects/<id>/reports``); this top-level form is for clients that need
+        to switch report type at runtime without remapping URLs. With no scope id
+        supplied, asks for an all-projects roll-up (superadmin only).
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportIn'
+        required: true
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportCreatedOut'
+          description: Accepted
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Queue a report (generic entry point)
+      tags:
+      - Reports
+  /reports/{report_id}:
+    delete:
+      description: Removes the report file from disk and deletes the underlying job
+        record. Idempotent at the file level -- a missing on-disk file still yields
+        204 as long as the job record exists and gets deleted; a missing job record
+        raises 404. Requires ADMIN or AUDITOR on the report's scope (or superadmin
+        for cross-project rollups).
+      parameters:
+      - in: path
+        name: report_id
+        required: true
+        schema: *id001
+      responses:
+        '204':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Empty'
+          description: No Content
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Delete a report
+      tags:
+      - Reports
+  /reports/{report_id}/file:
+    get:
+      description: 'Streams the completed report bytes with ``Content-Disposition:
+        attachment``. The response body is the raw report file (xlsx, html, csv, pdf,
+        ...) and is not modelled as JSON -- ``@document`` passes the Flask Response
+        through unchanged. Returns 404 for any of: job missing, job not a report-generation
+        job, job not yet COMPLETED, result/filename missing, or file removed from
+        disk after generation. Authorization mirrors the report''s scope (project/website/page
+        -> ADMIN/AUDITOR/CLIENT on that scope; cross-project rollups -> superadmin).'
+      parameters:
+      - in: path
+        name: report_id
+        required: true
+        schema: *id001
+      responses:
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Download a completed report file
+      tags:
+      - Reports
   /test-results/compare:
     post:
       description: 'Returns a diff of two test results, typically from different states
@@ -4202,6 +4747,62 @@ paths:
       summary: Create a page
       tags:
       - Pages
+  /websites/{website_id}/reports:
+    post:
+      description: Queues a background job to generate one of three website-scoped
+        reports, selected by the ``type`` discriminator. ``type`` defaults to ``accessibility``;
+        ``format`` defaults to ``xlsx``; ``include_ai`` defaults to true and is only
+        honoured for ``accessibility`` (the other types ignore it). The ``type`` discriminator
+        collapses the three legacy URLs (``/generate/website/<id>``, ``/generate/page-structure/<id>``,
+        ``/generate/discovery/website/<id>``) into one endpoint.
+      parameters:
+      - in: path
+        name: website_id
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebsiteReportIn'
+        required: true
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportCreatedOut'
+          description: Accepted
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Queue a website-scoped report
+      tags:
+      - Reports
   /websites/{website_id}/test:
     post:
       description: Queues a batch accessibility test run for every page on a website.

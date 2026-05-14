@@ -55,6 +55,14 @@ from auto_a11y.web.api.schemas.pages import (
     PageViolationsOut,
     ScriptStateDefinitionOut,
 )
+from auto_a11y.web.api.schemas.reports import (
+    JobRestartOut,
+    PageReportIn,
+    ProjectReportIn,
+    ReportCreatedOut,
+    ReportIn,
+    WebsiteReportIn,
+)
 from auto_a11y.web.api.schemas.test_runs import (
     PageTestRunCancelOut,
     PageTestRunIn,
@@ -3341,34 +3349,6 @@ def replace_testing_config() -> tuple[Response, int] | Response:
 # follow-up PR.
 
 
-_VALID_REPORT_FORMATS: frozenset[str] = frozenset({
-    "xlsx", "html", "csv", "pdf", "excel",
-})
-
-
-def _parse_report_format(raw: Any, *, field: str = "format") -> str:
-    if raw is None:
-        return "xlsx"
-    if not isinstance(raw, str):
-        raise ValidationError(
-            f"{field} must be a string",
-            errors=(
-                _FieldError(field=field, code="invalid_type", message="must be string"),
-            ),
-        )
-    if raw not in _VALID_REPORT_FORMATS:
-        raise ValidationError(
-            f"{field} must be one of {sorted(_VALID_REPORT_FORMATS)}",
-            errors=(
-                _FieldError(
-                    field=field, code="invalid_value",
-                    message=f"must be one of {sorted(_VALID_REPORT_FORMATS)}",
-                ),
-            ),
-        )
-    return raw
-
-
 def _capture_report_runtime() -> tuple[Any, dict[str, Any], str, Path]:
     """Snapshot the per-request Flask state the service needs.
 
@@ -3407,32 +3387,37 @@ def _handle_report_service_errors(exc: Exception) -> tuple[Response, int]:
     raise exc
 
 
-def _serialize_report_handle(handle: Any) -> dict[str, Any]:
+def _serialize_report_handle(handle: Any) -> ReportCreatedOut:
     """Shape :class:`ReportRunHandle` into the 202 response body."""
-    return {
-        "job_id": handle.job_id,
-        "scope": handle.scope,
-        "display_name": handle.display_name,
-        "status": "queued",
-    }
+    return ReportCreatedOut(
+        job_id=handle.job_id,
+        scope=handle.scope,
+        display_name=handle.display_name,
+        status="queued",
+    )
 
 
 @api_bp.route('/pages/<page_id>/reports', methods=['POST'])
 @api_endpoint
-def generate_page_report(page_id: str) -> tuple[Response, int] | Response:
-    """Queue a single-page accessibility report.
-
-    Body:
-
-        {
-          "format": "html|xlsx|csv|pdf|excel",  // optional, default xlsx
-          "include_ai": bool                    // optional, default true
-        }
-
-    The page's existence is validated up front so the response is a
-    clean 404 (Problem Details) rather than a 202 followed by a job
-    that fails on the first generator call.
-    """
+@document(
+    request=PageReportIn,
+    response_202=ReportCreatedOut,
+    errors=[400, 401, 403, 404],
+    tags=["Reports"],
+    summary="Queue a single-page accessibility report",
+    description=(
+        "Queues a background job to generate an accessibility report "
+        "for a single page. Returns 202 with the job handle. "
+        "``format`` defaults to ``xlsx``; ``include_ai`` defaults to "
+        "true. The page's existence is validated up front so the "
+        "response is a clean 404 (Problem Details) rather than a 202 "
+        "followed by a job that fails on the first generator call."
+    ),
+)
+def generate_page_report(
+    page_id: str, body: PageReportIn
+) -> tuple[ReportCreatedOut, int] | tuple[Response, int] | Response:
+    """Queue a single-page accessibility report."""
     from auto_a11y.core.report_run_service import (
         start_report_generation,
     )
@@ -3445,12 +3430,8 @@ def generate_page_report(page_id: str) -> tuple[Response, int] | Response:
         website_id=page.website_id,
     )
 
-    body = _require_dict_body() if request.data else {}
-    report_format = _parse_report_format(body.get("format"))
-    include_ai_raw = body.get("include_ai")
-    include_ai = (
-        include_ai_raw if isinstance(include_ai_raw, bool) else True
-    )
+    report_format = body.format if body.format is not None else "xlsx"
+    include_ai = body.include_ai if body.include_ai is not None else True
 
     app, config_snapshot, language, output_dir = _capture_report_runtime()
 
@@ -3469,12 +3450,8 @@ def generate_page_report(page_id: str) -> tuple[Response, int] | Response:
     except Exception as exc:
         return _handle_report_service_errors(exc)
 
-    return jsonify(_serialize_report_handle(handle)), 202
+    return _serialize_report_handle(handle), 202
 
-
-_WEBSITE_REPORT_TYPES: frozenset[str] = frozenset({
-    "accessibility", "page-structure", "discovery",
-})
 
 _WEBSITE_REPORT_TYPE_TO_SCOPE: dict[str, str] = {
     "accessibility": "website",
@@ -3483,51 +3460,29 @@ _WEBSITE_REPORT_TYPE_TO_SCOPE: dict[str, str] = {
 }
 
 
-def _parse_report_type(
-    raw: Any, *, allowed: frozenset[str], field: str = "type", default: str
-) -> str:
-    if raw is None:
-        return default
-    if not isinstance(raw, str):
-        raise ValidationError(
-            f"{field} must be a string",
-            errors=(
-                _FieldError(field=field, code="invalid_type", message="must be string"),
-            ),
-        )
-    if raw not in allowed:
-        raise ValidationError(
-            f"{field} must be one of {sorted(allowed)}",
-            errors=(
-                _FieldError(
-                    field=field, code="invalid_value",
-                    message=f"must be one of {sorted(allowed)}",
-                ),
-            ),
-        )
-    return raw
-
-
 @api_bp.route('/websites/<website_id>/reports', methods=['POST'])
 @api_endpoint
+@document(
+    request=WebsiteReportIn,
+    response_202=ReportCreatedOut,
+    errors=[400, 401, 403, 404],
+    tags=["Reports"],
+    summary="Queue a website-scoped report",
+    description=(
+        "Queues a background job to generate one of three website-"
+        "scoped reports, selected by the ``type`` discriminator. "
+        "``type`` defaults to ``accessibility``; ``format`` defaults "
+        "to ``xlsx``; ``include_ai`` defaults to true and is only "
+        "honoured for ``accessibility`` (the other types ignore it). "
+        "The ``type`` discriminator collapses the three legacy URLs "
+        "(``/generate/website/<id>``, ``/generate/page-structure/<id>``, "
+        "``/generate/discovery/website/<id>``) into one endpoint."
+    ),
+)
 def generate_website_report(
-    website_id: str,
-) -> tuple[Response, int] | Response:
-    """Queue a website-scoped report.
-
-    Body:
-
-        {
-          "format": "html|xlsx|csv|pdf|excel",                // optional
-          "type":   "accessibility|page-structure|discovery", // default accessibility
-          "include_ai": bool                                  // optional, default true
-        }
-
-    The ``type`` discriminator collapses the three legacy URLs
-    (``/generate/website/<id>``, ``/generate/page-structure/<id>``,
-    ``/generate/discovery/website/<id>``) into one endpoint. Only the
-    ``accessibility`` type reads ``include_ai`` — the others ignore it.
-    """
+    website_id: str, body: WebsiteReportIn,
+) -> tuple[ReportCreatedOut, int] | tuple[Response, int] | Response:
+    """Queue a website-scoped report."""
     from auto_a11y.core.report_run_service import (
         start_report_generation,
     )
@@ -3540,15 +3495,9 @@ def generate_website_report(
         website_id=website_id,
     )
 
-    body = _require_dict_body() if request.data else {}
-    report_format = _parse_report_format(body.get("format"))
-    report_type = _parse_report_type(
-        body.get("type"), allowed=_WEBSITE_REPORT_TYPES, default="accessibility",
-    )
-    include_ai_raw = body.get("include_ai")
-    include_ai = (
-        include_ai_raw if isinstance(include_ai_raw, bool) else True
-    )
+    report_format = body.format if body.format is not None else "xlsx"
+    report_type = body.type if body.type is not None else "accessibility"
+    include_ai = body.include_ai if body.include_ai is not None else True
 
     app, config_snapshot, language, output_dir = _capture_report_runtime()
     scope = _WEBSITE_REPORT_TYPE_TO_SCOPE[report_type]
@@ -3568,12 +3517,8 @@ def generate_website_report(
     except Exception as exc:
         return _handle_report_service_errors(exc)
 
-    return jsonify(_serialize_report_handle(handle)), 202
+    return _serialize_report_handle(handle), 202
 
-
-_PROJECT_REPORT_TYPES: frozenset[str] = frozenset({
-    "accessibility", "discovery", "recordings", "deduplicated",
-})
 
 _PROJECT_REPORT_TYPE_TO_SCOPE: dict[str, str] = {
     "accessibility": "project",
@@ -3585,27 +3530,27 @@ _PROJECT_REPORT_TYPE_TO_SCOPE: dict[str, str] = {
 
 @api_bp.route('/projects/<project_id>/reports', methods=['POST'])
 @api_endpoint
+@document(
+    request=ProjectReportIn,
+    response_202=ReportCreatedOut,
+    errors=[400, 401, 403, 404],
+    tags=["Reports"],
+    summary="Queue a project-scoped report",
+    description=(
+        "Queues a background job to generate one of four project-"
+        "scoped reports, selected by the ``type`` discriminator. "
+        "``type`` defaults to ``accessibility``; ``format`` defaults "
+        "to ``xlsx``. The ``type`` discriminator collapses four "
+        "legacy URLs (``/generate/project/<id>`` -> ``accessibility``, "
+        "``/generate/discovery/project/<id>`` -> ``discovery``, "
+        "``/generate/recordings/<id>`` -> ``recordings``, "
+        "``/generate/deduplicated`` -> ``deduplicated``)."
+    ),
+)
 def generate_project_report(
-    project_id: str,
-) -> tuple[Response, int] | Response:
-    """Queue a project-scoped report.
-
-    Body:
-
-        {
-          "format": "html|xlsx|csv|pdf|excel",                       // optional
-          "type":   "accessibility|discovery|recordings|deduplicated" // default accessibility
-        }
-
-    Replaces the previous hollow implementation that returned a fake
-    ``report_id`` without actually queueing anything. The ``type``
-    discriminator collapses the four legacy URLs:
-
-    - ``/generate/project/<id>``                     → ``type=accessibility``
-    - ``/generate/discovery/project/<id>``           → ``type=discovery``
-    - ``/generate/recordings/<project_id>``          → ``type=recordings``
-    - ``/generate/deduplicated`` (with project_id)   → ``type=deduplicated``
-    """
+    project_id: str, body: ProjectReportIn,
+) -> tuple[ReportCreatedOut, int] | tuple[Response, int] | Response:
+    """Queue a project-scoped report."""
     from auto_a11y.core.report_run_service import (
         start_report_generation,
     )
@@ -3618,11 +3563,8 @@ def generate_project_report(
         project_id=project_id,
     )
 
-    body = _require_dict_body() if request.data else {}
-    report_format = _parse_report_format(body.get("format"))
-    report_type = _parse_report_type(
-        body.get("type"), allowed=_PROJECT_REPORT_TYPES, default="accessibility",
-    )
+    report_format = body.format if body.format is not None else "xlsx"
+    report_type = body.type if body.type is not None else "accessibility"
 
     app, config_snapshot, language, output_dir = _capture_report_runtime()
     scope = _PROJECT_REPORT_TYPE_TO_SCOPE[report_type]
@@ -3641,17 +3583,7 @@ def generate_project_report(
     except Exception as exc:
         return _handle_report_service_errors(exc)
 
-    return jsonify(_serialize_report_handle(handle)), 202
-
-
-_GENERIC_REPORT_TYPES: frozenset[str] = frozenset({
-    "accessibility",
-    "page-structure",
-    "discovery",
-    "static-html",
-    "deduplicated",
-    "recordings",
-})
+    return _serialize_report_handle(handle), 202
 
 
 def _resolve_generic_scope(
@@ -3699,7 +3631,8 @@ def _resolve_generic_scope(
         return "deduplicated"
     if report_type == "recordings":
         return "recordings"
-    # Defensive — should be unreachable given _GENERIC_REPORT_TYPES.
+    # Defensive — should be unreachable given the Pydantic
+    # ``GenericReportType`` literal validates ``type`` upstream.
     raise ValidationError(
         f"unsupported type: {report_type}",
         errors=(
@@ -3712,50 +3645,38 @@ def _resolve_generic_scope(
 
 @api_bp.route('/reports', methods=['POST'])
 @api_endpoint
-def generate_generic_report() -> tuple[Response, int] | Response:
-    """Generic top-level report-generation endpoint.
-
-    Body:
-
-        {
-          "type": "accessibility|page-structure|discovery|static-html|deduplicated|recordings",
-          "project_id": "...",   // optional
-          "website_id": "...",   // optional
-          "page_id":    "...",   // optional
-          "format":     "...",   // optional, default xlsx
-          "include_ai": bool     // optional, default true
-        }
-
-    The route picks the right scope from ``(type, ids)`` via
-    :func:`_resolve_generic_scope`. Most clients should prefer the
-    scope-specific routes (``/pages/<id>/reports``,
-    ``/websites/<id>/reports``, ``/projects/<id>/reports``) which
-    enforce ``required-id`` shape at the URL level — this top-level
-    form is for clients that need to switch report type at runtime
-    without remapping URLs.
-
-    Authorization is checked at the ``require_project_role`` call
-    against whichever scope the ids resolve to; anonymous/unauthorized
-    callers get 401/403 from the service layer's auth checks.
-    """
+@document(
+    request=ReportIn,
+    response_202=ReportCreatedOut,
+    errors=[400, 401, 403, 404],
+    tags=["Reports"],
+    summary="Queue a report (generic entry point)",
+    description=(
+        "Generic top-level report-generation endpoint. Picks the scope "
+        "from ``(type, ids)`` -- e.g. ``type=accessibility`` with "
+        "``page_id`` queues a page-scoped run, with ``website_id`` a "
+        "website-scoped run, etc. Most clients should prefer the "
+        "scope-specific routes (``/pages/<id>/reports``, "
+        "``/websites/<id>/reports``, ``/projects/<id>/reports``); this "
+        "top-level form is for clients that need to switch report type "
+        "at runtime without remapping URLs. With no scope id supplied, "
+        "asks for an all-projects roll-up (superadmin only)."
+    ),
+)
+def generate_generic_report(
+    body: ReportIn,
+) -> tuple[ReportCreatedOut, int] | tuple[Response, int] | Response:
+    """Generic top-level report-generation endpoint."""
     from auto_a11y.core.report_run_service import (
         start_report_generation,
     )
 
-    body = _require_dict_body()
-    report_format = _parse_report_format(body.get("format"))
-    report_type = _parse_report_type(
-        body.get("type"),
-        allowed=_GENERIC_REPORT_TYPES,
-        default="accessibility",
-    )
-    project_id = _parse_optional_str(body.get("project_id"), field="project_id")
-    website_id = _parse_optional_str(body.get("website_id"), field="website_id")
-    page_id = _parse_optional_str(body.get("page_id"), field="page_id")
-    include_ai_raw = body.get("include_ai")
-    include_ai = (
-        include_ai_raw if isinstance(include_ai_raw, bool) else True
-    )
+    report_format = body.format if body.format is not None else "xlsx"
+    report_type = body.type if body.type is not None else "accessibility"
+    project_id = body.project_id
+    website_id = body.website_id
+    page_id = body.page_id
+    include_ai = body.include_ai if body.include_ai is not None else True
 
     # Validate target existence + enforce role before we read any
     # request-context machinery. This way a 404/403 doesn't waste a
@@ -3814,25 +3735,32 @@ def generate_generic_report() -> tuple[Response, int] | Response:
     except Exception as exc:
         return _handle_report_service_errors(exc)
 
-    return jsonify(_serialize_report_handle(handle)), 202
+    return _serialize_report_handle(handle), 202
 
 
 @api_bp.route('/jobs/<job_id>/restart', methods=['POST'])
 @api_endpoint
-def restart_job_rest(job_id: str) -> tuple[Response, int] | Response:
-    """Re-queue a (typically failed/cancelled) report job.
-
-    Reads the old job's metadata, files a cancellation request if it's
-    still pending/running (the worker thread reads the flag and exits
-    cleanly), and submits a fresh job with the same scope/type/format
-    via :func:`auto_a11y.core.report_run_service.restart_report_generation`.
-
-    Currently only ``REPORT_GENERATION`` jobs are restartable — other
-    job types either auto-restart (discovery) or have side effects
-    that don't make sense to replay (test runs, PDF audits). Restart
-    of a non-report job returns 400 rather than silently treating it
-    as a report.
-    """
+@document(
+    response_202=JobRestartOut,
+    errors=[400, 401, 403, 404],
+    tags=["Reports"],
+    summary="Restart a report-generation job",
+    description=(
+        "Re-queues a (typically failed or cancelled) report-generation "
+        "job. Reads the old job's metadata, files a cancellation "
+        "request if it is still pending/running (the worker thread "
+        "reads the flag and exits cleanly), and submits a fresh job "
+        "with the same scope/type/format. Currently only "
+        "``REPORT_GENERATION`` jobs are restartable -- other job types "
+        "either auto-restart (discovery) or have side effects that do "
+        "not make sense to replay (test runs, PDF audits); restart of "
+        "a non-report job returns 400."
+    ),
+)
+def restart_job_rest(
+    job_id: str,
+) -> tuple[JobRestartOut, int] | tuple[Response, int] | Response:
+    """Re-queue a (typically failed/cancelled) report job."""
     from auto_a11y.core.report_run_service import (
         restart_report_generation,
     )
@@ -3867,13 +3795,13 @@ def restart_job_rest(job_id: str) -> tuple[Response, int] | Response:
     except Exception as exc:
         return _handle_report_service_errors(exc)
 
-    return jsonify({
-        "old_job_id": job_id,
-        "job_id": handle.job_id,
-        "scope": handle.scope,
-        "display_name": handle.display_name,
-        "status": "queued",
-    }), 202
+    return JobRestartOut(
+        old_job_id=job_id,
+        job_id=handle.job_id,
+        scope=handle.scope,
+        display_name=handle.display_name,
+        status="queued",
+    ), 202
 
 
 # ---------------------------------------------------------------------------
@@ -4041,21 +3969,25 @@ def _resolve_report_file_path(record: dict[str, Any]) -> Path:
 
 @api_bp.route("/reports/<report_id>/file", methods=["GET"])
 @api_endpoint
+@document(
+    errors=[401, 403, 404],
+    tags=["Reports"],
+    summary="Download a completed report file",
+    description=(
+        "Streams the completed report bytes with "
+        "``Content-Disposition: attachment``. The response body is "
+        "the raw report file (xlsx, html, csv, pdf, ...) and is not "
+        "modelled as JSON -- ``@document`` passes the Flask Response "
+        "through unchanged. Returns 404 for any of: job missing, job "
+        "not a report-generation job, job not yet COMPLETED, "
+        "result/filename missing, or file removed from disk after "
+        "generation. Authorization mirrors the report's scope "
+        "(project/website/page -> ADMIN/AUDITOR/CLIENT on that scope; "
+        "cross-project rollups -> superadmin)."
+    ),
+)
 def download_report_file(report_id: str) -> Response | tuple[Response, int]:
-    """Stream the completed report file with Content-Disposition.
-
-    The opaque ``report_id`` is the underlying job id. Status 404 is
-    returned for any of: job missing, job not a report-generation
-    job, job not yet COMPLETED, result/filename missing, file removed
-    from disk after generation.
-
-    Authorization mirrors the report's scope:
-
-    - project-scoped → ADMIN/AUDITOR/CLIENT on the project
-    - website-scoped → ADMIN/AUDITOR/CLIENT on the website
-    - page-scoped    → ADMIN/AUDITOR/CLIENT on the page's website
-    - cross-project  → superadmin
-    """
+    """Stream the completed report file with Content-Disposition."""
     from flask import send_file
 
     record = _resolve_report_job(report_id)
@@ -4070,16 +4002,22 @@ def download_report_file(report_id: str) -> Response | tuple[Response, int]:
 
 @api_bp.route("/reports/<report_id>", methods=["DELETE"])
 @api_endpoint
+@document(
+    response_204=Empty,
+    errors=[401, 403, 404],
+    tags=["Reports"],
+    summary="Delete a report",
+    description=(
+        "Removes the report file from disk and deletes the underlying "
+        "job record. Idempotent at the file level -- a missing on-disk "
+        "file still yields 204 as long as the job record exists and "
+        "gets deleted; a missing job record raises 404. Requires ADMIN "
+        "or AUDITOR on the report's scope (or superadmin for "
+        "cross-project rollups)."
+    ),
+)
 def delete_report(report_id: str) -> tuple[Response, int]:
-    """Delete the report file and the underlying job record.
-
-    Idempotent at the file level — a missing on-disk file still
-    yields 204 as long as the job record exists and gets deleted. A
-    missing job record raises 404.
-
-    Requires ADMIN or AUDITOR on the report's scope (or superadmin
-    for cross-project rollups).
-    """
+    """Delete the report file and the underlying job record."""
     record = _resolve_report_job(report_id)
     _authorize_report_mutation(record)
 

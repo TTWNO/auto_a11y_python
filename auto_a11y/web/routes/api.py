@@ -67,11 +67,21 @@ from auto_a11y.web.api.schemas.pdfs import (
     PdfOut,
     PdfUploadIn,
 )
+from auto_a11y.web.api.schemas.orchestration import (
+    TestingConfigOut,
+    TestingConfigPatchIn,
+    TestRunBatchHandleOut,
+    TestRunBatchIn,
+    TestRunBatchOut,
+    TopLevelTestRunIn,
+    TopLevelTestRunOut,
+)
 from auto_a11y.web.api.schemas.recordings import (
     RecordingContentOut,
     RecordingContentPatch,
     RecordingIssueListOut,
     RecordingIssueOut,
+    RecordingIssuePatchIn,
     RecordingListOut,
     RecordingOut,
     RecordingPatch,
@@ -81,6 +91,8 @@ from auto_a11y.web.api.schemas.reports import (
     JobRestartOut,
     PageReportIn,
     ProjectReportIn,
+    ProjectReportSummaryItemOut,
+    ProjectReportSummaryOut,
     ReportCreatedOut,
     ReportIn,
     WebsiteReportIn,
@@ -3511,95 +3523,28 @@ def cancel_page_test_run_latest(
 # ---------------------------------------------------------------------------
 
 
-def _parse_optional_bool(raw: Any, *, field: str) -> bool | None:
-    if raw is None:
-        return None
-    if isinstance(raw, bool):
-        return raw
-    raise ValidationError(
-        f"{field} must be a boolean",
-        errors=(
-            _FieldError(field=field, code="invalid_type", message="must be bool"),
-        ),
-    )
-
-
-def _parse_optional_str(raw: Any, *, field: str) -> str | None:
-    if raw is None:
-        return None
-    if isinstance(raw, str):
-        return raw
-    raise ValidationError(
-        f"{field} must be a string",
-        errors=(
-            _FieldError(field=field, code="invalid_type", message="must be string"),
-        ),
-    )
-
-
-def _parse_required_str(raw: Any, *, field: str) -> str:
-    if not isinstance(raw, str) or not raw:
-        raise ValidationError(
-            f"{field} is required",
-            errors=(
-                _FieldError(field=field, code="required", message="required"),
-            ),
-        )
-    return raw
-
-
-def _parse_str_list(raw: Any, *, field: str) -> list[str]:
-    if not isinstance(raw, list):
-        raise ValidationError(
-            f"{field} must be a list of strings",
-            errors=(
-                _FieldError(field=field, code="invalid_type", message="must be list"),
-            ),
-        )
-    raw_list = _iter_to_any_list(raw)
-    result: list[str] = []
-    for idx, item in enumerate(raw_list):
-        if not isinstance(item, str):
-            raise ValidationError(
-                f"{field}[{idx}] must be a string",
-                errors=(
-                    _FieldError(
-                        field=f"{field}[{idx}]",
-                        code="invalid_type",
-                        message="must be string",
-                    ),
-                ),
-            )
-        result.append(item)
-    return result
-
-
 @api_bp.route("/test-runs", methods=["POST"])
 @api_endpoint
+@document(
+    request=TopLevelTestRunIn,
+    response_202=TopLevelTestRunOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["Test runs"],
+    summary="Queue a single-page accessibility test run (top-level)",
+    description=(
+        "Top-level form of ``POST /api/v1/pages/<id>/test-runs`` that "
+        "takes the page id in the request body instead of the URL. "
+        "Both endpoints call ``start_page_test_run`` and return the "
+        "same 202 handle envelope. Use this form when a caller "
+        "already has the page id in its payload (a queue worker, a "
+        "\"test this page\" bookmark service, etc.) and stringing it "
+        "into a URL is awkward."
+    ),
+)
 def create_test_run(
-) -> tuple[Response, int] | Response:
-    """Queue a single-page accessibility test run.
-
-    Body:
-
-        {
-          "page_id": "...",                // required
-          "enable_multi_state": bool,      // optional, default true
-          "website_user_id": "..."         // optional
-        }
-
-    Returns 202 with the same handle shape as
-    ``POST /api/v1/pages/<id>/test-runs`` — both call
-    :func:`auto_a11y.core.test_run_service.start_page_test_run`. The
-    per-page URL stays alive for clients that already know the page id
-    in the path; this top-level form is for callers who already have
-    the page id in their request body (e.g. a "test this page"
-    bookmark service or a queue worker).
-
-    Use :func:`create_test_runs_batch` for multiple pages — looping
-    this endpoint client-side is fine but the batch shape is more
-    convenient.
-    """
+    body: TopLevelTestRunIn,
+) -> tuple[TopLevelTestRunOut, int] | tuple[Response, int] | Response:
+    """Queue a single-page accessibility test run."""
     from auto_a11y.core.test_run_service import (
         BrowserDisabledError,
         BrowserRemoteError,
@@ -3607,16 +3552,11 @@ def create_test_run(
         start_page_test_run,
     )
 
-    body = _require_dict_body()
-    page_id = _parse_required_str(body.get("page_id"), field="page_id")
-    enable_multi_state = _parse_optional_bool(
-        body.get("enable_multi_state"), field="enable_multi_state"
+    page_id = body.page_id
+    enable_multi_state = (
+        body.enable_multi_state if body.enable_multi_state is not None else True
     )
-    if enable_multi_state is None:
-        enable_multi_state = True
-    website_user_id = _parse_optional_str(
-        body.get("website_user_id"), field="website_user_id"
-    )
+    website_user_id = body.website_user_id
 
     page = get_db().get_page(page_id)
     if page is None:
@@ -3642,45 +3582,43 @@ def create_test_run(
         # between then and the service call. Treat as a fresh 404.
         raise NotFoundError(str(exc)) from exc
 
-    return jsonify({
-        "job_id": handle.job_id,
-        "page_id": handle.page_id,
-        "multi_state": handle.multi_state,
-        "status": "queued",
-    }), 202
+    return (
+        TopLevelTestRunOut(
+            job_id=handle.job_id,
+            page_id=handle.page_id,
+            multi_state=handle.multi_state,
+            status="queued",
+        ),
+        202,
+    )
 
 
 @api_bp.route("/test-runs/batch", methods=["POST"])
 @api_endpoint
+@document(
+    request=TestRunBatchIn,
+    response_202=TestRunBatchOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["Test runs"],
+    summary="Queue accessibility test runs for several pages",
+    description=(
+        "Queues a single-page run for each entry in ``page_ids`` "
+        "through ``start_page_test_run`` — the same helper the "
+        "per-page and top-level single-page endpoints use. Pages "
+        "from different websites can be mixed; auth is enforced "
+        "per-page. The request is all-or-nothing: an unknown id "
+        "raises 404 before anything is queued, so the response "
+        "list always has exactly one handle per input id in the "
+        "same order. Use ``POST /api/v1/websites/<id>/test-runs`` "
+        "for whole-website testing — it handles per-user sequential "
+        "execution and PDF audit folding that this endpoint "
+        "deliberately doesn't."
+    ),
+)
 def create_test_runs_batch(
-) -> tuple[Response, int] | Response:
-    """Queue accessibility test runs for several pages.
-
-    Body:
-
-        {
-          "page_ids": ["...", "..."],      // required, 1..N entries
-          "enable_multi_state": bool,      // optional, default true
-          "website_user_id": "..."         // optional, applied to every run
-        }
-
-    Each page is queued through
-    :func:`auto_a11y.core.test_run_service.start_page_test_run`, the
-    same helper :func:`create_test_run` and the per-page endpoint use.
-    Pages from different websites can be mixed — auth is enforced
-    per-page so a non-admin caller will fail on the first page they
-    don't have access to.
-
-    On success returns 202 with a list of handles, one per queued
-    page, in the same order as the input. If ``page_ids`` contains an
-    unknown id, the request fails with 404 *before* anything is queued,
-    so the operation is all-or-nothing.
-
-    Use :func:`test_website` (``POST /websites/<id>/test-runs``) when
-    you want to test every page on a website — it handles the
-    per-user sequential execution and PDF audit folding that this
-    endpoint deliberately doesn't.
-    """
+    body: TestRunBatchIn,
+) -> tuple[TestRunBatchOut, int] | tuple[Response, int] | Response:
+    """Queue accessibility test runs for several pages."""
     from auto_a11y.core.test_run_service import (
         BrowserDisabledError,
         BrowserRemoteError,
@@ -3688,8 +3626,7 @@ def create_test_runs_batch(
         start_page_test_run,
     )
 
-    body = _require_dict_body()
-    page_ids = _parse_str_list(body.get("page_ids"), field="page_ids")
+    page_ids = body.page_ids
     if not page_ids:
         raise ValidationError(
             "page_ids must contain at least one entry",
@@ -3699,14 +3636,10 @@ def create_test_runs_batch(
                 ),
             ),
         )
-    enable_multi_state = _parse_optional_bool(
-        body.get("enable_multi_state"), field="enable_multi_state"
+    enable_multi_state = (
+        body.enable_multi_state if body.enable_multi_state is not None else True
     )
-    if enable_multi_state is None:
-        enable_multi_state = True
-    website_user_id = _parse_optional_str(
-        body.get("website_user_id"), field="website_user_id"
-    )
+    website_user_id = body.website_user_id
 
     # Validate every page up front so we don't half-queue on a typo.
     pages: list[Page] = []
@@ -3719,7 +3652,7 @@ def create_test_runs_batch(
         )
         pages.append(page)
 
-    handles: list[dict[str, Any]] = []
+    handles: list[TestRunBatchHandleOut] = []
     for page in pages:
         assert page.id is not None
         try:
@@ -3736,17 +3669,22 @@ def create_test_runs_batch(
             raise ConflictError(str(exc)) from exc
         except PageNotFoundError as exc:
             raise NotFoundError(str(exc)) from exc
-        handles.append({
-            "job_id": handle.job_id,
-            "page_id": handle.page_id,
-            "multi_state": handle.multi_state,
-        })
+        handles.append(
+            TestRunBatchHandleOut(
+                job_id=handle.job_id,
+                page_id=handle.page_id,
+                multi_state=handle.multi_state,
+            )
+        )
 
-    return jsonify({
-        "status": "queued",
-        "pages_queued": len(handles),
-        "runs": handles,
-    }), 202
+    return (
+        TestRunBatchOut(
+            status="queued",
+            pages_queued=len(handles),
+            runs=handles,
+        ),
+        202,
+    )
 
 
 # Runtime config keys the testing config endpoint exposes.
@@ -3783,73 +3721,104 @@ def _read_testing_config_field(
     return getattr(cfg, attr)
 
 
-def _serialize_testing_config(cfg: Any) -> dict[str, Any]:
-    return {
-        field: _read_testing_config_field(cfg, attr=attr, py_type=py_type)
-        for field, attr, py_type in _TESTING_CONFIG_FIELDS
-    }
+def _testing_config_to_out(cfg: Any) -> TestingConfigOut:
+    """Project the live :class:`Config` to its typed wire model.
+
+    Each field is read via :func:`_read_testing_config_field` (typed
+    defaults for unset attributes), so the response never contains
+    ``None`` for the documented keys.
+    """
+    return TestingConfigOut(
+        parallel_tests=int(
+            _read_testing_config_field(cfg, attr="PARALLEL_TESTS", py_type=int)
+        ),
+        test_timeout=int(
+            _read_testing_config_field(cfg, attr="TEST_TIMEOUT", py_type=int)
+        ),
+        run_ai_analysis=bool(
+            _read_testing_config_field(cfg, attr="RUN_AI_ANALYSIS", py_type=bool)
+        ),
+        browser_headless=bool(
+            _read_testing_config_field(cfg, attr="BROWSER_HEADLESS", py_type=bool)
+        ),
+        viewport_width=int(
+            _read_testing_config_field(
+                cfg, attr="BROWSER_VIEWPORT_WIDTH", py_type=int
+            )
+        ),
+        viewport_height=int(
+            _read_testing_config_field(
+                cfg, attr="BROWSER_VIEWPORT_HEIGHT", py_type=int
+            )
+        ),
+        pages_per_page=int(
+            _read_testing_config_field(cfg, attr="PAGES_PER_PAGE", py_type=int)
+        ),
+        max_pages_per_page=int(
+            _read_testing_config_field(
+                cfg, attr="MAX_PAGES_PER_PAGE", py_type=int
+            )
+        ),
+        show_error_codes=bool(
+            _read_testing_config_field(cfg, attr="SHOW_ERROR_CODES", py_type=bool)
+        ),
+    )
 
 
 @api_bp.route("/testing/config", methods=["GET"])
 @api_endpoint
-def get_testing_config() -> tuple[Response, int] | Response:
-    """Read the runtime testing config.
-
-    Mirrors the legacy GET ``/testing/configure`` form view, but emits
-    JSON only (the HTML form has been retained on ``testing_bp`` for
-    the admin UI). Fields:
-
-    - ``parallel_tests`` (int)
-    - ``test_timeout`` (int, ms)
-    - ``run_ai_analysis`` (bool)
-    - ``browser_headless`` (bool)
-    - ``viewport_width`` / ``viewport_height`` (int)
-    - ``pages_per_page`` / ``max_pages_per_page`` (int — pagination defaults)
-    - ``show_error_codes`` (bool — developer/debug toggle)
-
-    Superadmin-only because this surface also gates the PUT writer
-    and we don't want two role checks to drift.
-    """
+@document(
+    response_200=TestingConfigOut,
+    errors=[401, 403],
+    tags=["Testing config"],
+    summary="Read the runtime testing config",
+    description=(
+        "Mirrors the legacy GET ``/testing/configure`` form view but "
+        "emits JSON only — the HTML form is retained on ``testing_bp`` "
+        "for the admin UI. Returns every documented key with a "
+        "concrete value (typed defaults substitute for unset config "
+        "attributes). Superadmin-only because this surface also gates "
+        "the PUT writer and we don't want two role checks to drift."
+    ),
+)
+def get_testing_config() -> tuple[TestingConfigOut, int] | TestingConfigOut:
+    """Read the runtime testing config."""
     require_superadmin()
-    return jsonify(_serialize_testing_config(get_app_config()))
+    return _testing_config_to_out(get_app_config())
 
 
 @api_bp.route("/testing/config", methods=["PUT"])
 @api_endpoint
-def replace_testing_config() -> tuple[Response, int] | Response:
-    """Update runtime testing config keys.
-
-    Body shape:
-
-        {
-          "parallel_tests": 4,
-          "browser_headless": false,
-          ...
-        }
-
-    Any subset of :data:`_TESTING_CONFIG_FIELDS` is accepted; missing
-    keys are left untouched (PUT here is a *full-update-or-no-change*,
-    matching the legacy POST handler that only wrote the keys present
-    in the body). Unknown keys raise 400 so typos surface immediately
-    instead of silently dropping.
-
-    Type-validates each present key — pyright/mypy strict mode wants
-    real ``bool`` / ``int`` values, not the JSON-coerced ``Any`` the
-    legacy route happily passed straight into the Config attributes.
-
-    Returns the full post-update config so callers can confirm the
-    effective values without a follow-up GET.
-
-    **In-process only:** writes go to the live :class:`Config` object,
-    not to ``.env`` or a database — the changes survive until the
-    process restarts. Persisting these settings is out of scope for
-    #27; an admin-settings PR (#36) covers the persistent equivalents.
-    """
+@document(
+    request=TestingConfigPatchIn,
+    response_200=TestingConfigOut,
+    errors=[400, 401, 403],
+    tags=["Testing config"],
+    summary="Update runtime testing config keys",
+    description=(
+        "Partial update — any subset of the documented keys is "
+        "accepted; missing keys are left untouched (the PUT here is "
+        "a *full-update-or-no-change* shape, matching the legacy "
+        "POST handler that only wrote the keys present in the body). "
+        "Unknown keys raise 400 so typos surface immediately. "
+        "**In-process only:** writes go to the live ``Config`` "
+        "object, not to ``.env`` or a database. The changes survive "
+        "until the process restarts; persisting these settings is "
+        "out of scope for #27 (an admin-settings PR covers the "
+        "persistent equivalents). Returns the full post-update "
+        "config so callers can confirm the effective values without "
+        "a follow-up GET."
+    ),
+)
+def replace_testing_config(
+    body: TestingConfigPatchIn,
+) -> tuple[TestingConfigOut, int] | TestingConfigOut | tuple[Response, int]:
+    """Update runtime testing config keys."""
     require_superadmin()
-    body = _require_dict_body()
+    body_dict: dict[str, object] = body.root
 
     known_fields = {f for f, _, _ in _TESTING_CONFIG_FIELDS}
-    unknown = set(body) - known_fields
+    unknown = set(body_dict) - known_fields
     if unknown:
         sorted_unknown = sorted(unknown)
         raise ValidationError(
@@ -3864,9 +3833,9 @@ def replace_testing_config() -> tuple[Response, int] | Response:
 
     cfg = get_app_config()
     for field, attr, py_type in _TESTING_CONFIG_FIELDS:
-        if field not in body:
+        if field not in body_dict:
             continue
-        value: Any = body[field]
+        value: Any = body_dict[field]
         if py_type is bool:
             if not isinstance(value, bool):
                 raise ValidationError(
@@ -3894,7 +3863,7 @@ def replace_testing_config() -> tuple[Response, int] | Response:
         else:
             setattr(cfg, attr, value)
 
-    return jsonify(_serialize_testing_config(cfg))
+    return _testing_config_to_out(cfg)
 
 
 # Reports API (REST shape — §5.5 of docs/REST_API_ROADMAP.md).
@@ -4619,49 +4588,64 @@ def _iso_or_none(value: Any) -> str | None:
     return None
 
 
-def _summarize_record(record: dict[str, Any]) -> dict[str, Any]:
-    """Shape a completed-report job into the summary list-item form."""
+def _summary_record_to_out(
+    record: dict[str, Any],
+) -> ProjectReportSummaryItemOut:
+    """Project a completed-report job record to its summary item model.
+
+    Reaches into the free-form ``metadata`` / ``result`` blocks via
+    ``.get(...)`` and surfaces ``None`` when a key is missing (legacy
+    job docs from before the metadata schema settled can be).
+    """
     metadata_any: Any = record.get("metadata") or {}
-    metadata = cast(dict[str, Any], metadata_any) if isinstance(metadata_any, dict) else {}
+    metadata = (
+        cast(dict[str, Any], metadata_any) if isinstance(metadata_any, dict) else {}
+    )
     result_any: Any = record.get("result") or {}
-    result = cast(dict[str, Any], result_any) if isinstance(result_any, dict) else {}
-    return {
-        "id": record.get("job_id"),
-        "scope": metadata.get("scope"),
-        "report_type": metadata.get("report_type"),
-        "display_name": metadata.get("display_name"),
-        "filename": result.get("filename"),
-        "created_at": _iso_or_none(record.get("created_at")),
-        "completed_at": _iso_or_none(record.get("completed_at")),
-    }
+    result = (
+        cast(dict[str, Any], result_any) if isinstance(result_any, dict) else {}
+    )
+    return ProjectReportSummaryItemOut(
+        id=record.get("job_id"),
+        scope=metadata.get("scope"),
+        report_type=metadata.get("report_type"),
+        display_name=metadata.get("display_name"),
+        filename=result.get("filename"),
+        created_at=_iso_or_none(record.get("created_at")),
+        completed_at=_iso_or_none(record.get("completed_at")),
+    )
 
 
 @api_bp.route(
     "/projects/<project_id>/report-summary", methods=["GET"]
 )
 @api_endpoint
+@document(
+    response_200=ProjectReportSummaryOut,
+    errors=[401, 403, 404],
+    tags=["Reports"],
+    summary="Aggregate completed report-generation jobs for a project",
+    description=(
+        "Returns counts and the 10 most-recent completed report-"
+        "generation jobs for a project — a \"what reports are "
+        "available to download right now\" view. Counts and the "
+        "``recent`` list both filter to ``status=COMPLETED``: failed "
+        "or cancelled jobs are intentionally omitted. Use "
+        "``GET /api/v1/jobs?status=...`` for the broader job history. "
+        "``by_scope`` / ``by_report_type`` are free-form ``dict[str, "
+        "int]`` because their keys (``scope`` / ``report_type`` "
+        "metadata strings) are not a closed set — new report "
+        "generators can grow new values without a schema bump."
+    ),
+)
 def get_project_report_summary(
     project_id: str,
-) -> tuple[Response, int] | Response:
-    """Aggregate the project's completed report-generation jobs.
-
-    Returns:
-
-        {
-          "project_id": "...",
-          "total_completed": 7,
-          "by_scope":      {"project": 4, "discovery_project": 3},
-          "by_report_type": {"html": 2, "xlsx": 4, "csv": 1},
-          "recent": [<latest 10, newest first, summary shape>]
-        }
-
-    Counts and the ``recent`` list both filter to
-    ``status=COMPLETED`` — failed/cancelled jobs are intentionally
-    omitted because the summary is a "what reports are available to
-    download right now" view. Use ``GET /jobs?status=...`` (and the
-    forthcoming :doc:`/jobs` filters from #54) for the broader job
-    history.
-    """
+) -> (
+    tuple[ProjectReportSummaryOut, int]
+    | ProjectReportSummaryOut
+    | tuple[Response, int]
+):
+    """Aggregate the project's completed report-generation jobs."""
     project = get_db().get_project(project_id)
     if project is None:
         raise NotFoundError(f"project {project_id} not found")
@@ -4693,13 +4677,13 @@ def get_project_report_summary(
         if isinstance(report_type, str):
             by_report_type[report_type] = by_report_type.get(report_type, 0) + 1
 
-    return jsonify({
-        "project_id": project_id,
-        "total_completed": len(records),
-        "by_scope": by_scope,
-        "by_report_type": by_report_type,
-        "recent": [_summarize_record(r) for r in records[:10]],
-    })
+    return ProjectReportSummaryOut(
+        project_id=project_id,
+        total_completed=len(records),
+        by_scope=by_scope,
+        by_report_type=by_report_type,
+        recent=[_summary_record_to_out(r) for r in records[:10]],
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -6042,46 +6026,6 @@ _VALID_ISSUE_STATUSES: frozenset[str] = frozenset(
 )
 
 
-def _serialize_recording_issue(issue: RecordingIssue) -> dict[str, Any]:
-    """Project a :class:`RecordingIssue` to a JSON-safe dict."""
-
-    def _iso(dt: datetime | None) -> str | None:
-        return dt.isoformat() if dt is not None else None
-
-    return {
-        "id": issue.id,
-        "recording_id": issue.recording_id,
-        "title": issue.title,
-        "short_title": issue.short_title,
-        "language": issue.language,
-        "what": issue.what,
-        "why": issue.why,
-        "who": issue.who,
-        "remediation": issue.remediation,
-        "impact": issue.impact.value,
-        "touchpoint": issue.touchpoint,
-        "timecodes": [tc.to_dict() for tc in issue.timecodes],
-        "wcag": [w.to_dict() for w in issue.wcag],
-        "xpath": issue.xpath,
-        "element": issue.element,
-        "html": issue.html,
-        "project_id": issue.project_id,
-        "website_ids": list(issue.website_ids),
-        "page_urls": list(issue.page_urls),
-        "page_ids": list(issue.page_ids),
-        "component_names": list(issue.component_names),
-        "app_screens": list(issue.app_screens),
-        "device_sections": list(issue.device_sections),
-        "task_description": issue.task_description,
-        "status": issue.status,
-        "assigned_to": issue.assigned_to,
-        "resolution_notes": issue.resolution_notes,
-        "tags": list(issue.tags),
-        "created_at": _iso(issue.created_at),
-        "updated_at": _iso(issue.updated_at),
-    }
-
-
 def _apply_patch_to_recording_issue(
     issue: RecordingIssue, body: dict[str, Any]
 ) -> RecordingIssue:
@@ -6206,7 +6150,10 @@ def _recording_content_to_out(recording: Recording) -> RecordingContentOut:
 def _recording_issue_to_out(issue: RecordingIssue) -> RecordingIssueOut:
     """Project a :class:`RecordingIssue` to its output model.
 
-    Mirrors :func:`_serialize_recording_issue` byte-for-byte.
+    Mirrors the byte-for-byte projection of the legacy issue
+    serializer (a flat JSON-safe dict with ISO 8601 timestamps,
+    enum-value strings, and ``to_dict()`` for nested ``Timecode`` /
+    ``WCAG`` records).
     """
 
     def _iso(dt: datetime | None) -> str | None:
@@ -7037,7 +6984,25 @@ def list_recording_issues_rest(
 
 @api_bp.route("/recording-issues/<issue_id>", methods=["GET"])
 @api_endpoint
-def get_recording_issue_rest(issue_id: str) -> tuple[Response, int] | Response:
+@document(
+    response_200=RecordingIssueOut,
+    errors=[401, 403, 404],
+    tags=["Recordings"],
+    summary="Get a recording issue by id",
+    description=(
+        "Returns the full :class:`RecordingIssueOut` projection for a "
+        "single issue. Distinct from "
+        "``GET /api/v1/recordings/<id>/issues`` (which is the cursor-"
+        "paginated list under a parent recording); this endpoint is "
+        "the per-issue read-by-id path used by the triage UI's deep-"
+        "link form. Issues whose ``project_id`` is null (legacy data "
+        "from before recordings were scoped to projects) are treated "
+        "as not-found to keep the auth model coherent."
+    ),
+)
+def get_recording_issue_rest(
+    issue_id: str,
+) -> tuple[RecordingIssueOut, int] | RecordingIssueOut | tuple[Response, int]:
     """Get a recording issue by id."""
     issue = get_db().get_recording_issue(issue_id)
     if issue is None:
@@ -7047,12 +7012,32 @@ def get_recording_issue_rest(issue_id: str) -> tuple[Response, int] | Response:
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, project_id=issue.project_id
     )
-    return jsonify(_serialize_recording_issue(issue))
+    return _recording_issue_to_out(issue)
 
 
 @api_bp.route("/recording-issues/<issue_id>", methods=["PATCH"])
 @api_endpoint
-def patch_recording_issue_rest(issue_id: str) -> tuple[Response, int] | Response:
+@document(
+    request=RecordingIssuePatchIn,
+    response_200=RecordingIssueOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["Recordings"],
+    summary="Partial update of a recording issue",
+    description=(
+        "Updates the triage-workflow fields on a recording issue: "
+        "``status`` (open / in_progress / resolved / verified), "
+        "``assigned_to``, ``resolution_notes``, ``tags``. The bulk "
+        "content fields (what/why/who/remediation, timecodes, WCAG "
+        "references) are set during upload from the source JSON and "
+        "are intentionally not patchable here. The body validation "
+        "is performed by the handler (not Pydantic's literal/list "
+        "constraints) so the legacy ``invalid_value`` / "
+        "``invalid_type`` error codes are preserved on the wire."
+    ),
+)
+def patch_recording_issue_rest(
+    issue_id: str, body: RecordingIssuePatchIn
+) -> tuple[RecordingIssueOut, int] | RecordingIssueOut | tuple[Response, int]:
     """Partial update of a recording issue (status, assignment, notes, tags)."""
     issue = get_db().get_recording_issue(issue_id)
     if issue is None:
@@ -7062,11 +7047,19 @@ def patch_recording_issue_rest(issue_id: str) -> tuple[Response, int] | Response
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, project_id=issue.project_id
     )
-    body = _require_dict_body()
-    patched = _apply_patch_to_recording_issue(issue, body)
+    # ``body.root`` is the raw ``dict[str, object]`` payload — the
+    # legacy ``_apply_patch_to_recording_issue`` helper expects the
+    # raw shape (it does its own type and value validation, emitting
+    # the legacy ``invalid_value`` / ``invalid_type`` error codes).
+    # The helper signature uses ``dict[str, Any]`` to accept the
+    # JSON-parsed shape; ``dict[str, object]`` is structurally the
+    # same but ``dict`` is invariant for typecheckers, so we copy
+    # into a fresh dict typed as the helper expects.
+    raw_body: dict[str, Any] = dict(body.root)
+    patched = _apply_patch_to_recording_issue(issue, raw_body)
     if not get_db().update_recording_issue(patched):
         raise ConflictError("recording issue could not be updated")
-    return jsonify(_serialize_recording_issue(patched))
+    return _recording_issue_to_out(patched)
 
 
 # ---------------------------------------------------------------------------

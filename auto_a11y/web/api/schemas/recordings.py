@@ -47,6 +47,8 @@ from __future__ import annotations
 
 from typing import Optional
 
+from pydantic import RootModel
+
 from auto_a11y.web.api.schemas.common import StrictModel
 
 
@@ -285,3 +287,42 @@ class RecordingIssueListOut(StrictModel):
 
     items: list[RecordingIssueOut]
     next_cursor: Optional[str] = None
+
+
+# ---------------------------------------------------------------------------
+# PATCH /api/v1/recording-issues/<id>
+# ---------------------------------------------------------------------------
+
+
+class RecordingIssuePatchIn(RootModel[dict[str, object]]):
+    """Request body for ``PATCH /api/v1/recording-issues/<issue_id>``.
+
+    Free-form ``dict[str, object]`` rather than a typed schema so the
+    handler can preserve the legacy 400 wire shape on validation
+    failures. The editable fields are:
+
+    - ``status`` — one of ``open``, ``in_progress``, ``resolved``,
+      ``verified``. Invalid values emit
+      ``{field: status, code: invalid_value, ...}`` (Pydantic's
+      literal validator would emit ``literal_error``).
+    - ``assigned_to`` — string or null. The handler distinguishes
+      "absent" (leave untouched) from "null" (clear). A typed
+      ``Optional[str]`` would collapse both into ``None``.
+    - ``resolution_notes`` — same null vs absent semantics as
+      ``assigned_to``.
+    - ``tags`` — list of strings. The handler validates the
+      list-of-strings shape and emits ``{field: tags, code:
+      invalid_type, ...}``; Pydantic's list-of-str validator would
+      emit a different envelope.
+
+    The bulk content fields (what/why/who/remediation, timecodes,
+    WCAG references) are populated from the source JSON at upload
+    time and are intentionally not patchable here.
+
+    Mirrors :class:`auto_a11y.web.api.schemas.admin.GenericSectionPatchIn`:
+    same RootModel pattern, same "valid keys / value rules live in
+    the handler, not the schema" rationale. The OpenAPI surface for
+    this endpoint is therefore a free-form object; consumers should
+    consult :class:`RecordingIssueOut` for the documented field
+    semantics.
+    """

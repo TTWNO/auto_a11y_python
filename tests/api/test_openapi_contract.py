@@ -159,17 +159,6 @@ def test_registry_is_populated(contract_app: Flask) -> None:
 # enumerated rather than glob-matched so adding a NEW undocumented route
 # still fails the drift gate.
 _KNOWN_UNDOCUMENTED: frozenset[tuple[str, str]] = frozenset({
-    # §5.4 Test runs — top-level orchestration not covered by Task 14
-    ("POST", "/test-runs"),
-    ("POST", "/test-runs/batch"),
-    # Testing config — separate resource not in §5.x scope
-    ("GET", "/testing/config"),
-    ("PUT", "/testing/config"),
-    # Recording issues — separate from recordings; not in §5.6 scope
-    ("GET", "/recording-issues/<issue_id>"),
-    ("PATCH", "/recording-issues/<issue_id>"),
-    # Project report summary — separate from §5.5 Reports
-    ("GET", "/projects/<project_id>/report-summary"),
     # Project test-users (project-scoped) — separate user resource
     ("GET", "/projects/<project_id>/test-users"),
     ("POST", "/projects/<project_id>/test-users"),

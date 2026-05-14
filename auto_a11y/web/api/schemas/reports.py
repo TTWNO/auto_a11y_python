@@ -184,3 +184,56 @@ class JobRestartOut(StrictModel):
     scope: str
     display_name: str
     status: Literal["queued"]
+
+
+# ---------------------------------------------------------------------------
+# GET /projects/<id>/report-summary
+# ---------------------------------------------------------------------------
+
+
+class ProjectReportSummaryItemOut(StrictModel):
+    """One entry in :attr:`ProjectReportSummaryOut.recent`.
+
+    Mirrors :func:`_summarize_record` byte-for-byte. Every field is
+    ``Optional`` because the underlying job document carries
+    ``metadata`` / ``result`` as free-form dicts: the helper reaches
+    in via ``.get(...)`` and surfaces ``None`` when a key is missing
+    (which legacy job docs from before the metadata schema settled
+    can be).
+
+    ``id`` is the public ``job_id``, not the Mongo ``_id``.
+    ``filename`` comes from the worker's stored ``result.filename``
+    (the generated report file in :data:`Config.REPORTS_DIR`).
+    Timestamps are ISO 8601 strings via :func:`_iso_or_none`.
+    """
+
+    id: Optional[str] = None
+    scope: Optional[str] = None
+    report_type: Optional[str] = None
+    display_name: Optional[str] = None
+    filename: Optional[str] = None
+    created_at: Optional[str] = None
+    completed_at: Optional[str] = None
+
+
+class ProjectReportSummaryOut(StrictModel):
+    """Response body for ``GET /api/v1/projects/<id>/report-summary``.
+
+    Mirrors the legacy ``jsonify`` payload byte-for-byte. ``by_scope``
+    and ``by_report_type`` are free-form ``dict[str, int]`` — the
+    keys are :data:`metadata.scope` / :data:`metadata.report_type`
+    strings, which are not a closed set (new generators can add new
+    values without a schema bump). The summary is "what reports are
+    available to download right now": every count and the ``recent``
+    list filter to ``status=COMPLETED``, so failed/cancelled jobs are
+    intentionally omitted.
+
+    ``recent`` is bounded server-side to the latest 10 records,
+    newest first by ``completed_at`` descending.
+    """
+
+    project_id: str
+    total_completed: int
+    by_scope: dict[str, int]
+    by_report_type: dict[str, int]
+    recent: list[ProjectReportSummaryItemOut]

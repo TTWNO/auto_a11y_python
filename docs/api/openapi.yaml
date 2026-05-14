@@ -4537,6 +4537,131 @@ components:
           title: Type
       title: ProjectReportIn
       type: object
+    ProjectReportSummaryItemOut:
+      additionalProperties: false
+      description: 'One entry in :attr:`ProjectReportSummaryOut.recent`.
+
+
+        Mirrors :func:`_summarize_record` byte-for-byte. Every field is
+
+        ``Optional`` because the underlying job document carries
+
+        ``metadata`` / ``result`` as free-form dicts: the helper reaches
+
+        in via ``.get(...)`` and surfaces ``None`` when a key is missing
+
+        (which legacy job docs from before the metadata schema settled
+
+        can be).
+
+
+        ``id`` is the public ``job_id``, not the Mongo ``_id``.
+
+        ``filename`` comes from the worker''s stored ``result.filename``
+
+        (the generated report file in :data:`Config.REPORTS_DIR`).
+
+        Timestamps are ISO 8601 strings via :func:`_iso_or_none`.'
+      properties:
+        completed_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Completed At
+        created_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Created At
+        display_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Display Name
+        filename:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Filename
+        id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Id
+        report_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Report Type
+        scope:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Scope
+      title: ProjectReportSummaryItemOut
+      type: object
+    ProjectReportSummaryOut:
+      additionalProperties: false
+      description: 'Response body for ``GET /api/v1/projects/<id>/report-summary``.
+
+
+        Mirrors the legacy ``jsonify`` payload byte-for-byte. ``by_scope``
+
+        and ``by_report_type`` are free-form ``dict[str, int]`` — the
+
+        keys are :data:`metadata.scope` / :data:`metadata.report_type`
+
+        strings, which are not a closed set (new generators can add new
+
+        values without a schema bump). The summary is "what reports are
+
+        available to download right now": every count and the ``recent``
+
+        list filter to ``status=COMPLETED``, so failed/cancelled jobs are
+
+        intentionally omitted.
+
+
+        ``recent`` is bounded server-side to the latest 10 records,
+
+        newest first by ``completed_at`` descending.'
+      properties:
+        by_report_type:
+          additionalProperties:
+            type: integer
+          title: By Report Type
+          type: object
+        by_scope:
+          additionalProperties:
+            type: integer
+          title: By Scope
+          type: object
+        project_id:
+          title: Project Id
+          type: string
+        recent:
+          items:
+            $ref: '#/components/schemas/ProjectReportSummaryItemOut'
+          title: Recent
+          type: array
+        total_completed:
+          title: Total Completed
+          type: integer
+      required:
+      - project_id
+      - total_completed
+      - by_scope
+      - by_report_type
+      - recent
+      title: ProjectReportSummaryOut
+      type: object
     ProjectTestRunIn:
       additionalProperties: false
       description: 'Request body for queueing a project-wide batch test.
@@ -4928,6 +5053,29 @@ components:
       - status
       - tags
       title: RecordingIssueOut
+      type: object
+    RecordingIssuePatchIn:
+      additionalProperties: true
+      description: "Request body for ``PATCH /api/v1/recording-issues/<issue_id>``.\n\
+        \nFree-form ``dict[str, object]`` rather than a typed schema so the\nhandler\
+        \ can preserve the legacy 400 wire shape on validation\nfailures. The editable\
+        \ fields are:\n\n- ``status`` — one of ``open``, ``in_progress``, ``resolved``,\n\
+        \  ``verified``. Invalid values emit\n  ``{field: status, code: invalid_value,\
+        \ ...}`` (Pydantic's\n  literal validator would emit ``literal_error``).\n\
+        - ``assigned_to`` — string or null. The handler distinguishes\n  \"absent\"\
+        \ (leave untouched) from \"null\" (clear). A typed\n  ``Optional[str]`` would\
+        \ collapse both into ``None``.\n- ``resolution_notes`` — same null vs absent\
+        \ semantics as\n  ``assigned_to``.\n- ``tags`` — list of strings. The handler\
+        \ validates the\n  list-of-strings shape and emits ``{field: tags, code:\n\
+        \  invalid_type, ...}``; Pydantic's list-of-str validator would\n  emit a\
+        \ different envelope.\n\nThe bulk content fields (what/why/who/remediation,\
+        \ timecodes,\nWCAG references) are populated from the source JSON at upload\n\
+        time and are intentionally not patchable here.\n\nMirrors :class:`auto_a11y.web.api.schemas.admin.GenericSectionPatchIn`:\n\
+        same RootModel pattern, same \"valid keys / value rules live in\nthe handler,\
+        \ not the schema\" rationale. The OpenAPI surface for\nthis endpoint is therefore\
+        \ a free-form object; consumers should\nconsult :class:`RecordingIssueOut`\
+        \ for the documented field\nsemantics."
+      title: RecordingIssuePatchIn
       type: object
     RecordingListOut:
       additionalProperties: false
@@ -7408,6 +7556,102 @@ components:
       - states
       title: TestResultStatesOut
       type: object
+    TestRunBatchHandleOut:
+      additionalProperties: false
+      description: 'One per-page handle inside :attr:`TestRunBatchOut.runs`.
+
+
+        Mirrors the legacy handle dict the batch handler builds inline.
+
+        Slimmer than :class:`TopLevelTestRunOut` because the outer
+
+        envelope''s ``status`` covers the whole batch.'
+      properties:
+        job_id:
+          title: Job Id
+          type: string
+        multi_state:
+          title: Multi State
+          type: boolean
+        page_id:
+          title: Page Id
+          type: string
+      required:
+      - job_id
+      - page_id
+      - multi_state
+      title: TestRunBatchHandleOut
+      type: object
+    TestRunBatchIn:
+      additionalProperties: false
+      description: 'Request body for ``POST /api/v1/test-runs/batch``.
+
+
+        Queues a single-page run for each of ``page_ids``; all entries
+
+        must resolve to a real page before any run is queued (the legacy
+
+        handler validates up front so the operation is all-or-nothing).
+
+
+        ``page_ids`` is typed as ``list[str]`` without a min-length
+
+        constraint — the handler raises a custom :class:`ValidationError`
+
+        with field path ``page_ids`` and code ``too_short`` for the empty
+
+        case, and Pydantic''s min-length validator would emit a different
+
+        error code on the wire.'
+      properties:
+        enable_multi_state:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Enable Multi State
+        page_ids:
+          items:
+            type: string
+          title: Page Ids
+          type: array
+        website_user_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Website User Id
+      required:
+      - page_ids
+      title: TestRunBatchIn
+      type: object
+    TestRunBatchOut:
+      additionalProperties: false
+      description: 'Response body (202) for ``POST /api/v1/test-runs/batch``.
+
+
+        Mirrors the legacy ``jsonify`` payload byte-for-byte. ``runs`` is
+
+        in the same order as the input ``page_ids``.'
+      properties:
+        pages_queued:
+          title: Pages Queued
+          type: integer
+        runs:
+          items:
+            $ref: '#/components/schemas/TestRunBatchHandleOut'
+          title: Runs
+          type: array
+        status:
+          const: queued
+          title: Status
+          type: string
+      required:
+      - status
+      - pages_queued
+      - runs
+      title: TestRunBatchOut
+      type: object
     TestStateEntryOut:
       additionalProperties: false
       description: 'A single state''s summary inside a multi-state results listing.
@@ -7474,6 +7718,174 @@ components:
       - pass_count
       - duration_ms
       title: TestStateEntryOut
+      type: object
+    TestingConfigOut:
+      additionalProperties: false
+      description: "Response body for ``GET /api/v1/testing/config``.\n\nMirrors :func:`_serialize_testing_config`\
+        \ byte-for-byte. Every\nfield is concrete on the wire because the helper substitutes\n\
+        typed defaults (``0`` / ``False``) for unset config attributes.\n\nField semantics:\n\
+        \n- ``parallel_tests`` — number of concurrent browser workers.\n- ``test_timeout``\
+        \ — per-page browser timeout in milliseconds.\n- ``run_ai_analysis`` — global\
+        \ toggle for Claude visual analysis.\n- ``browser_headless`` — whether Playwright\
+        \ runs headless.\n- ``viewport_width`` / ``viewport_height`` — browser viewport\n\
+        \  dimensions in pixels.\n- ``pages_per_page`` / ``max_pages_per_page`` —\
+        \ admin-UI\n  pagination defaults / upper bound.\n- ``show_error_codes`` —\
+        \ developer/debug toggle that surfaces\n  internal error codes in the admin\
+        \ UI."
+      properties:
+        browser_headless:
+          title: Browser Headless
+          type: boolean
+        max_pages_per_page:
+          title: Max Pages Per Page
+          type: integer
+        pages_per_page:
+          title: Pages Per Page
+          type: integer
+        parallel_tests:
+          title: Parallel Tests
+          type: integer
+        run_ai_analysis:
+          title: Run Ai Analysis
+          type: boolean
+        show_error_codes:
+          title: Show Error Codes
+          type: boolean
+        test_timeout:
+          title: Test Timeout
+          type: integer
+        viewport_height:
+          title: Viewport Height
+          type: integer
+        viewport_width:
+          title: Viewport Width
+          type: integer
+      required:
+      - parallel_tests
+      - test_timeout
+      - run_ai_analysis
+      - browser_headless
+      - viewport_width
+      - viewport_height
+      - pages_per_page
+      - max_pages_per_page
+      - show_error_codes
+      title: TestingConfigOut
+      type: object
+    TestingConfigPatchIn:
+      additionalProperties: true
+      description: 'Request body for ``PUT /api/v1/testing/config``.
+
+
+        Free-form ``dict[str, object]`` rather than a typed model so the
+
+        handler can preserve the legacy 400 wire shape on unknown keys
+
+        (``{field, code: "unknown_field", message: "unknown config key"}``
+
+        in the ``errors`` array). Pydantic''s ``extra=''forbid''`` would
+
+        emit a different error envelope (``extra_forbidden`` on a ``loc``
+
+        path) and break in-flight admin frontends.
+
+
+        The same RootModel pattern is used by
+
+        :class:`auto_a11y.web.api.schemas.admin.GenericSectionPatchIn`
+
+        for the admin-settings PATCH surface, which has the same
+
+        "valid-keys list lives in a runtime registry" constraint. The
+
+        OpenAPI surface for this endpoint is therefore a free-form
+
+        object; consumers should consult :class:`TestingConfigOut` for
+
+        the documented field list.
+
+
+        PUT here is *partial*: any subset of the documented keys is
+
+        accepted; missing keys are left untouched (the legacy POST
+
+        handler was already partial-update; we preserve that semantics).
+
+        Per-key type validation (``isinstance(value, bool)`` and
+
+        ``isinstance(value, int)`` excluding ``bool``-as-int) happens in
+
+        the handler so the error wire shape stays consistent with the
+
+        legacy ``invalid_type`` field-error code.'
+      title: TestingConfigPatchIn
+      type: object
+    TopLevelTestRunIn:
+      additionalProperties: false
+      description: 'Request body for ``POST /api/v1/test-runs``.
+
+
+        Top-level form of the per-page ``POST /api/v1/pages/<id>/test-runs``
+
+        that takes the page id in the body instead of the URL. ``page_id``
+
+        is required; the other fields mirror :class:`PageTestRunIn` from
+
+        ``test_runs.py``.'
+      properties:
+        enable_multi_state:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Enable Multi State
+        page_id:
+          title: Page Id
+          type: string
+        website_user_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Website User Id
+      required:
+      - page_id
+      title: TopLevelTestRunIn
+      type: object
+    TopLevelTestRunOut:
+      additionalProperties: false
+      description: 'Response body (202) for ``POST /api/v1/test-runs``.
+
+
+        Mirrors the legacy ``jsonify`` payload byte-for-byte: same shape
+
+        as :class:`PageTestRunStartedOut` from ``test_runs.py`` but
+
+        duplicated rather than re-imported so the two endpoints can
+
+        diverge independently (e.g. the top-level form could grow a
+
+        ``submitted_by`` echo without forcing it onto the per-page route).'
+      properties:
+        job_id:
+          title: Job Id
+          type: string
+        multi_state:
+          title: Multi State
+          type: boolean
+        page_id:
+          title: Page Id
+          type: string
+        status:
+          const: queued
+          title: Status
+          type: string
+      required:
+      - job_id
+      - page_id
+      - multi_state
+      - status
+      title: TopLevelTestRunOut
       type: object
     UserSearchListOut:
       additionalProperties: false
@@ -11810,6 +12222,52 @@ paths:
       summary: Upload or fetch a PDF document for a project
       tags:
       - PDFs
+  /projects/{project_id}/report-summary:
+    get:
+      description: 'Returns counts and the 10 most-recent completed report-generation
+        jobs for a project — a "what reports are available to download right now"
+        view. Counts and the ``recent`` list both filter to ``status=COMPLETED``:
+        failed or cancelled jobs are intentionally omitted. Use ``GET /api/v1/jobs?status=...``
+        for the broader job history. ``by_scope`` / ``by_report_type`` are free-form
+        ``dict[str, int]`` because their keys (``scope`` / ``report_type`` metadata
+        strings) are not a closed set — new report generators can grow new values
+        without a schema bump.'
+      parameters:
+      - in: path
+        name: project_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectReportSummaryOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Aggregate completed report-generation jobs for a project
+      tags:
+      - Reports
   /projects/{project_id}/reports:
     post:
       description: Queues a background job to generate one of four project-scoped
@@ -12135,6 +12593,112 @@ paths:
       summary: Create a website
       tags:
       - Websites
+  /recording-issues/{issue_id}:
+    get:
+      description: Returns the full :class:`RecordingIssueOut` projection for a single
+        issue. Distinct from ``GET /api/v1/recordings/<id>/issues`` (which is the
+        cursor-paginated list under a parent recording); this endpoint is the per-issue
+        read-by-id path used by the triage UI's deep-link form. Issues whose ``project_id``
+        is null (legacy data from before recordings were scoped to projects) are treated
+        as not-found to keep the auth model coherent.
+      parameters:
+      - in: path
+        name: issue_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordingIssueOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Get a recording issue by id
+      tags:
+      - Recordings
+    patch:
+      description: 'Updates the triage-workflow fields on a recording issue: ``status``
+        (open / in_progress / resolved / verified), ``assigned_to``, ``resolution_notes``,
+        ``tags``. The bulk content fields (what/why/who/remediation, timecodes, WCAG
+        references) are set during upload from the source JSON and are intentionally
+        not patchable here. The body validation is performed by the handler (not Pydantic''s
+        literal/list constraints) so the legacy ``invalid_value`` / ``invalid_type``
+        error codes are preserved on the wire.'
+      parameters:
+      - in: path
+        name: issue_id
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordingIssuePatchIn'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordingIssueOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Partial update of a recording issue
+      tags:
+      - Recordings
   /recordings:
     get:
       description: Returns recordings filtered by ``?project_id=<id>`` (required)
@@ -13476,6 +14040,204 @@ paths:
       summary: List sibling state test results
       tags:
       - Test results
+  /test-runs:
+    post:
+      description: Top-level form of ``POST /api/v1/pages/<id>/test-runs`` that takes
+        the page id in the request body instead of the URL. Both endpoints call ``start_page_test_run``
+        and return the same 202 handle envelope. Use this form when a caller already
+        has the page id in its payload (a queue worker, a "test this page" bookmark
+        service, etc.) and stringing it into a URL is awkward.
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TopLevelTestRunIn'
+        required: true
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopLevelTestRunOut'
+          description: Accepted
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Queue a single-page accessibility test run (top-level)
+      tags:
+      - Test runs
+  /test-runs/batch:
+    post:
+      description: 'Queues a single-page run for each entry in ``page_ids`` through
+        ``start_page_test_run`` — the same helper the per-page and top-level single-page
+        endpoints use. Pages from different websites can be mixed; auth is enforced
+        per-page. The request is all-or-nothing: an unknown id raises 404 before anything
+        is queued, so the response list always has exactly one handle per input id
+        in the same order. Use ``POST /api/v1/websites/<id>/test-runs`` for whole-website
+        testing — it handles per-user sequential execution and PDF audit folding that
+        this endpoint deliberately doesn''t.'
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestRunBatchIn'
+        required: true
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestRunBatchOut'
+          description: Accepted
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Queue accessibility test runs for several pages
+      tags:
+      - Test runs
+  /testing/config:
+    get:
+      description: Mirrors the legacy GET ``/testing/configure`` form view but emits
+        JSON only — the HTML form is retained on ``testing_bp`` for the admin UI.
+        Returns every documented key with a concrete value (typed defaults substitute
+        for unset config attributes). Superadmin-only because this surface also gates
+        the PUT writer and we don't want two role checks to drift.
+      parameters: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestingConfigOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Read the runtime testing config
+      tags:
+      - Testing config
+    put:
+      description: 'Partial update — any subset of the documented keys is accepted;
+        missing keys are left untouched (the PUT here is a *full-update-or-no-change*
+        shape, matching the legacy POST handler that only wrote the keys present in
+        the body). Unknown keys raise 400 so typos surface immediately. **In-process
+        only:** writes go to the live ``Config`` object, not to ``.env`` or a database.
+        The changes survive until the process restarts; persisting these settings
+        is out of scope for #27 (an admin-settings PR covers the persistent equivalents).
+        Returns the full post-update config so callers can confirm the effective values
+        without a follow-up GET.'
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestingConfigPatchIn'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestingConfigOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Update runtime testing config keys
+      tags:
+      - Testing config
   /users:
     get:
       description: Returns the full list of :class:`AppUser` accounts with no pagination

@@ -225,6 +225,16 @@ from auto_a11y.web.api.schemas.test_runs import (
     WebsiteTestRunIn,
     WebsiteTestRunStartedOut,
 )
+from auto_a11y.web.api.schemas.test_users import (
+    LoginConfigOut,
+    ProjectTestUserListOut,
+    ProjectTestUserOut,
+    TestUserIn,
+    TestUserLoginOut,
+    TestUserPatch,
+    WebsiteTestUserListOut,
+    WebsiteTestUserOut,
+)
 from auto_a11y.web.typed_app import get_db, get_app_config, get_test_config
 from datetime import datetime
 import logging
@@ -9316,31 +9326,77 @@ def _app_user_to_search_out(user: AppUser) -> UserSearchOut:
     )
 
 
-def _serialize_login_config_via_model(config: Any) -> dict[str, Any]:
-    """Project either model's LoginConfig to JSON.
+def _serialize_login_config_via_model(config: Any) -> LoginConfigOut:
+    """Project either model's LoginConfig to its Pydantic response model.
 
     Both ProjectUser and WebsiteUser have their own LoginConfig class;
     they share an identical to_dict() shape, so we delegate to it
     instead of binding to one specific class.
+
+    ``manual_login_wait_seconds`` is intentionally not surfaced — the
+    legacy wire does not expose it (and the login-automation code
+    reads it directly off the model). Adding it here would change
+    the wire shape.
+
+    ``additional_steps`` entries are preserved with ``object``-typed
+    values; the legacy parser does not introspect step contents and
+    we forward them through unchanged. Non-dict entries are
+    defensively dropped (the legacy code already rejected them at
+    write time, so this branch is unreachable in practice but the
+    type narrowing is required to satisfy the strict checkers).
     """
     raw: dict[str, Any] = config.to_dict()
-    return {
-        "authentication_method": raw["authentication_method"],
-        "login_url": raw["login_url"],
-        "username_field_selector": raw["username_field_selector"],
-        "password_field_selector": raw["password_field_selector"],
-        "submit_button_selector": raw["submit_button_selector"],
-        "success_indicator_selector": raw["success_indicator_selector"],
-        "logout_url": raw["logout_url"],
-        "logout_button_selector": raw["logout_button_selector"],
-        "logout_success_indicator_selector": raw["logout_success_indicator_selector"],
-        "additional_steps": list(raw["additional_steps"]),
-        "session_timeout_minutes": raw["session_timeout_minutes"],
-    }
+    auth_method_raw: object = raw["authentication_method"]
+    auth_method = (
+        auth_method_raw if isinstance(auth_method_raw, str) else str(auth_method_raw)
+    )
+    steps_raw: object = raw["additional_steps"]
+    steps_iterable: list[object] = (
+        _iter_to_any_list(steps_raw) if isinstance(steps_raw, list) else []
+    )
+    steps: list[dict[str, object]] = []
+    for step in steps_iterable:
+        if isinstance(step, dict):
+            step_dict = cast(dict[object, object], step)
+            normalized: dict[str, object] = {}
+            for key, value in step_dict.items():
+                if isinstance(key, str):
+                    normalized[key] = value
+            steps.append(normalized)
+    session_timeout_raw: object = raw["session_timeout_minutes"]
+    session_timeout = (
+        session_timeout_raw
+        if isinstance(session_timeout_raw, int) and not isinstance(session_timeout_raw, bool)
+        else 30
+    )
+
+    def _opt_str(value: object) -> str | None:
+        return value if isinstance(value, str) else None
+
+    return LoginConfigOut(
+        authentication_method=auth_method,
+        login_url=_opt_str(raw["login_url"]),
+        username_field_selector=_opt_str(raw["username_field_selector"]),
+        password_field_selector=_opt_str(raw["password_field_selector"]),
+        submit_button_selector=_opt_str(raw["submit_button_selector"]),
+        success_indicator_selector=_opt_str(raw["success_indicator_selector"]),
+        logout_url=_opt_str(raw["logout_url"]),
+        logout_button_selector=_opt_str(raw["logout_button_selector"]),
+        logout_success_indicator_selector=_opt_str(
+            raw["logout_success_indicator_selector"]
+        ),
+        additional_steps=steps,
+        session_timeout_minutes=session_timeout,
+    )
 
 
-def _serialize_project_test_user(user: ProjectUser) -> dict[str, Any]:
-    """Project a :class:`ProjectUser` to a JSON-safe dict.
+def _serialize_project_test_user(user: ProjectUser) -> ProjectTestUserOut:
+    """Project a :class:`ProjectUser` to its Pydantic response model.
+
+    Mirrors the legacy ``_serialize_project_test_user`` byte-for-byte
+    (the helper used to return ``dict[str, Any]``; the F1b refactor
+    swapped the return type for :class:`ProjectTestUserOut` so the
+    documented endpoints can return a typed model directly).
 
     The raw ``password`` is intentionally not included — it's a
     test-credentials secret used by the login automation and the API
@@ -9352,46 +9408,46 @@ def _serialize_project_test_user(user: ProjectUser) -> dict[str, Any]:
     def _iso(dt: datetime | None) -> str | None:
         return dt.isoformat() if dt is not None else None
 
-    return {
-        "id": user.id,
-        "project_id": user.project_id,
-        "username": user.username,
-        "password_set": bool(user.password),
-        "display_name": user.display_name,
-        "roles": list(user.roles),
-        "description": user.description,
-        "login_config": _serialize_login_config_via_model(user.login_config),
-        "enabled": user.enabled,
-        "last_used": _iso(user.last_used),
-        "last_login_success": user.last_login_success,
-        "last_login_error": user.last_login_error,
-        "created_at": _iso(user.created_at),
-        "updated_at": _iso(user.updated_at),
-    }
+    return ProjectTestUserOut(
+        id=user.id,
+        project_id=user.project_id,
+        username=user.username,
+        password_set=bool(user.password),
+        display_name=user.display_name,
+        roles=list(user.roles),
+        description=user.description,
+        login_config=_serialize_login_config_via_model(user.login_config),
+        enabled=user.enabled,
+        last_used=_iso(user.last_used),
+        last_login_success=user.last_login_success,
+        last_login_error=user.last_login_error,
+        created_at=_iso(user.created_at),
+        updated_at=_iso(user.updated_at),
+    )
 
 
-def _serialize_website_test_user(user: WebsiteUser) -> dict[str, Any]:
+def _serialize_website_test_user(user: WebsiteUser) -> WebsiteTestUserOut:
     """Same shape as project test user, with ``website_id`` instead of ``project_id``."""
 
     def _iso(dt: datetime | None) -> str | None:
         return dt.isoformat() if dt is not None else None
 
-    return {
-        "id": user.id,
-        "website_id": user.website_id,
-        "username": user.username,
-        "password_set": bool(user.password),
-        "display_name": user.display_name,
-        "roles": list(user.roles),
-        "description": user.description,
-        "login_config": _serialize_login_config_via_model(user.login_config),
-        "enabled": user.enabled,
-        "last_used": _iso(user.last_used),
-        "last_login_success": user.last_login_success,
-        "last_login_error": user.last_login_error,
-        "created_at": _iso(user.created_at),
-        "updated_at": _iso(user.updated_at),
-    }
+    return WebsiteTestUserOut(
+        id=user.id,
+        website_id=user.website_id,
+        username=user.username,
+        password_set=bool(user.password),
+        display_name=user.display_name,
+        roles=list(user.roles),
+        description=user.description,
+        login_config=_serialize_login_config_via_model(user.login_config),
+        enabled=user.enabled,
+        last_used=_iso(user.last_used),
+        last_login_success=user.last_login_success,
+        last_login_error=user.last_login_error,
+        created_at=_iso(user.created_at),
+        updated_at=_iso(user.updated_at),
+    )
 
 
 def _parse_login_config_dict(raw: Any, *, field: str) -> dict[str, Any]:
@@ -9800,6 +9856,20 @@ def remove_project_member_rest(
 # ---------------------------------------------------------------------------
 
 
+def _test_user_body_to_dict(body: TestUserIn | TestUserPatch) -> dict[str, Any]:
+    """Re-serialise a validated ``TestUserIn``/``TestUserPatch`` to the
+    legacy dict shape ``_build_*_from_body`` and
+    ``_apply_patch_to_test_user`` expect.
+
+    Uses ``exclude_unset=True`` so missing fields stay missing on the
+    dict (the legacy parsers branch on ``if "field" in body``, treating
+    "absent" and "explicit None" differently). The ``login_config``
+    sub-model is dumped with ``mode='json'`` so the legacy parser sees
+    a plain dict, not the Pydantic instance.
+    """
+    return body.model_dump(mode="json", exclude_unset=True, by_alias=True)
+
+
 def _build_project_test_user_from_body(project_id: str, body: dict[str, Any]) -> ProjectUser:
     from auto_a11y.models.project_user import LoginConfig as ProjectLoginConfig
 
@@ -9946,7 +10016,24 @@ def _apply_patch_to_test_user(
 
 @api_bp.route("/projects/<project_id>/test-users", methods=["GET"])
 @api_endpoint
-def list_project_test_users_rest(project_id: str) -> tuple[Response, int] | Response:
+@document(
+    response_200=ProjectTestUserListOut,
+    errors=[401, 403, 404],
+    tags=["TestUsers"],
+    summary="List a project's test users (login credentials)",
+    description=(
+        "Lists the test-user credentials configured on a project. "
+        "Each entry is the same shape as the single-resource "
+        "``GET /project-test-users/<user_id>`` response. The list is "
+        "non-paginated (test-user counts are bounded by small "
+        "constants in practice — a project tracks a handful of "
+        "accounts, not thousands) and the raw password field is "
+        "never surfaced; clients see only ``password_set: bool``."
+    ),
+)
+def list_project_test_users_rest(
+    project_id: str,
+) -> tuple[ProjectTestUserListOut, int]:
     """List test users (login credentials) for a project."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, project_id=project_id
@@ -9954,12 +10041,32 @@ def list_project_test_users_rest(project_id: str) -> tuple[Response, int] | Resp
     if get_db().get_project(project_id) is None:
         raise NotFoundError(f"project {project_id} not found")
     users = get_db().get_project_users(project_id)
-    return jsonify({"items": [_serialize_project_test_user(u) for u in users]})
+    return ProjectTestUserListOut(
+        items=[_serialize_project_test_user(u) for u in users]
+    ), 200
 
 
 @api_bp.route("/projects/<project_id>/test-users", methods=["POST"])
 @api_endpoint
-def create_project_test_user_rest(project_id: str) -> tuple[Response, int]:
+@document(
+    request=TestUserIn,
+    response_201=ProjectTestUserOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["TestUsers"],
+    summary="Create a test user under a project",
+    description=(
+        "Creates a project-scoped test user. ``username`` and "
+        "``password`` are semantically required on create (the "
+        "handler surfaces its own 400 with field-specific codes). "
+        "On success returns 201 with the persisted "
+        "``ProjectTestUserOut`` resource plus a ``Location`` header "
+        "pointing at ``/api/v1/project-test-users/<user_id>``. "
+        "Duplicate ``username`` within the project surfaces as a 409."
+    ),
+)
+def create_project_test_user_rest(
+    project_id: str, body: TestUserIn,
+) -> tuple[Response, int]:
     """Create a test user under a project."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id
@@ -9967,8 +10074,8 @@ def create_project_test_user_rest(project_id: str) -> tuple[Response, int]:
     if get_db().get_project(project_id) is None:
         raise NotFoundError(f"project {project_id} not found")
 
-    body = _require_dict_body()
-    user = _build_project_test_user_from_body(project_id, body)
+    legacy_body = _test_user_body_to_dict(body)
+    user = _build_project_test_user_from_body(project_id, legacy_body)
 
     if get_db().get_project_user_by_username(project_id, user.username) is not None:
         raise ConflictError(f"username {user.username!r} is already in use in this project")
@@ -9977,14 +10084,26 @@ def create_project_test_user_rest(project_id: str) -> tuple[Response, int]:
     refreshed = get_db().get_project_user(user_id)
     if refreshed is None:
         raise ConflictError("project test user failed to persist")
-    response = jsonify(_serialize_project_test_user(refreshed))
+    # The @document decorator serialises BaseModel returns through
+    # ``jsonify``, but we need a ``Location`` header on the new
+    # resource, so we pre-build the Response here and attach the header.
+    payload = _serialize_project_test_user(refreshed)
+    response = jsonify(
+        payload.model_dump(mode="json", by_alias=True, exclude_none=True)
+    )
     response.headers["Location"] = f"/api/v1/project-test-users/{user_id}"
     return response, 201
 
 
 @api_bp.route("/project-test-users/<user_id>", methods=["GET"])
 @api_endpoint
-def get_project_test_user_rest(user_id: str) -> tuple[Response, int] | Response:
+@document(
+    response_200=ProjectTestUserOut,
+    errors=[401, 403, 404],
+    tags=["TestUsers"],
+    summary="Get a single project test user",
+)
+def get_project_test_user_rest(user_id: str) -> tuple[ProjectTestUserOut, int]:
     """Get one project test user."""
     user = get_db().get_project_user(user_id)
     if user is None:
@@ -9992,29 +10111,48 @@ def get_project_test_user_rest(user_id: str) -> tuple[Response, int] | Response:
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, project_id=user.project_id
     )
-    return jsonify(_serialize_project_test_user(user))
+    return _serialize_project_test_user(user), 200
 
 
 @api_bp.route("/project-test-users/<user_id>", methods=["PUT"])
 @api_endpoint
-def replace_project_test_user_rest(user_id: str) -> tuple[Response, int] | Response:
-    """Full replace of a project test user's editable fields.
-
-    project_id and metadata (last_used, last_login_*) are preserved;
-    blank password preserves the existing one.
-    """
+@document(
+    request=TestUserIn,
+    response_200=ProjectTestUserOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["TestUsers"],
+    summary="Replace a project test user's editable fields",
+    description=(
+        "Full replace of a project test user's editable fields. The "
+        "parent ``project_id``, the Mongo ``_id``, and the login "
+        "metadata (``last_used``, ``last_login_success``, "
+        "``last_login_error``) are preserved across the replace. A "
+        "missing or blank ``password`` on the PUT body preserves the "
+        "existing password (admin-settings secret-handling rule); "
+        "any other field must be supplied. Duplicate ``username`` "
+        "within the project surfaces as a 409."
+    ),
+)
+def replace_project_test_user_rest(
+    user_id: str, body: TestUserIn,
+) -> tuple[ProjectTestUserOut, int]:
+    """Full replace of a project test user's editable fields."""
     existing = get_db().get_project_user(user_id)
     if existing is None:
         raise NotFoundError(f"project test user {user_id} not found")
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, project_id=existing.project_id
     )
-    body = _require_dict_body()
+    legacy_body = _test_user_body_to_dict(body)
     # PUT body needs a password unless the existing record has one we
     # can preserve (admin-settings rule).
-    if "password" not in body or not isinstance(body.get("password"), str) or not body["password"]:
-        body["password"] = existing.password
-    replaced = _build_project_test_user_from_body(existing.project_id, body)
+    if (
+        "password" not in legacy_body
+        or not isinstance(legacy_body.get("password"), str)
+        or not legacy_body["password"]
+    ):
+        legacy_body["password"] = existing.password
+    replaced = _build_project_test_user_from_body(existing.project_id, legacy_body)
     if (
         replaced.username != existing.username
         and get_db().get_project_user_by_username(existing.project_id, replaced.username) is not None
@@ -10028,12 +10166,29 @@ def replace_project_test_user_rest(user_id: str) -> tuple[Response, int] | Respo
     replaced.update_timestamp()
     if not get_db().update_project_user(replaced):
         raise ConflictError("project test user could not be updated")
-    return jsonify(_serialize_project_test_user(replaced))
+    return _serialize_project_test_user(replaced), 200
 
 
 @api_bp.route("/project-test-users/<user_id>", methods=["PATCH"])
 @api_endpoint
-def patch_project_test_user_rest(user_id: str) -> tuple[Response, int] | Response:
+@document(
+    request=TestUserPatch,
+    response_200=ProjectTestUserOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["TestUsers"],
+    summary="Partially update a project test user",
+    description=(
+        "Partial update of a project test user — covers the legacy "
+        "enable/disable toggle plus any per-field edit. Missing keys "
+        "leave the corresponding field untouched. A missing or blank "
+        "``password`` preserves the existing one; setting it to a "
+        "non-empty string rotates it. Renaming ``username`` to a "
+        "value already in use on the project surfaces as a 409."
+    ),
+)
+def patch_project_test_user_rest(
+    user_id: str, body: TestUserPatch,
+) -> tuple[ProjectTestUserOut, int]:
     """Partial update — covers the legacy enable/disable toggle."""
     user = get_db().get_project_user(user_id)
     if user is None:
@@ -10041,21 +10196,27 @@ def patch_project_test_user_rest(user_id: str) -> tuple[Response, int] | Respons
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, project_id=user.project_id
     )
-    body = _require_dict_body()
-    if "username" in body and isinstance(body["username"], str):
-        new_username = body["username"].strip()
+    legacy_body = _test_user_body_to_dict(body)
+    if "username" in legacy_body and isinstance(legacy_body["username"], str):
+        new_username = legacy_body["username"].strip()
         if new_username != user.username:
             if get_db().get_project_user_by_username(user.project_id, new_username) is not None:
                 raise ConflictError(f"username {new_username!r} is already in use in this project")
-    _apply_patch_to_test_user(user, body)
+    _apply_patch_to_test_user(user, legacy_body)
     if not get_db().update_project_user(user):
         raise ConflictError("project test user could not be updated")
-    return jsonify(_serialize_project_test_user(user))
+    return _serialize_project_test_user(user), 200
 
 
 @api_bp.route("/project-test-users/<user_id>", methods=["DELETE"])
 @api_endpoint
-def delete_project_test_user_rest(user_id: str) -> tuple[Response, int]:
+@document(
+    response_204=Empty,
+    errors=[401, 403, 404],
+    tags=["TestUsers"],
+    summary="Delete a project test user",
+)
+def delete_project_test_user_rest(user_id: str) -> tuple[Empty, int]:
     """Delete a project test user."""
     user = get_db().get_project_user(user_id)
     if user is None:
@@ -10064,7 +10225,7 @@ def delete_project_test_user_rest(user_id: str) -> tuple[Response, int]:
         UserRole.ADMIN, UserRole.AUDITOR, project_id=user.project_id
     )
     get_db().delete_project_user(user_id)
-    return Response(status=204), 204
+    return Empty(), 204
 
 
 # --- Test-login action endpoints (§5.11) -------------------------------------
@@ -10094,6 +10255,24 @@ def _build_login_browser_config(
     if project_headless is not None:
         browser_config["BROWSER_HEADLESS"] = project_headless == "true"
     return browser_config
+
+
+def _login_result_error(value: object) -> str | None:
+    """Coerce the ``error`` field on a login_automation result dict.
+
+    The legacy handler did ``result.get("error")`` and forwarded the
+    value unchanged; the result dict is opaque to the route layer.
+    The Pydantic ``TestUserLoginOut`` schema declares ``error`` as
+    ``Optional[str]``, so we normalise non-string truthy values to
+    their ``str()`` representation (preserves the legacy "error
+    message round-tripped to the caller" semantic) and treat None /
+    falsy / empty values as ``None``.
+    """
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return value
+    return str(value)
 
 
 async def _run_login_test(
@@ -10127,40 +10306,40 @@ async def _run_login_test(
     "/project-test-users/<user_id>/test-login", methods=["POST"]
 )
 @api_endpoint
+@document(
+    response_200=TestUserLoginOut,
+    errors=[400, 401, 403, 404, 409, 500],
+    tags=["TestUsers"],
+    summary="Run a project test-user's login automation synchronously",
+    description=(
+        "Spins a fresh browser, attempts the project test-user's "
+        "login automation against the live site, and returns the "
+        "result inline. Synchronous — status 200 (not 202) on both "
+        "success and failure signals \"done synchronously\" so "
+        "clients don't poll a non-existent job. The 500 path "
+        "carries the same envelope shape with ``success=false`` and "
+        "the error message in ``error``, so clients have a single "
+        "parser regardless of outcome. The browser is closed before "
+        "returning even when login fails or raises — no leaked "
+        "Playwright instances.\n\n"
+        "Errors:\n\n"
+        "- **400** — ``login_url`` is not configured and the "
+        "authentication method is not ``manual_login`` (manual "
+        "login doesn't need a URL; it pops a visible browser for "
+        "the operator to drive).\n"
+        "- **404** — user does not exist.\n"
+        "- **409** — server-side ``BROWSER_MODE`` rules out a local "
+        "browser (``disabled`` or ``remote`` — the endpoint has no "
+        "queueable fallback).\n"
+        "- **500** — the login automation raised; the body still "
+        "carries the ``success: false`` envelope plus the error "
+        "message."
+    ),
+)
 def test_project_user_login(
     user_id: str,
-) -> tuple[Response, int] | Response:
-    """Run the project test-user's login automation against the live site.
-
-    Synchronous; the response is the same envelope shape regardless of
-    success or failure so clients have a single parser. The fresh
-    browser is closed before returning even when login fails or
-    raises — no leaked Playwright instances.
-
-    Response shape:
-
-        {
-          "user_id":      "...",
-          "scope":        "project",
-          "success":      true|false,
-          "duration_ms":  int,
-          "error":        null | "...",
-          "manual_login": bool,
-          "wait_seconds": int | null
-        }
-
-    Errors:
-
-    - **404** — user does not exist
-    - **400** — login_url is not configured AND authentication_method
-      is not ``manual_login`` (manual login doesn't need a URL — it
-      pops a visible browser for the operator to drive)
-    - **409** — server-side BROWSER_MODE rules out a local browser
-      (``disabled`` / ``remote`` — the endpoint has no queueable
-      fallback)
-    - **500** — login_automation raises; the body still carries the
-      ``success: false`` envelope plus the error message
-    """
+) -> tuple[TestUserLoginOut, int] | tuple[Response, int]:
+    """Run the project test-user's login automation against the live site."""
     import asyncio
 
     user = get_db().get_project_user(user_id)
@@ -10217,43 +10396,60 @@ def test_project_user_login(
         logger.error(
             "Error testing login for project user %s: %s", user_id, exc,
         )
-        return jsonify({
-            "user_id": user_id,
-            "scope": "project",
-            "success": False,
-            "duration_ms": 0,
-            "error": str(exc),
-            "manual_login": is_manual,
-            "wait_seconds": wait_seconds if is_manual else None,
-        }), 500
+        # 500 envelope is the same shape as the success/failure
+        # envelope so clients have a single parser. We pre-build the
+        # Response here rather than returning the BaseModel because
+        # the @document wrapper only serialises BaseModel returns at
+        # the declared response_<code> status; a 500 envelope has to
+        # ride through unchanged.
+        error_payload = TestUserLoginOut(
+            user_id=user_id,
+            scope="project",
+            success=False,
+            duration_ms=0,
+            error=str(exc),
+            manual_login=is_manual,
+            wait_seconds=wait_seconds if is_manual else None,
+        )
+        return jsonify(
+            error_payload.model_dump(mode="json", by_alias=True, exclude_none=True)
+        ), 500
     finally:
         loop.close()
 
-    return jsonify({
-        "user_id": user_id,
-        "scope": "project",
-        "success": bool(result.get("success", False)),
-        "duration_ms": int(result.get("duration_ms", 0) or 0),
-        "error": result.get("error"),
-        "manual_login": is_manual,
-        "wait_seconds": wait_seconds if is_manual else None,
-    })
+    return TestUserLoginOut(
+        user_id=user_id,
+        scope="project",
+        success=bool(result.get("success", False)),
+        duration_ms=int(result.get("duration_ms", 0) or 0),
+        error=_login_result_error(result.get("error")),
+        manual_login=is_manual,
+        wait_seconds=wait_seconds if is_manual else None,
+    ), 200
 
 
 @api_bp.route(
     "/website-test-users/<user_id>/test-login", methods=["POST"]
 )
 @api_endpoint
+@document(
+    response_200=TestUserLoginOut,
+    errors=[400, 401, 403, 404, 409, 500],
+    tags=["TestUsers"],
+    summary="Run a website test-user's login automation synchronously",
+    description=(
+        "Companion to ``POST /project-test-users/<id>/test-login``. "
+        "The two share the same response envelope and synchronous "
+        "semantics — the difference is which collection the user "
+        "record lives in and which target (the website's parent "
+        "project) the role check runs against. See the project "
+        "endpoint for the error matrix."
+    ),
+)
 def test_website_user_login(
     user_id: str,
-) -> tuple[Response, int] | Response:
-    """Run the website test-user's login automation against the live site.
-
-    Companion to :func:`test_project_user_login`. The two share the
-    same response envelope and synchronous semantics — the difference
-    is which collection the user record lives in and which target
-    (website's project) the role check runs against.
-    """
+) -> tuple[TestUserLoginOut, int] | tuple[Response, int]:
+    """Run the website test-user's login automation against the live site."""
     import asyncio
 
     user = get_db().get_website_user(user_id)
@@ -10319,27 +10515,30 @@ def test_website_user_login(
         logger.error(
             "Error testing login for website user %s: %s", user_id, exc,
         )
-        return jsonify({
-            "user_id": user_id,
-            "scope": "website",
-            "success": False,
-            "duration_ms": 0,
-            "error": str(exc),
-            "manual_login": is_manual,
-            "wait_seconds": wait_seconds if is_manual else None,
-        }), 500
+        error_payload = TestUserLoginOut(
+            user_id=user_id,
+            scope="website",
+            success=False,
+            duration_ms=0,
+            error=str(exc),
+            manual_login=is_manual,
+            wait_seconds=wait_seconds if is_manual else None,
+        )
+        return jsonify(
+            error_payload.model_dump(mode="json", by_alias=True, exclude_none=True)
+        ), 500
     finally:
         loop.close()
 
-    return jsonify({
-        "user_id": user_id,
-        "scope": "website",
-        "success": bool(result.get("success", False)),
-        "duration_ms": int(result.get("duration_ms", 0) or 0),
-        "error": result.get("error"),
-        "manual_login": is_manual,
-        "wait_seconds": wait_seconds if is_manual else None,
-    })
+    return TestUserLoginOut(
+        user_id=user_id,
+        scope="website",
+        success=bool(result.get("success", False)),
+        duration_ms=int(result.get("duration_ms", 0) or 0),
+        error=_login_result_error(result.get("error")),
+        manual_login=is_manual,
+        wait_seconds=wait_seconds if is_manual else None,
+    ), 200
 
 
 # --- Website-scoped test users ------------------------------------------------
@@ -10347,7 +10546,22 @@ def test_website_user_login(
 
 @api_bp.route("/websites/<website_id>/test-users", methods=["GET"])
 @api_endpoint
-def list_website_test_users_rest(website_id: str) -> tuple[Response, int] | Response:
+@document(
+    response_200=WebsiteTestUserListOut,
+    errors=[401, 403, 404],
+    tags=["TestUsers"],
+    summary="List a website's test users (login credentials)",
+    description=(
+        "Lists the test-user credentials configured on a website. "
+        "Same shape as ``GET /projects/<id>/test-users`` with "
+        "``website_id`` taking the place of ``project_id`` on each "
+        "item. The list is non-paginated and the raw password field "
+        "is never surfaced; clients see only ``password_set: bool``."
+    ),
+)
+def list_website_test_users_rest(
+    website_id: str,
+) -> tuple[WebsiteTestUserListOut, int]:
     """List test users (login credentials) for a website."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, website_id=website_id
@@ -10355,12 +10569,32 @@ def list_website_test_users_rest(website_id: str) -> tuple[Response, int] | Resp
     if get_db().get_website(website_id) is None:
         raise NotFoundError(f"website {website_id} not found")
     users = get_db().get_website_users(website_id)
-    return jsonify({"items": [_serialize_website_test_user(u) for u in users]})
+    return WebsiteTestUserListOut(
+        items=[_serialize_website_test_user(u) for u in users]
+    ), 200
 
 
 @api_bp.route("/websites/<website_id>/test-users", methods=["POST"])
 @api_endpoint
-def create_website_test_user_rest(website_id: str) -> tuple[Response, int]:
+@document(
+    request=TestUserIn,
+    response_201=WebsiteTestUserOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["TestUsers"],
+    summary="Create a test user under a website",
+    description=(
+        "Creates a website-scoped test user. Same request body shape "
+        "as the project-scoped create — ``username`` and ``password`` "
+        "are semantically required. On success returns 201 with the "
+        "persisted ``WebsiteTestUserOut`` resource plus a "
+        "``Location`` header pointing at "
+        "``/api/v1/website-test-users/<user_id>``. Duplicate "
+        "``username`` within the website surfaces as a 409."
+    ),
+)
+def create_website_test_user_rest(
+    website_id: str, body: TestUserIn,
+) -> tuple[Response, int]:
     """Create a test user under a website."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, website_id=website_id
@@ -10368,8 +10602,8 @@ def create_website_test_user_rest(website_id: str) -> tuple[Response, int]:
     if get_db().get_website(website_id) is None:
         raise NotFoundError(f"website {website_id} not found")
 
-    body = _require_dict_body()
-    user = _build_website_test_user_from_body(website_id, body)
+    legacy_body = _test_user_body_to_dict(body)
+    user = _build_website_test_user_from_body(website_id, legacy_body)
 
     if get_db().get_website_user_by_username(website_id, user.username) is not None:
         raise ConflictError(f"username {user.username!r} is already in use on this website")
@@ -10378,14 +10612,23 @@ def create_website_test_user_rest(website_id: str) -> tuple[Response, int]:
     refreshed = get_db().get_website_user(user_id)
     if refreshed is None:
         raise ConflictError("website test user failed to persist")
-    response = jsonify(_serialize_website_test_user(refreshed))
+    payload = _serialize_website_test_user(refreshed)
+    response = jsonify(
+        payload.model_dump(mode="json", by_alias=True, exclude_none=True)
+    )
     response.headers["Location"] = f"/api/v1/website-test-users/{user_id}"
     return response, 201
 
 
 @api_bp.route("/website-test-users/<user_id>", methods=["GET"])
 @api_endpoint
-def get_website_test_user_rest(user_id: str) -> tuple[Response, int] | Response:
+@document(
+    response_200=WebsiteTestUserOut,
+    errors=[401, 403, 404],
+    tags=["TestUsers"],
+    summary="Get a single website test user",
+)
+def get_website_test_user_rest(user_id: str) -> tuple[WebsiteTestUserOut, int]:
     """Get one website test user."""
     user = get_db().get_website_user(user_id)
     if user is None:
@@ -10393,12 +10636,28 @@ def get_website_test_user_rest(user_id: str) -> tuple[Response, int] | Response:
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, website_id=user.website_id
     )
-    return jsonify(_serialize_website_test_user(user))
+    return _serialize_website_test_user(user), 200
 
 
 @api_bp.route("/website-test-users/<user_id>", methods=["PUT"])
 @api_endpoint
-def replace_website_test_user_rest(user_id: str) -> tuple[Response, int] | Response:
+@document(
+    request=TestUserIn,
+    response_200=WebsiteTestUserOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["TestUsers"],
+    summary="Replace a website test user's editable fields",
+    description=(
+        "Companion to the project-scoped PUT — same semantics. The "
+        "parent ``website_id``, the Mongo ``_id``, and the login "
+        "metadata are preserved across the replace; a missing or "
+        "blank ``password`` preserves the existing one. Duplicate "
+        "``username`` within the website surfaces as a 409."
+    ),
+)
+def replace_website_test_user_rest(
+    user_id: str, body: TestUserIn,
+) -> tuple[WebsiteTestUserOut, int]:
     """Full replace of a website test user's editable fields."""
     existing = get_db().get_website_user(user_id)
     if existing is None:
@@ -10406,10 +10665,14 @@ def replace_website_test_user_rest(user_id: str) -> tuple[Response, int] | Respo
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, website_id=existing.website_id
     )
-    body = _require_dict_body()
-    if "password" not in body or not isinstance(body.get("password"), str) or not body["password"]:
-        body["password"] = existing.password
-    replaced = _build_website_test_user_from_body(existing.website_id, body)
+    legacy_body = _test_user_body_to_dict(body)
+    if (
+        "password" not in legacy_body
+        or not isinstance(legacy_body.get("password"), str)
+        or not legacy_body["password"]
+    ):
+        legacy_body["password"] = existing.password
+    replaced = _build_website_test_user_from_body(existing.website_id, legacy_body)
     if (
         replaced.username != existing.username
         and get_db().get_website_user_by_username(existing.website_id, replaced.username) is not None
@@ -10423,12 +10686,28 @@ def replace_website_test_user_rest(user_id: str) -> tuple[Response, int] | Respo
     replaced.update_timestamp()
     if not get_db().update_website_user(replaced):
         raise ConflictError("website test user could not be updated")
-    return jsonify(_serialize_website_test_user(replaced))
+    return _serialize_website_test_user(replaced), 200
 
 
 @api_bp.route("/website-test-users/<user_id>", methods=["PATCH"])
 @api_endpoint
-def patch_website_test_user_rest(user_id: str) -> tuple[Response, int] | Response:
+@document(
+    request=TestUserPatch,
+    response_200=WebsiteTestUserOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["TestUsers"],
+    summary="Partially update a website test user",
+    description=(
+        "Companion to the project-scoped PATCH — same semantics. "
+        "Missing keys leave the corresponding field untouched; a "
+        "missing or blank ``password`` preserves the existing one. "
+        "Renaming ``username`` to a value already in use on the "
+        "website surfaces as a 409."
+    ),
+)
+def patch_website_test_user_rest(
+    user_id: str, body: TestUserPatch,
+) -> tuple[WebsiteTestUserOut, int]:
     """Partial update of a website test user."""
     user = get_db().get_website_user(user_id)
     if user is None:
@@ -10436,21 +10715,27 @@ def patch_website_test_user_rest(user_id: str) -> tuple[Response, int] | Respons
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, website_id=user.website_id
     )
-    body = _require_dict_body()
-    if "username" in body and isinstance(body["username"], str):
-        new_username = body["username"].strip()
+    legacy_body = _test_user_body_to_dict(body)
+    if "username" in legacy_body and isinstance(legacy_body["username"], str):
+        new_username = legacy_body["username"].strip()
         if new_username != user.username:
             if get_db().get_website_user_by_username(user.website_id, new_username) is not None:
                 raise ConflictError(f"username {new_username!r} is already in use on this website")
-    _apply_patch_to_test_user(user, body)
+    _apply_patch_to_test_user(user, legacy_body)
     if not get_db().update_website_user(user):
         raise ConflictError("website test user could not be updated")
-    return jsonify(_serialize_website_test_user(user))
+    return _serialize_website_test_user(user), 200
 
 
 @api_bp.route("/website-test-users/<user_id>", methods=["DELETE"])
 @api_endpoint
-def delete_website_test_user_rest(user_id: str) -> tuple[Response, int]:
+@document(
+    response_204=Empty,
+    errors=[401, 403, 404],
+    tags=["TestUsers"],
+    summary="Delete a website test user",
+)
+def delete_website_test_user_rest(user_id: str) -> tuple[Empty, int]:
     """Delete a website test user."""
     user = get_db().get_website_user(user_id)
     if user is None:
@@ -10459,7 +10744,7 @@ def delete_website_test_user_rest(user_id: str) -> tuple[Response, int]:
         UserRole.ADMIN, UserRole.AUDITOR, website_id=user.website_id
     )
     get_db().delete_website_user(user_id)
-    return Response(status=204), 204
+    return Empty(), 204
 
 
 # ---------------------------------------------------------------------------

@@ -107,6 +107,12 @@ from auto_a11y.web.api.schemas.scripts import (
     ScriptTestRunOut,
     ScriptValidationOut,
 )
+from auto_a11y.web.api.schemas.share_tokens import (
+    ShareTokenCreatedOut,
+    ShareTokenIn,
+    ShareTokenListOut,
+    ShareTokenOut,
+)
 from auto_a11y.web.api.schemas.test_runs import (
     PageTestRunCancelOut,
     PageTestRunIn,
@@ -4366,51 +4372,68 @@ def _build_public_url(token_string: str) -> str:
     return f"{host}/t/{token_string}/"
 
 
-def _serialize_share_token(token: ShareToken) -> dict[str, Any]:
-    """Project a :class:`ShareToken` to a JSON-safe metadata dict.
+def _share_token_to_out(token: ShareToken) -> ShareTokenOut:
+    """Project a :class:`ShareToken` to the metadata-only response model.
 
-    Never includes the raw token or the SHA-256 hash. The raw token is
-    only ever returned by the create handler in the same response.
+    Mirrors the legacy ``_serialize_share_token`` byte-for-byte. The
+    raw token and SHA-256 hash are intentionally absent — both are
+    surfaced only by :class:`ShareTokenCreatedOut` (the create response).
     """
 
     def _iso(dt: datetime | None) -> str | None:
         return dt.isoformat() if dt is not None else None
 
-    return {
-        "id": token.id,
-        "scope": token.scope.value,
-        "scope_id": token.scope_id,
-        "label": token.label,
-        "created_by": token.created_by,
-        "created_at": _iso(token.created_at),
-        "expires_at": _iso(token.expires_at),
-        "revoked": token.revoked,
-        "revoked_at": _iso(token.revoked_at),
-        "last_used": _iso(token.last_used),
-        "use_count": token.use_count,
-        "is_valid": token.is_valid,
-    }
+    return ShareTokenOut(
+        id=token.id,
+        scope=token.scope.value,
+        scope_id=token.scope_id,
+        label=token.label,
+        created_by=token.created_by,
+        created_at=_iso(token.created_at),
+        expires_at=_iso(token.expires_at),
+        revoked=token.revoked,
+        revoked_at=_iso(token.revoked_at),
+        last_used=_iso(token.last_used),
+        use_count=token.use_count,
+        is_valid=token.is_valid,
+    )
 
 
-def _parse_share_token_body(body: dict[str, Any]) -> tuple[str, datetime | None]:
-    """Validate and extract ``label`` / ``expires_at`` from a create body."""
-    label_raw = body.get("label")
+def _resolve_share_token_label(body: ShareTokenIn) -> str:
+    """Extract a validated label from the create body.
+
+    Mirrors the legacy ``_parse_share_token_body``: the field is
+    semantically required even though it's ``Optional[str]`` on the
+    wire, and whitespace-only values are rejected with the same 400
+    shape (field path ``label``, code ``required``).
+    """
+    label_raw = body.label
     if not isinstance(label_raw, str) or not label_raw.strip():
         raise ValidationError(
             "label is required",
             errors=(_FieldError(field="label", code="required", message="required"),),
         )
-    label = label_raw.strip()
-    expires_at: datetime | None = None
-    if "expires_at" in body and body["expires_at"] is not None:
-        expires_at = _parse_iso_datetime(body["expires_at"], field="expires_at")
-    return label, expires_at
+    return label_raw.strip()
 
 
-def _create_share_token(scope: TokenScope, scope_id: str) -> tuple[Response, int]:
+def _resolve_share_token_expires_at(body: ShareTokenIn) -> datetime | None:
+    """Parse the optional ``expires_at`` ISO 8601 datetime.
+
+    ``None`` (or an absent field) means "never expires"; an invalid
+    datetime string surfaces as the legacy 400 with field path
+    ``expires_at``.
+    """
+    if body.expires_at is None:
+        return None
+    return _parse_iso_datetime(body.expires_at, field="expires_at")
+
+
+def _create_share_token(
+    scope: TokenScope, scope_id: str, body: ShareTokenIn,
+) -> tuple[Response, int]:
     """Shared logic for project- and website-scoped token creation."""
-    body = _require_dict_body()
-    label, expires_at = _parse_share_token_body(body)
+    label = _resolve_share_token_label(body)
+    expires_at = _resolve_share_token_expires_at(body)
 
     serializer = _share_token_serializer()
     # ``nonce`` ensures every dump produces a distinct signed string —
@@ -4435,39 +4458,81 @@ def _create_share_token(scope: TokenScope, scope_id: str) -> tuple[Response, int
     if refreshed is None:
         raise ConflictError("share token failed to persist")
 
-    payload = _serialize_share_token(refreshed)
-    payload["token"] = token_string  # raw token — only ever in the create response
-    payload["public_url"] = _build_public_url(token_string)
-    response = jsonify(payload)
+    metadata = _share_token_to_out(refreshed)
+    payload = ShareTokenCreatedOut(
+        **metadata.model_dump(by_alias=False),
+        token=token_string,  # raw token — only ever in the create response
+        public_url=_build_public_url(token_string),
+    )
+    # The @document decorator serialises BaseModel returns through
+    # ``jsonify``, but we need a ``Location`` header on the new resource,
+    # so we pre-build the Response here and attach the header.
+    response = jsonify(
+        payload.model_dump(mode="json", by_alias=True, exclude_none=True)
+    )
     response.headers["Location"] = f"/api/v1/share-tokens/{token_id}"
     return response, 201
 
 
 @api_bp.route("/projects/<project_id>/share-tokens", methods=["POST"])
 @api_endpoint
-def create_project_share_token(project_id: str) -> tuple[Response, int]:
+@document(
+    request=ShareTokenIn,
+    response_201=ShareTokenCreatedOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["ShareTokens"],
+    summary="Create a project-scoped share token",
+    description=(
+        "Creates a signed share token granting public read-only access "
+        "to the project's results. Returns 201 with "
+        "``ShareTokenCreatedOut`` plus a ``Location`` header pointing "
+        "at ``/api/v1/share-tokens/<id>``. The raw token value and the "
+        "derived ``public_url`` are returned ONLY in this response — "
+        "they are absent from every subsequent read."
+    ),
+)
+def create_project_share_token(
+    project_id: str, body: ShareTokenIn,
+) -> tuple[Response, int]:
     """Create a project-scoped share token."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id
     )
     if get_db().get_project(project_id) is None:
         raise NotFoundError(f"project {project_id} not found")
-    return _create_share_token(TokenScope.PROJECT, project_id)
+    return _create_share_token(TokenScope.PROJECT, project_id, body)
 
 
 @api_bp.route("/websites/<website_id>/share-tokens", methods=["POST"])
 @api_endpoint
-def create_website_share_token(website_id: str) -> tuple[Response, int]:
+@document(
+    request=ShareTokenIn,
+    response_201=ShareTokenCreatedOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["ShareTokens"],
+    summary="Create a website-scoped share token",
+    description=(
+        "Creates a signed share token granting public read-only access "
+        "to the website's results. Returns 201 with "
+        "``ShareTokenCreatedOut`` plus a ``Location`` header pointing "
+        "at ``/api/v1/share-tokens/<id>``. The raw token value and the "
+        "derived ``public_url`` are returned ONLY in this response — "
+        "they are absent from every subsequent read."
+    ),
+)
+def create_website_share_token(
+    website_id: str, body: ShareTokenIn,
+) -> tuple[Response, int]:
     """Create a website-scoped share token."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, website_id=website_id
     )
     if get_db().get_website(website_id) is None:
         raise NotFoundError(f"website {website_id} not found")
-    return _create_share_token(TokenScope.WEBSITE, website_id)
+    return _create_share_token(TokenScope.WEBSITE, website_id, body)
 
 
-def _list_share_tokens(scope: TokenScope, scope_id: str) -> Response:
+def _list_share_tokens(scope: TokenScope, scope_id: str) -> ShareTokenListOut:
     limit = parse_limit(request.args.get("limit"))
     cursor_raw = request.args.get("cursor")
     cursor = _Cursor.decode(cursor_raw) if cursor_raw else None
@@ -4494,36 +4559,64 @@ def _list_share_tokens(scope: TokenScope, scope_id: str) -> Response:
     page = paginate(
         tokens, limit=limit, get_id=lambda t: str(t.mongo_id) if t.mongo_id else ""
     )
-    return jsonify(
-        {
-            "items": [_serialize_share_token(t) for t in page["items"]],
-            "next_cursor": page["next_cursor"],
-        }
+    return ShareTokenListOut(
+        items=[_share_token_to_out(t) for t in page["items"]],
+        next_cursor=page["next_cursor"],
     )
 
 
 @api_bp.route("/projects/<project_id>/share-tokens", methods=["GET"])
 @api_endpoint
-def list_project_share_tokens(project_id: str) -> tuple[Response, int] | Response:
+@document(
+    response_200=ShareTokenListOut,
+    errors=[400, 401, 403, 404],
+    tags=["ShareTokens"],
+    summary="List share tokens scoped to a project",
+    description=(
+        "Returns share tokens granting public read-only access to the "
+        "project's results. Cursor-paginated using the legacy "
+        "``{items, next_cursor}`` shape shared by every v1 list "
+        "endpoint. The raw token value is never present in this "
+        "response — it is only ever returned by the create handler."
+    ),
+)
+def list_project_share_tokens(
+    project_id: str,
+) -> tuple[ShareTokenListOut, int] | tuple[Response, int] | Response:
     """List share tokens scoped to a project."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id
     )
     if get_db().get_project(project_id) is None:
         raise NotFoundError(f"project {project_id} not found")
-    return _list_share_tokens(TokenScope.PROJECT, project_id)
+    return _list_share_tokens(TokenScope.PROJECT, project_id), 200
 
 
 @api_bp.route("/websites/<website_id>/share-tokens", methods=["GET"])
 @api_endpoint
-def list_website_share_tokens(website_id: str) -> tuple[Response, int] | Response:
+@document(
+    response_200=ShareTokenListOut,
+    errors=[400, 401, 403, 404],
+    tags=["ShareTokens"],
+    summary="List share tokens scoped to a website",
+    description=(
+        "Returns share tokens granting public read-only access to the "
+        "website's results. Cursor-paginated using the legacy "
+        "``{items, next_cursor}`` shape shared by every v1 list "
+        "endpoint. The raw token value is never present in this "
+        "response — it is only ever returned by the create handler."
+    ),
+)
+def list_website_share_tokens(
+    website_id: str,
+) -> tuple[ShareTokenListOut, int] | tuple[Response, int] | Response:
     """List share tokens scoped to a website."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, website_id=website_id
     )
     if get_db().get_website(website_id) is None:
         raise NotFoundError(f"website {website_id} not found")
-    return _list_share_tokens(TokenScope.WEBSITE, website_id)
+    return _list_share_tokens(TokenScope.WEBSITE, website_id), 200
 
 
 def _resolve_token_project_id(token: ShareToken) -> str | None:
@@ -4536,7 +4629,22 @@ def _resolve_token_project_id(token: ShareToken) -> str | None:
 
 @api_bp.route("/share-tokens/<token_id>", methods=["GET"])
 @api_endpoint
-def get_share_token(token_id: str) -> tuple[Response, int] | Response:
+@document(
+    response_200=ShareTokenOut,
+    errors=[401, 403, 404],
+    tags=["ShareTokens"],
+    summary="Get share token metadata by id",
+    description=(
+        "Returns the share-token metadata resource (``ShareTokenOut``). "
+        "The raw token value and ``public_url`` are NOT present — they "
+        "are surfaced only by the create handler in the response that "
+        "persists the token. Tokens whose owning scope has been deleted "
+        "surface as 404."
+    ),
+)
+def get_share_token(
+    token_id: str,
+) -> tuple[ShareTokenOut, int] | tuple[Response, int] | Response:
     """Get share token metadata by id."""
     token = get_db().get_share_token(token_id)
     if token is None:
@@ -4549,12 +4657,25 @@ def get_share_token(token_id: str) -> tuple[Response, int] | Response:
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id
     )
-    return jsonify(_serialize_share_token(token))
+    return _share_token_to_out(token), 200
 
 
 @api_bp.route("/share-tokens/<token_id>", methods=["DELETE"])
 @api_endpoint
-def revoke_share_token(token_id: str) -> tuple[Response, int]:
+@document(
+    response_204=Empty,
+    errors=[401, 403, 404],
+    tags=["ShareTokens"],
+    summary="Revoke a share token",
+    description=(
+        "Revokes the share token; the public URL stops resolving "
+        "immediately. Idempotent — a repeat DELETE on an already-revoked "
+        "token still returns ``204 No Content``."
+    ),
+)
+def revoke_share_token(
+    token_id: str,
+) -> tuple[Empty, int] | tuple[Response, int]:
     """Revoke a share token (idempotent — repeated DELETE returns 204)."""
     token = get_db().get_share_token(token_id)
     if token is None:
@@ -4566,7 +4687,7 @@ def revoke_share_token(token_id: str) -> tuple[Response, int]:
         UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id
     )
     get_db().revoke_share_token(token_id)
-    return Response(status=204), 204
+    return Empty(), 204
 
 
 # ---------------------------------------------------------------------------

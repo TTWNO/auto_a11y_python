@@ -4457,6 +4457,234 @@ components:
       - failure_selectors
       title: ScriptValidationOut
       type: object
+    ShareTokenCreatedOut:
+      additionalProperties: false
+      description: "Response body for ``POST /{projects,websites}/<id>/share-tokens``.\n\
+        \nSuperset of :class:`ShareTokenOut` that carries the raw token value.\nThis\
+        \ is the only response shape on the entire share-token surface\nthat surfaces\
+        \ the signing material — every subsequent read returns\na :class:`ShareTokenOut`\
+        \ with these two fields absent.\n\n- ``token`` — the URL-safe signed string.\
+        \ The caller MUST capture\n  it from this single response; the server cannot\
+        \ return it again\n  because only the SHA-256 hash is persisted.\n- ``public_url``\
+        \ — pre-built landing URL (``{host}/t/<token>/``).\n  The handler builds it\
+        \ from ``request.host_url`` to keep the result\n  correct in test contexts\
+        \ where the public blueprint is not\n  registered (and ``url_for('public.token_landing',\
+        \ ...)`` would\n  raise ``BuildError``)."
+      properties:
+        created_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Created At
+        created_by:
+          title: Created By
+          type: string
+        expires_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Expires At
+        id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Id
+        is_valid:
+          title: Is Valid
+          type: boolean
+        label:
+          title: Label
+          type: string
+        last_used:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Last Used
+        public_url:
+          title: Public Url
+          type: string
+        revoked:
+          title: Revoked
+          type: boolean
+        revoked_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Revoked At
+        scope:
+          title: Scope
+          type: string
+        scope_id:
+          title: Scope Id
+          type: string
+        token:
+          title: Token
+          type: string
+        use_count:
+          title: Use Count
+          type: integer
+      required:
+      - scope
+      - scope_id
+      - label
+      - created_by
+      - revoked
+      - use_count
+      - is_valid
+      - token
+      - public_url
+      title: ShareTokenCreatedOut
+      type: object
+    ShareTokenIn:
+      additionalProperties: false
+      description: "POST body for creating a share token.\n\nShared by ``POST /projects/<id>/share-tokens``\
+        \ and\n``POST /websites/<id>/share-tokens``; the handler injects\n``scope``\
+        \ and ``scope_id`` from the URL path.\n\n- ``label`` is required at the semantic\
+        \ level (the handler rejects\n  empty/whitespace-only values) but typed as\
+        \ ``Optional[str]`` here\n  because the legacy parser permitted the field\
+        \ to be omitted (it\n  then surfaces a 400 with field path ``label``, code\
+        \ ``required``).\n- ``expires_at`` is an ISO 8601 datetime string or ``null``\
+        \ (never\n  expires). Parsed by ``_parse_iso_datetime`` to preserve the legacy\n\
+        \  400-shape on parse failures."
+      properties:
+        expires_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Expires At
+        label:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Label
+      title: ShareTokenIn
+      type: object
+    ShareTokenListOut:
+      additionalProperties: false
+      description: 'Response body for the share-token list endpoints.
+
+
+        Cursor-paginated; same ``{items, next_cursor}`` shape as the other
+
+        v1 list endpoints. Used by both
+
+        ``GET /api/v1/projects/<id>/share-tokens`` and
+
+        ``GET /api/v1/websites/<id>/share-tokens``.
+
+
+        ``items`` carries :class:`ShareTokenOut` (metadata only) — never
+
+        :class:`ShareTokenCreatedOut`. The split-class design means it is
+
+        not physically possible to serialise a list response that leaks
+
+        the raw token, even by mistake.'
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/ShareTokenOut'
+          title: Items
+          type: array
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Next Cursor
+      required:
+      - items
+      title: ShareTokenListOut
+      type: object
+    ShareTokenOut:
+      additionalProperties: false
+      description: "Metadata-only response shape for a single share token.\n\nMirrors\
+        \ :func:`_serialize_share_token` byte-for-byte. Used by:\n\n- ``GET /share-tokens/<id>``\n\
+        - ``GET /projects/<id>/share-tokens`` (inside ``items``)\n- ``GET /websites/<id>/share-tokens``\
+        \ (inside ``items``)\n\n**Never carries the raw token or the SHA-256 hash.**\
+        \ The signing\nmaterial is exposed only by :class:`ShareTokenCreatedOut`,\
+        \ returned\nby the create handlers in the same response that persists the\
+        \ token.\nSplitting create vs read into two distinct models means a list\n\
+        endpoint physically cannot construct a payload that leaks the\ntoken.\n\n\
+        Field details:\n\n- ``id`` — stringified Mongo ``_id``; ``None`` only for\
+        \ transient\n  unsaved tokens that never appear over the wire.\n- ``scope``\
+        \ — stringified ``TokenScope`` value (``\"project\"`` /\n  ``\"website\"``);\
+        \ kept as ``str`` to keep the wire forward-compatible\n  with any future scope\
+        \ kinds.\n- ``scope_id`` — the project or website ObjectId string the token\n\
+        \  grants access to.\n- ``created_at``, ``expires_at``, ``revoked_at``, ``last_used``\
+        \ —\n  ISO 8601 datetime strings (or ``None`` when unset).\n- ``is_valid``\
+        \ — computed property on the model (``not revoked and\n  not is_expired``);\
+        \ the frontend reads this directly to decide\n  whether to render the \"revoke\"\
+        \ button."
+      properties:
+        created_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Created At
+        created_by:
+          title: Created By
+          type: string
+        expires_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Expires At
+        id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Id
+        is_valid:
+          title: Is Valid
+          type: boolean
+        label:
+          title: Label
+          type: string
+        last_used:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Last Used
+        revoked:
+          title: Revoked
+          type: boolean
+        revoked_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Revoked At
+        scope:
+          title: Scope
+          type: string
+        scope_id:
+          title: Scope Id
+          type: string
+        use_count:
+          title: Use Count
+          type: integer
+      required:
+      - scope
+      - scope_id
+      - label
+      - created_by
+      - revoked
+      - use_count
+      - is_valid
+      title: ShareTokenOut
+      type: object
     TestResultCompareIn:
       additionalProperties: false
       description: 'Request body for ``POST /api/v1/test-results/compare``.
@@ -7122,6 +7350,114 @@ paths:
       summary: Queue a project-scoped report
       tags:
       - Reports
+  /projects/{project_id}/share-tokens:
+    get:
+      description: Returns share tokens granting public read-only access to the project's
+        results. Cursor-paginated using the legacy ``{items, next_cursor}`` shape
+        shared by every v1 list endpoint. The raw token value is never present in
+        this response — it is only ever returned by the create handler.
+      parameters:
+      - in: path
+        name: project_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShareTokenListOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: List share tokens scoped to a project
+      tags:
+      - ShareTokens
+    post:
+      description: Creates a signed share token granting public read-only access to
+        the project's results. Returns 201 with ``ShareTokenCreatedOut`` plus a ``Location``
+        header pointing at ``/api/v1/share-tokens/<id>``. The raw token value and
+        the derived ``public_url`` are returned ONLY in this response — they are absent
+        from every subsequent read.
+      parameters:
+      - in: path
+        name: project_id
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShareTokenIn'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShareTokenCreatedOut'
+          description: Created
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Create a project-scoped share token
+      tags:
+      - ShareTokens
   /projects/{project_id}/test-runs:
     post:
       description: Fan-out batch test across every website in a project. Each website
@@ -8429,6 +8765,88 @@ paths:
       summary: Execute a setup script synchronously
       tags:
       - Scripts
+  /share-tokens/{token_id}:
+    delete:
+      description: Revokes the share token; the public URL stops resolving immediately.
+        Idempotent — a repeat DELETE on an already-revoked token still returns ``204
+        No Content``.
+      parameters:
+      - in: path
+        name: token_id
+        required: true
+        schema: *id001
+      responses:
+        '204':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Empty'
+          description: No Content
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Revoke a share token
+      tags:
+      - ShareTokens
+    get:
+      description: Returns the share-token metadata resource (``ShareTokenOut``).
+        The raw token value and ``public_url`` are NOT present — they are surfaced
+        only by the create handler in the response that persists the token. Tokens
+        whose owning scope has been deleted surface as 404.
+      parameters:
+      - in: path
+        name: token_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShareTokenOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Get share token metadata by id
+      tags:
+      - ShareTokens
   /test-results/compare:
     post:
       description: 'Returns a diff of two test results, typically from different states
@@ -9254,6 +9672,114 @@ paths:
       summary: Create a website-scoped setup script
       tags:
       - Scripts
+  /websites/{website_id}/share-tokens:
+    get:
+      description: Returns share tokens granting public read-only access to the website's
+        results. Cursor-paginated using the legacy ``{items, next_cursor}`` shape
+        shared by every v1 list endpoint. The raw token value is never present in
+        this response — it is only ever returned by the create handler.
+      parameters:
+      - in: path
+        name: website_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShareTokenListOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: List share tokens scoped to a website
+      tags:
+      - ShareTokens
+    post:
+      description: Creates a signed share token granting public read-only access to
+        the website's results. Returns 201 with ``ShareTokenCreatedOut`` plus a ``Location``
+        header pointing at ``/api/v1/share-tokens/<id>``. The raw token value and
+        the derived ``public_url`` are returned ONLY in this response — they are absent
+        from every subsequent read.
+      parameters:
+      - in: path
+        name: website_id
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShareTokenIn'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShareTokenCreatedOut'
+          description: Created
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Create a website-scoped share token
+      tags:
+      - ShareTokens
   /websites/{website_id}/test:
     post:
       description: Queues a batch accessibility test run for every page on a website.

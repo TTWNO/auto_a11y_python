@@ -62,6 +62,34 @@ jobs:
         run: python -m ty check
         continue-on-error: true
 
+  openapi_check:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Verify docs/api/openapi.yaml is fresh
+        run: python scripts/generate_openapi.py --check
+
+      - name: Validate openapi.yaml with openapi-spec-validator
+        run: |
+          python -c "from openapi_spec_validator import validate_spec; import yaml; validate_spec(yaml.safe_load(open('docs/api/openapi.yaml')))"
+
   test:
     runs-on: ubuntu-latest
 

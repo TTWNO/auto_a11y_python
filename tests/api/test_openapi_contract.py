@@ -19,8 +19,12 @@ Two tiers:
 The 80 % coverage gate from the rollout plan is relaxed at landing time
 to a permissive 1 % floor — its job is to assert "at least *something*
 is contract-tested" so a future regression that drops the seed entries
-still trips a failure. The threshold should tighten as fixtures land
-(see ``tests/api/conftest.py`` and the §5.x suites).
+still trips a failure. With every /api/v1 route now ``@document``-decorated
+(177 routes, 171 model-returning), the denominator is fixed at ~171; the
+2 public seeds give ~1.17 % coverage. Adding MongoDB-backed test fixtures
+to ``tests/api/conftest.py`` is the next ratchet — once auth-gated
+endpoints can be exercised, raise the threshold first to 25 %, then 80 %
+per the rollout plan.
 
 Environment notes
 -----------------
@@ -324,13 +328,15 @@ def test_contract_coverage_meets_threshold(contract_app: Flask) -> None:
     response shape we can validate. Endpoints that document only error
     codes (no 2xx body) are excluded from the denominator.
 
-    The threshold is intentionally permissive at rollout (1 %). Each
-    fixture-bearing endpoint added to :data:`_MINIMAL_REQUESTS` ratchets
-    the realised coverage upward; once auth-bearing fixtures land the
-    threshold can be tightened — first to 25 %, ultimately to 80 % per
-    the rollout plan. The gate exists so a future change that removes
-    every seed entry trips a hard failure, not so it constrains the
-    rollout pace.
+    The threshold is intentionally permissive at rollout (1 %). With the
+    full /api/v1 surface (~171 model-returning endpoints) now documented,
+    the 2 public seeds (/health, /health/pdf) yield ~1.17 % — comfortably
+    above the floor. Each fixture-bearing endpoint added to
+    :data:`_MINIMAL_REQUESTS` ratchets coverage upward; once auth-bearing
+    fixtures land in ``tests/api/conftest.py`` the threshold can be
+    tightened — first to 25 %, ultimately to 80 % per the rollout plan.
+    The gate exists so a future change that removes every seed entry
+    trips a hard failure, not so it constrains the rollout pace.
     """
     _ = contract_app
 

@@ -795,8 +795,7 @@ def test_register_documented_views_is_idempotent(app: Flask) -> None:
 
     _register(app, "/v", view, ["GET"])
     # Second call: must not raise duplicate-registration error.
-    from auto_a11y.web.api.openapi.document import register_documented_views
-    register_documented_views(app)
+    register_documented_views(app, prefix="")
     # Registry still has exactly one entry for ("GET", "/v").
     assert ("GET", "/v") in REGISTRY
 
@@ -1058,10 +1057,10 @@ def _relativize(rule: str, prefix: str) -> str:
 
 **Notes on the implementation:**
 
-- `ParamSpec("P")` preserves the wrapped view's signature so callers see the real parameter types, not `(*args, **kwargs)`. The wrapper itself accepts `*args: object, **kwargs: object` because Flask invokes views by name/positional dispatch and we cannot know the concrete parameters at decoration time — but the **returned** callable is typed `Callable[P, WrappedReturn]`, so external callers (none — Flask is the only one) see the correct signature.
-- The `cast(Callable[..., ResponseLike], view)` inside `wrapper` is the one type cast in this file. It is **not** `cast(Any, ...)` — it converts a `Callable[P, ResponseLike]` to `Callable[..., ResponseLike]` so the dynamic `*args, **kwargs` invocation type-checks. This is a structurally-equivalent cast (`...` is a subtype of any `P`); permitted by the project rules.
+- `ParamSpec("P")` is used only on the **input** side — `decorator(view: Callable[P, ResponseLike])` types the view the user wrote. The **returned** wrapper is typed `_DocumentedView` (the Protocol), whose `__call__` is `(*args: object, **kwargs: object) -> WrappedReturn`. The output is intentionally less precise than the input because Flask dispatches by name and the wrapper accepts whatever Flask sends.
+- The `cast(Callable[..., ResponseLike], view)` inside `wrapper` is the one signature cast in this file. It is **not** `cast(Any, ...)` — it converts a `Callable[P, ResponseLike]` to `Callable[..., ResponseLike]` so the dynamic `*args, **kwargs` invocation type-checks. This is a structurally-equivalent cast (`...` is a subtype of any `P`); permitted by the project rules.
 - `setattr(wrapper, "__doc_meta__", doc)` plus the runtime-checkable Protocol replaces `# type: ignore[attr-defined]`. The Protocol's `__doc_meta__` field is read by `register_documented_views` via `isinstance(view, _DocumentedView)`.
-- `_strip_blueprint_prefix` makes registry keys blueprint-relative ("/projects") rather than absolute ("/api/v1/projects"). Task 28's drift gate relies on this normalization.
+- `_relativize` makes registry keys blueprint-relative ("/projects") rather than absolute ("/api/v1/projects"). Task 28's drift gate relies on this normalization.
 - `runtime_checkable` is needed so `isinstance(view, _DocumentedView)` works at runtime. The Protocol carries one attribute + one method, both checked structurally.
 
 Call `register_documented_views(app)` from `auto_a11y/web/app.py` immediately after all blueprints are registered. The Task 7 step wires this in.

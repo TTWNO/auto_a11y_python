@@ -38,6 +38,22 @@ from auto_a11y.web.api.schemas.websites import (
     WebsitePatch,
     WebsitePut,
 )
+from auto_a11y.web.api.schemas.pages import (
+    DiscoveredPageIn,
+    DiscoveredPageListOut,
+    DiscoveredPageOut,
+    DiscoveredPagePatch,
+    DiscoveredPagePut,
+    PageIn,
+    PageListOut,
+    PageMatrixIn,
+    PageMatrixOut,
+    PageOut,
+    PagePatch,
+    PagePut,
+    PageViolationsOut,
+    ScriptStateDefinitionOut,
+)
 from auto_a11y.web.typed_app import get_db, get_app_config, get_test_config
 from datetime import datetime
 import logging
@@ -2098,149 +2114,107 @@ def delete_website(website_id: str) -> tuple[Empty, int] | tuple[Response, int]:
 # ---------------------------------------------------------------------------
 
 
-_VALID_PAGE_PRIORITIES: frozenset[str] = frozenset({"high", "normal", "low"})
+def _page_to_out(page: Page) -> PageOut:
+    """Project a :class:`Page` to a :class:`PageOut` model.
 
-
-def _serialize_page(page: Page) -> dict[str, Any]:
-    """Project a :class:`Page` to a JSON-safe dict.
-
-    Datetimes emit as ISO 8601 strings; the Mongo ``_id`` becomes a
-    string ``id``. Drupal-sync fields are exposed read-only — they are
-    set by the Drupal sync subsystem, not by REST clients, but reading
-    them is useful for downstream tooling.
+    Mirrors the legacy ``_serialize_page()`` shape byte-for-byte:
+    datetimes emit as ISO 8601 strings, the Mongo ``_id`` surfaces via
+    the ``id`` property (already stringified), and Drupal-sync fields
+    are intentionally omitted (the legacy serializer dropped them too).
     """
 
     def _iso(dt: datetime | None) -> str | None:
         return dt.isoformat() if dt is not None else None
 
-    return {
-        "id": page.id,
-        "website_id": page.website_id,
-        "url": page.url,
-        "title": page.title,
-        "status": page.status.value,
-        "priority": page.priority,
-        "depth": page.depth,
-        "discovered_at": _iso(page.discovered_at),
-        "discovered_from": page.discovered_from,
-        "discovery_run_id": page.discovery_run_id,
-        "last_tested": _iso(page.last_tested),
-        "violation_count": page.violation_count,
-        "warning_count": page.warning_count,
-        "info_count": page.info_count,
-        "discovery_count": page.discovery_count,
-        "pass_count": page.pass_count,
-        "test_duration_ms": page.test_duration_ms,
-        "error_reason": page.error_reason,
-        "is_in_latest_discovery": page.is_in_latest_discovery,
-        "screenshot_path": page.screenshot_path,
-        "setup_script_id": page.setup_script_id,
-        "linked_pdf_document_id": page.linked_pdf_document_id,
-    }
-
-
-def _validate_page_priority(raw: Any, *, field: str) -> str:
-    if not isinstance(raw, str):
-        raise ValidationError(
-            f"{field} must be a string",
-            errors=(_FieldError(field=field, code="invalid_type", message="must be string"),),
-        )
-    if raw not in _VALID_PAGE_PRIORITIES:
-        raise ValidationError(
-            f"{field} must be one of high|normal|low",
-            errors=(
-                _FieldError(
-                    field=field,
-                    code="invalid_value",
-                    message=f"must be one of {sorted(_VALID_PAGE_PRIORITIES)}",
-                ),
-            ),
-        )
-    return raw
-
-
-def _build_page_from_body(website_id: str, body: dict[str, Any]) -> Page:
-    """Construct a :class:`Page` from a POST/PUT body, validating fields."""
-    url = _validate_url(body.get("url"), field="url")
-    title_raw = body.get("title")
-    if title_raw is not None and not isinstance(title_raw, str):
-        raise ValidationError(
-            "title must be a string or null",
-            errors=(_FieldError(field="title", code="invalid_type", message="must be string"),),
-        )
-    title = title_raw.strip() if isinstance(title_raw, str) and title_raw.strip() else None
-    priority = (
-        _validate_page_priority(body["priority"], field="priority")
-        if "priority" in body
-        else "normal"
+    return PageOut(
+        id=page.id,
+        website_id=page.website_id,
+        url=page.url,
+        title=page.title,
+        status=page.status.value,
+        priority=page.priority,
+        depth=page.depth,
+        discovered_at=_iso(page.discovered_at),
+        discovered_from=page.discovered_from,
+        discovery_run_id=page.discovery_run_id,
+        last_tested=_iso(page.last_tested),
+        violation_count=page.violation_count,
+        warning_count=page.warning_count,
+        info_count=page.info_count,
+        discovery_count=page.discovery_count,
+        pass_count=page.pass_count,
+        test_duration_ms=page.test_duration_ms,
+        error_reason=page.error_reason,
+        is_in_latest_discovery=page.is_in_latest_discovery,
+        screenshot_path=page.screenshot_path,
+        setup_script_id=page.setup_script_id,
+        linked_pdf_document_id=page.linked_pdf_document_id,
     )
-    setup_script_id_raw = body.get("setup_script_id")
-    if setup_script_id_raw is not None and not isinstance(setup_script_id_raw, str):
-        raise ValidationError(
-            "setup_script_id must be a string or null",
-            errors=(
-                _FieldError(
-                    field="setup_script_id",
-                    code="invalid_type",
-                    message="must be string",
-                ),
-            ),
-        )
+
+
+def _page_from_in(website_id: str, body: PageIn | PagePut) -> Page:
+    """Construct a new :class:`Page` from a POST or PUT body.
+
+    URL validation matches the legacy ``_validate_url`` rule (the
+    ``http(s)://`` prefix check). ``title`` is normalised: whitespace-only
+    strings collapse to ``None``. ``priority`` defaults to ``"normal"``
+    when the client omits it (matching the legacy default).
+    """
+    url = _validate_url(body.url, field="url")
+    title = (
+        body.title.strip()
+        if body.title is not None and body.title.strip()
+        else None
+    )
+    priority = body.priority if body.priority is not None else "normal"
     return Page(
         website_id=website_id,
         url=url,
         title=title,
         priority=priority,
-        setup_script_id=setup_script_id_raw if isinstance(setup_script_id_raw, str) else None,
+        setup_script_id=body.setup_script_id,
     )
 
 
-def _apply_patch_to_page(page: Page, body: dict[str, Any]) -> Page:
-    """Apply only the keys present in ``body`` to ``page`` in place.
+def _apply_page_patch(page: Page, body: PagePatch) -> Page:
+    """Apply a :class:`PagePatch` to ``page`` in place.
 
-    ``url`` and ``website_id`` are not patchable: the page identity is
-    its (website_id, url) pair, and changing either would conflict with
-    the upsert semantics in :meth:`Database.create_page`.
+    Only fields the client *sent* are applied; ``model_fields_set`` is
+    the distinguishing signal between "not in body" and "explicitly null".
+    Matches the legacy "patch only present keys" contract.
     """
-    if "title" in body:
-        title_raw = body["title"]
-        if title_raw is not None and not isinstance(title_raw, str):
-            raise ValidationError(
-                "title must be a string or null",
-                errors=(_FieldError(field="title", code="invalid_type", message="must be string"),),
-            )
+    fields_set = body.model_fields_set
+    if "title" in fields_set:
         page.title = (
-            title_raw.strip() if isinstance(title_raw, str) and title_raw.strip() else None
+            body.title.strip()
+            if body.title is not None and body.title.strip()
+            else None
         )
-    if "priority" in body:
-        page.priority = _validate_page_priority(body["priority"], field="priority")
-    if "setup_script_id" in body:
-        raw = body["setup_script_id"]
-        if raw is not None and not isinstance(raw, str):
-            raise ValidationError(
-                "setup_script_id must be a string or null",
-                errors=(
-                    _FieldError(
-                        field="setup_script_id",
-                        code="invalid_type",
-                        message="must be string",
-                    ),
-                ),
-            )
-        page.setup_script_id = raw if isinstance(raw, str) else None
+    if "priority" in fields_set and body.priority is not None:
+        page.priority = body.priority
+    if "setup_script_id" in fields_set:
+        page.setup_script_id = body.setup_script_id
     return page
 
 
 @api_bp.route("/websites/<website_id>/pages", methods=["GET"])
 @api_endpoint
-def list_pages_for_website(website_id: str) -> tuple[Response, int] | Response:
-    """List pages for a website with cursor pagination.
-
-    Optional query params:
-    - ``status``: filter to a single PageStatus value (e.g. ``tested``).
-      Unknown values produce a 400.
-    - ``limit`` / ``cursor``: standard pagination.
-    """
+@document(
+    response_200=PageListOut,
+    errors=[400, 401, 403, 404],
+    tags=["Pages"],
+    summary="List pages in a website",
+    description=(
+        "Returns pages belonging to ``website_id`` with cursor "
+        "pagination. The response shape is ``{items, next_cursor}``. "
+        "Supports an optional ``status`` filter that must match a "
+        "``PageStatus`` enum value."
+    ),
+)
+def list_pages_for_website(
+    website_id: str,
+) -> tuple[PageListOut, int] | tuple[Response, int] | Response:
+    """List pages for a website with cursor pagination."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, website_id=website_id
     )
@@ -2282,44 +2256,66 @@ def list_pages_for_website(website_id: str) -> tuple[Response, int] | Response:
     page = paginate(
         pages, limit=limit, get_id=lambda p: str(p.mongo_id) if p.mongo_id else ""
     )
-    return jsonify(
-        {
-            "items": [_serialize_page(p) for p in page["items"]],
-            "next_cursor": page["next_cursor"],
-        }
-    )
+    return PageListOut(
+        items=[_page_to_out(p) for p in page["items"]],
+        next_cursor=page["next_cursor"],
+    ), 200
 
 
 @api_bp.route("/websites/<website_id>/pages", methods=["POST"])
 @api_endpoint
-def create_page(website_id: str) -> tuple[Response, int]:
-    """Create a page on a website.
-
-    Note: :meth:`Database.create_page` is upsert-by-(website_id, url) —
-    posting a duplicate URL returns the existing page rather than a new
-    one. The 201 response and ``Location`` header reflect the resulting
-    resource either way.
-    """
+@document(
+    request=PageIn,
+    response_201=PageOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["Pages"],
+    summary="Create a page",
+    description=(
+        "Creates a page on ``website_id``. Returns the full page "
+        "resource plus a ``Location`` header pointing at "
+        "``/api/v1/pages/<id>``. Note: the underlying database call is "
+        "upsert-by-(website_id, url) -- posting a duplicate URL returns "
+        "the existing page rather than creating a new one. The 201 "
+        "status reflects the resulting resource either way."
+    ),
+)
+def create_page(
+    website_id: str, body: PageIn
+) -> tuple[Response, int]:
+    """Create a page on a website."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, website_id=website_id
     )
     if get_db().get_website(website_id) is None:
         raise NotFoundError(f"website {website_id} not found")
 
-    body = _require_dict_body()
-    page = _build_page_from_body(website_id, body)
+    page = _page_from_in(website_id, body)
     page_id = get_db().create_page(page)
     refreshed = get_db().get_page(page_id)
     if refreshed is None:
         raise ConflictError("page failed to persist")
-    response = jsonify(_serialize_page(refreshed))
+
+    # ``@document`` serialises a BaseModel return through jsonify(), but
+    # the Location header has to live on the same response. Build the
+    # response explicitly so we can attach the header.
+    payload = _page_to_out(refreshed)
+    response = jsonify(payload.model_dump(mode="json", by_alias=True, exclude_none=True))
     response.headers["Location"] = f"/api/v1/pages/{page_id}"
     return response, 201
 
 
 @api_bp.route("/pages/<page_id>", methods=["GET"])
 @api_endpoint
-def get_page_resource(page_id: str) -> tuple[Response, int] | Response:
+@document(
+    response_200=PageOut,
+    errors=[401, 403, 404],
+    tags=["Pages"],
+    summary="Get a page by ID",
+    description="Returns the page resource (``PageOut``).",
+)
+def get_page_resource(
+    page_id: str,
+) -> tuple[PageOut, int] | tuple[Response, int] | Response:
     """Get a page by id."""
     page = get_db().get_page(page_id)
     if page is None:
@@ -2327,26 +2323,36 @@ def get_page_resource(page_id: str) -> tuple[Response, int] | Response:
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, website_id=page.website_id
     )
-    return jsonify(_serialize_page(page))
+    return _page_to_out(page), 200
 
 
 @api_bp.route("/pages/<page_id>", methods=["PUT"])
 @api_endpoint
-def replace_page(page_id: str) -> tuple[Response, int] | Response:
-    """Full replace of a page's editable fields.
-
-    Server-managed fields (status, counts, dates, screenshot, drupal
-    sync, discovery metadata) are preserved. ``website_id`` and ``url``
-    are also locked — the (website_id, url) pair is the page's identity.
-    """
+@document(
+    request=PagePut,
+    response_200=PageOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["Pages"],
+    summary="Replace a page",
+    description=(
+        "Full replace of a page's editable fields. Server-managed "
+        "fields (status, counts, dates, screenshot, drupal sync, "
+        "discovery metadata) are preserved. ``website_id`` and ``url`` "
+        "are locked -- the (website_id, url) pair is the page's "
+        "identity. A PUT that changes ``url`` is rejected with 400."
+    ),
+)
+def replace_page(
+    page_id: str, body: PagePut
+) -> tuple[PageOut, int] | tuple[Response, int] | Response:
+    """Full replace of a page's editable fields."""
     existing = get_db().get_page(page_id)
     if existing is None:
         raise NotFoundError(f"page {page_id} not found")
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, website_id=existing.website_id
     )
-    body = _require_dict_body()
-    replaced = _build_page_from_body(existing.website_id, body)
+    replaced = _page_from_in(existing.website_id, body)
     if replaced.url != existing.url:
         raise ValidationError(
             "url cannot be changed; (website_id, url) is the page identity",
@@ -2381,12 +2387,25 @@ def replace_page(page_id: str) -> tuple[Response, int] | Response:
     replaced.linked_pdf_document_id = existing.linked_pdf_document_id
     if not get_db().update_page(replaced):
         raise ConflictError("page could not be updated")
-    return jsonify(_serialize_page(replaced))
+    return _page_to_out(replaced), 200
 
 
 @api_bp.route("/pages/<page_id>", methods=["PATCH"])
 @api_endpoint
-def patch_page(page_id: str) -> tuple[Response, int] | Response:
+@document(
+    request=PagePatch,
+    response_200=PageOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["Pages"],
+    summary="Partially update a page",
+    description=(
+        "Partial update -- only fields present in the request body are "
+        "applied. Returns the full updated ``PageOut``."
+    ),
+)
+def patch_page(
+    page_id: str, body: PagePatch
+) -> tuple[PageOut, int] | tuple[Response, int] | Response:
     """Partial update — only fields present in the request body are changed."""
     page = get_db().get_page(page_id)
     if page is None:
@@ -2394,16 +2413,25 @@ def patch_page(page_id: str) -> tuple[Response, int] | Response:
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, website_id=page.website_id
     )
-    body = _require_dict_body()
-    patched = _apply_patch_to_page(page, body)
+    patched = _apply_page_patch(page, body)
     if not get_db().update_page(patched):
         raise ConflictError("page could not be updated")
-    return jsonify(_serialize_page(patched))
+    return _page_to_out(patched), 200
 
 
 @api_bp.route("/pages/<page_id>", methods=["DELETE"])
 @api_endpoint
-def delete_page_resource(page_id: str) -> tuple[Response, int]:
+@document(
+    response_204=Empty,
+    errors=[401, 403, 404],
+    tags=["Pages"],
+    summary="Delete a page",
+    description=(
+        "Deletes the page and cascades to its test results. Returns "
+        "``204 No Content`` with an empty body."
+    ),
+)
+def delete_page_resource(page_id: str) -> tuple[Empty, int] | tuple[Response, int]:
     """Delete a page and its test results."""
     page = get_db().get_page(page_id)
     if page is None:
@@ -2412,7 +2440,7 @@ def delete_page_resource(page_id: str) -> tuple[Response, int]:
         UserRole.ADMIN, UserRole.AUDITOR, website_id=page.website_id
     )
     get_db().delete_page(page_id)
-    return Response(status=204), 204
+    return Empty(), 204
 
 
 # ---------------------------------------------------------------------------
@@ -2430,28 +2458,24 @@ def delete_page_resource(page_id: str) -> tuple[Response, int]:
 
 @api_bp.route("/pages/<page_id>/violations", methods=["GET"])
 @api_endpoint
-def get_page_violations(page_id: str) -> tuple[Response, int] | Response:
-    """Return the latest test result's issue buckets for a page.
-
-    Unlike :func:`get_page_test_results` (which lists every historical
-    result), this endpoint flattens the *latest* result down to just the
-    issue arrays a UI needs to render a violations table:
-
-    - ``violations`` — high-severity issues (the things that fail WCAG)
-    - ``warnings`` — medium-severity issues
-    - ``info`` — informational notes
-    - ``discovery`` — discovery items (elements that need a human review)
-    - ``ai_findings`` — AI-detected issues, when Claude analysis ran
-
-    Each issue is serialized via :meth:`Violation.to_dict` /
-    :meth:`AIFinding.to_dict` so the shape matches what
-    ``/test-results/<id>`` already returns inside its ``violations`` etc.
-    fields.
-
-    When the page has never been tested, the buckets are all empty and
-    ``test_result_id`` / ``tested_at`` are ``null`` — clients can still
-    render an empty-state table without a second request.
-    """
+@document(
+    response_200=PageViolationsOut,
+    errors=[401, 403, 404],
+    tags=["Pages"],
+    summary="Get the latest violations for a page",
+    description=(
+        "Returns the latest test result's issue buckets for a page "
+        "(``violations``, ``warnings``, ``info``, ``discovery``, "
+        "``ai_findings``) so a UI can render a violations table "
+        "without paging through the full result history. When the page "
+        "has never been tested, the buckets are empty and "
+        "``test_result_id`` / ``tested_at`` are ``null``."
+    ),
+)
+def get_page_violations(
+    page_id: str,
+) -> tuple[PageViolationsOut, int] | tuple[Response, int] | Response:
+    """Return the latest test result's issue buckets for a page."""
     page = get_db().get_page(page_id)
     if page is None:
         raise NotFoundError(f"page {page_id} not found")
@@ -2465,68 +2489,84 @@ def get_page_violations(page_id: str) -> tuple[Response, int] | Response:
         return dt.isoformat() if dt is not None else None
 
     if result is None:
-        return jsonify({
-            "page_id": page_id,
-            "test_result_id": None,
-            "tested_at": None,
-            "violations": [],
-            "warnings": [],
-            "info": [],
-            "discovery": [],
-            "ai_findings": [],
-        })
+        return PageViolationsOut(
+            page_id=page_id,
+            test_result_id=None,
+            tested_at=None,
+            violations=[],
+            warnings=[],
+            info=[],
+            discovery=[],
+            ai_findings=[],
+        ), 200
 
-    return jsonify({
-        "page_id": page_id,
-        "test_result_id": result.id,
-        "tested_at": _iso(result.test_date),
-        "violations": [v.to_dict() for v in result.violations],
-        "warnings": [v.to_dict() for v in result.warnings],
-        "info": [v.to_dict() for v in result.info],
-        "discovery": [v.to_dict() for v in result.discovery],
-        "ai_findings": [f.to_dict() for f in result.ai_findings],
-    })
+    return PageViolationsOut(
+        page_id=page_id,
+        test_result_id=result.id,
+        tested_at=_iso(result.test_date),
+        violations=[v.to_dict() for v in result.violations],
+        warnings=[v.to_dict() for v in result.warnings],
+        info=[v.to_dict() for v in result.info],
+        discovery=[v.to_dict() for v in result.discovery],
+        ai_findings=[f.to_dict() for f in result.ai_findings],
+    ), 200
 
 
-def _serialize_test_state_matrix(
+def _matrix_to_out(
     matrix: TestStateMatrix, *, page_id: str, website_id: str
-) -> dict[str, Any]:
-    """Project a :class:`TestStateMatrix` to a JSON-safe dict.
+) -> PageMatrixOut:
+    """Project a :class:`TestStateMatrix` to a :class:`PageMatrixOut`.
 
-    Datetimes emit as ISO 8601; the legacy ``matrix`` (row/column
-    boolean grid) is omitted because the canonical storage is
-    ``combinations`` — clients reading this endpoint should never need
-    to know the legacy shape. ``id`` is ``None`` for an unsaved default
-    matrix (when no row existed yet for this page).
+    Datetimes are emitted as ISO 8601; the legacy ``matrix`` (row/column
+    boolean grid) is intentionally dropped because the canonical
+    storage is ``combinations``. ``id`` is ``None`` for an unsaved
+    default matrix.
     """
 
     def _iso(dt: datetime | None) -> str | None:
         return dt.isoformat() if dt is not None else None
 
-    return {
-        "id": matrix.id,
-        "page_id": page_id,
-        "website_id": website_id,
-        "scripts": [s.to_dict() for s in matrix.scripts],
-        "combinations": list(matrix.combinations),
-        "created_date": _iso(matrix.created_date),
-        "last_modified": _iso(matrix.last_modified),
-        "created_by": matrix.created_by,
-    }
+    return PageMatrixOut(
+        id=matrix.id,
+        page_id=page_id,
+        website_id=website_id,
+        scripts=[
+            ScriptStateDefinitionOut(
+                script_id=s.script_id,
+                script_name=s.script_name,
+                test_before=s.test_before,
+                test_after=s.test_after,
+                execution_order=s.execution_order,
+            )
+            for s in matrix.scripts
+        ],
+        combinations=[dict(c) for c in matrix.combinations],
+        created_date=_iso(matrix.created_date),
+        last_modified=_iso(matrix.last_modified),
+        created_by=matrix.created_by,
+    )
 
 
 @api_bp.route("/pages/<page_id>/matrix", methods=["GET"])
 @api_endpoint
-def get_page_matrix(page_id: str) -> tuple[Response, int] | Response:
-    """Read the test-state matrix for a page.
-
-    A page can have at most one matrix. If none has been saved yet, the
-    handler returns a *default* in-memory matrix derived from the page's
-    currently-enabled multi-state scripts, with sequential combinations
-    initialised the same way the legacy HTML form would render them.
-    ``id`` is ``null`` in that case so clients can tell the matrix has
-    not yet been persisted.
-    """
+@document(
+    response_200=PageMatrixOut,
+    errors=[401, 403, 404],
+    tags=["Pages"],
+    summary="Get the test-state matrix for a page",
+    description=(
+        "Returns the test-state matrix for a page. A page has at most "
+        "one matrix; if none has been saved yet, returns a default "
+        "in-memory matrix derived from the page's currently-enabled "
+        "multi-state scripts with sequential combinations. ``id`` is "
+        "``null`` in that case so clients can detect a not-yet-"
+        "persisted matrix."
+    ),
+)
+def get_page_matrix(
+    page_id: str,
+) -> tuple[PageMatrixOut, int] | tuple[Response, int] | Response:
+    """Read the test-state matrix for a page."""
     page = get_db().get_page(page_id)
     if page is None:
         raise NotFoundError(f"page {page_id} not found")
@@ -2557,147 +2597,65 @@ def get_page_matrix(page_id: str) -> tuple[Response, int] | Response:
         if matrix.scripts:
             matrix.initialize_matrix()
 
-    return jsonify(_serialize_test_state_matrix(
+    return _matrix_to_out(
         matrix, page_id=page_id, website_id=page.website_id
-    ))
+    ), 200
 
 
-def _parse_matrix_combinations(raw: Any, *, field: str) -> list[dict[str, str]]:
-    if not isinstance(raw, list):
-        raise ValidationError(
-            f"{field} must be a list of state combinations",
-            errors=(
-                _FieldError(field=field, code="invalid_type", message="must be list"),
-            ),
-        )
-    raw_list = _iter_to_any_list(raw)
-    parsed: list[dict[str, str]] = []
-    for idx, item in enumerate(raw_list):
-        if not isinstance(item, dict):
-            raise ValidationError(
-                f"{field}[{idx}] must be an object mapping script_id → state",
-                errors=(
-                    _FieldError(
-                        field=f"{field}[{idx}]",
-                        code="invalid_type",
-                        message="must be object",
-                    ),
-                ),
-            )
-        item_dict = cast(dict[str, Any], item)
-        normalized: dict[str, str] = {}
-        for sid, state in item_dict.items():
-            if not isinstance(state, str):
+def _validate_matrix_combinations(
+    combinations: list[dict[str, str]],
+) -> list[dict[str, str]]:
+    """Validate that each combination value is ``before|after|none``.
+
+    Pydantic constrains the outer types (a list of ``dict[str, str]``)
+    but cannot enumerate values in a free-form dict where the keys are
+    arbitrary script IDs. This helper performs the value-level check
+    the legacy ``_parse_matrix_combinations`` did, raising a
+    ``ValidationError`` with the same field path so the wire shape of
+    the error envelope stays identical.
+    """
+    valid: tuple[str, ...] = ("before", "after", "none")
+    for idx, combo in enumerate(combinations):
+        for sid, state in combo.items():
+            if state not in valid:
                 raise ValidationError(
-                    f"{field}[{idx}].{sid} must be a string",
+                    f"combinations[{idx}].{sid} must be one of before|after|none",
                     errors=(
                         _FieldError(
-                            field=f"{field}[{idx}].{sid}",
-                            code="invalid_type",
-                            message="must be string",
-                        ),
-                    ),
-                )
-            if state not in ("before", "after", "none"):
-                raise ValidationError(
-                    f"{field}[{idx}].{sid} must be one of before|after|none",
-                    errors=(
-                        _FieldError(
-                            field=f"{field}[{idx}].{sid}",
+                            field=f"combinations[{idx}].{sid}",
                             code="invalid_value",
                             message="must be before|after|none",
                         ),
                     ),
                 )
-            normalized[sid] = state
-        parsed.append(normalized)
-    return parsed
-
-
-def _parse_script_order(raw: Any, *, field: str) -> dict[str, int]:
-    if not isinstance(raw, list):
-        raise ValidationError(
-            f"{field} must be a list of {{script_id, execution_order}} objects",
-            errors=(
-                _FieldError(field=field, code="invalid_type", message="must be list"),
-            ),
-        )
-    raw_list = _iter_to_any_list(raw)
-    order_map: dict[str, int] = {}
-    for idx, item in enumerate(raw_list):
-        if not isinstance(item, dict):
-            raise ValidationError(
-                f"{field}[{idx}] must be an object",
-                errors=(
-                    _FieldError(
-                        field=f"{field}[{idx}]",
-                        code="invalid_type",
-                        message="must be object",
-                    ),
-                ),
-            )
-        item_dict = cast(dict[str, Any], item)
-        sid = item_dict.get("script_id")
-        order = item_dict.get("execution_order")
-        if not isinstance(sid, str):
-            raise ValidationError(
-                f"{field}[{idx}].script_id must be a string",
-                errors=(
-                    _FieldError(
-                        field=f"{field}[{idx}].script_id",
-                        code="invalid_type",
-                        message="must be string",
-                    ),
-                ),
-            )
-        if not isinstance(order, int) or isinstance(order, bool):
-            raise ValidationError(
-                f"{field}[{idx}].execution_order must be an integer",
-                errors=(
-                    _FieldError(
-                        field=f"{field}[{idx}].execution_order",
-                        code="invalid_type",
-                        message="must be int",
-                    ),
-                ),
-            )
-        order_map[sid] = order
-    return order_map
+    return combinations
 
 
 @api_bp.route("/pages/<page_id>/matrix", methods=["PUT"])
 @api_endpoint
-def replace_page_matrix(page_id: str) -> tuple[Response, int] | Response:
-    """Full replace of the page's test-state matrix.
-
-    Body shape:
-
-        {
-          "combinations": [
-            {"script_id_1": "before", "script_id_2": "before"},
-            {"script_id_1": "after",  "script_id_2": "after"},
-            ...
-          ],
-          "script_order": [          // optional
-            {"script_id": "...", "execution_order": 0},
-            ...
-          ]
-        }
-
-    The ``scripts`` array on the matrix is always rebuilt from the page's
-    currently-enabled multi-state scripts at save time — clients don't
-    have to (and can't) submit it. This matches the legacy HTML form's
-    POST handler, which re-derives ``scripts`` from
-    :meth:`Database.get_scripts_for_page_v2` on every save.
-
-    ``combinations`` is **required**; ``script_order`` is optional and
-    only repositions scripts already present on the page.
-
-    On success, returns ``200`` with the persisted matrix. The verb is
-    PUT because the matrix is an idempotent 1:1 sub-resource of the
-    page — there is no PATCH and no DELETE; clearing it means PUTing an
-    empty ``combinations`` array.
-    """
+@document(
+    request=PageMatrixIn,
+    response_200=PageMatrixOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["Pages"],
+    summary="Replace the test-state matrix for a page",
+    description=(
+        "Full replace of the page's test-state matrix. The ``scripts`` "
+        "array on the persisted matrix is always rebuilt from the "
+        "page's currently-enabled multi-state scripts at save time -- "
+        "clients don't submit it. ``combinations`` is required and "
+        "each value must be ``\"before\"``, ``\"after\"``, or "
+        "``\"none\"``. ``script_order`` is optional and only "
+        "repositions scripts already present on the page. The verb is "
+        "PUT because the matrix is an idempotent 1:1 sub-resource of "
+        "the page -- there is no PATCH or DELETE; clearing it means "
+        "PUTing an empty ``combinations`` array."
+    ),
+)
+def replace_page_matrix(
+    page_id: str, body: PageMatrixIn
+) -> tuple[PageMatrixOut, int] | tuple[Response, int] | Response:
+    """Full replace of the page's test-state matrix."""
     page = get_db().get_page(page_id)
     if page is None:
         raise NotFoundError(f"page {page_id} not found")
@@ -2705,24 +2663,11 @@ def replace_page_matrix(page_id: str) -> tuple[Response, int] | Response:
         UserRole.ADMIN, UserRole.AUDITOR, website_id=page.website_id
     )
 
-    body = _require_dict_body()
-    if "combinations" not in body:
-        raise ValidationError(
-            "combinations is required",
-            errors=(
-                _FieldError(
-                    field="combinations", code="required", message="required"
-                ),
-            ),
-        )
-    combinations = _parse_matrix_combinations(
-        body["combinations"], field="combinations"
-    )
-    order_map = (
-        _parse_script_order(body["script_order"], field="script_order")
-        if "script_order" in body
-        else {}
-    )
+    combinations = _validate_matrix_combinations(body.combinations)
+    order_map: dict[str, int] = {
+        entry.script_id: entry.execution_order
+        for entry in (body.script_order or ())
+    }
 
     scripts = get_db().get_scripts_for_page_v2(
         page_id=page_id, website_id=page.website_id, enabled_only=False
@@ -2760,9 +2705,9 @@ def replace_page_matrix(page_id: str) -> tuple[Response, int] | Response:
             raise ConflictError("matrix failed to persist")
         matrix = refreshed
 
-    return jsonify(_serialize_test_state_matrix(
+    return _matrix_to_out(
         matrix, page_id=page_id, website_id=page.website_id
-    ))
+    ), 200
 
 
 @api_bp.route("/pages/<page_id>/test-runs/latest", methods=["GET"])
@@ -9467,179 +9412,131 @@ from auto_a11y.models.discovered_page import DiscoveredPage  # noqa: E402
 from auto_a11y.models.page import DrupalSyncStatus  # noqa: E402
 
 
-def _serialize_discovered_page(page: DiscoveredPage) -> dict[str, Any]:
-    """Project a :class:`DiscoveredPage` to a JSON-safe dict.
+def _discovered_page_to_out(page: DiscoveredPage) -> DiscoveredPageOut:
+    """Project a :class:`DiscoveredPage` to a :class:`DiscoveredPageOut`.
 
-    Datetimes go to ISO 8601 and the Mongo ``_id`` is dropped (the public
-    identifier is the string ``id`` property). The Drupal-sync fields
-    are exposed read-only — they're managed by the Drupal sync subsystem
-    rather than by REST clients.
+    Mirrors the legacy ``_serialize_discovered_page`` shape byte-for-byte:
+    datetimes emit as ISO 8601 strings and the Mongo ``_id`` is dropped
+    (the public identifier is the ``id`` string property). Drupal-sync
+    fields are exposed read-only.
     """
 
     def _iso(dt: datetime | None) -> str | None:
         return dt.isoformat() if dt is not None else None
 
-    return {
-        "id": page.id,
-        "title": page.title,
-        "url": page.url,
-        "project_id": page.project_id,
-        "source_type": page.source_type,
-        "source_page_id": page.source_page_id,
-        "source_website_id": page.source_website_id,
-        "source_component_signature": page.source_component_signature,
-        "source_upload_id": page.source_upload_id,
-        "interested_because": list(page.interested_because),
-        "page_elements": list(page.page_elements),
-        "private_notes": page.private_notes,
-        "public_notes": page.public_notes,
-        "include_in_report": page.include_in_report,
-        "audited": page.audited,
-        "manual_audit": page.manual_audit,
-        "screenshot_paths": list(page.screenshot_paths),
-        "document_links": list(page.document_links),
-        "drupal_uuid": page.drupal_uuid,
-        "drupal_sync_status": page.drupal_sync_status.value,
-        "drupal_last_synced": _iso(page.drupal_last_synced),
-        "drupal_error_message": page.drupal_error_message,
-        "created_at": _iso(page.created_at),
-        "updated_at": _iso(page.updated_at),
-        "created_by": page.created_by,
-    }
+    return DiscoveredPageOut(
+        id=page.id,
+        title=page.title,
+        url=page.url,
+        project_id=page.project_id,
+        source_type=page.source_type,
+        source_page_id=page.source_page_id,
+        source_website_id=page.source_website_id,
+        source_component_signature=page.source_component_signature,
+        source_upload_id=page.source_upload_id,
+        interested_because=list(page.interested_because),
+        page_elements=list(page.page_elements),
+        private_notes=page.private_notes,
+        public_notes=page.public_notes,
+        include_in_report=page.include_in_report,
+        audited=page.audited,
+        manual_audit=page.manual_audit,
+        screenshot_paths=list(page.screenshot_paths),
+        document_links=[dict(d) for d in page.document_links],
+        drupal_uuid=page.drupal_uuid,
+        drupal_sync_status=page.drupal_sync_status.value,
+        drupal_last_synced=_iso(page.drupal_last_synced),
+        drupal_error_message=page.drupal_error_message,
+        created_at=_iso(page.created_at),
+        updated_at=_iso(page.updated_at),
+        created_by=page.created_by,
+    )
 
 
-def _validate_document_links(raw: Any, *, field: str) -> list[dict[str, Any]]:
-    """``document_links`` is a list of objects; validate the shape minimally."""
-    if not isinstance(raw, list):
-        raise ValidationError(
-            f"{field} must be an array",
-            errors=(_FieldError(field=field, code="invalid_type", message="must be array"),),
-        )
-    items: list[dict[str, Any]] = []
-    for index, item in enumerate(_iter_to_any_list(raw)):
-        if not isinstance(item, dict):
-            raise ValidationError(
-                f"{field}[{index}] must be an object",
-                errors=(_FieldError(field=f"{field}[{index}]", code="invalid_type", message="must be object"),),
-            )
-        items.append(cast(dict[str, Any], item))
-    return items
-
-
-def _build_discovered_page_from_body(
-    project_id: str, body: dict[str, Any]
+def _discovered_page_from_in(
+    project_id: str, body: DiscoveredPageIn | DiscoveredPagePut
 ) -> DiscoveredPage:
-    title_raw = body.get("title")
-    if not isinstance(title_raw, str) or not title_raw.strip():
-        raise ValidationError(
-            "title is required",
-            errors=(_FieldError(field="title", code="required", message="required"),),
-        )
-    url_raw = body.get("url")
-    if not isinstance(url_raw, str) or not url_raw.strip():
-        raise ValidationError(
-            "url is required",
-            errors=(_FieldError(field="url", code="required", message="required"),),
-        )
-    interested_raw: Any = body.get("interested_because", [])
-    if not isinstance(interested_raw, list):
-        raise ValidationError(
-            "interested_because must be an array",
-            errors=(_FieldError(field="interested_because", code="invalid_type", message="must be array"),),
-        )
-    elements_raw: Any = body.get("page_elements", [])
-    if not isinstance(elements_raw, list):
-        raise ValidationError(
-            "page_elements must be an array",
-            errors=(_FieldError(field="page_elements", code="invalid_type", message="must be array"),),
-        )
-    screenshots_raw: Any = body.get("screenshot_paths", [])
-    if not isinstance(screenshots_raw, list):
-        raise ValidationError(
-            "screenshot_paths must be an array",
-            errors=(_FieldError(field="screenshot_paths", code="invalid_type", message="must be array"),),
-        )
-    document_links_raw: Any = body.get("document_links", [])
-    document_links = _validate_document_links(document_links_raw, field="document_links")
+    """Construct a new :class:`DiscoveredPage` from a POST or PUT body.
 
+    ``title`` and ``url`` are trimmed of leading/trailing whitespace
+    (matching the legacy helper). Optional list fields default to empty
+    lists when the client omits them; optional booleans default to the
+    dataclass defaults (``include_in_report=True``, others ``False``).
+    """
     return DiscoveredPage(
-        title=title_raw.strip(),
-        url=url_raw.strip(),
+        title=body.title.strip(),
+        url=body.url.strip(),
         project_id=project_id,
-        source_type=str(body.get("source_type", "manual")),
-        interested_because=_coerce_str_list(interested_raw),
-        page_elements=_coerce_str_list(elements_raw),
-        private_notes=_optional_str(body.get("private_notes"), field="private_notes"),
-        public_notes=_optional_str(body.get("public_notes"), field="public_notes"),
-        include_in_report=bool(body.get("include_in_report", True)),
-        audited=bool(body.get("audited", False)),
-        manual_audit=bool(body.get("manual_audit", False)),
-        screenshot_paths=_coerce_str_list(screenshots_raw),
-        document_links=document_links,
+        source_type=body.source_type if body.source_type is not None else "manual",
+        interested_because=list(body.interested_because or ()),
+        page_elements=list(body.page_elements or ()),
+        private_notes=body.private_notes if body.private_notes else None,
+        public_notes=body.public_notes if body.public_notes else None,
+        include_in_report=(
+            body.include_in_report if body.include_in_report is not None else True
+        ),
+        audited=body.audited if body.audited is not None else False,
+        manual_audit=body.manual_audit if body.manual_audit is not None else False,
+        screenshot_paths=list(body.screenshot_paths or ()),
+        document_links=[dict(d) for d in (body.document_links or ())],
         created_by=str(current_user.get_id()) if current_user.is_authenticated else None,
     )
 
 
-def _apply_patch_to_discovered_page(
-    page: DiscoveredPage, body: dict[str, Any]
+def _apply_discovered_page_patch(
+    page: DiscoveredPage, body: DiscoveredPagePatch
 ) -> None:
-    if "title" in body:
-        if not isinstance(body["title"], str) or not body["title"].strip():
-            raise ValidationError(
-                "title must be a non-empty string",
-                errors=(_FieldError(field="title", code="invalid_value", message="must be non-empty"),),
-            )
-        page.title = body["title"].strip()
-    if "url" in body:
-        if not isinstance(body["url"], str) or not body["url"].strip():
-            raise ValidationError(
-                "url must be a non-empty string",
-                errors=(_FieldError(field="url", code="invalid_value", message="must be non-empty"),),
-            )
-        page.url = body["url"].strip()
-    if "interested_because" in body:
-        if not isinstance(body["interested_because"], list):
-            raise ValidationError(
-                "interested_because must be an array",
-                errors=(_FieldError(field="interested_because", code="invalid_type", message="must be array"),),
-            )
-        page.interested_because = _coerce_str_list(body["interested_because"])
-    if "page_elements" in body:
-        if not isinstance(body["page_elements"], list):
-            raise ValidationError(
-                "page_elements must be an array",
-                errors=(_FieldError(field="page_elements", code="invalid_type", message="must be array"),),
-            )
-        page.page_elements = _coerce_str_list(body["page_elements"])
-    if "private_notes" in body:
-        page.private_notes = _optional_str(body["private_notes"], field="private_notes")
-    if "public_notes" in body:
-        page.public_notes = _optional_str(body["public_notes"], field="public_notes")
-    if "include_in_report" in body:
-        page.include_in_report = bool(body["include_in_report"])
-    if "audited" in body:
-        page.audited = bool(body["audited"])
-    if "manual_audit" in body:
-        page.manual_audit = bool(body["manual_audit"])
-    if "screenshot_paths" in body:
-        if not isinstance(body["screenshot_paths"], list):
-            raise ValidationError(
-                "screenshot_paths must be an array",
-                errors=(_FieldError(field="screenshot_paths", code="invalid_type", message="must be array"),),
-            )
-        page.screenshot_paths = _coerce_str_list(body["screenshot_paths"])
-    if "document_links" in body:
-        page.document_links = _validate_document_links(
-            body["document_links"], field="document_links"
+    """Apply a :class:`DiscoveredPagePatch` to ``page`` in place.
+
+    Only fields the client *sent* are applied (Pydantic's
+    ``model_fields_set`` distinguishes "absent" from "explicit null").
+    ``updated_at`` is bumped regardless. Matches the legacy "patch only
+    present keys" contract from ``_apply_patch_to_discovered_page``.
+    """
+    fields_set = body.model_fields_set
+    if "title" in fields_set and body.title is not None:
+        page.title = body.title.strip()
+    if "url" in fields_set and body.url is not None:
+        page.url = body.url.strip()
+    if "interested_because" in fields_set:
+        page.interested_because = list(body.interested_because or ())
+    if "page_elements" in fields_set:
+        page.page_elements = list(body.page_elements or ())
+    if "private_notes" in fields_set:
+        page.private_notes = (
+            body.private_notes if body.private_notes else None
         )
+    if "public_notes" in fields_set:
+        page.public_notes = body.public_notes if body.public_notes else None
+    if "include_in_report" in fields_set and body.include_in_report is not None:
+        page.include_in_report = body.include_in_report
+    if "audited" in fields_set and body.audited is not None:
+        page.audited = body.audited
+    if "manual_audit" in fields_set and body.manual_audit is not None:
+        page.manual_audit = body.manual_audit
+    if "screenshot_paths" in fields_set:
+        page.screenshot_paths = list(body.screenshot_paths or ())
+    if "document_links" in fields_set:
+        page.document_links = [dict(d) for d in (body.document_links or ())]
     page.updated_at = datetime.now()
 
 
 @api_bp.route("/projects/<project_id>/discovered-pages", methods=["GET"])
 @api_endpoint
+@document(
+    response_200=DiscoveredPageListOut,
+    errors=[400, 401, 403, 404],
+    tags=["DiscoveredPages"],
+    summary="List discovered pages in a project",
+    description=(
+        "Returns the discovered pages belonging to ``project_id`` with "
+        "cursor pagination. The response shape is "
+        "``{items, next_cursor}``."
+    ),
+)
 def list_discovered_pages_rest(
     project_id: str,
-) -> tuple[Response, int] | Response:
+) -> tuple[DiscoveredPageListOut, int] | tuple[Response, int] | Response:
     """List discovered pages within a project, with cursor pagination."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, project_id=project_id
@@ -9667,17 +9564,29 @@ def list_discovered_pages_rest(
     page = paginate(
         pages, limit=limit, get_id=lambda p: str(p.mongo_id) if p.mongo_id else ""
     )
-    return jsonify(
-        {
-            "items": [_serialize_discovered_page(p) for p in page["items"]],
-            "next_cursor": page["next_cursor"],
-        }
-    )
+    return DiscoveredPageListOut(
+        items=[_discovered_page_to_out(p) for p in page["items"]],
+        next_cursor=page["next_cursor"],
+    ), 200
 
 
 @api_bp.route("/projects/<project_id>/discovered-pages", methods=["POST"])
 @api_endpoint
-def create_discovered_page_rest(project_id: str) -> tuple[Response, int]:
+@document(
+    request=DiscoveredPageIn,
+    response_201=DiscoveredPageOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["DiscoveredPages"],
+    summary="Create a discovered page",
+    description=(
+        "Creates a discovered page on ``project_id``. Returns the full "
+        "resource plus a ``Location`` header pointing at "
+        "``/api/v1/discovered-pages/<id>``."
+    ),
+)
+def create_discovered_page_rest(
+    project_id: str, body: DiscoveredPageIn
+) -> tuple[Response, int]:
     """Create a discovered page on a project."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id
@@ -9685,20 +9594,32 @@ def create_discovered_page_rest(project_id: str) -> tuple[Response, int]:
     if get_db().get_project(project_id) is None:
         raise NotFoundError(f"project {project_id} not found")
 
-    body = _require_dict_body()
-    page = _build_discovered_page_from_body(project_id, body)
+    page = _discovered_page_from_in(project_id, body)
     new_id = get_db().create_discovered_page(page)
     refreshed = get_db().get_discovered_page_by_id(new_id)
     if refreshed is None:
         raise ConflictError("discovered page failed to persist")
-    response = jsonify(_serialize_discovered_page(refreshed))
+
+    payload = _discovered_page_to_out(refreshed)
+    response = jsonify(
+        payload.model_dump(mode="json", by_alias=True, exclude_none=True)
+    )
     response.headers["Location"] = f"/api/v1/discovered-pages/{new_id}"
     return response, 201
 
 
 @api_bp.route("/discovered-pages/<page_id>", methods=["GET"])
 @api_endpoint
-def get_discovered_page_rest(page_id: str) -> tuple[Response, int] | Response:
+@document(
+    response_200=DiscoveredPageOut,
+    errors=[401, 403, 404],
+    tags=["DiscoveredPages"],
+    summary="Get a discovered page by ID",
+    description="Returns the discovered page resource.",
+)
+def get_discovered_page_rest(
+    page_id: str,
+) -> tuple[DiscoveredPageOut, int] | tuple[Response, int] | Response:
     """Get a discovered page by id."""
     page = get_db().get_discovered_page_by_id(page_id)
     if page is None:
@@ -9706,29 +9627,37 @@ def get_discovered_page_rest(page_id: str) -> tuple[Response, int] | Response:
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, project_id=page.project_id
     )
-    return jsonify(_serialize_discovered_page(page))
+    return _discovered_page_to_out(page), 200
 
 
 @api_bp.route("/discovered-pages/<page_id>", methods=["PUT"])
 @api_endpoint
+@document(
+    request=DiscoveredPagePut,
+    response_200=DiscoveredPageOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["DiscoveredPages"],
+    summary="Replace a discovered page",
+    description=(
+        "Full replace of a discovered page's editable fields. "
+        "Server-managed fields (``project_id``, ``source_*``, "
+        "``drupal_*``, ``created_at``, ``created_by``) are preserved "
+        "from the existing record; clients cannot reassign a "
+        "discovered page to a different project, change its source, "
+        "or rewrite Drupal-sync state via this endpoint."
+    ),
+)
 def replace_discovered_page_rest(
-    page_id: str,
-) -> tuple[Response, int] | Response:
-    """Full replace of a discovered page's editable fields.
-
-    Server-managed fields (project_id, source_*, drupal_*, created_at,
-    created_by) are preserved across PUT — clients cannot reassign a
-    discovered page to a different project, change its source, or
-    rewrite Drupal-sync state through this endpoint.
-    """
+    page_id: str, body: DiscoveredPagePut
+) -> tuple[DiscoveredPageOut, int] | tuple[Response, int] | Response:
+    """Full replace of a discovered page's editable fields."""
     existing = get_db().get_discovered_page_by_id(page_id)
     if existing is None:
         raise NotFoundError(f"discovered page {page_id} not found")
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, project_id=existing.project_id
     )
-    body = _require_dict_body()
-    replaced = _build_discovered_page_from_body(existing.project_id, body)
+    replaced = _discovered_page_from_in(existing.project_id, body)
     replaced.mongo_id = existing.mongo_id
     replaced.created_at = existing.created_at
     replaced.created_by = existing.created_by
@@ -9744,14 +9673,26 @@ def replace_discovered_page_rest(
     replaced.updated_at = datetime.now()
     if not get_db().update_discovered_page(replaced):
         raise ConflictError("discovered page could not be updated")
-    return jsonify(_serialize_discovered_page(replaced))
+    return _discovered_page_to_out(replaced), 200
 
 
 @api_bp.route("/discovered-pages/<page_id>", methods=["PATCH"])
 @api_endpoint
+@document(
+    request=DiscoveredPagePatch,
+    response_200=DiscoveredPageOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["DiscoveredPages"],
+    summary="Partially update a discovered page",
+    description=(
+        "Partial update -- only fields present in the request body "
+        "are applied. ``updated_at`` is bumped on every successful "
+        "PATCH. Returns the full updated resource."
+    ),
+)
 def patch_discovered_page_rest(
-    page_id: str,
-) -> tuple[Response, int] | Response:
+    page_id: str, body: DiscoveredPagePatch
+) -> tuple[DiscoveredPageOut, int] | tuple[Response, int] | Response:
     """Partial update — covers the legacy edit form's per-field updates."""
     page = get_db().get_discovered_page_by_id(page_id)
     if page is None:
@@ -9759,16 +9700,27 @@ def patch_discovered_page_rest(
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, project_id=page.project_id
     )
-    body = _require_dict_body()
-    _apply_patch_to_discovered_page(page, body)
+    _apply_discovered_page_patch(page, body)
     if not get_db().update_discovered_page(page):
         raise ConflictError("discovered page could not be updated")
-    return jsonify(_serialize_discovered_page(page))
+    return _discovered_page_to_out(page), 200
 
 
 @api_bp.route("/discovered-pages/<page_id>", methods=["DELETE"])
 @api_endpoint
-def delete_discovered_page_rest(page_id: str) -> tuple[Response, int]:
+@document(
+    response_204=Empty,
+    errors=[401, 403, 404],
+    tags=["DiscoveredPages"],
+    summary="Delete a discovered page",
+    description=(
+        "Deletes the discovered page. Returns ``204 No Content`` with "
+        "an empty body."
+    ),
+)
+def delete_discovered_page_rest(
+    page_id: str,
+) -> tuple[Empty, int] | tuple[Response, int]:
     """Delete a discovered page."""
     page = get_db().get_discovered_page_by_id(page_id)
     if page is None:
@@ -9777,7 +9729,7 @@ def delete_discovered_page_rest(page_id: str) -> tuple[Response, int]:
         UserRole.ADMIN, UserRole.AUDITOR, project_id=page.project_id
     )
     get_db().delete_discovered_page(page_id)
-    return Response(status=204), 204
+    return Empty(), 204
 
 
 # ---------------------------------------------------------------------------

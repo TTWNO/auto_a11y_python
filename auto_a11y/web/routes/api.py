@@ -8,6 +8,7 @@ from typing import Any, cast
 
 from flask import Blueprint, Response, jsonify, request
 from flask_login import current_user
+from werkzeug.datastructures import FileStorage
 from auto_a11y.models import (
     Page,
     PageStatus,
@@ -54,6 +55,16 @@ from auto_a11y.web.api.schemas.pages import (
     PagePut,
     PageViolationsOut,
     ScriptStateDefinitionOut,
+)
+from auto_a11y.web.api.schemas.recordings import (
+    RecordingContentOut,
+    RecordingContentPatch,
+    RecordingIssueListOut,
+    RecordingIssueOut,
+    RecordingListOut,
+    RecordingOut,
+    RecordingPatch,
+    RecordingUploadIn,
 )
 from auto_a11y.web.api.schemas.reports import (
     JobRestartOut,
@@ -5173,43 +5184,6 @@ _VALID_ISSUE_STATUSES: frozenset[str] = frozenset(
 )
 
 
-def _serialize_recording(recording: Recording) -> dict[str, Any]:
-    """Project a :class:`Recording` to a JSON-safe dict."""
-
-    def _iso(dt: datetime | None) -> str | None:
-        return dt.isoformat() if dt is not None else None
-
-    return {
-        "id": recording.id,
-        "recording_id": recording.recording_id,
-        "title": recording.title,
-        "description": recording.description,
-        "duration": recording.duration,
-        "recorded_date": _iso(recording.recorded_date),
-        "auditor_name": recording.auditor_name,
-        "auditor_role": recording.auditor_role,
-        "recording_type": recording.recording_type.value,
-        "project_id": recording.project_id,
-        "testing_scope": dict(recording.testing_scope),
-        "website_ids": list(recording.website_ids),
-        "page_urls": list(recording.page_urls),
-        "page_ids": list(recording.page_ids),
-        "discovered_page_ids": list(recording.discovered_page_ids),
-        "component_names": list(recording.component_names),
-        "app_screens": list(recording.app_screens),
-        "device_sections": list(recording.device_sections),
-        "task_description": recording.task_description,
-        "total_issues": recording.total_issues,
-        "high_impact_count": recording.high_impact_count,
-        "medium_impact_count": recording.medium_impact_count,
-        "low_impact_count": recording.low_impact_count,
-        "tags": list(recording.tags),
-        "notes": recording.notes,
-        "created_at": _iso(recording.created_at),
-        "updated_at": _iso(recording.updated_at),
-    }
-
-
 def _serialize_recording_issue(issue: RecordingIssue) -> dict[str, Any]:
     """Project a :class:`RecordingIssue` to a JSON-safe dict."""
 
@@ -5248,66 +5222,6 @@ def _serialize_recording_issue(issue: RecordingIssue) -> dict[str, Any]:
         "created_at": _iso(issue.created_at),
         "updated_at": _iso(issue.updated_at),
     }
-
-
-def _apply_patch_to_recording(recording: Recording, body: dict[str, Any]) -> Recording:
-    """Apply a partial-update body to ``recording``.
-
-    Editable fields are intentionally narrow: human-facing metadata only
-    (title, description, auditor_name/role, tags, notes). Computed
-    counts, project_id, recording_id, recording_type, media_file_path,
-    Drupal sync, and multi-language structured content
-    (key_takeaways/user_painpoints/user_assertions) are server- or
-    upload-managed and not editable here.
-    """
-    if "title" in body:
-        if not isinstance(body["title"], str) or not body["title"].strip():
-            raise ValidationError(
-                "title must be a non-empty string",
-                errors=(_FieldError(field="title", code="invalid_value", message="must be non-empty string"),),
-            )
-        recording.title = body["title"].strip()
-    if "description" in body:
-        desc = body["description"]
-        if desc is not None and not isinstance(desc, str):
-            raise ValidationError(
-                "description must be a string or null",
-                errors=(_FieldError(field="description", code="invalid_type", message="must be string"),),
-            )
-        recording.description = desc.strip() if isinstance(desc, str) and desc.strip() else None
-    if "auditor_name" in body:
-        name = body["auditor_name"]
-        if name is not None and not isinstance(name, str):
-            raise ValidationError(
-                "auditor_name must be a string or null",
-                errors=(_FieldError(field="auditor_name", code="invalid_type", message="must be string"),),
-            )
-        recording.auditor_name = name if isinstance(name, str) else None
-    if "auditor_role" in body:
-        role = body["auditor_role"]
-        if role is not None and not isinstance(role, str):
-            raise ValidationError(
-                "auditor_role must be a string or null",
-                errors=(_FieldError(field="auditor_role", code="invalid_type", message="must be string"),),
-            )
-        recording.auditor_role = role if isinstance(role, str) else None
-    if "tags" in body:
-        if not isinstance(body["tags"], list):
-            raise ValidationError(
-                "tags must be an array",
-                errors=(_FieldError(field="tags", code="invalid_type", message="must be array"),),
-            )
-        recording.tags = _coerce_str_list(body["tags"])
-    if "notes" in body:
-        notes = body["notes"]
-        if notes is not None and not isinstance(notes, str):
-            raise ValidationError(
-                "notes must be a string or null",
-                errors=(_FieldError(field="notes", code="invalid_type", message="must be string"),),
-            )
-        recording.notes = notes if isinstance(notes, str) else None
-    recording.updated_at = datetime.now()
-    return recording
 
 
 def _apply_patch_to_recording_issue(
@@ -5378,64 +5292,181 @@ def _parse_multiline_form_field(value: str | None) -> list[str]:
     return [line.strip() for line in value.split("\n") if line.strip()]
 
 
+def _recording_to_out(recording: Recording) -> RecordingOut:
+    """Project a :class:`Recording` to a :class:`RecordingOut` model.
+
+    Mirrors :func:`_serialize_recording` byte-for-byte; the two helpers
+    exist side-by-side during the §5.6 refactor so the legacy
+    ``dict``-returning serialiser still backs internal callers (HTML
+    views, the supplementary-content GET path) while the REST handlers
+    move to typed Pydantic responses.
+    """
+
+    def _iso(dt: datetime | None) -> str | None:
+        return dt.isoformat() if dt is not None else None
+
+    return RecordingOut(
+        id=recording.id,
+        recording_id=recording.recording_id,
+        title=recording.title,
+        description=recording.description,
+        duration=recording.duration,
+        recorded_date=_iso(recording.recorded_date),
+        auditor_name=recording.auditor_name,
+        auditor_role=recording.auditor_role,
+        recording_type=recording.recording_type.value,
+        project_id=recording.project_id,
+        testing_scope=dict(recording.testing_scope),
+        website_ids=list(recording.website_ids),
+        page_urls=list(recording.page_urls),
+        page_ids=list(recording.page_ids),
+        discovered_page_ids=list(recording.discovered_page_ids),
+        component_names=list(recording.component_names),
+        app_screens=list(recording.app_screens),
+        device_sections=list(recording.device_sections),
+        task_description=recording.task_description,
+        total_issues=recording.total_issues,
+        high_impact_count=recording.high_impact_count,
+        medium_impact_count=recording.medium_impact_count,
+        low_impact_count=recording.low_impact_count,
+        tags=list(recording.tags),
+        notes=recording.notes,
+        created_at=_iso(recording.created_at),
+        updated_at=_iso(recording.updated_at),
+    )
+
+
+def _recording_content_to_out(recording: Recording) -> RecordingContentOut:
+    """Project a :class:`Recording`'s supplementary content to its output model."""
+    return RecordingContentOut(
+        key_takeaways=dict(recording.key_takeaways),
+        user_painpoints=dict(recording.user_painpoints),
+        user_assertions=dict(recording.user_assertions),
+    )
+
+
+def _recording_issue_to_out(issue: RecordingIssue) -> RecordingIssueOut:
+    """Project a :class:`RecordingIssue` to its output model.
+
+    Mirrors :func:`_serialize_recording_issue` byte-for-byte.
+    """
+
+    def _iso(dt: datetime | None) -> str | None:
+        return dt.isoformat() if dt is not None else None
+
+    return RecordingIssueOut(
+        id=issue.id,
+        recording_id=issue.recording_id,
+        title=issue.title,
+        short_title=issue.short_title,
+        language=issue.language,
+        what=issue.what,
+        why=issue.why,
+        who=issue.who,
+        remediation=issue.remediation,
+        impact=issue.impact.value,
+        touchpoint=issue.touchpoint,
+        # Widen the nested ``to_dict()`` returns to ``dict[str, object]``
+        # so the list types line up with ``RecordingIssueOut``.
+        # ``Timecode.to_dict`` returns ``dict[str, str]``; we treat it
+        # as the broader object dict the schema declares.
+        timecodes=[dict(tc.to_dict()) for tc in issue.timecodes],
+        wcag=[dict(w.to_dict()) for w in issue.wcag],
+        xpath=issue.xpath,
+        element=issue.element,
+        html=issue.html,
+        project_id=issue.project_id,
+        website_ids=list(issue.website_ids),
+        page_urls=list(issue.page_urls),
+        page_ids=list(issue.page_ids),
+        component_names=list(issue.component_names),
+        app_screens=list(issue.app_screens),
+        device_sections=list(issue.device_sections),
+        task_description=issue.task_description,
+        status=issue.status,
+        assigned_to=issue.assigned_to,
+        resolution_notes=issue.resolution_notes,
+        tags=list(issue.tags),
+        created_at=_iso(issue.created_at),
+        updated_at=_iso(issue.updated_at),
+    )
+
+
+def _apply_recording_patch_pyd(
+    recording: Recording, body: RecordingPatch,
+) -> Recording:
+    """Apply a :class:`RecordingPatch` to ``recording`` in place.
+
+    Pydantic already enforces the type contract (strings stay strings,
+    ``tags`` stays a list of strings), so this helper only handles
+    the value-shape rules the legacy ``_apply_patch_to_recording``
+    enforced beyond type: title must be non-empty, optional strings
+    collapse to ``None`` when they're empty/whitespace-only.
+    """
+    fields_set = body.model_fields_set
+    if "title" in fields_set:
+        if body.title is None or not body.title.strip():
+            raise ValidationError(
+                "title must be a non-empty string",
+                errors=(
+                    _FieldError(
+                        field="title", code="invalid_value",
+                        message="must be non-empty string",
+                    ),
+                ),
+            )
+        recording.title = body.title.strip()
+    if "description" in fields_set:
+        recording.description = (
+            body.description.strip()
+            if body.description is not None and body.description.strip()
+            else None
+        )
+    if "auditor_name" in fields_set:
+        recording.auditor_name = body.auditor_name
+    if "auditor_role" in fields_set:
+        recording.auditor_role = body.auditor_role
+    if "tags" in fields_set and body.tags is not None:
+        recording.tags = list(body.tags)
+    if "notes" in fields_set:
+        recording.notes = body.notes
+    recording.updated_at = datetime.now()
+    return recording
+
+
 @api_bp.route("/recordings", methods=["POST"])
 @api_endpoint
-def create_recording_rest() -> tuple[Response, int] | Response:
-    """Upload a Dictaphone JSON recording.
-
-    Multipart/form-data shape:
-
-    - ``project_id`` (form, required)
-    - ``recording_json_en`` (file, required) — Dictaphone JSON
-    - ``recording_json_fr`` (file, optional) — second-language file;
-      its ``recording`` id must match the English file's
-    - Optional form fields: ``title``, ``description``,
-      ``auditor_name``, ``auditor_role``, ``recording_type``,
-      ``task_description``, ``test_user_account``,
-      ``lived_experience_tester_id``, ``test_supervisor_id``,
-      ``media_file_path``, ``page_urls``, ``component_names``,
-      ``app_screens``, ``device_sections``, ``discovered_page_ids``
-      (the last 5 are newline-separated lists)
-    - Testing scope checkboxes (``scope_forms`` through
-      ``scope_drag_drop``) are accepted with ``"on"`` for true (the
-      browser idiom); any other value is false.
-
-    Returns 201 with the new Recording on success.
-
-    Out of scope for this commit (deferred to follow-up PATCH):
-      supplementary content files for key-takeaways, painpoints, and
-      assertions — those land via separate endpoints once the storage
-      shape is settled.
-
-    Errors:
-
-    - **400** — required field/file missing, non-JSON file, language
-      mismatch between en/fr files, invalid ``recording_type``
-    - **404** — project does not exist
-    - **409** — recording id from the file already exists (Dictaphone's
-      ``recording`` field is the dedup key)
-    """
+@document(
+    request_form=RecordingUploadIn,
+    request_files=["recording_json_en", "recording_json_fr"],
+    response_201=RecordingOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["Recordings"],
+    summary="Upload a Dictaphone JSON recording",
+    description=(
+        "Multipart upload of a Dictaphone audit recording. The "
+        "``recording_json_en`` file part is required; ``recording_json_fr`` "
+        "is optional but, if provided, must share the same ``recording`` "
+        "id as the English file. Returns 201 with the persisted "
+        "``RecordingOut`` resource plus a ``Location`` header pointing "
+        "at ``/api/v1/recordings/<id>``. Supplementary content (key-"
+        "takeaways / painpoints / assertions) lands via the separate "
+        "``PATCH /recordings/<id>/content`` endpoint."
+    ),
+)
+def create_recording_rest(
+    form: RecordingUploadIn,
+    recording_json_en: FileStorage | None = None,
+    recording_json_fr: FileStorage | None = None,
+) -> tuple[Response, int] | Response:
+    """Upload a Dictaphone JSON recording."""
     import json
     import tempfile
     from pathlib import Path
 
     from auto_a11y.importers import DictaphoneImporter
 
-    if not request.content_type or not request.content_type.startswith(
-        "multipart/form-data"
-    ):
-        raise ValidationError(
-            "request must be multipart/form-data",
-            errors=(
-                _FieldError(
-                    field="<content-type>", code="invalid_type",
-                    message="must be multipart/form-data",
-                ),
-            ),
-        )
-
-    project_id_raw = request.form.get("project_id")
-    if not project_id_raw:
+    if not form.project_id:
         raise ValidationError(
             "project_id is required",
             errors=(
@@ -5444,6 +5475,7 @@ def create_recording_rest() -> tuple[Response, int] | Response:
                 ),
             ),
         )
+    project_id_raw = form.project_id
     project = get_db().get_project(project_id_raw)
     if project is None:
         raise NotFoundError(f"project {project_id_raw} not found")
@@ -5451,7 +5483,7 @@ def create_recording_rest() -> tuple[Response, int] | Response:
         UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id_raw,
     )
 
-    file_en = request.files.get("recording_json_en")
+    file_en = recording_json_en
     if file_en is None or not file_en.filename:
         raise ValidationError(
             "recording_json_en part is required",
@@ -5473,10 +5505,16 @@ def create_recording_rest() -> tuple[Response, int] | Response:
             ),
         )
 
-    file_fr = request.files.get("recording_json_fr")
-    has_french = file_fr is not None and file_fr.filename and file_fr.filename.endswith(".json")
+    file_fr = recording_json_fr
+    has_french = (
+        file_fr is not None
+        and file_fr.filename is not None
+        and file_fr.filename.endswith(".json")
+    )
 
-    recording_type_raw = request.form.get("recording_type", "audit")
+    recording_type_raw = (
+        form.recording_type if form.recording_type is not None else "audit"
+    )
     try:
         RecordingType(recording_type_raw)
     except ValueError as exc:
@@ -5555,46 +5593,53 @@ def create_recording_rest() -> tuple[Response, int] | Response:
         )
 
     auditor_info: dict[str, Any] = {
-        "title": request.form.get("title", ""),
-        "description": request.form.get("description", ""),
-        "auditor_name": request.form.get("auditor_name", ""),
-        "auditor_role": request.form.get("auditor_role", ""),
+        "title": form.title if form.title is not None else "",
+        "description": form.description if form.description is not None else "",
+        "auditor_name": form.auditor_name if form.auditor_name is not None else "",
+        "auditor_role": form.auditor_role if form.auditor_role is not None else "",
         "test_user_account": (
-            request.form.get("test_user_account", "").strip() or None
+            form.test_user_account.strip()
+            if form.test_user_account is not None and form.test_user_account.strip()
+            else None
         ),
         "lived_experience_tester_id": (
-            request.form.get("lived_experience_tester_id", "").strip() or None
+            form.lived_experience_tester_id.strip()
+            if form.lived_experience_tester_id is not None
+            and form.lived_experience_tester_id.strip()
+            else None
         ),
         "test_supervisor_id": (
-            request.form.get("test_supervisor_id", "").strip() or None
+            form.test_supervisor_id.strip()
+            if form.test_supervisor_id is not None and form.test_supervisor_id.strip()
+            else None
         ),
-        "media_file_path": request.form.get("media_file_path", ""),
+        "media_file_path": (
+            form.media_file_path if form.media_file_path is not None else ""
+        ),
     }
     testing_scope: dict[str, bool] = {
-        "forms": request.form.get("scope_forms") == "on",
-        "video": request.form.get("scope_video") == "on",
-        "live_multimedia": request.form.get("scope_live_multimedia") == "on",
-        "multilingual": request.form.get("scope_multilingual") == "on",
-        "orientation": request.form.get("scope_orientation") == "on",
-        "zoom": request.form.get("scope_zoom") == "on",
-        "timeouts": request.form.get("scope_timeouts") == "on",
-        "motion_actuation": request.form.get("scope_motion_actuation") == "on",
-        "drag_drop": request.form.get("scope_drag_drop") == "on",
+        "forms": form.scope_forms == "on",
+        "video": form.scope_video == "on",
+        "live_multimedia": form.scope_live_multimedia == "on",
+        "multilingual": form.scope_multilingual == "on",
+        "orientation": form.scope_orientation == "on",
+        "zoom": form.scope_zoom == "on",
+        "timeouts": form.scope_timeouts == "on",
+        "motion_actuation": form.scope_motion_actuation == "on",
+        "drag_drop": form.scope_drag_drop == "on",
     }
 
-    page_urls = _parse_multiline_form_field(request.form.get("page_urls"))
-    component_names = _parse_multiline_form_field(
-        request.form.get("component_names")
-    )
-    app_screens = _parse_multiline_form_field(
-        request.form.get("app_screens")
-    )
-    device_sections = _parse_multiline_form_field(
-        request.form.get("device_sections")
-    )
+    page_urls = _parse_multiline_form_field(form.page_urls)
+    component_names = _parse_multiline_form_field(form.component_names)
+    app_screens = _parse_multiline_form_field(form.app_screens)
+    device_sections = _parse_multiline_form_field(form.device_sections)
+    # Multi-value form key: read directly off ``request.form`` since the
+    # @document decorator collapses repeated keys via ``form.items()``.
     discovered_page_ids = request.form.getlist("discovered_page_ids")
     task_description = (
-        request.form.get("task_description", "").strip() or None
+        form.task_description.strip()
+        if form.task_description is not None and form.task_description.strip()
+        else None
     )
 
     importer = DictaphoneImporter()
@@ -5660,14 +5705,31 @@ def create_recording_rest() -> tuple[Response, int] | Response:
         for path in tmp_paths:
             path.unlink(missing_ok=True)
 
-    response = jsonify(_serialize_recording(refreshed))
+    # The @document decorator serialises BaseModel returns through
+    # ``jsonify``, but we need a ``Location`` header on the new resource,
+    # so we pre-build the Response here and attach the header.
+    payload = _recording_to_out(refreshed)
+    response = jsonify(payload.model_dump(mode="json", by_alias=True, exclude_none=True))
     response.headers["Location"] = f"/api/v1/recordings/{created_id}"
     return response, 201
 
 
 @api_bp.route("/recordings", methods=["GET"])
 @api_endpoint
-def list_recordings_rest() -> tuple[Response, int] | Response:
+@document(
+    response_200=RecordingListOut,
+    errors=[400, 401, 403, 404],
+    tags=["Recordings"],
+    summary="List recordings",
+    description=(
+        "Returns recordings filtered by ``?project_id=<id>`` (required) "
+        "with optional ``?recording_type=<type>`` narrowing. Cursor-"
+        "paginated using ``{items, next_cursor}`` shape."
+    ),
+)
+def list_recordings_rest() -> (
+    tuple[RecordingListOut, int] | tuple[Response, int] | Response
+):
     """List recordings.
 
     Filter via ``?project_id=<id>`` (required for non-superadmins so the
@@ -5718,17 +5780,24 @@ def list_recordings_rest() -> tuple[Response, int] | Response:
     page = paginate(
         recordings, limit=limit, get_id=lambda r: str(r.mongo_id) if r.mongo_id else ""
     )
-    return jsonify(
-        {
-            "items": [_serialize_recording(r) for r in page["items"]],
-            "next_cursor": page["next_cursor"],
-        }
-    )
+    return RecordingListOut(
+        items=[_recording_to_out(r) for r in page["items"]],
+        next_cursor=page["next_cursor"],
+    ), 200
 
 
 @api_bp.route("/recordings/<recording_id>", methods=["GET"])
 @api_endpoint
-def get_recording_rest(recording_id: str) -> tuple[Response, int] | Response:
+@document(
+    response_200=RecordingOut,
+    errors=[401, 403, 404],
+    tags=["Recordings"],
+    summary="Get a recording by ID",
+    description="Returns the recording resource (``RecordingOut``).",
+)
+def get_recording_rest(
+    recording_id: str,
+) -> tuple[RecordingOut, int] | tuple[Response, int] | Response:
     """Get a recording by id."""
     recording = get_db().get_recording(recording_id)
     if recording is None:
@@ -5739,12 +5808,29 @@ def get_recording_rest(recording_id: str) -> tuple[Response, int] | Response:
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, project_id=project_id
     )
-    return jsonify(_serialize_recording(recording))
+    return _recording_to_out(recording), 200
 
 
 @api_bp.route("/recordings/<recording_id>", methods=["PATCH"])
 @api_endpoint
-def patch_recording_rest(recording_id: str) -> tuple[Response, int] | Response:
+@document(
+    request=RecordingPatch,
+    response_200=RecordingOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["Recordings"],
+    summary="Partially update a recording's metadata",
+    description=(
+        "Partial update -- only fields present in the request body are "
+        "applied. Editable fields are narrow (title, description, "
+        "auditor_name/role, tags, notes); server-managed fields "
+        "(counts, recording_type, project_id, Drupal sync, the multi-"
+        "language content arrays) are not patchable here -- use the "
+        "supplementary-content PATCH for content updates."
+    ),
+)
+def patch_recording_rest(
+    recording_id: str, body: RecordingPatch,
+) -> tuple[RecordingOut, int] | tuple[Response, int] | Response:
     """Partial update of a recording's metadata."""
     recording = get_db().get_recording(recording_id)
     if recording is None:
@@ -5755,16 +5841,27 @@ def patch_recording_rest(recording_id: str) -> tuple[Response, int] | Response:
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id
     )
-    body = _require_dict_body()
-    patched = _apply_patch_to_recording(recording, body)
+    patched = _apply_recording_patch_pyd(recording, body)
     if not get_db().update_recording(patched):
         raise ConflictError("recording could not be updated")
-    return jsonify(_serialize_recording(patched))
+    return _recording_to_out(patched), 200
 
 
 @api_bp.route("/recordings/<recording_id>", methods=["DELETE"])
 @api_endpoint
-def delete_recording_rest(recording_id: str) -> tuple[Response, int]:
+@document(
+    response_204=Empty,
+    errors=[401, 403, 404],
+    tags=["Recordings"],
+    summary="Delete a recording",
+    description=(
+        "Deletes the recording and cascades to its ``RecordingIssues``. "
+        "Returns ``204 No Content`` with an empty body."
+    ),
+)
+def delete_recording_rest(
+    recording_id: str,
+) -> tuple[Empty, int] | tuple[Response, int]:
     """Delete a recording. Cascades to its RecordingIssues."""
     recording = get_db().get_recording(recording_id)
     if recording is None:
@@ -5776,7 +5873,7 @@ def delete_recording_rest(recording_id: str) -> tuple[Response, int]:
         UserRole.ADMIN, project_id=project_id
     )
     get_db().delete_recording(recording_id)
-    return Response(status=204), 204
+    return Empty(), 204
 
 
 # --- Recording supplementary content (§5.6 deferred slot) ---------------------
@@ -5881,31 +5978,24 @@ def _parse_recording_content_file(
         ) from exc
 
 
-def _serialize_recording_content(recording: Recording) -> dict[str, Any]:
-    """Shape the three per-language content fields for the GET response."""
-    return {
-        "key_takeaways": dict(recording.key_takeaways),
-        "user_painpoints": dict(recording.user_painpoints),
-        "user_assertions": dict(recording.user_assertions),
-    }
-
-
 @api_bp.route("/recordings/<recording_id>/content", methods=["GET"])
 @api_endpoint
+@document(
+    response_200=RecordingContentOut,
+    errors=[401, 403, 404],
+    tags=["Recordings"],
+    summary="Read a recording's supplementary content",
+    description=(
+        "Returns ``{key_takeaways, user_painpoints, user_assertions}``, "
+        "each a per-language dict (``{en: [...], fr: [...]}``). Kept off "
+        "the main recording response so the common case doesn't carry "
+        "potentially-large content payloads."
+    ),
+)
 def get_recording_content(
     recording_id: str,
-) -> tuple[Response, int] | Response:
-    """Read the recording's supplementary content fields.
-
-    Returns ``{key_takeaways, user_painpoints, user_assertions}``,
-    each a ``{lang: [items]}`` dict. Empty dicts when no content has
-    been uploaded for that field — never ``null``, so clients have
-    one parser.
-
-    Kept off the main :func:`get_recording_rest` response so the
-    common case (list / single-read of a recording) doesn't carry
-    potentially-large content payloads.
-    """
+) -> tuple[RecordingContentOut, int] | tuple[Response, int] | Response:
+    """Read the recording's supplementary content fields."""
     recording = get_db().get_recording(recording_id)
     if recording is None:
         raise NotFoundError(f"recording {recording_id} not found")
@@ -5915,47 +6005,51 @@ def get_recording_content(
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, project_id=project_id,
     )
-    return jsonify(_serialize_recording_content(recording))
+    return _recording_content_to_out(recording), 200
 
 
 @api_bp.route("/recordings/<recording_id>/content", methods=["PATCH"])
 @api_endpoint
+@document(
+    request_form=RecordingContentPatch,
+    request_files=[
+        "key_takeaways_file_en",
+        "key_takeaways_file_fr",
+        "user_painpoints_file_en",
+        "user_painpoints_file_fr",
+        "user_assertions_file_en",
+        "user_assertions_file_fr",
+    ],
+    response_200=RecordingContentOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["Recordings"],
+    summary="Merge in supplementary content for a recording",
+    description=(
+        "Multipart PATCH with up to six optional file parts "
+        "(key_takeaways / user_painpoints / user_assertions × en/fr). "
+        "Each present file is parsed (HTML or JSON by extension) and "
+        "stored in that ``(content_type, language)`` slot; absent slots "
+        "are preserved. Sending zero files is a valid no-op that "
+        "returns the current content."
+    ),
+)
 def patch_recording_content(
     recording_id: str,
-) -> tuple[Response, int] | Response:
+    form: RecordingContentPatch,
+    key_takeaways_file_en: FileStorage | None = None,
+    key_takeaways_file_fr: FileStorage | None = None,
+    user_painpoints_file_en: FileStorage | None = None,
+    user_painpoints_file_fr: FileStorage | None = None,
+    user_assertions_file_en: FileStorage | None = None,
+    user_assertions_file_fr: FileStorage | None = None,
+) -> tuple[RecordingContentOut, int] | tuple[Response, int] | Response:
     """Merge in supplementary content for a recording.
 
-    Multipart/form-data with any of these six optional file parts:
-
-    - ``key_takeaways_file_en`` / ``key_takeaways_file_fr``
-    - ``user_painpoints_file_en`` / ``user_painpoints_file_fr``
-    - ``user_assertions_file_en`` / ``user_assertions_file_fr``
-
-    Each present file is parsed (HTML or JSON by extension) and stored
-    in that ``(content_type, language)`` slot. Absent slots are
-    preserved — this is a partial update, not a replace. Sending zero
-    files is a valid no-op and returns the current content.
-
-    Empty filename → treated as absent (the legacy form did the same
-    for browser parts that the user left unselected).
-
-    Returns 200 with the post-update content. ADMIN/AUDITOR on the
-    project. PATCH was chosen over PUT because the merge-by-language
-    semantic is partial — a PUT here would have to also accept
-    "delete this slot" sentinels, which multipart doesn't model well.
+    See the route description for the request shape. The empty
+    ``form`` parameter is required by the decorator's multipart
+    contract; this endpoint takes no non-file form fields.
     """
-    if not request.content_type or not request.content_type.startswith(
-        "multipart/form-data"
-    ):
-        raise ValidationError(
-            "request must be multipart/form-data",
-            errors=(
-                _FieldError(
-                    field="<content-type>", code="invalid_type",
-                    message="must be multipart/form-data",
-                ),
-            ),
-        )
+    del form  # No non-file form fields; satisfied only for the decorator.
 
     recording = get_db().get_recording(recording_id)
     if recording is None:
@@ -5967,9 +6061,21 @@ def patch_recording_content(
         UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id,
     )
 
+    # Pair the decorator-bound FileStorage kwargs with the
+    # ``(attr_name, lang_code)`` they target. A local lookup avoids
+    # touching ``request.files`` directly and keeps the file-handling
+    # path uniform with the rest of the §5.6 surface.
+    file_parts: tuple[tuple[FileStorage | None, str, str, str], ...] = (
+        (key_takeaways_file_en, "key_takeaways_file_en", "key_takeaways", "en"),
+        (key_takeaways_file_fr, "key_takeaways_file_fr", "key_takeaways", "fr"),
+        (user_painpoints_file_en, "user_painpoints_file_en", "user_painpoints", "en"),
+        (user_painpoints_file_fr, "user_painpoints_file_fr", "user_painpoints", "fr"),
+        (user_assertions_file_en, "user_assertions_file_en", "user_assertions", "en"),
+        (user_assertions_file_fr, "user_assertions_file_fr", "user_assertions", "fr"),
+    )
+
     any_changes = False
-    for part_name, attr_name, lang_code in _RECORDING_CONTENT_PARTS:
-        uploaded = request.files.get(part_name)
+    for uploaded, part_name, attr_name, lang_code in file_parts:
         if uploaded is None or not uploaded.filename:
             continue
         content_bytes = uploaded.read()
@@ -6012,14 +6118,24 @@ def patch_recording_content(
             )
         recording = refreshed
 
-    return jsonify(_serialize_recording_content(recording))
+    return _recording_content_to_out(recording), 200
 
 
 @api_bp.route("/recordings/<recording_id>/issues", methods=["GET"])
 @api_endpoint
+@document(
+    response_200=RecordingIssueListOut,
+    errors=[400, 401, 403, 404],
+    tags=["Recordings"],
+    summary="List issues for a recording",
+    description=(
+        "Returns the issues belonging to the recording with cursor "
+        "pagination. The response shape is ``{items, next_cursor}``."
+    ),
+)
 def list_recording_issues_rest(
     recording_id: str,
-) -> tuple[Response, int] | Response:
+) -> tuple[RecordingIssueListOut, int] | tuple[Response, int] | Response:
     """List the issues for a recording with cursor pagination."""
     recording = get_db().get_recording(recording_id)
     if recording is None:
@@ -6055,12 +6171,10 @@ def list_recording_issues_rest(
     page = paginate(
         issues, limit=limit, get_id=lambda i: str(i.mongo_id) if i.mongo_id else ""
     )
-    return jsonify(
-        {
-            "items": [_serialize_recording_issue(i) for i in page["items"]],
-            "next_cursor": page["next_cursor"],
-        }
-    )
+    return RecordingIssueListOut(
+        items=[_recording_issue_to_out(i) for i in page["items"]],
+        next_cursor=page["next_cursor"],
+    ), 200
 
 
 @api_bp.route("/recording-issues/<issue_id>", methods=["GET"])

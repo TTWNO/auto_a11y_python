@@ -138,3 +138,67 @@ def test_spec_validates_via_openapi_spec_validator(app: Flask) -> None:
     from openapi_spec_validator import validate_spec
     spec = build_spec(app)
     validate_spec(spec)  # raises on invalid spec
+
+
+def test_spec_emits_multipart_for_request_form(app: Flask) -> None:
+    """Verify build_spec produces multipart/form-data for @document(request_form=...).
+
+    The recordings refactor (§5.6) needed the builder to emit
+    ``multipart/form-data`` content with binary-string file properties
+    for any operation whose ``EndpointDoc`` carries ``request_form_model``
+    and ``request_files``. This test isolates that behaviour on a tiny
+    synthetic upload endpoint so a regression won't be hidden by the
+    recordings handlers' weight.
+    """
+    from auto_a11y.web.api.openapi.document import (
+        document,
+        register_documented_views,
+    )
+    from auto_a11y.web.api.openapi.registry import reset_registry_for_tests
+
+    reset_registry_for_tests()
+    new_app = Flask(__name__)
+
+    class _UploadMeta(StrictModel):
+        title: str
+
+    class _Out(StrictModel):
+        id: str
+
+    @document(
+        request_form=_UploadMeta,
+        request_files=["recording"],
+        response_201=_Out,
+        tags=["X"],
+        summary="upload",
+    )
+    def upload(
+        form: _UploadMeta, recording: object = None,
+    ) -> tuple[_Out, int]:
+        del form, recording
+        return _Out(id="1"), 201
+
+    new_app.add_url_rule("/upload", view_func=upload, methods=["POST"])
+    register_documented_views(new_app, prefix="")
+
+    spec = build_spec(new_app)
+    paths = _as_dict(spec["paths"])
+    post_op = _as_dict(_as_dict(paths["/upload"])["post"])
+    rb = _as_dict(post_op["requestBody"])
+    content = _as_dict(rb["content"])
+    assert "multipart/form-data" in content
+    mp_schema = _as_dict(_as_dict(content["multipart/form-data"])["schema"])
+    assert mp_schema["type"] == "object"
+    props = _as_dict(mp_schema["properties"])
+    # File field appears as binary string.
+    rec_prop = _as_dict(props["recording"])
+    assert rec_prop["type"] == "string"
+    assert rec_prop["format"] == "binary"
+    # Form field also appears.
+    assert "title" in props
+    # Required includes both the form's required keys and the file fields.
+    required_raw = mp_schema["required"]
+    assert isinstance(required_raw, list)
+    required = cast(list[object], required_raw)
+    assert "title" in required
+    assert "recording" in required

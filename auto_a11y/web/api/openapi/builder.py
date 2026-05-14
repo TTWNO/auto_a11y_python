@@ -116,6 +116,59 @@ def _build_operation(
                 },
             },
         }
+    elif doc.request_form_model is not None:
+        _merge_model_schema(schemas, doc.request_form_model)
+        if doc.request_files:
+            # Multipart: inline the form-model properties alongside file
+            # fields rendered as binary strings. We inline rather than
+            # $ref because OpenAPI 3.1 multipart schemas customarily live
+            # under the content media-type to keep the file/non-file
+            # fields visible in one place to spec consumers.
+            form_schema_obj = schemas[doc.request_form_model.__name__]
+            form_props: dict[str, object]
+            form_required: list[str]
+            if isinstance(form_schema_obj, dict):
+                form_schema_dict = cast(dict[str, object], form_schema_obj)
+                form_props_raw = form_schema_dict.get("properties", {})
+                form_required_raw = form_schema_dict.get("required", [])
+                form_props = (
+                    cast(dict[str, object], form_props_raw)
+                    if isinstance(form_props_raw, dict)
+                    else {}
+                )
+                form_required = (
+                    [str(item) for item in cast(list[object], form_required_raw)]
+                    if isinstance(form_required_raw, list)
+                    else []
+                )
+            else:
+                form_props = {}
+                form_required = []
+            file_props: dict[str, object] = {
+                name: {"type": "string", "format": "binary"}
+                for name in doc.request_files
+            }
+            op["requestBody"] = {
+                "required": True,
+                "content": {
+                    "multipart/form-data": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {**form_props, **file_props},
+                            "required": form_required + list(doc.request_files),
+                        },
+                    },
+                },
+            }
+        else:
+            op["requestBody"] = {
+                "required": True,
+                "content": {
+                    "multipart/form-data": {
+                        "schema": {"$ref": f"#/components/schemas/{doc.request_form_model.__name__}"},
+                    },
+                },
+            }
 
     responses: dict[str, dict[str, object]] = {}
     for status, model in doc.responses.items():

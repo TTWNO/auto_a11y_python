@@ -1732,6 +1732,708 @@ components:
       - total_tests
       title: ProjectTestRunWebsiteHandleOut
       type: object
+    RecordingContentOut:
+      additionalProperties: false
+      description: 'Response body for the supplementary-content GET and PATCH.
+
+
+        Each field is a per-language dict (``{en: [...], fr: [...]}``) of
+
+        structured content items. The inner item shapes vary by content
+
+        type and are produced by the parser modules — we expose them as
+
+        ``list[dict[str, object]]`` rather than fully typing every variant
+
+        here.'
+      properties:
+        key_takeaways:
+          additionalProperties:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+          title: Key Takeaways
+          type: object
+        user_assertions:
+          additionalProperties:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+          title: User Assertions
+          type: object
+        user_painpoints:
+          additionalProperties:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+          title: User Painpoints
+          type: object
+      required:
+      - key_takeaways
+      - user_painpoints
+      - user_assertions
+      title: RecordingContentOut
+      type: object
+    RecordingContentPatch:
+      additionalProperties: false
+      description: 'Empty form model for the supplementary content PATCH.
+
+
+        The endpoint accepts up to six optional file parts (key_takeaways
+
+        / user_painpoints / user_assertions × en/fr) and zero non-file
+
+        fields. ``@document`` requires *some* form model whenever the wire
+
+        is multipart, so we declare an empty :class:`StrictModel` whose
+
+        ``extra=''forbid''`` still rejects any stray form fields a misbehaving
+
+        client might include.'
+      properties: {}
+      title: RecordingContentPatch
+      type: object
+    RecordingIssueListOut:
+      additionalProperties: false
+      description: 'Response body for ``GET /api/v1/recordings/<id>/issues``.
+
+
+        Cursor-paginated; same ``{items, next_cursor}`` shape as the other
+
+        list endpoints.'
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/RecordingIssueOut'
+          title: Items
+          type: array
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Next Cursor
+      required:
+      - items
+      title: RecordingIssueListOut
+      type: object
+    RecordingIssueOut:
+      additionalProperties: false
+      description: 'Response body for a single recording-issue resource.
+
+
+        Mirrors ``_serialize_recording_issue`` byte-for-byte. ``impact``
+
+        is the enum''s string value (e.g. ``"high"``). ``timecodes`` and
+
+        ``wcag`` carry per-item dicts produced by their model''s
+
+        ``to_dict()``.'
+      properties:
+        app_screens:
+          items:
+            type: string
+          title: App Screens
+          type: array
+        assigned_to:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Assigned To
+        component_names:
+          items:
+            type: string
+          title: Component Names
+          type: array
+        created_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Created At
+        device_sections:
+          items:
+            type: string
+          title: Device Sections
+          type: array
+        element:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Element
+        html:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Html
+        id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Id
+        impact:
+          title: Impact
+          type: string
+        language:
+          title: Language
+          type: string
+        page_ids:
+          items:
+            type: string
+          title: Page Ids
+          type: array
+        page_urls:
+          items:
+            type: string
+          title: Page Urls
+          type: array
+        project_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Project Id
+        recording_id:
+          title: Recording Id
+          type: string
+        remediation:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Remediation
+        resolution_notes:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Resolution Notes
+        short_title:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Short Title
+        status:
+          title: Status
+          type: string
+        tags:
+          items:
+            type: string
+          title: Tags
+          type: array
+        task_description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Task Description
+        timecodes:
+          items:
+            additionalProperties: true
+            type: object
+          title: Timecodes
+          type: array
+        title:
+          title: Title
+          type: string
+        touchpoint:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Touchpoint
+        updated_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Updated At
+        wcag:
+          items:
+            additionalProperties: true
+            type: object
+          title: Wcag
+          type: array
+        website_ids:
+          items:
+            type: string
+          title: Website Ids
+          type: array
+        what:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: What
+        who:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Who
+        why:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Why
+        xpath:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Xpath
+      required:
+      - recording_id
+      - title
+      - language
+      - impact
+      - timecodes
+      - wcag
+      - website_ids
+      - page_urls
+      - page_ids
+      - component_names
+      - app_screens
+      - device_sections
+      - status
+      - tags
+      title: RecordingIssueOut
+      type: object
+    RecordingListOut:
+      additionalProperties: false
+      description: 'Response body for ``GET /api/v1/recordings``.
+
+
+        Cursor-paginated using the legacy ``{items, next_cursor}`` shape.'
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/RecordingOut'
+          title: Items
+          type: array
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Next Cursor
+      required:
+      - items
+      title: RecordingListOut
+      type: object
+    RecordingOut:
+      additionalProperties: false
+      description: 'Response body for single-recording GET / POST / PATCH.
+
+
+        Mirrors ``_serialize_recording`` byte-for-byte. ``id`` is the
+
+        stringified Mongo ``_id``; ``recording_type`` is the enum''s
+
+        string value (e.g. ``"audit"``). Timestamps are ISO 8601.'
+      properties:
+        app_screens:
+          items:
+            type: string
+          title: App Screens
+          type: array
+        auditor_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Auditor Name
+        auditor_role:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Auditor Role
+        component_names:
+          items:
+            type: string
+          title: Component Names
+          type: array
+        created_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Created At
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Description
+        device_sections:
+          items:
+            type: string
+          title: Device Sections
+          type: array
+        discovered_page_ids:
+          items:
+            type: string
+          title: Discovered Page Ids
+          type: array
+        duration:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Duration
+        high_impact_count:
+          title: High Impact Count
+          type: integer
+        id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Id
+        low_impact_count:
+          title: Low Impact Count
+          type: integer
+        medium_impact_count:
+          title: Medium Impact Count
+          type: integer
+        notes:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Notes
+        page_ids:
+          items:
+            type: string
+          title: Page Ids
+          type: array
+        page_urls:
+          items:
+            type: string
+          title: Page Urls
+          type: array
+        project_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Project Id
+        recorded_date:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Recorded Date
+        recording_id:
+          title: Recording Id
+          type: string
+        recording_type:
+          title: Recording Type
+          type: string
+        tags:
+          items:
+            type: string
+          title: Tags
+          type: array
+        task_description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Task Description
+        testing_scope:
+          additionalProperties:
+            type: boolean
+          title: Testing Scope
+          type: object
+        title:
+          title: Title
+          type: string
+        total_issues:
+          title: Total Issues
+          type: integer
+        updated_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Updated At
+        website_ids:
+          items:
+            type: string
+          title: Website Ids
+          type: array
+      required:
+      - recording_id
+      - title
+      - recording_type
+      - testing_scope
+      - website_ids
+      - page_urls
+      - page_ids
+      - discovered_page_ids
+      - component_names
+      - app_screens
+      - device_sections
+      - total_issues
+      - high_impact_count
+      - medium_impact_count
+      - low_impact_count
+      - tags
+      title: RecordingOut
+      type: object
+    RecordingPatch:
+      additionalProperties: false
+      description: 'Request body for partial recording updates.
+
+
+        Editable fields are intentionally narrow: human-facing metadata
+
+        only. The legacy ``_apply_patch_to_recording`` helper applies the
+
+        same set. Server-managed fields (counts, project_id, recording_id,
+
+        recording_type, media_file_path, Drupal sync, and the multi-language
+
+        content arrays) are not patchable here.
+
+
+        The PATCH body is *partial* — only fields the client sends are
+
+        applied. Pydantic''s ``model_fields_set`` is the signal the handler
+
+        uses to distinguish "absent" from "explicit ``null``".'
+      properties:
+        auditor_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Auditor Name
+        auditor_role:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Auditor Role
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Description
+        notes:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Notes
+        tags:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          default: null
+          title: Tags
+        title:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Title
+      title: RecordingPatch
+      type: object
+    RecordingUploadIn:
+      additionalProperties: false
+      description: "Form fields for the multipart upload of a Dictaphone recording.\n\
+        \nThe two file parts ``recording_json_en`` (required) and\n``recording_json_fr``\
+        \ (optional) are declared via\n``@document(request_files=[...])`` and arrive\
+        \ in the handler as\n:class:`werkzeug.datastructures.FileStorage` kwargs alongside\
+        \ this\nparsed form model.\n\nField semantics mirror the legacy ``request.form.get(...)``\
+        \ handler:\n\n- ``project_id`` — required; identifies the target project.\n\
+        - ``title`` / ``description`` / ``auditor_name`` / ``auditor_role`` —\n  free-text\
+        \ auditor metadata, all optional.\n- ``recording_type`` — optional string;\
+        \ defaults to ``\"audit\"`` on the\n  server. The handler validates against\
+        \ :class:`RecordingType` so\n  invalid values surface as 400 with a ``recording_type``\
+        \ field path\n  rather than a generic Pydantic error.\n- ``task_description``\
+        \ — optional task summary.\n- ``test_user_account``, ``lived_experience_tester_id``,\n\
+        \  ``test_supervisor_id`` — optional auditor-context ids; the handler\n  collapses\
+        \ empty strings to ``None``.\n- ``media_file_path`` — optional pointer to\
+        \ the underlying MP4.\n- ``page_urls`` / ``component_names`` / ``app_screens``\
+        \ /\n  ``device_sections`` — optional newline-separated lists parsed by\n\
+        \  ``_parse_multiline_form_field`` in the handler.\n- ``discovered_page_ids``\
+        \ — optional. Multipart forms send list\n  fields as repeated entries with\
+        \ the same key; the handler reads\n  that via ``request.form.getlist(\"discovered_page_ids\"\
+        )``. We\n  accept the legacy single-key shape here (the value is the *last*\n\
+        \  submitted entry, which is what ``dict(request.form.items())``\n  yields);\
+        \ the handler still reads the full list via ``getlist``\n  so multi-entry\
+        \ posts continue to work end-to-end.\n- ``scope_forms`` … ``scope_drag_drop``\
+        \ — checkbox booleans. The\n  browser idiom sends the literal string ``\"\
+        on\"`` for true and\n  omits the field entirely for false; we accept ``Optional[str]``\n\
+        \  to preserve that wire and let the handler interpret it."
+      properties:
+        app_screens: &id002
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: App Screens
+        auditor_name: &id003
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Auditor Name
+        auditor_role: &id004
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Auditor Role
+        component_names: &id005
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Component Names
+        description: &id006
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Description
+        device_sections: &id007
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Device Sections
+        discovered_page_ids: &id008
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Discovered Page Ids
+        lived_experience_tester_id: &id009
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Lived Experience Tester Id
+        media_file_path: &id010
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Media File Path
+        page_urls: &id011
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Page Urls
+        project_id: &id012
+          title: Project Id
+          type: string
+        recording_type: &id013
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Recording Type
+        scope_drag_drop: &id014
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Scope Drag Drop
+        scope_forms: &id015
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Scope Forms
+        scope_live_multimedia: &id016
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Scope Live Multimedia
+        scope_motion_actuation: &id017
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Scope Motion Actuation
+        scope_multilingual: &id018
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Scope Multilingual
+        scope_orientation: &id019
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Scope Orientation
+        scope_timeouts: &id020
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Scope Timeouts
+        scope_video: &id021
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Scope Video
+        scope_zoom: &id022
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Scope Zoom
+        task_description: &id023
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Task Description
+        test_supervisor_id: &id024
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Test Supervisor Id
+        test_user_account: &id025
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Test User Account
+        title: &id026
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Title
+      required:
+      - project_id
+      title: RecordingUploadIn
+      type: object
     ReportCreatedOut:
       additionalProperties: false
       description: 'Response body (202) for every report-generation POST.
@@ -4098,6 +4800,453 @@ paths:
       summary: Create a website
       tags:
       - Websites
+  /recordings:
+    get:
+      description: Returns recordings filtered by ``?project_id=<id>`` (required)
+        with optional ``?recording_type=<type>`` narrowing. Cursor-paginated using
+        ``{items, next_cursor}`` shape.
+      parameters: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordingListOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: List recordings
+      tags:
+      - Recordings
+    post:
+      description: Multipart upload of a Dictaphone audit recording. The ``recording_json_en``
+        file part is required; ``recording_json_fr`` is optional but, if provided,
+        must share the same ``recording`` id as the English file. Returns 201 with
+        the persisted ``RecordingOut`` resource plus a ``Location`` header pointing
+        at ``/api/v1/recordings/<id>``. Supplementary content (key-takeaways / painpoints
+        / assertions) lands via the separate ``PATCH /recordings/<id>/content`` endpoint.
+      parameters: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              properties:
+                app_screens: *id002
+                auditor_name: *id003
+                auditor_role: *id004
+                component_names: *id005
+                description: *id006
+                device_sections: *id007
+                discovered_page_ids: *id008
+                lived_experience_tester_id: *id009
+                media_file_path: *id010
+                page_urls: *id011
+                project_id: *id012
+                recording_json_en:
+                  format: binary
+                  type: string
+                recording_json_fr:
+                  format: binary
+                  type: string
+                recording_type: *id013
+                scope_drag_drop: *id014
+                scope_forms: *id015
+                scope_live_multimedia: *id016
+                scope_motion_actuation: *id017
+                scope_multilingual: *id018
+                scope_orientation: *id019
+                scope_timeouts: *id020
+                scope_video: *id021
+                scope_zoom: *id022
+                task_description: *id023
+                test_supervisor_id: *id024
+                test_user_account: *id025
+                title: *id026
+              required:
+              - project_id
+              - recording_json_en
+              - recording_json_fr
+              type: object
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordingOut'
+          description: Created
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Upload a Dictaphone JSON recording
+      tags:
+      - Recordings
+  /recordings/{recording_id}:
+    delete:
+      description: Deletes the recording and cascades to its ``RecordingIssues``.
+        Returns ``204 No Content`` with an empty body.
+      parameters:
+      - in: path
+        name: recording_id
+        required: true
+        schema: *id001
+      responses:
+        '204':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Empty'
+          description: No Content
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Delete a recording
+      tags:
+      - Recordings
+    get:
+      description: Returns the recording resource (``RecordingOut``).
+      parameters:
+      - in: path
+        name: recording_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordingOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Get a recording by ID
+      tags:
+      - Recordings
+    patch:
+      description: Partial update -- only fields present in the request body are applied.
+        Editable fields are narrow (title, description, auditor_name/role, tags, notes);
+        server-managed fields (counts, recording_type, project_id, Drupal sync, the
+        multi-language content arrays) are not patchable here -- use the supplementary-content
+        PATCH for content updates.
+      parameters:
+      - in: path
+        name: recording_id
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordingPatch'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordingOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Partially update a recording's metadata
+      tags:
+      - Recordings
+  /recordings/{recording_id}/content:
+    get:
+      description: 'Returns ``{key_takeaways, user_painpoints, user_assertions}``,
+        each a per-language dict (``{en: [...], fr: [...]}``). Kept off the main recording
+        response so the common case doesn''t carry potentially-large content payloads.'
+      parameters:
+      - in: path
+        name: recording_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordingContentOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Read a recording's supplementary content
+      tags:
+      - Recordings
+    patch:
+      description: Multipart PATCH with up to six optional file parts (key_takeaways
+        / user_painpoints / user_assertions × en/fr). Each present file is parsed
+        (HTML or JSON by extension) and stored in that ``(content_type, language)``
+        slot; absent slots are preserved. Sending zero files is a valid no-op that
+        returns the current content.
+      parameters:
+      - in: path
+        name: recording_id
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              properties:
+                key_takeaways_file_en:
+                  format: binary
+                  type: string
+                key_takeaways_file_fr:
+                  format: binary
+                  type: string
+                user_assertions_file_en:
+                  format: binary
+                  type: string
+                user_assertions_file_fr:
+                  format: binary
+                  type: string
+                user_painpoints_file_en:
+                  format: binary
+                  type: string
+                user_painpoints_file_fr:
+                  format: binary
+                  type: string
+              required:
+              - key_takeaways_file_en
+              - key_takeaways_file_fr
+              - user_painpoints_file_en
+              - user_painpoints_file_fr
+              - user_assertions_file_en
+              - user_assertions_file_fr
+              type: object
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordingContentOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Merge in supplementary content for a recording
+      tags:
+      - Recordings
+  /recordings/{recording_id}/issues:
+    get:
+      description: Returns the issues belonging to the recording with cursor pagination.
+        The response shape is ``{items, next_cursor}``.
+      parameters:
+      - in: path
+        name: recording_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordingIssueListOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: List issues for a recording
+      tags:
+      - Recordings
   /reports:
     post:
       description: Generic top-level report-generation endpoint. Picks the scope from

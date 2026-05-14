@@ -159,6 +159,12 @@ from auto_a11y.web.api.schemas.health import (
     JobStatsOut,
     StorageHealthOut,
 )
+from auto_a11y.web.api.schemas.fixtures import (
+    FixtureRunSummaryOut,
+    FixtureTestCheckOut,
+    FixtureTestStatusEntry,
+    FixtureTestStatusOut,
+)
 from auto_a11y.web.api.schemas.drupal import (
     DrupalAuditListOut,
     DrupalAuditOut,
@@ -217,8 +223,130 @@ api_bp = Blueprint('api', __name__)
 
 # Fixture Test Status API
 
+
+def _fixture_iso(value: object) -> Optional[str]:
+    """Coerce a fixture-status timestamp field to an ISO 8601 string.
+
+    The validator hands back either a ``datetime`` or ``None`` for the
+    ``tested_at`` / ``completed_at`` fields (depending on whether any
+    fixtures were ever run). We surface the value as an ISO 8601 string
+    so the Pydantic schema sees a stable ``Optional[str]`` rather than
+    a raw datetime; this matches the §5.15 ``JobOut`` precedent.
+    Non-datetime, non-None values are coerced via ``str()`` as a
+    defensive fallback so a future store-format change doesn't crash
+    the handler.
+    """
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value.isoformat()
+    return str(value)
+
+
+def _fixture_int(raw: object, default: int = 0) -> int:
+    """Narrow an ``object`` to ``int`` for fixture-status payloads.
+
+    The validator emits values typed as ``Any``; we narrow at the
+    schema boundary to avoid leaking ``Any`` into the model.
+    Non-int values fall back to ``default`` (the legacy ``.get(key,
+    default)`` semantics). ``bool`` is excluded explicitly because
+    it is an ``int`` subclass and a stray flag shouldn't be treated
+    as a count.
+    """
+    if isinstance(raw, bool):
+        return default
+    if isinstance(raw, int):
+        return raw
+    return default
+
+
+def _fixture_str_list(raw: object) -> list[str]:
+    """Narrow an ``object`` to ``list[str]`` for fixture-status payloads.
+
+    Distinct from the broader :func:`_coerce_str_list` further down
+    in this module — that helper takes ``Any`` (matching the schedule
+    handlers' projection) and would re-poison the type-check here.
+    """
+    if not isinstance(raw, list):
+        return []
+    items: list[object] = list(cast(list[object], raw))
+    return [str(item) for item in items]
+
+
+def _fixture_object_list(raw: object) -> list[object]:
+    """Narrow an ``object`` to ``list[object]`` for fixture-status payloads."""
+    if not isinstance(raw, list):
+        return []
+    items: list[object] = list(cast(list[object], raw))
+    return items
+
+
+def _fixture_status_entry(raw: Mapping[str, object]) -> FixtureTestStatusEntry:
+    """Project a single ``get_test_status`` entry into the schema.
+
+    The validator emits ``dict[str, Any]`` because its keys are not
+    schema-managed; we accept it as ``Mapping[str, object]`` here so
+    pyright's strict mode does not leak ``Any`` into the model
+    construction. Unknown / missing fields default to the schema-
+    friendly zero value (empty list, empty string, ``False``).
+    """
+    return FixtureTestStatusEntry(
+        success=bool(raw.get('success', False)),
+        status_category=str(raw.get('status_category', 'all_fail')),
+        total_fixtures=_fixture_int(raw.get('total_fixtures')),
+        passed_fixtures=_fixture_int(raw.get('passed_fixtures')),
+        fixture_paths=_fixture_str_list(raw.get('fixture_paths')),
+        fixture_path=str(raw.get('fixture_path', '')),
+        notes=_fixture_str_list(raw.get('notes')),
+        tested_at=_fixture_iso(raw.get('tested_at')),
+        found_codes=_fixture_object_list(raw.get('found_codes')),
+    )
+
+
+def _fixture_run_summary(raw: Mapping[str, object]) -> FixtureRunSummaryOut:
+    """Project a ``get_fixture_run_summary`` dict into the schema.
+
+    ``success_rate`` is computed as ``(passed / total * 100) if total
+    > 0 else 0`` in the writer, so it can be either ``int`` (the
+    empty-path literal) or ``float`` — we coerce to ``float`` so the
+    schema sees a single type.
+    """
+    success_rate_raw = raw.get('success_rate', 0)
+    if isinstance(success_rate_raw, bool):
+        success_rate: float = 0.0
+    elif isinstance(success_rate_raw, (int, float)):
+        success_rate = float(success_rate_raw)
+    else:
+        success_rate = 0.0
+    return FixtureRunSummaryOut(
+        run_id=str(raw.get('run_id', '')),
+        completed_at=_fixture_iso(raw.get('completed_at')),
+        total=_fixture_int(raw.get('total')),
+        passed=_fixture_int(raw.get('passed')),
+        failed=_fixture_int(raw.get('failed')),
+        success_rate=success_rate,
+    )
+
+
 @api_bp.route('/fixture-tests/status', methods=['GET'])
-def get_fixture_test_status() -> tuple[Response, int] | Response:
+@document(
+    response_200=FixtureTestStatusOut,
+    errors=[500],
+    tags=["Fixtures"],
+    summary="Fixture-test status for every accessibility code",
+    description=(
+        "Bulk view used by the SPA's ``/testing/fixture-status`` page "
+        "and by the production-gate check in the test runner. Returns "
+        "the full per-error-code status map plus pre-computed "
+        "category counts (all-pass / partial-pass / all-fail) so the "
+        "front-end avoids re-aggregating. ``fixture_run_summary`` is "
+        "the latest fixture-run row or ``null`` when no runs have "
+        "been recorded. ``debug_mode`` mirrors the test-config flag — "
+        "when true every test is forcibly marked available "
+        "regardless of fixture state."
+    ),
+)
+def get_fixture_test_status() -> tuple[FixtureTestStatusOut, int] | tuple[Response, int] | Response:
     """Get fixture test status for all tests"""
     try:
         # Get test configuration
@@ -226,12 +354,12 @@ def get_fixture_test_status() -> tuple[Response, int] | Response:
 
         # Get all test statuses
         statuses = test_config.get_all_test_statuses()
-        
+
         # Get fixture run summary
-        summary = None
+        summary_raw: Optional[dict[str, Any]] = None
         if test_config.fixture_validator:
-            summary = test_config.fixture_validator.get_fixture_run_summary()
-        
+            summary_raw = test_config.fixture_validator.get_fixture_run_summary()
+
         # Get passing tests
         passing_tests: set[str] = set()
         if test_config.fixture_validator:
@@ -251,18 +379,25 @@ def get_fixture_test_status() -> tuple[Response, int] | Response:
             else:
                 all_fail_count += 1
 
-        return jsonify({
-            'success': True,
-            'debug_mode': test_config.debug_mode,
-            'fixture_run_summary': summary,
-            'passing_tests': list(passing_tests),
-            'test_statuses': statuses,
-            'total_tests': len(statuses),
-            'passing_count': len(passing_tests),
-            'all_pass_count': all_pass_count,
-            'partial_pass_count': partial_pass_count,
-            'all_fail_count': all_fail_count
-        })
+        test_statuses: dict[str, FixtureTestStatusEntry] = {
+            code: _fixture_status_entry(entry) for code, entry in statuses.items()
+        }
+        fixture_run_summary: Optional[FixtureRunSummaryOut] = (
+            _fixture_run_summary(summary_raw) if summary_raw is not None else None
+        )
+
+        return FixtureTestStatusOut(
+            success=True,
+            debug_mode=test_config.debug_mode,
+            fixture_run_summary=fixture_run_summary,
+            passing_tests=list(passing_tests),
+            test_statuses=test_statuses,
+            total_tests=len(statuses),
+            passing_count=len(passing_tests),
+            all_pass_count=all_pass_count,
+            partial_pass_count=partial_pass_count,
+            all_fail_count=all_fail_count,
+        ), 200
     except Exception as e:
         logger.error(f"Error getting fixture test status: {e}")
         return jsonify({
@@ -272,23 +407,41 @@ def get_fixture_test_status() -> tuple[Response, int] | Response:
 
 
 @api_bp.route('/fixture-tests/check/<error_code>', methods=['GET'])
-def check_test_availability(error_code: str) -> tuple[Response, int] | Response:
+@document(
+    response_200=FixtureTestCheckOut,
+    errors=[500],
+    tags=["Fixtures"],
+    summary="Check fixture availability for one accessibility code",
+    description=(
+        "Per-code fixture probe. Returns whether a single error code "
+        "is available in production, plus the source signals that "
+        "drove the decision: ``passed_fixture`` is the pure fixture "
+        "signal; ``debug_override`` is true when ``debug_mode`` is "
+        "the reason ``available`` is true (i.e. fixtures didn't pass "
+        "but we're forcing the test on for debugging). "
+        "``fixture_path`` is the validator's back-compat summary "
+        "string (e.g. ``\"3 fixtures\"``); ``tested_at`` is the ISO "
+        "8601 timestamp of the most recent fixture run for this "
+        "code, or ``null`` when no run is recorded."
+    ),
+)
+def check_test_availability(error_code: str) -> tuple[FixtureTestCheckOut, int] | tuple[Response, int] | Response:
     """Check if a specific test is available based on fixture status"""
     try:
         test_config = get_test_config()
 
         # Get fixture status for this test
         status = test_config.get_test_fixture_status(error_code)
-        
-        return jsonify({
-            'success': True,
-            'error_code': error_code,
-            'available': status.get('available', False),
-            'passed_fixture': status.get('passed_fixture', False),
-            'debug_override': status.get('debug_override', False),
-            'fixture_path': status.get('fixture_path', ''),
-            'tested_at': status.get('tested_at')
-        })
+
+        return FixtureTestCheckOut(
+            success=True,
+            error_code=error_code,
+            available=bool(status.get('available', False)),
+            passed_fixture=bool(status.get('passed_fixture', False)),
+            debug_override=bool(status.get('debug_override', False)),
+            fixture_path=str(status.get('fixture_path', '')),
+            tested_at=_fixture_iso(status.get('tested_at')),
+        ), 200
     except Exception as e:
         logger.error(f"Error checking test availability for {error_code}: {e}")
         return jsonify({

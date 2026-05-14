@@ -657,7 +657,11 @@ from typing import Optional
 import pytest
 from flask import Flask, Response, jsonify
 
-from auto_a11y.web.api.openapi.document import document
+from auto_a11y.web.api.openapi.document import (
+    _DocumentedView,
+    document,
+    register_documented_views,
+)
 from auto_a11y.web.api.openapi.registry import (
     REGISTRY,
     reset_registry_for_tests,
@@ -693,16 +697,16 @@ def _register(app: Flask, rule: str, view: _DocumentedView, methods: list[str]) 
     """Helper: add_url_rule + register_documented_views in one step.
 
     Parameter ``view`` is typed as ``_DocumentedView`` (the Protocol declared
-    in document.py) so the call to ``add_url_rule`` is type-correct — Flask
-    accepts any ``Callable[..., ResponseReturnValue]`` and our Protocol
-    satisfies that.
+    in document.py) — the decorator's return type is structurally compatible
+    via the embedded ``__call__``. Flask accepts any
+    ``Callable[..., ResponseReturnValue]`` so the ``add_url_rule`` call is
+    type-correct.
+
+    ``prefix=""`` because tests use a vanilla Flask app with no /api/v1
+    mount; rules stay as-is for registry-key purposes.
     """
-    from auto_a11y.web.api.openapi.document import (
-        _DocumentedView,
-        register_documented_views,
-    )
     app.add_url_rule(rule, view_func=view, methods=methods)
-    register_documented_views(app)
+    register_documented_views(app, prefix="")
 
 
 def test_request_model_validates_json(app: Flask) -> None:
@@ -919,11 +923,18 @@ def document(
     summary: str,
     description: Optional[str] = None,
     security: SecurityScheme = "bearer+session",
-) -> Callable[[Callable[P, ResponseLike]], Callable[P, WrappedReturn]]:
+) -> Callable[[Callable[P, ResponseLike]], _DocumentedView]:
     """Decorate a view with validation, serialization, and documentation.
 
     Exactly one of ``request`` or ``request_form`` may be set; setting both is
     a programmer error (mixing JSON and multipart on the same endpoint).
+
+    Return type is ``_DocumentedView`` (the Protocol declared above), not
+    ``Callable[P, WrappedReturn]``. The wrapper's external signature is
+    ``(*args, **kwargs) -> WrappedReturn`` because Flask dispatches by name,
+    and exposing this via the Protocol keeps callers (the test ``_register``
+    helper, ``register_documented_views``) type-correct without losing the
+    ``__doc_meta__`` attribute on the returned object.
     """
     if request is not None and request_form is not None:
         raise RuntimeError(
@@ -940,7 +951,7 @@ def document(
     if response_204 is not None:
         responses[204] = response_204
 
-    def decorator(view: Callable[P, ResponseLike]) -> Callable[P, WrappedReturn]:
+    def decorator(view: Callable[P, ResponseLike]) -> _DocumentedView:
         doc = EndpointDoc(
             view=view,
             request_model=request,
@@ -980,11 +991,12 @@ def document(
             return _serialize(result)
 
         # Attach the EndpointDoc to the wrapper. setattr satisfies pyright's
-        # strict reportGeneralTypeIssues; the Protocol below picks it up.
+        # strict reportGeneralTypeIssues; the Protocol picks it up via
+        # runtime_checkable isinstance later.
         setattr(wrapper, "__doc_meta__", doc)
-        # Tell the type checker the wrapper conforms to the Protocol. The
-        # call is structural — no runtime cost beyond the attribute set above.
-        return cast(Callable[P, WrappedReturn], wrapper)
+        # Tell the type checker the wrapper conforms to _DocumentedView. The
+        # cast is structural — no runtime cost beyond the attribute set above.
+        return cast(_DocumentedView, wrapper)
 
     return decorator
 
@@ -1004,7 +1016,7 @@ def _serialize(result: ResponseLike) -> WrappedReturn:
     return result
 
 
-def register_documented_views(app: Flask) -> None:
+def register_documented_views(app: Flask, *, prefix: str = "/api/v1") -> None:
     """Walk app.url_map and insert each documented view's EndpointDoc.
 
     Idempotent across multiple calls per app (skips entries already present)
@@ -1013,38 +1025,34 @@ def register_documented_views(app: Flask) -> None:
     duplicate — same (method, rule) pointing at a different ``EndpointDoc``
     — still raises ``RuntimeError`` via the registry.
 
-    Rule normalization: the registry stores blueprint-relative keys.
-    For a blueprint mounted at /api/v1, the rule string in url_map is
-    "/api/v1/projects" but the registry key is "/projects". The leading
-    blueprint prefix is stripped here once, so consumers (spec builder,
-    drift gate, contract tests) all use the same key format.
+    Rule normalization: the registry stores keys relative to ``prefix``.
+    For ``prefix='/api/v1'``, the rule string in url_map is
+    ``/api/v1/projects`` and the registry key becomes ``/projects``. This is
+    explicit (not derived from ``Blueprint.url_prefix``) because Flask stores
+    the prefix on the ``BlueprintSetupState`` at registration time, not on
+    the ``Blueprint`` object itself — ``app.blueprints['api'].url_prefix`` is
+    ``None`` even when the prefix was supplied at ``register_blueprint``.
+
+    Tests that register views on a vanilla app (no blueprint, no prefix)
+    pass ``prefix=""`` to keep the rules as-is.
     """
     for rule in app.url_map.iter_rules():
         view_obj = app.view_functions.get(rule.endpoint)
         if not isinstance(view_obj, _DocumentedView):
             continue
         meta = view_obj.__doc_meta__
-        registry_rule = _strip_blueprint_prefix(rule.rule, app)
+        registry_rule = _relativize(rule.rule, prefix)
         for method in sorted(rule.methods or set()):
             if method in {"HEAD", "OPTIONS"}:
                 continue
-            key = (method, registry_rule)
-            from auto_a11y.web.api.openapi.registry import REGISTRY
-            if REGISTRY.get(key) is meta:
-                continue  # idempotent re-registration
             register(method, registry_rule, meta)
 
 
-def _strip_blueprint_prefix(rule: str, app: Flask) -> str:
-    """Strip the api_bp url_prefix from ``rule`` if present, else return unchanged."""
-    # api_bp is registered with url_prefix="/api/v1"; the prefix is on the
-    # blueprint object, accessible via app.blueprints.
-    bp = app.blueprints.get("api")  # the blueprint variable name in api.py
-    if bp is None:
-        return rule
-    prefix = bp.url_prefix or ""
+def _relativize(rule: str, prefix: str) -> str:
+    """Strip ``prefix`` from ``rule`` if it leads, else return unchanged."""
     if prefix and rule.startswith(prefix):
-        return rule[len(prefix):] or "/"
+        stripped = rule[len(prefix):]
+        return stripped or "/"
     return rule
 ```
 
@@ -2647,7 +2655,7 @@ Anything else is a type error at decoration time. For a 204 No Content response,
 
 3. **`request=Model` on a GET endpoint.** GET doesn't have a JSON body. The decorator will try to validate `{}` and the model will pass if all fields are optional, or fail if any field is required — confusing either way. Don't pass `request=` to GET handlers.
 
-4. **`from_db` adapter taking the DB model as a duck type.** The `@classmethod from_db(cls, project: object)` with an `assert isinstance(project, Project)` is the typed pattern. Avoid `from_db(cls, **kwargs: Any)`.
+4. **`from_db` adapter typing.** Use `@classmethod def from_db(cls, project: "Project") -> "ProjectOut": ...` with the DB model imported under a `TYPE_CHECKING` guard. The concrete annotation makes call-site mistakes (passing a `Website` to `ProjectOut.from_db`) into compile-time errors. Avoid `from_db(cls, project: object)` with runtime `isinstance` — that defers errors to runtime for no benefit. Also avoid `from_db(cls, **kwargs: Any)`.
 
 5. **Pydantic schema with `Optional[...]` defaulting to `None`.** If the field MUST be sent (even if its value can be null), use `Optional[X] = ...` (Pydantic's `Field(...)`). If the field MAY be omitted, use `Optional[X] = None`.
 

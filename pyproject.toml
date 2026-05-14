@@ -25,6 +25,9 @@ files = [
     # excluded (no per-tool exclude knob in mypy; we just don't list them).
     "scripts/port_pdfmax_remediation_guide.py",
     "scripts/generate_pdf_checks_ftl.py",
+    # OpenAPI schemas namespace is covered by the "auto_a11y" entry above;
+    # no explicit sub-path needed (and adding it would cause duplicate-module
+    # errors when mypy resolves both globs to the same files).
 ]
 mypy_path = "stubs"
 namespace_packages = true
@@ -66,6 +69,8 @@ include = [
     # PDF audit engine port — Phase 7.
     "scripts/port_pdfmax_remediation_guide.py",
     "scripts/generate_pdf_checks_ftl.py",
+    # OpenAPI schemas namespace is covered by the "auto_a11y" entry above;
+    # no explicit sub-path needed (pyright also deduplicates via the broader glob).
 ]
 stubPath = "stubs"
 typeCheckingMode = "strict"

@@ -235,6 +235,16 @@ from auto_a11y.web.api.schemas.test_users import (
     WebsiteTestUserListOut,
     WebsiteTestUserOut,
 )
+from auto_a11y.web.api.schemas.people import (
+    SupervisorIn,
+    SupervisorListOut,
+    SupervisorOut,
+    SupervisorPatch,
+    TesterIn,
+    TesterListOut,
+    TesterOut,
+    TesterPatch,
+)
 from auto_a11y.web.typed_app import get_db, get_app_config, get_test_config
 from datetime import datetime
 import logging
@@ -10765,26 +10775,50 @@ def delete_website_test_user_rest(user_id: str) -> tuple[Empty, int]:
 from auto_a11y.models.project import LivedExperienceTester, TestSupervisor  # noqa: E402
 
 
-def _serialize_tester(tester: LivedExperienceTester) -> dict[str, Any]:
-    return {
-        "id": tester.id,
-        "name": tester.name,
-        "email": tester.email,
-        "disability_type": tester.disability_type,
-        "assistive_tech": list(tester.assistive_tech),
-        "notes": tester.notes,
-    }
+def _serialize_tester(tester: LivedExperienceTester) -> TesterOut:
+    """Project a :class:`LivedExperienceTester` to its Pydantic response model.
+
+    Mirrors the legacy ``_serialize_tester`` byte-for-byte (the helper
+    used to return ``dict[str, Any]``; the F1c refactor swapped the
+    return type for :class:`TesterOut` so the documented endpoints
+    can return a typed model directly).
+    """
+    return TesterOut(
+        id=tester.id,
+        name=tester.name,
+        email=tester.email,
+        disability_type=tester.disability_type,
+        assistive_tech=list(tester.assistive_tech),
+        notes=tester.notes,
+    )
 
 
-def _serialize_supervisor(supervisor: TestSupervisor) -> dict[str, Any]:
-    return {
-        "id": supervisor.id,
-        "name": supervisor.name,
-        "email": supervisor.email,
-        "role": supervisor.role,
-        "organization": supervisor.organization,
-        "notes": supervisor.notes,
-    }
+def _serialize_supervisor(supervisor: TestSupervisor) -> SupervisorOut:
+    """Project a :class:`TestSupervisor` to its Pydantic response model.
+
+    Mirrors the legacy ``_serialize_supervisor`` byte-for-byte.
+    """
+    return SupervisorOut(
+        id=supervisor.id,
+        name=supervisor.name,
+        email=supervisor.email,
+        role=supervisor.role,
+        organization=supervisor.organization,
+        notes=supervisor.notes,
+    )
+
+
+def _people_body_to_dict(
+    body: TesterIn | TesterPatch | SupervisorIn | SupervisorPatch,
+) -> dict[str, Any]:
+    """Re-serialise a validated request body to the legacy dict shape.
+
+    Mirrors the same role :func:`_test_user_body_to_dict` plays for the
+    test-user endpoints: ``_build_*_from_body`` and ``_apply_patch_to_*``
+    branch on ``if "field" in body``, so we use ``exclude_unset=True``
+    to preserve the distinction between "absent" and "explicit None".
+    """
+    return body.model_dump(mode="json", exclude_unset=True, by_alias=True)
 
 
 def _validate_required_name(body: dict[str, Any]) -> str:
@@ -10875,7 +10909,21 @@ def _apply_patch_to_supervisor(
 
 @api_bp.route("/projects/<project_id>/testers", methods=["GET"])
 @api_endpoint
-def list_testers_rest(project_id: str) -> tuple[Response, int] | Response:
+@document(
+    response_200=TesterListOut,
+    errors=[401, 403, 404],
+    tags=["Projects"],
+    summary="List a project's lived-experience testers",
+    description=(
+        "Lists the lived-experience testers configured on a project. "
+        "Each entry is the same shape as the single-resource "
+        "``GET /projects/<project_id>/testers/<tester_id>`` response. "
+        "The list is non-paginated (tester counts are bounded by "
+        "small constants in practice — a project tracks a handful of "
+        "participants, not thousands)."
+    ),
+)
+def list_testers_rest(project_id: str) -> tuple[TesterListOut, int]:
     """List lived-experience testers for a project."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, project_id=project_id
@@ -10883,14 +10931,34 @@ def list_testers_rest(project_id: str) -> tuple[Response, int] | Response:
     project = get_db().get_project(project_id)
     if project is None:
         raise NotFoundError(f"project {project_id} not found")
-    return jsonify(
-        {"items": [_serialize_tester(t) for t in project.lived_experience_testers]}
-    )
+    return TesterListOut(
+        items=[_serialize_tester(t) for t in project.lived_experience_testers]
+    ), 200
 
 
 @api_bp.route("/projects/<project_id>/testers", methods=["POST"])
 @api_endpoint
-def create_tester_rest(project_id: str) -> tuple[Response, int]:
+@document(
+    request=TesterIn,
+    response_201=TesterOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["Projects"],
+    summary="Create a lived-experience tester on a project",
+    description=(
+        "Creates a lived-experience tester on the project. ``name`` "
+        "is semantically required (the handler surfaces its own 400 "
+        "with field path ``name`` and code ``required``). On success "
+        "returns 201 with the persisted ``TesterOut`` resource plus a "
+        "``Location`` header pointing at "
+        "``/api/v1/projects/<project_id>/testers/<tester_id>``. The "
+        "tester is appended to the inline "
+        "``project.lived_experience_testers`` array; a string UUID is "
+        "assigned via ``ensure_id()`` on insert."
+    ),
+)
+def create_tester_rest(
+    project_id: str, body: TesterIn,
+) -> tuple[Response, int]:
     """Create a lived-experience tester on a project."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id
@@ -10899,13 +10967,19 @@ def create_tester_rest(project_id: str) -> tuple[Response, int]:
     if project is None:
         raise NotFoundError(f"project {project_id} not found")
 
-    body = _require_dict_body()
-    tester = _build_tester_from_body(body)
+    legacy_body = _people_body_to_dict(body)
+    tester = _build_tester_from_body(legacy_body)
     project.add_tester(tester)
     if not get_db().update_project(project):
         raise ConflictError("project document could not be updated")
 
-    response = jsonify(_serialize_tester(tester))
+    # The @document decorator serialises BaseModel returns through
+    # ``jsonify``, but we need a ``Location`` header on the new
+    # resource, so we pre-build the Response here and attach the header.
+    payload = _serialize_tester(tester)
+    response = jsonify(
+        payload.model_dump(mode="json", by_alias=True, exclude_none=True)
+    )
     response.headers["Location"] = (
         f"/api/v1/projects/{project_id}/testers/{tester.id}"
     )
@@ -10914,9 +10988,15 @@ def create_tester_rest(project_id: str) -> tuple[Response, int]:
 
 @api_bp.route("/projects/<project_id>/testers/<tester_id>", methods=["GET"])
 @api_endpoint
+@document(
+    response_200=TesterOut,
+    errors=[401, 403, 404],
+    tags=["Projects"],
+    summary="Get a single lived-experience tester",
+)
 def get_tester_rest(
     project_id: str, tester_id: str
-) -> tuple[Response, int] | Response:
+) -> tuple[TesterOut, int]:
     """Get one lived-experience tester."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, project_id=project_id
@@ -10927,14 +11007,27 @@ def get_tester_rest(
     tester = project.get_tester(tester_id)
     if tester is None:
         raise NotFoundError(f"tester {tester_id} not found in project {project_id}")
-    return jsonify(_serialize_tester(tester))
+    return _serialize_tester(tester), 200
 
 
 @api_bp.route("/projects/<project_id>/testers/<tester_id>", methods=["PUT"])
 @api_endpoint
+@document(
+    request=TesterIn,
+    response_200=TesterOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["Projects"],
+    summary="Replace a lived-experience tester's editable fields",
+    description=(
+        "Full replace of a tester's editable fields. The tester's "
+        "string UUID is preserved across the replace — ``name`` is "
+        "still semantically required on the body. Persists by "
+        "replacing the whole parent project document."
+    ),
+)
 def replace_tester_rest(
-    project_id: str, tester_id: str
-) -> tuple[Response, int] | Response:
+    project_id: str, tester_id: str, body: TesterIn,
+) -> tuple[TesterOut, int]:
     """Full replace of a tester's editable fields. The id is preserved."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id
@@ -10946,21 +11039,35 @@ def replace_tester_rest(
     if existing is None:
         raise NotFoundError(f"tester {tester_id} not found in project {project_id}")
 
-    body = _require_dict_body()
-    replaced = _build_tester_from_body(body)
+    legacy_body = _people_body_to_dict(body)
+    replaced = _build_tester_from_body(legacy_body)
     replaced.mongo_id = tester_id
     if not project.update_tester(replaced):
         raise ConflictError("tester could not be updated")
     if not get_db().update_project(project):
         raise ConflictError("project document could not be updated")
-    return jsonify(_serialize_tester(replaced))
+    return _serialize_tester(replaced), 200
 
 
 @api_bp.route("/projects/<project_id>/testers/<tester_id>", methods=["PATCH"])
 @api_endpoint
+@document(
+    request=TesterPatch,
+    response_200=TesterOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["Projects"],
+    summary="Partially update a lived-experience tester",
+    description=(
+        "Partial update of a tester. Missing keys leave the "
+        "corresponding field untouched. When ``name`` is present it "
+        "must be a non-empty string; ``assistive_tech``, when "
+        "present, must be an array. Persists by replacing the whole "
+        "parent project document."
+    ),
+)
 def patch_tester_rest(
-    project_id: str, tester_id: str
-) -> tuple[Response, int] | Response:
+    project_id: str, tester_id: str, body: TesterPatch,
+) -> tuple[TesterOut, int]:
     """Partial update of a tester."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id
@@ -10972,18 +11079,26 @@ def patch_tester_rest(
     if tester is None:
         raise NotFoundError(f"tester {tester_id} not found in project {project_id}")
 
-    body = _require_dict_body()
-    _apply_patch_to_tester(tester, body)
+    legacy_body = _people_body_to_dict(body)
+    _apply_patch_to_tester(tester, legacy_body)
     if not project.update_tester(tester):
         raise ConflictError("tester could not be updated")
     if not get_db().update_project(project):
         raise ConflictError("project document could not be updated")
-    return jsonify(_serialize_tester(tester))
+    return _serialize_tester(tester), 200
 
 
 @api_bp.route("/projects/<project_id>/testers/<tester_id>", methods=["DELETE"])
 @api_endpoint
-def delete_tester_rest(project_id: str, tester_id: str) -> tuple[Response, int]:
+@document(
+    response_204=Empty,
+    errors=[401, 403, 404, 409],
+    tags=["Projects"],
+    summary="Delete a lived-experience tester from a project",
+)
+def delete_tester_rest(
+    project_id: str, tester_id: str,
+) -> tuple[Empty, int]:
     """Delete a lived-experience tester from a project."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id
@@ -10995,7 +11110,7 @@ def delete_tester_rest(project_id: str, tester_id: str) -> tuple[Response, int]:
         raise NotFoundError(f"tester {tester_id} not found in project {project_id}")
     if not get_db().update_project(project):
         raise ConflictError("project document could not be updated")
-    return Response(status=204), 204
+    return Empty(), 204
 
 
 # --- Supervisors --------------------------------------------------------------
@@ -11003,7 +11118,20 @@ def delete_tester_rest(project_id: str, tester_id: str) -> tuple[Response, int]:
 
 @api_bp.route("/projects/<project_id>/supervisors", methods=["GET"])
 @api_endpoint
-def list_supervisors_rest(project_id: str) -> tuple[Response, int] | Response:
+@document(
+    response_200=SupervisorListOut,
+    errors=[401, 403, 404],
+    tags=["Projects"],
+    summary="List a project's test supervisors",
+    description=(
+        "Lists the test supervisors configured on a project. Each "
+        "entry is the same shape as the single-resource "
+        "``GET /projects/<project_id>/supervisors/<supervisor_id>`` "
+        "response. The list is non-paginated (supervisor counts are "
+        "bounded by small constants in practice)."
+    ),
+)
+def list_supervisors_rest(project_id: str) -> tuple[SupervisorListOut, int]:
     """List test supervisors for a project."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, project_id=project_id
@@ -11011,14 +11139,34 @@ def list_supervisors_rest(project_id: str) -> tuple[Response, int] | Response:
     project = get_db().get_project(project_id)
     if project is None:
         raise NotFoundError(f"project {project_id} not found")
-    return jsonify(
-        {"items": [_serialize_supervisor(s) for s in project.test_supervisors]}
-    )
+    return SupervisorListOut(
+        items=[_serialize_supervisor(s) for s in project.test_supervisors]
+    ), 200
 
 
 @api_bp.route("/projects/<project_id>/supervisors", methods=["POST"])
 @api_endpoint
-def create_supervisor_rest(project_id: str) -> tuple[Response, int]:
+@document(
+    request=SupervisorIn,
+    response_201=SupervisorOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["Projects"],
+    summary="Create a test supervisor on a project",
+    description=(
+        "Creates a test supervisor on the project. ``name`` is "
+        "semantically required (the handler surfaces its own 400 "
+        "with field path ``name`` and code ``required``). On success "
+        "returns 201 with the persisted ``SupervisorOut`` resource "
+        "plus a ``Location`` header pointing at "
+        "``/api/v1/projects/<project_id>/supervisors/<supervisor_id>``. "
+        "The supervisor is appended to the inline "
+        "``project.test_supervisors`` array; a string UUID is "
+        "assigned via ``ensure_id()`` on insert."
+    ),
+)
+def create_supervisor_rest(
+    project_id: str, body: SupervisorIn,
+) -> tuple[Response, int]:
     """Create a test supervisor on a project."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id
@@ -11027,13 +11175,16 @@ def create_supervisor_rest(project_id: str) -> tuple[Response, int]:
     if project is None:
         raise NotFoundError(f"project {project_id} not found")
 
-    body = _require_dict_body()
-    supervisor = _build_supervisor_from_body(body)
+    legacy_body = _people_body_to_dict(body)
+    supervisor = _build_supervisor_from_body(legacy_body)
     project.add_supervisor(supervisor)
     if not get_db().update_project(project):
         raise ConflictError("project document could not be updated")
 
-    response = jsonify(_serialize_supervisor(supervisor))
+    payload = _serialize_supervisor(supervisor)
+    response = jsonify(
+        payload.model_dump(mode="json", by_alias=True, exclude_none=True)
+    )
     response.headers["Location"] = (
         f"/api/v1/projects/{project_id}/supervisors/{supervisor.id}"
     )
@@ -11042,9 +11193,15 @@ def create_supervisor_rest(project_id: str) -> tuple[Response, int]:
 
 @api_bp.route("/projects/<project_id>/supervisors/<supervisor_id>", methods=["GET"])
 @api_endpoint
+@document(
+    response_200=SupervisorOut,
+    errors=[401, 403, 404],
+    tags=["Projects"],
+    summary="Get a single test supervisor",
+)
 def get_supervisor_rest(
     project_id: str, supervisor_id: str
-) -> tuple[Response, int] | Response:
+) -> tuple[SupervisorOut, int]:
     """Get one test supervisor."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT, project_id=project_id
@@ -11057,14 +11214,27 @@ def get_supervisor_rest(
         raise NotFoundError(
             f"supervisor {supervisor_id} not found in project {project_id}"
         )
-    return jsonify(_serialize_supervisor(supervisor))
+    return _serialize_supervisor(supervisor), 200
 
 
 @api_bp.route("/projects/<project_id>/supervisors/<supervisor_id>", methods=["PUT"])
 @api_endpoint
+@document(
+    request=SupervisorIn,
+    response_200=SupervisorOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["Projects"],
+    summary="Replace a test supervisor's editable fields",
+    description=(
+        "Full replace of a supervisor's editable fields. The "
+        "supervisor's string UUID is preserved across the replace — "
+        "``name`` is still semantically required on the body. "
+        "Persists by replacing the whole parent project document."
+    ),
+)
 def replace_supervisor_rest(
-    project_id: str, supervisor_id: str
-) -> tuple[Response, int] | Response:
+    project_id: str, supervisor_id: str, body: SupervisorIn,
+) -> tuple[SupervisorOut, int]:
     """Full replace of a supervisor's editable fields. The id is preserved."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id
@@ -11078,21 +11248,34 @@ def replace_supervisor_rest(
             f"supervisor {supervisor_id} not found in project {project_id}"
         )
 
-    body = _require_dict_body()
-    replaced = _build_supervisor_from_body(body)
+    legacy_body = _people_body_to_dict(body)
+    replaced = _build_supervisor_from_body(legacy_body)
     replaced.mongo_id = supervisor_id
     if not project.update_supervisor(replaced):
         raise ConflictError("supervisor could not be updated")
     if not get_db().update_project(project):
         raise ConflictError("project document could not be updated")
-    return jsonify(_serialize_supervisor(replaced))
+    return _serialize_supervisor(replaced), 200
 
 
 @api_bp.route("/projects/<project_id>/supervisors/<supervisor_id>", methods=["PATCH"])
 @api_endpoint
+@document(
+    request=SupervisorPatch,
+    response_200=SupervisorOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["Projects"],
+    summary="Partially update a test supervisor",
+    description=(
+        "Partial update of a supervisor. Missing keys leave the "
+        "corresponding field untouched. When ``name`` is present it "
+        "must be a non-empty string. Persists by replacing the whole "
+        "parent project document."
+    ),
+)
 def patch_supervisor_rest(
-    project_id: str, supervisor_id: str
-) -> tuple[Response, int] | Response:
+    project_id: str, supervisor_id: str, body: SupervisorPatch,
+) -> tuple[SupervisorOut, int]:
     """Partial update of a supervisor."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id
@@ -11106,20 +11289,26 @@ def patch_supervisor_rest(
             f"supervisor {supervisor_id} not found in project {project_id}"
         )
 
-    body = _require_dict_body()
-    _apply_patch_to_supervisor(supervisor, body)
+    legacy_body = _people_body_to_dict(body)
+    _apply_patch_to_supervisor(supervisor, legacy_body)
     if not project.update_supervisor(supervisor):
         raise ConflictError("supervisor could not be updated")
     if not get_db().update_project(project):
         raise ConflictError("project document could not be updated")
-    return jsonify(_serialize_supervisor(supervisor))
+    return _serialize_supervisor(supervisor), 200
 
 
 @api_bp.route("/projects/<project_id>/supervisors/<supervisor_id>", methods=["DELETE"])
 @api_endpoint
+@document(
+    response_204=Empty,
+    errors=[401, 403, 404, 409],
+    tags=["Projects"],
+    summary="Delete a test supervisor from a project",
+)
 def delete_supervisor_rest(
-    project_id: str, supervisor_id: str
-) -> tuple[Response, int]:
+    project_id: str, supervisor_id: str,
+) -> tuple[Empty, int]:
     """Delete a test supervisor from a project."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id
@@ -11133,7 +11322,7 @@ def delete_supervisor_rest(
         )
     if not get_db().update_project(project):
         raise ConflictError("project document could not be updated")
-    return Response(status=204), 204
+    return Empty(), 204
 
 
 # ---------------------------------------------------------------------------

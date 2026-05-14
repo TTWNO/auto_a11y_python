@@ -7741,6 +7741,165 @@ components:
       - writable
       title: StorageHealthOut
       type: object
+    SupervisorIn:
+      additionalProperties: false
+      description: "POST/PUT body for creating or replacing a test supervisor.\n\n\
+        Mirrors the legacy ``_build_supervisor_from_body`` validator.\n\nFields:\n\
+        \n- ``name`` — semantically required on create / replace; the\n  handler surfaces\
+        \ its own 400 with field path ``name`` and\n  code ``required`` on missing/blank\
+        \ values. Typed\n  ``Optional[str]`` to preserve the legacy error envelope.\n\
+        - ``email`` — optional, free-text.\n- ``role`` — optional, free-text job title\
+        \ (e.g.\n  \"Accessibility Specialist\", \"Research Lead\").\n- ``organization``\
+        \ — optional, free-text affiliation.\n- ``notes`` — optional, free-text."
+      properties:
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Email
+        name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Name
+        notes:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Notes
+        organization:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Organization
+        role:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Role
+      title: SupervisorIn
+      type: object
+    SupervisorListOut:
+      additionalProperties: false
+      description: 'Response body for ``GET /projects/<project_id>/supervisors``.
+
+
+        Non-paginated ``{items: [...]}`` envelope. Supervisor counts
+
+        are bounded by small constants in practice (a project tracks
+
+        a handful of supervisors, not thousands) so cursoring is
+
+        unnecessary.'
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/SupervisorOut'
+          title: Items
+          type: array
+      required:
+      - items
+      title: SupervisorListOut
+      type: object
+    SupervisorOut:
+      additionalProperties: false
+      description: "Response shape for a single test supervisor.\n\nMirrors :func:`_serialize_supervisor`\
+        \ byte-for-byte. Used by:\n\n- ``GET /projects/<project_id>/supervisors/<supervisor_id>``\n\
+        - ``POST /projects/<project_id>/supervisors`` (create response)\n- ``PUT /projects/<project_id>/supervisors/<supervisor_id>``\
+        \ (replace response)\n- ``PATCH /projects/<project_id>/supervisors/<supervisor_id>``\
+        \ (patch response)\n- ``GET /projects/<project_id>/supervisors`` (inside ``items``)\n\
+        \nField details:\n\n- ``id`` — string UUID assigned by ``ensure_id()`` on\
+        \ insert;\n  ``None`` only for transient unsaved supervisors that never\n\
+        \  appear over the wire.\n- ``name`` — required on the response (the model\
+        \ enforces it)."
+      properties:
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Email
+        id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Id
+        name:
+          title: Name
+          type: string
+        notes:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Notes
+        organization:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Organization
+        role:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Role
+      required:
+      - name
+      title: SupervisorOut
+      type: object
+    SupervisorPatch:
+      additionalProperties: false
+      description: 'PATCH body for partially updating a test supervisor.
+
+
+        Structurally identical to :class:`SupervisorIn` — every field
+
+        optional. PATCH is a thin alias rather than a distinct type
+
+        because ``_apply_patch_to_supervisor`` accepts the full
+
+        create-shape body and treats missing keys as "leave alone".'
+      properties:
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Email
+        name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Name
+        notes:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Notes
+        organization:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Organization
+        role:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Role
+      title: SupervisorPatch
+      type: object
     TestResultCompareIn:
       additionalProperties: false
       description: 'Request body for ``POST /api/v1/test-results/compare``.
@@ -8209,6 +8368,177 @@ components:
           default: null
           title: Username
       title: TestUserPatch
+      type: object
+    TesterIn:
+      additionalProperties: false
+      description: "POST/PUT body for creating or replacing a lived-experience tester.\n\
+        \nMirrors the legacy ``_build_tester_from_body`` validator.\n\nFields:\n\n\
+        - ``name`` — semantically required on create / replace; the\n  handler surfaces\
+        \ its own 400 with field path ``name`` and\n  code ``required`` on missing/blank\
+        \ values. Typed\n  ``Optional[str]`` to preserve the legacy error envelope.\n\
+        - ``email`` — optional, free-text. Empty string is normalised\n  to ``None``\
+        \ by the handler.\n- ``disability_type`` — optional, free-text label (e.g.\n\
+        \  \"Blind\", \"Low Vision\", \"Deaf\", \"Motor Disability\"). Not a\n  closed\
+        \ set — projects vary on terminology.\n- ``assistive_tech`` — optional list\
+        \ of free-text AT names\n  (e.g. ``[\"JAWS\", \"Screen Magnifier\"]``). Defaults\
+        \ to ``[]``\n  when omitted.\n- ``notes`` — optional, free-text."
+      properties:
+        assistive_tech:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          default: null
+          title: Assistive Tech
+        disability_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Disability Type
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Email
+        name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Name
+        notes:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Notes
+      title: TesterIn
+      type: object
+    TesterListOut:
+      additionalProperties: false
+      description: 'Response body for ``GET /projects/<project_id>/testers``.
+
+
+        Non-paginated ``{items: [...]}`` envelope. Tester counts are
+
+        bounded by small constants in practice (a project tracks a
+
+        handful of participants, not thousands) so cursoring is
+
+        unnecessary.'
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/TesterOut'
+          title: Items
+          type: array
+      required:
+      - items
+      title: TesterListOut
+      type: object
+    TesterOut:
+      additionalProperties: false
+      description: "Response shape for a single lived-experience tester.\n\nMirrors\
+        \ :func:`_serialize_tester` byte-for-byte. Used by:\n\n- ``GET /projects/<project_id>/testers/<tester_id>``\n\
+        - ``POST /projects/<project_id>/testers`` (create response)\n- ``PUT /projects/<project_id>/testers/<tester_id>``\
+        \ (replace response)\n- ``PATCH /projects/<project_id>/testers/<tester_id>``\
+        \ (patch response)\n- ``GET /projects/<project_id>/testers`` (inside ``items``)\n\
+        \nField details:\n\n- ``id`` — string UUID assigned by ``ensure_id()`` on\
+        \ insert;\n  ``None`` only for transient unsaved testers that never\n  appear\
+        \ over the wire.\n- ``name`` — required on the response (the model enforces\
+        \ it).\n- ``assistive_tech`` — always a list (the dataclass default\n  factory\
+        \ yields ``[]`` when no AT is specified)."
+      properties:
+        assistive_tech:
+          items:
+            type: string
+          title: Assistive Tech
+          type: array
+        disability_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Disability Type
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Email
+        id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Id
+        name:
+          title: Name
+          type: string
+        notes:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Notes
+      required:
+      - name
+      - assistive_tech
+      title: TesterOut
+      type: object
+    TesterPatch:
+      additionalProperties: false
+      description: 'PATCH body for partially updating a lived-experience tester.
+
+
+        Structurally identical to :class:`TesterIn` — every field
+
+        optional. PATCH is intentionally a thin alias rather than a
+
+        distinct type because ``_apply_patch_to_tester`` accepts the
+
+        full create-shape body and treats missing keys as "leave alone".
+
+        Splitting the types would imply a behavioural difference the
+
+        runtime doesn''t actually implement.'
+      properties:
+        assistive_tech:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          default: null
+          title: Assistive Tech
+        disability_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Disability Type
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Email
+        name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Name
+        notes:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Notes
+      title: TesterPatch
       type: object
     TestingConfigOut:
       additionalProperties: false
@@ -13303,6 +13633,322 @@ paths:
       summary: Create a project-scoped share token
       tags:
       - ShareTokens
+  /projects/{project_id}/supervisors:
+    get:
+      description: Lists the test supervisors configured on a project. Each entry
+        is the same shape as the single-resource ``GET /projects/<project_id>/supervisors/<supervisor_id>``
+        response. The list is non-paginated (supervisor counts are bounded by small
+        constants in practice).
+      parameters:
+      - in: path
+        name: project_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupervisorListOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: List a project's test supervisors
+      tags:
+      - Projects
+    post:
+      description: Creates a test supervisor on the project. ``name`` is semantically
+        required (the handler surfaces its own 400 with field path ``name`` and code
+        ``required``). On success returns 201 with the persisted ``SupervisorOut``
+        resource plus a ``Location`` header pointing at ``/api/v1/projects/<project_id>/supervisors/<supervisor_id>``.
+        The supervisor is appended to the inline ``project.test_supervisors`` array;
+        a string UUID is assigned via ``ensure_id()`` on insert.
+      parameters:
+      - in: path
+        name: project_id
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupervisorIn'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupervisorOut'
+          description: Created
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Create a test supervisor on a project
+      tags:
+      - Projects
+  /projects/{project_id}/supervisors/{supervisor_id}:
+    delete:
+      parameters:
+      - in: path
+        name: project_id
+        required: true
+        schema: *id001
+      - in: path
+        name: supervisor_id
+        required: true
+        schema: *id001
+      responses:
+        '204':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Empty'
+          description: No Content
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Delete a test supervisor from a project
+      tags:
+      - Projects
+    get:
+      parameters:
+      - in: path
+        name: project_id
+        required: true
+        schema: *id001
+      - in: path
+        name: supervisor_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupervisorOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Get a single test supervisor
+      tags:
+      - Projects
+    patch:
+      description: Partial update of a supervisor. Missing keys leave the corresponding
+        field untouched. When ``name`` is present it must be a non-empty string. Persists
+        by replacing the whole parent project document.
+      parameters:
+      - in: path
+        name: project_id
+        required: true
+        schema: *id001
+      - in: path
+        name: supervisor_id
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupervisorPatch'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupervisorOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Partially update a test supervisor
+      tags:
+      - Projects
+    put:
+      description: Full replace of a supervisor's editable fields. The supervisor's
+        string UUID is preserved across the replace — ``name`` is still semantically
+        required on the body. Persists by replacing the whole parent project document.
+      parameters:
+      - in: path
+        name: project_id
+        required: true
+        schema: *id001
+      - in: path
+        name: supervisor_id
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupervisorIn'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupervisorOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Replace a test supervisor's editable fields
+      tags:
+      - Projects
   /projects/{project_id}/test-runs:
     post:
       description: Fan-out batch test across every website in a project. Each website
@@ -13462,6 +14108,323 @@ paths:
       summary: Create a test user under a project
       tags:
       - TestUsers
+  /projects/{project_id}/testers:
+    get:
+      description: Lists the lived-experience testers configured on a project. Each
+        entry is the same shape as the single-resource ``GET /projects/<project_id>/testers/<tester_id>``
+        response. The list is non-paginated (tester counts are bounded by small constants
+        in practice — a project tracks a handful of participants, not thousands).
+      parameters:
+      - in: path
+        name: project_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TesterListOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: List a project's lived-experience testers
+      tags:
+      - Projects
+    post:
+      description: Creates a lived-experience tester on the project. ``name`` is semantically
+        required (the handler surfaces its own 400 with field path ``name`` and code
+        ``required``). On success returns 201 with the persisted ``TesterOut`` resource
+        plus a ``Location`` header pointing at ``/api/v1/projects/<project_id>/testers/<tester_id>``.
+        The tester is appended to the inline ``project.lived_experience_testers``
+        array; a string UUID is assigned via ``ensure_id()`` on insert.
+      parameters:
+      - in: path
+        name: project_id
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TesterIn'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TesterOut'
+          description: Created
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Create a lived-experience tester on a project
+      tags:
+      - Projects
+  /projects/{project_id}/testers/{tester_id}:
+    delete:
+      parameters:
+      - in: path
+        name: project_id
+        required: true
+        schema: *id001
+      - in: path
+        name: tester_id
+        required: true
+        schema: *id001
+      responses:
+        '204':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Empty'
+          description: No Content
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Delete a lived-experience tester from a project
+      tags:
+      - Projects
+    get:
+      parameters:
+      - in: path
+        name: project_id
+        required: true
+        schema: *id001
+      - in: path
+        name: tester_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TesterOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Get a single lived-experience tester
+      tags:
+      - Projects
+    patch:
+      description: Partial update of a tester. Missing keys leave the corresponding
+        field untouched. When ``name`` is present it must be a non-empty string; ``assistive_tech``,
+        when present, must be an array. Persists by replacing the whole parent project
+        document.
+      parameters:
+      - in: path
+        name: project_id
+        required: true
+        schema: *id001
+      - in: path
+        name: tester_id
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TesterPatch'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TesterOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Partially update a lived-experience tester
+      tags:
+      - Projects
+    put:
+      description: Full replace of a tester's editable fields. The tester's string
+        UUID is preserved across the replace — ``name`` is still semantically required
+        on the body. Persists by replacing the whole parent project document.
+      parameters:
+      - in: path
+        name: project_id
+        required: true
+        schema: *id001
+      - in: path
+        name: tester_id
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TesterIn'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TesterOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Replace a lived-experience tester's editable fields
+      tags:
+      - Projects
   /projects/{project_id}/websites:
     get:
       description: Returns the websites belonging to ``project_id`` with cursor pagination.

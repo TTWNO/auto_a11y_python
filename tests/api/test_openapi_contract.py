@@ -151,29 +151,22 @@ def test_registry_is_populated(contract_app: Flask) -> None:
     assert len(REGISTRY) > 100, f"expected >100 documented routes, got {len(REGISTRY)}"
 
 
-# Allowlist of /api/v1 routes that exist on the api_bp but were intentionally
-# left out of Phase 2's §5.1–§5.16 conversion. The rollout plan scoped each
-# §5.x task narrowly (e.g. §5.13 Auth covered /auth/* and /users/* core CRUD
-# but not the test-user / supervisor / tester sub-resources). Documenting
-# these follows as a Phase-3 follow-up; the allowlist is intentionally
-# enumerated rather than glob-matched so adding a NEW undocumented route
-# still fails the drift gate.
-_KNOWN_UNDOCUMENTED: frozenset[tuple[str, str]] = frozenset({
-    # Project supervisors
-    ("GET", "/projects/<project_id>/supervisors"),
-    ("POST", "/projects/<project_id>/supervisors"),
-    ("GET", "/projects/<project_id>/supervisors/<supervisor_id>"),
-    ("PUT", "/projects/<project_id>/supervisors/<supervisor_id>"),
-    ("PATCH", "/projects/<project_id>/supervisors/<supervisor_id>"),
-    ("DELETE", "/projects/<project_id>/supervisors/<supervisor_id>"),
-    # Lived experience testers
-    ("GET", "/projects/<project_id>/testers"),
-    ("POST", "/projects/<project_id>/testers"),
-    ("GET", "/projects/<project_id>/testers/<tester_id>"),
-    ("PUT", "/projects/<project_id>/testers/<tester_id>"),
-    ("PATCH", "/projects/<project_id>/testers/<tester_id>"),
-    ("DELETE", "/projects/<project_id>/testers/<tester_id>"),
-})
+# Empty allowlist — every ``/api/v1`` route now carries ``@document``.
+# The Phase-3 follow-ups (F1a → F1c) closed the last 23 entries: F1a
+# documented the test-orchestration helpers, recording-issues writes,
+# and the project-report-summary endpoint; F1b documented the 14
+# test-user routes (project + website scope); F1c documented the
+# remaining 12 project-people routes (lived-experience testers + test
+# supervisors).
+#
+# We keep the symbol as an explicit empty ``frozenset`` rather than
+# deleting it because the drift gate below still references it
+# (``key in _KNOWN_UNDOCUMENTED``) and because its presence
+# documents the policy: any future route added to ``api_bp`` must
+# either carry ``@document`` or be added here with a follow-up issue.
+# A new undocumented route lands today as a hard test failure with
+# a precise diff, not a silently-tolerated gap.
+_KNOWN_UNDOCUMENTED: frozenset[tuple[str, str]] = frozenset()
 
 
 def test_every_api_v1_route_is_documented(contract_app: Flask) -> None:

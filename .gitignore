@@ -107,6 +107,7 @@ test_*.py
 !tests/pdf/test_*.py
 !tests/api/test_*.py
 !tests/api/schemas/test_*.py
+!tests/api/openapi/test_*.py
 verify_*.py
 adapt_*.py
 

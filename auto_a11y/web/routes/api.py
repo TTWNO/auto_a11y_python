@@ -138,6 +138,14 @@ from auto_a11y.web.api.schemas.auth import (
     SsoCallbackOut,
     SsoUrlOut,
 )
+from auto_a11y.web.api.schemas.admin import (
+    AdminSettingsOut,
+    DrupalSettingsOut,
+    DrupalSettingsPatchIn,
+    DrupalSettingsValuesOut,
+    GenericSectionPatchIn,
+    SettingsSectionOut,
+)
 from auto_a11y.web.api.schemas.drupal import (
     DrupalAuditListOut,
     DrupalAuditOut,
@@ -6807,17 +6815,18 @@ def _serialize_field_value(field: ConfigField, section_data: dict[str, Any] | No
     return raw_env
 
 
-def _serialize_settings_section(
+def _settings_section_to_out(
     section: ConfigSection, section_data: dict[str, Any] | None
-) -> dict[str, Any]:
-    """Project a settings section to JSON: values + per-field metadata.
+) -> SettingsSectionOut:
+    """Project a settings section to its typed wire model.
 
     Each field shows up under its ``db_key`` with the effective value;
     password fields are reported as ``null`` with a sibling
     ``<key>_set`` boolean so callers can render a "[set]" indicator
-    without us echoing the secret.
+    without us echoing the secret. Mirrors the legacy
+    ``_serialize_settings_section`` helper byte-for-byte.
     """
-    values: dict[str, Any] = {}
+    values: dict[str, object] = {}
     for field in section.fields:
         if field.field_type is FieldType.PASSWORD:
             values[field.db_key] = None
@@ -6826,38 +6835,45 @@ def _serialize_settings_section(
             values[field.db_key] = is_bool_true(field, section_data)
         else:
             values[field.db_key] = _serialize_field_value(field, section_data)
-    return {
-        "section_id": section.section_id,
-        "source": section_source(section, section_data),
-        "values": values,
-    }
+    return SettingsSectionOut(
+        section_id=section.section_id,
+        source=section_source(section, section_data),
+        values=values,
+    )
 
 
-def _serialize_drupal_settings(section_data: dict[str, Any] | None) -> dict[str, Any]:
-    """Drupal config has its own shape (not in CONFIG_SECTIONS); project here."""
+def _drupal_settings_to_out(section_data: dict[str, Any] | None) -> DrupalSettingsOut:
+    """Project the drupal section to its typed wire model.
+
+    Drupal config has its own shape (not in ``CONFIG_SECTIONS``);
+    project here. Mirrors the legacy ``_serialize_drupal_settings``
+    helper byte-for-byte — when no DB row exists the env-var fallback
+    fills the fields and ``source`` reflects whether any of the env
+    vars are set.
+    """
     if section_data is not None:
-        return {
-            "source": "database",
-            "values": {
-                "base_url": section_data.get("base_url", ""),
-                "username": section_data.get("username", ""),
-                "password_set": bool(section_data.get("password")),
-                "enabled": bool(section_data.get("enabled", True)),
-            },
-        }
+        return DrupalSettingsOut(
+            source="database",
+            values=DrupalSettingsValuesOut(
+                base_url=str(section_data.get("base_url", "")),
+                username=str(section_data.get("username", "")),
+                password_set=bool(section_data.get("password")),
+                enabled=bool(section_data.get("enabled", True)),
+            ),
+        )
     env_present = any(
         os.getenv(name)
         for name in ("DRUPAL_BASE_URL", "DRUPAL_USERNAME", "DRUPAL_PASSWORD")
     )
-    return {
-        "source": "environment" if env_present else "unset",
-        "values": {
-            "base_url": os.getenv("DRUPAL_BASE_URL", ""),
-            "username": os.getenv("DRUPAL_USERNAME", ""),
-            "password_set": bool(os.getenv("DRUPAL_PASSWORD")),
-            "enabled": os.getenv("DRUPAL_EXPORT_ENABLED", "true").lower() == "true",
-        },
-    }
+    return DrupalSettingsOut(
+        source="environment" if env_present else "unset",
+        values=DrupalSettingsValuesOut(
+            base_url=os.getenv("DRUPAL_BASE_URL", ""),
+            username=os.getenv("DRUPAL_USERNAME", ""),
+            password_set=bool(os.getenv("DRUPAL_PASSWORD")),
+            enabled=os.getenv("DRUPAL_EXPORT_ENABLED", "true").lower() == "true",
+        ),
+    )
 
 
 def _coerce_field_value(field: ConfigField, raw: Any) -> FieldValue:
@@ -6925,60 +6941,102 @@ def _coerce_field_value(field: ConfigField, raw: Any) -> FieldValue:
 
 @api_bp.route("/admin/settings", methods=["GET"])
 @api_endpoint
-def get_admin_settings() -> Response:
+@document(
+    response_200=AdminSettingsOut,
+    errors=[401, 403],
+    tags=["Admin Settings"],
+    summary="Get the full runtime settings document",
+    description=(
+        "Returns the entire runtime configuration: the special-cased "
+        "``drupal`` section plus every entry in ``CONFIG_SECTIONS`` "
+        "(SMTP, LDAP, etc.). Each generic section's ``values`` block "
+        "is keyed by ``db_key`` from the section schema; password "
+        "fields surface as ``null`` with a sibling ``<key>_set: bool`` "
+        "so callers can render a \"[set]\" indicator without us "
+        "echoing secrets. ``source`` on each section reports where "
+        "the effective values came from (database / environment / "
+        "default). Superadmin-only."
+    ),
+)
+def get_admin_settings() -> tuple[AdminSettingsOut, int]:
     """Return the full settings document — Drupal config + every named section."""
     require_superadmin()
     settings = SystemSettings(get_db())
     sections = [
-        _serialize_settings_section(s, settings.get_section(s.section_id))
+        _settings_section_to_out(s, settings.get_section(s.section_id))
         for s in CONFIG_SECTIONS
     ]
-    return jsonify(
-        {
-            "drupal": _serialize_drupal_settings(settings.get_section(DRUPAL_SETTINGS_KEY)),
-            "sections": sections,
-        }
-    )
+    return AdminSettingsOut(
+        drupal=_drupal_settings_to_out(settings.get_section(DRUPAL_SETTINGS_KEY)),
+        sections=sections,
+    ), 200
 
 
 @api_bp.route("/admin/settings/drupal", methods=["PATCH"])
 @api_endpoint
-def patch_drupal_settings() -> Response:
-    """Update Drupal connection settings.
-
-    Validation mirrors the legacy form: ``base_url`` must be http(s),
-    ``username`` is required, and a blank ``password`` keeps the existing
-    stored value (so admins don't have to re-enter the secret on every
-    edit).
-    """
+@document(
+    request=DrupalSettingsPatchIn,
+    response_200=DrupalSettingsOut,
+    errors=[400, 401, 403],
+    tags=["Admin Settings"],
+    summary="Update Drupal connection settings",
+    description=(
+        "Updates the drupal connection block. All fields are "
+        "optional (PATCH semantics — absent ⇒ no change): "
+        "``base_url`` must be a non-empty http(s) URL, ``username`` "
+        "is required (non-empty), ``password`` omitted preserves the "
+        "existing stored value (so admins don't re-enter the secret "
+        "on every edit), and ``enabled`` is a boolean. An explicit "
+        "``null`` on any field raises 400 (the handler distinguishes "
+        "\"omitted\" from \"null\" via "
+        "``model_fields_set``). Superadmin-only."
+    ),
+)
+def patch_drupal_settings(body: DrupalSettingsPatchIn) -> tuple[DrupalSettingsOut, int]:
+    """Update Drupal connection settings."""
     require_superadmin()
-    body = _require_dict_body()
     settings = SystemSettings(get_db())
     existing = settings.get_section(DRUPAL_SETTINGS_KEY) or {}
+    fields_set = body.model_fields_set
 
-    base_url = body.get("base_url", existing.get("base_url", ""))
-    if not isinstance(base_url, str) or not base_url.strip():
+    # base_url — explicit value (incl. null) goes through type check;
+    # omitted falls back to existing-or-empty (which then fails the
+    # non-empty check, mirroring the legacy 400 path).
+    if "base_url" in fields_set:
+        base_url_raw: object = body.base_url
+    else:
+        base_url_raw = existing.get("base_url", "")
+    if not isinstance(base_url_raw, str) or not base_url_raw.strip():
         raise ValidationError(
             "base_url is required",
             errors=(_FieldError(field="base_url", code="required", message="required"),),
         )
-    base_url = base_url.strip()
+    base_url = base_url_raw.strip()
     if not (base_url.startswith("http://") or base_url.startswith("https://")):
         raise ValidationError(
             "base_url must be an http(s) URL",
             errors=(_FieldError(field="base_url", code="invalid_format", message="must start with http:// or https://"),),
         )
 
-    username = body.get("username", existing.get("username", ""))
-    if not isinstance(username, str) or not username.strip():
+    if "username" in fields_set:
+        username_raw: object = body.username
+    else:
+        username_raw = existing.get("username", "")
+    if not isinstance(username_raw, str) or not username_raw.strip():
         raise ValidationError(
             "username is required",
             errors=(_FieldError(field="username", code="required", message="required"),),
         )
-    username = username.strip()
+    username = username_raw.strip()
 
-    password_raw = body.get("password")
-    existing_password = existing.get("password") if isinstance(existing.get("password"), str) else None
+    # password — omitted (or explicit None) preserves existing; only a
+    # real string overwrites. Mirrors the legacy ``body.get("password")``
+    # behaviour: both absent and ``null`` map to "preserve".
+    password_raw = body.password if "password" in fields_set else None
+    existing_password = (
+        existing.get("password") if isinstance(existing.get("password"), str) else None
+    )
+    password: str | None
     if password_raw is None:
         password = existing_password
         if password is None:
@@ -6987,14 +7045,16 @@ def patch_drupal_settings() -> Response:
                 errors=(_FieldError(field="password", code="required", message="required"),),
             )
     else:
-        if not isinstance(password_raw, str):
-            raise ValidationError(
-                "password must be a string",
-                errors=(_FieldError(field="password", code="invalid_type", message="must be string"),),
-            )
         password = password_raw
 
-    enabled_raw: Any = body.get("enabled", existing.get("enabled", True))
+    # enabled — explicit takes precedence (incl. null which fails the
+    # isinstance check, raising 400); omitted falls back to existing
+    # or True. The Pydantic field is ``Optional[bool]`` so ``null``
+    # surfaces as None here.
+    if "enabled" in fields_set:
+        enabled_raw: object = body.enabled
+    else:
+        enabled_raw = existing.get("enabled", True)
     if not isinstance(enabled_raw, bool):
         raise ValidationError(
             "enabled must be a boolean",
@@ -7012,31 +7072,54 @@ def patch_drupal_settings() -> Response:
         },
         updated_by=user_id,
     )
-    return jsonify(_serialize_drupal_settings(settings.get_section(DRUPAL_SETTINGS_KEY)))
+    return _drupal_settings_to_out(settings.get_section(DRUPAL_SETTINGS_KEY)), 200
 
 
 @api_bp.route("/admin/settings/drupal", methods=["DELETE"])
 @api_endpoint
-def delete_drupal_settings() -> tuple[Response, int]:
+@document(
+    response_204=Empty,
+    errors=[401, 403],
+    tags=["Admin Settings"],
+    summary="Clear the Drupal settings section",
+    description=(
+        "Removes the drupal section's stored values so the env-var "
+        "fallback applies again on subsequent reads. Idempotent — "
+        "calling this when no section is stored is a no-op and still "
+        "returns 204. Superadmin-only."
+    ),
+)
+def delete_drupal_settings() -> tuple[Empty, int]:
     """Clear the Drupal section so the env-var fallback applies again."""
     require_superadmin()
     SystemSettings(get_db()).clear_section(DRUPAL_SETTINGS_KEY)
-    return Response(status=204), 204
+    return Empty(), 204
 
 
 @api_bp.route("/admin/settings/<section_id>", methods=["PATCH"])
 @api_endpoint
-def patch_settings_section(section_id: str) -> Response:
-    """Partial update of a named CONFIG_SECTIONS section.
-
-    Each key in the request body must match a ``db_key`` defined in the
-    section schema; the value is type-coerced per :class:`ConfigField`.
-    Password fields with a blank string preserve the existing value
-    (mirrors the legacy "leave blank to keep" form behaviour).
-
-    The Drupal section is *not* reachable through this endpoint — its
-    schema is special-cased and lives at /api/v1/admin/settings/drupal.
-    """
+@document(
+    request=GenericSectionPatchIn,
+    response_200=SettingsSectionOut,
+    errors=[400, 401, 403, 404],
+    tags=["Admin Settings"],
+    summary="Update a generic settings section",
+    description=(
+        "Partial update of a named ``CONFIG_SECTIONS`` section. Each "
+        "key in the request body must match a ``db_key`` defined in "
+        "the section schema; the value is type-coerced per "
+        ":class:`ConfigField`. Password fields with a blank string "
+        "preserve the existing value (mirrors the legacy \"leave "
+        "blank to keep\" form behaviour). Unknown keys produce a "
+        "400 listing them. The drupal section is NOT reachable "
+        "through this endpoint — its shape is special-cased and "
+        "lives at ``/admin/settings/drupal``. Superadmin-only."
+    ),
+)
+def patch_settings_section(
+    section_id: str, body: GenericSectionPatchIn
+) -> tuple[SettingsSectionOut, int]:
+    """Partial update of a named CONFIG_SECTIONS section."""
     require_superadmin()
     if section_id == DRUPAL_SETTINGS_KEY:
         raise NotFoundError(
@@ -7046,12 +7129,12 @@ def patch_settings_section(section_id: str) -> Response:
     if section is None:
         raise NotFoundError(f"unknown settings section {section_id!r}")
 
-    body = _require_dict_body()
+    body_dict: dict[str, object] = body.root
     settings = SystemSettings(get_db())
     existing = settings.get_section(section_id) or {}
     db_keys = {f.db_key: f for f in section.fields}
 
-    unknown = [k for k in body.keys() if k not in db_keys]
+    unknown = [k for k in body_dict.keys() if k not in db_keys]
     if unknown:
         raise ValidationError(
             f"unknown field(s) for section {section_id}: {', '.join(unknown)}",
@@ -7062,7 +7145,7 @@ def patch_settings_section(section_id: str) -> Response:
         )
 
     new_values: dict[str, Any] = dict(existing)
-    for db_key, raw in body.items():
+    for db_key, raw in body_dict.items():
         field = db_keys[db_key]
         if field.field_type is FieldType.PASSWORD:
             if raw == "" or raw is None:
@@ -7083,12 +7166,26 @@ def patch_settings_section(section_id: str) -> Response:
 
     user_id = str(current_user.get_id()) if current_user.is_authenticated else None
     settings.set_section(section_id, new_values, updated_by=user_id)
-    return jsonify(_serialize_settings_section(section, settings.get_section(section_id)))
+    return _settings_section_to_out(section, settings.get_section(section_id)), 200
 
 
 @api_bp.route("/admin/settings/<section_id>", methods=["DELETE"])
 @api_endpoint
-def delete_settings_section(section_id: str) -> tuple[Response, int]:
+@document(
+    response_204=Empty,
+    errors=[401, 403, 404],
+    tags=["Admin Settings"],
+    summary="Clear a generic settings section",
+    description=(
+        "Removes the named section's stored values so the env-var "
+        "fallback applies again on subsequent reads. The drupal "
+        "section is NOT reachable through this endpoint — use "
+        "``DELETE /admin/settings/drupal`` instead. Idempotent — "
+        "calling this when no section is stored is a no-op and still "
+        "returns 204. Superadmin-only."
+    ),
+)
+def delete_settings_section(section_id: str) -> tuple[Empty, int]:
     """Clear a named section so the env-var fallback applies again."""
     require_superadmin()
     if section_id == DRUPAL_SETTINGS_KEY:
@@ -7098,7 +7195,7 @@ def delete_settings_section(section_id: str) -> tuple[Response, int]:
     if get_config_section(section_id) is None:
         raise NotFoundError(f"unknown settings section {section_id!r}")
     SystemSettings(get_db()).clear_section(section_id)
-    return Response(status=204), 204
+    return Empty(), 204
 
 
 # ---------------------------------------------------------------------------

@@ -1,5 +1,292 @@
 components:
   schemas:
+    ApiTokenOut:
+      additionalProperties: false
+      description: 'JSON-safe projection of an :class:`ApiToken`.
+
+
+        Mirrors the legacy ``_serialize_token`` helper byte-for-byte.
+
+        The raw token value is NEVER surfaced here — it appears once on
+
+        the ``token`` field of the login envelope and is not persisted
+
+        in plaintext. This model is the token''s metadata only.'
+      properties:
+        created_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Created At
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Description
+        expires_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Expires At
+        id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Id
+        last_used_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Last Used At
+        user_id:
+          title: User Id
+          type: string
+      required:
+      - user_id
+      title: ApiTokenOut
+      type: object
+    AppUserCreateIn:
+      additionalProperties: false
+      description: 'Request body for ``POST /users`` (admin-create).
+
+
+        Distinct from :class:`RegisterIn` because the admin path can
+
+        set ``role`` and ``is_superadmin`` at create time. ``role``
+
+        defaults to ``client`` server-side when absent; ``is_superadmin``
+
+        defaults to false. Both ``email`` and ``password`` are typed
+
+        loosely (``Optional[str]``) to preserve the legacy field-path
+
+        400 envelope.
+
+
+        Note: this endpoint does NOT issue a Bearer token (unlike
+
+        ``/auth/register``) because the admin doesn''t need to become the
+
+        newly-created user.'
+      properties:
+        display_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Display Name
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Email
+        is_superadmin:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Is Superadmin
+        password:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Password
+        role:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Role
+      title: AppUserCreateIn
+      type: object
+    AppUserListOut:
+      additionalProperties: false
+      description: 'Response body for ``GET /users``.
+
+
+        Non-paginated ``{users: [...]}`` envelope. The production user
+
+        count is small (typically <100) so cursor pagination is overkill;
+
+        if the user count ever grows past that, swap to the shared
+
+        cursor-pagination shape.'
+      properties:
+        users:
+          items:
+            $ref: '#/components/schemas/AppUserOut'
+          title: Users
+          type: array
+      required:
+      - users
+      title: AppUserListOut
+      type: object
+    AppUserOut:
+      additionalProperties: false
+      description: 'JSON-safe projection of an :class:`AppUser`.
+
+
+        Mirrors the legacy ``_serialize_app_user`` helper byte-for-byte:
+
+        ``id``, ``email``, ``display_name`` (nullable), ``role`` (enum
+
+        string value), ``is_active``, ``is_superadmin``, plus three
+
+        ISO-8601 timestamps (``created_at``, ``updated_at``,
+
+        ``last_login`` — the last one nullable because never-logged-in
+
+        users carry ``None``).
+
+
+        Deliberately omits ``password_hash``, ``sso_provider``, and
+
+        ``sso_id`` — those are internal-only and never surface on the
+
+        wire.'
+      properties:
+        created_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Created At
+        display_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Display Name
+        email:
+          title: Email
+          type: string
+        id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Id
+        is_active:
+          title: Is Active
+          type: boolean
+        is_superadmin:
+          title: Is Superadmin
+          type: boolean
+        last_login:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Last Login
+        role:
+          title: Role
+          type: string
+        updated_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Updated At
+      required:
+      - email
+      - role
+      - is_active
+      - is_superadmin
+      title: AppUserOut
+      type: object
+    AppUserPatch:
+      additionalProperties: false
+      description: 'Request body for ``PATCH /users/<id>`` (admin-patch).
+
+
+        Adds ``role``, ``is_active``, ``is_superadmin`` over the
+
+        self-service :class:`AuthMePatch` shape. Email is deliberately
+
+        not editable through this endpoint — email is the natural key for
+
+        SSO matching and changing it can orphan OAuth-linked sessions.
+
+
+        ``is_superadmin`` is not gated against self-demotion at the API
+
+        layer; the operator can lock themselves out and would need to
+
+        recover via direct DB access.'
+      properties:
+        display_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Display Name
+        is_active:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Is Active
+        is_superadmin:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Is Superadmin
+        password:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Password
+        role:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Role
+      title: AppUserPatch
+      type: object
+    AuthMePatch:
+      additionalProperties: false
+      description: 'Request body for ``PATCH /auth/me``.
+
+
+        Self-service profile edits — only ``display_name`` and
+
+        ``password`` are patchable. ``email`` is the natural key for SSO
+
+        matching and the role/superadmin flags are admin-only mutations
+
+        (use ``PATCH /users/<id>`` for those). Both fields are
+
+        ``Optional`` because PATCH semantics mean absent ⇒ no change.
+
+
+        Password is typed loosely (``Optional[str]``) so the existing
+
+        field-path 400 envelope continues to fire for invalid values.'
+      properties:
+        display_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Display Name
+        password:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Password
+      title: AuthMePatch
+      type: object
     AvailableGroupOut:
       additionalProperties: false
       description: 'A group entry on the project-member list response.
@@ -29,6 +316,53 @@ components:
       - name
       - is_system
       title: AvailableGroupOut
+      type: object
+    CurrentUserOut:
+      additionalProperties: false
+      description: 'Response body for ``GET /users/me``.
+
+
+        Intentionally narrower than :class:`AppUserOut` — the legacy
+
+        handler surfaced only ``user_id``, ``email``, ``display_name``,
+
+        and ``is_superadmin``. SPAs that need the fuller surface
+
+        (``role``, timestamps, ``is_active``) should call ``GET
+
+        /auth/me`` instead.
+
+
+        ``user_id`` is ``Optional[str]`` because the legacy projection
+
+        coerced ``None`` IDs to ``"None"`` then back to ``None`` —
+
+        preserving that nullability rather than coercing to ``""``.'
+      properties:
+        display_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Display Name
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Email
+        is_superadmin:
+          title: Is Superadmin
+          type: boolean
+        user_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: User Id
+      required:
+      - is_superadmin
+      title: CurrentUserOut
       type: object
     DiscoveredPageIn:
       additionalProperties: false
@@ -1271,6 +1605,29 @@ components:
       - average_duration_ms
       title: ExecutionStatsOut
       type: object
+    ForgotPasswordIn:
+      additionalProperties: false
+      description: 'Request body for ``POST /auth/forgot-password``.
+
+
+        ``email`` is ``Optional[str]`` because the handler ALWAYS
+
+        returns 202 — even on missing/unknown/inactive email — to defend
+
+        against email-enumeration attacks. Tightening the schema here
+
+        would let a caller distinguish "missing field" from "unknown
+
+        email" via the 400-vs-202 status difference.'
+      properties:
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Email
+      title: ForgotPasswordIn
+      type: object
     GroupIn:
       additionalProperties: false
       description: 'POST/PUT body for creating or replacing a permission group.
@@ -1465,6 +1822,76 @@ components:
       - display_name
       - status
       title: JobRestartOut
+      type: object
+    LoginIn:
+      additionalProperties: false
+      description: 'Request body for ``POST /auth/login``.
+
+
+        ``email`` and ``password`` are typed as ``Optional[str]`` because
+
+        the legacy handler surfaces an opaque ``invalid_credentials`` 401
+
+        on missing/non-string values rather than a per-field 400.
+
+        Tightening the schema here would bump that path to a 400 and
+
+        leak which field is missing — the opaque 401 is deliberate
+
+        (defends against email-enumeration attacks).
+
+
+        ``description`` is a free-form label persisted with the minted
+
+        :class:`ApiToken` so a user can later identify the session on the
+
+        ``/api/v1/tokens`` page.'
+      properties:
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Description
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Email
+        password:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Password
+      title: LoginIn
+      type: object
+    LoginOut:
+      additionalProperties: false
+      description: 'Response body for ``POST /auth/login``.
+
+
+        Returns ``{token, token_record, user}`` — the raw Bearer token,
+
+        its persisted metadata, and the user record. The token value is
+
+        returned ONCE; clients must persist it because the database only
+
+        stores its hash.'
+      properties:
+        token:
+          title: Token
+          type: string
+        token_record:
+          $ref: '#/components/schemas/ApiTokenOut'
+        user:
+          $ref: '#/components/schemas/AppUserOut'
+      required:
+      - token
+      - token_record
+      - user
+      title: LoginOut
       type: object
     MemberIn:
       additionalProperties: false
@@ -4046,6 +4473,68 @@ components:
       - project_id
       title: RecordingUploadIn
       type: object
+    RegisterIn:
+      additionalProperties: false
+      description: 'Request body for ``POST /auth/register``.
+
+
+        Same field-path / loose-typing convention as :class:`LoginIn`:
+
+        the handler does the actual validation and surfaces field-path
+
+        400s on missing email, short password, or duplicate email.
+
+
+        ``display_name`` is optional; when absent the user''s email
+
+        local-part is used for display.'
+      properties:
+        display_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Display Name
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Email
+        password:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Password
+      title: RegisterIn
+      type: object
+    RegisterOut:
+      additionalProperties: false
+      description: 'Response body for ``POST /auth/register`` (status 201).
+
+
+        Same envelope as :class:`LoginOut` — register-and-token-in-one
+
+        saves the new account from a second roundtrip to ``/auth/login``.
+
+        The handler also sets a ``Location`` header pointing at
+
+        ``/api/v1/users/<new_user_id>``.'
+      properties:
+        token:
+          title: Token
+          type: string
+        token_record:
+          $ref: '#/components/schemas/ApiTokenOut'
+        user:
+          $ref: '#/components/schemas/AppUserOut'
+      required:
+      - token
+      - token_record
+      - user
+      title: RegisterOut
+      type: object
     ReportCreatedOut:
       additionalProperties: false
       description: 'Response body (202) for every report-generation POST.
@@ -4144,6 +4633,59 @@ components:
           default: null
           title: Website Id
       title: ReportIn
+      type: object
+    ResetPasswordIn:
+      additionalProperties: false
+      description: 'Request body for ``POST /auth/reset-password``.
+
+
+        ``token`` is the signed value emitted by the email''s reset link
+
+        (see ``auto_a11y.web.routes.auth.generate_reset_token``).
+
+        ``password`` is the new password; the handler enforces ``len >=
+
+        6``. Both are typed loosely (``Optional[str]``) to keep the
+
+        legacy field-path 400 envelope in play.'
+      properties:
+        password:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Password
+        token:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Token
+      title: ResetPasswordIn
+      type: object
+    ResetPasswordOut:
+      additionalProperties: false
+      description: 'Response body for ``POST /auth/reset-password``.
+
+
+        Same envelope as :class:`LoginOut`. On a successful reset the
+
+        handler mints a fresh Bearer token so the caller lands on the
+
+        app authenticated without a redirect-and-login dance.'
+      properties:
+        token:
+          title: Token
+          type: string
+        token_record:
+          $ref: '#/components/schemas/ApiTokenOut'
+        user:
+          $ref: '#/components/schemas/AppUserOut'
+      required:
+      - token
+      - token_record
+      - user
+      title: ResetPasswordOut
       type: object
     ScheduleIn:
       additionalProperties: false
@@ -5754,6 +6296,60 @@ components:
       - is_valid
       title: ShareTokenOut
       type: object
+    SsoCallbackOut:
+      additionalProperties: false
+      description: 'Response body for ``GET /auth/sso/<provider>/callback``.
+
+
+        Extends the login envelope with a ``provider`` field so SPAs
+
+        that share a single callback handler across providers can branch
+
+        on it without parsing the URL.'
+      properties:
+        provider:
+          title: Provider
+          type: string
+        token:
+          title: Token
+          type: string
+        token_record:
+          $ref: '#/components/schemas/ApiTokenOut'
+        user:
+          $ref: '#/components/schemas/AppUserOut'
+      required:
+      - token
+      - token_record
+      - user
+      - provider
+      title: SsoCallbackOut
+      type: object
+    SsoUrlOut:
+      additionalProperties: false
+      description: 'Response body for ``GET /auth/sso/<provider>/url``.
+
+
+        Returns the OAuth authorization URL the client should redirect
+
+        the user to (e.g. ``window.location.href = response.url``). The
+
+        matching state is written to the Flask session so the callback
+
+        can complete the exchange. ``provider`` echoes the path param
+
+        for symmetry with :class:`SsoCallbackOut`.'
+      properties:
+        provider:
+          title: Provider
+          type: string
+        url:
+          title: Url
+          type: string
+      required:
+      - provider
+      - url
+      title: SsoUrlOut
+      type: object
     TestResultCompareIn:
       additionalProperties: false
       description: 'Request body for ``POST /api/v1/test-results/compare``.
@@ -6461,6 +7057,311 @@ info:
   version: 1.0.0
 openapi: 3.1.0
 paths:
+  /auth/forgot-password:
+    post:
+      description: Always returns 202 — even if the email is missing, unknown, or
+        matches an inactive user — so an attacker can't probe which addresses are
+        registered. When the email matches an active user, the handler generates a
+        signed reset token and dispatches the standard ``auth.py`` reset email. Email
+        delivery failures are swallowed (logged but not surfaced) so the response
+        time doesn't leak which branch fired.
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordIn'
+        required: true
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Empty'
+          description: Accepted
+      security: []
+      summary: Request a password-reset email
+      tags:
+      - Auth
+  /auth/login:
+    post:
+      description: Exchanges email and password for a freshly-minted API Bearer token.
+        Returns the raw token ONCE in the ``token`` field — the database stores only
+        its hash, so the caller MUST persist it client-side. On any failure (unknown
+        email, wrong password, deactivated user) returns 401 with an opaque ``invalid
+        credentials`` message so the caller can't distinguish which case fired (defends
+        against email enumeration). On success the handler records the login (bumps
+        ``login_count``, clears ``failed_login_count``) and mints the token with the
+        supplied ``description`` label so the user can later identify the session
+        on the tokens page.
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginIn'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+      security: []
+      summary: Log in with email + password
+      tags:
+      - Auth
+  /auth/logout:
+    post:
+      description: Revokes the Bearer token used to authorize the call. Idempotent
+        — a request with no token or an already-revoked token still returns 204. The
+        motivation is a "log out" button on the client that should always succeed
+        even if the session expired between the user clicking and the server seeing
+        the request. Session-cookie callers still need to hit the legacy ``/auth/logout``
+        HTML route to clear the cookie — this endpoint only touches the Bearer side.
+      parameters: []
+      responses:
+        '204':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Empty'
+          description: No Content
+      security: []
+      summary: Revoke the current Bearer token
+      tags:
+      - Auth
+  /auth/me:
+    get:
+      description: Returns the full :class:`AppUser` projection (``role``, ``is_active``,
+        ``is_superadmin``, and the user's timestamps) so SPAs can render an authenticated
+        profile without a separate ``GET /users/<id>`` call. The richer counterpart
+        of ``GET /users/me`` (which is intentionally minimal — id, email, display_name,
+        is_superadmin only).
+      parameters: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppUserOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Get the authenticated user (full surface)
+      tags:
+      - Auth
+    patch:
+      description: Self-service profile edits — only ``display_name`` and ``password``
+        are patchable. The old password is NOT required for Bearer-authenticated calls
+        because the bearer is itself proof of identity; clients that want a "current
+        password" gate should re-prompt in the UI. Email and the role/superadmin flags
+        are deliberately not patchable here — use ``PATCH /users/<id>`` for those
+        (superadmin-only).
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthMePatch'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppUserOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Patch the authenticated user's editable profile
+      tags:
+      - Auth
+  /auth/register:
+    post:
+      description: Creates a new :class:`AppUser` and returns the same envelope as
+        ``POST /auth/login`` — a freshly minted Bearer token plus the user record
+        — so a client can register and immediately make authenticated requests without
+        a second roundtrip. The response sets a ``Location`` header pointing at ``/api/v1/users/<new_user_id>``.
+        The email dedup check is case-insensitive; a duplicate surfaces as a 400 with
+        the field path ``email`` and code ``duplicate``.
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterIn'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterOut'
+          description: Created
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security: []
+      summary: Self-register a new account
+      tags:
+      - Auth
+  /auth/reset-password:
+    post:
+      description: 'Completes a password reset using the signed token from the email
+        link. ``token`` is the value emitted by ``generate_reset_token``; ``password``
+        must be at least 6 characters. On success returns 200 with the same envelope
+        as ``POST /auth/login`` (raw Bearer token + token record + user) so the caller
+        can land on the app authenticated without a redirect-and-login dance. Errors:
+        400 on invalid/expired token or short password; 404 if the token decodes but
+        the email no longer maps to a user.'
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordIn'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResetPasswordOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security: []
+      summary: Complete a password reset
+      tags:
+      - Auth
+  /auth/sso/{provider}/callback:
+    get:
+      description: Completes the OAuth dance for the named provider. The provider
+        redirects the user here with ``?code=...`` and matching state; the handler
+        exchanges that for ID-token claims, looks up the matching :class:`AppUser`
+        by email (no auto-provisioning — same as the legacy callbacks), records the
+        login, and mints a Bearer token. Returns the login envelope (``token`` + ``token_record``
+        + ``user``) plus a ``provider`` field so SPAs that share a single callback
+        handler across providers can branch on it. Returns 401 on OAuth failure, unknown
+        user, or deactivated account; 404 on unknown/disabled provider.
+      parameters:
+      - in: path
+        name: provider
+        required: true
+        schema: &id001
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SsoCallbackOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security: []
+      summary: Complete the SSO callback and mint a Bearer token
+      tags:
+      - Auth
+  /auth/sso/{provider}/url:
+    get:
+      description: Builds the OAuth authorization URL for the named provider (``microsoft``
+        or ``google``). The client is responsible for redirecting the user to it (e.g.
+        ``window.location.href = response.url``). The accompanying state (MSAL flow
+        or Google session info) is written to the Flask session so the callback can
+        complete the exchange. Returns 404 for an unknown provider or a provider that
+        is not enabled in the server config.
+      parameters:
+      - in: path
+        name: provider
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SsoUrlOut'
+          description: OK
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security: []
+      summary: Get the SSO authorization URL for a provider
+      tags:
+      - Auth
   /discovered-pages/{page_id}:
     delete:
       description: Deletes the discovered page. Returns ``204 No Content`` with an
@@ -6469,8 +7370,7 @@ paths:
       - in: path
         name: page_id
         required: true
-        schema: &id001
-          type: string
+        schema: *id001
       responses:
         '204':
           content:
@@ -11091,6 +11991,116 @@ paths:
       summary: List sibling state test results
       tags:
       - Test results
+  /users:
+    get:
+      description: Returns the full list of :class:`AppUser` accounts with no pagination
+        — the legacy admin UI rendered all users on one page; the production database
+        has a small enough user count (typically <100) for that to be fine. If the
+        user count ever grows past that, swap to the shared cursor-pagination envelope.
+      parameters: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppUserListOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: List all app users (superadmin-only)
+      tags:
+      - Users
+    post:
+      description: Admin path for creating a user. ``role`` defaults to ``client``
+        and must be one of the :class:`UserRole` string values; ``is_superadmin``
+        defaults to false. Distinct from ``POST /auth/register`` because the admin
+        path can set ``role`` + ``is_superadmin`` at create time and does NOT issue
+        a Bearer token (the admin doesn't need to become the new user). Returns 201
+        with a ``Location`` header pointing at ``/api/v1/users/<new_user_id>``.
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppUserCreateIn'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppUserOut'
+          description: Created
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Admin-create a new user (superadmin-only)
+      tags:
+      - Users
+  /users/me:
+    get:
+      description: 'Returns a narrow projection of the authenticated user: ``user_id``,
+        ``email``, ``display_name``, ``is_superadmin``. Useful for SPAs that need
+        to know who they''re logged in as without rolling their own session-introspection
+        endpoint. Callers that need the full surface (``role``, timestamps, ``is_active``)
+        should call ``GET /auth/me`` instead.'
+      parameters: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUserOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Get the currently-authenticated user (minimal surface)
+      tags:
+      - Users
   /users/search:
     get:
       description: Replaces the legacy ``GET /members/api/search-users``. Searches
@@ -11123,6 +12133,142 @@ paths:
       - bearerAuth: []
       - sessionAuth: []
       summary: Search active app users
+      tags:
+      - Users
+  /users/{user_id}:
+    delete:
+      parameters:
+      - in: path
+        name: user_id
+        required: true
+        schema: *id001
+      responses:
+        '204':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Empty'
+          description: No Content
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Admin-delete a user (superadmin-only)
+      tags:
+      - Users
+    get:
+      parameters:
+      - in: path
+        name: user_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppUserOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Get a single user by id (superadmin-only)
+      tags:
+      - Users
+    patch:
+      description: Patches any combination of ``display_name``, ``password``, ``role``,
+        ``is_active``, ``is_superadmin``. Email is deliberately not editable through
+        this endpoint — email is the natural key for SSO matching and changing it
+        can orphan OAuth-linked sessions. ``is_superadmin`` is NOT gated against self-demotion
+        at the API layer; the operator can lock themselves out and would need to recover
+        via direct DB access.
+      parameters:
+      - in: path
+        name: user_id
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppUserPatch'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppUserOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Admin-patch a user (superadmin-only)
       tags:
       - Users
   /websites/{website_id}:

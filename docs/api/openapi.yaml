@@ -1,0 +1,62 @@
+components:
+  schemas:
+    Problem:
+      additionalProperties: false
+      description: RFC 7807 Problem Details for HTTP APIs.
+      properties:
+        detail:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Detail
+        errors:
+          anyOf:
+          - items:
+              additionalProperties: true
+              type: object
+            type: array
+          - type: 'null'
+          default: null
+          title: Errors
+        instance:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Instance
+        status:
+          title: Status
+          type: integer
+        title:
+          title: Title
+          type: string
+        type:
+          default: about:blank
+          title: Type
+          type: string
+      required:
+      - title
+      - status
+      title: Problem
+      type: object
+  securitySchemes:
+    bearerAuth:
+      bearerFormat: Token
+      description: 'API token issued via /auth/tokens. Prefix: a11y_'
+      scheme: bearer
+      type: http
+    sessionAuth:
+      description: Flask-Login session cookie.
+      in: cookie
+      name: session
+      type: apiKey
+info:
+  description: Documented surface for /api/v1/*.
+  title: Auto A11y REST API
+  version: 1.0.0
+openapi: 3.1.0
+paths: {}
+servers:
+- description: Live
+  url: /api/v1

@@ -25,6 +25,7 @@ files = [
     # excluded (no per-tool exclude knob in mypy; we just don't list them).
     "scripts/port_pdfmax_remediation_guide.py",
     "scripts/generate_pdf_checks_ftl.py",
+    "scripts/generate_openapi.py",
     # auto_a11y/web/api/schemas/**/*.py — covered by the broader "auto_a11y" entry
     #   above. Adding a sub-path glob here causes mypy's "Duplicate module" error.
     # auto_a11y/web/api/openapi/**/*.py — same.
@@ -69,6 +70,7 @@ include = [
     # PDF audit engine port — Phase 7.
     "scripts/port_pdfmax_remediation_guide.py",
     "scripts/generate_pdf_checks_ftl.py",
+    "scripts/generate_openapi.py",
     # auto_a11y/web/api/schemas/**/*.py — covered by the broader "auto_a11y" entry
     #   above. Adding a sub-path glob here causes pyright's duplicate-module error.
     # auto_a11y/web/api/openapi/**/*.py — same.

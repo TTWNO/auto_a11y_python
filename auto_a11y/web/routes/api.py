@@ -120,6 +120,25 @@ from auto_a11y.web.api.schemas.members import (
     UserSearchListOut,
     UserSearchOut,
 )
+from auto_a11y.web.api.schemas.drupal import (
+    DrupalAuditListOut,
+    DrupalAuditOut,
+    DrupalAutomatedUploadIn,
+    DrupalAutomatedUploadOut,
+    DrupalDiscoveredPageListOut,
+    DrupalDiscoveredPageOut,
+    DrupalImportIssuesIn,
+    DrupalImportPagesIn,
+    DrupalImportSummaryOut,
+    DrupalIssueListOut,
+    DrupalIssueOut,
+    DrupalRecordingListOut,
+    DrupalRecordingOut,
+    DrupalSyncBucketCounts,
+    DrupalSyncStatusOut,
+    DrupalUploadIn,
+    DrupalUploadOut,
+)
 from auto_a11y.web.api.schemas.share_tokens import (
     ShareTokenCreatedOut,
     ShareTokenIn,
@@ -11421,20 +11440,24 @@ def _drupal_client_or_503() -> Any:
 
 @api_bp.route("/drupal/audits", methods=["GET"])
 @api_endpoint
-def drupal_list_audits_rest() -> tuple[Response, int] | Response:
-    """List every audit visible in the configured Drupal instance.
-
-    Replaces the legacy ``/drupal/audits/list`` JSON route. Authenticated;
-    no project scope because the caller may be picking a Drupal audit
-    to *link* to a project that doesn't yet have ``drupal_audit_name``
-    set.
-
-    Errors:
-
-    - **409** — Drupal integration is not enabled
-    - **502** — upstream Drupal returned a non-2xx (mapped to
-      :class:`ConflictError` since the API doesn't have a 502 helper)
-    """
+@document(
+    response_200=DrupalAuditListOut,
+    errors=[401, 409],
+    tags=["DrupalSync"],
+    summary="List Drupal audits",
+    description=(
+        "Lists every audit visible in the configured Drupal "
+        "instance. Authenticated; no project scope because the "
+        "caller may be picking a Drupal audit to link to a project "
+        "that doesn't yet have ``drupal_audit_name`` set. A 409 "
+        "is returned when the Drupal integration is not enabled or "
+        "when the upstream Drupal returns a non-2xx (the REST "
+        "surface doesn't have a 502 helper so upstream failures "
+        "map to 409)."
+    ),
+)
+def drupal_list_audits_rest() -> tuple[DrupalAuditListOut, int]:
+    """List every audit visible in the configured Drupal instance."""
     require_authenticated()
     from auto_a11y.drupal.config import get_drupal_config
 
@@ -11457,38 +11480,56 @@ def drupal_list_audits_rest() -> tuple[Response, int] | Response:
             timeout=10,
         )
         response.raise_for_status()
-        audits = response.json()
+        audits_raw: object = response.json()
     except Exception as exc:  # noqa: BLE001
         raise ConflictError(f"Drupal upstream error: {exc}") from exc
 
-    return jsonify({
-        "audits": sorted(
-            [
-                {
-                    "title": a.get("title", ""),
-                    "uuid": a.get("uuid") or a.get("uuId"),
-                    "nid": a.get("nid"),
-                }
-                for a in audits
-            ],
-            key=lambda r: (r["title"] or "").lower(),
-        ),
-    })
+    audits_list: list[object] = (
+        list(cast(list[object], audits_raw))
+        if isinstance(audits_raw, list) else []
+    )
+    audit_models: list[DrupalAuditOut] = []
+    for entry in audits_list:
+        if not isinstance(entry, dict):
+            continue
+        entry_obj: dict[object, object] = cast(dict[object, object], entry)
+        title_raw: object = entry_obj.get("title", "")
+        title = title_raw if isinstance(title_raw, str) else ""
+        uuid_lookup: object = entry_obj.get("uuid")
+        uuu_lookup: object = entry_obj.get("uuId")
+        uuid_raw: object = uuid_lookup or uuu_lookup
+        uuid_val: str | None = (
+            uuid_raw if isinstance(uuid_raw, str) else None
+        )
+        nid_raw: object = entry_obj.get("nid")
+        nid_val: int | None = (
+            nid_raw if isinstance(nid_raw, int) else None
+        )
+        audit_models.append(
+            DrupalAuditOut(title=title, uuid=uuid_val, nid=nid_val)
+        )
+    audit_models.sort(key=lambda r: (r.title or "").lower())
+    return DrupalAuditListOut(audits=audit_models), 200
 
 
 @api_bp.route("/drupal/projects/<project_id>/sync-status", methods=["GET"])
 @api_endpoint
-def drupal_sync_status_rest(
-    project_id: str,
-) -> tuple[Response, int] | Response:
-    """Return per-project sync counts: pages, recordings, errors.
-
-    Replaces the legacy ``/drupal/projects/<id>/sync/status``. Returns
-    aggregates over the project's ``discovered_pages`` and
-    ``recordings`` collections — synced/pending/failed counts plus the
-    most-recent sync timestamp across both. Up to 5 most-recent error
-    messages are included for surfacing in a sync-status banner.
-    """
+@document(
+    response_200=DrupalSyncStatusOut,
+    errors=[401, 403, 404],
+    tags=["DrupalSync"],
+    summary="Per-project Drupal sync status",
+    description=(
+        "Replaces the legacy ``/drupal/projects/<id>/sync/status``. "
+        "Returns aggregates over the project's ``discovered_pages`` "
+        "and ``recordings`` collections — synced / pending / failed "
+        "counts plus the most-recent sync timestamp across both. "
+        "Up to 5 most-recent error messages are included for "
+        "surfacing in a sync-status banner."
+    ),
+)
+def drupal_sync_status_rest(project_id: str) -> tuple[DrupalSyncStatusOut, int]:
+    """Return per-project sync counts: pages, recordings, errors."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT,
         project_id=project_id,
@@ -11529,42 +11570,52 @@ def drupal_sync_status_rest(
         if isinstance(err, str) and err:
             sync_errors.append(f"Recording '{r.get('title')}': {err}")
 
-    return jsonify({
-        "drupal_enabled": drupal_enabled,
-        "project_name": project.name,
-        "discovered_pages": {
-            "total": len(pages),
-            "synced": _count(pages, "synced"),
-            "pending": _count(pages, "not_synced") + _count(pages, "pending"),
-            "failed": _count(pages, "sync_failed"),
-        },
-        "recordings": {
-            "total": len(recordings),
-            "synced": _count(recordings, "synced"),
-            "pending": _count(recordings, "not_synced") + _count(recordings, "pending"),
-            "failed": _count(recordings, "sync_failed"),
-        },
-        "last_sync_time": (
+    return DrupalSyncStatusOut(
+        drupal_enabled=drupal_enabled,
+        project_name=project.name,
+        discovered_pages=DrupalSyncBucketCounts(
+            total=len(pages),
+            synced=_count(pages, "synced"),
+            pending=_count(pages, "not_synced") + _count(pages, "pending"),
+            failed=_count(pages, "sync_failed"),
+        ),
+        recordings=DrupalSyncBucketCounts(
+            total=len(recordings),
+            synced=_count(recordings, "synced"),
+            pending=(
+                _count(recordings, "not_synced")
+                + _count(recordings, "pending")
+            ),
+            failed=_count(recordings, "sync_failed"),
+        ),
+        last_sync_time=(
             last_sync_time.isoformat() if last_sync_time else None
         ),
-        "sync_errors": sync_errors[:5],
-    })
+        sync_errors=sync_errors[:5],
+    ), 200
 
 
 @api_bp.route(
     "/drupal/projects/<project_id>/discovered-pages", methods=["GET"]
 )
 @api_endpoint
+@document(
+    response_200=DrupalDiscoveredPageListOut,
+    errors=[401, 403, 404],
+    tags=["DrupalSync"],
+    summary="List discovered pages with Drupal sync state",
+    description=(
+        "Lists the project's discovered pages projected to the "
+        "Drupal-sync view. Distinct from the §5.1 / §5.3 "
+        "discovered-pages list — that one returns the page's full "
+        "structural fields; this one surfaces only the fields the "
+        "Drupal sync UI needs plus all ``drupal_*`` sync state."
+    ),
+)
 def drupal_list_discovered_pages_rest(
     project_id: str,
-) -> tuple[Response, int] | Response:
-    """List discovered pages with their Drupal-sync state.
-
-    Distinct from :func:`list_discovered_pages_for_project_rest` (the
-    §5.1 / §5.3 endpoint) — that one returns the page's structural
-    fields; this one surfaces the ``drupal_*`` sync fields used by the
-    Drupal sync UI.
-    """
+) -> tuple[DrupalDiscoveredPageListOut, int]:
+    """List discovered pages with their Drupal-sync state."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT,
         project_id=project_id,
@@ -11573,34 +11624,47 @@ def drupal_list_discovered_pages_rest(
         raise NotFoundError(f"project {project_id} not found")
 
     pages = list(get_db().discovered_pages.find({"project_id": project_id}))
-    items: list[dict[str, Any]] = []
+    items: list[DrupalDiscoveredPageOut] = []
     for doc in pages:
         page = DiscoveredPage.from_dict(doc)
-        items.append({
-            "id": page.id,
-            "title": page.title,
-            "url": page.url,
-            "interested_because": page.interested_because,
-            "page_elements": page.page_elements,
-            "drupal_uuid": page.drupal_uuid,
-            "drupal_sync_status": page.drupal_sync_status.value,
-            "drupal_last_synced": (
+        items.append(DrupalDiscoveredPageOut(
+            id=page.id,
+            title=page.title,
+            url=page.url,
+            interested_because=list(page.interested_because),
+            page_elements=list(page.page_elements),
+            drupal_uuid=page.drupal_uuid,
+            drupal_sync_status=page.drupal_sync_status.value,
+            drupal_last_synced=(
                 page.drupal_last_synced.isoformat()
                 if page.drupal_last_synced else None
             ),
-            "is_synced": page.is_synced,
-            "needs_sync": page.needs_sync,
-        })
-    return jsonify({"discovered_pages": items})
+            is_synced=page.is_synced,
+            needs_sync=page.needs_sync,
+        ))
+    return DrupalDiscoveredPageListOut(discovered_pages=items), 200
 
 
 @api_bp.route(
     "/drupal/projects/<project_id>/recordings", methods=["GET"]
 )
 @api_endpoint
+@document(
+    response_200=DrupalRecordingListOut,
+    errors=[401, 403, 404],
+    tags=["DrupalSync"],
+    summary="List recordings with Drupal sync state",
+    description=(
+        "Lists the project's recordings projected to the "
+        "Drupal-sync view. Each row carries the recording's "
+        "structural fields (title, duration, auditor, type, issue "
+        "count, component names) plus the full ``drupal_*`` sync "
+        "state."
+    ),
+)
 def drupal_list_recordings_rest(
     project_id: str,
-) -> tuple[Response, int] | Response:
+) -> tuple[DrupalRecordingListOut, int]:
     """List the project's recordings with their Drupal-sync state."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT,
@@ -11610,35 +11674,46 @@ def drupal_list_recordings_rest(
         raise NotFoundError(f"project {project_id} not found")
 
     docs = list(get_db().recordings.find({"project_id": project_id}))
-    items: list[dict[str, Any]] = []
+    items: list[DrupalRecordingOut] = []
     for doc in docs:
         rec = Recording.from_dict(doc)
-        items.append({
-            "id": rec.id,
-            "title": rec.title,
-            "duration": rec.duration,
-            "auditor_name": rec.auditor_name,
-            "recording_type": rec.recording_type.value,
-            "total_issues": rec.total_issues,
-            "component_names": rec.component_names,
-            "drupal_video_uuid": rec.drupal_video_uuid,
-            "drupal_video_nid": rec.drupal_video_nid,
-            "drupal_sync_status": rec.drupal_sync_status.value,
-            "drupal_last_synced": (
+        items.append(DrupalRecordingOut(
+            id=rec.id,
+            title=rec.title,
+            duration=rec.duration,
+            auditor_name=rec.auditor_name,
+            recording_type=rec.recording_type.value,
+            total_issues=rec.total_issues,
+            component_names=list(rec.component_names),
+            drupal_video_uuid=rec.drupal_video_uuid,
+            drupal_video_nid=rec.drupal_video_nid,
+            drupal_sync_status=rec.drupal_sync_status.value,
+            drupal_last_synced=(
                 rec.drupal_last_synced.isoformat()
                 if rec.drupal_last_synced else None
             ),
-            "is_synced": rec.is_synced,
-            "needs_sync": rec.needs_sync,
-        })
-    return jsonify({"recordings": items})
+            is_synced=rec.is_synced,
+            needs_sync=rec.needs_sync,
+        ))
+    return DrupalRecordingListOut(recordings=items), 200
 
 
 @api_bp.route("/drupal/projects/<project_id>/issues", methods=["GET"])
 @api_endpoint
+@document(
+    response_200=DrupalIssueListOut,
+    errors=[401, 403, 404],
+    tags=["DrupalSync"],
+    summary="List issues with Drupal sync state",
+    description=(
+        "Lists the project's standalone issues (not "
+        ":class:`RecordingIssue` — those cascade through the parent "
+        "recording's sync state) projected to the Drupal-sync view."
+    ),
+)
 def drupal_list_issues_rest(
     project_id: str,
-) -> tuple[Response, int] | Response:
+) -> tuple[DrupalIssueListOut, int]:
     """List the project's Drupal-bound issues with their sync state."""
     from auto_a11y.models import Issue
 
@@ -11650,66 +11725,58 @@ def drupal_list_issues_rest(
         raise NotFoundError(f"project {project_id} not found")
 
     docs = list(get_db().issues.find({"project_id": project_id}))
-    items: list[dict[str, Any]] = []
+    items: list[DrupalIssueOut] = []
     for doc in docs:
         issue = Issue.from_dict(doc)
-        items.append({
-            "id": issue.id,
-            "title": issue.title,
-            "impact": issue.impact.value,
-            "issue_type": issue.issue_type,
-            "location_on_page": issue.location_on_page,
-            "wcag_criteria": issue.wcag_criteria,
-            "source_type": issue.source_type,
-            "detection_method": issue.detection_method,
-            "status": issue.status,
-            "drupal_uuid": issue.drupal_uuid,
-            "drupal_nid": issue.drupal_nid,
-            "drupal_sync_status": issue.drupal_sync_status.value,
-            "drupal_last_synced": (
+        items.append(DrupalIssueOut(
+            id=issue.id,
+            title=issue.title,
+            impact=issue.impact.value,
+            issue_type=issue.issue_type,
+            location_on_page=issue.location_on_page,
+            wcag_criteria=list(issue.wcag_criteria),
+            source_type=issue.source_type,
+            detection_method=issue.detection_method,
+            status=issue.status,
+            drupal_uuid=issue.drupal_uuid,
+            drupal_nid=issue.drupal_nid,
+            drupal_sync_status=issue.drupal_sync_status.value,
+            drupal_last_synced=(
                 issue.drupal_last_synced.isoformat()
                 if issue.drupal_last_synced else None
             ),
-            "is_synced": issue.is_synced,
-            "needs_sync": issue.needs_sync,
-        })
-    return jsonify({"issues": items})
-
-
-def _aggregate_result() -> dict[str, Any]:
-    """Empty aggregate-result envelope the action routes return."""
-    return {
-        "success_count": 0,
-        "failure_count": 0,
-        "skipped_count": 0,
-        "errors": [],  # list[{item, error}]
-    }
+            is_synced=issue.is_synced,
+            needs_sync=issue.needs_sync,
+        ))
+    return DrupalIssueListOut(issues=items), 200
 
 
 @api_bp.route(
     "/drupal/projects/<project_id>/upload", methods=["POST"]
 )
 @api_endpoint
+@document(
+    request=DrupalUploadIn,
+    response_200=DrupalUploadOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["DrupalSync"],
+    summary="Upload selected items to Drupal",
+    description=(
+        "Pushes selected discovered-pages, recordings, and issues "
+        "to Drupal. All three ID arrays are optional; missing or "
+        "empty arrays simply skip that resource type. The action "
+        "runs synchronously and returns an aggregate summary once "
+        "the loop finishes. Unlike the legacy NDJSON streaming "
+        "counterpart, there is no per-item progress channel — "
+        "clients that need real-time feedback should keep using "
+        "``/drupal/projects/<id>/sync/upload`` on the HTML "
+        "blueprint."
+    ),
+)
 def drupal_upload_rest(
-    project_id: str,
-) -> tuple[Response, int] | Response:
-    """Push selected discovered-pages / recordings / issues to Drupal.
-
-    Body:
-
-        {
-          "discovered_page_ids": ["...", ...],   // optional
-          "recording_ids":       ["...", ...],   // optional
-          "issue_ids":           ["...", ...],   // optional
-          "options": {"include_french": bool}    // optional
-        }
-
-    The action runs synchronously and returns an aggregate summary
-    once the loop finishes. Unlike the legacy NDJSON streaming
-    counterpart, there is no per-item progress channel — clients that
-    need real-time feedback should keep using ``/drupal/projects/<id>/
-    sync/upload`` on the HTML blueprint.
-    """
+    project_id: str, body: DrupalUploadIn,
+) -> tuple[DrupalUploadOut, int]:
+    """Push selected discovered-pages / recordings / issues to Drupal."""
     require_project_role(
         UserRole.ADMIN, UserRole.AUDITOR, project_id=project_id,
     )
@@ -11726,16 +11793,12 @@ def drupal_upload_rest(
     )
     from auto_a11y.models import RecordingIssue
 
-    body = _require_dict_body() if request.data else {}
-    page_ids = _coerce_str_list(body.get("discovered_page_ids") or [])
-    recording_ids = _coerce_str_list(body.get("recording_ids") or [])
-    issue_ids = _coerce_str_list(body.get("issue_ids") or [])
-    options_any: Any = body.get("options", {})
-    options: dict[str, Any] = (
-        cast(dict[str, Any], options_any)
-        if isinstance(options_any, dict) else {}
+    page_ids = list(body.discovered_page_ids or [])
+    recording_ids = list(body.recording_ids or [])
+    issue_ids = list(body.issue_ids or [])
+    include_french = bool(
+        body.options.include_french if body.options is not None else False
     )
-    include_french = bool(options.get("include_french", False))
 
     client = _drupal_client_or_503()
     audit_uuid = _drupal_audit_uuid_or_400(project)
@@ -11750,7 +11813,10 @@ def drupal_upload_rest(
     recording_exporter = RecordingExporter(client)
     issue_exporter = IssueExporter(client, taxonomies.cache, wcag_cache)
 
-    result = _aggregate_result()
+    success_count = 0
+    failure_count = 0
+    skipped_count = 0
+    errors: list[dict[str, object]] = []
     db = get_db()
 
     # Pages
@@ -11759,8 +11825,8 @@ def drupal_upload_rest(
             from bson import ObjectId
             page_doc = db.discovered_pages.find_one({"_id": ObjectId(page_id)})
             if not page_doc:
-                result["failure_count"] += 1
-                result["errors"].append({"item": page_id, "error": "page not found"})
+                failure_count += 1
+                errors.append({"item": page_id, "error": "page not found"})
                 continue
             page = DiscoveredPage.from_dict(page_doc)
             res = page_exporter.export_from_discovered_page_model(page, audit_uuid)
@@ -11774,7 +11840,7 @@ def drupal_upload_rest(
                         "drupal_error_message": None,
                     }},
                 )
-                result["success_count"] += 1
+                success_count += 1
             else:
                 db.discovered_pages.update_one(
                     {"_id": page_doc["_id"]},
@@ -11783,13 +11849,13 @@ def drupal_upload_rest(
                         "drupal_error_message": res.get("error"),
                     }},
                 )
-                result["failure_count"] += 1
-                result["errors"].append(
+                failure_count += 1
+                errors.append(
                     {"item": page.title, "error": res.get("error")}
                 )
         except Exception as exc:  # noqa: BLE001
-            result["failure_count"] += 1
-            result["errors"].append({"item": page_id, "error": str(exc)})
+            failure_count += 1
+            errors.append({"item": page_id, "error": str(exc)})
 
     # Recordings (cascade includes their RecordingIssues)
     for recording_id in recording_ids:
@@ -11797,8 +11863,8 @@ def drupal_upload_rest(
             from bson import ObjectId
             rec_doc = db.recordings.find_one({"_id": ObjectId(recording_id)})
             if not rec_doc:
-                result["failure_count"] += 1
-                result["errors"].append({"item": recording_id, "error": "recording not found"})
+                failure_count += 1
+                errors.append({"item": recording_id, "error": "recording not found"})
                 continue
             recording = Recording.from_dict(rec_doc)
 
@@ -11827,7 +11893,7 @@ def drupal_upload_rest(
                         "drupal_error_message": None,
                     }},
                 )
-                result["success_count"] += 1
+                success_count += 1
 
                 # Cascade RecordingIssues for this recording.
                 for ri_doc in db.recording_issues.find(
@@ -11867,13 +11933,13 @@ def drupal_upload_rest(
                         "drupal_error_message": rec_res.get("error"),
                     }},
                 )
-                result["failure_count"] += 1
-                result["errors"].append(
+                failure_count += 1
+                errors.append(
                     {"item": recording.title, "error": rec_res.get("error")}
                 )
         except Exception as exc:  # noqa: BLE001
-            result["failure_count"] += 1
-            result["errors"].append({"item": recording_id, "error": str(exc)})
+            failure_count += 1
+            errors.append({"item": recording_id, "error": str(exc)})
 
     # Standalone issues
     for issue_id in issue_ids:
@@ -11882,8 +11948,8 @@ def drupal_upload_rest(
             from bson import ObjectId
             issue_doc = db.issues.find_one({"_id": ObjectId(issue_id)})
             if not issue_doc:
-                result["failure_count"] += 1
-                result["errors"].append({"item": issue_id, "error": "issue not found"})
+                failure_count += 1
+                errors.append({"item": issue_id, "error": "issue not found"})
                 continue
             issue = Issue.from_dict(issue_doc)
             i_res = issue_exporter.export_from_issue_model(issue, audit_uuid)
@@ -11898,7 +11964,7 @@ def drupal_upload_rest(
                         "drupal_error_message": None,
                     }},
                 )
-                result["success_count"] += 1
+                success_count += 1
             else:
                 db.issues.update_one(
                     {"_id": issue_doc["_id"]},
@@ -11907,35 +11973,48 @@ def drupal_upload_rest(
                         "drupal_error_message": i_res.get("error"),
                     }},
                 )
-                result["failure_count"] += 1
-                result["errors"].append(
+                failure_count += 1
+                errors.append(
                     {"item": issue.title, "error": i_res.get("error")}
                 )
         except Exception as exc:  # noqa: BLE001
-            result["failure_count"] += 1
-            result["errors"].append({"item": issue_id, "error": str(exc)})
+            failure_count += 1
+            errors.append({"item": issue_id, "error": str(exc)})
 
-    return jsonify({
-        "project_id": project_id,
-        "audit_uuid": audit_uuid,
-        **result,
-    })
+    return DrupalUploadOut(
+        project_id=project_id,
+        audit_uuid=audit_uuid,
+        success_count=success_count,
+        failure_count=failure_count,
+        skipped_count=skipped_count,
+        errors=errors,
+    ), 200
 
 
 @api_bp.route(
     "/drupal/projects/<project_id>/import-pages", methods=["POST"]
 )
 @api_endpoint
+@document(
+    request=DrupalImportPagesIn,
+    response_200=DrupalImportSummaryOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["DrupalSync"],
+    summary="Import discovered pages from Drupal",
+    description=(
+        "Pulls discovered pages from Drupal into the local "
+        "database. Aggregate-summary REST form of the legacy "
+        "NDJSON ``/drupal/projects/<id>/sync/import-pages``. "
+        "Counts are ``imported`` (new local row), ``updated`` "
+        "(existing local row keyed on ``drupal_uuid``), and "
+        "``skipped`` (failed on any page)."
+    ),
+)
 def drupal_import_pages_rest(
-    project_id: str,
-) -> tuple[Response, int] | Response:
-    """Pull discovered pages from Drupal into the local database.
-
-    Aggregate-summary REST form of the legacy NDJSON
-    ``/drupal/projects/<id>/sync/import-pages``. Counts are
-    ``imported`` (new local row), ``updated`` (existing local row
-    keyed on ``drupal_uuid``), and ``skipped`` (failed on any page).
-    """
+    project_id: str, body: DrupalImportPagesIn,
+) -> tuple[DrupalImportSummaryOut, int]:
+    """Pull discovered pages from Drupal into the local database."""
+    del body  # body currently carries no fields; kept for forward-compat
     from auto_a11y.drupal import (
         DiscoveredPageImporter,
         DiscoveredPageTaxonomies,
@@ -11959,7 +12038,7 @@ def drupal_import_pages_rest(
     imported_count = 0
     updated_count = 0
     skipped_count = 0
-    errors: list[dict[str, Any]] = []
+    errors: list[dict[str, object]] = []
 
     for drupal_page in drupal_pages:
         try:
@@ -11998,28 +12077,39 @@ def drupal_import_pages_rest(
                 {"item": drupal_page.get("title", "unknown"), "error": str(exc)}
             )
 
-    return jsonify({
-        "project_id": project_id,
-        "audit_uuid": audit_uuid,
-        "fetched": len(drupal_pages),
-        "imported": imported_count,
-        "updated": updated_count,
-        "skipped": skipped_count,
-        "errors": errors,
-    })
+    return DrupalImportSummaryOut(
+        project_id=project_id,
+        audit_uuid=audit_uuid,
+        fetched=len(drupal_pages),
+        imported=imported_count,
+        updated=updated_count,
+        skipped=skipped_count,
+        errors=errors,
+    ), 200
 
 
 @api_bp.route(
     "/drupal/projects/<project_id>/import-issues", methods=["POST"]
 )
 @api_endpoint
+@document(
+    request=DrupalImportIssuesIn,
+    response_200=DrupalImportSummaryOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["DrupalSync"],
+    summary="Import issues from Drupal",
+    description=(
+        "Pulls issues from Drupal into the local database. "
+        "Companion to ``/drupal/projects/<id>/import-pages`` for "
+        "the :class:`Issue` model. Returns the same aggregate "
+        "``fetched``/``imported``/``updated``/``skipped`` shape."
+    ),
+)
 def drupal_import_issues_rest(
-    project_id: str,
-) -> tuple[Response, int] | Response:
-    """Pull issues from Drupal into the local database. Aggregate summary.
-
-    Companion to :func:`drupal_import_pages_rest` for the Issue model.
-    """
+    project_id: str, body: DrupalImportIssuesIn,
+) -> tuple[DrupalImportSummaryOut, int]:
+    """Pull issues from Drupal into the local database. Aggregate summary."""
+    del body  # body currently carries no fields; kept for forward-compat
     from auto_a11y.drupal import IssueImporter
 
     require_project_role(
@@ -12039,7 +12129,7 @@ def drupal_import_issues_rest(
     imported_count = 0
     updated_count = 0
     skipped_count = 0
-    errors: list[dict[str, Any]] = []
+    errors: list[dict[str, object]] = []
 
     for drupal_issue in drupal_issues:
         try:
@@ -12061,15 +12151,15 @@ def drupal_import_issues_rest(
                 {"item": drupal_issue.get("title", "unknown"), "error": str(exc)}
             )
 
-    return jsonify({
-        "project_id": project_id,
-        "audit_uuid": audit_uuid,
-        "fetched": len(drupal_issues),
-        "imported": imported_count,
-        "updated": updated_count,
-        "skipped": skipped_count,
-        "errors": errors,
-    })
+    return DrupalImportSummaryOut(
+        project_id=project_id,
+        audit_uuid=audit_uuid,
+        fetched=len(drupal_issues),
+        imported=imported_count,
+        updated=updated_count,
+        skipped=skipped_count,
+        errors=errors,
+    ), 200
 
 
 @api_bp.route(
@@ -12077,33 +12167,31 @@ def drupal_import_issues_rest(
     methods=["POST"],
 )
 @api_endpoint
+@document(
+    request=DrupalAutomatedUploadIn,
+    response_200=DrupalAutomatedUploadOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["DrupalSync"],
+    summary="Upload deduplicated automated-test issues to Drupal",
+    description=(
+        "Runs the automated-test deduplication pipeline and uploads "
+        "the resulting :class:`DiscoveredPage` rows to Drupal. The "
+        "pipeline:\n\n"
+        "1. Generates the project's comprehensive automated-test "
+        "report\n"
+        "2. Deduplicates issues by common component (XPath-based)\n"
+        "3. Creates :class:`DiscoveredPage` rows for components and "
+        "URLs\n"
+        "4. Uploads each of those pages to Drupal via "
+        ":class:`DiscoveredPageExporter`\n\n"
+        "Returns the aggregate result — total discovered pages "
+        "created and per-item upload outcomes."
+    ),
+)
 def drupal_upload_automated_results_rest(
-    project_id: str,
-) -> tuple[Response, int] | Response:
-    """Upload deduplicated automated-test issues to Drupal.
-
-    Body (all optional):
-
-        {
-          "options": {
-            "min_component_pages": 2,            // pages a component must
-                                                  // appear on to count as
-                                                  // "common"
-            "mark_pages_for_inspection": false   // mark URL-only pages for
-                                                  // manual inspection
-          }
-        }
-
-    The pipeline:
-    1. Generates the project's comprehensive automated-test report
-    2. Deduplicates issues by common component (XPath-based)
-    3. Creates :class:`DiscoveredPage` rows for components and URLs
-    4. Uploads each of those pages to Drupal via
-       :class:`DiscoveredPageExporter`
-
-    Returns the aggregate result — total discovered pages created and
-    per-item upload outcomes.
-    """
+    project_id: str, body: DrupalAutomatedUploadIn,
+) -> tuple[DrupalAutomatedUploadOut, int]:
+    """Upload deduplicated automated-test issues to Drupal."""
     from auto_a11y.drupal import (
         DiscoveredPageExporter, DiscoveredPageTaxonomies,
     )
@@ -12119,19 +12207,17 @@ def drupal_upload_automated_results_rest(
     if project is None:
         raise NotFoundError(f"project {project_id} not found")
 
-    body = _require_dict_body() if request.data else {}
-    options_any: Any = body.get("options", {})
-    options: dict[str, Any] = (
-        cast(dict[str, Any], options_any)
-        if isinstance(options_any, dict) else {}
+    options = body.options
+    min_component_pages_raw = (
+        options.min_component_pages if options is not None else None
     )
-    min_component_pages_raw = options.get("min_component_pages", 2)
     min_component_pages = (
         min_component_pages_raw
-        if isinstance(min_component_pages_raw, int) else 2
+        if isinstance(min_component_pages_raw, int)
+        else 2
     )
     mark_pages_for_inspection = bool(
-        options.get("mark_pages_for_inspection", False)
+        options.mark_pages_for_inspection if options is not None else False
     )
 
     db = get_db()
@@ -12183,7 +12269,7 @@ def drupal_upload_automated_results_rest(
 
     success_count = 0
     failure_count = 0
-    errors: list[dict[str, Any]] = []
+    errors: list[dict[str, object]] = []
     from bson import ObjectId
     for page_id in all_page_ids:
         try:
@@ -12223,17 +12309,21 @@ def drupal_upload_automated_results_rest(
             failure_count += 1
             errors.append({"item": page_id, "error": str(exc)})
 
-    return jsonify({
-        "project_id": project_id,
-        "audit_uuid": audit_uuid,
-        "upload_id": dedup_result.get("upload_id"),
-        "discovered_pages_created": len(all_page_ids),
-        "common_components": len(component_page_ids),
-        "page_urls": len(page_url_ids),
-        "success_count": success_count,
-        "failure_count": failure_count,
-        "errors": errors,
-    })
+    upload_id_raw = dedup_result.get("upload_id")
+    upload_id: str | None = (
+        upload_id_raw if isinstance(upload_id_raw, str) else None
+    )
+    return DrupalAutomatedUploadOut(
+        project_id=project_id,
+        audit_uuid=audit_uuid,
+        upload_id=upload_id,
+        discovered_pages_created=len(all_page_ids),
+        common_components=len(component_page_ids),
+        page_urls=len(page_url_ids),
+        success_count=success_count,
+        failure_count=failure_count,
+        errors=errors,
+    ), 200
 
 
 @api_bp.route("/auth/sso/<provider>/callback", methods=["GET"])

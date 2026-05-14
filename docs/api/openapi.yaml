@@ -483,6 +483,756 @@ components:
       - url
       title: DiscoveredPagePut
       type: object
+    DrupalAuditListOut:
+      additionalProperties: false
+      description: 'Response body for ``GET /drupal/audits``.
+
+
+        Non-paginated ``{audits: [...]}`` shape. The legacy form mirrors
+
+        this byte-for-byte; cursoring is unnecessary because the audit
+
+        count is bounded by a small constant in practice.'
+      properties:
+        audits:
+          items:
+            $ref: '#/components/schemas/DrupalAuditOut'
+          title: Audits
+          type: array
+      required:
+      - audits
+      title: DrupalAuditListOut
+      type: object
+    DrupalAuditOut:
+      additionalProperties: false
+      description: 'A single Drupal-side audit row.
+
+
+        Mirrors the projection built inline by
+
+        :func:`drupal_list_audits_rest`: ``title``, ``uuid`` (or ``uuId``
+
+        upstream — the handler normalizes both), and ``nid``. ``nid`` is
+
+        ``Optional`` because the upstream payload occasionally omits it
+
+        for audits whose nid hasn''t been assigned yet.'
+      properties:
+        nid:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          default: null
+          title: Nid
+        title:
+          title: Title
+          type: string
+        uuid:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Uuid
+      required:
+      - title
+      title: DrupalAuditOut
+      type: object
+    DrupalAutomatedUploadIn:
+      additionalProperties: false
+      description: 'Request body for
+
+        ``POST /drupal/projects/<id>/upload-automated-results``.
+
+
+        Both top-level fields are optional. ``options`` is preserved
+
+        as a nested sub-object so future toggles can be added without
+
+        bumping the wire contract.'
+      properties:
+        options:
+          anyOf:
+          - $ref: '#/components/schemas/DrupalAutomatedUploadOptions'
+          - type: 'null'
+          default: null
+      title: DrupalAutomatedUploadIn
+      type: object
+    DrupalAutomatedUploadOptions:
+      additionalProperties: false
+      description: "Options block on the automated-results upload action.\n\n- ``min_component_pages``\
+        \ — minimum number of pages a component\n  must appear on to be considered\
+        \ \"common\" by the deduplication\n  service. Defaults to 2 server-side; non-int\
+        \ values fall back\n  to the default.\n- ``mark_pages_for_inspection`` — when\
+        \ true, URL-only pages\n  created during deduplication are flagged for manual\
+        \ inspection\n  (defaults to false)."
+      properties:
+        mark_pages_for_inspection:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Mark Pages For Inspection
+        min_component_pages:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          default: null
+          title: Min Component Pages
+      title: DrupalAutomatedUploadOptions
+      type: object
+    DrupalAutomatedUploadOut:
+      additionalProperties: false
+      description: 'Response body for the automated-results upload action.
+
+
+        Mirrors the aggregate dict
+
+        :func:`drupal_upload_automated_results_rest` returns. The
+
+        ``upload_id`` is the deduplication-service batch identifier
+
+        (``Optional`` because the service may not always assign one).
+
+
+        The three count fields ``discovered_pages_created``,
+
+        ``common_components``, and ``page_urls`` describe what the
+
+        deduplication step produced before the Drupal upload loop
+
+        started. ``success_count`` and ``failure_count`` then describe
+
+        the upload-loop outcome over those pages.'
+      properties:
+        audit_uuid:
+          title: Audit Uuid
+          type: string
+        common_components:
+          title: Common Components
+          type: integer
+        discovered_pages_created:
+          title: Discovered Pages Created
+          type: integer
+        errors:
+          items:
+            additionalProperties: true
+            type: object
+          title: Errors
+          type: array
+        failure_count:
+          title: Failure Count
+          type: integer
+        page_urls:
+          title: Page Urls
+          type: integer
+        project_id:
+          title: Project Id
+          type: string
+        success_count:
+          title: Success Count
+          type: integer
+        upload_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Upload Id
+      required:
+      - project_id
+      - audit_uuid
+      - discovered_pages_created
+      - common_components
+      - page_urls
+      - success_count
+      - failure_count
+      - errors
+      title: DrupalAutomatedUploadOut
+      type: object
+    DrupalDiscoveredPageListOut:
+      additionalProperties: false
+      description: 'Response body for
+
+        ``GET /drupal/projects/<id>/discovered-pages``.
+
+
+        Non-paginated ``{discovered_pages: [...]}`` envelope. Bounded by
+
+        project-scope.'
+      properties:
+        discovered_pages:
+          items:
+            $ref: '#/components/schemas/DrupalDiscoveredPageOut'
+          title: Discovered Pages
+          type: array
+      required:
+      - discovered_pages
+      title: DrupalDiscoveredPageListOut
+      type: object
+    DrupalDiscoveredPageOut:
+      additionalProperties: false
+      description: 'Discovered-page row carrying its Drupal-sync state.
+
+
+        Distinct from :class:`DiscoveredPageOut` in the §5.1 / §5.3
+
+        schemas — that one returns the full structural surface; this one
+
+        surfaces only the fields the Drupal sync UI needs (title, url,
+
+        interested_because, page_elements, plus all ``drupal_*`` fields).
+
+
+        ``interested_because`` and ``page_elements`` are arrays of strings
+
+        even when empty (matching the local model''s defaults).'
+      properties:
+        drupal_last_synced:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Drupal Last Synced
+        drupal_sync_status:
+          title: Drupal Sync Status
+          type: string
+        drupal_uuid:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Drupal Uuid
+        id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Id
+        interested_because:
+          items:
+            type: string
+          title: Interested Because
+          type: array
+        is_synced:
+          title: Is Synced
+          type: boolean
+        needs_sync:
+          title: Needs Sync
+          type: boolean
+        page_elements:
+          items:
+            type: string
+          title: Page Elements
+          type: array
+        title:
+          title: Title
+          type: string
+        url:
+          title: Url
+          type: string
+      required:
+      - title
+      - url
+      - interested_because
+      - page_elements
+      - drupal_sync_status
+      - is_synced
+      - needs_sync
+      title: DrupalDiscoveredPageOut
+      type: object
+    DrupalImportIssuesIn:
+      additionalProperties: false
+      description: 'Request body for ``POST /drupal/projects/<id>/import-issues``.
+
+
+        Same shape as :class:`DrupalImportPagesIn` — currently no
+
+        fields, but kept as a model for forward-compat.'
+      properties: {}
+      title: DrupalImportIssuesIn
+      type: object
+    DrupalImportPagesIn:
+      additionalProperties: false
+      description: 'Request body for ``POST /drupal/projects/<id>/import-pages``.
+
+
+        No-op body — the legacy handler accepts an empty body (or no
+
+        body at all) and pulls every discovered page bound to the
+
+        project''s resolved audit UUID. Kept as a model rather than
+
+        ``None`` so the OpenAPI spec carries a content type and future
+
+        options (e.g. a filter on Drupal-side status) can be added
+
+        without bumping the handler signature.'
+      properties: {}
+      title: DrupalImportPagesIn
+      type: object
+    DrupalImportSummaryOut:
+      additionalProperties: false
+      description: "Aggregate response for the import-pages / import-issues actions.\n\
+        \nMirrors the dict :func:`drupal_import_pages_rest` and\n:func:`drupal_import_issues_rest`\
+        \ return:\n\n- ``fetched`` — total rows pulled from Drupal\n- ``imported``\
+        \ — new local rows created\n- ``updated`` — existing local rows updated (keyed\
+        \ on\n  ``drupal_uuid``)\n- ``skipped`` — rows that failed mid-import; one\
+        \ entry per\n  failure appears in ``errors``\n\nThe ``errors`` list carries\
+        \ the same ``list[dict[str, object]]``\nshape as :class:`DrupalUploadOut.errors`\
+        \ for the same reason."
+      properties:
+        audit_uuid:
+          title: Audit Uuid
+          type: string
+        errors:
+          items:
+            additionalProperties: true
+            type: object
+          title: Errors
+          type: array
+        fetched:
+          title: Fetched
+          type: integer
+        imported:
+          title: Imported
+          type: integer
+        project_id:
+          title: Project Id
+          type: string
+        skipped:
+          title: Skipped
+          type: integer
+        updated:
+          title: Updated
+          type: integer
+      required:
+      - project_id
+      - audit_uuid
+      - fetched
+      - imported
+      - updated
+      - skipped
+      - errors
+      title: DrupalImportSummaryOut
+      type: object
+    DrupalIssueListOut:
+      additionalProperties: false
+      description: 'Response body for ``GET /drupal/projects/<id>/issues``.
+
+
+        Non-paginated ``{issues: [...]}`` envelope.'
+      properties:
+        issues:
+          items:
+            $ref: '#/components/schemas/DrupalIssueOut'
+          title: Issues
+          type: array
+      required:
+      - issues
+      title: DrupalIssueListOut
+      type: object
+    DrupalIssueOut:
+      additionalProperties: false
+      description: 'Issue row carrying its Drupal-sync state.
+
+
+        Mirrors the inline projection in
+
+        :func:`drupal_list_issues_rest`. Note this is the standalone
+
+        :class:`Issue` model, not :class:`RecordingIssue` — the latter
+
+        cascades through the parent recording''s sync state.
+
+
+        ``wcag_criteria`` is the list of associated WCAG criterion ids
+
+        (e.g. ``["1.1.1", "2.4.6"]``); empty list if the issue carries
+
+        no WCAG references.'
+      properties:
+        detection_method:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Detection Method
+        drupal_last_synced:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Drupal Last Synced
+        drupal_nid:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          default: null
+          title: Drupal Nid
+        drupal_sync_status:
+          title: Drupal Sync Status
+          type: string
+        drupal_uuid:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Drupal Uuid
+        id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Id
+        impact:
+          title: Impact
+          type: string
+        is_synced:
+          title: Is Synced
+          type: boolean
+        issue_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Issue Type
+        location_on_page:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Location On Page
+        needs_sync:
+          title: Needs Sync
+          type: boolean
+        source_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Source Type
+        status:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Status
+        title:
+          title: Title
+          type: string
+        wcag_criteria:
+          items:
+            type: string
+          title: Wcag Criteria
+          type: array
+      required:
+      - title
+      - impact
+      - wcag_criteria
+      - drupal_sync_status
+      - is_synced
+      - needs_sync
+      title: DrupalIssueOut
+      type: object
+    DrupalRecordingListOut:
+      additionalProperties: false
+      description: 'Response body for ``GET /drupal/projects/<id>/recordings``.
+
+
+        Non-paginated ``{recordings: [...]}`` envelope.'
+      properties:
+        recordings:
+          items:
+            $ref: '#/components/schemas/DrupalRecordingOut'
+          title: Recordings
+          type: array
+      required:
+      - recordings
+      title: DrupalRecordingListOut
+      type: object
+    DrupalRecordingOut:
+      additionalProperties: false
+      description: 'Recording row carrying its Drupal-sync state.
+
+
+        Mirrors the inline projection in
+
+        :func:`drupal_list_recordings_rest`. ``duration`` is the recording
+
+        length as an ``HH:MM:SS`` string (``Optional`` because recordings
+
+        imported from Drupal may not carry a duration). ``component_names``
+
+        is the list of UI components covered by the recording (empty
+
+        list if none).'
+      properties:
+        auditor_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Auditor Name
+        component_names:
+          items:
+            type: string
+          title: Component Names
+          type: array
+        drupal_last_synced:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Drupal Last Synced
+        drupal_sync_status:
+          title: Drupal Sync Status
+          type: string
+        drupal_video_nid:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          default: null
+          title: Drupal Video Nid
+        drupal_video_uuid:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Drupal Video Uuid
+        duration:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Duration
+        id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Id
+        is_synced:
+          title: Is Synced
+          type: boolean
+        needs_sync:
+          title: Needs Sync
+          type: boolean
+        recording_type:
+          title: Recording Type
+          type: string
+        title:
+          title: Title
+          type: string
+        total_issues:
+          title: Total Issues
+          type: integer
+      required:
+      - title
+      - recording_type
+      - total_issues
+      - component_names
+      - drupal_sync_status
+      - is_synced
+      - needs_sync
+      title: DrupalRecordingOut
+      type: object
+    DrupalSyncBucketCounts:
+      additionalProperties: false
+      description: 'Per-collection sync counts.
+
+
+        Mirrors the ``discovered_pages`` and ``recordings`` blocks in the
+
+        sync-status response. ``pending`` aggregates both ``not_synced``
+
+        and ``pending`` statuses since the UI presents them as the same
+
+        state (anything that isn''t ``synced`` or ``sync_failed``).'
+      properties:
+        failed:
+          title: Failed
+          type: integer
+        pending:
+          title: Pending
+          type: integer
+        synced:
+          title: Synced
+          type: integer
+        total:
+          title: Total
+          type: integer
+      required:
+      - total
+      - synced
+      - pending
+      - failed
+      title: DrupalSyncBucketCounts
+      type: object
+    DrupalSyncStatusOut:
+      additionalProperties: false
+      description: 'Response body for ``GET /drupal/projects/<id>/sync-status``.
+
+
+        Mirrors the inline projection in :func:`drupal_sync_status_rest`
+
+        byte-for-byte: a ``drupal_enabled`` flag (whether the integration
+
+        is configured), the project''s display name, per-collection
+
+        buckets, the most-recent sync timestamp across both collections,
+
+        and up to 5 most-recent error messages (capped server-side to
+
+        keep the banner readable).'
+      properties:
+        discovered_pages:
+          $ref: '#/components/schemas/DrupalSyncBucketCounts'
+        drupal_enabled:
+          title: Drupal Enabled
+          type: boolean
+        last_sync_time:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Last Sync Time
+        project_name:
+          title: Project Name
+          type: string
+        recordings:
+          $ref: '#/components/schemas/DrupalSyncBucketCounts'
+        sync_errors:
+          items:
+            type: string
+          title: Sync Errors
+          type: array
+      required:
+      - drupal_enabled
+      - project_name
+      - discovered_pages
+      - recordings
+      - sync_errors
+      title: DrupalSyncStatusOut
+      type: object
+    DrupalUploadIn:
+      additionalProperties: false
+      description: 'Request body for ``POST /drupal/projects/<id>/upload``.
+
+
+        All three ID arrays are optional; missing or empty arrays simply
+
+        skip that resource type. The handler doesn''t reject an entirely
+
+        empty body (you get back a result with all counts == 0). The
+
+        ``options`` block carries upload-time toggles
+
+        (currently only ``include_french``).'
+      properties:
+        discovered_page_ids:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          default: null
+          title: Discovered Page Ids
+        issue_ids:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          default: null
+          title: Issue Ids
+        options:
+          anyOf:
+          - $ref: '#/components/schemas/DrupalUploadOptions'
+          - type: 'null'
+          default: null
+        recording_ids:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          default: null
+          title: Recording Ids
+      title: DrupalUploadIn
+      type: object
+    DrupalUploadOptions:
+      additionalProperties: false
+      description: 'Upload-options sub-object on the upload action body.
+
+
+        ``include_french`` controls whether the recording exporter pushes
+
+        the French translation of issue descriptions alongside English.
+
+        Defaults to ``False`` server-side when absent.'
+      properties:
+        include_french:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Include French
+      title: DrupalUploadOptions
+      type: object
+    DrupalUploadOut:
+      additionalProperties: false
+      description: 'Response body for the upload action.
+
+
+        Mirrors the aggregate dict :func:`drupal_upload_rest` returns:
+
+        the project id, the resolved Drupal audit UUID the upload
+
+        targeted, and the three counts (``success_count``,
+
+        ``failure_count``, ``skipped_count``) plus a per-item
+
+        ``errors`` list. The ``errors`` list is typed
+
+        ``list[dict[str, object]]`` rather than a closed
+
+        ``list[{item: str, error: str}]`` because the legacy payload
+
+        occasionally surfaces a non-string ``error`` value from upstream
+
+        Drupal — tightening the schema here would surface as a 500 on
+
+        every such failure.'
+      properties:
+        audit_uuid:
+          title: Audit Uuid
+          type: string
+        errors:
+          items:
+            additionalProperties: true
+            type: object
+          title: Errors
+          type: array
+        failure_count:
+          title: Failure Count
+          type: integer
+        project_id:
+          title: Project Id
+          type: string
+        skipped_count:
+          title: Skipped Count
+          type: integer
+        success_count:
+          title: Success Count
+          type: integer
+      required:
+      - project_id
+      - audit_uuid
+      - success_count
+      - failure_count
+      - skipped_count
+      - errors
+      title: DrupalUploadOut
+      type: object
     Empty:
       additionalProperties: false
       description: Empty body — for 204 responses or endpoints that return ``{}``.
@@ -5908,6 +6658,459 @@ paths:
       summary: Replace a discovered page
       tags:
       - DiscoveredPages
+  /drupal/audits:
+    get:
+      description: Lists every audit visible in the configured Drupal instance. Authenticated;
+        no project scope because the caller may be picking a Drupal audit to link
+        to a project that doesn't yet have ``drupal_audit_name`` set. A 409 is returned
+        when the Drupal integration is not enabled or when the upstream Drupal returns
+        a non-2xx (the REST surface doesn't have a 502 helper so upstream failures
+        map to 409).
+      parameters: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DrupalAuditListOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: List Drupal audits
+      tags:
+      - DrupalSync
+  /drupal/projects/{project_id}/discovered-pages:
+    get:
+      description: Lists the project's discovered pages projected to the Drupal-sync
+        view. Distinct from the §5.1 / §5.3 discovered-pages list — that one returns
+        the page's full structural fields; this one surfaces only the fields the Drupal
+        sync UI needs plus all ``drupal_*`` sync state.
+      parameters:
+      - in: path
+        name: project_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DrupalDiscoveredPageListOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: List discovered pages with Drupal sync state
+      tags:
+      - DrupalSync
+  /drupal/projects/{project_id}/import-issues:
+    post:
+      description: Pulls issues from Drupal into the local database. Companion to
+        ``/drupal/projects/<id>/import-pages`` for the :class:`Issue` model. Returns
+        the same aggregate ``fetched``/``imported``/``updated``/``skipped`` shape.
+      parameters:
+      - in: path
+        name: project_id
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DrupalImportIssuesIn'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DrupalImportSummaryOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Import issues from Drupal
+      tags:
+      - DrupalSync
+  /drupal/projects/{project_id}/import-pages:
+    post:
+      description: Pulls discovered pages from Drupal into the local database. Aggregate-summary
+        REST form of the legacy NDJSON ``/drupal/projects/<id>/sync/import-pages``.
+        Counts are ``imported`` (new local row), ``updated`` (existing local row keyed
+        on ``drupal_uuid``), and ``skipped`` (failed on any page).
+      parameters:
+      - in: path
+        name: project_id
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DrupalImportPagesIn'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DrupalImportSummaryOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Import discovered pages from Drupal
+      tags:
+      - DrupalSync
+  /drupal/projects/{project_id}/issues:
+    get:
+      description: Lists the project's standalone issues (not :class:`RecordingIssue`
+        — those cascade through the parent recording's sync state) projected to the
+        Drupal-sync view.
+      parameters:
+      - in: path
+        name: project_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DrupalIssueListOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: List issues with Drupal sync state
+      tags:
+      - DrupalSync
+  /drupal/projects/{project_id}/recordings:
+    get:
+      description: Lists the project's recordings projected to the Drupal-sync view.
+        Each row carries the recording's structural fields (title, duration, auditor,
+        type, issue count, component names) plus the full ``drupal_*`` sync state.
+      parameters:
+      - in: path
+        name: project_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DrupalRecordingListOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: List recordings with Drupal sync state
+      tags:
+      - DrupalSync
+  /drupal/projects/{project_id}/sync-status:
+    get:
+      description: Replaces the legacy ``/drupal/projects/<id>/sync/status``. Returns
+        aggregates over the project's ``discovered_pages`` and ``recordings`` collections
+        — synced / pending / failed counts plus the most-recent sync timestamp across
+        both. Up to 5 most-recent error messages are included for surfacing in a sync-status
+        banner.
+      parameters:
+      - in: path
+        name: project_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DrupalSyncStatusOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Per-project Drupal sync status
+      tags:
+      - DrupalSync
+  /drupal/projects/{project_id}/upload:
+    post:
+      description: Pushes selected discovered-pages, recordings, and issues to Drupal.
+        All three ID arrays are optional; missing or empty arrays simply skip that
+        resource type. The action runs synchronously and returns an aggregate summary
+        once the loop finishes. Unlike the legacy NDJSON streaming counterpart, there
+        is no per-item progress channel — clients that need real-time feedback should
+        keep using ``/drupal/projects/<id>/sync/upload`` on the HTML blueprint.
+      parameters:
+      - in: path
+        name: project_id
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DrupalUploadIn'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DrupalUploadOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Upload selected items to Drupal
+      tags:
+      - DrupalSync
+  /drupal/projects/{project_id}/upload-automated-results:
+    post:
+      description: 'Runs the automated-test deduplication pipeline and uploads the
+        resulting :class:`DiscoveredPage` rows to Drupal. The pipeline:
+
+
+        1. Generates the project''s comprehensive automated-test report
+
+        2. Deduplicates issues by common component (XPath-based)
+
+        3. Creates :class:`DiscoveredPage` rows for components and URLs
+
+        4. Uploads each of those pages to Drupal via :class:`DiscoveredPageExporter`
+
+
+        Returns the aggregate result — total discovered pages created and per-item
+        upload outcomes.'
+      parameters:
+      - in: path
+        name: project_id
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DrupalAutomatedUploadIn'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DrupalAutomatedUploadOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Upload deduplicated automated-test issues to Drupal
+      tags:
+      - DrupalSync
   /groups:
     get:
       description: Lists all permission groups with cursor pagination. The underlying

@@ -1,5 +1,35 @@
 components:
   schemas:
+    AvailableGroupOut:
+      additionalProperties: false
+      description: 'A group entry on the project-member list response.
+
+
+        Narrow projection of :class:`GroupOut` carrying only the fields
+
+        the add-member UI needs (id, name, ``is_system`` so the picker
+
+        can flag protected defaults). The full group resource lives at
+
+        ``/api/v1/groups/<id>``.'
+      properties:
+        id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Id
+        is_system:
+          title: Is System
+          type: boolean
+        name:
+          title: Name
+          type: string
+      required:
+      - name
+      - is_system
+      title: AvailableGroupOut
+      type: object
     DiscoveredPageIn:
       additionalProperties: false
       description: 'Request body for ``POST /api/v1/projects/<id>/discovered-pages``.
@@ -491,6 +521,164 @@ components:
       - average_duration_ms
       title: ExecutionStatsOut
       type: object
+    GroupIn:
+      additionalProperties: false
+      description: 'POST/PUT body for creating or replacing a permission group.
+
+
+        Mirrors the legacy ``_build_group_from_body``: ``name`` is required
+
+        at the semantic level (the handler rejects empty/whitespace-only
+
+        values) but typed as ``Optional[str]`` because the legacy parser
+
+        surfaces its own 400 shape rather than letting Pydantic generate
+
+        the error. ``description`` defaults to ``""`` on the wire when the
+
+        field is absent. ``permissions`` is an open ``dict[str, str]``
+
+        (resource-noun → permission-level); the handler validates against
+
+        the closed enums at the application level.'
+      properties:
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Description
+        name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Name
+        permissions:
+          anyOf:
+          - additionalProperties:
+              type: string
+            type: object
+          - type: 'null'
+          default: null
+          title: Permissions
+      title: GroupIn
+      type: object
+    GroupListOut:
+      additionalProperties: false
+      description: 'Response body for ``GET /groups``.
+
+
+        Cursor-paginated; same ``{items, next_cursor}`` shape as the other
+
+        v1 list endpoints. Most deployments will fit on one page (the
+
+        seeded defaults plus a small handful of custom groups) but the
+
+        cursor shape is preserved for forward compatibility.'
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/GroupOut'
+          title: Items
+          type: array
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Next Cursor
+      required:
+      - items
+      title: GroupListOut
+      type: object
+    GroupOut:
+      additionalProperties: false
+      description: "Response shape for a single permission group.\n\nMirrors :func:`_serialize_permission_group`\
+        \ byte-for-byte. Used by:\n\n- ``GET /groups/<group_id>``\n- ``POST /groups``\
+        \ (create response)\n- ``PUT /groups/<group_id>`` (replace response)\n- ``PATCH\
+        \ /groups/<group_id>`` (patch response)\n- ``GET /groups`` (inside ``items``)\n\
+        \nField details:\n\n- ``id`` — stringified Mongo ``_id``; ``None`` only for\
+        \ transient\n  unsaved groups that never appear over the wire.\n- ``permissions``\
+        \ — open ``dict[str, str]`` rather than a closed\n  enum-of-enums because\
+        \ the resource-noun list is expected to grow.\n- ``is_system`` — ``True``\
+        \ for the seeded default groups (Admin,\n  Auditor, Client) which are protected\
+        \ from deletion.\n- ``created_at`` / ``updated_at`` — ISO 8601 datetime strings."
+      properties:
+        created_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Created At
+        description:
+          title: Description
+          type: string
+        id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Id
+        is_system:
+          title: Is System
+          type: boolean
+        name:
+          title: Name
+          type: string
+        permissions:
+          additionalProperties:
+            type: string
+          title: Permissions
+          type: object
+        updated_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Updated At
+      required:
+      - name
+      - description
+      - permissions
+      - is_system
+      title: GroupOut
+      type: object
+    GroupPatch:
+      additionalProperties: false
+      description: 'PATCH body for partially updating a permission group.
+
+
+        Same shape as :class:`GroupIn` — every field optional. ``is_system``
+
+        is intentionally absent: that flag protects the seeded default
+
+        groups from deletion and clients are never permitted to flip it on
+
+        or off.'
+      properties:
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Description
+        name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Name
+        permissions:
+          anyOf:
+          - additionalProperties:
+              type: string
+            type: object
+          - type: 'null'
+          default: null
+          title: Permissions
+      title: GroupPatch
+      type: object
     JobRestartOut:
       additionalProperties: false
       description: 'Response body (202) for ``POST /jobs/<id>/restart``.
@@ -527,6 +715,137 @@ components:
       - display_name
       - status
       title: JobRestartOut
+      type: object
+    MemberIn:
+      additionalProperties: false
+      description: "POST body for adding a project member.\n\nMirrors the legacy ``add_project_member_rest``\
+        \ validator:\n\n- ``user_id`` is semantically required (the handler rejects\
+        \ empty\n  values) but typed ``Optional[str]`` because the legacy parser\n\
+        \  surfaces its own 400 shape (field path ``user_id``, code\n  ``required``).\n\
+        - ``group_ids`` is semantically a non-empty list (the handler\n  rejects an\
+        \ empty array with a 400) but typed\n  ``Optional[list[str]]`` for the same\
+        \ reason."
+      properties:
+        group_ids:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          default: null
+          title: Group Ids
+        user_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: User Id
+      title: MemberIn
+      type: object
+    MemberListOut:
+      additionalProperties: false
+      description: 'Response body for ``GET /projects/<id>/members``.
+
+
+        Non-paginated ``{members, available_groups}`` shape. A project''s
+
+        member count is bounded by a small constant (typically <20) and
+
+        the UI needs the available-groups list alongside to render an
+
+        add-member dialog in a single round-trip; cursoring would force
+
+        two HTTP requests for the common case.'
+      properties:
+        available_groups:
+          items:
+            $ref: '#/components/schemas/AvailableGroupOut'
+          title: Available Groups
+          type: array
+        members:
+          items:
+            $ref: '#/components/schemas/MemberOut'
+          title: Members
+          type: array
+      required:
+      - members
+      - available_groups
+      title: MemberListOut
+      type: object
+    MemberOut:
+      additionalProperties: false
+      description: 'Response shape for a single project member.
+
+
+        Mirrors :func:`_serialize_project_member` byte-for-byte. Used by:
+
+
+        - ``GET /projects/<id>/members/<user_id>``
+
+        - ``POST /projects/<id>/members`` (create response)
+
+        - ``PUT /projects/<id>/members/<user_id>`` (update response)
+
+        - ``GET /projects/<id>/members`` (inside ``members``)
+
+
+        The ``email`` and ``display_name`` fields are populated by joining
+
+        against the AppUser collection at serialization time; both may be
+
+        ``None`` if the referenced AppUser has been deleted (the member
+
+        row is preserved to keep audit trails intact).'
+      properties:
+        display_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Display Name
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Email
+        group_ids:
+          items:
+            type: string
+          title: Group Ids
+          type: array
+        user_id:
+          title: User Id
+          type: string
+      required:
+      - user_id
+      - group_ids
+      title: MemberOut
+      type: object
+    MemberPatch:
+      additionalProperties: false
+      description: 'PUT body for replacing a member''s group assignments.
+
+
+        Despite being a PUT, the only mutable field is ``group_ids`` —
+
+        ``user_id`` lives in the URL path, not the body, and is never
+
+        rewritten. Typed ``Optional[list[str]]`` to keep the field
+
+        technically present-or-absent on the wire even though the handler
+
+        always rejects an empty list with a 400.'
+      properties:
+        group_ids:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          default: null
+          title: Group Ids
+      title: MemberPatch
       type: object
     MessageOut:
       additionalProperties: false
@@ -4872,6 +5191,73 @@ components:
       - duration_ms
       title: TestStateEntryOut
       type: object
+    UserSearchListOut:
+      additionalProperties: false
+      description: 'Response body for ``GET /users/search``.
+
+
+        Non-paginated ``{users: [...]}`` shape. The results are capped at
+
+        20 entries server-side; queries shorter than 2 characters return
+
+        an empty list rather than 400 to keep the autocomplete UX smooth.'
+      properties:
+        users:
+          items:
+            $ref: '#/components/schemas/UserSearchOut'
+          title: Users
+          type: array
+      required:
+      - users
+      title: UserSearchListOut
+      type: object
+    UserSearchOut:
+      additionalProperties: false
+      description: 'Single hit on the ``/users/search`` autocomplete endpoint.
+
+
+        Deliberately narrow — this endpoint exists for picking a user when
+
+        adding a project member, so it surfaces only the email, display
+
+        name, and id. The full AppUser surface (password hash, SSO ids,
+
+        last_login, etc.) is out of scope for this endpoint by design.
+
+
+        ``display_name`` is optional because AppUser allows it to be unset
+
+        (the UI falls back to the email). ``user_id`` is typed
+
+        ``Optional[str]`` because the underlying ``AppUser.id`` is
+
+        ``Optional[str]`` (transient unsaved users return ``None``); in
+
+        practice the search endpoint only returns persisted users so the
+
+        field is always set, but the type preserves byte-for-byte wire
+
+        parity with the legacy ``_serialize_app_user_search_hit``.'
+      properties:
+        display_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Display Name
+        email:
+          title: Email
+          type: string
+        user_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: User Id
+      required:
+      - email
+      title: UserSearchOut
+      type: object
     WebsiteDiscoveryIn:
       additionalProperties: false
       description: 'Request body for queueing a website discovery crawl.
@@ -5522,6 +5908,293 @@ paths:
       summary: Replace a discovered page
       tags:
       - DiscoveredPages
+  /groups:
+    get:
+      description: Lists all permission groups with cursor pagination. The underlying
+        collection is bounded (a handful of system groups plus custom additions),
+        so the cursor envelope is preserved for forward compatibility even though
+        most deployments fit on one page.
+      parameters: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupListOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: List permission groups
+      tags:
+      - Groups
+    post:
+      description: Creates a new permission group. Returns 201 with the created group
+        plus a ``Location`` header pointing at ``/api/v1/groups/<id>``. The ``is_system``
+        flag cannot be set via the API — only seeded default groups carry ``is_system=true``
+        and they are protected from deletion.
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupIn'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupOut'
+          description: Created
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Create a permission group
+      tags:
+      - Groups
+  /groups/{group_id}:
+    delete:
+      description: Deletes a non-system group. System groups (``is_system=true`` —
+        the seeded Admin/Auditor/Client defaults) are protected and surface as a 409
+        because removing them would orphan every ``project_member.group_ids`` reference.
+      parameters:
+      - in: path
+        name: group_id
+        required: true
+        schema: *id001
+      responses:
+        '204':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Empty'
+          description: No Content
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Delete a permission group
+      tags:
+      - Groups
+    get:
+      parameters:
+      - in: path
+        name: group_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Get a permission group by id
+      tags:
+      - Groups
+    patch:
+      description: Partial update — only fields present in the request body are changed.
+        ``is_system`` is intentionally not patchable to keep the seeded default groups
+        protected from deletion.
+      parameters:
+      - in: path
+        name: group_id
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupPatch'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Partially update a permission group
+      tags:
+      - Groups
+    put:
+      description: Full replace of a group's editable fields. ``is_system`` and ``created_at``
+        are preserved server-side; the ``updated_at`` timestamp is bumped on every
+        successful write.
+      parameters:
+      - in: path
+        name: group_id
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupIn'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Replace a permission group
+      tags:
+      - Groups
   /jobs/{job_id}/restart:
     post:
       description: Re-queues a (typically failed or cancelled) report-generation job.
@@ -7158,6 +7831,261 @@ paths:
       summary: Create a discovered page
       tags:
       - DiscoveredPages
+  /projects/{project_id}/members:
+    get:
+      description: Lists the platform members of a project alongside the available
+        groups. The non-paginated ``{members, available_groups}`` envelope lets a
+        UI render an add-member dialog in a single round-trip; cursoring is unnecessary
+        because member counts are bounded by a small constant in practice.
+      parameters:
+      - in: path
+        name: project_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberListOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: List a project's platform members
+      tags:
+      - ProjectMembers
+    post:
+      description: Adds a member to a project with the given group assignments. Returns
+        201 with the member plus a ``Location`` header pointing at ``/api/v1/projects/<project_id>/members/<user_id>``.
+        A user who is already a member surfaces as a 409; an unknown ``user_id`` surfaces
+        as a 404.
+      parameters:
+      - in: path
+        name: project_id
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberIn'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberOut'
+          description: Created
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Add a member to a project
+      tags:
+      - ProjectMembers
+  /projects/{project_id}/members/{user_id}:
+    delete:
+      description: Removes a member from a project. Self-removal is rejected with
+        a 400 carrying field path ``user_id`` (code ``self_removal``) to prevent a
+        project admin from accidentally locking themselves out.
+      parameters:
+      - in: path
+        name: project_id
+        required: true
+        schema: *id001
+      - in: path
+        name: user_id
+        required: true
+        schema: *id001
+      responses:
+        '204':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Empty'
+          description: No Content
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Remove a member from a project
+      tags:
+      - ProjectMembers
+    get:
+      parameters:
+      - in: path
+        name: project_id
+        required: true
+        schema: *id001
+      - in: path
+        name: user_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Get a single project member
+      tags:
+      - ProjectMembers
+    put:
+      description: Replaces the ``group_ids`` array for a project member. The member
+        identity is read from the URL path; the body's ``user_id`` (if present) is
+        ignored. An empty ``group_ids`` array surfaces as a 400.
+      parameters:
+      - in: path
+        name: project_id
+        required: true
+        schema: *id001
+      - in: path
+        name: user_id
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberPatch'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Replace a project member's group assignments
+      tags:
+      - ProjectMembers
   /projects/{project_id}/pdfs:
     get:
       description: Cursor-paginates the PDF documents attached to every website in
@@ -8960,6 +9888,40 @@ paths:
       summary: List sibling state test results
       tags:
       - Test results
+  /users/search:
+    get:
+      description: Replaces the legacy ``GET /members/api/search-users``. Searches
+        active app users by email or display name. Results are capped at 20 entries
+        server-side; queries shorter than 2 characters return an empty list rather
+        than 400 to keep autocomplete UX smooth. The ``exclude_project`` query param
+        strips out users who are already members of that project, which is the standard
+        usage when populating an "add member" autocomplete.
+      parameters: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSearchListOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Search active app users
+      tags:
+      - Users
   /websites/{website_id}:
     delete:
       description: Deletes the website and cascades to its pages, PDFs, and test results.

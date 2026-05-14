@@ -107,6 +107,19 @@ from auto_a11y.web.api.schemas.scripts import (
     ScriptTestRunOut,
     ScriptValidationOut,
 )
+from auto_a11y.web.api.schemas.members import (
+    AvailableGroupOut,
+    GroupIn,
+    GroupListOut,
+    GroupOut,
+    GroupPatch,
+    MemberIn,
+    MemberListOut,
+    MemberOut,
+    MemberPatch,
+    UserSearchListOut,
+    UserSearchOut,
+)
 from auto_a11y.web.api.schemas.share_tokens import (
     ShareTokenCreatedOut,
     ShareTokenIn,
@@ -8386,21 +8399,24 @@ _RESOURCE_NOUNS_SET: frozenset[str] = frozenset(RESOURCE_NOUNS)
 _PERMISSION_LEVEL_NAMES: frozenset[str] = frozenset(PERMISSION_LEVELS.keys())
 
 
-def _serialize_permission_group(group: PermissionGroup) -> dict[str, Any]:
-    """Project a :class:`PermissionGroup` to a JSON-safe dict."""
+def _group_to_out(group: PermissionGroup) -> GroupOut:
+    """Project a :class:`PermissionGroup` to the response model.
+
+    Mirrors the legacy ``_serialize_permission_group`` byte-for-byte.
+    """
 
     def _iso(dt: datetime | None) -> str | None:
         return dt.isoformat() if dt is not None else None
 
-    return {
-        "id": group.id,
-        "name": group.name,
-        "description": group.description,
-        "permissions": dict(group.permissions),
-        "is_system": group.is_system,
-        "created_at": _iso(group.created_at),
-        "updated_at": _iso(group.updated_at),
-    }
+    return GroupOut(
+        id=group.id,
+        name=group.name,
+        description=group.description,
+        permissions=dict(group.permissions),
+        is_system=group.is_system,
+        created_at=_iso(group.created_at),
+        updated_at=_iso(group.updated_at),
+    )
 
 
 def _validate_permissions_dict(raw: Any, *, field: str) -> dict[str, str]:
@@ -8450,23 +8466,26 @@ def _validate_group_name_unique(name: str, *, exclude_id: str | None = None) -> 
         raise ConflictError(f"group name {name!r} is already in use")
 
 
-def _build_group_from_body(body: dict[str, Any]) -> PermissionGroup:
-    name_raw = body.get("name")
-    if not isinstance(name_raw, str) or not name_raw.strip():
+def _build_group_from_model(body: GroupIn) -> PermissionGroup:
+    """Build a :class:`PermissionGroup` from a validated :class:`GroupIn`.
+
+    Mirrors the legacy ``_build_group_from_body``: ``name`` is
+    semantically required (whitespace-only is a 400 with field path
+    ``name``); ``description`` defaults to ``""`` when absent;
+    ``permissions`` defaults to every resource noun mapped to
+    ``'none'``.
+    """
+    name_raw = body.name
+    if name_raw is None or not name_raw.strip():
         raise ValidationError(
             "name is required",
             errors=(_FieldError(field="name", code="required", message="required"),),
         )
     name = name_raw.strip()
-    description_raw = body.get("description", "")
-    if not isinstance(description_raw, str):
-        raise ValidationError(
-            "description must be a string",
-            errors=(_FieldError(field="description", code="invalid_type", message="must be string"),),
-        )
+    description_raw = body.description if body.description is not None else ""
     permissions = (
-        _validate_permissions_dict(body["permissions"], field="permissions")
-        if "permissions" in body
+        _validate_permissions_dict(body.permissions, field="permissions")
+        if body.permissions is not None
         else {r: "none" for r in RESOURCE_NOUNS}
     )
     return PermissionGroup(
@@ -8476,44 +8495,67 @@ def _build_group_from_body(body: dict[str, Any]) -> PermissionGroup:
     )
 
 
-def _apply_patch_to_group(group: PermissionGroup, body: dict[str, Any]) -> PermissionGroup:
+def _apply_patch_to_group(group: PermissionGroup, body: GroupPatch) -> PermissionGroup:
     """Apply only the keys present in ``body`` to ``group``.
 
     ``is_system`` is intentionally not patchable — that flag protects
     the seeded default groups from deletion, and clients shouldn't be
     able to flip it on/off.
+
+    The patch model exposes every field as ``Optional`` so a missing
+    field is indistinguishable from ``None`` at the type level. The
+    legacy ``"key" in body`` dispatch is preserved by inspecting
+    ``model_fields_set`` — that set carries only fields that were
+    actually present in the incoming JSON, so a caller can still pass
+    ``{"description": null}`` to clear a value without inadvertently
+    clearing every other field.
     """
-    if "name" in body:
-        if not isinstance(body["name"], str) or not body["name"].strip():
+    fields_present = body.model_fields_set
+    if "name" in fields_present:
+        name_value = body.name
+        if name_value is None or not name_value.strip():
             raise ValidationError(
                 "name must be a non-empty string",
                 errors=(_FieldError(field="name", code="invalid_value", message="must be non-empty string"),),
             )
-        group.name = body["name"].strip()
-    if "description" in body:
-        desc = body["description"]
-        if not isinstance(desc, str):
+        group.name = name_value.strip()
+    if "description" in fields_present:
+        desc = body.description
+        if desc is None:
             raise ValidationError(
                 "description must be a string",
                 errors=(_FieldError(field="description", code="invalid_type", message="must be string"),),
             )
         group.description = desc
-    if "permissions" in body:
-        group.permissions = _validate_permissions_dict(body["permissions"], field="permissions")
+    if "permissions" in fields_present:
+        perms = body.permissions
+        if perms is None:
+            raise ValidationError(
+                "permissions must be an object",
+                errors=(_FieldError(field="permissions", code="invalid_type", message="must be object"),),
+            )
+        group.permissions = _validate_permissions_dict(perms, field="permissions")
     group.updated_at = datetime.now()
     return group
 
 
 @api_bp.route("/groups", methods=["GET"])
 @api_endpoint
-def list_groups_rest() -> tuple[Response, int] | Response:
-    """List all permission groups with cursor pagination.
-
-    Defaults to the smallest sensible page; the underlying collection
-    is bounded (a handful of system groups + custom additions), so the
-    response shape with ``next_cursor`` is preserved for forward
-    compatibility even though most deployments will fit on one page.
-    """
+@document(
+    response_200=GroupListOut,
+    errors=[400, 401, 403],
+    tags=["Groups"],
+    summary="List permission groups",
+    description=(
+        "Lists all permission groups with cursor pagination. The "
+        "underlying collection is bounded (a handful of system groups "
+        "plus custom additions), so the cursor envelope is preserved "
+        "for forward compatibility even though most deployments fit on "
+        "one page."
+    ),
+)
+def list_groups_rest() -> tuple[GroupListOut, int]:
+    """List all permission groups with cursor pagination."""
     require_global_permission("groups", "read")
 
     limit = parse_limit(request.args.get("limit"))
@@ -8536,56 +8578,84 @@ def list_groups_rest() -> tuple[Response, int] | Response:
     page = paginate(
         groups, limit=limit, get_id=lambda g: str(g.mongo_id) if g.mongo_id else ""
     )
-    return jsonify(
-        {
-            "items": [_serialize_permission_group(g) for g in page["items"]],
-            "next_cursor": page["next_cursor"],
-        }
-    )
+    return GroupListOut(
+        items=[_group_to_out(g) for g in page["items"]],
+        next_cursor=page["next_cursor"],
+    ), 200
 
 
 @api_bp.route("/groups", methods=["POST"])
 @api_endpoint
-def create_group_rest() -> tuple[Response, int]:
+@document(
+    request=GroupIn,
+    response_201=GroupOut,
+    errors=[400, 401, 403, 409],
+    tags=["Groups"],
+    summary="Create a permission group",
+    description=(
+        "Creates a new permission group. Returns 201 with the created "
+        "group plus a ``Location`` header pointing at "
+        "``/api/v1/groups/<id>``. The ``is_system`` flag cannot be set "
+        "via the API — only seeded default groups carry "
+        "``is_system=true`` and they are protected from deletion."
+    ),
+)
+def create_group_rest(body: GroupIn) -> tuple[Response, int]:
     """Create a permission group."""
     require_global_permission("groups", "create")
-    body = _require_dict_body()
-    group = _build_group_from_body(body)
+    group = _build_group_from_model(body)
     _validate_group_name_unique(group.name)
     group_id = get_db().create_group(group)
     refreshed = get_db().get_group(group_id)
     if refreshed is None:
         raise ConflictError("group failed to persist")
-    response = jsonify(_serialize_permission_group(refreshed))
+    response = jsonify(
+        _group_to_out(refreshed).model_dump(
+            mode="json", by_alias=True, exclude_none=True
+        )
+    )
     response.headers["Location"] = f"/api/v1/groups/{group_id}"
     return response, 201
 
 
 @api_bp.route("/groups/<group_id>", methods=["GET"])
 @api_endpoint
-def get_group_rest(group_id: str) -> tuple[Response, int] | Response:
+@document(
+    response_200=GroupOut,
+    errors=[401, 403, 404],
+    tags=["Groups"],
+    summary="Get a permission group by id",
+)
+def get_group_rest(group_id: str) -> tuple[GroupOut, int]:
     """Get a permission group by id."""
     require_global_permission("groups", "read")
     group = get_db().get_group(group_id)
     if group is None:
         raise NotFoundError(f"group {group_id} not found")
-    return jsonify(_serialize_permission_group(group))
+    return _group_to_out(group), 200
 
 
 @api_bp.route("/groups/<group_id>", methods=["PUT"])
 @api_endpoint
-def replace_group_rest(group_id: str) -> tuple[Response, int] | Response:
-    """Full replace of a group's editable fields.
-
-    ``is_system`` and ``created_at`` are preserved; the ``updated_at``
-    timestamp is bumped.
-    """
+@document(
+    request=GroupIn,
+    response_200=GroupOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["Groups"],
+    summary="Replace a permission group",
+    description=(
+        "Full replace of a group's editable fields. ``is_system`` and "
+        "``created_at`` are preserved server-side; the ``updated_at`` "
+        "timestamp is bumped on every successful write."
+    ),
+)
+def replace_group_rest(group_id: str, body: GroupIn) -> tuple[GroupOut, int]:
+    """Full replace of a group's editable fields."""
     require_global_permission("groups", "update")
     existing = get_db().get_group(group_id)
     if existing is None:
         raise NotFoundError(f"group {group_id} not found")
-    body = _require_dict_body()
-    replaced = _build_group_from_body(body)
+    replaced = _build_group_from_model(body)
     _validate_group_name_unique(replaced.name, exclude_id=group_id)
     replaced.mongo_id = existing.mongo_id
     replaced.is_system = existing.is_system
@@ -8593,36 +8663,53 @@ def replace_group_rest(group_id: str) -> tuple[Response, int] | Response:
     replaced.updated_at = datetime.now()
     if not get_db().update_group(replaced):
         raise ConflictError("group could not be updated")
-    return jsonify(_serialize_permission_group(replaced))
+    return _group_to_out(replaced), 200
 
 
 @api_bp.route("/groups/<group_id>", methods=["PATCH"])
 @api_endpoint
-def patch_group_rest(group_id: str) -> tuple[Response, int] | Response:
+@document(
+    request=GroupPatch,
+    response_200=GroupOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["Groups"],
+    summary="Partially update a permission group",
+    description=(
+        "Partial update — only fields present in the request body are "
+        "changed. ``is_system`` is intentionally not patchable to keep "
+        "the seeded default groups protected from deletion."
+    ),
+)
+def patch_group_rest(group_id: str, body: GroupPatch) -> tuple[GroupOut, int]:
     """Partial update — only fields present in the request body are changed."""
     require_global_permission("groups", "update")
     group = get_db().get_group(group_id)
     if group is None:
         raise NotFoundError(f"group {group_id} not found")
-    body = _require_dict_body()
-    if "name" in body and isinstance(body["name"], str):
-        _validate_group_name_unique(body["name"].strip(), exclude_id=group_id)
+    if "name" in body.model_fields_set and body.name is not None:
+        _validate_group_name_unique(body.name.strip(), exclude_id=group_id)
     patched = _apply_patch_to_group(group, body)
     if not get_db().update_group(patched):
         raise ConflictError("group could not be updated")
-    return jsonify(_serialize_permission_group(patched))
+    return _group_to_out(patched), 200
 
 
 @api_bp.route("/groups/<group_id>", methods=["DELETE"])
 @api_endpoint
-def delete_group_rest(group_id: str) -> tuple[Response, int]:
-    """Delete a non-system group.
-
-    System groups (``is_system=True``) are the seeded default groups
-    (Admin, Auditor, Client). Removing them would orphan every
-    project_member.group_ids reference, so the legacy form blocks it
-    and the REST endpoint mirrors that with a 409.
-    """
+@document(
+    response_204=Empty,
+    errors=[401, 403, 404, 409],
+    tags=["Groups"],
+    summary="Delete a permission group",
+    description=(
+        "Deletes a non-system group. System groups (``is_system=true`` "
+        "— the seeded Admin/Auditor/Client defaults) are protected and "
+        "surface as a 409 because removing them would orphan every "
+        "``project_member.group_ids`` reference."
+    ),
+)
+def delete_group_rest(group_id: str) -> tuple[Empty, int]:
+    """Delete a non-system group."""
     require_global_permission("groups", "delete")
     group = get_db().get_group(group_id)
     if group is None:
@@ -8632,7 +8719,7 @@ def delete_group_rest(group_id: str) -> tuple[Response, int]:
             f"group {group_id} is a system group and cannot be deleted"
         )
     get_db().delete_group(group_id)
-    return Response(status=204), 204
+    return Empty(), 204
 
 
 # ---------------------------------------------------------------------------
@@ -8680,19 +8767,24 @@ _AUTH_METHOD_VALUES: frozenset[str] = frozenset(
 )
 
 
-def _serialize_app_user_search_hit(user: AppUser) -> dict[str, Any]:
-    """Project an :class:`AppUser` to the search-result shape.
+def _app_user_to_search_out(user: AppUser) -> UserSearchOut:
+    """Project an :class:`AppUser` to the search-result response model.
 
+    Mirrors the legacy ``_serialize_app_user_search_hit`` byte-for-byte.
     Deliberately narrow — this endpoint exists for picking a user when
     adding a project member, so it surfaces the email, display name,
     and id and nothing else (no password hash, no SSO id, no
     last_login). The full AppUser surface is out of scope for #27.
+
+    ``user_id`` is ``Optional[str]`` here because ``AppUser.id`` is
+    optional at the model layer; the handler only returns persisted
+    users so it is always set in practice.
     """
-    return {
-        "user_id": user.id,
-        "email": user.email,
-        "display_name": user.display_name,
-    }
+    return UserSearchOut(
+        user_id=user.id,
+        email=user.email,
+        display_name=user.display_name,
+    )
 
 
 def _serialize_login_config_via_model(config: Any) -> dict[str, Any]:
@@ -8875,19 +8967,28 @@ def get_current_user() -> tuple[Response, int] | Response:
 
 @api_bp.route("/users/search", methods=["GET"])
 @api_endpoint
-def search_users_rest() -> tuple[Response, int] | Response:
-    """Search active app users by email/display name.
-
-    Replaces the legacy ``GET /members/api/search-users``. Results are
-    capped at 20 entries server-side. The ``exclude_project`` query
-    param strips out users who are already members of that project,
-    which is the standard usage when populating a "add member"
-    autocomplete.
-    """
+@document(
+    response_200=UserSearchListOut,
+    errors=[400, 401],
+    tags=["Users"],
+    summary="Search active app users",
+    description=(
+        "Replaces the legacy ``GET /members/api/search-users``. "
+        "Searches active app users by email or display name. "
+        "Results are capped at 20 entries server-side; queries shorter "
+        "than 2 characters return an empty list rather than 400 to "
+        "keep autocomplete UX smooth. The ``exclude_project`` query "
+        "param strips out users who are already members of that "
+        "project, which is the standard usage when populating an "
+        "\"add member\" autocomplete."
+    ),
+)
+def search_users_rest() -> tuple[UserSearchListOut, int]:
+    """Search active app users by email/display name."""
     require_authenticated()
     q = (request.args.get("q") or "").strip()
     if len(q) < 2:
-        return jsonify({"users": []})
+        return UserSearchListOut(users=[]), 200
 
     limit_raw = request.args.get("limit", "10")
     try:
@@ -8910,7 +9011,9 @@ def search_users_rest() -> tuple[Response, int] | Response:
         exclude_user_ids=exclude_user_ids or None,
         limit=limit,
     )
-    return jsonify({"users": [_serialize_app_user_search_hit(u) for u in users]})
+    return UserSearchListOut(
+        users=[_app_user_to_search_out(u) for u in users]
+    ), 200
 
 
 # ---------------------------------------------------------------------------
@@ -8918,68 +9021,121 @@ def search_users_rest() -> tuple[Response, int] | Response:
 # ---------------------------------------------------------------------------
 
 
-def _serialize_project_member(member: ProjectMember, *, user: AppUser | None) -> dict[str, Any]:
-    return {
-        "user_id": member.user_id,
-        "email": user.email if user is not None else None,
-        "display_name": user.display_name if user is not None else None,
-        "group_ids": list(member.group_ids),
-    }
+def _project_member_to_out(
+    member: ProjectMember, *, user: AppUser | None
+) -> MemberOut:
+    """Project a :class:`ProjectMember` plus the looked-up
+    :class:`AppUser` to the response model.
+
+    Mirrors the legacy ``_serialize_project_member`` byte-for-byte.
+    The ``email`` and ``display_name`` fields are ``None`` when the
+    referenced AppUser has been deleted; the member row is preserved
+    on the project to keep audit trails intact.
+    """
+    return MemberOut(
+        user_id=member.user_id,
+        email=user.email if user is not None else None,
+        display_name=user.display_name if user is not None else None,
+        group_ids=list(member.group_ids),
+    )
 
 
-def _validate_group_ids_body(body: dict[str, Any], *, field: str = "group_ids") -> list[str]:
-    raw = body.get(field)
-    if not isinstance(raw, list) or not raw:
+def _resolve_member_user_id(body: MemberIn) -> str:
+    """Extract a validated, stripped ``user_id`` from a create body.
+
+    Mirrors the legacy ``add_project_member_rest`` validator: the
+    field is semantically required even though it's ``Optional[str]``
+    on the wire, and whitespace-only values are rejected with the
+    same 400 shape (field path ``user_id``, code ``required``).
+    """
+    user_id_raw = body.user_id
+    if user_id_raw is None or not user_id_raw.strip():
         raise ValidationError(
-            f"{field} must be a non-empty array",
-            errors=(_FieldError(field=field, code="required", message="must be non-empty array"),),
+            "user_id is required",
+            errors=(_FieldError(field="user_id", code="required", message="required"),),
         )
-    return _coerce_str_list(raw)
+    return user_id_raw.strip()
+
+
+def _resolve_member_group_ids(group_ids_raw: list[str] | None) -> list[str]:
+    """Validate and stringify the ``group_ids`` field.
+
+    Mirrors the legacy ``_validate_group_ids_body``: a missing field
+    or empty list is rejected with the same 400 shape (field path
+    ``group_ids``, code ``required``).
+    """
+    if group_ids_raw is None or not group_ids_raw:
+        raise ValidationError(
+            "group_ids must be a non-empty array",
+            errors=(_FieldError(field="group_ids", code="required", message="must be non-empty array"),),
+        )
+    return _coerce_str_list(group_ids_raw)
 
 
 @api_bp.route("/projects/<project_id>/members", methods=["GET"])
 @api_endpoint
-def list_project_members_rest(project_id: str) -> tuple[Response, int] | Response:
-    """List the platform members of a project + the available groups.
-
-    Returns each member with their email + display name + ``group_ids``,
-    plus an ``available_groups`` array (id + name) so a UI can render
-    a group picker without a second round-trip.
-    """
+@document(
+    response_200=MemberListOut,
+    errors=[401, 403, 404],
+    tags=["ProjectMembers"],
+    summary="List a project's platform members",
+    description=(
+        "Lists the platform members of a project alongside the "
+        "available groups. The non-paginated "
+        "``{members, available_groups}`` envelope lets a UI render an "
+        "add-member dialog in a single round-trip; cursoring is "
+        "unnecessary because member counts are bounded by a small "
+        "constant in practice."
+    ),
+)
+def list_project_members_rest(project_id: str) -> tuple[MemberListOut, int]:
+    """List the platform members of a project + the available groups."""
     require_global_permission("project_members", "read")
     project = get_db().get_project(project_id)
     if project is None:
         raise NotFoundError(f"project {project_id} not found")
 
-    members: list[dict[str, Any]] = []
+    members: list[MemberOut] = []
     for member in project.members:
         user = get_db().get_app_user(member.user_id)
-        members.append(_serialize_project_member(member, user=user))
+        members.append(_project_member_to_out(member, user=user))
 
     available_groups = [
-        {"id": g.id, "name": g.name, "is_system": g.is_system}
+        AvailableGroupOut(id=g.id, name=g.name, is_system=g.is_system)
         for g in get_db().get_all_groups()
     ]
-    return jsonify({"members": members, "available_groups": available_groups})
+    return MemberListOut(
+        members=members, available_groups=available_groups
+    ), 200
 
 
 @api_bp.route("/projects/<project_id>/members", methods=["POST"])
 @api_endpoint
-def add_project_member_rest(project_id: str) -> tuple[Response, int]:
+@document(
+    request=MemberIn,
+    response_201=MemberOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["ProjectMembers"],
+    summary="Add a member to a project",
+    description=(
+        "Adds a member to a project with the given group assignments. "
+        "Returns 201 with the member plus a ``Location`` header "
+        "pointing at "
+        "``/api/v1/projects/<project_id>/members/<user_id>``. A user "
+        "who is already a member surfaces as a 409; an unknown "
+        "``user_id`` surfaces as a 404."
+    ),
+)
+def add_project_member_rest(
+    project_id: str, body: MemberIn,
+) -> tuple[Response, int]:
     """Add a member to a project."""
     require_global_permission("project_members", "create")
     project = get_db().get_project(project_id)
     if project is None:
         raise NotFoundError(f"project {project_id} not found")
 
-    body = _require_dict_body()
-    user_id_raw = body.get("user_id")
-    if not isinstance(user_id_raw, str) or not user_id_raw.strip():
-        raise ValidationError(
-            "user_id is required",
-            errors=(_FieldError(field="user_id", code="required", message="required"),),
-        )
-    user_id = user_id_raw.strip()
+    user_id = _resolve_member_user_id(body)
 
     user = get_db().get_app_user(user_id)
     if user is None:
@@ -8988,7 +9144,7 @@ def add_project_member_rest(project_id: str) -> tuple[Response, int]:
     if any(m.user_id == user_id for m in project.members):
         raise ConflictError(f"user {user_id} is already a member of project {project_id}")
 
-    group_ids = _validate_group_ids_body(body)
+    group_ids = _resolve_member_group_ids(body.group_ids)
     get_db().add_project_member(project_id, user_id, group_ids)
 
     refreshed = get_db().get_project(project_id)
@@ -8997,14 +9153,24 @@ def add_project_member_rest(project_id: str) -> tuple[Response, int]:
     member = next((m for m in refreshed.members if m.user_id == user_id), None)
     if member is None:
         raise ConflictError("member-add did not persist")
-    response = jsonify(_serialize_project_member(member, user=user))
+    response = jsonify(
+        _project_member_to_out(member, user=user).model_dump(
+            mode="json", by_alias=True, exclude_none=True
+        )
+    )
     response.headers["Location"] = f"/api/v1/projects/{project_id}/members/{user_id}"
     return response, 201
 
 
 @api_bp.route("/projects/<project_id>/members/<user_id>", methods=["GET"])
 @api_endpoint
-def get_project_member_rest(project_id: str, user_id: str) -> tuple[Response, int] | Response:
+@document(
+    response_200=MemberOut,
+    errors=[401, 403, 404],
+    tags=["ProjectMembers"],
+    summary="Get a single project member",
+)
+def get_project_member_rest(project_id: str, user_id: str) -> tuple[MemberOut, int]:
     """Get one project member."""
     require_global_permission("project_members", "read")
     project = get_db().get_project(project_id)
@@ -9014,14 +9180,27 @@ def get_project_member_rest(project_id: str, user_id: str) -> tuple[Response, in
     if member is None:
         raise NotFoundError(f"user {user_id} is not a member of project {project_id}")
     user = get_db().get_app_user(user_id)
-    return jsonify(_serialize_project_member(member, user=user))
+    return _project_member_to_out(member, user=user), 200
 
 
 @api_bp.route("/projects/<project_id>/members/<user_id>", methods=["PUT"])
 @api_endpoint
+@document(
+    request=MemberPatch,
+    response_200=MemberOut,
+    errors=[400, 401, 403, 404, 409],
+    tags=["ProjectMembers"],
+    summary="Replace a project member's group assignments",
+    description=(
+        "Replaces the ``group_ids`` array for a project member. The "
+        "member identity is read from the URL path; the body's "
+        "``user_id`` (if present) is ignored. An empty ``group_ids`` "
+        "array surfaces as a 400."
+    ),
+)
 def update_project_member_rest(
-    project_id: str, user_id: str
-) -> tuple[Response, int] | Response:
+    project_id: str, user_id: str, body: MemberPatch,
+) -> tuple[MemberOut, int]:
     """Replace a member's group assignments."""
     require_global_permission("project_members", "update")
     project = get_db().get_project(project_id)
@@ -9030,8 +9209,7 @@ def update_project_member_rest(
     if not any(m.user_id == user_id for m in project.members):
         raise NotFoundError(f"user {user_id} is not a member of project {project_id}")
 
-    body = _require_dict_body()
-    group_ids = _validate_group_ids_body(body)
+    group_ids = _resolve_member_group_ids(body.group_ids)
     if not get_db().update_project_member_groups(project_id, user_id, group_ids):
         raise ConflictError("member group update did not modify any document")
 
@@ -9042,14 +9220,26 @@ def update_project_member_rest(
     if member is None:
         raise ConflictError("member disappeared after update")
     user = get_db().get_app_user(user_id)
-    return jsonify(_serialize_project_member(member, user=user))
+    return _project_member_to_out(member, user=user), 200
 
 
 @api_bp.route("/projects/<project_id>/members/<user_id>", methods=["DELETE"])
 @api_endpoint
+@document(
+    response_204=Empty,
+    errors=[400, 401, 403, 404],
+    tags=["ProjectMembers"],
+    summary="Remove a member from a project",
+    description=(
+        "Removes a member from a project. Self-removal is rejected "
+        "with a 400 carrying field path ``user_id`` (code "
+        "``self_removal``) to prevent a project admin from accidentally "
+        "locking themselves out."
+    ),
+)
 def remove_project_member_rest(
-    project_id: str, user_id: str
-) -> tuple[Response, int]:
+    project_id: str, user_id: str,
+) -> tuple[Empty, int]:
     """Remove a member from a project. Self-removal is rejected (400)."""
     require_global_permission("project_members", "delete")
     if user_id == str(current_user.get_id()):
@@ -9063,7 +9253,7 @@ def remove_project_member_rest(
     if not any(m.user_id == user_id for m in project.members):
         raise NotFoundError(f"user {user_id} is not a member of project {project_id}")
     get_db().remove_project_member(project_id, user_id)
-    return Response(status=204), 204
+    return Empty(), 204
 
 
 # ---------------------------------------------------------------------------

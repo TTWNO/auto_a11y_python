@@ -151,6 +151,93 @@ def test_registry_is_populated(contract_app: Flask) -> None:
     assert len(REGISTRY) > 100, f"expected >100 documented routes, got {len(REGISTRY)}"
 
 
+# Allowlist of /api/v1 routes that exist on the api_bp but were intentionally
+# left out of Phase 2's §5.1–§5.16 conversion. The rollout plan scoped each
+# §5.x task narrowly (e.g. §5.13 Auth covered /auth/* and /users/* core CRUD
+# but not the test-user / supervisor / tester sub-resources). Documenting
+# these follows as a Phase-3 follow-up; the allowlist is intentionally
+# enumerated rather than glob-matched so adding a NEW undocumented route
+# still fails the drift gate.
+_KNOWN_UNDOCUMENTED: frozenset[tuple[str, str]] = frozenset({
+    # §5.4 Test runs — top-level orchestration not covered by Task 14
+    ("POST", "/test-runs"),
+    ("POST", "/test-runs/batch"),
+    # Testing config — separate resource not in §5.x scope
+    ("GET", "/testing/config"),
+    ("PUT", "/testing/config"),
+    # Recording issues — separate from recordings; not in §5.6 scope
+    ("GET", "/recording-issues/<issue_id>"),
+    ("PATCH", "/recording-issues/<issue_id>"),
+    # Project report summary — separate from §5.5 Reports
+    ("GET", "/projects/<project_id>/report-summary"),
+    # Project test-users (project-scoped) — separate user resource
+    ("GET", "/projects/<project_id>/test-users"),
+    ("POST", "/projects/<project_id>/test-users"),
+    ("GET", "/project-test-users/<user_id>"),
+    ("PUT", "/project-test-users/<user_id>"),
+    ("PATCH", "/project-test-users/<user_id>"),
+    ("DELETE", "/project-test-users/<user_id>"),
+    ("POST", "/project-test-users/<user_id>/test-login"),
+    # Website test-users (website-scoped)
+    ("GET", "/websites/<website_id>/test-users"),
+    ("POST", "/websites/<website_id>/test-users"),
+    ("GET", "/website-test-users/<user_id>"),
+    ("PUT", "/website-test-users/<user_id>"),
+    ("PATCH", "/website-test-users/<user_id>"),
+    ("DELETE", "/website-test-users/<user_id>"),
+    ("POST", "/website-test-users/<user_id>/test-login"),
+    # Project supervisors
+    ("GET", "/projects/<project_id>/supervisors"),
+    ("POST", "/projects/<project_id>/supervisors"),
+    ("GET", "/projects/<project_id>/supervisors/<supervisor_id>"),
+    ("PUT", "/projects/<project_id>/supervisors/<supervisor_id>"),
+    ("PATCH", "/projects/<project_id>/supervisors/<supervisor_id>"),
+    ("DELETE", "/projects/<project_id>/supervisors/<supervisor_id>"),
+    # Lived experience testers
+    ("GET", "/projects/<project_id>/testers"),
+    ("POST", "/projects/<project_id>/testers"),
+    ("GET", "/projects/<project_id>/testers/<tester_id>"),
+    ("PUT", "/projects/<project_id>/testers/<tester_id>"),
+    ("PATCH", "/projects/<project_id>/testers/<tester_id>"),
+    ("DELETE", "/projects/<project_id>/testers/<tester_id>"),
+})
+
+
+def test_every_api_v1_route_is_documented(contract_app: Flask) -> None:
+    """Drift gate: no ``/api/v1`` rule may exist without an ``EndpointDoc``.
+
+    The registry stores blueprint-relative rules (``/projects``, not
+    ``/api/v1/projects``) because ``register_documented_views`` strips the
+    ``api_bp`` ``url_prefix``. We match that convention here.
+
+    Exempt: the OpenAPI spec endpoints themselves (documenting the
+    documentation would be recursive). Plus the ``_KNOWN_UNDOCUMENTED``
+    allowlist for routes the §5.x rollout did not cover — adding a NEW
+    undocumented route still fails this gate.
+    """
+    prefix = "/api/v1"
+    exempt: set[tuple[str, str]] = {
+        ("GET", "/openapi.json"),
+        ("GET", "/openapi.yaml"),
+    }
+    undocumented: list[str] = []
+    for rule in contract_app.url_map.iter_rules():
+        if not rule.rule.startswith(prefix + "/"):
+            continue
+        relative = rule.rule[len(prefix):] or "/"
+        for method in (rule.methods or set()) - {"HEAD", "OPTIONS"}:
+            key = (method, relative)
+            if key in REGISTRY or key in exempt or key in _KNOWN_UNDOCUMENTED:
+                continue
+            undocumented.append(f"{method} {rule.rule}")
+    msg = (
+        "every /api/v1 route must carry @document (or be added to "
+        + "_KNOWN_UNDOCUMENTED with a follow-up issue); missing:\n  "
+        + "\n  ".join(sorted(undocumented))
+    )
+    assert not undocumented, msg
+
+
 def test_every_documented_endpoint_has_at_least_one_response_or_error(
     contract_app: Flask,
 ) -> None:

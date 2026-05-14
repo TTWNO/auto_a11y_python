@@ -226,6 +226,15 @@ def create_app(config: Any) -> Flask:
     app.register_blueprint(testing_bp, url_prefix='/testing')
     app.register_blueprint(reports_bp, url_prefix='/reports')
     app.register_blueprint(api_bp, url_prefix='/api/v1')
+    from auto_a11y.web.routes import v1_openapi
+    from auto_a11y.web.api.openapi.document import register_documented_views
+
+    # Reference the views so the linter doesn't flag the import as unused.
+    # Importing v1_openapi has the side effect of attaching the routes to
+    # api_bp at module load.
+    _ = (v1_openapi.openapi_json, v1_openapi.openapi_yaml)
+
+    register_documented_views(app)
     app.register_blueprint(scripts_bp, url_prefix='/scripts')
     app.register_blueprint(website_users_bp, url_prefix='/users')
     app.register_blueprint(project_users_bp, url_prefix='')

@@ -750,7 +750,6 @@ components:
       title: DiscoveredPagePatch
       type: object
     DiscoveredPagePut:
-      additionalProperties: false
       description: 'Request body for ``PUT /api/v1/discovered-pages/<id>``.
 
 
@@ -2194,6 +2193,48 @@ components:
           title: Permissions
       title: GroupPatch
       type: object
+    GroupPut:
+      description: 'PUT body for replacing a permission group.
+
+
+        Same editable fields as :class:`GroupIn`. The wire-shape distinction
+
+        is leniency: a client that does ``GET`` → mutate → ``PUT`` ships
+
+        server-managed fields like ``id``, ``is_system``, and timestamps
+
+        back to the server. We silently drop those (handler only acts on
+
+        the editable fields) rather than 400ing every well-behaved client.
+
+        The ``is_system`` flag in particular MUST stay server-controlled —
+
+        protecting it through schema rejection is brittle, so the handler
+
+        preserves the existing value regardless of what the body sets.'
+      properties:
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Description
+        name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Name
+        permissions:
+          anyOf:
+          - additionalProperties:
+              type: string
+            type: object
+          - type: 'null'
+          default: null
+          title: Permissions
+      title: GroupPut
+      type: object
     HealthOut:
       additionalProperties: false
       description: "Response body for ``GET /health``.\n\nMirrors the legacy ``health_check``\
@@ -3075,13 +3116,13 @@ components:
           title: Description
         email:
           anyOf:
-          - type: string
+          - {}
           - type: 'null'
           default: null
           title: Email
         password:
           anyOf:
-          - type: string
+          - {}
           - type: 'null'
           default: null
           title: Password
@@ -3598,7 +3639,6 @@ components:
       title: PagePatch
       type: object
     PagePut:
-      additionalProperties: false
       description: 'Request body for ``PUT /api/v1/pages/<id>``.
 
 
@@ -6786,6 +6826,18 @@ components:
           - type: 'null'
           default: null
           title: Respect Robots
+        spa_click_discovery:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Spa Click Discovery
+        spa_ready_selector:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Spa Ready Selector
       title: ScrapingConfigModel
       type: object
     ScriptIn:
@@ -7254,7 +7306,6 @@ components:
       title: ScriptPatch
       type: object
     ScriptPut:
-      additionalProperties: false
       description: 'PUT body for full replacement of a setup script.
 
 
@@ -7658,6 +7709,42 @@ components:
       required:
       - failure_selectors
       title: ScriptValidationOut
+      type: object
+    SessionCacheClearedOut:
+      additionalProperties: false
+      description: "Response body for ``DELETE /{scope}-test-users/<user_id>/session-cache``.\n\
+        \nIdempotent — the handler returns 200 whether or not a cached\nmanual-login\
+        \ session existed. ``removed`` distinguishes the two\ncases so a UI can render\
+        \ \"cache cleared\" vs. \"no cache to clear\"\nwithout parsing the human-readable\
+        \ ``message`` string.\n\nFields:\n\n- ``user_id`` — echoes the URL path parameter.\n\
+        - ``scope`` — ``\"project\"`` or ``\"website\"``; lets a generic\n  client\
+        \ route the response without inspecting the URL.\n- ``removed`` — ``True``\
+        \ when a cached session was deleted;\n  ``False`` when there was no cache\
+        \ to delete.\n- ``message`` — already-translated human-readable status string\n\
+        \  (the legacy handler emits this via Fluent; we preserve the\n  wire shape\
+        \ so the existing UI can render it as-is)."
+      properties:
+        message:
+          title: Message
+          type: string
+        removed:
+          title: Removed
+          type: boolean
+        scope:
+          enum:
+          - project
+          - website
+          title: Scope
+          type: string
+        user_id:
+          title: User Id
+          type: string
+      required:
+      - user_id
+      - scope
+      - removed
+      - message
+      title: SessionCacheClearedOut
       type: object
     SettingsSectionOut:
       additionalProperties: false
@@ -8856,7 +8943,16 @@ components:
 
         is required; the other fields mirror :class:`PageTestRunIn` from
 
-        ``test_runs.py``.'
+        ``test_runs.py``.
+
+
+        ``enable_multi_state`` uses strict bool validation: Pydantic''s lax
+
+        default would coerce the string ``"yes"`` (and other truthy strings)
+
+        to ``True``, but the test orchestration surface treats those as a
+
+        typo and 400s them so the caller fixes the wire shape.'
       properties:
         enable_multi_state:
           anyOf:
@@ -9230,7 +9326,6 @@ components:
       title: WebsitePatch
       type: object
     WebsitePut:
-      additionalProperties: false
       description: 'Request body for ``PUT /api/v1/websites/<id>``.
 
 
@@ -11046,7 +11141,8 @@ paths:
     put:
       description: Full replace of a group's editable fields. ``is_system`` and ``created_at``
         are preserved server-side; the ``updated_at`` timestamp is bumped on every
-        successful write.
+        successful write. Extra fields on the wire (e.g. ``is_system`` round-tripped
+        from a prior GET) are silently ignored — see :class:`GroupPut`.
       parameters:
       - in: path
         name: group_id
@@ -11056,7 +11152,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GroupIn'
+              $ref: '#/components/schemas/GroupPut'
         required: true
       responses:
         '200':
@@ -12975,6 +13071,49 @@ paths:
       - bearerAuth: []
       - sessionAuth: []
       summary: Replace a project test user's editable fields
+      tags:
+      - TestUsers
+  /project-test-users/{user_id}/session-cache:
+    delete:
+      description: Deletes the Playwright ``storage_state`` blob captured during a
+        prior manual-login run for this project test-user. Idempotent — status 200
+        in both branches (a delete with nothing to remove still succeeds). ``removed``
+        distinguishes the two cases for UIs that want to render distinct success states
+        ("cleared" vs. "nothing to clear").
+      parameters:
+      - in: path
+        name: user_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionCacheClearedOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Clear a project test-user's cached manual-login session
       tags:
       - TestUsers
   /project-test-users/{user_id}/test-login:
@@ -16988,6 +17127,47 @@ paths:
       - bearerAuth: []
       - sessionAuth: []
       summary: Replace a website test user's editable fields
+      tags:
+      - TestUsers
+  /website-test-users/{user_id}/session-cache:
+    delete:
+      description: Website-scoped companion to ``DELETE /project-test-users/<id>/session-cache``.
+        Same wire shape and same idempotent semantics — see that route's description
+        for the rationale.
+      parameters:
+      - in: path
+        name: user_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionCacheClearedOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Clear a website test-user's cached manual-login session
       tags:
       - TestUsers
   /website-test-users/{user_id}/test-login:

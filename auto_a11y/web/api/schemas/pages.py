@@ -43,7 +43,7 @@ from typing import Literal, Optional
 
 from pydantic import Field
 
-from auto_a11y.web.api.schemas.common import StrictModel
+from auto_a11y.web.api.schemas.common import LenientPutModel, StrictModel
 
 
 # ---------------------------------------------------------------------------
@@ -68,7 +68,7 @@ class PageIn(StrictModel):
     setup_script_id: Optional[str] = None
 
 
-class PagePut(StrictModel):
+class PagePut(LenientPutModel):
     """Request body for ``PUT /api/v1/pages/<id>``.
 
     Full replace of editable fields. Server-managed fields (status,
@@ -270,7 +270,7 @@ class DiscoveredPageIn(StrictModel):
     document_links: Optional[list[dict[str, object]]] = None
 
 
-class DiscoveredPagePut(StrictModel):
+class DiscoveredPagePut(LenientPutModel):
     """Request body for ``PUT /api/v1/discovered-pages/<id>``.
 
     Full replace of editable fields. Server-managed fields (project_id,

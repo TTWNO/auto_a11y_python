@@ -61,9 +61,9 @@ Decisions worth flagging
 """
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Annotated, Literal, Optional
 
-from pydantic import RootModel
+from pydantic import Field, RootModel
 
 from auto_a11y.web.api.schemas.common import StrictModel
 
@@ -80,10 +80,15 @@ class TopLevelTestRunIn(StrictModel):
     that takes the page id in the body instead of the URL. ``page_id``
     is required; the other fields mirror :class:`PageTestRunIn` from
     ``test_runs.py``.
+
+    ``enable_multi_state`` uses strict bool validation: Pydantic's lax
+    default would coerce the string ``"yes"`` (and other truthy strings)
+    to ``True``, but the test orchestration surface treats those as a
+    typo and 400s them so the caller fixes the wire shape.
     """
 
     page_id: str
-    enable_multi_state: Optional[bool] = None
+    enable_multi_state: Annotated[Optional[bool], Field(strict=True)] = None
     website_user_id: Optional[str] = None
 
 

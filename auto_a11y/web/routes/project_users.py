@@ -7,6 +7,7 @@ import asyncio
 
 from flask import Blueprint, Response, render_template, request, redirect, url_for, flash, jsonify
 from werkzeug.wrappers import Response as WerkzeugResponse
+from auto_a11y.web.api.deprecation import deprecated
 from auto_a11y.web.fluent import ftl
 from auto_a11y.web.typed_app import get_db, get_app_config
 from auto_a11y.models.project_user import ProjectUser, LoginConfig, AuthenticationMethod
@@ -287,6 +288,10 @@ def toggle_user(user_id: str) -> Response | tuple[Response, int]:
 
 
 @project_users_bp.route('/projects/users/<user_id>/clear-cache', methods=['POST'])
+@deprecated(
+    successor="/api/v1/project-test-users/<user_id>/session-cache",
+    sunset="2026-09-01",
+)
 def clear_cache(user_id: str) -> Response | tuple[Response, int]:
     """Delete the cached manual-login session for this project user."""
     from auto_a11y.testing.login_automation import clear_session_cache

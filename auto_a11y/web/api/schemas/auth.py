@@ -191,8 +191,13 @@ class LoginIn(StrictModel):
     ignored otherwise.
     """
 
-    email: Optional[str] = None
-    password: Optional[str] = None
+    # email / password typed as ``Optional[object]`` (not ``Optional[str]``)
+    # so Pydantic does NOT reject non-string values at the @document
+    # boundary. The handler's ``isinstance(_, str)`` check fires inside
+    # the route body and uniformly returns the opaque 401 — preserving
+    # the email-enumeration defence the docstring above describes.
+    email: Optional[object] = None
+    password: Optional[object] = None
     description: Optional[str] = None
     session: Optional[bool] = None
     remember: Optional[bool] = None

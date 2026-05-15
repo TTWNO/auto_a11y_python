@@ -1,29 +1,17 @@
-"""Dynamic OpenAPI 3.1 spec endpoints for /api/v1/*.
+"""Compatibility shim — the dynamic OpenAPI 3.1 spec endpoints now live
+directly on ``api_bp`` inside :mod:`auto_a11y.web.routes.api` (search for
+"Dynamic OpenAPI 3.1 spec endpoints"). Co-locating the route definitions
+eliminates a pytest-only import-order trap: a prior test could register
+``api_bp`` against its test app and freeze the blueprint before this
+module's module-level ``add_url_rule`` calls ran.
 
-These views rebuild the spec on every request from the live registry, so
-the response can never be stale. They attach to the existing api_bp at
-module load time (no new blueprint).
+This file re-exports the two view functions so existing callers
+(``auto_a11y/web/app.py``, ``scripts/generate_openapi.py``, the contract
+and endpoint tests) keep working without churn. Importing the module no
+longer has side effects.
 """
 from __future__ import annotations
 
-import yaml
-from flask import Response, current_app, jsonify
+from auto_a11y.web.routes.api import openapi_json, openapi_yaml
 
-from auto_a11y.web.api.openapi.builder import build_spec
-from auto_a11y.web.routes.api import api_bp
-
-
-def openapi_json() -> Response:
-    """GET /api/v1/openapi.json — JSON representation."""
-    return jsonify(build_spec(current_app))
-
-
-def openapi_yaml() -> Response:
-    """GET /api/v1/openapi.yaml — YAML representation, deterministic ordering."""
-    spec = build_spec(current_app)
-    body = yaml.safe_dump(spec, sort_keys=True, default_flow_style=False, allow_unicode=True)
-    return Response(body, mimetype="application/yaml")
-
-
-api_bp.add_url_rule("/openapi.json", view_func=openapi_json, methods=["GET"])
-api_bp.add_url_rule("/openapi.yaml", view_func=openapi_yaml, methods=["GET"])
+__all__ = ["openapi_json", "openapi_yaml"]

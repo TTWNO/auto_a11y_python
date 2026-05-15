@@ -20,10 +20,18 @@ TEMPLATES_DIR = Path(__file__).resolve().parent.parent / 'auto_a11y' / 'web' / '
 EXEMPT_TEMPLATE_DIRS: frozenset[str] = frozenset({'public', 'demo'})
 
 _FORM_RE = re.compile(
-    r'<form\b[^>]*\bmethod\s*=\s*["\']?post["\']?[^>]*>(.*?)</form>',
+    # ``(?<![-\w])method`` requires the ``method`` attribute be the form's
+    # OWN attribute, not a dataset alias like ``data-api-method`` whose
+    # name happens to contain the substring "method". ``data-api-method``
+    # forms route through ``apiClient`` which posts to a CSRF-exempt
+    # ``/api/v1/*`` endpoint, so they don't need a hidden ``csrf_token``
+    # input. Without this guard the regex's ``\bmethod`` match would
+    # fire on every migrated form and surface a false positive.
+    r'<form\b[^>]*(?<![-\w])method\s*=\s*["\']?post["\']?[^>]*>(.*?)</form>',
     re.IGNORECASE | re.DOTALL,
 )
 _CSRF_RE = re.compile(r'name=["\']csrf_token["\']', re.IGNORECASE)
+_DATA_API_FORM_RE = re.compile(r'\bdata-api-form\b', re.IGNORECASE)
 
 
 def _is_exempt(template: Path) -> bool:
@@ -33,10 +41,24 @@ def _is_exempt(template: Path) -> bool:
 
 
 def _find_offending_forms(template: Path) -> list[int]:
-    """Return 1-based line numbers of POST forms in `template` missing csrf_token."""
+    """Return 1-based line numbers of POST forms in `template` missing csrf_token.
+
+    ``data-api-form`` forms are skipped — they route through ``apiClient``
+    to a CSRF-exempt ``/api/v1/*`` endpoint, so the hidden CSRF input is
+    not required (and actively dropped by the client to keep Pydantic's
+    ``extra='forbid'`` happy).
+    """
     text = template.read_text(encoding='utf-8')
     offenders: list[int] = []
     for match in _FORM_RE.finditer(text):
+        # The opening ``<form ...>`` tag spans from match.start() up to
+        # the first ``>``. Pull just that substring and check whether
+        # it carries ``data-api-form``; if so, the form is on the
+        # apiClient path and doesn't need a server-rendered CSRF token.
+        tag_open_end = text.index('>', match.start()) + 1
+        opening_tag = text[match.start():tag_open_end]
+        if _DATA_API_FORM_RE.search(opening_tag):
+            continue
         body = match.group(1)
         if _CSRF_RE.search(body):
             continue

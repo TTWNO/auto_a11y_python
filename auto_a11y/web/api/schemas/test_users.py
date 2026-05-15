@@ -360,3 +360,29 @@ class TestUserLoginOut(StrictModel):
     error: Optional[str] = None
     manual_login: bool
     wait_seconds: Optional[int] = None
+
+
+class SessionCacheClearedOut(StrictModel):
+    """Response body for ``DELETE /{scope}-test-users/<user_id>/session-cache``.
+
+    Idempotent — the handler returns 200 whether or not a cached
+    manual-login session existed. ``removed`` distinguishes the two
+    cases so a UI can render "cache cleared" vs. "no cache to clear"
+    without parsing the human-readable ``message`` string.
+
+    Fields:
+
+    - ``user_id`` — echoes the URL path parameter.
+    - ``scope`` — ``"project"`` or ``"website"``; lets a generic
+      client route the response without inspecting the URL.
+    - ``removed`` — ``True`` when a cached session was deleted;
+      ``False`` when there was no cache to delete.
+    - ``message`` — already-translated human-readable status string
+      (the legacy handler emits this via Fluent; we preserve the
+      wire shape so the existing UI can render it as-is).
+    """
+
+    user_id: str
+    scope: Literal["project", "website"]
+    removed: bool
+    message: str

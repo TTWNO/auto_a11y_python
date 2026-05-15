@@ -312,6 +312,9 @@ def create_app(config: Any) -> Flask:
             'api.auth_login_rest', 'api.auth_register_rest',
             'api.auth_forgot_password_rest', 'api.auth_reset_password_rest',
             'api.auth_sso_url_rest', 'api.auth_sso_callback_rest',
+            # The dynamic OpenAPI 3.1 spec endpoints are deliberately
+            # public — documenting the documentation is the whole point.
+            'api.openapi_json', 'api.openapi_yaml',
             'static', 'health', 'set_language',
             'desktop.shutdown'
         ]

@@ -76,8 +76,13 @@ def test_request_validation_failure_returns_400_problem(app: Flask) -> None:
     assert r.status_code == 400
     assert r.mimetype == "application/problem+json"
     body = r.get_json()
-    assert body["title"] == "Bad Request"
-    assert any(e["loc"] == ["name"] for e in body["errors"])
+    # Validation envelope mirrors the canonical ``FieldError`` shape that
+    # every other ``@api_endpoint`` route emits: ``{type, title, status,
+    # errors:[{field, code, message}, ...]}``. The two paths are kept in
+    # sync by ``validation_error_to_problem`` (openapi/errors.py).
+    assert body["title"] == "Validation failed"
+    assert body["type"] == "https://auto-a11y/errors/validation"
+    assert any(e["field"] == "name" for e in body["errors"])
 
 
 def test_response_201_status_via_tuple(app: Flask) -> None:

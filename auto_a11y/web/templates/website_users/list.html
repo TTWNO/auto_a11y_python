@@ -294,16 +294,12 @@ function deleteUser(userId) {
 function clearLoginCache(userId) {
     const btn = document.getElementById(`clear-cache-btn-${userId}`);
     btn.disabled = true;
-    fetch(`/users/user/${userId}/clear-cache`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(r => r.json())
-    .then(data => {
-        btn.disabled = false;
-        if (data.success) {
+    window.apiClient.delete(`/website-test-users/${userId}/session-cache`)
+        .then(data => {
+            btn.disabled = false;
+            // ``removed`` distinguishes "cleared" from "nothing to clear";
+            // both are success — render the same flash either way and
+            // keep the human-readable ``message`` for the title attribute.
             btn.classList.remove('btn-outline-neutral');
             btn.classList.add('btn-outline-pass');
             btn.title = data.message;
@@ -312,15 +308,15 @@ function clearLoginCache(userId) {
                 btn.classList.add('btn-outline-neutral');
                 btn.title = {{ ftl('websites-clear-login-cache') | tojson }};
             }, 2000);
-        } else {
+        })
+        .catch(err => {
+            btn.disabled = false;
             btn.classList.add('btn-outline-high');
-            btn.title = data.error || data.message;
-        }
-    })
-    .catch(err => {
-        btn.disabled = false;
-        btn.title = String(err);
-    });
+            const detail = (err && err.problem && err.problem.detail)
+                || (err && err.message)
+                || String(err);
+            btn.title = detail;
+        });
 }
 </script>
 {% endblock %}

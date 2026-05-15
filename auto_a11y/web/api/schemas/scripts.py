@@ -87,7 +87,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from auto_a11y.web.api.schemas.common import StrictModel
+from auto_a11y.web.api.schemas.common import LenientPutModel, StrictModel
 
 
 # ---------------------------------------------------------------------------
@@ -166,7 +166,7 @@ class ScriptIn(StrictModel):
     validation: Optional[ScriptValidationIn] = None
 
 
-class ScriptPut(StrictModel):
+class ScriptPut(LenientPutModel):
     """PUT body for full replacement of a setup script.
 
     Same wire shape as :class:`ScriptIn` but declared separately so

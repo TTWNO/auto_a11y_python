@@ -55,7 +55,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from auto_a11y.web.api.schemas.common import StrictModel
+from auto_a11y.web.api.schemas.common import LenientPutModel, StrictModel
 
 
 # ---------------------------------------------------------------------------
@@ -74,6 +74,24 @@ class GroupIn(StrictModel):
     field is absent. ``permissions`` is an open ``dict[str, str]``
     (resource-noun → permission-level); the handler validates against
     the closed enums at the application level.
+    """
+
+    name: Optional[str] = None
+    description: Optional[str] = None
+    permissions: Optional[dict[str, str]] = None
+
+
+class GroupPut(LenientPutModel):
+    """PUT body for replacing a permission group.
+
+    Same editable fields as :class:`GroupIn`. The wire-shape distinction
+    is leniency: a client that does ``GET`` → mutate → ``PUT`` ships
+    server-managed fields like ``id``, ``is_system``, and timestamps
+    back to the server. We silently drop those (handler only acts on
+    the editable fields) rather than 400ing every well-behaved client.
+    The ``is_system`` flag in particular MUST stay server-controlled —
+    protecting it through schema rejection is brittle, so the handler
+    preserves the existing value regardless of what the body sets.
     """
 
     name: Optional[str] = None

@@ -39,7 +39,32 @@ from flask import Flask, Response, jsonify, request as flask_request
 from pydantic import BaseModel, ValidationError
 from werkzeug.datastructures import FileStorage
 
+from auto_a11y.web.api.errors import FieldError, ProblemDetails, problem_response
 from auto_a11y.web.api.openapi.errors import validation_error_to_problem
+
+
+def _wrong_content_type_problem(*, expected: str) -> tuple[Response, int]:
+    """Return a (400 Problem, 400) tuple for a wrong-content-type request.
+
+    Multipart-only endpoints raise this when a client posts JSON to a
+    ``request_form=`` handler. The wire shape mirrors
+    :func:`validation_error_to_problem` so callers can de-multiplex on
+    ``error[*].code == 'wrong_content_type'``.
+    """
+    problem = ProblemDetails(
+        type="https://auto-a11y/errors/validation",
+        title="Validation failed",
+        status=400,
+        detail=f"this endpoint requires Content-Type: {expected}",
+        errors=(
+            FieldError(
+                field="<request>",
+                code="wrong_content_type",
+                message=f"expected {expected}",
+            ),
+        ),
+    )
+    return problem_response(problem)
 from auto_a11y.web.api.openapi.registry import (
     EndpointDoc,
     SecurityScheme,
@@ -86,11 +111,21 @@ def document(
     summary: str,
     description: Optional[str] = None,
     security: SecurityScheme = "bearer+session",
+    allow_json_alternative: bool = False,
 ) -> Callable[[Callable[P, ResponseLike]], DocumentedView]:
     """Decorate a view with validation, serialization, and documentation.
 
     Exactly one of ``request`` or ``request_form`` may be set; setting both is
     a programmer error (mixing JSON and multipart on the same endpoint).
+
+    ``allow_json_alternative=True`` opts a multipart endpoint into also
+    accepting an ``application/json`` body. The decorator skips form
+    validation and the file-kwarg binding for JSON requests — the
+    handler is responsible for reading the JSON body itself (typically
+    via ``flask.request.get_json()``). Used by hybrid endpoints like
+    ``POST /api/v1/projects/<id>/pdfs`` that accept either a multipart
+    upload OR a JSON URL-fetch instruction. Defaults to ``False`` so
+    pure-multipart endpoints stay strict (a JSON body 400s).
     """
     if request is not None and request_form is not None:
         raise RuntimeError(
@@ -132,15 +167,47 @@ def document(
                     return validation_error_to_problem(exc)
                 kwargs["body"] = body
             elif request_form is not None:
-                form_payload: dict[str, object] = dict(flask_request.form.items())
-                try:
-                    form_model = request_form.model_validate(form_payload)
-                except ValidationError as exc:
-                    return validation_error_to_problem(exc)
-                kwargs["form"] = form_model
-                for file_field in request_files or ():
-                    file_obj: Optional[FileStorage] = flask_request.files.get(file_field)
-                    kwargs[file_field] = file_obj
+                # Multipart endpoints reject non-multipart requests at the
+                # boundary unless ``allow_json_alternative=True`` was
+                # set on the @document decoration. ``flask_request.form``
+                # is silently empty for a JSON body, which would
+                # otherwise let an empty ``request_form`` model pass
+                # validation and run the handler — masking the wrong
+                # content type. Surface a clean 400 instead so clients
+                # see the contract violation.
+                #
+                # The ``allow_json_alternative`` carve-out is for hybrid
+                # endpoints that branch on Content-Type inside the
+                # handler (e.g. PDF upload accepting either multipart or
+                # a JSON URL-fetch shape). For JSON requests we skip
+                # form validation entirely and hand back an empty
+                # ``request_form`` model — the handler is responsible
+                # for reading ``request.get_json()`` itself.
+                is_multipart = (flask_request.mimetype or "").startswith(
+                    "multipart/form-data"
+                )
+                if not is_multipart and not allow_json_alternative:
+                    return _wrong_content_type_problem(expected="multipart/form-data")
+
+                if is_multipart:
+                    form_payload: dict[str, object] = dict(flask_request.form.items())
+                    try:
+                        form_model = request_form.model_validate(form_payload)
+                    except ValidationError as exc:
+                        return validation_error_to_problem(exc)
+                    kwargs["form"] = form_model
+                    for file_field in request_files or ():
+                        file_obj: Optional[FileStorage] = flask_request.files.get(
+                            file_field
+                        )
+                        kwargs[file_field] = file_obj
+                else:
+                    # JSON alternative: pass an empty form model and
+                    # ``None`` for every file kwarg. The handler reads
+                    # the JSON body itself.
+                    kwargs["form"] = request_form.model_validate({})
+                    for file_field in request_files or ():
+                        kwargs[file_field] = None
             result = cast(Callable[..., ResponseLike], view)(*args, **kwargs)
             return _serialize(result)
 
@@ -151,16 +218,25 @@ def document(
 
 
 def _serialize(result: ResponseLike) -> WrappedReturn:
-    """Convert a view's return value into a Flask response."""
+    """Convert a view's return value into a Flask response.
+
+    ``exclude_none`` is deliberately ``False``: every field a response
+    model declares — even ones whose runtime value is ``None`` — appears
+    on the wire as an explicit ``null``. Callers (tests, frontend) treat
+    "key absent" as a contract change; keeping the field present
+    preserves the cursor-pagination shape (``items``, ``next_cursor``)
+    where ``next_cursor`` is ``None`` on the final page but MUST still
+    be readable as ``body["next_cursor"]``.
+    """
     if isinstance(result, BaseModel):
-        return jsonify(result.model_dump(mode="json", by_alias=True, exclude_none=True))
+        return jsonify(result.model_dump(mode="json", by_alias=True))
     if isinstance(result, Response):
         return result
     # ``result`` is a 2-tuple: either (BaseModel, int) or (Response, int).
     body, status = result
     if isinstance(body, BaseModel):
         payload: Response = jsonify(
-            body.model_dump(mode="json", by_alias=True, exclude_none=True)
+            body.model_dump(mode="json", by_alias=True)
         )
         return payload, status
     return body, status

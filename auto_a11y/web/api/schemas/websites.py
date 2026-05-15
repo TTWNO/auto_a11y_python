@@ -35,7 +35,7 @@ from typing import Optional
 
 from pydantic import Field
 
-from auto_a11y.web.api.schemas.common import StrictModel
+from auto_a11y.web.api.schemas.common import LenientPutModel, StrictModel
 
 
 # ---------------------------------------------------------------------------
@@ -61,6 +61,12 @@ class ScrapingConfigModel(StrictModel):
     allowed_paths: Optional[list[str]] = None
     excluded_paths: Optional[list[str]] = None
     auto_fetch_pdfs: Optional[bool] = None
+    # SPA click-discovery fields (added on main alongside the interactive-auth
+    # delay feature). Both default to off; ``spa_ready_selector`` is a CSS
+    # selector the scraper waits for before reading the DOM when SPA mode
+    # is on.
+    spa_click_discovery: Optional[bool] = None
+    spa_ready_selector: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------
@@ -82,7 +88,7 @@ class WebsiteIn(StrictModel):
     scraping_config: Optional[ScrapingConfigModel] = None
 
 
-class WebsitePut(StrictModel):
+class WebsitePut(LenientPutModel):
     """Request body for ``PUT /api/v1/websites/<id>``.
 
     PUT is a full replace of editable fields. Server-managed fields

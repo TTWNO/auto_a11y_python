@@ -6,7 +6,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Literal, Mapping, Optional, TypeGuard, cast
 
-from flask import Blueprint, Response, jsonify, request
+from flask import Blueprint, Response, current_app, jsonify, request
+
+from auto_a11y.web.fluent import ftl
 from flask_login import current_user
 from werkzeug.datastructures import FileStorage
 from auto_a11y.models import (
@@ -127,6 +129,7 @@ from auto_a11y.web.api.schemas.members import (
     GroupListOut,
     GroupOut,
     GroupPatch,
+    GroupPut,
     MemberIn,
     MemberListOut,
     MemberOut,
@@ -234,6 +237,7 @@ from auto_a11y.web.api.schemas.test_users import (
     LoginConfigOut,
     ProjectTestUserListOut,
     ProjectTestUserOut,
+    SessionCacheClearedOut,
     TestUserIn,
     TestUserLoginOut,
     TestUserPatch,
@@ -2220,7 +2224,7 @@ def create_scheduled_test(
     # so we pre-build the Response here and attach the header.
     payload = _schedule_to_out(refreshed)
     response = jsonify(
-        payload.model_dump(mode="json", by_alias=True, exclude_none=True)
+        payload.model_dump(mode="json", by_alias=True, exclude_none=False)
     )
     response.headers["Location"] = f"/api/v1/scheduled-tests/{schedule_id}"
     return response, 201
@@ -2413,7 +2417,7 @@ def run_scheduled_test_now(
     # as a 500 rather than silently drifting from the spec).
     payload = ScheduleRunOut.model_validate(body)
     return jsonify(
-        payload.model_dump(mode="json", by_alias=True, exclude_none=True)
+        payload.model_dump(mode="json", by_alias=True, exclude_none=False)
     ), status_code
 
 
@@ -2670,7 +2674,7 @@ def create_website(
     # *that* response -- not the model. We pre-build a Response here
     # to preserve the header.
     payload = _website_to_out(refreshed)
-    response = jsonify(payload.model_dump(mode="json", by_alias=True, exclude_none=True))
+    response = jsonify(payload.model_dump(mode="json", by_alias=True, exclude_none=False))
     response.headers["Location"] = f"/api/v1/websites/{website_id}"
     return response, 201
 
@@ -3041,7 +3045,7 @@ def create_page(
     # the Location header has to live on the same response. Build the
     # response explicitly so we can attach the header.
     payload = _page_to_out(refreshed)
-    response = jsonify(payload.model_dump(mode="json", by_alias=True, exclude_none=True))
+    response = jsonify(payload.model_dump(mode="json", by_alias=True, exclude_none=False))
     response.headers["Location"] = f"/api/v1/pages/{page_id}"
     return response, 201
 
@@ -4898,7 +4902,7 @@ def _create_share_token(
     # ``jsonify``, but we need a ``Location`` header on the new resource,
     # so we pre-build the Response here and attach the header.
     response = jsonify(
-        payload.model_dump(mode="json", by_alias=True, exclude_none=True)
+        payload.model_dump(mode="json", by_alias=True, exclude_none=False)
     )
     response.headers["Location"] = f"/api/v1/share-tokens/{token_id}"
     return response, 201
@@ -5646,7 +5650,7 @@ def create_page_script_rest(
     # so we pre-build the Response here and attach the header.
     payload = _script_to_out(refreshed)
     response = jsonify(
-        payload.model_dump(mode="json", by_alias=True, exclude_none=True)
+        payload.model_dump(mode="json", by_alias=True, exclude_none=False)
     )
     response.headers["Location"] = f"/api/v1/scripts/{script_id}"
     return response, 201
@@ -5713,7 +5717,7 @@ def create_website_script_rest(
         raise ConflictError("script failed to persist")
     payload = _script_to_out(refreshed)
     response = jsonify(
-        payload.model_dump(mode="json", by_alias=True, exclude_none=True)
+        payload.model_dump(mode="json", by_alias=True, exclude_none=False)
     )
     response.headers["Location"] = f"/api/v1/scripts/{script_id}"
     return response, 201
@@ -6601,7 +6605,7 @@ def create_recording_rest(
     # ``jsonify``, but we need a ``Location`` header on the new resource,
     # so we pre-build the Response here and attach the header.
     payload = _recording_to_out(refreshed)
-    response = jsonify(payload.model_dump(mode="json", by_alias=True, exclude_none=True))
+    response = jsonify(payload.model_dump(mode="json", by_alias=True, exclude_none=False))
     response.headers["Location"] = f"/api/v1/recordings/{created_id}"
     return response, 201
 
@@ -7955,6 +7959,7 @@ def list_pdfs_for_website(website_id: str) -> PdfListOut:
 @document(
     request_form=PdfUploadIn,
     request_files=["pdf_file"],
+    allow_json_alternative=True,
     response_200=PdfOut,
     response_201=PdfOut,
     errors=[400, 401, 403, 404, 409],
@@ -8219,7 +8224,7 @@ def create_pdf_for_project(
     # the body of a (BaseModel, int) tuple, but we need to add a
     # ``Location`` header — so build the Response explicitly here.
     payload = PdfOut.model_validate(_serialize_pdf_document(doc))
-    response = jsonify(payload.model_dump(mode="json", exclude_none=True))
+    response = jsonify(payload.model_dump(mode="json", exclude_none=False))
     response.headers["Location"] = f"/api/v1/pdf-documents/{doc.id}"
     return response, (201 if is_new else 200)
 
@@ -9226,7 +9231,7 @@ def create_group_rest(body: GroupIn) -> tuple[Response, int]:
         raise ConflictError("group failed to persist")
     response = jsonify(
         _group_to_out(refreshed).model_dump(
-            mode="json", by_alias=True, exclude_none=True
+            mode="json", by_alias=True, exclude_none=False
         )
     )
     response.headers["Location"] = f"/api/v1/groups/{group_id}"
@@ -9253,7 +9258,7 @@ def get_group_rest(group_id: str) -> tuple[GroupOut, int]:
 @api_bp.route("/groups/<group_id>", methods=["PUT"])
 @api_endpoint
 @document(
-    request=GroupIn,
+    request=GroupPut,
     response_200=GroupOut,
     errors=[400, 401, 403, 404, 409],
     tags=["Groups"],
@@ -9261,16 +9266,22 @@ def get_group_rest(group_id: str) -> tuple[GroupOut, int]:
     description=(
         "Full replace of a group's editable fields. ``is_system`` and "
         "``created_at`` are preserved server-side; the ``updated_at`` "
-        "timestamp is bumped on every successful write."
+        "timestamp is bumped on every successful write. Extra fields "
+        "on the wire (e.g. ``is_system`` round-tripped from a prior "
+        "GET) are silently ignored — see :class:`GroupPut`."
     ),
 )
-def replace_group_rest(group_id: str, body: GroupIn) -> tuple[GroupOut, int]:
+def replace_group_rest(group_id: str, body: GroupPut) -> tuple[GroupOut, int]:
     """Full replace of a group's editable fields."""
     require_global_permission("groups", "update")
     existing = get_db().get_group(group_id)
     if existing is None:
         raise NotFoundError(f"group {group_id} not found")
-    replaced = _build_group_from_model(body)
+    # GroupPut shares the editable field set with GroupIn; project the
+    # body into a GroupIn for the model-builder helper rather than
+    # duplicating the field-shape logic.
+    as_in = GroupIn.model_validate(body.model_dump(exclude_unset=True))
+    replaced = _build_group_from_model(as_in)
     _validate_group_name_unique(replaced.name, exclude_id=group_id)
     replaced.mongo_id = existing.mongo_id
     replaced.is_system = existing.is_system
@@ -9826,7 +9837,7 @@ def add_project_member_rest(
         raise ConflictError("member-add did not persist")
     response = jsonify(
         _project_member_to_out(member, user=user).model_dump(
-            mode="json", by_alias=True, exclude_none=True
+            mode="json", by_alias=True, exclude_none=False
         )
     )
     response.headers["Location"] = f"/api/v1/projects/{project_id}/members/{user_id}"
@@ -10165,7 +10176,7 @@ def create_project_test_user_rest(
     # resource, so we pre-build the Response here and attach the header.
     payload = _serialize_project_test_user(refreshed)
     response = jsonify(
-        payload.model_dump(mode="json", by_alias=True, exclude_none=True)
+        payload.model_dump(mode="json", by_alias=True, exclude_none=False)
     )
     response.headers["Location"] = f"/api/v1/project-test-users/{user_id}"
     return response, 201
@@ -10488,7 +10499,7 @@ def test_project_user_login(
             wait_seconds=wait_seconds if is_manual else None,
         )
         return jsonify(
-            error_payload.model_dump(mode="json", by_alias=True, exclude_none=True)
+            error_payload.model_dump(mode="json", by_alias=True, exclude_none=False)
         ), 500
     finally:
         loop.close()
@@ -10601,7 +10612,7 @@ def test_website_user_login(
             wait_seconds=wait_seconds if is_manual else None,
         )
         return jsonify(
-            error_payload.model_dump(mode="json", by_alias=True, exclude_none=True)
+            error_payload.model_dump(mode="json", by_alias=True, exclude_none=False)
         ), 500
     finally:
         loop.close()
@@ -10614,6 +10625,103 @@ def test_website_user_login(
         error=_login_result_error(result.get("error")),
         manual_login=is_manual,
         wait_seconds=wait_seconds if is_manual else None,
+    ), 200
+
+
+# ---------------------------------------------------------------------------
+# Manual-login session cache — DELETE successors for the two legacy
+# ``/clear-cache`` routes. The cache is the Playwright ``storage_state``
+# blob captured during a prior manual-login run; subsequent automated
+# tests reuse it via :class:`ManualSession`. Clearing forces the next
+# run to pop a visible browser again — useful when the session expired
+# upstream or the human-driven login captured stale 2FA.
+# ---------------------------------------------------------------------------
+
+
+@api_bp.route(
+    "/project-test-users/<user_id>/session-cache", methods=["DELETE"]
+)
+@api_endpoint
+@document(
+    response_200=SessionCacheClearedOut,
+    errors=[401, 403, 404],
+    tags=["TestUsers"],
+    summary="Clear a project test-user's cached manual-login session",
+    description=(
+        "Deletes the Playwright ``storage_state`` blob captured during "
+        "a prior manual-login run for this project test-user. "
+        "Idempotent — status 200 in both branches (a delete with "
+        "nothing to remove still succeeds). ``removed`` distinguishes "
+        "the two cases for UIs that want to render distinct success "
+        "states (\"cleared\" vs. \"nothing to clear\")."
+    ),
+)
+def clear_project_test_user_session_cache(
+    user_id: str,
+) -> tuple[SessionCacheClearedOut, int]:
+    """Delete the cached manual-login session for a project test user."""
+    from auto_a11y.testing.login_automation import clear_session_cache
+
+    user = get_db().get_project_user(user_id)
+    if user is None:
+        raise NotFoundError(f"project test user {user_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, project_id=user.project_id,
+    )
+    removed = bool(clear_session_cache(user))
+    message = (
+        ftl("websites-login-cache-cleared") if removed
+        else ftl("websites-login-cache-empty")
+    )
+    return SessionCacheClearedOut(
+        user_id=user_id,
+        scope="project",
+        removed=removed,
+        message=message,
+    ), 200
+
+
+@api_bp.route(
+    "/website-test-users/<user_id>/session-cache", methods=["DELETE"]
+)
+@api_endpoint
+@document(
+    response_200=SessionCacheClearedOut,
+    errors=[401, 403, 404],
+    tags=["TestUsers"],
+    summary="Clear a website test-user's cached manual-login session",
+    description=(
+        "Website-scoped companion to "
+        "``DELETE /project-test-users/<id>/session-cache``. Same wire "
+        "shape and same idempotent semantics — see that route's "
+        "description for the rationale."
+    ),
+)
+def clear_website_test_user_session_cache(
+    user_id: str,
+) -> tuple[SessionCacheClearedOut, int]:
+    """Delete the cached manual-login session for a website test user."""
+    from auto_a11y.testing.login_automation import clear_session_cache
+
+    user = get_db().get_website_user(user_id)
+    if user is None:
+        raise NotFoundError(f"website test user {user_id} not found")
+    website = get_db().get_website(user.website_id)
+    if website is None:
+        raise NotFoundError(f"website test user {user_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, website_id=user.website_id,
+    )
+    removed = bool(clear_session_cache(user))
+    message = (
+        ftl("websites-login-cache-cleared") if removed
+        else ftl("websites-login-cache-empty")
+    )
+    return SessionCacheClearedOut(
+        user_id=user_id,
+        scope="website",
+        removed=removed,
+        message=message,
     ), 200
 
 
@@ -10690,7 +10798,7 @@ def create_website_test_user_rest(
         raise ConflictError("website test user failed to persist")
     payload = _serialize_website_test_user(refreshed)
     response = jsonify(
-        payload.model_dump(mode="json", by_alias=True, exclude_none=True)
+        payload.model_dump(mode="json", by_alias=True, exclude_none=False)
     )
     response.headers["Location"] = f"/api/v1/website-test-users/{user_id}"
     return response, 201
@@ -11044,7 +11152,7 @@ def create_tester_rest(
     # resource, so we pre-build the Response here and attach the header.
     payload = _serialize_tester(tester)
     response = jsonify(
-        payload.model_dump(mode="json", by_alias=True, exclude_none=True)
+        payload.model_dump(mode="json", by_alias=True, exclude_none=False)
     )
     response.headers["Location"] = (
         f"/api/v1/projects/{project_id}/testers/{tester.id}"
@@ -11249,7 +11357,7 @@ def create_supervisor_rest(
 
     payload = _serialize_supervisor(supervisor)
     response = jsonify(
-        payload.model_dump(mode="json", by_alias=True, exclude_none=True)
+        payload.model_dump(mode="json", by_alias=True, exclude_none=False)
     )
     response.headers["Location"] = (
         f"/api/v1/projects/{project_id}/supervisors/{supervisor.id}"
@@ -11601,7 +11709,7 @@ def create_discovered_page_rest(
 
     payload = _discovered_page_to_out(refreshed)
     response = jsonify(
-        payload.model_dump(mode="json", by_alias=True, exclude_none=True)
+        payload.model_dump(mode="json", by_alias=True, exclude_none=False)
     )
     response.headers["Location"] = f"/api/v1/discovered-pages/{new_id}"
     return response, 201
@@ -12121,7 +12229,7 @@ def auth_register_rest(body: RegisterIn) -> tuple[Response, int]:
         user=_app_user_to_out(persisted),
     )
     response = jsonify(
-        payload.model_dump(mode="json", by_alias=True, exclude_none=True)
+        payload.model_dump(mode="json", by_alias=True, exclude_none=False)
     )
     response.headers["Location"] = f"/api/v1/users/{new_user_id}"
     return response, 201
@@ -12440,7 +12548,7 @@ def create_user_rest(body: AppUserCreateIn) -> tuple[Response, int]:
 
     response = jsonify(
         _app_user_to_out(persisted).model_dump(
-            mode="json", by_alias=True, exclude_none=True
+            mode="json", by_alias=True, exclude_none=False
         )
     )
     response.headers["Location"] = f"/api/v1/users/{new_user_id}"
@@ -13713,3 +13821,35 @@ def auth_sso_callback_rest(provider: str) -> tuple[SsoCallbackOut, int]:
         token_record=_api_token_to_out(token),
         user=_app_user_to_out(user),
     ), 200
+
+
+# ---------------------------------------------------------------------------
+# Dynamic OpenAPI 3.1 spec endpoints
+#
+# Defined inline in api.py (not in a separate ``v1_openapi`` module)
+# because Flask's blueprint API permits ``add_url_rule`` only before the
+# blueprint has been registered on any app. The separate module worked
+# in production (``app.py`` imported it before ``register_blueprint``)
+# but broke under pytest, where a prior test could finalize ``api_bp``
+# against its test app before the openapi-endpoint test fixture imported
+# the side-effect module. Co-locating eliminates the import-order trap.
+# ---------------------------------------------------------------------------
+
+
+@api_bp.route("/openapi.json", methods=["GET"])
+def openapi_json() -> Response:
+    """GET /api/v1/openapi.json — rebuild from the live registry."""
+    from auto_a11y.web.api.openapi.builder import build_spec
+    return jsonify(build_spec(current_app))
+
+
+@api_bp.route("/openapi.yaml", methods=["GET"])
+def openapi_yaml() -> Response:
+    """GET /api/v1/openapi.yaml — YAML, deterministic key ordering."""
+    import yaml as _yaml
+    from auto_a11y.web.api.openapi.builder import build_spec
+    spec = build_spec(current_app)
+    body = _yaml.safe_dump(
+        spec, sort_keys=True, default_flow_style=False, allow_unicode=True,
+    )
+    return Response(body, mimetype="application/yaml")

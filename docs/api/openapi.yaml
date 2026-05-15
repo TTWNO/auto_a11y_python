@@ -2244,6 +2244,131 @@ components:
       - storage
       title: HealthPdfOut
       type: object
+    IssueMessageTemplateOut:
+      additionalProperties: false
+      description: 'Per-issue user-facing copy block.
+
+
+        Mirrors the ``message_template`` dict the legacy handler optionally
+
+        attached when the enhanced issue description was available.'
+      properties:
+        remediation:
+          title: Remediation
+          type: string
+        title:
+          title: Title
+          type: string
+        what:
+          title: What
+          type: string
+        why:
+          title: Why
+          type: string
+      required:
+      - title
+      - what
+      - why
+      - remediation
+      title: IssueMessageTemplateOut
+      type: object
+    IssueOut:
+      additionalProperties: false
+      description: 'Response body for ``GET /api/v1/issues/<code>``.
+
+
+        Combines the static catalog entry with the per-code database
+
+        documentation status (the ``production_ready`` flag). ``message_template``
+
+        is optional — populated only when the enhanced description table
+
+        has a matching entry.
+
+
+        Fields without a translation in the catalog default to empty
+
+        strings rather than ``None`` so clients can render them
+
+        unconditionally; the legacy handler did the same.'
+      properties:
+        category:
+          title: Category
+          type: string
+        description:
+          title: Description
+          type: string
+        how_to_fix:
+          title: How To Fix
+          type: string
+        id:
+          title: Id
+          type: string
+        impact:
+          title: Impact
+          type: string
+        message_template:
+          anyOf:
+          - $ref: '#/components/schemas/IssueMessageTemplateOut'
+          - type: 'null'
+          default: null
+        production_ready:
+          title: Production Ready
+          type: boolean
+        type:
+          title: Type
+          type: string
+        wcag:
+          items:
+            type: string
+          title: Wcag
+          type: array
+        wcag_full:
+          title: Wcag Full
+          type: string
+        who_it_affects:
+          title: Who It Affects
+          type: string
+        why_it_matters:
+          title: Why It Matters
+          type: string
+      required:
+      - id
+      - type
+      - impact
+      - wcag
+      - wcag_full
+      - category
+      - description
+      - why_it_matters
+      - who_it_affects
+      - how_to_fix
+      - production_ready
+      title: IssueOut
+      type: object
+    IssuePatch:
+      additionalProperties: false
+      description: 'Request body for ``PATCH /api/v1/issues/<code>``.
+
+
+        Only ``production_ready`` is patchable from the REST surface — the
+
+        rest of the issue catalog is static build-time data. The body is
+
+        *partial* (Pydantic''s ``model_fields_set`` is the signal) so future
+
+        fields can be added without forcing every existing client to send
+
+        them.'
+      properties:
+        production_ready:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Production Ready
+      title: IssuePatch
+      type: object
     JobCancelOut:
       additionalProperties: false
       description: 'Response body for ``POST /jobs/<job_id>/cancel``.
@@ -4928,10 +5053,10 @@ components:
           title: Max Pages
         project_user_ids:
           anyOf:
-          - type: string
           - items:
               type: string
             type: array
+          - type: string
           - type: 'null'
           default: null
           title: Project User Ids
@@ -4955,10 +5080,10 @@ components:
           title: Untested Only
         website_user_ids:
           anyOf:
-          - type: string
           - items:
               type: string
             type: array
+          - type: string
           - type: 'null'
           default: null
           title: Website User Ids
@@ -5639,15 +5764,26 @@ components:
       description: 'Request body for partial recording updates.
 
 
-        Editable fields are intentionally narrow: human-facing metadata
+        Editable fields cover human-facing metadata plus two scope fields
 
-        only. The legacy ``_apply_patch_to_recording`` helper applies the
+        that the legacy ``/recordings/<id>/edit`` form has always written:
 
-        same set. Server-managed fields (counts, project_id, recording_id,
+        ``page_urls`` (free-form URL list) and ``discovered_page_ids``
 
-        recording_type, media_file_path, Drupal sync, and the multi-language
+        (cross-reference to discovered-pages). Server-managed fields
 
-        content arrays) are not patchable here.
+        (counts, project_id, recording_id, recording_type, media_file_path,
+
+        Drupal sync, and the multi-language content arrays) are not patchable
+
+        here.
+
+
+        ``page_urls`` accepts either a list of strings or a single newline-
+
+        separated string; the handler normalises to a list. Same shape
+
+        flexibility for ``discovered_page_ids`` (list-or-comma-separated).
 
 
         The PATCH body is *partial* — only fields the client sends are
@@ -5674,12 +5810,30 @@ components:
           - type: 'null'
           default: null
           title: Description
+        discovered_page_ids:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: string
+          - type: 'null'
+          default: null
+          title: Discovered Page Ids
         notes:
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Notes
+        page_urls:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: string
+          - type: 'null'
+          default: null
+          title: Page Urls
         tags:
           anyOf:
           - items:
@@ -8907,19 +9061,19 @@ components:
           title: Max Pages
         project_user_ids:
           anyOf:
-          - type: string
           - items:
               type: string
             type: array
+          - type: string
           - type: 'null'
           default: null
           title: Project User Ids
         website_user_ids:
           anyOf:
-          - type: string
           - items:
               type: string
             type: array
+          - type: string
           - type: 'null'
           default: null
           title: Website User Ids
@@ -9263,10 +9417,10 @@ components:
           title: Max Pages
         project_user_ids:
           anyOf:
-          - type: string
           - items:
               type: string
             type: array
+          - type: string
           - type: 'null'
           default: null
           title: Project User Ids
@@ -9290,10 +9444,10 @@ components:
           title: Untested Only
         website_user_ids:
           anyOf:
-          - type: string
           - items:
               type: string
             type: array
+          - type: string
           - type: 'null'
           default: null
           title: Website User Ids
@@ -11042,6 +11196,97 @@ paths:
       summary: PDF subsystem health probe
       tags:
       - Health
+  /issues/{code}:
+    get:
+      description: Returns the static catalog entry for ``<code>`` (description, WCAG
+        ids, impact, how-to-fix, ...) plus the database-managed ``production_ready``
+        flag. The catalog itself is build-time data; only ``production_ready`` is
+        mutable (via PATCH on this same resource). Returns 404 when the code is absent
+        from the catalog — the catalog identity governs 404, not the database row.
+      parameters:
+      - in: path
+        name: code
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssueOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Read an issue catalog entry
+      tags:
+      - Issues
+    patch:
+      description: Partial update — currently only ``production_ready`` is patchable.
+        Returns the refreshed projection so the client can render the new state without
+        a second roundtrip. Requires ADMIN (the legacy handler accepted any authenticated
+        user; we tighten that here because flipping ``production_ready`` is a release-gate
+        decision).
+      parameters:
+      - in: path
+        name: code
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssuePatch'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssueOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Update an issue catalog entry's documentation status
+      tags:
+      - Issues
   /jobs/active:
     get:
       description: Returns up to 100 jobs in RUNNING / PENDING / CANCELLING status,

@@ -146,7 +146,7 @@
                                         <i class="bi bi-play-circle" aria-hidden="true"></i>
                                     </button>
                                     <button type="button" class="btn btn-outline-{% if script.enabled %}success{% else %}secondary{% endif %}"
-                                            onclick="toggleScript('{{ script.id }}')" aria-label="{% if script.enabled %}{{ ftl('common-disable') }}{% else %}{{ ftl('common-enable') }}{% endif %}">
+                                            onclick="toggleScript('{{ script.id }}', {{ (not script.enabled) | tojson }})" aria-label="{% if script.enabled %}{{ ftl('common-disable') }}{% else %}{{ ftl('common-enable') }}{% endif %}">
                                         <i class="bi bi-toggle-{% if script.enabled %}on{% else %}off{% endif %}" aria-hidden="true"></i>
                                     </button>
                                     <button type="button" class="btn btn-outline-high"
@@ -265,97 +265,64 @@ function testScript(scriptId) {
     icon.className = 'bi bi-arrow-repeat spin';
     btn.title = {{ ftl('scripts-testing-script') | tojson }};
 
-    fetch(`/scripts/${scriptId}/test`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(r => r.json())
-    .then(data => {
-        btn.disabled = false;
-        if (data.success) {
-            icon.className = 'bi bi-check-circle-fill';
-            btn.classList.remove('btn-outline-brand');
-            btn.classList.add('btn-outline-pass');
-            btn.title = {{ ftl('scripts-script-test-succeeded') | tojson }} + ' (' + (data.duration_ms || 0) + 'ms)';
-        } else {
-            icon.className = 'bi bi-x-circle-fill';
-            btn.classList.remove('btn-outline-brand');
-            btn.classList.add('btn-outline-high');
-            btn.title = data.error || {{ ftl('scripts-script-test-failed') | tojson }};
-        }
-    })
-    .catch(err => {
-        btn.disabled = false;
-        icon.className = originalIconClass;
-        btn.classList.remove('btn-outline-pass', 'btn-outline-high');
-        if (!btn.classList.contains('btn-outline-brand')) {
-            btn.classList.add('btn-outline-brand');
-        }
-        alert({{ ftl('scripts-error-testing-script') | tojson }} + ' ' + err.message);
-    });
+    window.apiClient.post(`/scripts/${scriptId}/test-runs`, {})
+        .then(data => {
+            btn.disabled = false;
+            if (data.success) {
+                icon.className = 'bi bi-check-circle-fill';
+                btn.classList.remove('btn-outline-brand');
+                btn.classList.add('btn-outline-pass');
+                btn.title = {{ ftl('scripts-script-test-succeeded') | tojson }} + ' (' + (data.duration_ms || 0) + 'ms)';
+            } else {
+                icon.className = 'bi bi-x-circle-fill';
+                btn.classList.remove('btn-outline-brand');
+                btn.classList.add('btn-outline-high');
+                btn.title = data.error || {{ ftl('scripts-script-test-failed') | tojson }};
+            }
+        })
+        .catch(err => {
+            btn.disabled = false;
+            // The new endpoint returns 500 (with the same envelope) when the
+            // script raises during execution. Surface that as a script-failure
+            // result rather than a generic network error.
+            if (err && err.status === 500 && err.problem && 'success' in err.problem) {
+                icon.className = 'bi bi-x-circle-fill';
+                btn.classList.remove('btn-outline-brand');
+                btn.classList.add('btn-outline-high');
+                btn.title = err.problem.error || {{ ftl('scripts-script-test-failed') | tojson }};
+                return;
+            }
+            icon.className = originalIconClass;
+            btn.classList.remove('btn-outline-pass', 'btn-outline-high');
+            if (!btn.classList.contains('btn-outline-brand')) {
+                btn.classList.add('btn-outline-brand');
+            }
+            alert({{ ftl('scripts-error-testing-script') | tojson }} + ' ' + err.message);
+        });
 }
 
-function toggleScript(scriptId) {
-    console.log('=== toggleScript called with scriptId:', scriptId);
+function toggleScript(scriptId, newEnabled) {
+    if (!confirm('{{ ftl('scripts-toggle-this-script-enable-disable') }}')) return;
 
-    if (!confirm('{{ ftl('scripts-toggle-this-script-enable-disable') }}')) {
-        console.log('User cancelled toggle');
-        return;
-    }
-
-    const url = `/scripts/${scriptId}/toggle`;
-    console.log('Fetching URL:', url);
-
-    fetch(url, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(r => {
-        console.log('Response status:', r.status);
-        console.log('Response content-type:', r.headers.get('content-type'));
-        return r.text(); // Get as text first to debug
-    })
-    .then(text => {
-        console.log('Response text:', text);
-        const data = JSON.parse(text); // Try to parse
-        console.log('Parsed data:', data);
-        if (data.success) {
-            console.log('Success! Reloading page...');
+    window.apiClient.patch(`/scripts/${scriptId}`, { enabled: newEnabled })
+        .then(() => {
             location.reload();
-        } else {
-            alert('{{ ftl('common-error') }} ' + (data.error || '{{ ftl('common-unknown-error') }}'));
-        }
-    })
-    .catch(err => {
-        console.error('Toggle error:', err);
-        alert('{{ ftl('scripts-error-toggling-script') }} ' + err.message);
-    });
+        })
+        .catch(err => {
+            console.error('Toggle error:', err);
+            window.apiClient.showError(err);
+        });
 }
 
 function deleteScript(scriptId) {
     if (!confirm('{{ ftl('scripts-are-you-sure-you-want-to-delete-this-script-this') }}')) return;
 
-    fetch(`/scripts/${scriptId}/delete`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            window.location.href = data.redirect;
-        } else {
-            alert('{{ ftl('common-error') }} ' + (data.error || '{{ ftl('common-unknown-error') }}'));
-        }
-    })
-    .catch(err => {
-        alert('{{ ftl('scripts-error-deleting-script') }} ' + err);
-    });
+    window.apiClient.delete(`/scripts/${scriptId}`)
+        .then(() => {
+            // Reload the list — the deleted row will simply be gone.
+            location.reload();
+        })
+        .catch(err => window.apiClient.showError(err));
 }
 </script>
 {% endblock %}

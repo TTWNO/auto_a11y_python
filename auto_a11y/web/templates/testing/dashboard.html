@@ -523,24 +523,21 @@ document.getElementById('projectSelect').addEventListener('change', function() {
         websiteSelect.innerHTML = '<option value="">' + {{ ftl('common-loading-websites') | tojson }} + '</option>';
         websiteSelect.disabled = true;
 
-        fetch('{{ url_for("testing.api_project_websites", project_id="PLACEHOLDER") }}'.replace('PLACEHOLDER', projectId))
-            .then(response => response.json())
+        window.apiClient.get(`/projects/${projectId}/websites`)
             .then(data => {
-                if (data.success) {
-                    websiteSelect.innerHTML = '<option value="">' + {{ ftl('common-all-websites') | tojson }} + '</option>';
-                    if (data.websites && data.websites.length > 0) {
-                        data.websites.forEach(website => {
-                            const option = document.createElement('option');
-                            option.value = website.id;
-                            option.textContent = website.name + ' (' + website.page_count + ' ' + {{ ftl('common-pages-2') | tojson }} + ')';
-                            websiteSelect.appendChild(option);
-                        });
-                        websiteSelect.disabled = false;
-                    } else {
-                        websiteSelect.innerHTML = '<option value="">' + {{ ftl('common-no-websites-in-this-project') | tojson }} + '</option>';
-                    }
+                websiteSelect.innerHTML = '<option value="">' + {{ ftl('common-all-websites') | tojson }} + '</option>';
+                const websites = (data && data.items) || [];
+                if (websites.length > 0) {
+                    websites.forEach(website => {
+                        const option = document.createElement('option');
+                        option.value = website.id;
+                        const pages = website.page_count != null ? website.page_count : 0;
+                        option.textContent = website.name + ' (' + pages + ' ' + {{ ftl('common-pages-2') | tojson }} + ')';
+                        websiteSelect.appendChild(option);
+                    });
+                    websiteSelect.disabled = false;
                 } else {
-                    websiteSelect.innerHTML = '<option value="">' + {{ ftl('common-error-loading-websites') | tojson }} + '</option>';
+                    websiteSelect.innerHTML = '<option value="">' + {{ ftl('common-no-websites-in-this-project') | tojson }} + '</option>';
                 }
             })
             .catch(error => {
@@ -609,41 +606,48 @@ function runTests(untestedOnly) {
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>' + {{ ftl('common-starting') | tojson }};
 
-    const data = {
+    const body = {
         untested_only: untestedOnly,
-        include_screenshots: document.getElementById('includeScreenshots').checked,
-        run_ai_analysis: document.getElementById('runAiAnalysis').checked,
-        tester_ids: selectedTesters
+        take_screenshot: document.getElementById('includeScreenshots').checked,
+        run_ai: document.getElementById('runAiAnalysis').checked,
     };
-
     if (currentWebsiteId) {
-        data.website_id = currentWebsiteId;
-    } else if (currentProjectId) {
-        data.project_id = currentProjectId;
+        body.website_user_ids = selectedTesters;
+    } else {
+        body.project_user_ids = selectedTesters;
     }
 
-    fetch('{{ url_for("testing.api_run_tests") }}', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.success) {
-            showToast({{ ftl('testing-tests-started') | tojson }}, result.message, 'success');
-            // Refresh stats
-            refreshStats();
-        } else {
-            showToast({{ ftl('common-error-2') | tojson }}, result.error || result.message, 'danger');
-        }
-    })
-    .catch(error => {
-        showToast({{ ftl('common-error-2') | tojson }}, error.message, 'danger');
-    })
-    .finally(() => {
+    let path;
+    if (currentWebsiteId) {
+        path = `/websites/${currentWebsiteId}/test-runs`;
+    } else if (currentProjectId) {
+        path = `/projects/${currentProjectId}/test-runs`;
+    } else {
+        showToast({{ ftl('common-error-2') | tojson }},
+                  {{ ftl('common-select-a-project-first') | tojson }},
+                  'danger');
         btn.disabled = false;
         btn.innerHTML = originalText;
-    });
+        return;
+    }
+
+    window.apiClient.post(path, body)
+        .then(result => {
+            showToast({{ ftl('testing-tests-started') | tojson }},
+                      result.message || {{ ftl('testing-tests-started') | tojson }},
+                      'success');
+            refreshStats();
+        })
+        .catch(err => {
+            const detail = (err && err.problem && err.problem.detail)
+                || (err && err.message)
+                || {{ ftl('common-unknown-error') | tojson }};
+            showToast({{ ftl('common-error-2') | tojson }}, detail, 'danger');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        });
 }
 
 // ============================================================================

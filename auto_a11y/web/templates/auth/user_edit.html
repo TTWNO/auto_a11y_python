@@ -10,9 +10,7 @@
                 <h1 class="mb-0 h4" id="edit-user-heading"><i class="bi bi-person-gear" aria-hidden="true"></i> {{ ftl('common-edit-user') }}</h1>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('auth.user_edit', user_id=user.id) }}" aria-labelledby="edit-user-heading">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                    <input type="hidden" name="action" value="update">
+                <form id="userUpdateForm" aria-labelledby="edit-user-heading">
                     <fieldset>
                         <legend class="visually-hidden">{{ ftl('auth-user-details') }}</legend>
                         <div class="mb-3">
@@ -56,29 +54,27 @@
                 <dl class="row mb-0">
                     <dt class="col-sm-5">{{ ftl('common-created') }}</dt>
                     <dd class="col-sm-7">{{ user.created_at.strftime('%Y-%m-%d %H:%M') }}</dd>
-                    
+
                     <dt class="col-sm-5">{{ ftl('auth-last-login') }}</dt>
                     <dd class="col-sm-7">{{ user.last_login.strftime('%Y-%m-%d %H:%M') if user.last_login else '-' }}</dd>
-                    
+
                     <dt class="col-sm-5">{{ ftl('auth-login-count') }}</dt>
                     <dd class="col-sm-7">{{ user.login_count }}</dd>
-                    
+
                     <dt class="col-sm-5">{{ ftl('auth-failed-logins') }}</dt>
                     <dd class="col-sm-7">{{ user.failed_login_count }}</dd>
                 </dl>
             </div>
         </div>
     </div>
-    
+
     <div class="col-md-6">
         <div class="card shadow mb-4">
             <div class="card-header card-header-medium">
                 <h3 class="mb-0" id="reset-password-heading"><i class="bi bi-key" aria-hidden="true"></i> {{ ftl('auth-reset-password') }}</h3>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('auth.user_edit', user_id=user.id) }}" aria-labelledby="reset-password-heading">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                    <input type="hidden" name="action" value="reset_password">
+                <form id="userResetPasswordForm" aria-labelledby="reset-password-heading">
                     <p class="form-text mb-3"><span class="text-severity-high" aria-hidden="true">*</span> {{ ftl('common-required-field') }}</p>
                     <fieldset>
                         <legend class="visually-hidden">{{ ftl('auth-reset-password') }}</legend>
@@ -99,7 +95,7 @@
                 </form>
             </div>
         </div>
-        
+
         <div class="card shadow mb-4">
             <div class="card-header card-header-neutral">
                 <h3 class="mb-0" id="email-reset-heading"><i class="bi bi-envelope" aria-hidden="true"></i> {{ ftl('auth-email-password-reset') }}</h3>
@@ -107,9 +103,13 @@
             <div class="card-body">
                 <p class="text-muted">{{ ftl('auth-send-the-user-an-email-with-a-link-to-reset-their') }}</p>
                 {% if smtp_enabled %}
-                <form method="POST" action="{{ url_for('auth.user_edit', user_id=user.id) }}" aria-labelledby="email-reset-heading">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                    <input type="hidden" name="action" value="send_reset_email">
+                <form data-api-form
+                      data-api-method="POST"
+                      data-api-path="/api/v1/auth/forgot-password"
+                      data-api-on-success="toast"
+                      data-api-success-message="{{ ftl('auth-send-password-reset-email') }}"
+                      aria-labelledby="email-reset-heading">
+                    <input type="hidden" name="email" value="{{ user.email }}"/>
                     <button type="submit" class="btn btn-neutral">
                         <i class="bi bi-send" aria-hidden="true"></i> {{ ftl('auth-send-password-reset-email') }}
                     </button>
@@ -130,9 +130,11 @@
             <div class="card-body">
                 <p>{{ ftl('auth-this-account-is-locked-due-to-too-many-failed') }}</p>
                 <p>{{ ftl('auth-locked-until') }} {{ user.locked_until.strftime('%Y-%m-%d %H:%M') }}</p>
-                <form method="POST" action="{{ url_for('auth.user_edit', user_id=user.id) }}" aria-labelledby="unlock-account-heading">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                    <input type="hidden" name="action" value="unlock">
+                <form data-api-form
+                      data-api-method="POST"
+                      data-api-path="/api/v1/users/{{ user.id }}/unlock"
+                      data-api-on-success="reload"
+                      aria-labelledby="unlock-account-heading">
                     <button type="submit" class="btn btn-high">
                         <i class="bi bi-unlock" aria-hidden="true"></i> {{ ftl('auth-unlock-account') }}
                     </button>
@@ -181,4 +183,72 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    const userId = {{ user.id | tojson }};
+    const isSuperadmin = {{ is_superadmin | tojson }};
+
+    function disableSubmit(form) {
+        const btn = form.querySelector('button[type="submit"]');
+        if (btn) {
+            btn.disabled = true;
+            btn.setAttribute('aria-busy', 'true');
+        }
+        return btn;
+    }
+    function reenable(btn) {
+        if (btn) {
+            btn.disabled = false;
+            btn.removeAttribute('aria-busy');
+        }
+    }
+
+    document.getElementById('userUpdateForm').addEventListener('submit', async function (ev) {
+        ev.preventDefault();
+        const form = ev.currentTarget;
+        const btn = disableSubmit(form);
+        try {
+            const body = {
+                display_name: form.querySelector('#display_name').value.trim() || null,
+                is_active: form.querySelector('#is_active').checked,
+            };
+            if (isSuperadmin) {
+                const su = form.querySelector('#is_superadmin');
+                if (su) body.is_superadmin = su.checked;
+            }
+            await window.apiClient.patch('/users/' + encodeURIComponent(userId), body);
+            window.apiClient.showSuccess({{ ftl('auth-user-updated-successfully') | tojson }});
+            location.reload();
+        } catch (err) {
+            window.apiClient.showError(err);
+            reenable(btn);
+        }
+    });
+
+    document.getElementById('userResetPasswordForm').addEventListener('submit', async function (ev) {
+        ev.preventDefault();
+        const form = ev.currentTarget;
+        const btn = disableSubmit(form);
+        const newPassword = form.querySelector('#new_password').value;
+        if (newPassword.length < 8) {
+            window.apiClient.showError({
+                problem: { detail: {{ ftl('auth-password-must-be-at-least-8-characters') | tojson }} },
+            });
+            reenable(btn);
+            return;
+        }
+        try {
+            await window.apiClient.patch('/users/' + encodeURIComponent(userId), { password: newPassword });
+            window.apiClient.showSuccess({{ ftl('auth-password-reset-successfully') | tojson }});
+            location.reload();
+        } catch (err) {
+            window.apiClient.showError(err);
+            reenable(btn);
+        }
+    });
+})();
+</script>
 {% endblock %}

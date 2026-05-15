@@ -82,8 +82,7 @@
                 {{ ftl('scripts-with-multi-state-testing-you-can-test-pages-both') }}
             </div>
 
-            <form method="POST" id="script-form" aria-labelledby="script-form-heading">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <form id="script-form" aria-labelledby="script-form-heading">
                 <p class="form-text mb-3"><span class="text-severity-high" aria-hidden="true">*</span> {{ ftl('common-required-field') }}</p>
 
                 <!-- Basic Information -->
@@ -571,13 +570,101 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Form validation
-document.getElementById('script-form').addEventListener('submit', function(e) {
+// Build a /api/v1 ScriptIn body from the form and the dynamic steps.
+function buildScriptPayload(form) {
+    const data = new FormData(form);
+    const expectVisible = (data.get('expect_visible_after') || '')
+        .split('\n').map((s) => s.trim()).filter(Boolean);
+    const expectHidden = (data.get('expect_hidden_after') || '')
+        .split('\n').map((s) => s.trim()).filter(Boolean);
+
+    const stepCards = document.querySelectorAll('.step-card');
+    const steps = [];
+    stepCards.forEach(function (card) {
+        const stepIndex = card.dataset.stepIndex;
+        const action = (data.get('step_' + stepIndex + '_action') || '').trim();
+        if (!action) return;
+        const selector = data.get('step_' + stepIndex + '_selector');
+        const value = data.get('step_' + stepIndex + '_value');
+        const description = data.get('step_' + stepIndex + '_description') || '';
+        const timeout = parseInt(data.get('step_' + stepIndex + '_timeout') || '5000', 10);
+        const waitAfter = parseInt(data.get('step_' + stepIndex + '_wait_after') || '0', 10);
+        const step = {
+            action_type: action,
+            description: description,
+            timeout: timeout,
+            wait_after: waitAfter,
+        };
+        if (selector) step.selector = selector;
+        if (value) step.value = value;
+        steps.push(step);
+    });
+
+    const trigger = data.get('trigger') || (IS_WEBSITE_SCRIPT ? 'once_per_session' : 'always');
+    const body = {
+        name: (data.get('name') || '').trim(),
+        description: data.get('description') || '',
+        enabled: form.querySelector('#enabled').checked,
+        trigger: trigger,
+        test_before_execution: form.querySelector('#test_before_execution').checked,
+        test_after_execution: form.querySelector('#test_after_execution').checked,
+        expect_visible_after: expectVisible,
+        expect_hidden_after: expectHidden,
+        steps: steps,
+    };
+
+    if (IS_WEBSITE_SCRIPT) {
+        const clearCookies = form.querySelector('#clear_cookies_before');
+        const clearStorage = form.querySelector('#clear_local_storage_before');
+        if (clearCookies) body.clear_cookies_before = clearCookies.checked;
+        if (clearStorage) body.clear_local_storage_before = clearStorage.checked;
+
+        const conditionSelector = data.get('condition_selector');
+        if (conditionSelector) body.condition_selector = conditionSelector;
+
+        const waitForSelector = form.querySelector('#wait_for_selector');
+        if (waitForSelector) body.wait_for_selector = waitForSelector.checked;
+
+        const waitTimeoutRaw = data.get('wait_timeout');
+        if (waitTimeoutRaw) body.wait_timeout = parseInt(waitTimeoutRaw, 10);
+    }
+
+    return body;
+}
+
+const IS_WEBSITE_SCRIPT = {{ is_website_script | tojson }};
+const SCRIPT_PARENT_PATH = IS_WEBSITE_SCRIPT
+    ? '/websites/' + encodeURIComponent({{ website.id | tojson }}) + '/scripts'
+    : '/pages/' + encodeURIComponent({{ page.id | tojson if page else 'null' }}) + '/scripts';
+
+document.getElementById('script-form').addEventListener('submit', async function (ev) {
+    ev.preventDefault();
+    const form = ev.currentTarget;
     const steps = document.querySelectorAll('.step-card');
     if (steps.length === 0) {
-        e.preventDefault();
-        alert('{{ ftl('scripts-please-add-at-least-one-step-to-the-script') }}');
-        return false;
+        alert({{ ftl('scripts-please-add-at-least-one-step-to-the-script') | tojson }});
+        return;
+    }
+    const btn = form.querySelector('button[type="submit"]');
+    if (btn) {
+        btn.disabled = true;
+        btn.setAttribute('aria-busy', 'true');
+    }
+    try {
+        const body = buildScriptPayload(form);
+        const created = await window.apiClient.post(SCRIPT_PARENT_PATH, body);
+        const scriptId = created && created.id;
+        if (scriptId) {
+            location.assign('/scripts/' + encodeURIComponent(scriptId) + '/edit');
+        } else {
+            location.assign('/scripts');
+        }
+    } catch (err) {
+        window.apiClient.showError(err);
+        if (btn) {
+            btn.disabled = false;
+            btn.removeAttribute('aria-busy');
+        }
     }
 });
 </script>

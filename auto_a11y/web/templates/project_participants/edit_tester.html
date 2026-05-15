@@ -32,8 +32,7 @@
         {% endif %}
     {% endwith %}
 
-    <form method="POST" class="needs-validation" novalidate aria-labelledby="edit-tester-heading">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <form id="editTesterForm" class="needs-validation" novalidate aria-labelledby="edit-tester-heading">
         <div class="row">
             <div class="col-md-8">
                 <div class="card mb-4">
@@ -165,18 +164,55 @@
 
 {% block extra_js %}
 <script>
-// Form validation
+// API-backed submit handler — PUT (full replace). Legacy handler overwrites
+// every field (name, email, disability_type, assistive_tech, notes), matching
+// PUT semantics; PATCH would be a behavioural narrowing.
 (function() {
     'use strict';
-    var forms = document.querySelectorAll('.needs-validation');
-    Array.prototype.slice.call(forms).forEach(function(form) {
-        form.addEventListener('submit', function(event) {
-            if (!form.checkValidity()) {
-                event.preventDefault();
-                event.stopPropagation();
-            }
+    const form = document.getElementById('editTesterForm');
+    const redirectUrl = {{ url_for('project_participants.list_participants', project_id=project.id) | tojson }};
+    const testerId = {{ tester.id | tojson }};
+
+    function emptyToNull(value) {
+        const trimmed = (value || '').toString().trim();
+        return trimmed === '' ? null : trimmed;
+    }
+
+    function parseList(value) {
+        const trimmed = (value || '').toString().trim();
+        if (!trimmed) return [];
+        return trimmed.split(',').map(function (s) { return s.trim(); }).filter(function (s) { return s.length > 0; });
+    }
+
+    form.addEventListener('submit', async function (ev) {
+        ev.preventDefault();
+        if (!form.checkValidity()) {
             form.classList.add('was-validated');
-        }, false);
+            return;
+        }
+        form.classList.add('was-validated');
+
+        const fd = new FormData(form);
+        const body = {
+            name: (fd.get('name') || '').toString().trim(),
+            email: emptyToNull(fd.get('email')),
+            disability_type: emptyToNull(fd.get('disability_type')),
+            assistive_tech: parseList(fd.get('assistive_tech')),
+            notes: emptyToNull(fd.get('notes')),
+        };
+
+        const submit = form.querySelector('button[type="submit"]');
+        if (submit) submit.disabled = true;
+        try {
+            await window.apiClient.put(
+                '/projects/' + {{ project.id | tojson }} + '/testers/' + testerId,
+                body
+            );
+            window.location.assign(redirectUrl);
+        } catch (err) {
+            if (submit) submit.disabled = false;
+            window.apiClient.showError(err);
+        }
     });
 })();
 </script>

@@ -98,7 +98,7 @@ def api_project_websites(project_id: str) -> Response | tuple[Response, int]:
 
 
 @projects_bp.route('/api/test-details/<test_id>')
-@deprecated(successor="/api/v1/test-results/<test_id>", sunset="2026-09-01")
+@deprecated(successor="/api/v1/issues/<code>", sunset="2026-09-01")
 def api_test_details(test_id: str) -> Response | tuple[Response, int]:
     """API endpoint to get detailed information about a test"""
     try:
@@ -158,7 +158,7 @@ def api_test_details(test_id: str) -> Response | tuple[Response, int]:
 
 
 @projects_bp.route('/api/test-details/<test_id>/production-ready', methods=['POST'])
-@deprecated(sunset="2026-09-01")  # successor TBD — pending #51 (PATCH /api/v1/issues/<code>)
+@deprecated(successor="/api/v1/issues/<code>", sunset="2026-09-01")
 def api_set_test_production_ready(test_id: str) -> Response | tuple[Response, int]:
     """API endpoint to toggle production_ready flag for a test"""
     try:

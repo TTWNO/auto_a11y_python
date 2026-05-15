@@ -55,10 +55,17 @@ class PageTestRunIn(StrictModel):
 
     All fields are optional; ``enable_multi_state`` defaults to true on
     the server (mirroring :func:`start_page_test_run`).
+
+    ``take_screenshot`` and ``run_ai`` are per-run overrides for the
+    test runner's screenshot capture and Claude-AI visual analysis.
+    When ``None``, the runner's defaults apply (``take_screenshot=True``,
+    ``run_ai_analysis=False``).
     """
 
     enable_multi_state: Optional[bool] = None
     website_user_id: Optional[str] = None
+    take_screenshot: Optional[bool] = None
+    run_ai: Optional[bool] = None
 
 
 class PageTestRunStartedOut(StrictModel):
@@ -128,12 +135,18 @@ class WebsiteTestRunIn(StrictModel):
     ``project_user_ids`` first, falling back to ``website_user_ids``.
 
     ``untested_only`` filters the queue to pages still in DISCOVERED.
+
+    ``take_screenshot`` and ``run_ai`` are per-run overrides applied
+    uniformly across every page queued by this batch. ``None`` keeps
+    the runner's defaults.
     """
 
     max_pages: Optional[int] = None
     untested_only: Optional[bool] = None
     project_user_ids: Optional[str | list[str]] = None
     website_user_ids: Optional[str | list[str]] = None
+    take_screenshot: Optional[bool] = None
+    run_ai: Optional[bool] = None
 
 
 class WebsiteTestRunStartedOut(StrictModel):
@@ -167,6 +180,8 @@ class ProjectTestRunIn(StrictModel):
     untested_only: Optional[bool] = None
     project_user_ids: Optional[str | list[str]] = None
     website_user_ids: Optional[str | list[str]] = None
+    take_screenshot: Optional[bool] = None
+    run_ai: Optional[bool] = None
 
 
 class ProjectTestRunWebsiteHandleOut(StrictModel):

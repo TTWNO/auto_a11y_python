@@ -225,14 +225,17 @@ def create_app(config: Any) -> Flask:
     app.register_blueprint(pages_bp, url_prefix='/pages')
     app.register_blueprint(testing_bp, url_prefix='/testing')
     app.register_blueprint(reports_bp, url_prefix='/reports')
-    app.register_blueprint(api_bp, url_prefix='/api/v1')
+
+    # Import v1_openapi BEFORE register_blueprint(api_bp). Its module-level
+    # code attaches /openapi.{json,yaml} via api_bp.add_url_rule, which
+    # Flask only permits before the blueprint is registered on any app.
     from auto_a11y.web.routes import v1_openapi
     from auto_a11y.web.api.openapi.document import register_documented_views
 
     # Reference the views so the linter doesn't flag the import as unused.
-    # Importing v1_openapi has the side effect of attaching the routes to
-    # api_bp at module load.
     _ = (v1_openapi.openapi_json, v1_openapi.openapi_yaml)
+
+    app.register_blueprint(api_bp, url_prefix='/api/v1')
 
     register_documented_views(app)
     app.register_blueprint(scripts_bp, url_prefix='/scripts')
@@ -306,6 +309,9 @@ def create_app(config: Any) -> Flask:
             'auth.login', 'auth.register', 'auth.logout',
             'auth.microsoft_login', 'auth.microsoft_callback',
             'auth.google_login', 'auth.google_callback',
+            'api.auth_login_rest', 'api.auth_register_rest',
+            'api.auth_forgot_password_rest', 'api.auth_reset_password_rest',
+            'api.auth_sso_url_rest', 'api.auth_sso_callback_rest',
             'static', 'health', 'set_language',
             'desktop.shutdown'
         ]

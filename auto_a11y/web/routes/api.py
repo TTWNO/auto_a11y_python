@@ -39,6 +39,7 @@ from auto_a11y.web.api.schemas.websites import (
     WebsiteOut,
     WebsitePatch,
     WebsitePut,
+    WebsiteTestResultsClearedOut,
 )
 from auto_a11y.web.api.schemas.pages import (
     DiscoveredPageIn,
@@ -157,6 +158,11 @@ from auto_a11y.web.api.schemas.admin import (
     DrupalSettingsValuesOut,
     GenericSectionPatchIn,
     SettingsSectionOut,
+)
+from auto_a11y.web.api.schemas.issues import (
+    IssueMessageTemplateOut,
+    IssueOut,
+    IssuePatch,
 )
 from auto_a11y.web.api.schemas.health import (
     GhostscriptHealthOut,
@@ -742,6 +748,8 @@ def test_page(
             page_id,
             enable_multi_state=enable_multi_state,
             website_user_id=body.website_user_id,
+            take_screenshot=body.take_screenshot,
+            run_ai_analysis=body.run_ai,
         )
     except BrowserDisabledError as exc:
         return jsonify({'error': str(exc)}), 503
@@ -929,6 +937,8 @@ def test_website(
             max_pages=max_pages,
             untested_only=untested_only,
             pdf_runner=_get_pdf_runner(),
+            take_screenshot=body.take_screenshot,
+            run_ai_analysis=body.run_ai,
         )
     except WebsiteNotFoundError:
         return jsonify({'error': 'Website not found'}), 404
@@ -1035,6 +1045,8 @@ def test_project(
                 max_pages=max_pages,
                 untested_only=untested_only,
                 pdf_runner=pdf_runner,
+                take_screenshot=body.take_screenshot,
+                run_ai_analysis=body.run_ai,
             )
         except WebsiteNotFoundError:
             # Race: website disappeared between list and start —
@@ -2792,6 +2804,55 @@ def delete_website(website_id: str) -> tuple[Empty, int] | tuple[Response, int]:
     )
     get_db().delete_website(website_id)
     return Empty(), 204
+
+
+@api_bp.route("/websites/<website_id>/test-results", methods=["DELETE"])
+@api_endpoint
+@document(
+    response_200=WebsiteTestResultsClearedOut,
+    errors=[401, 403, 404],
+    tags=["Websites"],
+    summary="Clear all test results for a website",
+    description=(
+        "Deletes every test-result document for the website's pages "
+        "and resets each page's cached test state (violation / "
+        "warning / info / discovery / pass counts, ``last_tested``, "
+        "``test_duration_ms``) so they show as untested again. Pages "
+        "in TESTED / TESTING / ERROR move back to DISCOVERED; PDFs "
+        "in AUDITED / AUDITING / AUDIT_FAILED move back to PENDING. "
+        "The website itself, its pages, screenshots, discovery runs, "
+        "and document references are preserved. Mirrors the legacy "
+        "``/websites/<id>/clear-test-results`` admin action, plus "
+        "wipes the pdfMax cache directory on disk for each PDF so "
+        "the viewer doesn't keep serving stale issue data."
+    ),
+)
+def clear_website_test_results_rest(
+    website_id: str,
+) -> tuple[WebsiteTestResultsClearedOut, int]:
+    """Clear all test results for every page/PDF in a website."""
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, website_id=website_id
+    )
+    website = get_db().get_website(website_id)
+    if website is None:
+        raise NotFoundError(f"website {website_id} not found")
+
+    # Snapshot PDFs before the DB reset so we can wipe their pdfMax
+    # cache directories — the viewer reads issue_map.json straight from
+    # disk, so a DB-only reset would leave stale issue counts visible.
+    website_pdfs = get_db().get_pdf_documents(website_id=website_id, limit=10000)
+    result = get_db().clear_website_test_results(website_id)
+
+    storage = PdfStorage(base_dir=Path(get_app_config().PDF_STORAGE_DIR))
+    for pdf in website_pdfs:
+        storage.delete_audit_cache(pdf)
+
+    return WebsiteTestResultsClearedOut(
+        test_results_deleted=int(result.get("test_results_deleted", 0)),
+        pages_reset=int(result.get("pages_reset", 0)),
+        pdf_documents_reset=int(result.get("pdf_documents_reset", 0)),
+    ), 200
 
 
 # ---------------------------------------------------------------------------
@@ -6255,6 +6316,22 @@ def _apply_recording_patch_pyd(
         recording.tags = list(body.tags)
     if "notes" in fields_set:
         recording.notes = body.notes
+    if "page_urls" in fields_set:
+        raw_urls = body.page_urls
+        if isinstance(raw_urls, str):
+            recording.page_urls = [u.strip() for u in raw_urls.split("\n") if u.strip()]
+        elif raw_urls is None:
+            recording.page_urls = []
+        else:
+            recording.page_urls = [u.strip() for u in raw_urls if u.strip()]
+    if "discovered_page_ids" in fields_set:
+        raw_ids = body.discovered_page_ids
+        if isinstance(raw_ids, str):
+            recording.discovered_page_ids = [d.strip() for d in raw_ids.split(",") if d.strip()]
+        elif raw_ids is None:
+            recording.discovered_page_ids = []
+        else:
+            recording.discovered_page_ids = [d.strip() for d in raw_ids if d.strip()]
     recording.updated_at = datetime.now()
     return recording
 
@@ -11682,6 +11759,145 @@ def delete_discovered_page_rest(
 # semantic.
 # ---------------------------------------------------------------------------
 
+
+# ---------------------------------------------------------------------------
+# Issues — catalog read + production-readiness PATCH (issue #51 successor).
+#
+# Replaces:
+#   GET  /projects/api/test-details/<id>               → GET /issues/<code>
+#   POST /projects/api/test-details/<id>/production-ready
+#                                                      → PATCH /issues/<code>
+#
+# The catalog content is build-time data from
+# ``auto_a11y/reporting/issue_catalog.py``; only the ``production_ready``
+# flag round-trips through the database via
+# :meth:`Database.set_issue_production_ready` / ``get_issue_documentation_status``.
+# ---------------------------------------------------------------------------
+
+
+def _build_issue_out(code: str) -> IssueOut | None:
+    """Assemble the wire-shape :class:`IssueOut` for ``code``.
+
+    Returns ``None`` when the code is absent from the static catalog —
+    callers raise :class:`NotFoundError` so the catalog identity (rather
+    than the database row) governs 404.
+    """
+    from auto_a11y.reporting.issue_catalog import IssueCatalog
+    from auto_a11y.reporting.issue_descriptions_translated import (
+        get_detailed_issue_description,
+    )
+
+    test_info = IssueCatalog.get_issue(code)
+    if not test_info:
+        return None
+
+    doc_status = get_db().get_issue_documentation_status(code)
+    production_ready = bool(
+        doc_status.get("production_ready", False) if doc_status else False
+    )
+
+    enhanced = get_detailed_issue_description(code)
+    message_template: IssueMessageTemplateOut | None = None
+    if enhanced:
+        message_template = IssueMessageTemplateOut(
+            title=str(enhanced.get("title", "") or ""),
+            what=str(enhanced.get("what", "") or ""),
+            why=str(enhanced.get("why", "") or ""),
+            remediation=str(enhanced.get("remediation", "") or ""),
+        )
+
+    wcag_raw: object = test_info.get("wcag", []) or []
+    wcag: list[str]
+    if isinstance(wcag_raw, list):
+        wcag = [str(item) for item in cast(list[object], wcag_raw)]
+    else:
+        wcag = []
+
+    return IssueOut(
+        id=str(test_info.get("id", code)),
+        type=str(test_info.get("type", "Unknown") or "Unknown"),
+        impact=str(test_info.get("impact", "Unknown") or "Unknown"),
+        wcag=wcag,
+        wcag_full=str(test_info.get("wcag_full", "") or ""),
+        category=str(test_info.get("category", "") or ""),
+        description=str(test_info.get("description", "") or ""),
+        why_it_matters=str(test_info.get("why_it_matters", "") or ""),
+        who_it_affects=str(test_info.get("who_it_affects", "") or ""),
+        how_to_fix=str(test_info.get("how_to_fix", "") or ""),
+        production_ready=production_ready,
+        message_template=message_template,
+    )
+
+
+@api_bp.route("/issues/<code>", methods=["GET"])
+@api_endpoint
+@document(
+    response_200=IssueOut,
+    errors=[401, 404],
+    tags=["Issues"],
+    summary="Read an issue catalog entry",
+    description=(
+        "Returns the static catalog entry for ``<code>`` (description, "
+        "WCAG ids, impact, how-to-fix, ...) plus the database-managed "
+        "``production_ready`` flag. The catalog itself is build-time "
+        "data; only ``production_ready`` is mutable (via PATCH on this "
+        "same resource). Returns 404 when the code is absent from the "
+        "catalog — the catalog identity governs 404, not the database row."
+    ),
+)
+def issue_get_rest(code: str) -> tuple[IssueOut, int]:
+    """Return the catalog + documentation-status projection for ``code``."""
+    require_authenticated()
+    body = _build_issue_out(code)
+    if body is None:
+        raise NotFoundError(f"issue {code!r} not in catalog")
+    return body, 200
+
+
+@api_bp.route("/issues/<code>", methods=["PATCH"])
+@api_endpoint
+@document(
+    request=IssuePatch,
+    response_200=IssueOut,
+    errors=[400, 401, 403, 404],
+    tags=["Issues"],
+    summary="Update an issue catalog entry's documentation status",
+    description=(
+        "Partial update — currently only ``production_ready`` is "
+        "patchable. Returns the refreshed projection so the client can "
+        "render the new state without a second roundtrip. Requires "
+        "ADMIN (the legacy handler accepted any authenticated user; we "
+        "tighten that here because flipping ``production_ready`` is a "
+        "release-gate decision)."
+    ),
+)
+def issue_patch_rest(
+    code: str, body: IssuePatch,
+) -> tuple[IssueOut, int]:
+    """Apply :class:`IssuePatch` to the documentation-status row for ``code``."""
+    require_authenticated()
+    from auto_a11y.reporting.issue_catalog import IssueCatalog
+    if not IssueCatalog.get_issue(code):
+        raise NotFoundError(f"issue {code!r} not in catalog")
+
+    fields_set = body.model_fields_set
+    if "production_ready" in fields_set and body.production_ready is not None:
+        success = get_db().set_issue_production_ready(
+            code, body.production_ready, updated_by="api_v1",
+        )
+        if not success:
+            raise ConflictError(
+                f"failed to update production-ready status for {code!r}",
+            )
+
+    refreshed = _build_issue_out(code)
+    if refreshed is None:
+        raise NotFoundError(f"issue {code!r} disappeared after update")
+    return refreshed, 200
+
+
+# ---------------------------------------------------------------------------
+
 from auto_a11y.models.api_token import ApiToken  # noqa: E402
 from auto_a11y.web.api.tokens import (  # noqa: E402
     extract_bearer,
@@ -11751,18 +11967,43 @@ def _api_token_to_out(token: ApiToken) -> ApiTokenOut:
     security="public",
 )
 def auth_login_rest(body: LoginIn) -> tuple[LoginOut, int]:
-    """Exchange email + password for an API Bearer token."""
+    """Exchange email + password for an API Bearer token.
+
+    Mirrors the legacy HTML login handler's security gates (locked
+    account check, failed-login tracking) which the original v1
+    implementation skipped. All failure paths return the same opaque
+    ``invalid credentials`` 401 to defend against email enumeration
+    *and* account-state enumeration (locked vs. deactivated vs.
+    unknown).
+
+    When ``body.session`` is true, also calls :func:`login_user` so
+    the response sets a Flask-Login session cookie — used by the
+    admin HTML frontend so subsequent same-origin navigations
+    authenticate via the cookie rather than a Bearer header. The
+    Bearer token is still returned for clients that want both
+    mechanisms.
+    """
+    from flask_login import login_user as _login_user
+
     email = body.email
     password = body.password
     if not isinstance(email, str) or not isinstance(password, str):
         raise UnauthorizedError("invalid credentials")
 
     user = get_db().get_app_user_by_email(email)
-    if user is None or not user.is_active or not user.check_password(password):
+    if user is None or not user.is_active or user.is_locked():
+        raise UnauthorizedError("invalid credentials")
+
+    if not user.check_password(password):
+        user.record_login(success=False)
+        get_db().update_app_user(user)
         raise UnauthorizedError("invalid credentials")
 
     user.record_login(success=True)
     get_db().update_app_user(user)
+
+    if body.session:
+        _login_user(user, remember=bool(body.remember))
 
     assert user.id is not None
     raw_token, token = mint_token(
@@ -11857,13 +12098,31 @@ def auth_register_rest(body: RegisterIn) -> tuple[Response, int]:
             ),
         )
 
+    # Match the legacy registration handler: the very first account
+    # bootstrapped on a fresh deploy is auto-promoted to ADMIN +
+    # superadmin, so the operator can configure the platform without
+    # an external seed step. Subsequent registrations default to
+    # CLIENT.
+    admin_count = get_db().count_app_users(role=UserRole.ADMIN)
+    is_first_user = admin_count == 0
+    role = UserRole.ADMIN if is_first_user else UserRole.CLIENT
+
     new_user = AppUser.create(
         email=email, password=password, display_name=body.display_name,
+        role=role,
     )
+    if body.password_hint:
+        new_user.password_hint = body.password_hint
+    if is_first_user:
+        new_user.is_superadmin = True
     new_user_id = get_db().create_app_user(new_user)
     persisted = get_db().get_app_user(new_user_id)
     if persisted is None:
         raise ConflictError("user failed to persist")
+
+    if body.session:
+        from flask_login import login_user as _login_user
+        _login_user(persisted)
 
     raw_token, token = mint_token(get_db(), user_id=new_user_id)
 
@@ -11981,6 +12240,10 @@ def auth_reset_password_rest(body: ResetPasswordIn) -> tuple[ResetPasswordOut, i
 
     user.set_password(password)
     get_db().update_app_user(user)
+
+    if body.session:
+        from flask_login import login_user as _login_user
+        _login_user(user)
 
     assert user.id is not None
     raw_token, persisted_token = mint_token(get_db(), user_id=user.id)
@@ -12317,6 +12580,35 @@ def delete_user_rest(user_id: str) -> tuple[Empty, int]:
         raise NotFoundError(f"user {user_id} not found")
     get_db().delete_app_user(user_id)
     return Empty(), 204
+
+
+@api_bp.route("/users/<user_id>/unlock", methods=["POST"])
+@api_endpoint
+@document(
+    response_200=AppUserOut,
+    errors=[401, 403, 404],
+    tags=["Users"],
+    summary="Clear failed-login lockout state on a user (admin-only)",
+    description=(
+        "Resets ``failed_login_count`` to 0 and clears ``locked_until`` "
+        "so an account that hit the lockout threshold can sign in "
+        "again without waiting for the lockout window to expire. The "
+        "legacy admin UI exposes this as the \"Unlock account\" button "
+        "on the user-edit page; the REST mirror lets the same flow "
+        "go through the API. Admin-only — same authorization gate as "
+        "``PATCH /users/<id>``."
+    ),
+)
+def unlock_user_rest(user_id: str) -> tuple[AppUserOut, int]:
+    """Reset failed-login state on a user. Admin-only."""
+    require_global_permission("users", "update")
+    user = get_db().get_app_user(user_id)
+    if user is None:
+        raise NotFoundError(f"user {user_id} not found")
+    user.failed_login_count = 0
+    user.locked_until = None
+    get_db().update_app_user(user)
+    return _app_user_to_out(user), 200
 
 
 # --- SSO endpoints ----------------------------------------------------------

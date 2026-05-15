@@ -496,8 +496,7 @@
                 <h2 class="modal-title" id="addWebsiteModalLabel">{{ ftl('projects-add-website') }}</h2>
                 <button type="button" class="btn-close" data-close-modal aria-label="{{ ftl('common-close') }}"></button>
             </div>
-            <form method="POST" action="{{ url_for('projects.add_website', project_id=project.id) }}" aria-labelledby="addWebsiteModalLabel">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <form id="addWebsiteForm" aria-labelledby="addWebsiteModalLabel">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="url" class="form-label">{{ ftl('common-website-url') }} *</label>
@@ -593,8 +592,7 @@
                 <h2 class="modal-title" id="testAllModalLabel">{{ ftl('projects-test-all-websites-in-project') }}</h2>
                 <button type="button" class="btn-close" data-close-modal aria-label="{{ ftl('common-close') }}"></button>
             </div>
-            <form id="testAllForm" method="POST" action="{{ url_for('projects.test_project', project_id=project.id) }}" aria-labelledby="testAllModalLabel">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <form id="testAllForm" aria-labelledby="testAllModalLabel">
                 <div class="modal-body">
                     <p>{{ ftl('projects-this-will-test-all-websites-in-the-project') }} "{{ project.name }}".</p>
 
@@ -649,8 +647,12 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-neutral" data-close-modal>{{ ftl('common-cancel') }}</button>
-                <form method="POST" action="{{ url_for('projects.delete_project', project_id=project.id) }}" style="display: inline;" aria-labelledby="deleteModalLabel">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <form data-api-form
+                      data-api-method="DELETE"
+                      data-api-path="/api/v1/projects/{{ project.id }}"
+                      data-api-redirect="{{ url_for('projects.list_projects') }}"
+                      style="display: inline;"
+                      aria-labelledby="deleteModalLabel">
                     <button type="submit" class="btn btn-high">{{ ftl('projects-delete-project') }}</button>
                 </form>
             </div>
@@ -669,14 +671,13 @@ let availableGroups = [];
 
 async function loadMembers() {
     try {
-        const resp = await fetch(`/projects/${PROJECT_ID}/members`);
-        const data = await resp.json();
-        if (!resp.ok) { console.error(data.error); return; }
+        const data = await window.apiClient.get(`/projects/${PROJECT_ID}/members`);
 
         document.getElementById('members-loading').style.display = 'none';
 
         // Store available groups for use in inline editing
         availableGroups = data.available_groups || [];
+        const groupNameById = Object.fromEntries(availableGroups.map(g => [g.id, g.name]));
 
         // Populate members table
         const tbody = document.getElementById('members-tbody');
@@ -687,10 +688,7 @@ async function loadMembers() {
             document.getElementById('no-members-msg').style.display = 'none';
             data.members.forEach(m => {
                 const tr = document.createElement('tr');
-                const memberGroupIds = m.groups.map(g => g.id);
-                const groupBadges = m.groups.map(g =>
-                    `<span class="badge badge-neutral">${escapeHtml(g.name)}</span>`
-                ).join(' ');
+                const memberGroupIds = m.group_ids || [];
                 const groupCheckboxes = availableGroups.map(g => {
                     const checked = memberGroupIds.includes(g.id) ? 'checked' : '';
                     const cbId = `member-group-${m.user_id}-${g.id}`;
@@ -726,6 +724,7 @@ async function loadMembers() {
         document.getElementById('add-member-form').style.display = '';
     } catch (e) {
         console.error('Failed to load members:', e);
+        window.apiClient.showError(e);
     }
 }
 
@@ -737,11 +736,13 @@ async function addMember() {
         alert('{{ ftl('projects-please-select-at-least-one-group') }}');
         return;
     }
-    await fetch(`/projects/${PROJECT_ID}/members`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({user_id: userId, group_ids: groupIds})
-    });
+    try {
+        await window.apiClient.post(`/projects/${PROJECT_ID}/members`, {
+            user_id: userId, group_ids: groupIds
+        });
+    } catch (e) {
+        window.apiClient.showError(e);
+    }
     loadMembers();
 }
 
@@ -753,26 +754,22 @@ async function updateMemberGroups(userId) {
         loadMembers(); // Reset checkboxes
         return;
     }
-    const resp = await fetch(`/projects/${PROJECT_ID}/members/${userId}`, {
-        method: 'PUT',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({group_ids: groupIds})
-    });
-    if (!resp.ok) {
-        const data = await resp.json();
-        alert(data.error || '{{ ftl('projects-failed-to-update-groups') }}');
+    try {
+        await window.apiClient.put(`/projects/${PROJECT_ID}/members/${userId}`, {
+            group_ids: groupIds
+        });
+    } catch (e) {
+        window.apiClient.showError(e);
         loadMembers();
     }
 }
 
 async function removeMember(userId) {
     if (!confirm('{{ ftl('projects-remove-this-member-from-the-project') }}')) return;
-    const resp = await fetch(`/projects/${PROJECT_ID}/members/${userId}`, {
-        method: 'DELETE'
-    });
-    if (!resp.ok) {
-        const data = await resp.json();
-        alert(data.error || '{{ ftl('projects-failed-to-remove-member') }}');
+    try {
+        await window.apiClient.delete(`/projects/${PROJECT_ID}/members/${userId}`);
+    } catch (e) {
+        window.apiClient.showError(e);
     }
     loadMembers();
 }
@@ -814,9 +811,7 @@ function showMemberSearching() {
 async function fetchMemberSearch(q) {
     const params = new URLSearchParams({q, exclude_project: PROJECT_ID, limit: '10'});
     try {
-        const resp = await fetch(`/members/api/search-users?${params}`);
-        if (!resp.ok) return;
-        const data = await resp.json();
+        const data = await window.apiClient.get(`/users/search?${params}`);
         memberSearchResults = data.users;
         renderMemberResults(data.users, q);
     } catch (e) {
@@ -1119,50 +1114,30 @@ $('#discoveryForm').submit(function(e) {
         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"><span class="visually-hidden">{{ ftl('common-loading') }}</span></span> {{ ftl('common-starting') }}';
     }
 
-    $.ajax({
-        url: `/websites/${websiteId}/discover`,
-        method: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify(requestData),
-        success: function(data) {
-            if (data.success) {
-                discoveryJobs[websiteId] = data.job_id;
-
-                // Add to global tracking
-                if (typeof TestTracker !== 'undefined') {
-                    let description = `{{ ftl('projects-discovering-pages-for') }} ${websiteName}`;
-                    if (data.max_pages) {
-                        description += ` ({{ ftl('projects-max') }} ${data.max_pages} {{ ftl('common-pages-2') }})`;
-                    }
-                    TestTracker.addTest('discovery', websiteId, description);
+    window.apiClient.post(`/websites/${websiteId}/discover`, requestData)
+        .then(data => {
+            discoveryJobs[websiteId] = data.job_id;
+            if (typeof TestTracker !== 'undefined') {
+                let description = `{{ ftl('projects-discovering-pages-for') }} ${websiteName}`;
+                if (data.max_pages) {
+                    description += ` ({{ ftl('projects-max') }} ${data.max_pages} {{ ftl('common-pages-2') }})`;
                 }
-
-                // Show success message
-                if (window.showNotification) {
-                    showNotification('{{ ftl('common-discovery-started') }}', data.message, 'info');
-                } else {
-                    alert(data.message);
-                }
-
-                // Start polling for discovery progress
-                if (btn) {
-                    startDiscoveryPolling(websiteId, btn);
-                }
-            } else {
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = originalHtml;
-                }
-                alert(data.message || '{{ ftl('common-failed-to-start-discovery') }}');
+                TestTracker.addTest('discovery', websiteId, description);
             }
-        }
-    }).fail(function() {
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = originalHtml;
-        }
-        alert('{{ ftl('common-failed-to-start-page-discovery') }}');
-    });
+            if (window.showNotification) {
+                showNotification('{{ ftl('common-discovery-started') }}', data.message, 'info');
+            }
+            if (btn) {
+                startDiscoveryPolling(websiteId, btn);
+            }
+        })
+        .catch(err => {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+            window.apiClient.showError(err);
+        });
 });
 
 function cancelDiscovery(websiteId, btn) {
@@ -1175,28 +1150,23 @@ function cancelDiscovery(websiteId, btn) {
     const originalHtml = '<i class="bi bi-search" aria-hidden="true"></i><span class="d-none d-lg-inline"> {{ ftl('projects-discover') }}</span>';
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> {{ ftl('common-cancelling') }}';
     
-    $.post(`/websites/${websiteId}/cancel-discovery`, { job_id: jobId }, function(data) {
-        if (data.success) {
+    window.apiClient.post(`/jobs/${jobId}/cancel`, {})
+        .then(data => {
             stopDiscoveryPolling(websiteId);
             btn.disabled = false;
             btn.innerHTML = originalHtml;
-            
-            // Remove from global tracking
             if (typeof TestTracker !== 'undefined') {
                 TestTracker.removeTest(`discovery_${websiteId}`);
             }
-            
             if (window.showNotification) {
-                showNotification('{{ ftl('common-discovery-cancelled') }}', data.message, 'warning');
-            } else {
-                alert(data.message);
+                showNotification('{{ ftl('common-discovery-cancelled') }}',
+                                 data.message || '{{ ftl('common-discovery-cancelled') }}',
+                                 'warning');
             }
-        } else {
-            alert('{{ ftl('projects-failed-to-cancel-discovery') }} ' + (data.message || '{{ ftl('common-unknown-error') }}'));
-        }
-    }).fail(function() {
-        alert('{{ ftl('common-failed-to-cancel-discovery') }}');
-    });
+        })
+        .catch(err => {
+            window.apiClient.showError(err);
+        });
 }
 
 function startDiscoveryPolling(websiteId, btn) {
@@ -1305,36 +1275,23 @@ function testWebsite(websiteId) {
     const websiteRow = btn.closest('tr');
     const websiteName = websiteRow ? websiteRow.querySelector('td:first-child').textContent.trim() : 'website';
     
-    $.post(`/websites/${websiteId}/test-all`, function(data) {
-        if (data.success) {
-            // Add to global tracking
+    window.apiClient.post(`/websites/${websiteId}/test-runs`, {})
+        .then(data => {
             if (typeof trackWebsiteTest !== 'undefined') {
                 trackWebsiteTest(websiteId, websiteName);
             }
-            
-            // Show notification
             if (window.showNotification) {
                 showNotification('Testing Started', `Testing ${data.pages_queued} pages. The page will refresh when complete.`, 'info');
-            } else {
-                alert(`Testing queued for ${data.pages_queued} pages.`);
             }
-            
-            // Start polling for this website
             startWebsiteStatusPolling(websiteId);
-            
-            // Re-enable button but change text
             btn.disabled = false;
             btn.innerHTML = '<i class="bi bi-hourglass-split" aria-hidden="true"></i><span class="d-none d-lg-inline"> Testing...</span>';
-        } else {
+        })
+        .catch(err => {
             btn.disabled = false;
             btn.innerHTML = '<i class="bi bi-play" aria-hidden="true"></i><span class="d-none d-lg-inline"> Test</span>';
-            alert(data.message);
-        }
-    }).fail(function() {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-play" aria-hidden="true"></i><span class="d-none d-lg-inline"> Test</span>';
-        alert('Failed to start testing');
-    });
+            window.apiClient.showError(err);
+        });
 }
 
 // Clean up on page unload
@@ -1350,5 +1307,59 @@ window.addEventListener('beforeunload', function() {
 function viewPageDetails(pageId) {
     window.location.href = `/discovered-pages/${pageId}`;
 }
+
+// Add-website modal → POST /api/v1/projects/<id>/websites
+(function () {
+    const form = document.getElementById('addWebsiteForm');
+    if (!form) return;
+    form.addEventListener('submit', async function (ev) {
+        ev.preventDefault();
+        const fd = new FormData(form);
+        const body = {
+            url: (fd.get('url') || '').toString().trim(),
+            name: ((fd.get('name') || '').toString().trim()) || null,
+        };
+        const submit = form.querySelector('button[type="submit"]');
+        if (submit) submit.disabled = true;
+        try {
+            const created = await window.apiClient.post('/projects/{{ project.id }}/websites', body);
+            if (created && created.id) {
+                window.location.assign('/websites/' + created.id);
+            } else {
+                window.location.reload();
+            }
+        } catch (err) {
+            if (submit) submit.disabled = false;
+            window.apiClient.showError(err);
+        }
+    });
+})();
+
+// Test-all modal → POST /api/v1/projects/<id>/test-runs
+(function () {
+    const form = document.getElementById('testAllForm');
+    if (!form) return;
+    form.addEventListener('submit', async function (ev) {
+        ev.preventDefault();
+        const fd = new FormData(form);
+        // Legacy form sends test_all=true to test every page; API expects
+        // the inverse — untested_only=true skips already-tested pages.
+        const testAll = !!fd.get('test_all');
+        const body = {
+            untested_only: !testAll,
+            take_screenshot: !!fd.get('take_screenshot'),
+            run_ai: !!fd.get('run_ai'),
+        };
+        const submit = form.querySelector('button[type="submit"]');
+        if (submit) submit.disabled = true;
+        try {
+            await window.apiClient.post('/projects/{{ project.id }}/test-runs', body);
+            window.location.reload();
+        } catch (err) {
+            if (submit) submit.disabled = false;
+            window.apiClient.showError(err);
+        }
+    });
+})();
 </script>
 {% endblock %}

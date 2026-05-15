@@ -741,27 +741,13 @@ document.getElementById('runTestBtn')?.addEventListener('click', function() {
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>{{ ftl('common-testing-2') }}';
 
-    fetch("{{ url_for('testing.test_page', page_id=page.id) }}", {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            location.reload();
-        } else {
-            alert('{{ ftl('pages-test-failed') }} ' + (data.error || '{{ ftl('common-unknown-error') }}'));
+    window.apiClient.post(`/pages/{{ page.id }}/test-runs`, {})
+        .then(() => location.reload())
+        .catch(err => {
+            window.apiClient.showError(err);
             btn.disabled = false;
             btn.innerHTML = '<i class="bi bi-play-circle" aria-hidden="true"></i> {{ ftl('pages-run-test') }}';
-        }
-    })
-    .catch(error => {
-        alert('{{ ftl('pages-error-running-test') }} ' + error);
-        btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-play-circle" aria-hidden="true"></i> {{ ftl('pages-run-test') }}';
-    });
+        });
 });
 </script>
 {% endblock %}

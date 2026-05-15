@@ -32,8 +32,7 @@
         {% endif %}
     {% endwith %}
 
-    <form method="POST" class="needs-validation" novalidate aria-labelledby="create-test-user-heading">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <form id="createProjectTestUserForm" class="needs-validation" novalidate aria-labelledby="create-test-user-heading">
         <p class="form-text mb-3"><span class="text-severity-high" aria-hidden="true">*</span> {{ ftl('common-required-field') }}</p>
         <div class="row">
             <div class="col-md-8">
@@ -288,21 +287,6 @@
 
 {% block extra_js %}
 <script>
-// Form validation
-(function() {
-    'use strict';
-    var forms = document.querySelectorAll('.needs-validation');
-    Array.prototype.slice.call(forms).forEach(function(form) {
-        form.addEventListener('submit', function(event) {
-            if (!form.checkValidity()) {
-                event.preventDefault();
-                event.stopPropagation();
-            }
-            form.classList.add('was-validated');
-        }, false);
-    });
-})();
-
 // Show/hide login config sections based on auth method.
 // form_login and manual_login are mutually exclusive.
 (function() {
@@ -320,6 +304,75 @@
 
     select.addEventListener('change', applyVisibility);
     applyVisibility();
+})();
+
+// API-backed submit handler — packs the flat form into a TestUserIn body.
+(function() {
+    'use strict';
+    const form = document.getElementById('createProjectTestUserForm');
+    const redirectUrl = {{ url_for('project_users.list_users', project_id=project.id) | tojson }};
+
+    function emptyToNull(value) {
+        const trimmed = (value || '').toString().trim();
+        return trimmed === '' ? null : trimmed;
+    }
+
+    function parseRoles(value) {
+        const trimmed = (value || '').toString().trim();
+        if (!trimmed) return [];
+        return trimmed.split(',').map(function (r) { return r.trim(); }).filter(function (r) { return r.length > 0; });
+    }
+
+    function intOrDefault(value, fallback) {
+        const n = parseInt(value, 10);
+        return Number.isFinite(n) ? n : fallback;
+    }
+
+    form.addEventListener('submit', async function (ev) {
+        ev.preventDefault();
+        if (!form.checkValidity()) {
+            form.classList.add('was-validated');
+            return;
+        }
+        form.classList.add('was-validated');
+
+        const fd = new FormData(form);
+        const loginConfig = {
+            authentication_method: (fd.get('authentication_method') || 'form_login').toString(),
+            login_url: emptyToNull(fd.get('login_url')),
+            username_field_selector: emptyToNull(fd.get('username_field_selector')),
+            password_field_selector: emptyToNull(fd.get('password_field_selector')),
+            submit_button_selector: emptyToNull(fd.get('submit_button_selector')),
+            success_indicator_selector: emptyToNull(fd.get('success_indicator_selector')),
+            logout_url: emptyToNull(fd.get('logout_url')),
+            logout_button_selector: emptyToNull(fd.get('logout_button_selector')),
+            logout_success_indicator_selector: emptyToNull(fd.get('logout_success_indicator_selector')),
+            session_timeout_minutes: intOrDefault(fd.get('session_timeout_minutes'), 30),
+        };
+
+        const body = {
+            username: (fd.get('username') || '').toString().trim(),
+            password: (fd.get('password') || '').toString(),
+            display_name: emptyToNull(fd.get('display_name')),
+            description: emptyToNull(fd.get('description')),
+            roles: parseRoles(fd.get('roles')),
+            login_config: loginConfig,
+            enabled: form.querySelector('#enabled').checked,
+        };
+
+        const submit = form.querySelector('button[type="submit"]');
+        if (submit) submit.disabled = true;
+        try {
+            await window.apiClient.post(
+                '/projects/' + {{ project.id | tojson }} + '/test-users',
+                body
+            );
+            window.location.assign(redirectUrl);
+        } catch (err) {
+            if (submit) submit.disabled = false;
+            window.apiClient.showError(err);
+        }
+    });
 })();
 </script>
 {% endblock %}

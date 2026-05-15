@@ -176,6 +176,8 @@ def start_page_test_run(
     *,
     enable_multi_state: bool = True,
     website_user_id: str | None = None,
+    take_screenshot: bool | None = None,
+    run_ai_analysis: bool | None = None,
 ) -> PageTestRunHandle:
     """Queue an accessibility test run for a single page.
 
@@ -190,6 +192,14 @@ def start_page_test_run(
             legacy single-state path.
         website_user_id: Optional authenticated-user credential for
             login-required pages.
+        take_screenshot: Per-run override for screenshot capture.
+            ``None`` (default) keeps the historical behaviour
+            (``True``); callers that want to disable screenshots for a
+            specific run pass ``False`` explicitly.
+        run_ai_analysis: Per-run override for Claude-AI visual
+            analysis. ``None`` (default) keeps the historical
+            behaviour (``False``); pass ``True`` to opt in for this
+            run when the project has an AI key configured.
 
     Returns:
         :class:`PageTestRunHandle` carrying the queued job id.
@@ -234,6 +244,9 @@ def start_page_test_run(
         asyncio.set_event_loop(loop)
         try:
 
+            screenshot_flag = True if take_screenshot is None else take_screenshot
+            ai_flag = False if run_ai_analysis is None else run_ai_analysis
+
             async def run_test_with_cleanup() -> list[Any]:
                 test_runner_instance = TestRunner(database, browser_config)
                 try:
@@ -241,15 +254,15 @@ def start_page_test_run(
                         return await test_runner_instance.test_page_multi_state(
                             page,
                             enable_multi_state=True,
-                            take_screenshot=True,
-                            run_ai_analysis=False,
+                            take_screenshot=screenshot_flag,
+                            run_ai_analysis=ai_flag,
                             ai_api_key=ai_key,
                             website_user_id=website_user_id,
                         )
                     result = await test_runner_instance.test_page(
                         page,
-                        take_screenshot=True,
-                        run_ai_analysis=False,
+                        take_screenshot=screenshot_flag,
+                        run_ai_analysis=ai_flag,
                         ai_api_key=ai_key,
                         website_user_id=website_user_id,
                     )
@@ -407,6 +420,8 @@ def start_website_test_run(
     user_id: str | None = None,
     session_id: str | None = None,
     pdf_runner: PdfRunner | None = None,
+    take_screenshot: bool | None = None,
+    run_ai_analysis: bool | None = None,
 ) -> WebsiteTestRunHandle:
     """Queue a batch accessibility test run for every page on a website.
 
@@ -496,8 +511,10 @@ def start_website_test_run(
                             user_id=user_id,
                             session_id=session_id,
                             test_all=False,
-                            take_screenshot=True,
-                            run_ai_analysis=None,
+                            take_screenshot=(
+                                True if take_screenshot is None else take_screenshot
+                            ),
+                            run_ai_analysis=run_ai_analysis,
                             ai_api_key=ai_key,
                             website_user_id=user_arg,
                             skip_completion=True,

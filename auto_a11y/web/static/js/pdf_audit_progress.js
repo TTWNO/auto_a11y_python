@@ -20,6 +20,11 @@
     }
 
     function fetchStatus(pdfId) {
+        // TODO: no /api/v1 equivalent yet — /api/v1/pdf-documents/<id> GET
+        // returns metadata only, not job progress. The legacy
+        // /pdfs/<id>/audit-status endpoint exposes the in-flight job state
+        // via JobManager which has no REST counterpart. Verify before
+        // sunset 2026-09-01.
         return fetch('/pdfs/' + encodeURIComponent(pdfId) + '/audit-status', {
             headers: { 'Accept': 'application/json' },
             credentials: 'same-origin'

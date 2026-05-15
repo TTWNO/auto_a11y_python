@@ -204,7 +204,7 @@
                                             </a>
                                             <button type="button"
                                                     class="btn btn-outline-{% if schedule.enabled %}success{% else %}secondary{% endif %}"
-                                                    onclick="toggleSchedule('{{ schedule._website_id }}', '{{ schedule.id }}')"
+                                                    onclick="toggleSchedule('{{ schedule._website_id }}', '{{ schedule.id }}', {{ (not schedule.enabled) | tojson }})"
                                                     aria-label="{% if schedule.enabled %}{{ ftl('common-disable') }}{% else %}{{ ftl('common-enable') }}{% endif %}">
                                                 <i class="bi bi-toggle-{% if schedule.enabled %}on{% else %}off{% endif %}" aria-hidden="true"></i>
                                             </button>
@@ -332,47 +332,29 @@
 // Make 'now' available for time comparisons
 const now = new Date();
 
-function toggleSchedule(websiteId, scheduleId) {
-    fetch(`/websites/${websiteId}/schedules/${scheduleId}/toggle`, {
-        method: 'POST',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-        }
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
+function toggleSchedule(websiteId, scheduleId, newEnabled) {
+    window.apiClient.patch(`/scheduled-tests/${scheduleId}`, { enabled: newEnabled })
+        .then(() => {
             location.reload();
-        } else {
-            alert('{{ ftl('common-error-3') }}' + (data.error || '{{ ftl('common-unknown-error') }}'));
-        }
-    })
-    .catch(err => {
-        alert('{{ ftl('schedules-error-toggling-schedule') }}' + err.message);
-    });
+        })
+        .catch(err => {
+            console.error('Error toggling schedule:', err);
+            window.apiClient.showError(err);
+        });
 }
 
 function runNow(websiteId, scheduleId) {
     if (!confirm('{{ ftl('schedules-run-this-schedule-now') }}')) return;
 
-    fetch(`/websites/${websiteId}/schedules/${scheduleId}/run-now`, {
-        method: 'POST',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-        }
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
+    window.apiClient.post(`/scheduled-tests/${scheduleId}/runs`)
+        .then(() => {
             alert('{{ ftl('schedules-test-run-started-2') }}');
             location.reload();
-        } else {
-            alert('{{ ftl('common-error-3') }}' + (data.error || '{{ ftl('common-unknown-error') }}'));
-        }
-    })
-    .catch(err => {
-        alert('{{ ftl('schedules-error-starting-test-run') }}' + err.message);
-    });
+        })
+        .catch(err => {
+            console.error('Error running schedule:', err);
+            window.apiClient.showError(err);
+        });
 }
 </script>
 {% endblock %}

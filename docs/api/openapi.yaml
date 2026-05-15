@@ -2920,7 +2920,27 @@ components:
 
         :class:`ApiToken` so a user can later identify the session on the
 
-        ``/api/v1/tokens`` page.'
+        ``/api/v1/tokens`` page.
+
+
+        ``session`` opts the caller into Flask-Login session cookie
+
+        establishment. The default (``None`` / ``False``) returns a Bearer
+
+        token only — appropriate for API clients and integrations. The
+
+        admin HTML frontend sets ``session: true`` so a subsequent same-
+
+        origin navigation (no Authorization header) is still authenticated.
+
+        The two mechanisms coexist: a session-cookie login still mints and
+
+        returns a Bearer token.
+
+
+        ``remember`` is forwarded to Flask-Login when ``session`` is true;
+
+        ignored otherwise.'
       properties:
         description:
           anyOf:
@@ -2940,6 +2960,18 @@ components:
           - type: 'null'
           default: null
           title: Password
+        remember:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Remember
+        session:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Session
       title: LoginIn
       type: object
     LoginOut:
@@ -3124,6 +3156,7 @@ components:
         priority:
           anyOf:
           - enum:
+            - critical
             - high
             - normal
             - low
@@ -3416,6 +3449,7 @@ components:
         priority:
           anyOf:
           - enum:
+            - critical
             - high
             - normal
             - low
@@ -3456,6 +3490,7 @@ components:
         priority:
           anyOf:
           - enum:
+            - critical
             - high
             - normal
             - low
@@ -3567,7 +3602,16 @@ components:
 
         All fields are optional; ``enable_multi_state`` defaults to true on
 
-        the server (mirroring :func:`start_page_test_run`).'
+        the server (mirroring :func:`start_page_test_run`).
+
+
+        ``take_screenshot`` and ``run_ai`` are per-run overrides for the
+
+        test runner''s screenshot capture and Claude-AI visual analysis.
+
+        When ``None``, the runner''s defaults apply (``take_screenshot=True``,
+
+        ``run_ai_analysis=False``).'
       properties:
         enable_multi_state:
           anyOf:
@@ -3575,6 +3619,18 @@ components:
           - type: 'null'
           default: null
           title: Enable Multi State
+        run_ai:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Run Ai
+        take_screenshot:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Take Screenshot
         website_user_id:
           anyOf:
           - type: string
@@ -4879,6 +4935,18 @@ components:
           - type: 'null'
           default: null
           title: Project User Ids
+        run_ai:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Run Ai
+        take_screenshot:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Take Screenshot
         untested_only:
           anyOf:
           - type: boolean
@@ -5822,7 +5890,16 @@ components:
 
         ``display_name`` is optional; when absent the user''s email
 
-        local-part is used for display.'
+        local-part is used for display.
+
+
+        ``session`` opts into Flask-Login session cookie establishment
+
+        after a successful registration (same semantics as
+
+        :attr:`LoginIn.session`). The admin HTML registration form sets
+
+        this to ``true``; API clients leave it unset.'
       properties:
         display_name:
           anyOf:
@@ -5842,6 +5919,18 @@ components:
           - type: 'null'
           default: null
           title: Password
+        password_hint:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Password Hint
+        session:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Session
       title: RegisterIn
       type: object
     RegisterOut:
@@ -5982,7 +6071,14 @@ components:
 
         6``. Both are typed loosely (``Optional[str]``) to keep the
 
-        legacy field-path 400 envelope in play.'
+        legacy field-path 400 envelope in play.
+
+
+        ``session`` opts into Flask-Login session cookie establishment so
+
+        the user lands on the app authenticated after the reset, same
+
+        semantics as :attr:`LoginIn.session`.'
       properties:
         password:
           anyOf:
@@ -5990,6 +6086,12 @@ components:
           - type: 'null'
           default: null
           title: Password
+        session:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Session
         token:
           anyOf:
           - type: string
@@ -9102,6 +9204,36 @@ components:
           title: Type
       title: WebsiteReportIn
       type: object
+    WebsiteTestResultsClearedOut:
+      additionalProperties: false
+      description: 'Response body for ``DELETE /api/v1/websites/<id>/test-results``.
+
+
+        Wipes every test-result document for the website''s pages and
+
+        resets their cached counters; mirrors the counts returned by
+
+        :meth:`Database.clear_website_test_results`. Returned with status
+
+        200 (the operation deletes child records but the website itself
+
+        is preserved).'
+      properties:
+        pages_reset:
+          title: Pages Reset
+          type: integer
+        pdf_documents_reset:
+          title: Pdf Documents Reset
+          type: integer
+        test_results_deleted:
+          title: Test Results Deleted
+          type: integer
+      required:
+      - test_results_deleted
+      - pages_reset
+      - pdf_documents_reset
+      title: WebsiteTestResultsClearedOut
+      type: object
     WebsiteTestRunIn:
       additionalProperties: false
       description: 'Request body for queueing a website-wide batch test.
@@ -9114,7 +9246,14 @@ components:
         ``project_user_ids`` first, falling back to ``website_user_ids``.
 
 
-        ``untested_only`` filters the queue to pages still in DISCOVERED.'
+        ``untested_only`` filters the queue to pages still in DISCOVERED.
+
+
+        ``take_screenshot`` and ``run_ai`` are per-run overrides applied
+
+        uniformly across every page queued by this batch. ``None`` keeps
+
+        the runner''s defaults.'
       properties:
         max_pages:
           anyOf:
@@ -9131,6 +9270,18 @@ components:
           - type: 'null'
           default: null
           title: Project User Ids
+        run_ai:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Run Ai
+        take_screenshot:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          default: null
+          title: Take Screenshot
         untested_only:
           anyOf:
           - type: boolean
@@ -16456,6 +16607,49 @@ paths:
       summary: Admin-patch a user (superadmin-only)
       tags:
       - Users
+  /users/{user_id}/unlock:
+    post:
+      description: Resets ``failed_login_count`` to 0 and clears ``locked_until``
+        so an account that hit the lockout threshold can sign in again without waiting
+        for the lockout window to expire. The legacy admin UI exposes this as the
+        "Unlock account" button on the user-edit page; the REST mirror lets the same
+        flow go through the API. Admin-only — same authorization gate as ``PATCH /users/<id>``.
+      parameters:
+      - in: path
+        name: user_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppUserOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Clear failed-login lockout state on a user (admin-only)
+      tags:
+      - Users
   /website-test-users/{user_id}:
     delete:
       parameters:
@@ -17584,6 +17778,53 @@ paths:
       summary: Queue a website-wide batch test
       tags:
       - Test runs
+  /websites/{website_id}/test-results:
+    delete:
+      description: Deletes every test-result document for the website's pages and
+        resets each page's cached test state (violation / warning / info / discovery
+        / pass counts, ``last_tested``, ``test_duration_ms``) so they show as untested
+        again. Pages in TESTED / TESTING / ERROR move back to DISCOVERED; PDFs in
+        AUDITED / AUDITING / AUDIT_FAILED move back to PENDING. The website itself,
+        its pages, screenshots, discovery runs, and document references are preserved.
+        Mirrors the legacy ``/websites/<id>/clear-test-results`` admin action, plus
+        wipes the pdfMax cache directory on disk for each PDF so the viewer doesn't
+        keep serving stale issue data.
+      parameters:
+      - in: path
+        name: website_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebsiteTestResultsClearedOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Clear all test results for a website
+      tags:
+      - Websites
   /websites/{website_id}/test-runs:
     post:
       description: Queues a batch accessibility test run for every page on a website.

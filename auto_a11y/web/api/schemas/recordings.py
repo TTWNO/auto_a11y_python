@@ -45,7 +45,7 @@ Decisions worth flagging
 """
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, Union
 
 from pydantic import RootModel
 
@@ -134,11 +134,17 @@ class RecordingUploadIn(StrictModel):
 class RecordingPatch(StrictModel):
     """Request body for partial recording updates.
 
-    Editable fields are intentionally narrow: human-facing metadata
-    only. The legacy ``_apply_patch_to_recording`` helper applies the
-    same set. Server-managed fields (counts, project_id, recording_id,
-    recording_type, media_file_path, Drupal sync, and the multi-language
-    content arrays) are not patchable here.
+    Editable fields cover human-facing metadata plus two scope fields
+    that the legacy ``/recordings/<id>/edit`` form has always written:
+    ``page_urls`` (free-form URL list) and ``discovered_page_ids``
+    (cross-reference to discovered-pages). Server-managed fields
+    (counts, project_id, recording_id, recording_type, media_file_path,
+    Drupal sync, and the multi-language content arrays) are not patchable
+    here.
+
+    ``page_urls`` accepts either a list of strings or a single newline-
+    separated string; the handler normalises to a list. Same shape
+    flexibility for ``discovered_page_ids`` (list-or-comma-separated).
 
     The PATCH body is *partial* — only fields the client sends are
     applied. Pydantic's ``model_fields_set`` is the signal the handler
@@ -151,6 +157,8 @@ class RecordingPatch(StrictModel):
     auditor_role: Optional[str] = None
     tags: Optional[list[str]] = None
     notes: Optional[str] = None
+    page_urls: Optional[Union[list[str], str]] = None
+    discovered_page_ids: Optional[Union[list[str], str]] = None
 
 
 # ---------------------------------------------------------------------------

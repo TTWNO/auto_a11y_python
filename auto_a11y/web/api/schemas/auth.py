@@ -178,11 +178,24 @@ class LoginIn(StrictModel):
     ``description`` is a free-form label persisted with the minted
     :class:`ApiToken` so a user can later identify the session on the
     ``/api/v1/tokens`` page.
+
+    ``session`` opts the caller into Flask-Login session cookie
+    establishment. The default (``None`` / ``False``) returns a Bearer
+    token only — appropriate for API clients and integrations. The
+    admin HTML frontend sets ``session: true`` so a subsequent same-
+    origin navigation (no Authorization header) is still authenticated.
+    The two mechanisms coexist: a session-cookie login still mints and
+    returns a Bearer token.
+
+    ``remember`` is forwarded to Flask-Login when ``session`` is true;
+    ignored otherwise.
     """
 
     email: Optional[str] = None
     password: Optional[str] = None
     description: Optional[str] = None
+    session: Optional[bool] = None
+    remember: Optional[bool] = None
 
 
 class LoginOut(AuthEnvelopeOut):
@@ -204,11 +217,18 @@ class RegisterIn(StrictModel):
 
     ``display_name`` is optional; when absent the user's email
     local-part is used for display.
+
+    ``session`` opts into Flask-Login session cookie establishment
+    after a successful registration (same semantics as
+    :attr:`LoginIn.session`). The admin HTML registration form sets
+    this to ``true``; API clients leave it unset.
     """
 
     email: Optional[str] = None
     password: Optional[str] = None
     display_name: Optional[str] = None
+    password_hint: Optional[str] = None
+    session: Optional[bool] = None
 
 
 class RegisterOut(AuthEnvelopeOut):
@@ -242,10 +262,15 @@ class ResetPasswordIn(StrictModel):
     ``password`` is the new password; the handler enforces ``len >=
     6``. Both are typed loosely (``Optional[str]``) to keep the
     legacy field-path 400 envelope in play.
+
+    ``session`` opts into Flask-Login session cookie establishment so
+    the user lands on the app authenticated after the reset, same
+    semantics as :attr:`LoginIn.session`.
     """
 
     token: Optional[str] = None
     password: Optional[str] = None
+    session: Optional[bool] = None
 
 
 class ResetPasswordOut(AuthEnvelopeOut):

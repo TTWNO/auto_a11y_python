@@ -38,8 +38,7 @@
         {% endif %}
     {% endwith %}
 
-    <form method="POST" id="scheduleForm" aria-labelledby="schedule-form-heading">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <form id="scheduleForm" aria-labelledby="schedule-form-heading">
         <div class="row">
             <!-- Left Column - Basic Info & Schedule -->
             <div class="col-lg-6">
@@ -347,6 +346,104 @@
 
 {% block extra_js %}
 <script>
+const SCHEDULE_IS_EDIT = {{ is_edit | tojson }};
+const SCHEDULE_ID = {{ schedule.id | tojson if is_edit and schedule else 'null' }};
+const SCHEDULE_WEBSITE_ID = {{ website.id | tojson }};
+const SCHEDULE_LIST_URL = {{ url_for('schedules.list_schedules', website_id=website.id) | tojson }};
+
+function buildSchedulePayload(form) {
+    const data = new FormData(form);
+    const scheduleType = data.get('schedule_type') || 'daily';
+    const timezone = data.get('timezone') || 'America/Toronto';
+
+    // Pick the `time` value that corresponds to the active schedule type.
+    // Multiple inputs share name="time" but only one is in the visible group.
+    let timeValue = '02:00';
+    const activeGroup = document.getElementById(scheduleType === 'one_time' ? 'oneTimeFields'
+        : scheduleType === 'daily' ? 'dailyFields'
+        : scheduleType === 'weekly' ? 'weeklyFields'
+        : scheduleType === 'monthly' ? 'monthlyFields'
+        : 'cronFields');
+    if (activeGroup) {
+        const timeInput = activeGroup.querySelector('input[name="time"]');
+        if (timeInput && timeInput.value) timeValue = timeInput.value;
+    }
+
+    const presetConfig = {
+        time: timeValue,
+        day_of_week: parseInt(data.get('day_of_week') || '0', 10),
+        day_of_month: parseInt(data.get('day_of_month') || '1', 10),
+        timezone: timezone,
+    };
+
+    // For one-time schedules, construct an ISO 8601 timestamp from the date
+    // + time. The server applies the timezone; we emit a naive local-time
+    // string (no offset) so the server's ZoneInfo logic kicks in unchanged.
+    let scheduledDatetime = null;
+    if (scheduleType === 'one_time') {
+        const dateStr = data.get('scheduled_date');
+        const oneTimeInput = document.getElementById('oneTimeFields').querySelector('input[name="scheduled_time"]');
+        const timeStr = oneTimeInput && oneTimeInput.value ? oneTimeInput.value : '02:00';
+        if (dateStr) {
+            scheduledDatetime = dateStr + 'T' + timeStr + ':00';
+        }
+    }
+
+    const aiPagesMode = data.get('ai_pages_mode') || 'all';
+    const aiPageIds = aiPagesMode === 'selected'
+        ? data.getAll('ai_page_ids')
+        : [];
+
+    const testConfig = {
+        run_ai_tests: form.querySelector('#run_ai_tests').checked,
+        run_javascript_tests: form.querySelector('#run_javascript_tests').checked,
+        run_python_tests: form.querySelector('#run_python_tests').checked,
+        enabled_touchpoints: data.getAll('enabled_touchpoints'),
+        ai_pages_mode: aiPagesMode,
+        ai_page_ids: aiPageIds,
+        take_screenshots: form.querySelector('#take_screenshots').checked,
+    };
+
+    const cronExpression = (data.get('cron_expression') || '').trim();
+
+    return {
+        name: (data.get('name') || '').trim(),
+        description: (data.get('description') || '').trim() || null,
+        schedule_type: scheduleType,
+        scheduled_datetime: scheduledDatetime,
+        cron_expression: cronExpression || null,
+        preset_config: presetConfig,
+        test_config: testConfig,
+        project_user_ids: data.getAll('project_user_ids'),
+        enabled: form.querySelector('#enabled').checked,
+    };
+}
+
+document.getElementById('scheduleForm').addEventListener('submit', async function (ev) {
+    ev.preventDefault();
+    const form = ev.currentTarget;
+    const btn = form.querySelector('button[type="submit"]');
+    if (btn) {
+        btn.disabled = true;
+        btn.setAttribute('aria-busy', 'true');
+    }
+    try {
+        const body = buildSchedulePayload(form);
+        if (SCHEDULE_IS_EDIT) {
+            await window.apiClient.put('/scheduled-tests/' + encodeURIComponent(SCHEDULE_ID), body);
+        } else {
+            await window.apiClient.post('/websites/' + encodeURIComponent(SCHEDULE_WEBSITE_ID) + '/scheduled-tests', body);
+        }
+        location.assign(SCHEDULE_LIST_URL);
+    } catch (err) {
+        window.apiClient.showError(err);
+        if (btn) {
+            btn.disabled = false;
+            btn.removeAttribute('aria-busy');
+        }
+    }
+});
+
 document.addEventListener('DOMContentLoaded', function() {
     // Schedule type toggle
     const scheduleTypes = document.querySelectorAll('input[name="schedule_type"]');

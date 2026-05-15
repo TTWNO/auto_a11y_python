@@ -166,3 +166,18 @@ class MessageOut(StrictModel):
     """
 
     message: str
+
+
+class WebsiteTestResultsClearedOut(StrictModel):
+    """Response body for ``DELETE /api/v1/websites/<id>/test-results``.
+
+    Wipes every test-result document for the website's pages and
+    resets their cached counters; mirrors the counts returned by
+    :meth:`Database.clear_website_test_results`. Returned with status
+    200 (the operation deletes child records but the website itself
+    is preserved).
+    """
+
+    test_results_deleted: int
+    pages_reset: int
+    pdf_documents_reset: int

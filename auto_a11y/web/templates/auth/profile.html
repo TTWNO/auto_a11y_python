@@ -11,9 +11,7 @@
                 <h2 class="mb-0" id="profile-heading"><i class="bi bi-person-circle" aria-hidden="true"></i> {{ ftl('common-profile') }}</h2>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('auth.profile') }}" aria-labelledby="profile-heading">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                    <input type="hidden" name="action" value="update_profile">
+                <form id="updateProfileForm" aria-labelledby="profile-heading">
                     <fieldset>
                         <legend class="visually-hidden">{{ ftl('auth-profile-information') }}</legend>
                         <div class="mb-3">
@@ -42,16 +40,14 @@
             </div>
         </div>
     </div>
-    
+
     <div class="col-md-6">
         <div class="card shadow">
             <div class="card-header card-header-medium">
                 <h2 class="mb-0" id="change-password-heading"><i class="bi bi-key" aria-hidden="true"></i> {{ ftl('auth-change-password') }}</h2>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('auth.profile') }}" aria-labelledby="change-password-heading">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                    <input type="hidden" name="action" value="change_password">
+                <form id="changePasswordForm" aria-labelledby="change-password-heading">
                     <p class="form-text mb-3"><span class="text-severity-high" aria-hidden="true">*</span> {{ ftl('common-required-field') }}</p>
                     <fieldset>
                         <legend class="visually-hidden">{{ ftl('auth-change-password') }}</legend>
@@ -82,4 +78,70 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    function disableSubmit(form) {
+        const btn = form.querySelector('button[type="submit"]');
+        if (btn) {
+            btn.disabled = true;
+            btn.setAttribute('aria-busy', 'true');
+        }
+        return btn;
+    }
+    function reenable(btn) {
+        if (btn) {
+            btn.disabled = false;
+            btn.removeAttribute('aria-busy');
+        }
+    }
+
+    document.getElementById('updateProfileForm').addEventListener('submit', async function (ev) {
+        ev.preventDefault();
+        const form = ev.currentTarget;
+        const btn = disableSubmit(form);
+        try {
+            const displayName = form.querySelector('#display_name').value;
+            await window.apiClient.patch('/auth/me', { display_name: displayName });
+            window.apiClient.showSuccess({{ ftl('auth-profile-updated-successfully') | tojson }});
+            location.reload();
+        } catch (err) {
+            window.apiClient.showError(err);
+            reenable(btn);
+        }
+    });
+
+    document.getElementById('changePasswordForm').addEventListener('submit', async function (ev) {
+        ev.preventDefault();
+        const form = ev.currentTarget;
+        const btn = disableSubmit(form);
+        const newPassword = form.querySelector('#new_password').value;
+        const confirmPassword = form.querySelector('#confirm_password').value;
+        if (newPassword !== confirmPassword) {
+            window.apiClient.showError({
+                problem: { detail: {{ ftl('auth-new-passwords-do-not-match') | tojson }} },
+            });
+            reenable(btn);
+            return;
+        }
+        if (newPassword.length < 8) {
+            window.apiClient.showError({
+                problem: { detail: {{ ftl('auth-new-password-must-be-at-least-8-characters') | tojson }} },
+            });
+            reenable(btn);
+            return;
+        }
+        try {
+            await window.apiClient.patch('/auth/me', { password: newPassword });
+            window.apiClient.showSuccess({{ ftl('auth-password-changed-successfully') | tojson }});
+            location.reload();
+        } catch (err) {
+            window.apiClient.showError(err);
+            reenable(btn);
+        }
+    });
+})();
+</script>
 {% endblock %}

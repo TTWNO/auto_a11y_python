@@ -51,7 +51,7 @@ from auto_a11y.web.api.schemas.common import StrictModel
 # ---------------------------------------------------------------------------
 
 
-PagePriority = Literal["high", "normal", "low"]
+PagePriority = Literal["critical", "high", "normal", "low"]
 
 
 class PageIn(StrictModel):

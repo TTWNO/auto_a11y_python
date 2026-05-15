@@ -10,8 +10,7 @@
                 <h1 class="mb-0" id="create-user-heading"><i class="bi bi-person-plus" aria-hidden="true"></i> {{ ftl('auth-create-user') }}</h1>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('auth.user_create') }}" aria-labelledby="create-user-heading">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <form id="userCreateForm" aria-labelledby="create-user-heading">
                     <p class="form-text mb-3"><span class="text-severity-high" aria-hidden="true">*</span> {{ ftl('common-required-field') }}</p>
                     <fieldset>
                         <legend class="visually-hidden">{{ ftl('auth-new-user-account') }}</legend>
@@ -50,4 +49,34 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('userCreateForm').addEventListener('submit', async function (ev) {
+    ev.preventDefault();
+    const form = ev.currentTarget;
+    const btn = form.querySelector('button[type="submit"]');
+    if (btn) {
+        btn.disabled = true;
+        btn.setAttribute('aria-busy', 'true');
+    }
+    try {
+        const body = {
+            email: form.querySelector('#email').value.trim().toLowerCase(),
+            password: form.querySelector('#password').value,
+        };
+        const displayName = form.querySelector('#display_name').value.trim();
+        if (displayName) body.display_name = displayName;
+        await window.apiClient.post('/users', body);
+        location.assign({{ url_for('auth.user_list') | tojson }});
+    } catch (err) {
+        window.apiClient.showError(err);
+        if (btn) {
+            btn.disabled = false;
+            btn.removeAttribute('aria-busy');
+        }
+    }
+});
+</script>
 {% endblock %}

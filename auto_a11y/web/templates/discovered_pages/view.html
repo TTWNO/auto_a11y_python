@@ -25,9 +25,13 @@
             <button type="button" class="btn btn-neutral me-2" id="cancelBtn" style="display: none;" onclick="cancelEdit()">
                 <i class="bi bi-x-lg" aria-hidden="true"></i> {{ ftl('common-cancel') }}
             </button>
-            <form method="post" action="{{ url_for('discovered_pages.delete_discovered_page', page_id=page.id) }}"
-                  onsubmit="return confirm('{{ ftl('pages-are-you-sure-you-want-to-delete-this-discovered') }}')" class="d-inline" aria-label="{{ ftl('common-delete') }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <form data-api-form
+                  data-api-method="DELETE"
+                  data-api-path="/api/v1/discovered-pages/{{ page.id }}"
+                  data-api-redirect="{{ url_for('projects.view_project', project_id=project.id) }}"
+                  data-api-confirm="{{ ftl('pages-are-you-sure-you-want-to-delete-this-discovered') }}"
+                  class="d-inline"
+                  aria-label="{{ ftl('common-delete') }}">
                 <button type="submit" class="btn btn-outline-high">
                     <i class="bi bi-trash" aria-hidden="true"></i> {{ ftl('common-delete') }}
                 </button>
@@ -444,9 +448,9 @@ async function savePage() {
     const data = {
         title: document.getElementById('editTitle').value,
         url: document.getElementById('editUrl').value,
-        audited: document.getElementById('editAudited').checked ? 'true' : 'false',
-        manual_audit: document.getElementById('editManualAudit').checked ? 'true' : 'false',
-        include_in_report: document.getElementById('editIncludeInReport').checked ? 'true' : 'false',
+        audited: document.getElementById('editAudited').checked,
+        manual_audit: document.getElementById('editManualAudit').checked,
+        include_in_report: document.getElementById('editIncludeInReport').checked,
         interested_because: getCheckedValues('interested-because-checkbox'),
         page_elements: getCheckedValues('page-elements-checkbox'),
         private_notes: document.getElementById('editPrivateNotes').value,
@@ -454,25 +458,10 @@ async function savePage() {
     };
 
     try {
-        const response = await fetch('{{ url_for("discovered_pages.edit_discovered_page", page_id=page.id) }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(data)
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            // Reload the page to show updated data
-            window.location.reload();
-        } else {
-            alert('{{ ftl('pages-error-saving-page') }} ' + result.error);
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('{{ ftl('pages-error-saving-page') }} ' + error.message);
+        await window.apiClient.patch(`/discovered-pages/{{ page.id }}`, data);
+        window.location.reload();
+    } catch (err) {
+        window.apiClient.showError(err);
     }
 }
 </script>

@@ -28,11 +28,8 @@
                     </div>
                 </div>
                 {% endif %}
-                <form method="POST" action="{{ url_for('auth.login', next=request.args.get('next')) if request.args.get('next') else url_for('auth.login') }}" aria-labelledby="login-heading">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                    {% if request.args.get('next') %}
-                    <input type="hidden" name="next" value="{{ request.args.get('next') }}"/>
-                    {% endif %}
+                <form id="loginForm" aria-labelledby="login-heading">
+                    <input type="hidden" name="session" value="true"/>
                     <p class="form-text mb-3"><span class="text-severity-high" aria-hidden="true">*</span> {{ ftl('common-required-field') }}</p>
                     <fieldset>
                         <legend class="visually-hidden">{{ ftl('auth-login-credentials') }}</legend>
@@ -79,5 +76,43 @@
 document.getElementById('show-password').addEventListener('change', function () {
     document.getElementById('password').type = this.checked ? 'text' : 'password';
 });
+
+(function () {
+    const form = document.getElementById('loginForm');
+    // Same-origin allow-list for the ?next= redirect; mirrors the legacy
+    // handler's gate (auto_a11y/web/routes/auth.py).
+    function safeNext(raw) {
+        if (!raw) return null;
+        try {
+            const here = new URL(window.location.href);
+            const parsed = new URL(raw, here);
+            const isRelative = raw.startsWith('/') && !raw.startsWith('//');
+            const isSameOrigin = parsed.origin === here.origin && parsed.pathname.startsWith('/');
+            return (isRelative || isSameOrigin) ? parsed.pathname + parsed.search + parsed.hash : null;
+        } catch (e) {
+            return null;
+        }
+    }
+    form.addEventListener('submit', async function (ev) {
+        ev.preventDefault();
+        const fd = new FormData(form);
+        const body = {
+            email: (fd.get('email') || '').toString().trim().toLowerCase(),
+            password: fd.get('password') || '',
+            remember: !!fd.get('remember'),
+            session: true,
+        };
+        const submit = form.querySelector('button[type="submit"]');
+        if (submit) submit.disabled = true;
+        try {
+            await window.apiClient.post('/auth/login', body);
+            const next = safeNext(new URLSearchParams(window.location.search).get('next'));
+            window.location.assign(next || '{{ url_for('dashboard') }}');
+        } catch (err) {
+            if (submit) submit.disabled = false;
+            window.apiClient.showError(err);
+        }
+    });
+})();
 </script>
 {% endblock %}

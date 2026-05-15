@@ -316,25 +316,15 @@ document.getElementById('testing-config-form').addEventListener('submit', functi
         show_error_codes: document.getElementById('show_error_codes').checked
     };
     
-    fetch('/testing/configure', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(config)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
+    window.apiClient.put('/testing/config', config)
+        .then(() => {
             showAlert('success', {{ ftl('testing-configuration-saved-successfully') | tojson }});
-        } else {
-            showAlert('danger', data.error || {{ ftl('testing-failed-to-save-configuration') | tojson }});
-        }
-    })
-    .catch(error => {
-        console.error('Error saving configuration:', error);
-        showAlert('danger', {{ ftl('testing-an-error-occurred-while-saving-configuration') | tojson }});
-    });
+        })
+        .catch(error => {
+            console.error('Error saving configuration:', error);
+            const detail = error && error.problem && (error.problem.detail || error.problem.title);
+            showAlert('danger', detail || {{ ftl('testing-an-error-occurred-while-saving-configuration') | tojson }});
+        });
 });
 
 // Clean up page counts

@@ -204,10 +204,7 @@
     </section>
 
     <!-- Save Form -->
-    <form method="POST" id="matrix-form" aria-labelledby="matrix-form-heading">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-        <input type="hidden" name="combinations_data" id="combinations-data-input">
-        <input type="hidden" name="script_order" id="script-order-input">
+    <form id="matrix-form" aria-labelledby="matrix-form-heading">
         <div class="d-flex justify-content-between align-items-center">
             <div>
                 <button type="submit" class="btn btn-brand btn-lg">
@@ -477,11 +474,16 @@ function initializeDragDrop() {
     });
 }
 
-// Form submission - save combinations and script order
-document.getElementById('matrix-form').addEventListener('submit', function(e) {
-    document.getElementById('combinations-data-input').value = JSON.stringify(combinations);
-    
-    // Save script order
+// Form submission - PUT the matrix to /api/v1/pages/<id>/matrix.
+document.getElementById('matrix-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const submit = e.target.querySelector('[type="submit"]');
+    if (submit) {
+        submit.disabled = true;
+        submit.setAttribute('aria-busy', 'true');
+    }
+
+    // Build script_order from the current DOM order of the chip list.
     const scriptOrder = [];
     document.querySelectorAll('#script-order-list .script-order-item').forEach((item, idx) => {
         scriptOrder.push({
@@ -489,7 +491,22 @@ document.getElementById('matrix-form').addEventListener('submit', function(e) {
             execution_order: idx
         });
     });
-    document.getElementById('script-order-input').value = JSON.stringify(scriptOrder);
+
+    const body = {
+        combinations: combinations,
+        script_order: scriptOrder
+    };
+
+    try {
+        await window.apiClient.put('/pages/{{ page.id }}/matrix', body);
+        window.location.assign({{ url_for('pages.view_page', page_id=page.id) | tojson }});
+    } catch (err) {
+        window.apiClient.showError(err);
+        if (submit) {
+            submit.disabled = false;
+            submit.removeAttribute('aria-busy');
+        }
+    }
 });
 
 // Script order drag and drop

@@ -123,9 +123,13 @@
                            class="btn btn-sm btn-brand flex-grow-1">
                             <i class="bi bi-eye" aria-hidden="true"></i> {{ ftl('common-view-details') }}
                         </a>
-                        <form method="post" action="{{ url_for('recordings.delete_recording', recording_id=recording.id) }}"
-                              onsubmit="return confirm('{{ ftl('recordings-are-you-sure-you-want-to-delete-this-recording') }}')" class="d-inline" aria-label="{{ ftl('common-delete') }} {{ recording.title }}">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <form data-api-form
+                              data-api-method="DELETE"
+                              data-api-path="/api/v1/recordings/{{ recording.id }}"
+                              data-api-redirect="{{ url_for('recordings.list_recordings') }}"
+                              data-api-confirm="{{ ftl('recordings-are-you-sure-you-want-to-delete-this-recording') }}"
+                              class="d-inline"
+                              aria-label="{{ ftl('common-delete') }} {{ recording.title }}">
                             <button type="submit" class="btn btn-sm btn-outline-high">
                                 <i class="bi bi-trash" aria-hidden="true"></i>
                             </button>

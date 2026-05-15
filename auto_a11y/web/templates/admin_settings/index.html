@@ -43,9 +43,7 @@
         </div>
         {% endif %}
 
-        <form method="POST" action="{{ url_for('admin_settings.update_drupal') }}" novalidate>
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-
+        <form id="drupalSettingsForm" data-drupal-password-set="{{ '1' if drupal.password_set else '' }}" novalidate>
             <div class="mb-3">
                 <label for="drupal-base-url" class="form-label">{{ ftl('admin-settings-drupal-base-url') }}</label>
                 <input
@@ -108,7 +106,8 @@
                     <i class="bi bi-save" aria-hidden="true"></i> {{ ftl('admin-settings-save') }}
                 </button>
                 {% if drupal.source == 'database' %}
-                <button type="submit" name="action" value="clear" class="btn btn-outline-high" onclick="return confirm('{{ ftl('admin-settings-drupal-clear-confirm') }}');">
+                <button type="button" data-drupal-clear class="btn btn-outline-high"
+                        data-confirm-msg="{{ ftl('admin-settings-drupal-clear-confirm') }}">
                     <i class="bi bi-trash" aria-hidden="true"></i> {{ ftl('admin-settings-drupal-clear') }}
                 </button>
                 {% endif %}
@@ -150,9 +149,7 @@
         </p>
         {% endif %}
 
-        <form method="POST" action="{{ url_for('admin_settings.update_env_section', section_id=section.section_id) }}" novalidate>
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-
+        <form data-env-section-form data-section-id="{{ section.section_id }}" novalidate>
             {% for field in section.fields %}
                 {% if field.type == 'bool' %}
                 <div class="form-check mb-3">
@@ -161,6 +158,7 @@
                         class="form-check-input"
                         id="{{ field.input_id }}"
                         name="{{ field.db_key }}"
+                        data-field-type="bool"
                         {% if field.checked %}checked{% endif %}
                     >
                     <label for="{{ field.input_id }}" class="form-check-label">
@@ -182,6 +180,8 @@
                         class="form-control"
                         id="{{ field.input_id }}"
                         name="{{ field.db_key }}"
+                        data-field-type="password"
+                        data-password-set="{{ '1' if field.password_set else '' }}"
                         autocomplete="new-password"
                         aria-describedby="{{ field.input_id }}-help"
                         {% if field.password_set %}placeholder="{{ ftl('admin-settings-password-placeholder-set') }}"{% endif %}
@@ -207,6 +207,7 @@
                         class="form-control"
                         id="{{ field.input_id }}"
                         name="{{ field.db_key }}"
+                        data-field-type="{{ field.type }}"
                         value="{{ field.value }}"
                         autocomplete="off"
                         {% if field.help_id %}aria-describedby="{{ field.input_id }}-help"{% endif %}
@@ -223,7 +224,8 @@
                     <i class="bi bi-save" aria-hidden="true"></i> {{ ftl('admin-settings-save') }}
                 </button>
                 {% if section.source == 'database' %}
-                <button type="submit" name="action" value="clear" class="btn btn-outline-high" onclick="return confirm('{{ ftl('admin-settings-section-clear-confirm', heading=ftl(section.heading_id)) }}');">
+                <button type="button" data-section-clear class="btn btn-outline-high"
+                        data-confirm-msg="{{ ftl('admin-settings-section-clear-confirm', heading=ftl(section.heading_id)) }}">
                     <i class="bi bi-trash" aria-hidden="true"></i> {{ ftl('admin-settings-clear') }}
                 </button>
                 {% endif %}
@@ -232,4 +234,143 @@
     </div>
 </div>
 {% endfor %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    function disableSubmit(form) {
+        const btn = form.querySelector('button[type="submit"]');
+        if (btn) {
+            btn.disabled = true;
+            btn.setAttribute('aria-busy', 'true');
+        }
+        return btn;
+    }
+    function reenable(btn) {
+        if (btn) {
+            btn.disabled = false;
+            btn.removeAttribute('aria-busy');
+        }
+    }
+
+    // ---------------- Drupal form ----------------
+    const drupalForm = document.getElementById('drupalSettingsForm');
+    if (drupalForm) {
+        drupalForm.addEventListener('submit', async function (ev) {
+            ev.preventDefault();
+            const btn = disableSubmit(drupalForm);
+            try {
+                const body = {
+                    base_url: drupalForm.querySelector('#drupal-base-url').value.trim(),
+                    username: drupalForm.querySelector('#drupal-username').value.trim(),
+                    enabled: drupalForm.querySelector('#drupal-enabled').checked,
+                };
+                const passwordInput = drupalForm.querySelector('#drupal-password');
+                const passwordValue = passwordInput.value;
+                const passwordSet = drupalForm.dataset.drupalPasswordSet === '1';
+                // Blank password: only send if no existing password is stored
+                // (server-side, omitted preserves; sending an explicit value
+                // is the only way to set a new one). Mirror the legacy form's
+                // "leave blank to keep" UX.
+                if (passwordValue) {
+                    body.password = passwordValue;
+                } else if (!passwordSet) {
+                    body.password = '';
+                }
+                await window.apiClient.patch('/admin/settings/drupal', body);
+                location.reload();
+            } catch (err) {
+                window.apiClient.showError(err);
+                reenable(btn);
+            }
+        });
+
+        const drupalClearBtn = drupalForm.querySelector('[data-drupal-clear]');
+        if (drupalClearBtn) {
+            drupalClearBtn.addEventListener('click', async function () {
+                const msg = drupalClearBtn.dataset.confirmMsg || '';
+                if (msg && !window.confirm(msg)) return;
+                drupalClearBtn.disabled = true;
+                drupalClearBtn.setAttribute('aria-busy', 'true');
+                try {
+                    await window.apiClient.delete('/admin/settings/drupal');
+                    location.reload();
+                } catch (err) {
+                    window.apiClient.showError(err);
+                    drupalClearBtn.disabled = false;
+                    drupalClearBtn.removeAttribute('aria-busy');
+                }
+            });
+        }
+    }
+
+    // ---------------- Generic env-var sections ----------------
+    function buildEnvBody(form) {
+        const body = {};
+        const inputs = form.querySelectorAll('[data-field-type][name]');
+        inputs.forEach(function (input) {
+            const fieldType = input.dataset.fieldType;
+            const name = input.name;
+            if (fieldType === 'bool') {
+                body[name] = input.checked;
+            } else if (fieldType === 'password') {
+                const raw = input.value;
+                const passwordSet = input.dataset.passwordSet === '1';
+                if (raw) {
+                    body[name] = raw;
+                } else if (!passwordSet) {
+                    // No existing password and field is blank: send "" so the
+                    // handler treats it as clearing the field.
+                    body[name] = '';
+                }
+                // Else: omit so the server preserves the existing value.
+            } else if (fieldType === 'int') {
+                const raw = input.value.trim();
+                body[name] = raw === '' ? 0 : parseInt(raw, 10);
+            } else if (fieldType === 'float') {
+                const raw = input.value.trim();
+                body[name] = raw === '' ? 0.0 : parseFloat(raw);
+            } else {
+                body[name] = input.value;
+            }
+        });
+        return body;
+    }
+
+    document.querySelectorAll('form[data-env-section-form]').forEach(function (form) {
+        const sectionId = form.dataset.sectionId;
+        form.addEventListener('submit', async function (ev) {
+            ev.preventDefault();
+            const btn = disableSubmit(form);
+            try {
+                const body = buildEnvBody(form);
+                await window.apiClient.patch('/admin/settings/' + encodeURIComponent(sectionId), body);
+                location.reload();
+            } catch (err) {
+                window.apiClient.showError(err);
+                reenable(btn);
+            }
+        });
+
+        const clearBtn = form.querySelector('[data-section-clear]');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', async function () {
+                const msg = clearBtn.dataset.confirmMsg || '';
+                if (msg && !window.confirm(msg)) return;
+                clearBtn.disabled = true;
+                clearBtn.setAttribute('aria-busy', 'true');
+                try {
+                    await window.apiClient.delete('/admin/settings/' + encodeURIComponent(sectionId));
+                    location.reload();
+                } catch (err) {
+                    window.apiClient.showError(err);
+                    clearBtn.disabled = false;
+                    clearBtn.removeAttribute('aria-busy');
+                }
+            });
+        }
+    });
+})();
+</script>
 {% endblock %}

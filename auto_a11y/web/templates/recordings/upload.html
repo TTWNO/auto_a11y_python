@@ -17,8 +17,7 @@
         <div class="col-lg-8">
             <div class="card">
                 <div class="card-body">
-                    <form method="post" action="{{ url_for('recordings.upload_recording') }}" enctype="multipart/form-data" aria-labelledby="upload-recording-heading">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <form id="recording-upload-form" enctype="multipart/form-data" aria-labelledby="upload-recording-heading">
                         <fieldset>
                         <legend class="visually-hidden">{{ ftl('recordings-upload-recording-details') }}</legend>
 
@@ -444,16 +443,18 @@ document.getElementById('project_id').addEventListener('change', function() {
         return;
     }
 
-    // Fetch project users
-    fetch(`/projects/api/${projectId}/users`)
-        .then(response => response.json())
+    // Fetch project test-users (login automation credentials)
+    window.apiClient.get(`/projects/${projectId}/test-users`)
         .then(data => {
-            if (data.success && data.users && data.users.length > 0) {
-                data.users.forEach(user => {
+            const items = (data && data.items) || [];
+            const enabled = items.filter(u => u && u.enabled !== false);
+            if (enabled.length > 0) {
+                enabled.forEach(user => {
                     const option = document.createElement('option');
-                    option.value = user.display_name || user.username;
-                    option.textContent = user.display_name || user.username;
-                    if (user.roles && user.roles.length > 0) {
+                    const label = user.display_name || user.username;
+                    option.value = label;
+                    option.textContent = label;
+                    if (Array.isArray(user.roles) && user.roles.length > 0) {
                         option.textContent += ` (${user.roles.join(', ')})`;
                     }
                     testUserSelect.appendChild(option);
@@ -464,48 +465,45 @@ document.getElementById('project_id').addEventListener('change', function() {
             }
         })
         .catch(error => {
-            console.error('Error fetching project users:', error);
+            console.error('Error fetching project test-users:', error);
             testUserHelp.textContent = {{ ftl('recordings-optional-select-the-test-account-used-during-this-2') | tojson }};
         });
 
     // Fetch project data to get testers and supervisors
-    fetch(`/projects/api/${projectId}/details`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success && data.project) {
-                const project = data.project;
+    window.apiClient.get(`/projects/${projectId}`)
+        .then(project => {
+            if (!project) return;
 
-                // Populate testers
-                if (project.lived_experience_testers && project.lived_experience_testers.length > 0) {
-                    project.lived_experience_testers.forEach(tester => {
-                        const option = document.createElement('option');
-                        option.value = tester._id;
-                        option.textContent = tester.name;
-                        if (tester.disability_type) {
-                            option.textContent += ` (${tester.disability_type})`;
-                        }
-                        testerSelect.appendChild(option);
-                    });
-                    testerHelp.textContent = {{ ftl('recordings-select-the-lived-experience-tester-who-performed-2') | tojson }};
-                } else {
-                    testerHelp.textContent = {{ ftl('recordings-no-lived-experience-testers-configured-for-this') | tojson }};
-                }
+            // Populate testers
+            if (project.lived_experience_testers && project.lived_experience_testers.length > 0) {
+                project.lived_experience_testers.forEach(tester => {
+                    const option = document.createElement('option');
+                    option.value = tester._id;
+                    option.textContent = tester.name;
+                    if (tester.disability_type) {
+                        option.textContent += ` (${tester.disability_type})`;
+                    }
+                    testerSelect.appendChild(option);
+                });
+                testerHelp.textContent = {{ ftl('recordings-select-the-lived-experience-tester-who-performed-2') | tojson }};
+            } else {
+                testerHelp.textContent = {{ ftl('recordings-no-lived-experience-testers-configured-for-this') | tojson }};
+            }
 
-                // Populate supervisors
-                if (project.test_supervisors && project.test_supervisors.length > 0) {
-                    project.test_supervisors.forEach(supervisor => {
-                        const option = document.createElement('option');
-                        option.value = supervisor._id;
-                        option.textContent = supervisor.name;
-                        if (supervisor.role) {
-                            option.textContent += ` (${supervisor.role})`;
-                        }
-                        supervisorSelect.appendChild(option);
-                    });
-                    supervisorHelp.textContent = {{ ftl('recordings-select-the-supervisor-who-oversaw-this-test-2') | tojson }};
-                } else {
-                    supervisorHelp.textContent = {{ ftl('recordings-no-test-supervisors-configured-for-this-project') | tojson }};
-                }
+            // Populate supervisors
+            if (project.test_supervisors && project.test_supervisors.length > 0) {
+                project.test_supervisors.forEach(supervisor => {
+                    const option = document.createElement('option');
+                    option.value = supervisor._id;
+                    option.textContent = supervisor.name;
+                    if (supervisor.role) {
+                        option.textContent += ` (${supervisor.role})`;
+                    }
+                    supervisorSelect.appendChild(option);
+                });
+                supervisorHelp.textContent = {{ ftl('recordings-select-the-supervisor-who-oversaw-this-test-2') | tojson }};
+            } else {
+                supervisorHelp.textContent = {{ ftl('recordings-no-test-supervisors-configured-for-this-project') | tojson }};
             }
         })
         .catch(error => {
@@ -515,12 +513,12 @@ document.getElementById('project_id').addEventListener('change', function() {
         });
 
     // Fetch discovered pages for this project
-    fetch(`/projects/api/${projectId}/discovered-pages`)
-        .then(response => response.json())
+    window.apiClient.get(`/projects/${projectId}/discovered-pages`)
         .then(data => {
-            if (data.success && data.discovered_pages && data.discovered_pages.length > 0) {
+            const pages = (data && data.items) || [];
+            if (pages.length > 0) {
                 discoveredPagesContainer.innerHTML = '';
-                data.discovered_pages.forEach(page => {
+                pages.forEach(page => {
                     const div = document.createElement('div');
                     div.className = 'form-check';
 
@@ -528,12 +526,12 @@ document.getElementById('project_id').addEventListener('change', function() {
                     checkbox.type = 'checkbox';
                     checkbox.className = 'form-check-input';
                     checkbox.name = 'discovered_page_ids';
-                    checkbox.value = page._id;
-                    checkbox.id = `dp_${page._id}`;
+                    checkbox.value = page.id;
+                    checkbox.id = `dp_${page.id}`;
 
                     const label = document.createElement('label');
                     label.className = 'form-check-label';
-                    label.htmlFor = `dp_${page._id}`;
+                    label.htmlFor = `dp_${page.id}`;
                     label.textContent = page.title;
 
                     if (page.url) {
@@ -558,5 +556,100 @@ document.getElementById('project_id').addEventListener('change', function() {
             discoveredPagesContainer.innerHTML = '<p class="text-muted small mb-0">' + {{ ftl('recordings-error-loading-discovered-pages') | tojson }} + '</p>';
         });
 });
+
+// Recording upload submit -> POST /api/v1/recordings (multipart), then
+// optionally PATCH /api/v1/recordings/<id>/content with supplementary
+// content files. The template's two main JSON file inputs are named
+// json_file_en/json_file_fr for legacy continuity; the v1 endpoint
+// expects recording_json_en/recording_json_fr, so we remap on submit.
+// The six content file inputs already match the v1 part names.
+(function () {
+    "use strict";
+    var form = document.getElementById('recording-upload-form');
+    if (!form) return;
+
+    var CONTENT_PARTS = [
+        'key_takeaways_file_en',
+        'key_takeaways_file_fr',
+        'user_painpoints_file_en',
+        'user_painpoints_file_fr',
+        'user_assertions_file_en',
+        'user_assertions_file_fr'
+    ];
+    // The /recordings endpoint's RecordingUploadIn rejects unknown keys
+    // (StrictModel extra='forbid'). Drop the content-file parts and the
+    // CSRF token before posting; the content files go in the PATCH below.
+    var DROP_FROM_UPLOAD = new Set(['csrf_token'].concat(CONTENT_PARTS));
+
+    form.addEventListener('submit', async function (ev) {
+        ev.preventDefault();
+        var submit = form.querySelector('[type="submit"]');
+        if (submit) {
+            submit.disabled = true;
+            submit.setAttribute('aria-busy', 'true');
+        }
+
+        try {
+            // Build the upload multipart body. Walk every form field
+            // except the supplementary content parts; rename the JSON
+            // file inputs to match the v1 schema.
+            var src = new FormData(form);
+            var uploadFd = new FormData();
+            src.forEach(function (value, key) {
+                if (DROP_FROM_UPLOAD.has(key)) return;
+                if (key === 'json_file_en') {
+                    if (value instanceof File && value.size > 0) {
+                        uploadFd.append('recording_json_en', value, value.name);
+                    }
+                    return;
+                }
+                if (key === 'json_file_fr') {
+                    if (value instanceof File && value.size > 0) {
+                        uploadFd.append('recording_json_fr', value, value.name);
+                    }
+                    return;
+                }
+                // Strip empty file inputs (browsers append a 0-byte File
+                // for every <input type="file"> regardless of whether
+                // the user picked anything).
+                if (value instanceof File && value.size === 0 && value.name === '') {
+                    return;
+                }
+                uploadFd.append(key, value);
+            });
+
+            var created = await window.apiClient.post('/recordings', uploadFd);
+
+            // Build the content PATCH body if any supplementary content
+            // file was selected. All six parts are optional; the v1
+            // endpoint accepts a zero-file no-op, but we skip the PATCH
+            // entirely when nothing was provided to avoid a wasted RTT.
+            var contentFd = new FormData();
+            var hasContent = false;
+            CONTENT_PARTS.forEach(function (partName) {
+                var input = form.querySelector('input[type="file"][name="' + partName + '"]');
+                if (input && input.files && input.files[0]) {
+                    contentFd.append(partName, input.files[0]);
+                    hasContent = true;
+                }
+            });
+            if (hasContent && created && created.id) {
+                await window.apiClient.patch('/recordings/' + created.id + '/content', contentFd);
+            }
+
+            if (created && created.id) {
+                window.location.assign('/recordings/' + created.id);
+            } else {
+                window.location.assign({{ url_for('recordings.list_recordings') | tojson }});
+            }
+        } catch (err) {
+            window.apiClient.showError(err);
+            if (submit) {
+                submit.disabled = false;
+                submit.removeAttribute('aria-busy');
+            }
+        }
+    });
+})();
 </script>
 {% endblock %}

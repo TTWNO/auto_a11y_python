@@ -52,8 +52,7 @@
             
             <div class="card">
                 <div class="card-body">
-                    <form method="POST" action="{{ url_for('projects.edit_project', project_id=project.id) }}" aria-labelledby="edit-project-heading">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <form id="projectForm" aria-labelledby="edit-project-heading">
                         <fieldset class="mb-4">
                             <legend><h2 class="h5 mb-0">{{ ftl('projects-project-details') }}</h2></legend>
                             <div class="mb-3">
@@ -472,8 +471,12 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-neutral" data-close-modal>{{ ftl('common-cancel') }}</button>
-                <form method="POST" action="{{ url_for('projects.delete_project', project_id=project.id) }}" style="display: inline;" aria-labelledby="deleteProjectModalLabel">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <form data-api-form
+                      data-api-method="DELETE"
+                      data-api-path="/api/v1/projects/{{ project.id }}"
+                      data-api-redirect="{{ url_for('projects.list_projects') }}"
+                      style="display: inline;"
+                      aria-labelledby="deleteProjectModalLabel">
                     <button type="submit" class="btn btn-high">{{ ftl('projects-delete-project') }}</button>
                 </form>
             </div>
@@ -511,6 +514,122 @@
 
 {% block extra_js %}
 <script>
+// Build the /api/v1/projects/<id> PUT body from the form.
+//
+// NOTE (issue-21 cutover): `ProjectPatch` (see
+// auto_a11y/web/api/schemas/projects.py) accepts only:
+//   name, description, status, config
+// The legacy server-rendered POST handler also updated:
+//   drupal_audit_name
+// which is currently NOT modeled in `ProjectPatch`. That field is kept
+// visible for UX continuity (and the GET still populates it from the
+// project), but it is DROPPED from the PUT body. A future PR can add
+// `drupal_audit_name` to `ProjectPatch` and reinstate it here.
+function parseLengthLimit(raw) {
+    // Legacy parity: int() with try/except, range-validated to [30, 120],
+    // default 60 otherwise.
+    const n = parseInt(raw, 10);
+    if (!Number.isFinite(n)) return 60;
+    if (n < 30 || n > 120) return 60;
+    return n;
+}
+
+function parseFontList(raw) {
+    // Legacy parity: split on '\n', strip, lowercase, drop blanks.
+    if (!raw) return [];
+    return raw
+        .split('\n')
+        .map(s => s.trim().toLowerCase())
+        .filter(s => s.length > 0);
+}
+
+function buildEditProjectBody(form) {
+    const fd = new FormData(form);
+
+    // Touchpoints — same prefix-walk pattern as the create form.
+    const touchpoints = {};
+    form.querySelectorAll('input[name^="touchpoint_"]').forEach(cb => {
+        const id = cb.name.substring('touchpoint_'.length);
+        const tests = {};
+        form.querySelectorAll('input[name^="test_' + id + '_"]').forEach(testCb => {
+            const testId = testCb.name.substring(('test_' + id + '_').length);
+            tests[testId] = testCb.checked;
+        });
+        touchpoints[id] = { enabled: cb.checked, tests: tests };
+    });
+
+    // AI tests — canonical order from the legacy handler.
+    const aiTests = [];
+    ['headings', 'reading_order', 'modals', 'language', 'animations', 'interactive'].forEach(t => {
+        const el = form.querySelector('#ai_test_' + t);
+        if (el && el.checked) aiTests.push(t);
+    });
+
+    const enableAiTesting = !!form.querySelector('#enable_ai_testing')?.checked;
+    const stealthMode = !!form.querySelector('#stealth_mode')?.checked;
+    const useDefaultFonts = !!form.querySelector('#use_default_fonts')?.checked;
+
+    const config = {
+        wcag_level: fd.get('wcag_level') || 'AA',
+        page_load_strategy: fd.get('page_load_strategy') || 'networkidle2',
+        headless_browser: fd.get('headless_browser') || 'default',
+        titleLengthLimit: parseLengthLimit(fd.get('title_length_limit')),
+        headingLengthLimit: parseLengthLimit(fd.get('heading_length_limit')),
+        touchpoints: touchpoints,
+        enable_ai_testing: enableAiTesting,
+        ai_tests: aiTests,
+        stealth_mode: stealthMode,
+        font_accessibility: {
+            use_defaults: useDefaultFonts,
+            additional_inaccessible_fonts: parseFontList(fd.get('additional_inaccessible_fonts')),
+            excluded_fonts: parseFontList(fd.get('excluded_fonts')),
+        },
+    };
+
+    // PUT body for ProjectPatch — every field optional, only present
+    // keys are applied. We always send these because the form always
+    // reflects the user's intended state.
+    return {
+        name: fd.get('name') || '',
+        description: fd.get('description') || '',
+        status: fd.get('status') || 'active',
+        config: config,
+    };
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('projectForm');
+    if (!form) return;
+    form.addEventListener('submit', async function(ev) {
+        ev.preventDefault();
+        // Only intercept the main update button. The delete-project form is
+        // a sibling <form data-api-form ...> inside the dialog, so its
+        // submit events never reach this listener.
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalLabel = submitBtn ? submitBtn.innerHTML : null;
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>{{ ftl('common-loading') }}';
+        }
+        try {
+            const body = buildEditProjectBody(form);
+            await window.apiClient.put('/projects/{{ project.id }}', body);
+            location.assign('/projects/{{ project.id }}');
+        } catch (err) {
+            if (window.apiClient && window.apiClient.showError) {
+                window.apiClient.showError(err);
+            } else {
+                console.error('Update project failed:', err);
+                alert((err && err.message) || 'Request failed');
+            }
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                if (originalLabel !== null) submitBtn.innerHTML = originalLabel;
+            }
+        }
+    });
+});
+
 function toggleAITests() {
     const enabled = document.getElementById('enable_ai_testing').checked;
     const selection = document.getElementById('ai_tests_selection');
@@ -671,62 +790,59 @@ function showTestDetails(testId) {
     document.getElementById('testDetailsModal').showModal();
 
     // Fetch test details
-    fetch(`/projects/api/test-details/${testId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const test = data.test;
+    window.apiClient.get(`/issues/${testId}`)
+        .then(test => {
+            // Build impact badge
+            let impactClass = 'neutral';
+            if (test.impact === 'High' || test.impact === 'Critical') impactClass = 'high';
+            else if (test.impact === 'Medium') impactClass = 'medium';
+            else if (test.impact === 'Low') impactClass = 'info';
 
-                // Build impact badge
-                let impactClass = 'neutral';
-                if (test.impact === 'High' || test.impact === 'Critical') impactClass = 'high';
-                else if (test.impact === 'Medium') impactClass = 'medium';
-                else if (test.impact === 'Low') impactClass = 'info';
+            // Build WCAG badges
+            let wcagBadges = '';
+            if (test.wcag && test.wcag.length > 0) {
+                wcagBadges = test.wcag.map(w => `<span class="badge badge-brand me-1">${w}</span>`).join('');
+            }
 
-                // Build WCAG badges
-                let wcagBadges = '';
-                if (test.wcag && test.wcag.length > 0) {
-                    wcagBadges = test.wcag.map(w => `<span class="badge badge-brand me-1">${w}</span>`).join('');
-                }
-
-                // Build modal content
-                bodyEl.innerHTML = `
-                    <div class="mb-3">
-                        <div class="d-flex align-items-center mb-2">
-                            <span class="badge badge-${impactClass} impact-badge me-2">${test.impact} {{ ftl('common-impact-2') }}</span>
-                            <span class="badge badge-neutral me-2">${test.type}</span>
-                            ${wcagBadges}
-                        </div>
-                        ${test.wcag_full ? `<small class="text-muted">${test.wcag_full}</small>` : ''}
+            bodyEl.innerHTML = `
+                <div class="mb-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <span class="badge badge-${impactClass} impact-badge me-2">${test.impact} {{ ftl('common-impact-2') }}</span>
+                        <span class="badge badge-neutral me-2">${test.type}</span>
+                        ${wcagBadges}
                     </div>
+                    ${test.wcag_full ? `<small class="text-muted">${test.wcag_full}</small>` : ''}
+                </div>
 
-                    <div class="test-details-section">
-                        <h3><i class="bi bi-info-circle me-2" aria-hidden="true"></i>{{ ftl('projects-what-this-test-detects') }}</h3>
-                        <p>${test.description}</p>
-                    </div>
+                <div class="test-details-section">
+                    <h3><i class="bi bi-info-circle me-2" aria-hidden="true"></i>{{ ftl('projects-what-this-test-detects') }}</h3>
+                    <p>${test.description}</p>
+                </div>
 
-                    ${test.why_it_matters ? `
-                    <div class="test-details-section">
-                        <h3><i class="bi bi-exclamation-triangle me-2" aria-hidden="true"></i>{{ ftl('projects-why-it-matters') }}</h3>
-                        <p>${test.why_it_matters}</p>
-                    </div>
-                    ` : ''}
+                ${test.why_it_matters ? `
+                <div class="test-details-section">
+                    <h3><i class="bi bi-exclamation-triangle me-2" aria-hidden="true"></i>{{ ftl('projects-why-it-matters') }}</h3>
+                    <p>${test.why_it_matters}</p>
+                </div>
+                ` : ''}
 
-                    ${test.who_it_affects ? `
-                    <div class="test-details-section">
-                        <h3><i class="bi bi-people me-2" aria-hidden="true"></i>{{ ftl('projects-who-it-affects') }}</h3>
-                        <p>${test.who_it_affects}</p>
-                    </div>
-                    ` : ''}
+                ${test.who_it_affects ? `
+                <div class="test-details-section">
+                    <h3><i class="bi bi-people me-2" aria-hidden="true"></i>{{ ftl('projects-who-it-affects') }}</h3>
+                    <p>${test.who_it_affects}</p>
+                </div>
+                ` : ''}
 
-                    ${test.how_to_fix ? `
-                    <div class="test-details-section">
-                        <h3><i class="bi bi-wrench me-2" aria-hidden="true"></i>{{ ftl('projects-how-to-fix') }}</h3>
-                        <p>${test.how_to_fix}</p>
-                    </div>
-                    ` : ''}
-                `;
-            } else {
+                ${test.how_to_fix ? `
+                <div class="test-details-section">
+                    <h3><i class="bi bi-wrench me-2" aria-hidden="true"></i>{{ ftl('projects-how-to-fix') }}</h3>
+                    <p>${test.how_to_fix}</p>
+                </div>
+                ` : ''}
+            `;
+        })
+        .catch(err => {
+            if (err && err.status === 404) {
                 bodyEl.innerHTML = `
                     <div class="alert alert-medium">
                         <i class="bi bi-exclamation-triangle me-2" aria-hidden="true"></i>
@@ -734,17 +850,16 @@ function showTestDetails(testId) {
                         <p class="mb-0 mt-2">{{ ftl('projects-details-for-test') }} <code>${testId}</code> {{ ftl('projects-are-not-available-in-the-catalog') }}</p>
                     </div>
                 `;
+            } else {
+                console.error('Error fetching test details:', err);
+                bodyEl.innerHTML = `
+                    <div class="alert alert-high">
+                        <i class="bi bi-x-circle me-2" aria-hidden="true"></i>
+                        <strong>{{ ftl('projects-error-loading-test-details') }}</strong>
+                        <p class="mb-0 mt-2">{{ ftl('projects-an-error-occurred-while-loading-the-test-details') }}</p>
+                    </div>
+                `;
             }
-        })
-        .catch(error => {
-            console.error('Error fetching test details:', error);
-            bodyEl.innerHTML = `
-                <div class="alert alert-high">
-                    <i class="bi bi-x-circle me-2" aria-hidden="true"></i>
-                    <strong>{{ ftl('projects-error-loading-test-details') }}</strong>
-                    <p class="mb-0 mt-2">{{ ftl('projects-an-error-occurred-while-loading-the-test-details') }}</p>
-                </div>
-            `;
         });
 }
 
@@ -760,17 +875,12 @@ async function loadDrupalAudits() {
     console.log('Loading Drupal audits... Current value:', currentValue);
 
     try {
-        const response = await fetch('/drupal/audits/list');
-        console.log('Response status:', response.status);
-        const data = await response.json();
-        console.log('Received audits:', data);
+        const data = await window.apiClient.get('/drupal/audits');
+        const audits = (data && data.audits) || [];
 
-        if (data.success && data.audits && data.audits.length > 0) {
-            // Clear loading option
-            select.innerHTML = '<option value="">{{ ftl('projects-auto-match-by-project-name') }}</option>';
-
-            // Add audit options
-            data.audits.forEach(audit => {
+        select.innerHTML = '<option value="">{{ ftl('projects-auto-match-by-project-name') }}</option>';
+        if (audits.length > 0) {
+            audits.forEach(audit => {
                 const option = document.createElement('option');
                 option.value = audit.title;
                 option.textContent = audit.title;
@@ -779,24 +889,14 @@ async function loadDrupalAudits() {
                 }
                 select.appendChild(option);
             });
-        } else if (!data.success && data.error) {
-            // Show error but keep the auto-match option
-            select.innerHTML = '<option value="">{{ ftl('projects-auto-match-by-project-name') }}</option>';
-            const option = document.createElement('option');
-            option.disabled = true;
-            option.textContent = `{{ ftl('common-error') }} ${data.error}`;
-            select.appendChild(option);
         } else {
-            // No audits available
-            select.innerHTML = '<option value="">{{ ftl('projects-auto-match-by-project-name') }}</option>';
             const option = document.createElement('option');
             option.disabled = true;
             option.textContent = '{{ ftl('projects-no-drupal-audits-found') }}';
             select.appendChild(option);
         }
-    } catch (error) {
-        console.error('Error loading Drupal audits:', error);
-        // Keep the auto-match option on error
+    } catch (err) {
+        console.error('Error loading Drupal audits:', err);
         select.innerHTML = '<option value="">{{ ftl('projects-auto-match-by-project-name') }}</option>';
         const option = document.createElement('option');
         option.disabled = true;

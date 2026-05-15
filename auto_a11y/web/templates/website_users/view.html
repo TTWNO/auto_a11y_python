@@ -197,23 +197,14 @@
 function deleteUser(userId) {
     if (!confirm("{{ ftl('common-are-you-sure-you-want-to-delete-this-test-user') }}")) return;
 
-    fetch(`/users/user/${userId}/delete`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            window.location.href = data.redirect;
-        } else {
-            alert("{{ ftl('common-error') }} " + (data.error || "{{ ftl('common-unknown-error') }}"));
-        }
-    })
-    .catch(err => {
-        alert("{{ ftl('websites-error-deleting-user') }} " + err);
-    });
+    window.apiClient.delete(`/website-test-users/${userId}`)
+        .then(() => {
+            window.location.href = {{ url_for('website_users.list_users', website_id=website.id) | tojson }};
+        })
+        .catch(err => {
+            console.error('Error deleting user:', err);
+            window.apiClient.showError(err);
+        });
 }
 </script>
 {% endblock %}

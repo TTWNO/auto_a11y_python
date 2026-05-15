@@ -16,8 +16,7 @@
                 </div>
                 {% endif %}
                 
-                <form method="POST" action="{{ url_for('auth.register') }}" aria-labelledby="register-heading">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <form id="registerForm" aria-labelledby="register-heading">
                     <p class="form-text mb-3"><span class="text-severity-high" aria-hidden="true">*</span> {{ ftl('common-required-field') }}</p>
                     <fieldset>
                         <legend class="visually-hidden">{{ ftl('auth-account-details') }}</legend>
@@ -56,4 +55,41 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    const form = document.getElementById('registerForm');
+    form.addEventListener('submit', async function (ev) {
+        ev.preventDefault();
+        const fd = new FormData(form);
+        const email = (fd.get('email') || '').toString().trim().toLowerCase();
+        const password = (fd.get('password') || '').toString();
+        const confirm = (fd.get('confirm_password') || '').toString();
+        if (password !== confirm) {
+            window.apiClient.showError(new window.apiClient.ApiError(400, {
+                detail: {{ ftl('auth-passwords-do-not-match') | tojson }},
+            }));
+            return;
+        }
+        const body = {
+            email,
+            password,
+            display_name: ((fd.get('display_name') || '').toString().trim()) || null,
+            password_hint: ((fd.get('password_hint') || '').toString().trim()) || null,
+            session: true,
+        };
+        const submit = form.querySelector('button[type="submit"]');
+        if (submit) submit.disabled = true;
+        try {
+            await window.apiClient.post('/auth/register', body);
+            window.location.assign('{{ url_for('dashboard') }}');
+        } catch (err) {
+            if (submit) submit.disabled = false;
+            window.apiClient.showError(err);
+        }
+    });
+})();
+</script>
 {% endblock %}

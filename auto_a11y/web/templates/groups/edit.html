@@ -15,8 +15,7 @@
 
 <div class="card shadow">
     <div class="card-body">
-        <form method="POST" aria-labelledby="group-form-heading">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <form id="groupForm" aria-labelledby="group-form-heading">
             <fieldset class="mb-4">
                 <legend><h2 class="h5 mb-0">{{ ftl('groups-group-details') }}</h2></legend>
                 <div class="mb-3">
@@ -83,4 +82,59 @@
         </form>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// API-backed submit handler — walks perm_<resource> selects into a nested
+// permissions dict. The resource list is not hard-coded here: we discover it
+// at submit time by querying every select[name^="perm_"], so changes to
+// RESOURCE_NOUNS in the Python model flow through without touching this code.
+(function() {
+    'use strict';
+    const form = document.getElementById('groupForm');
+    const redirectUrl = {{ url_for('groups.list_groups') | tojson }};
+    {% if group %}
+    const groupId = {{ group.id | tojson }};
+    const isEdit = true;
+    {% else %}
+    const groupId = null;
+    const isEdit = false;
+    {% endif %}
+
+    form.addEventListener('submit', async function (ev) {
+        ev.preventDefault();
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
+        const permissions = {};
+        form.querySelectorAll('select[name^="perm_"]').forEach(function (select) {
+            const resource = select.name.slice('perm_'.length);
+            permissions[resource] = select.value;
+        });
+
+        const body = {
+            name: (form.querySelector('#name').value || '').trim(),
+            description: (form.querySelector('#description').value || '').trim(),
+            permissions: permissions,
+        };
+
+        const submit = form.querySelector('button[type="submit"]');
+        if (submit) submit.disabled = true;
+        try {
+            if (isEdit) {
+                await window.apiClient.patch('/groups/' + groupId, body);
+            } else {
+                await window.apiClient.post('/groups', body);
+            }
+            window.location.assign(redirectUrl);
+        } catch (err) {
+            if (submit) submit.disabled = false;
+            window.apiClient.showError(err);
+        }
+    });
+})();
+</script>
 {% endblock %}

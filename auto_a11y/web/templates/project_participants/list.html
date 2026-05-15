@@ -223,45 +223,28 @@
 function deleteTester(testerId) {
     if (!confirm("{{ ftl('projects-are-you-sure-you-want-to-delete-this-tester-this') }}")) return;
 
-    fetch(`/projects/{{ project.id }}/participants/testers/${testerId}/delete`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            window.location.href = data.redirect;
-        } else {
-            alert("{{ ftl('projects-error', arg='%s') }}".replace('%s', data.error || "{{ ftl('common-unknown-error') }}"));
-        }
-    })
-    .catch(err => {
-        alert("{{ ftl('projects-error-deleting-tester', arg='%s') }}".replace('%s', err));
-    });
+    window.apiClient.delete(`/projects/{{ project.id }}/testers/${testerId}`)
+        .then(() => {
+            // The legacy handler redirected back to the participants list.
+            window.location.reload();
+        })
+        .catch(err => {
+            console.error('Error deleting tester:', err);
+            window.apiClient.showError(err);
+        });
 }
 
 function deleteSupervisor(supervisorId) {
     if (!confirm("{{ ftl('projects-are-you-sure-you-want-to-delete-this-supervisor') }}")) return;
 
-    fetch(`/projects/{{ project.id }}/participants/supervisors/${supervisorId}/delete`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            window.location.href = data.redirect;
-        } else {
-            alert("{{ ftl('projects-error', arg='%s') }}".replace('%s', data.error || "{{ ftl('common-unknown-error') }}"));
-        }
-    })
-    .catch(err => {
-        alert("{{ ftl('projects-error-deleting-supervisor', arg='%s') }}".replace('%s', err));
-    });
+    window.apiClient.delete(`/projects/{{ project.id }}/supervisors/${supervisorId}`)
+        .then(() => {
+            window.location.reload();
+        })
+        .catch(err => {
+            console.error('Error deleting supervisor:', err);
+            window.apiClient.showError(err);
+        });
 }
 </script>
 {% endblock %}

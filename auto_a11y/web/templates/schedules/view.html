@@ -340,46 +340,29 @@ const websiteId = '{{ website.id }}';
 const scheduleId = '{{ schedule.id }}';
 
 function toggleSchedule() {
-    fetch(`/websites/${websiteId}/schedules/${scheduleId}/toggle`, {
-        method: 'POST',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-        }
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
+    const newEnabled = {{ (not schedule.enabled) | tojson }};
+    window.apiClient.patch(`/scheduled-tests/${scheduleId}`, { enabled: newEnabled })
+        .then(() => {
             location.reload();
-        } else {
-            alert('{{ ftl('common-error-3') }}' + (data.error || '{{ ftl('common-unknown-error') }}'));
-        }
-    })
-    .catch(err => {
-        alert('{{ ftl('schedules-error-toggling-schedule') }}' + err.message);
-    });
+        })
+        .catch(err => {
+            console.error('Error toggling schedule:', err);
+            window.apiClient.showError(err);
+        });
 }
 
 function runNow() {
     if (!confirm('{{ ftl('schedules-run-this-schedule-now') }}')) return;
 
-    fetch(`/websites/${websiteId}/schedules/${scheduleId}/run-now`, {
-        method: 'POST',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-        }
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
+    window.apiClient.post(`/scheduled-tests/${scheduleId}/runs`)
+        .then(() => {
             alert('{{ ftl('schedules-test-run-started-2') }}');
             location.reload();
-        } else {
-            alert('{{ ftl('common-error-3') }}' + (data.error || '{{ ftl('common-unknown-error') }}'));
-        }
-    })
-    .catch(err => {
-        alert('{{ ftl('schedules-error-starting-test-run') }}' + err.message);
-    });
+        })
+        .catch(err => {
+            console.error('Error running schedule:', err);
+            window.apiClient.showError(err);
+        });
 }
 
 function deleteSchedule() {

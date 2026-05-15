@@ -32,8 +32,13 @@
         {% endif %}
     {% endwith %}
 
-    <form method="POST" class="needs-validation" novalidate aria-labelledby="edit-supervisor-heading">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <form data-api-form
+          data-api-method="PATCH"
+          data-api-path="/api/v1/projects/{{ project.id }}/supervisors/{{ supervisor.id }}"
+          data-api-redirect="{{ url_for('project_participants.list_participants', project_id=project.id) }}"
+          class="needs-validation"
+          novalidate
+          aria-labelledby="edit-supervisor-heading">
         <div class="row">
             <div class="col-md-8">
                 <div class="card mb-4">

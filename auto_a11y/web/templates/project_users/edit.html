@@ -32,8 +32,7 @@
         {% endif %}
     {% endwith %}
 
-    <form method="POST" class="needs-validation" novalidate aria-labelledby="edit-test-user-heading">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <form id="editProjectTestUserForm" class="needs-validation" novalidate aria-labelledby="edit-test-user-heading">
         <div class="row">
             <div class="col-md-8">
                 <!-- Basic Information -->
@@ -326,21 +325,6 @@
 
 {% block extra_js %}
 <script>
-// Form validation
-(function() {
-    'use strict';
-    var forms = document.querySelectorAll('.needs-validation');
-    Array.prototype.slice.call(forms).forEach(function(form) {
-        form.addEventListener('submit', function(event) {
-            if (!form.checkValidity()) {
-                event.preventDefault();
-                event.stopPropagation();
-            }
-            form.classList.add('was-validated');
-        }, false);
-    });
-})();
-
 // Show/hide login config sections based on auth method.
 // form_login and manual_login are mutually exclusive.
 (function() {
@@ -358,6 +342,77 @@
 
     select.addEventListener('change', applyVisibility);
     applyVisibility();
+})();
+
+// API-backed submit handler — PUT (full replace) to /api/v1/project-test-users/<id>.
+// Legacy handler overwrites every field, matching PUT semantics; blank password
+// preserves the existing one (admin-settings secret-handling rule).
+(function() {
+    'use strict';
+    const form = document.getElementById('editProjectTestUserForm');
+    const redirectUrl = {{ url_for('project_users.list_users', project_id=project.id) | tojson }};
+    const userId = {{ user.id | tojson }};
+
+    function emptyToNull(value) {
+        const trimmed = (value || '').toString().trim();
+        return trimmed === '' ? null : trimmed;
+    }
+
+    function parseRoles(value) {
+        const trimmed = (value || '').toString().trim();
+        if (!trimmed) return [];
+        return trimmed.split(',').map(function (r) { return r.trim(); }).filter(function (r) { return r.length > 0; });
+    }
+
+    function intOrDefault(value, fallback) {
+        const n = parseInt(value, 10);
+        return Number.isFinite(n) ? n : fallback;
+    }
+
+    form.addEventListener('submit', async function (ev) {
+        ev.preventDefault();
+        if (!form.checkValidity()) {
+            form.classList.add('was-validated');
+            return;
+        }
+        form.classList.add('was-validated');
+
+        const fd = new FormData(form);
+        const loginConfig = {
+            authentication_method: (fd.get('authentication_method') || 'form_login').toString(),
+            login_url: emptyToNull(fd.get('login_url')),
+            username_field_selector: emptyToNull(fd.get('username_field_selector')),
+            password_field_selector: emptyToNull(fd.get('password_field_selector')),
+            submit_button_selector: emptyToNull(fd.get('submit_button_selector')),
+            success_indicator_selector: emptyToNull(fd.get('success_indicator_selector')),
+            logout_url: emptyToNull(fd.get('logout_url')),
+            logout_button_selector: emptyToNull(fd.get('logout_button_selector')),
+            logout_success_indicator_selector: emptyToNull(fd.get('logout_success_indicator_selector')),
+            session_timeout_minutes: intOrDefault(fd.get('session_timeout_minutes'), 30),
+        };
+
+        // Blank password preserves existing on PUT; non-blank rotates it.
+        const passwordRaw = (fd.get('password') || '').toString();
+        const body = {
+            username: (fd.get('username') || '').toString().trim(),
+            password: passwordRaw === '' ? null : passwordRaw,
+            display_name: emptyToNull(fd.get('display_name')),
+            description: emptyToNull(fd.get('description')),
+            roles: parseRoles(fd.get('roles')),
+            login_config: loginConfig,
+            enabled: form.querySelector('#enabled').checked,
+        };
+
+        const submit = form.querySelector('button[type="submit"]');
+        if (submit) submit.disabled = true;
+        try {
+            await window.apiClient.put('/project-test-users/' + userId, body);
+            window.location.assign(redirectUrl);
+        } catch (err) {
+            if (submit) submit.disabled = false;
+            window.apiClient.showError(err);
+        }
+    });
 })();
 </script>
 {% endblock %}

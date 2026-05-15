@@ -20,8 +20,7 @@
 
             <div class="card">
                 <div class="card-body">
-                    <form method="POST" action="{{ url_for('websites.edit_website', website_id=website.id) }}" aria-labelledby="edit-website-heading">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <form id="editWebsiteForm" aria-labelledby="edit-website-heading">
                         <fieldset>
                             <legend id="basic-info-heading">{{ ftl('common-basic-information') }}</legend>
 
@@ -70,7 +69,7 @@
                                     <div id="request-delay-help" class="form-text">{{ ftl('websites-delay-between-requests') }}</div>
                                 </div>
                             </div>
-                        
+
                             <div class="mb-3">
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="follow_external"
@@ -174,8 +173,12 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-neutral" data-close-modal>{{ ftl('common-cancel') }}</button>
-                <form method="POST" action="{{ url_for('websites.clear_test_results', website_id=website.id) }}" style="display: inline;" aria-labelledby="clearTestResultsModalLabel">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <form data-api-form
+                      data-api-method="DELETE"
+                      data-api-path="/api/v1/websites/{{ website.id }}/test-results"
+                      data-api-on-success="reload"
+                      style="display: inline;"
+                      aria-labelledby="clearTestResultsModalLabel">
                     <button type="submit" class="btn btn-medium">{{ ftl('websites-clear-test-results') }}</button>
                 </form>
             </div>
@@ -197,12 +200,51 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-neutral" data-close-modal>{{ ftl('common-cancel') }}</button>
-                <form method="POST" action="{{ url_for('websites.delete_website', website_id=website.id) }}" style="display: inline;" aria-labelledby="deleteWebsiteModalLabel">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <form id="deleteWebsiteForm" data-api-form
+                      data-api-method="DELETE"
+                      data-api-path="/websites/{{ website.id }}"
+                      data-api-redirect="{{ url_for('projects.view_project', project_id=project.id) }}"
+                      style="display: inline;" aria-labelledby="deleteWebsiteModalLabel">
                     <button type="submit" class="btn btn-high">{{ ftl('websites-delete-website') }}</button>
                 </form>
             </div>
         </div>
     </div>
 </dialog>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('editWebsiteForm').addEventListener('submit', async function (ev) {
+    ev.preventDefault();
+    const form = ev.currentTarget;
+    const submit = form.querySelector('button[type="submit"]');
+    if (submit) {
+        submit.disabled = true;
+        submit.setAttribute('aria-busy', 'true');
+    }
+    try {
+        const body = {
+            name: form.querySelector('#name').value,
+            url: form.querySelector('#url').value,
+            scraping_config: {
+                max_pages: parseInt(form.querySelector('#max_pages').value, 10),
+                max_depth: parseInt(form.querySelector('#max_depth').value, 10),
+                request_delay: parseFloat(form.querySelector('#request_delay').value),
+                follow_external: form.querySelector('#follow_external').checked,
+                include_subdomains: form.querySelector('#include_subdomains').checked,
+                respect_robots: form.querySelector('#respect_robots').checked,
+            },
+        };
+        await window.apiClient.patch('/websites/{{ website.id }}', body);
+        location.assign('{{ url_for('websites.view_website', website_id=website.id) }}');
+    } catch (err) {
+        window.apiClient.showError(err);
+        if (submit) {
+            submit.disabled = false;
+            submit.removeAttribute('aria-busy');
+        }
+    }
+});
+</script>
 {% endblock %}

@@ -122,9 +122,9 @@ function createShareToken(event, scope, scopeId) {
 function revokeToken(tokenId, scope, scopeId) {
     if (!confirm('{{ ftl('settings-revoke-this-share-link-anyone-using-it-will-lose') }}')) return;
 
-    fetch(`/share-tokens/share-tokens/${tokenId}/revoke`, { method: 'POST' })
-        .then(r => r.json())
-        .then(() => loadShareTokens(scope, scopeId));
+    window.apiClient.delete(`/share-tokens/${tokenId}`)
+        .then(() => loadShareTokens(scope, scopeId))
+        .catch(err => window.apiClient.showError(err));
 }
 
 function copyTokenUrl() {

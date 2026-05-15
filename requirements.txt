@@ -127,3 +127,4 @@ wcag-contrast-ratio==0.9
 PyYAML==6.0.2
 types-PyYAML==6.0.12.20240917
 markdown-it-py==3.0.0
+openapi-spec-validator>=0.7.1,<0.9

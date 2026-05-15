@@ -543,17 +543,19 @@ function startJobPoll(jobId, displayName) {
         // that were in-flight when stopJobPoll() ran.
         if (stoppedJobs.has(jobId)) return;
 
-        fetch(`/reports/job/${jobId}/status`)
-            .then(r => {
+        window.apiClient.get(`/jobs/${jobId}`)
+            .catch(err => {
                 // 404 means the job doc has been cleaned up server-side.
-                // That is a terminal state — stop polling silently.
-                if (r.status === 404) {
+                // That is a terminal state — stop polling silently. Other
+                // ApiErrors fall through to the .catch() at the end so the
+                // retry/backoff path runs unchanged.
+                if (err instanceof window.apiClient.ApiError && err.status === 404) {
                     stopJobPoll(jobId);
                     const row = document.querySelector(`tr[data-job-id="${jobId}"]`);
                     if (row) row.remove();
                     return null;
                 }
-                return r.json();
+                throw err;
             })
             .then(data => {
                 if (!data || stoppedJobs.has(jobId)) return;
@@ -678,14 +680,13 @@ function dropJob(jobId) {
     const row = document.querySelector(`tr[data-job-id="${jobId}"]`);
     if (row) row.remove();
 
-    fetch(`/reports/job/${jobId}/drop`, { method: 'POST' })
-        .then(r => r.json())
-        .then(data => {
-            if (!data.success) {
-                alert(data.error || _i18n.failedToDropJob);
-            }
-        })
-        .catch(err => alert(_i18n.errorPrefix + ' ' + err.message));
+    window.apiClient.post(`/jobs/${jobId}/cancel`)
+        .catch(err => {
+            // 404 (already gone) and 409 (already cancelling/finished) are
+            // idempotent success conditions for the drop UX.
+            if (err instanceof window.apiClient.ApiError && (err.status === 404 || err.status === 409)) return;
+            alert((err.problem && (err.problem.detail || err.problem.title)) || _i18n.failedToDropJob);
+        });
 }
 
 function restartJob(jobId) {
@@ -694,20 +695,19 @@ function restartJob(jobId) {
     // Stop polling old job
     stopJobPoll(jobId);
 
-    fetch(`/reports/job/${jobId}/restart`, { method: 'POST' })
-        .then(r => r.json())
+    window.apiClient.post(`/jobs/${jobId}/restart`)
         .then(data => {
-            if (data.success && data.job_id) {
+            if (data && data.job_id) {
                 // Remove old row
                 const oldRow = document.querySelector(`tr[data-job-id="${jobId}"]`);
                 if (oldRow) oldRow.remove();
                 // Start polling new job
                 startJobPoll(data.job_id, data.display_name);
             } else {
-                alert(data.error || _i18n.failedToRestartJob);
+                alert(_i18n.failedToRestartJob);
             }
         })
-        .catch(err => alert(_i18n.errorPrefix + ' ' + err.message));
+        .catch(err => alert((err.problem && (err.problem.detail || err.problem.title)) || _i18n.failedToRestartJob));
 }
 
 window.addEventListener('beforeunload', () => {
@@ -748,13 +748,13 @@ document.getElementById('projectSelect').addEventListener('change', function() {
         websiteSelect.innerHTML = '<option value="">' + {{ ftl('common-loading-websites') | tojson }} + '</option>';
         websiteSelect.disabled = true;
 
-        fetch(`/projects/api/${selectedProjectId}/websites`)
-            .then(response => response.json())
+        window.apiClient.get(`/projects/${selectedProjectId}/websites`)
             .then(data => {
                 websiteSelect.innerHTML = '<option value="">' + {{ ftl('common-all-websites') | tojson }} + '</option>';
 
-                if (data.websites && data.websites.length > 0) {
-                    data.websites.forEach(website => {
+                const websites = (data && data.items) || [];
+                if (websites.length > 0) {
+                    websites.forEach(website => {
                         const option = document.createElement('option');
                         option.value = website.id;
                         option.textContent = website.name;
@@ -817,17 +817,14 @@ function deleteReport(reportId) {
         return;
     }
 
-    fetch(`/reports/${reportId}/delete`, {
-        method: 'POST'
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
+    window.apiClient.delete(`/reports/${reportId}`)
+        .then(() => {
             location.reload();
-        } else {
-            alert({{ ftl('reports-failed-to-delete-report') | tojson }});
-        }
-    });
+        })
+        .catch(err => {
+            console.error('Error deleting report:', err);
+            window.apiClient.showError(err);
+        });
 }
 
 // Site Structure Report Functions
@@ -858,16 +855,16 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function loadProjectsForStructure() {
-    fetch('/projects/api/list')
-    .then(response => response.json())
+    window.apiClient.get('/projects')
     .then(data => {
         const select = document.getElementById('structureProject');
         select.innerHTML = '<option value="">' + {{ ftl('reports-choose-a-project') | tojson }} + '</option>';
 
-        if (data.projects && data.projects.length > 0) {
-            data.projects.forEach(project => {
+        const projects = (data && data.projects) || [];
+        if (projects.length > 0) {
+            projects.forEach(project => {
                 const option = document.createElement('option');
-                option.value = project.id;
+                option.value = project._id;
                 option.textContent = project.name;
                 select.appendChild(option);
             });
@@ -887,13 +884,13 @@ function loadWebsitesForProject(projectId) {
     websiteSelect.innerHTML = '<option value="">' + {{ ftl('common-loading-websites') | tojson }} + '</option>';
     websiteSelect.disabled = true;
 
-    fetch(`/projects/api/${projectId}/websites`)
-    .then(response => response.json())
+    window.apiClient.get(`/projects/${projectId}/websites`)
     .then(data => {
         websiteSelect.innerHTML = '<option value="">' + {{ ftl('reports-choose-a-website') | tojson }} + '</option>';
 
-        if (data.websites && data.websites.length > 0) {
-            data.websites.forEach(website => {
+        const websites = (data && data.items) || [];
+        if (websites.length > 0) {
+            websites.forEach(website => {
                 const option = document.createElement('option');
                 option.value = website.id;
                 option.textContent = `${website.name} (${website.url})`;
@@ -1004,16 +1001,16 @@ function generateSiteStructureReport() {
 })();
 
 function loadProjectsForDiscovery() {
-    fetch('/projects/api/list')
-    .then(response => response.json())
+    window.apiClient.get('/projects')
     .then(data => {
         const select = document.getElementById('discoveryProject');
         select.innerHTML = '<option value="">' + {{ ftl('reports-choose-a-project') | tojson }} + '</option>';
 
-        if (data.projects && data.projects.length > 0) {
-            data.projects.forEach(project => {
+        const projects = (data && data.projects) || [];
+        if (projects.length > 0) {
+            projects.forEach(project => {
                 const option = document.createElement('option');
-                option.value = project.id;
+                option.value = project._id;
                 option.textContent = project.name;
                 select.appendChild(option);
             });
@@ -1033,13 +1030,13 @@ function loadWebsitesForDiscovery(projectId) {
     websiteSelect.innerHTML = '<option value="">' + {{ ftl('common-loading-websites') | tojson }} + '</option>';
     websiteSelect.disabled = true;
 
-    fetch(`/projects/api/${projectId}/websites`)
-    .then(response => response.json())
+    window.apiClient.get(`/projects/${projectId}/websites`)
     .then(data => {
         websiteSelect.innerHTML = '<option value="">' + {{ ftl('reports-choose-a-website') | tojson }} + '</option>';
 
-        if (data.websites && data.websites.length > 0) {
-            data.websites.forEach(website => {
+        const websites = (data && data.items) || [];
+        if (websites.length > 0) {
+            websites.forEach(website => {
                 const option = document.createElement('option');
                 option.value = website.id;
                 option.textContent = `${website.name} (${website.url})`;
@@ -1303,13 +1300,13 @@ if (staticHtmlModal) {
             websiteSelect.innerHTML = '<option value="">' + {{ ftl('common-loading-websites') | tojson }} + '</option>';
             websiteSelect.disabled = true;
 
-            fetch(`/projects/api/${selectedProjectId}/websites`)
-                .then(response => response.json())
+            window.apiClient.get(`/projects/${selectedProjectId}/websites`)
                 .then(data => {
                     websiteSelect.innerHTML = '<option value="">' + {{ ftl('common-all-websites') | tojson }} + '</option>';
 
-                    if (data.websites && data.websites.length > 0) {
-                        data.websites.forEach(website => {
+                    const websites = (data && data.items) || [];
+                    if (websites.length > 0) {
+                        websites.forEach(website => {
                             const option = document.createElement('option');
                             option.value = website.id;
                             option.textContent = website.name;
@@ -1439,13 +1436,13 @@ if (deduplicatedModal) {
             websiteSelect.innerHTML = '<option value="">' + {{ ftl('common-loading-websites') | tojson }} + '</option>';
             websiteSelect.disabled = true;
 
-            fetch(`/projects/api/${selectedProjectId}/websites`)
-                .then(response => response.json())
+            window.apiClient.get(`/projects/${selectedProjectId}/websites`)
                 .then(data => {
                     websiteSelect.innerHTML = '<option value="">' + {{ ftl('common-all-websites') | tojson }} + '</option>';
 
-                    if (data.websites && data.websites.length > 0) {
-                        data.websites.forEach(website => {
+                    const websites = (data && data.items) || [];
+                    if (websites.length > 0) {
+                        websites.forEach(website => {
                             const option = document.createElement('option');
                             option.value = website.id;
                             option.textContent = website.name;

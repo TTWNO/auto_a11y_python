@@ -3918,45 +3918,26 @@ function cancelPageTest(pageId) {
         postData.job_id = window.currentTestJobId;
     }
     
-    $.post(`/pages/${pageId}/cancel-test`, postData, function(data) {
-        if (data.success) {
-            // Stop polling
+    window.apiClient.post(`/pages/${pageId}/test-runs/latest/cancel`, {})
+        .then(data => {
             stopStatusPolling();
-            
-            // Update status badge
-            updateStatusBadge(data.new_status || 'discovered');
-            
-            // Replace Cancel button with Run Test button
+            updateStatusBadge(data.status || 'discovered');
             updateActionButtons('run');
-            
-            // Clear job ID
             window.currentTestJobId = null;
-            
-            // Remove from global tracking if available
             if (typeof TestTracker !== 'undefined') {
                 TestTracker.removeTest(`test_page_${pageId}`);
             }
-            
-            // Show notification
             if (window.showNotification) {
                 showNotification(i18n.testCancelled, i18n.testCancelledMsg, 'warning');
             }
-        } else {
-            alert(i18n.failedToCancelMsg + ' ' + (data.message || i18n.unknownError));
-
-            // Re-enable button
+        })
+        .catch(err => {
+            window.apiClient.showError(err);
             if (cancelBtn) {
                 cancelBtn.disabled = false;
                 cancelBtn.innerHTML = `<i class="bi bi-x-circle" aria-hidden="true"></i> ${i18n.cancelTest}`;
             }
-        }
-    }).fail(function() {
-        alert(i18n.failedToCancel);
-        if (cancelBtn) {
-            cancelBtn.disabled = false;
-            cancelBtn.innerHTML = `<i class="bi bi-x-circle" aria-hidden="true"></i> ${i18n.cancelTest}`;
-        }
-    });
+        });
 }
 
 function testPage(pageId) {
@@ -3982,60 +3963,29 @@ function testPage(pageId) {
         testData.website_user_id = websiteUserId;
     }
 
-    // Run test
-    $.ajax({
-        url: `/pages/${pageId}/test`,
-        method: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify(testData),
-        success: function(data) {
-            if (data.success) {
-                // Store job ID for potential cancellation
-                window.currentTestJobId = data.job_id;
-
-                // Hide modal
-                closeModal('testModal');
-
-                // Update status immediately
-                updateStatusBadge('queued');
-
-                // Replace Run Test button with Cancel button
-                updateActionButtons('cancel');
-
-                // Add to global tracking
-                const pageTitle = '{{ page.title or page.url }}';
-                if (typeof trackPageTest !== 'undefined') {
-                    trackPageTest(pageId, pageTitle);
-                }
-
-                // Start polling for status updates
-                startStatusPolling(pageId);
-
-                // Show progress notification
-                if (window.showNotification) {
-                    showNotification(i18n.testStarted, i18n.testStartedMsg, 'info');
-                }
-            } else {
-                closeModal('testModal');
-                alert(i18n.testFailed + ' ' + (data.error || i18n.unknownError));
-
-                // Re-enable button
-                if (testBtn) {
-                    testBtn.disabled = false;
-                    testBtn.innerHTML = `<i class="bi bi-play" aria-hidden="true"></i> ${i18n.runTest}`;
-                }
+    window.apiClient.post(`/pages/${pageId}/test-runs`, testData)
+        .then(data => {
+            window.currentTestJobId = data.job_id;
+            closeModal('testModal');
+            updateStatusBadge('queued');
+            updateActionButtons('cancel');
+            const pageTitle = '{{ page.title or page.url }}';
+            if (typeof trackPageTest !== 'undefined') {
+                trackPageTest(pageId, pageTitle);
             }
-        }
-    }).fail(function() {
-        closeModal('testModal');
-        alert(i18n.failedToStart);
-
-        // Re-enable button
-        if (testBtn) {
-            testBtn.disabled = false;
-            testBtn.innerHTML = `<i class="bi bi-play" aria-hidden="true"></i> ${i18n.runTest}`;
-        }
-    });
+            startStatusPolling(pageId);
+            if (window.showNotification) {
+                showNotification(i18n.testStarted, i18n.testStartedMsg, 'info');
+            }
+        })
+        .catch(err => {
+            closeModal('testModal');
+            window.apiClient.showError(err);
+            if (testBtn) {
+                testBtn.disabled = false;
+                testBtn.innerHTML = `<i class="bi bi-play" aria-hidden="true"></i> ${i18n.runTest}`;
+            }
+        });
 }
 
 // Check if page is currently testing on load

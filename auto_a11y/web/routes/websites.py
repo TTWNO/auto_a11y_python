@@ -9,6 +9,7 @@ from typing import Any
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session
 from werkzeug.wrappers import Response
+from auto_a11y.web.api.deprecation import deprecated
 from auto_a11y.web.fluent import ftl
 from auto_a11y.web.typed_app import get_db, get_app_config, get_pdf_runner
 from auto_a11y.models import Page, PageStatus
@@ -22,6 +23,7 @@ websites_bp = Blueprint('websites', __name__)
 
 
 @websites_bp.route('/api/list')
+@deprecated(sunset="2026-09-01")  # successor TBD — pending #54 (/api/v1/websites?project_id=)
 def api_list_websites() -> Response | tuple[Response, int]:
     """API endpoint to list all websites"""
     try:
@@ -270,159 +272,90 @@ def clear_test_results(website_id: str) -> Response:
 
 @websites_bp.route('/<website_id>/discover', methods=['POST'])
 def discover_pages(website_id: str) -> Response | tuple[Response, int]:
-    """Start page discovery for website with optional max pages limit"""
-    from auto_a11y.core.website_manager import WebsiteManager
-    from auto_a11y.core.task_runner import task_runner
-    
-    website = get_db().get_website(website_id)
-    if not website:
-        return jsonify({'error': ftl('common-website-not-found')}), 404
+    """Start page discovery for a website (with optional max-pages cap)."""
+    from auto_a11y.core.test_run_service import (
+        WebsiteNotFoundError,
+        start_website_discovery,
+    )
 
-    # Get parameters from request
     data: dict[str, Any] = request.get_json() if request.is_json else {}
-    max_pages_raw: str | None = data.get('max_pages') if request.is_json else request.form.get('max_pages')
+    max_pages_raw: str | int | None = (
+        data.get('max_pages') if request.is_json
+        else request.form.get('max_pages')
+    )
 
-    # Get project_user_ids (project-level test users)
-    # Still accept 'website_user_ids' key name for backward compatibility with JavaScript
-    user_ids_raw: list[str] | str = data.get('project_user_ids') or data.get('website_user_ids', [])
-
-    # Convert to list if single value provided
-    if isinstance(user_ids_raw, str):
-        user_ids_list: list[str] = [user_ids_raw]
-    else:
-        user_ids_list = user_ids_raw
-
-    # Default to guest only if no users specified
-    if not user_ids_list:
-        user_ids_list = ['']  # empty string represents guest/no login
-
-    # Keep the old variable name for compatibility with existing code paths
-    website_user_ids: list[str] = user_ids_list
+    # Still accept the legacy `website_user_ids` form key from the
+    # in-flight admin frontend; both are normalised inside the service.
+    user_ids_raw: list[str] | str = (
+        data.get('project_user_ids') or data.get('website_user_ids', [])
+    )
 
     max_pages: int | None = None
-    if max_pages_raw:
+    if max_pages_raw is not None and max_pages_raw != '':
         try:
             max_pages = int(max_pages_raw)
             if max_pages <= 0:
                 max_pages = None
-            else:
-                logger.info(f"Discovery will be limited to {max_pages} pages")
         except (ValueError, TypeError):
             max_pages = None
-    
+
+    session_user_id = session.get('user_id') if session else None
+    session_id_value = session.get('session_id') if session else None
+
     try:
-        # Browser availability is checked at launch time by BrowserManager,
-        # which auto-detects the executable and can install it at runtime.
-
-        # Get project to access stealth_mode setting
-        project = get_db().get_project(website.project_id)
-
-        # Create browser config with project-specific stealth_mode and headless settings
-        browser_config = get_app_config().__dict__.copy()
-        if project and project.config:
-            browser_config['stealth_mode'] = project.config.get('stealth_mode', False)
-
-            # Apply project-specific headless browser setting
-            headless_setting = project.config.get('headless_browser', 'true')
-            browser_config['BROWSER_HEADLESS'] = (headless_setting == 'true')
-        else:
-            browser_config['stealth_mode'] = False
-
-        # Create website manager (with pdf_runner so PDFs found during the
-        # crawl are auto-fetched and surfaced in the PDFs UI)
-        website_manager = WebsiteManager(
-            get_db(), browser_config, pdf_runner=get_pdf_runner()
+        handle = start_website_discovery(
+            get_db(),
+            get_app_config(),
+            website_id,
+            max_pages=max_pages,
+            project_user_ids=user_ids_raw,
+            user_id=session_user_id,
+            session_id=session_id_value,
+            pdf_runner=get_pdf_runner(),
         )
-
-        # Get user info from session if available
-        session_user_id = session.get('user_id') if session else None
-        session_id_value = session.get('session_id') if session else None
-
-        # Submit a single combined discovery task that will scrape with all users
-        import uuid
-        task_id = f'discovery_{website_id}_{uuid.uuid4().hex[:8]}'
-        logger.info(f"Submitting discovery task with ID: {task_id} for {len(website_user_ids)} users")
-
-        # Create a wrapper that handles the async execution properly
-        def discovery_wrapper() -> object:
-            import asyncio
-            import nest_asyncio
-            nest_asyncio.apply()
-
-            logger.info(f"Discovery wrapper starting for website {website_id}, task_id: {task_id}, users: {len(website_user_ids)}")
-
-            # Try to get the running loop, or create a new one
-            try:
-                loop = asyncio.get_running_loop()
-                logger.info("Using existing event loop for discovery")
-            except RuntimeError:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                logger.info("Created new event loop for discovery")
-
-            try:
-                result = loop.run_until_complete(
-                    website_manager.discover_pages(
-                        website_id,
-                        max_pages=max_pages,
-                        job_id=task_id,
-                        user_id=session_user_id,
-                        session_id=session_id_value,
-                        website_user_ids=website_user_ids
-                    )
-                )
-                logger.info(f"Discovery wrapper completed, result job_id: {result.job_id if result else 'None'}")
-                return result
-            except Exception as e:
-                logger.error(f"Error in discovery wrapper: {e}")
-                raise
-            finally:
-                # Don't close the loop immediately - let it complete tasks
-                try:
-                    if not loop.is_running():
-                        loop.close()
-                        logger.info("Closed discovery event loop")
-                except:
-                    pass
-
-        submitted_id = task_runner.submit_task(
-            func=discovery_wrapper,
-            args=(),
-            task_id=task_id
-        )
-
-        logger.info(f"Discovery task submitted successfully with ID: {submitted_id}")
-
-        # Build message
-        user_count = len(website_user_ids)
-        if user_count == 1:
-            if website_user_ids[0]:
-                user_info = get_db().get_project_user(website_user_ids[0])
-                message = f'Page discovery started as {user_info.name_display if user_info else "user"}'
-            else:
-                message = f'Page discovery started as guest'
-        else:
-            message = f'Page discovery started with {user_count} users'
-
-        if max_pages:
-            message += f' (limited to {max_pages} pages)'
-
-        return jsonify({
-            'success': True,
-            'message': message,
-            'job_id': submitted_id,
-            'max_pages': max_pages,
-            'user_count': user_count,
-            'status_url': url_for('websites.discovery_status', website_id=website_id, job_id=submitted_id)
-        })
-        
+    except WebsiteNotFoundError:
+        return jsonify({'error': ftl('common-website-not-found')}), 404
     except Exception as e:
         logger.error(f"Failed to start discovery: {e}")
         return jsonify({
             'success': False,
             'error': str(e),
-            'message': ftl('common-failed-to-start-page-discovery')
+            'message': ftl('common-failed-to-start-page-discovery'),
         }), 500
+
+    # Re-derive the user-facing message from the handle so the legacy
+    # response shape stays byte-identical for the in-flight frontend.
+    normalized_user_ids = (
+        [user_ids_raw] if isinstance(user_ids_raw, str)
+        else (user_ids_raw or [''])
+    )
+    if handle.user_count == 1:
+        first_id = normalized_user_ids[0] if normalized_user_ids else ''
+        if first_id:
+            user_info = get_db().get_project_user(first_id)
+            message = (
+                f'Page discovery started as '
+                f'{user_info.name_display if user_info else "user"}'
+            )
+        else:
+            message = 'Page discovery started as guest'
+    else:
+        message = f'Page discovery started with {handle.user_count} users'
+    if handle.max_pages:
+        message += f' (limited to {handle.max_pages} pages)'
+
+    return jsonify({
+        'success': True,
+        'message': message,
+        'job_id': handle.job_id,
+        'max_pages': handle.max_pages,
+        'user_count': handle.user_count,
+        'status_url': url_for(
+            'websites.discovery_status',
+            website_id=website_id,
+            job_id=handle.job_id,
+        ),
+    })
 
 
 @websites_bp.route('/<website_id>/discovery-status')
@@ -611,342 +544,79 @@ def add_page(website_id: str) -> Response | tuple[Response, int]:
 
 @websites_bp.route('/<website_id>/test-all', methods=['POST'])
 def test_all_pages(website_id: str) -> Response | tuple[Response, int]:
-    """Start testing all pages in website using database-backed job management"""
-    from auto_a11y.core.website_manager import WebsiteManager
-    from auto_a11y.core.task_runner import task_runner
-    import uuid
+    """Start testing all pages in website using database-backed job management."""
+    from auto_a11y.core.test_run_service import (
+        NoPagesToTestError,
+        WebsiteNotFoundError,
+        start_website_test_run,
+    )
 
-    website = get_db().get_website(website_id)
-    if not website:
-        return jsonify({'error': ftl('common-website-not-found')}), 404
-
-    # Extract user IDs from request (array of user IDs, empty string for guest)
     data: dict[str, Any] = request.get_json() if request.is_json else {}
 
-    # Get project_user_ids (project-level test users)
-    # Still accept 'website_user_ids' key name for backward compatibility with JavaScript
-    uids_raw: list[str] | str = data.get('project_user_ids') or data.get('website_user_ids', [])
+    # Get project_user_ids (project-level test users); legacy
+    # ``website_user_ids`` form key still accepted by the service.
+    uids_raw: list[str] | str = (
+        data.get('project_user_ids') or data.get('website_user_ids', [])
+    )
 
-    # Convert to list if single value provided
-    if isinstance(uids_raw, str):
-        uids_list: list[str] = [uids_raw]
-    else:
-        uids_list = uids_raw
-
-    # Default to guest if no users specified
-    if not uids_list:
-        uids_list = ['']  # empty string represents guest/no login
-
-    # Keep the old variable name for compatibility with existing code paths
-    website_user_ids: list[str] = uids_list
-
-    # Filter to untested pages only if requested
     untested_only: bool = data.get('untested_only', False)
-
-    # Use latest_only=False and limit=0 to get all pages (consistent with stats shown in UI)
-    pages = get_db().get_pages(website_id, latest_only=False, limit=0)
-    # Allow testing of all pages, not just untested ones
-    # Users may want to re-test pages to check for improvements
-    testable_pages = [p for p in pages if p.status != PageStatus.TESTING]  # Exclude currently testing pages
-
-    if untested_only:
-        testable_pages = [p for p in testable_pages if p.status != PageStatus.TESTED]
-
-    # Limit number of pages if max_pages specified
     max_pages: int | None = data.get('max_pages')
-    if max_pages and max_pages > 0:
-        testable_pages = testable_pages[:max_pages]
 
-    if not testable_pages:
-        return jsonify({
-            'success': False,
-            'message': ftl('websites-no-pages-available-for-testing-some-may-be')
-        })
+    session_user_id = session.get('user_id') if session else None
+    session_id_value = session.get('session_id') if session else None
 
     try:
-        # Get project to access stealth_mode setting
-        project = get_db().get_project(website.project_id)
-
-        # Create browser config with project-specific stealth_mode and headless settings
-        browser_config = get_app_config().__dict__.copy()
-        if project and project.config:
-            browser_config['stealth_mode'] = project.config.get('stealth_mode', False)
-
-            # Apply project-specific headless browser setting
-            headless_setting = project.config.get('headless_browser', 'true')
-            browser_config['BROWSER_HEADLESS'] = (headless_setting == 'true')
-        else:
-            browser_config['stealth_mode'] = False
-
-        # Create website manager
-        website_manager = WebsiteManager(get_db(), browser_config)
-
-        # Get AI configuration
-        ai_key = getattr(get_app_config(), 'CLAUDE_API_KEY', None)
-
-        # Get user info from session if available
-        session_user_id = session.get('user_id') if session else None
-        session_id_value = session.get('session_id') if session else None
-
-        # PDF audits are queued AFTER the HTML page-test loop completes
-        # (see the testing_wrapper below). Running them concurrently with
-        # Playwright fails with "Timeout should be used inside a task"
-        # because ``nest_asyncio.apply()`` (called by the testing wrapper)
-        # interferes with the per-request timeout context manager that
-        # both Playwright and aiohttp use deep in their stacks. The
-        # PdfRunner reference is captured here (Flask app context is
-        # required to read it) and consumed inside the wrapper.
-        pdf_runner = get_pdf_runner()
-        db_for_audits = get_db()
-
-        # Submit a SINGLE testing job that processes all users SEQUENTIALLY
-        # This prevents browser session corruption from concurrent user testing
-        total_tests = len(website_user_ids) * len(testable_pages)
-        job_id = f'testing_{website_id}_{uuid.uuid4().hex[:8]}'
-        logger.info(f"Submitting testing job with ID: {job_id} for {len(website_user_ids)} user(s)")
-
-        # Create a wrapper that handles the async execution properly
-        # Process all users sequentially within this single job
-        def testing_wrapper() -> object:
-            import asyncio
-            import nest_asyncio
-            nest_asyncio.apply()
-
-            logger.info(f"Testing wrapper starting for website {website_id}, job_id: {job_id}, users: {len(website_user_ids)}")
-
-            # Try to get the running loop, or create a new one
-            try:
-                loop = asyncio.get_running_loop()
-                logger.info("Using existing event loop")
-            except RuntimeError:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                logger.info("Created new event loop")
-
-            try:
-                # Get page IDs for testing
-                page_ids = [p.id for p in testable_pages if p.id is not None]
-                last_result = None
-                num_users = len(website_user_ids)
-
-                # Process each user SEQUENTIALLY to avoid browser session corruption
-                for idx, current_website_user_id in enumerate(website_user_ids):
-                    user_label = current_website_user_id or 'guest'
-                    logger.info(f"Testing user {idx + 1}/{num_users}: {user_label}")
-
-                    # Convert empty string to None for guest testing
-                    user_id_to_pass = current_website_user_id if current_website_user_id else None
-
-                    # Always use the main job_id for UI tracking
-                    # We'll update progress messages to show which user is being tested
-                    current_job_id = job_id
-
-                    # Hold off completing the testing job until PDF audits
-                    # finish too — combined HTML-page + PDF progress is
-                    # what the button shows.
-                    try:
-                        result = loop.run_until_complete(
-                            website_manager.test_website(
-                                website_id=website_id,
-                                page_ids=page_ids,
-                                job_id=current_job_id,
-                                user_id=session_user_id,
-                                session_id=session_id_value,
-                                test_all=False,
-                                take_screenshot=True,
-                                run_ai_analysis=None,
-                                ai_api_key=ai_key,
-                                website_user_id=user_id_to_pass,
-                                skip_completion=True,
-                            )
-                        )
-                        last_result = result
-                        logger.info(f"Completed testing for user: {user_label}")
-                    except Exception as user_error:
-                        logger.error(f"Error testing user {user_label}: {user_error}")
-                        # Continue with next user even if one fails
-
-                logger.info(f"Testing wrapper completed for all {num_users} users")
-
-                # Now that the HTML page tests are done, queue PDF audits.
-                # Running them earlier (concurrent with Playwright on this
-                # same nest_asyncio'd loop) crashes the page tests.
-                pdf_audit_job_ids: list[str] = []
-                if pdf_runner is not None:
-                    from auto_a11y.core.pdf_audit_job import (
-                        queue_audits_for_website,
-                    )
-
-                    try:
-                        pdf_audit_job_ids = queue_audits_for_website(
-                            runner=pdf_runner,
-                            db=db_for_audits,
-                            website_id=website_id,
-                            user_id=str(session_user_id)
-                            if session_user_id
-                            else 'anonymous',
-                            session_id=str(session_id_value)
-                            if session_id_value
-                            else None,
-                        )
-                    except Exception as audit_err:
-                        logger.warning(
-                            "Failed to queue PDF audits for website %s: %s",
-                            website_id,
-                            audit_err,
-                        )
-
-                # Read the post-page-test progress so we can fold PDF
-                # progress on top of it.
-                from auto_a11y.core.job_manager import JobStatus as _JobStatus
-                jm = website_manager.job_manager
-
-                from typing import cast as _cast
-
-                def _read_int(record: dict[str, Any] | None, key: str, default: int) -> int:
-                    if record is None:
-                        return default
-                    progress_obj = record.get('progress')
-                    if not isinstance(progress_obj, dict):
-                        return default
-                    progress_typed = _cast("dict[str, object]", progress_obj)
-                    details_obj = progress_typed.get('details')
-                    if not isinstance(details_obj, dict):
-                        return default
-                    details_typed = _cast("dict[str, object]", details_obj)
-                    value = details_typed.get(key, default)
-                    if isinstance(value, int):
-                        return value
-                    if isinstance(value, str):
-                        try:
-                            return int(value)
-                        except ValueError:
-                            return default
-                    return default
-
-                page_record = jm.get_job(job_id)
-                pages_tested_final: int = _read_int(
-                    page_record, 'pages_tested', len(page_ids)
-                )
-                pages_total_final: int = _read_int(
-                    page_record, 'total_pages', len(page_ids)
-                )
-                page_details: dict[str, Any] = {
-                    'pages_tested': pages_tested_final,
-                    'total_pages': pages_total_final,
-                }
-                pdf_total: int = len(pdf_audit_job_ids)
-                combined_total: int = pages_total_final + pdf_total
-                terminal_states = {'completed', 'failed', 'cancelled'}
-
-                # Poll until all PDF audit jobs reach a terminal state,
-                # streaming combined progress into the testing job's
-                # record so the button's existing poller picks it up.
-                if pdf_audit_job_ids:
-                    import time
-
-                    while True:
-                        done = 0
-                        for aid in pdf_audit_job_ids:
-                            rec = jm.get_job(aid)
-                            if rec and rec.get('status') in terminal_states:
-                                done += 1
-                        combined_done = pages_tested_final + done
-                        jm.update_job_status(
-                            job_id=job_id,
-                            status=_JobStatus.RUNNING,
-                            progress={
-                                'current': combined_done,
-                                'total': combined_total,
-                                'message': (
-                                    f'Auditing PDFs: {done}/{pdf_total}'
-                                ),
-                                'details': {
-                                    **page_details,
-                                    'pages_tested': combined_done,
-                                    'total_pages': combined_total,
-                                    'pdf_audits_done': done,
-                                    'pdf_audits_total': pdf_total,
-                                },
-                            },
-                        )
-                        if done >= pdf_total:
-                            break
-                        time.sleep(2)
-
-                # Mark the testing job complete with combined counts so
-                # the UI's "Testing complete" message reflects everything.
-                jm.update_job_status(
-                    job_id=job_id,
-                    status=_JobStatus.COMPLETED,
-                    progress={
-                        'current': combined_total,
-                        'total': combined_total,
-                        'message': (
-                            f'Testing complete: {pages_total_final} '
-                            f'page(s), {pdf_total} PDF(s)'
-                        ),
-                        'details': {
-                            **page_details,
-                            'pages_tested': combined_total,
-                            'total_pages': combined_total,
-                            'pdf_audits_done': pdf_total,
-                            'pdf_audits_total': pdf_total,
-                        },
-                    },
-                )
-
-                return last_result
-            except Exception as e:
-                logger.error(f"Error in testing wrapper: {e}")
-                raise
-            finally:
-                try:
-                    if not loop.is_running():
-                        loop.close()
-                        logger.info("Closed event loop")
-                except:
-                    pass
-
-        # Submit single testing task for all users
-        submitted_id = task_runner.submit_task(
-            func=testing_wrapper,
-            args=(),
-            task_id=job_id
+        handle = start_website_test_run(
+            get_db(),
+            get_app_config(),
+            website_id,
+            project_user_ids=uids_raw,
+            max_pages=max_pages,
+            untested_only=untested_only,
+            user_id=session_user_id,
+            session_id=session_id_value,
+            pdf_runner=get_pdf_runner(),
         )
-
-        job_ids = [submitted_id]
-        logger.info(f"Testing job submitted successfully with ID: {submitted_id} for {len(website_user_ids)} user(s)")
-
-        # Build response message
-        user_count = len(website_user_ids)
-        if user_count == 1:
-            if website_user_ids[0]:
-                user_info = get_db().get_project_user(website_user_ids[0])
-                message = f'Testing {len(testable_pages)} pages as {user_info.name_display if user_info else "user"}'
-            else:
-                message = f'Testing {len(testable_pages)} pages as guest'
-        else:
-            message = f'Testing {len(testable_pages)} pages with {user_count} users ({total_tests} total tests)'
-
-        return jsonify({
-            'success': True,
-            'message': message,
-            'job_id': job_ids[0],  # Return first job ID for backward compatibility
-            'job_ids': job_ids,  # Return all job IDs
-            'pages_queued': len(testable_pages),
-            'user_count': user_count,
-            'total_tests': total_tests,
-            'status_url': url_for('websites.test_status', website_id=website_id)
-        })
-        
-    except Exception as e:
-        logger.error(f"Failed to start testing: {e}")
+    except WebsiteNotFoundError:
+        return jsonify({'error': ftl('common-website-not-found')}), 404
+    except NoPagesToTestError:
         return jsonify({
             'success': False,
-            'error': str(e),
-            'message': ftl('websites-failed-to-start-testing')
-        }), 500
+            'message': ftl('websites-no-pages-available-for-testing-some-may-be'),
+        })
+
+    # Re-derive the per-user message envelope so the in-flight admin
+    # frontend keeps seeing the same response shape.
+    normalized_user_ids = (
+        [uids_raw] if isinstance(uids_raw, str)
+        else (uids_raw or [''])
+    )
+    if handle.user_count == 1:
+        first_id = normalized_user_ids[0] if normalized_user_ids else ''
+        if first_id:
+            user_info = get_db().get_project_user(first_id)
+            message = (
+                f'Testing {handle.pages_queued} pages as '
+                f'{user_info.name_display if user_info else "user"}'
+            )
+        else:
+            message = f'Testing {handle.pages_queued} pages as guest'
+    else:
+        message = (
+            f'Testing {handle.pages_queued} pages with '
+            f'{handle.user_count} users ({handle.total_tests} total tests)'
+        )
+
+    return jsonify({
+        'success': True,
+        'message': message,
+        'job_id': handle.job_id,
+        'job_ids': [handle.job_id],
+        'pages_queued': handle.pages_queued,
+        'user_count': handle.user_count,
+        'total_tests': handle.total_tests,
+        'status_url': url_for('websites.test_status', website_id=website_id),
+    })
 
 
 @websites_bp.route('/<website_id>/cancel-testing', methods=['POST'])

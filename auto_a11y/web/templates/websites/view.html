@@ -1014,53 +1014,35 @@ $(document).ready(function() {
         // Show the cancel button
         $('#cancelDiscoveryBtn').show();
 
-        $.ajax({
-            url: "{{ url_for('websites.discover_pages', website_id=website.id) }}",
-            method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify(requestData),
-            success: function(data) {
-                if (data.success) {
-                    discoveryJobId = data.job_id;
-
-                    // Add to global tracking if available
-                    if (typeof TestTracker !== 'undefined') {
-                        let description = 'Discovering pages for {{ website.display_name }}';
-                        if (data.max_pages) {
-                            description += ` (max ${data.max_pages} pages)`;
-                        }
-                        // Store with website ID but also save job_id in the data
-                        const tests = TestTracker.getActiveTests();
-                        tests['discovery_{{ website.id }}'] = {
-                            type: 'discovery',
-                            id: '{{ website.id }}',
-                            job_id: data.job_id,  // Store the actual job ID
-                            description: description,
-                            startTime: Date.now()
-                        };
-                        localStorage.setItem(TestTracker.STORAGE_KEY, JSON.stringify(tests));
-                        TestTracker.startTracking();
+        window.apiClient.post('/websites/{{ website.id }}/discover', requestData)
+            .then(data => {
+                discoveryJobId = data.job_id;
+                if (typeof TestTracker !== 'undefined') {
+                    let description = 'Discovering pages for {{ website.display_name }}';
+                    if (data.max_pages) {
+                        description += ` (max ${data.max_pages} pages)`;
                     }
-
-                    if (window.showNotification) {
-                        showNotification('{{ ftl('common-discovery-started') }}', data.message, 'info');
-                    } else {
-                        alert(data.message);
-                    }
-
-                    // Start polling for discovery progress
-                    startDiscoveryPolling();
-                } else {
-                    btn.prop('disabled', false).html('<i class="bi bi-search" aria-hidden="true"></i> {{ ftl('websites-discover-pages') }}');
-                    $('#cancelDiscoveryBtn').hide();
-                    alert(data.message || '{{ ftl('common-failed-to-start-discovery') }}');
+                    const tests = TestTracker.getActiveTests();
+                    tests['discovery_{{ website.id }}'] = {
+                        type: 'discovery',
+                        id: '{{ website.id }}',
+                        job_id: data.job_id,
+                        description: description,
+                        startTime: Date.now()
+                    };
+                    localStorage.setItem(TestTracker.STORAGE_KEY, JSON.stringify(tests));
+                    TestTracker.startTracking();
                 }
-            }
-        }).fail(function() {
-            btn.prop('disabled', false).html('<i class="bi bi-search" aria-hidden="true"></i> {{ ftl('websites-discover-pages') }}');
-            $('#cancelDiscoveryBtn').hide();
-            alert('{{ ftl('common-failed-to-start-page-discovery') }}');
-        });
+                if (window.showNotification) {
+                    showNotification('{{ ftl('common-discovery-started') }}', data.message, 'info');
+                }
+                startDiscoveryPolling();
+            })
+            .catch(err => {
+                btn.prop('disabled', false).html('<i class="bi bi-search" aria-hidden="true"></i> {{ ftl('websites-discover-pages') }}');
+                $('#cancelDiscoveryBtn').hide();
+                window.apiClient.showError(err);
+            });
     });
     
     $('#testAllBtn').click(function() {
@@ -1108,48 +1090,33 @@ $(document).ready(function() {
         btn.prop('disabled', true);
         testAllBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> {{ ftl('common-starting') }}');
 
-        $.ajax({
-            url: "{{ url_for('websites.test_all_pages', website_id=website.id) }}",
-            method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify(testData),
-            success: function(data) {
-                if (data.success) {
-                    testingJobId = data.job_id;
-                    cancelBtn.show();
-
-                    if (typeof TestTracker !== 'undefined') {
-                        const tests = TestTracker.getActiveTests();
-                        tests['testing_{{ website.id }}'] = {
-                            type: 'testing',
-                            id: '{{ website.id }}',
-                            job_id: data.job_id,
-                            description: `Testing ${data.pages_queued} untested pages for {{ website.display_name }}`,
-                            startTime: Date.now()
-                        };
-                        localStorage.setItem(TestTracker.STORAGE_KEY, JSON.stringify(tests));
-                        TestTracker.startTracking();
-                    }
-
-                    if (window.showNotification) {
-                        showNotification('{{ ftl('websites-testing-started') }}', `{{ ftl('common-queued') }} ${data.pages_queued} {{ ftl('websites-untested-documents-for-testing') }}`, 'info');
-                    } else {
-                        alert(data.message);
-                    }
-
-                    testAllBtn.html(`<span class="spinner-border spinner-border-sm"></span> {{ ftl('common-testing') }}: 0/${data.pages_queued}`);
-                    startTestingStatusPolling();
-                } else {
-                    alert(data.message || '{{ ftl('websites-failed-to-queue-tests') }}');
-                    btn.prop('disabled', false);
-                    testAllBtn.prop('disabled', false).html('<i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('common-test-all-documents') }}');
+        window.apiClient.post('/websites/{{ website.id }}/test-runs', testData)
+            .then(data => {
+                testingJobId = data.job_id;
+                cancelBtn.show();
+                if (typeof TestTracker !== 'undefined') {
+                    const tests = TestTracker.getActiveTests();
+                    tests['testing_{{ website.id }}'] = {
+                        type: 'testing',
+                        id: '{{ website.id }}',
+                        job_id: data.job_id,
+                        description: `Testing ${data.pages_queued} untested pages for {{ website.display_name }}`,
+                        startTime: Date.now()
+                    };
+                    localStorage.setItem(TestTracker.STORAGE_KEY, JSON.stringify(tests));
+                    TestTracker.startTracking();
                 }
-            }
-        }).fail(function() {
-            alert('{{ ftl('websites-failed-to-start-testing') }}');
-            btn.prop('disabled', false);
-            testAllBtn.prop('disabled', false).html('<i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('common-test-all-documents') }}');
-        });
+                if (window.showNotification) {
+                    showNotification('{{ ftl('websites-testing-started') }}', `{{ ftl('common-queued') }} ${data.pages_queued} {{ ftl('websites-untested-documents-for-testing') }}`, 'info');
+                }
+                testAllBtn.html(`<span class="spinner-border spinner-border-sm"></span> {{ ftl('common-testing') }}: 0/${data.pages_queued}`);
+                startTestingStatusPolling();
+            })
+            .catch(err => {
+                window.apiClient.showError(err);
+                btn.prop('disabled', false);
+                testAllBtn.prop('disabled', false).html('<i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('common-test-all-documents') }}');
+            });
     });
 
     // Handle test all form submission
@@ -1184,57 +1151,32 @@ $(document).ready(function() {
 
         btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> {{ ftl('common-starting') }}');
 
-        $.ajax({
-            url: "{{ url_for('websites.test_all_pages', website_id=website.id) }}",
-            method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify(testData),
-            success: function(data) {
-                console.log('Test all response:', data);
-
-                if (data.success) {
-                    testingJobId = data.job_id;
-
-                    // Show cancel button
-                    cancelBtn.show();
-
-                    // Add to global tracking if available
-                    if (typeof TestTracker !== 'undefined') {
-                        const tests = TestTracker.getActiveTests();
-                        tests['testing_{{ website.id }}'] = {
-                            type: 'testing',
-                            id: '{{ website.id }}',
-                            job_id: data.job_id,
-                            description: `Testing ${data.pages_queued} pages for {{ website.display_name }}`,
-                            startTime: Date.now()
-                        };
-                        localStorage.setItem(TestTracker.STORAGE_KEY, JSON.stringify(tests));
-                        TestTracker.startTracking();
-                    }
-
-                    if (window.showNotification) {
-                        showNotification('{{ ftl('websites-testing-started') }}', `{{ ftl('common-queued') }} ${data.pages_queued} {{ ftl('websites-pages-for-testing') }}`, 'info');
-                    } else {
-                        alert(data.message);
-                    }
-
-                    // Update button to show it's testing
-                    btn.html(`<span class="spinner-border spinner-border-sm"></span> {{ ftl('common-testing') }}: 0/${data.pages_queued}`);
-
-                    // Start polling for status immediately
-                    console.log('Starting testing status polling with job_id:', testingJobId);
-                    startTestingStatusPolling();
-
-                } else {
-                    alert(data.message || '{{ ftl('websites-failed-to-queue-tests') }}');
-                    btn.prop('disabled', false).html('<i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('common-test-all-documents') }}');
+        window.apiClient.post('/websites/{{ website.id }}/test-runs', testData)
+            .then(data => {
+                testingJobId = data.job_id;
+                cancelBtn.show();
+                if (typeof TestTracker !== 'undefined') {
+                    const tests = TestTracker.getActiveTests();
+                    tests['testing_{{ website.id }}'] = {
+                        type: 'testing',
+                        id: '{{ website.id }}',
+                        job_id: data.job_id,
+                        description: `Testing ${data.pages_queued} pages for {{ website.display_name }}`,
+                        startTime: Date.now()
+                    };
+                    localStorage.setItem(TestTracker.STORAGE_KEY, JSON.stringify(tests));
+                    TestTracker.startTracking();
                 }
-            }
-        }).fail(function(error) {
-            console.error('Failed to start testing:', error);
-            alert('{{ ftl('websites-failed-to-start-testing') }}');
-            btn.prop('disabled', false).html('<i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('common-test-all-documents') }}');
-        });
+                if (window.showNotification) {
+                    showNotification('{{ ftl('websites-testing-started') }}', `{{ ftl('common-queued') }} ${data.pages_queued} {{ ftl('websites-pages-for-testing') }}`, 'info');
+                }
+                btn.html(`<span class="spinner-border spinner-border-sm"></span> {{ ftl('common-testing') }}: 0/${data.pages_queued}`);
+                startTestingStatusPolling();
+            })
+            .catch(err => {
+                window.apiClient.showError(err);
+                btn.prop('disabled', false).html('<i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('common-test-all-documents') }}');
+            });
     });
     
     // Wire up the cancel testing button
@@ -1246,18 +1188,15 @@ $(document).ready(function() {
     
     $('#addPageForm').submit(function(e) {
         e.preventDefault();
-        
-        $.post("{{ url_for('websites.add_page', website_id=website.id) }}", {
+        window.apiClient.post('/websites/{{ website.id }}/pages', {
             url: $('#pageUrl').val(),
-            priority: $('#priority').val()
-        }, function(data) {
-            if (data.success) {
+            priority: $('#priority').val(),
+        })
+            .then(() => {
                 closeModal('addPageModal');
                 location.reload();
-            } else {
-                alert(data.error || '{{ ftl('websites-failed-to-add-page') }}');
-            }
-        });
+            })
+            .catch(err => window.apiClient.showError(err));
     });
 });
 
@@ -1266,47 +1205,33 @@ function testPage(pageId) {
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
     
-    $.post(`/pages/${pageId}/test`, function(data) {
-        if (data.success) {
-            // Store job ID for potential cancellation
+    window.apiClient.post(`/pages/${pageId}/test-runs`, {})
+        .then(data => {
             if (!window.pageTestJobs) {
                 window.pageTestJobs = {};
             }
             window.pageTestJobs[pageId] = data.job_id;
-            
-            // Add to global tracking if available
             if (typeof trackPageTest !== 'undefined') {
                 trackPageTest(pageId, 'Page');
             }
-            
-            // Update status immediately
             updatePageStatus(pageId, 'queued');
-            
-            // Change button to cancel
             btn.classList.remove('btn-pass');
             btn.classList.add('btn-high');
             btn.onclick = function() { cancelPageTest(pageId); };
             btn.innerHTML = '<i class="bi bi-x-circle" aria-hidden="true"></i>';
             btn.disabled = false;
-            
             if (window.showNotification) {
                 showNotification('{{ ftl('websites-test-started') }}', '{{ ftl('common-page-queued-for-testing') }}', 'info');
             }
-
-            // Start polling if not already running
             if (!websiteStatusInterval) {
                 startWebsiteStatusPolling();
             }
-        } else {
+        })
+        .catch(err => {
+            window.apiClient.showError(err);
             btn.disabled = false;
             btn.innerHTML = '<i class="bi bi-play" aria-hidden="true"></i>';
-            alert('{{ ftl('common-failed-to-start-test') }}');
-        }
-    }).fail(function() {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-play" aria-hidden="true"></i>';
-        alert('{{ ftl('common-failed-to-start-test') }}');
-    });
+        });
 }
 
 function cancelPageTest(pageId) {
@@ -1321,12 +1246,9 @@ function cancelPageTest(pageId) {
         postData.job_id = window.pageTestJobs[pageId];
     }
     
-    $.post(`/pages/${pageId}/cancel-test`, postData, function(data) {
-        if (data.success) {
-            // Update status
-            updatePageStatus(pageId, data.new_status || 'discovered');
-            
-            // Change button back to test
+    window.apiClient.post(`/pages/${pageId}/test-runs/latest/cancel`, {})
+        .then(data => {
+            updatePageStatus(pageId, data.status || 'discovered');
             if (btn) {
                 btn.classList.remove('btn-high');
                 btn.classList.add('btn-pass');
@@ -1334,34 +1256,23 @@ function cancelPageTest(pageId) {
                 btn.innerHTML = '<i class="bi bi-play" aria-hidden="true"></i>';
                 btn.disabled = false;
             }
-            
-            // Clear job ID
             if (window.pageTestJobs) {
                 delete window.pageTestJobs[pageId];
             }
-            
-            // Remove from global tracking if available
             if (typeof TestTracker !== 'undefined') {
                 TestTracker.removeTest(`test_page_${pageId}`);
             }
-            
             if (window.showNotification) {
                 showNotification('{{ ftl('common-test-cancelled') }}', '{{ ftl('websites-page-test-has-been-cancelled') }}', 'warning');
             }
-        } else {
-            alert('{{ ftl('common-failed-to-cancel-test') }}: ' + (data.message || '{{ ftl('common-unknown-error') }}'));
+        })
+        .catch(err => {
+            window.apiClient.showError(err);
             if (btn) {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="bi bi-x-circle" aria-hidden="true"></i>';
             }
-        }
-    }).fail(function() {
-        alert('{{ ftl('common-failed-to-cancel-test') }}');
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-x-circle" aria-hidden="true"></i>';
-        }
-    });
+        });
 }
 
 function deletePage(pageId, pageUrl) {
@@ -1375,19 +1286,20 @@ function deletePage(pageId, pageUrl) {
         btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
     }
 
-    $.post(`/pages/${pageId}/delete`, function(data) {
-        if (window.showNotification) {
-            showNotification('{{ ftl('websites-page-deleted') }}', '{{ ftl('websites-page-has-been-deleted-successfully') }}', 'success');
-        }
-        // Reload page to show updated list
-        location.reload();
-    }).fail(function(xhr) {
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-trash" aria-hidden="true"></i>';
-        }
-        alert('{{ ftl('common-failed-to-delete-page') }}: ' + (xhr.responseJSON?.error || '{{ ftl('common-unknown-error') }}'));
-    });
+    window.apiClient.delete(`/pages/${pageId}`)
+        .then(() => {
+            if (window.showNotification) {
+                showNotification('{{ ftl('websites-page-deleted') }}', '{{ ftl('websites-page-has-been-deleted-successfully') }}', 'success');
+            }
+            location.reload();
+        })
+        .catch(err => {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-trash" aria-hidden="true"></i>';
+            }
+            window.apiClient.showError(err);
+        });
 }
 
 function cancelDiscovery() {
@@ -1403,55 +1315,25 @@ function cancelDiscovery() {
     cancelBtn.prop('disabled', true);
     btn.html('<span class="spinner-border spinner-border-sm"></span> {{ ftl('common-cancelling') }}');
     
-    $.post(`{{ url_for('websites.cancel_discovery', website_id=website.id) }}`, 
-        { job_id: discoveryJobId }, 
-        function(data) {
-            if (data.success) {
-                stopDiscoveryPolling();
-                
-                // Hide cancel button and reset discover button
-                cancelBtn.hide().prop('disabled', false);
-                btn.prop('disabled', false).html('<i class="bi bi-search" aria-hidden="true"></i> {{ ftl('websites-discover-pages') }}');
-
-                // Remove from global tracking
-                if (typeof TestTracker !== 'undefined') {
-                    TestTracker.removeTest('discovery', '{{ website.id }}');
-                }
-
-                if (window.showNotification) {
-                    showNotification('{{ ftl('common-discovery-cancelled') }}', data.message, 'warning');
-                } else {
-                    alert(data.message);
-                }
-            } else {
-                // Re-enable cancel button on failure
-                cancelBtn.prop('disabled', false);
-                btn.html('<span class="spinner-border spinner-border-sm"></span> {{ ftl('websites-discovery-running') }}');
-                alert('{{ ftl('common-failed-to-cancel-discovery') }}: ' + (data.message || '{{ ftl('common-unknown-error') }}'));
+    window.apiClient.post(`/jobs/${discoveryJobId}/cancel`, {})
+        .then(data => {
+            stopDiscoveryPolling();
+            cancelBtn.hide().prop('disabled', false);
+            btn.prop('disabled', false).html('<i class="bi bi-search" aria-hidden="true"></i> {{ ftl('websites-discover-pages') }}');
+            if (typeof TestTracker !== 'undefined') {
+                TestTracker.removeTest('discovery', '{{ website.id }}');
             }
-        }
-    ).fail(function(xhr, status, error) {
-        // Re-enable cancel button on failure
-        cancelBtn.prop('disabled', false);
-        btn.html('<span class="spinner-border spinner-border-sm"></span> {{ ftl('websites-discovery-running') }}');
-        console.error('Cancel discovery failed:', status, error);
-        console.error('Response:', xhr.responseText);
-
-        // Try to parse error message
-        let errorMsg = '{{ ftl('common-failed-to-cancel-discovery') }}';
-        try {
-            const response = JSON.parse(xhr.responseText);
-            if (response.error) {
-                errorMsg += ': ' + response.error;
+            if (window.showNotification) {
+                showNotification('{{ ftl('common-discovery-cancelled') }}',
+                                 data.message || '{{ ftl('common-discovery-cancelled') }}',
+                                 'warning');
             }
-        } catch(e) {
-            // If not JSON, show the raw error
-            if (xhr.responseText) {
-                errorMsg += ': ' + xhr.responseText.substring(0, 200);
-            }
-        }
-        alert(errorMsg);
-    });
+        })
+        .catch(err => {
+            cancelBtn.prop('disabled', false);
+            btn.html('<span class="spinner-border spinner-border-sm"></span> {{ ftl('websites-discovery-running') }}');
+            window.apiClient.showError(err);
+        });
 }
 
 function startDiscoveryPolling() {
@@ -1703,40 +1585,25 @@ function cancelTesting() {
     cancelBtn.prop('disabled', true);
     btn.html('<span class="spinner-border spinner-border-sm"></span> {{ ftl('common-cancelling') }}');
     
-    $.post(`{{ url_for('websites.cancel_testing', website_id=website.id) }}`, 
-        { job_id: testingJobId }, 
-        function(data) {
-            if (data.success) {
-                stopTestingStatusPolling();
-                
-                // Hide cancel button and reset test button
-                cancelBtn.hide().prop('disabled', false);
-                btn.prop('disabled', false).html('<i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('common-test-all-documents') }}');
-
-                // Remove from global tracking
-                if (typeof TestTracker !== 'undefined') {
-                    TestTracker.removeTest('testing', '{{ website.id }}');
-                }
-
-                if (window.showNotification) {
-                    showNotification('{{ ftl('websites-testing-cancelled') }}', data.message, 'warning');
-                } else {
-                    alert(data.message);
-                }
-            } else {
-                // Re-enable cancel button on failure
-                cancelBtn.prop('disabled', false);
-                btn.html('<span class="spinner-border spinner-border-sm"></span> {{ ftl('common-testing-2') }}');
-                alert('{{ ftl('websites-failed-to-cancel-testing') }}: ' + (data.message || '{{ ftl('common-unknown-error') }}'));
+    window.apiClient.post(`/jobs/${testingJobId}/cancel`, {})
+        .then(data => {
+            stopTestingStatusPolling();
+            cancelBtn.hide().prop('disabled', false);
+            btn.prop('disabled', false).html('<i class="bi bi-play-fill" aria-hidden="true"></i> {{ ftl('common-test-all-documents') }}');
+            if (typeof TestTracker !== 'undefined') {
+                TestTracker.removeTest('testing', '{{ website.id }}');
             }
-        }
-    ).fail(function(xhr, status, error) {
-        // Re-enable cancel button on failure
-        cancelBtn.prop('disabled', false);
-        btn.html('<span class="spinner-border spinner-border-sm"></span> {{ ftl('common-testing-2') }}');
-        console.error('Cancel testing failed:', status, error);
-        alert('{{ ftl('websites-failed-to-cancel-testing') }}');
-    });
+            if (window.showNotification) {
+                showNotification('{{ ftl('websites-testing-cancelled') }}',
+                                 data.message || '{{ ftl('websites-testing-cancelled') }}',
+                                 'warning');
+            }
+        })
+        .catch(err => {
+            cancelBtn.prop('disabled', false);
+            btn.html('<span class="spinner-border spinner-border-sm"></span> {{ ftl('common-testing-2') }}');
+            window.apiClient.showError(err);
+        });
 }
 
 // Report generation functions
@@ -1747,32 +1614,23 @@ function generateSiteStructureReport(format) {
         btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
         btn.classList.add('disabled');
     }
-    fetch('{{ url_for("reports.generate_page_structure_report") }}', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            website_id: '{{ website.id }}',
-            format: format
-        })
+    window.apiClient.post('/websites/{{ website.id }}/reports', {
+        type: 'page-structure',
+        format: format,
     })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
+        .then(() => {
             if (window.showNotification) {
                 showNotification('{{ ftl('websites-report-generation') }}',
                     '{{ ftl('websites-report-is-being-generated-check-the-reports') }}', 'info');
             }
-        } else {
-            alert(data.error || '{{ ftl('websites-failed-to-generate-report') }}');
-        }
-    })
-    .catch(() => alert('{{ ftl('websites-failed-to-generate-report') }}'))
-    .finally(() => {
-        if (btn) {
-            btn.innerHTML = originalText;
-            btn.classList.remove('disabled');
-        }
-    });
+        })
+        .catch(err => window.apiClient.showError(err))
+        .finally(() => {
+            if (btn) {
+                btn.innerHTML = originalText;
+                btn.classList.remove('disabled');
+            }
+        });
 }
 
 function generateAccessibilityReport(format) {
@@ -1782,29 +1640,23 @@ function generateAccessibilityReport(format) {
         btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
         btn.classList.add('disabled');
     }
-    fetch('{{ url_for("reports.generate_website_report", website_id=website.id) }}', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({format: format})
+    window.apiClient.post('/websites/{{ website.id }}/reports', {
+        type: 'accessibility',
+        format: format,
     })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
+        .then(() => {
             if (window.showNotification) {
                 showNotification('{{ ftl('websites-report-generation') }}',
                     '{{ ftl('websites-report-is-being-generated-check-the-reports') }}', 'info');
             }
-        } else {
-            alert(data.error || '{{ ftl('websites-failed-to-generate-report') }}');
-        }
-    })
-    .catch(() => alert('{{ ftl('websites-failed-to-generate-report') }}'))
-    .finally(() => {
-        if (btn) {
-            btn.innerHTML = originalText;
-            btn.classList.remove('disabled');
-        }
-    });
+        })
+        .catch(err => window.apiClient.showError(err))
+        .finally(() => {
+            if (btn) {
+                btn.innerHTML = originalText;
+                btn.classList.remove('disabled');
+            }
+        });
 }
 
 // Clean up on page unload

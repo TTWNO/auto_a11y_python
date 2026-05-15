@@ -31,11 +31,9 @@
         <div class="col-lg-8">
             <div class="card">
                 <div class="card-body">
-                    <form method="POST"
-                          action="{{ url_for('pdf.create', project_id=project.id) }}"
+                    <form id="pdf-add-form"
                           enctype="multipart/form-data"
                           aria-labelledby="pdf-add-heading">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
 
                         <fieldset class="mb-4">
                             <legend class="h5">{{ ftl('common-website') }}</legend>
@@ -160,6 +158,58 @@
         r.addEventListener('change', refresh);
     });
     refresh();
+
+    // Intercept the submit and round-trip through /api/v1/projects/<id>/pdfs.
+    // The endpoint accepts two body shapes:
+    //   - multipart/form-data (file upload): website_id + pdf_file part
+    //   - application/json (URL fetch):      {website_id, source_url}
+    // We dispatch based on the source_choice radio. The response carries
+    // the new document's id; we redirect to its detail page.
+    var form = document.getElementById('pdf-add-form');
+    form.addEventListener('submit', async function (ev) {
+        ev.preventDefault();
+        var submit = form.querySelector('[type="submit"]');
+        if (submit) {
+            submit.disabled = true;
+            submit.setAttribute('aria-busy', 'true');
+        }
+
+        var websiteId = form.querySelector('#website_id').value;
+        var choice = (document.querySelector('[data-pdf-source-choice]:checked') || {}).value || 'upload';
+
+        try {
+            var doc;
+            if (choice === 'url') {
+                var sourceUrl = form.querySelector('#source_url').value;
+                doc = await window.apiClient.post(
+                    '/projects/{{ project.id }}/pdfs',
+                    { website_id: websiteId, source_url: sourceUrl }
+                );
+            } else {
+                var fd = new FormData();
+                fd.append('website_id', websiteId);
+                var fileInput = form.querySelector('#pdf_file');
+                if (fileInput.files && fileInput.files[0]) {
+                    fd.append('pdf_file', fileInput.files[0]);
+                }
+                doc = await window.apiClient.post(
+                    '/projects/{{ project.id }}/pdfs',
+                    fd
+                );
+            }
+            if (doc && doc.id) {
+                window.location.assign('/pdfs/' + doc.id);
+            } else {
+                window.location.assign({{ url_for('pdf.list_for_project', project_id=project.id) | tojson }});
+            }
+        } catch (err) {
+            window.apiClient.showError(err);
+            if (submit) {
+                submit.disabled = false;
+                submit.removeAttribute('aria-busy');
+            }
+        }
+    });
 })();
 </script>
 {% endblock %}

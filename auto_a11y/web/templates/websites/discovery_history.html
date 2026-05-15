@@ -164,31 +164,15 @@
 <script>
 function startDiscovery() {
     if (confirm('{{ ftl('websites-start-a-new-discovery-run-for-this-website') }}')) {
-        fetch(`/websites/{{ website.id }}/discover`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({})  // Send empty JSON body
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
+        window.apiClient.post(`/websites/{{ website.id }}/discover`, {})
+            .then(() => {
                 alert('{{ ftl('websites-discovery-started-successfully') }}');
                 window.location.reload();
-            } else {
-                alert('{{ ftl('common-error') }} ' + (data.error || '{{ ftl('common-unknown-error') }}'));
-            }
-        })
-        .catch(error => {
-            console.error('Error starting discovery:', error);
-            alert('{{ ftl('websites-error-starting-discovery') }} ' + error.message);
-        });
+            })
+            .catch(error => {
+                console.error('Error starting discovery:', error);
+                window.apiClient.showError(error);
+            });
     }
 }
 

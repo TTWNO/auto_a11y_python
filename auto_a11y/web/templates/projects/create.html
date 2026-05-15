@@ -27,8 +27,7 @@
             
             <div class="card">
                 <div class="card-body">
-                    <form method="POST" action="{{ url_for('projects.create_project') }}" aria-labelledby="create-project-heading">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <form id="projectForm" aria-labelledby="create-project-heading">
                         <fieldset class="mb-4">
                             <legend><h2 class="h5 mb-0">{{ ftl('projects-project-details') }}</h2></legend>
                             <div class="mb-3">
@@ -485,12 +484,9 @@ function showTestDetails(testId) {
     document.getElementById('testDetailsModal').showModal();
 
     // Fetch test details
-    fetch(`/projects/api/test-details/${testId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const test = data.test;
-
+    window.apiClient.get(`/issues/${testId}`)
+        .then(test => {
+            {
                 // Build impact badge
                 const impactI18n = {'High': '{{ ftl('common-high') }}', 'Medium': '{{ ftl('common-medium') }}', 'Low': '{{ ftl('common-low') }}', 'Critical': '{{ ftl('common-critical') }}'};
                 let impactClass = 'neutral';
@@ -603,7 +599,10 @@ function showTestDetails(testId) {
                     </div>
                     ` : ''}
                 `;
-            } else {
+            }
+        })
+        .catch(err => {
+            if (err && err.status === 404) {
                 bodyEl.innerHTML = `
                     <div class="alert alert-medium">
                         <i class="bi bi-exclamation-triangle me-2" aria-hidden="true"></i>
@@ -611,17 +610,16 @@ function showTestDetails(testId) {
                         <p class="mb-0 mt-2">{{ ftl('projects-details-for-test') }} <code>${testId}</code> {{ ftl('projects-are-not-available-in-the-catalog') }}</p>
                     </div>
                 `;
+            } else {
+                console.error('Error fetching test details:', err);
+                bodyEl.innerHTML = `
+                    <div class="alert alert-high">
+                        <i class="bi bi-x-circle me-2" aria-hidden="true"></i>
+                        <strong>{{ ftl('projects-error-loading-test-details') }}</strong>
+                        <p class="mb-0 mt-2">{{ ftl('projects-an-error-occurred-while-loading-the-test-details') }}</p>
+                    </div>
+                `;
             }
-        })
-        .catch(error => {
-            console.error('Error fetching test details:', error);
-            bodyEl.innerHTML = `
-                <div class="alert alert-high">
-                    <i class="bi bi-x-circle me-2" aria-hidden="true"></i>
-                    <strong>{{ ftl('projects-error-loading-test-details') }}</strong>
-                    <p class="mb-0 mt-2">{{ ftl('projects-an-error-occurred-while-loading-the-test-details') }}</p>
-                </div>
-            `;
         });
 }
 
@@ -635,39 +633,19 @@ function toggleProductionReady(testId, newValue) {
     const originalHTML = button.innerHTML;
     button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>{{ ftl('projects-updating') }}';
 
-    // Make API call to update status
-    fetch(`/projects/api/test-details/${testId}/production-ready`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            production_ready: newValue
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Update the inline checkbox if it exists
+    window.apiClient.patch(`/issues/${testId}`, { production_ready: newValue })
+        .then(() => {
             const inlineCheckbox = document.getElementById('prod_ready_' + testId);
             if (inlineCheckbox) {
                 inlineCheckbox.checked = newValue;
             }
-
-            // Refresh the modal content without creating a new modal instance
             refreshTestDetailsContent(testId);
-        } else {
-            alert('Error updating status: ' + (data.error || 'Unknown error'));
+        })
+        .catch(err => {
+            window.apiClient.showError(err);
             button.disabled = false;
             button.innerHTML = originalHTML;
-        }
-    })
-    .catch(error => {
-        console.error('Error updating production ready status:', error);
-        alert('Error updating status. Please try again.');
-        button.disabled = false;
-        button.innerHTML = originalHTML;
-    });
+        });
 }
 
 // Refresh modal content without creating new modal instance
@@ -686,12 +664,9 @@ function refreshTestDetailsContent(testId) {
     `;
 
     // Fetch updated test details
-    fetch(`/projects/api/test-details/${testId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const test = data.test;
-
+    window.apiClient.get(`/issues/${testId}`)
+        .then(test => {
+            {
                 // Build impact badge
                 const impactI18n = {'High': '{{ ftl('common-high') }}', 'Medium': '{{ ftl('common-medium') }}', 'Low': '{{ ftl('common-low') }}', 'Critical': '{{ ftl('common-critical') }}'};
                 let impactClass = 'neutral';
@@ -803,7 +778,10 @@ function refreshTestDetailsContent(testId) {
                     </div>
                     ` : ''}
                 `;
-            } else {
+            }
+        })
+        .catch(err => {
+            if (err && err.status === 404) {
                 bodyEl.innerHTML = `
                     <div class="alert alert-medium">
                         <i class="bi bi-exclamation-triangle me-2" aria-hidden="true"></i>
@@ -811,17 +789,16 @@ function refreshTestDetailsContent(testId) {
                         <p class="mb-0 mt-2">{{ ftl('projects-details-for-test') }} <code>${testId}</code> {{ ftl('projects-are-not-available-in-the-catalog') }}</p>
                     </div>
                 `;
+            } else {
+                console.error('Error fetching test details:', err);
+                bodyEl.innerHTML = `
+                    <div class="alert alert-high">
+                        <i class="bi bi-x-circle me-2" aria-hidden="true"></i>
+                        <strong>{{ ftl('projects-error-loading-test-details') }}</strong>
+                        <p class="mb-0 mt-2">{{ ftl('projects-an-error-occurred-while-loading-the-test-details') }}</p>
+                    </div>
+                `;
             }
-        })
-        .catch(error => {
-            console.error('Error fetching test details:', error);
-            bodyEl.innerHTML = `
-                <div class="alert alert-high">
-                    <i class="bi bi-x-circle me-2" aria-hidden="true"></i>
-                    <strong>{{ ftl('projects-error-loading-test-details') }}</strong>
-                    <p class="mb-0 mt-2">{{ ftl('projects-an-error-occurred-while-loading-the-test-details') }}</p>
-                </div>
-            `;
         });
 }
 
@@ -830,33 +807,12 @@ function toggleProductionReadyInline(testId, newValue) {
     const checkbox = document.getElementById('prod_ready_' + testId);
     if (!checkbox) return;
 
-    // Store original state in case we need to revert
     const originalState = !newValue;
-
-    // Make API call to update status
-    fetch(`/projects/api/test-details/${testId}/production-ready`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            production_ready: newValue
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (!data.success) {
-            // Revert checkbox on error
+    window.apiClient.patch(`/issues/${testId}`, { production_ready: newValue })
+        .catch(err => {
             checkbox.checked = originalState;
-            alert('Error updating status: ' + (data.error || 'Unknown error'));
-        }
-    })
-    .catch(error => {
-        console.error('Error updating production ready status:', error);
-        // Revert checkbox on error
-        checkbox.checked = originalState;
-        alert('Error updating status. Please try again.');
-    });
+            window.apiClient.showError(err);
+        });
 }
 
 // Show/hide project type-specific fields
@@ -884,6 +840,94 @@ document.addEventListener('DOMContentLoaded', function() {
     loadDrupalAudits();
 });
 
+// Build the /api/v1/projects request body from the form.
+//
+// NOTE (issue-21 cutover): The legacy server-rendered POST handler accepted
+// the following top-level form fields that the v1 `ProjectIn` schema does NOT
+// model and that the v1 `POST /projects` handler does NOT read:
+//   - project_type
+//   - app_identifier
+//   - device_model
+//   - location
+//   - drupal_audit_name
+// We keep those inputs visible for UX continuity (the GET flow still asks
+// the user for them), but we DROP them from the request body. They can be
+// set on the project later via the edit flow once `ProjectPatch` gains
+// fields for them, or via a follow-up endpoint. The v1 schema is the
+// source of truth — see auto_a11y/web/api/schemas/projects.py::ProjectIn.
+function buildCreateProjectBody(form) {
+    const fd = new FormData(form);
+
+    // Walk every touchpoint_<id> checkbox in the rendered tree and pack
+    // its tests by prefix-matching test_<id>_<test_id> in the same form.
+    // This avoids duplicating the TOUCHPOINT_TEST_MAPPING in JS.
+    const touchpoints = {};
+    form.querySelectorAll('input[name^="touchpoint_"]').forEach(cb => {
+        const id = cb.name.substring('touchpoint_'.length);
+        const tests = {};
+        form.querySelectorAll('input[name^="test_' + id + '_"]').forEach(testCb => {
+            const testId = testCb.name.substring(('test_' + id + '_').length);
+            tests[testId] = testCb.checked;
+        });
+        touchpoints[id] = { enabled: cb.checked, tests: tests };
+    });
+
+    // AI tests — collect only the checked ones, in the canonical order
+    // the legacy handler used.
+    const aiTests = [];
+    ['headings', 'reading_order', 'modals', 'language', 'animations', 'interactive'].forEach(t => {
+        const el = form.querySelector('#ai_test_' + t);
+        if (el && el.checked) aiTests.push(t);
+    });
+
+    const config = {
+        wcag_level: fd.get('wcag_level') || 'AA',
+        page_load_strategy: fd.get('page_load_strategy') || 'networkidle2',
+        headless_browser: fd.get('headless_browser') || 'default',
+        touchpoints: touchpoints,
+        enable_ai_testing: !!form.querySelector('#enable_ai_testing')?.checked,
+        ai_tests: aiTests,
+        stealth_mode: !!form.querySelector('#stealth_mode')?.checked,
+    };
+
+    return {
+        name: fd.get('name') || '',
+        description: fd.get('description') || '',
+        config: config,
+    };
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('projectForm');
+    if (!form) return;
+    form.addEventListener('submit', async function(ev) {
+        ev.preventDefault();
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalLabel = submitBtn ? submitBtn.innerHTML : null;
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>{{ ftl('common-loading') }}';
+        }
+        try {
+            const body = buildCreateProjectBody(form);
+            const response = await window.apiClient.post('/projects', body);
+            // Legacy v1 wire shape: {id, message}. Redirect to project page.
+            location.assign('/projects/' + response.id);
+        } catch (err) {
+            if (window.apiClient && window.apiClient.showError) {
+                window.apiClient.showError(err);
+            } else {
+                console.error('Create project failed:', err);
+                alert((err && err.message) || 'Request failed');
+            }
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                if (originalLabel !== null) submitBtn.innerHTML = originalLabel;
+            }
+        }
+    });
+});
+
 // Load Drupal audits for the dropdown
 async function loadDrupalAudits() {
     const select = document.getElementById('drupal_audit_name');
@@ -895,40 +939,25 @@ async function loadDrupalAudits() {
     console.log('Loading Drupal audits...');
 
     try {
-        const response = await fetch('/drupal/audits/list');
-        console.log('Response status:', response.status);
-        const data = await response.json();
-        console.log('Received audits:', data);
+        const data = await window.apiClient.get('/drupal/audits');
+        const audits = (data && data.audits) || [];
 
-        if (data.success && data.audits && data.audits.length > 0) {
-            // Clear loading option
-            select.innerHTML = '<option value="">{{ ftl('projects-auto-match-by-project-name') }}</option>';
-
-            // Add audit options
-            data.audits.forEach(audit => {
+        select.innerHTML = '<option value="">{{ ftl('projects-auto-match-by-project-name') }}</option>';
+        if (audits.length > 0) {
+            audits.forEach(audit => {
                 const option = document.createElement('option');
                 option.value = audit.title;
                 option.textContent = audit.title;
                 select.appendChild(option);
             });
-        } else if (!data.success && data.error) {
-            // Show error but keep the auto-match option
-            select.innerHTML = '<option value="">{{ ftl('projects-auto-match-by-project-name') }}</option>';
-            const option = document.createElement('option');
-            option.disabled = true;
-            option.textContent = `{{ ftl('common-error') }} ${data.error}`;
-            select.appendChild(option);
         } else {
-            // No audits available
-            select.innerHTML = '<option value="">{{ ftl('projects-auto-match-by-project-name') }}</option>';
             const option = document.createElement('option');
             option.disabled = true;
             option.textContent = '{{ ftl('projects-no-drupal-audits-found') }}';
             select.appendChild(option);
         }
-    } catch (error) {
-        console.error('Error loading Drupal audits:', error);
-        // Keep the auto-match option on error
+    } catch (err) {
+        console.error('Error loading Drupal audits:', err);
         select.innerHTML = '<option value="">{{ ftl('projects-auto-match-by-project-name') }}</option>';
         const option = document.createElement('option');
         option.disabled = true;

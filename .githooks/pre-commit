@@ -111,4 +111,14 @@ if [ $STATUS -ne 0 ]; then
     exit 1
 fi
 
+echo
+echo "==> openapi.yaml drift check"
+if ! "$PYTHON" scripts/generate_openapi.py --check; then
+    echo
+    echo "COMMIT BLOCKED: docs/api/openapi.yaml is stale or invalid."
+    echo "Regenerate with:"
+    echo "  $PYTHON scripts/generate_openapi.py"
+    exit 1
+fi
+
 exit 0

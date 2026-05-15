@@ -40,10 +40,11 @@
     {# Top action bar: re-audit, delete. #}
     <div class="d-flex flex-wrap gap-2 mb-3" role="group"
          aria-label="{{ ftl('pdf-detail-actions-aria-label') }}">
-        <form method="POST"
-              action="{{ url_for('pdf.audit', pdf_document_id=pdf.id) }}"
+        <form data-api-form
+              data-api-method="POST"
+              data-api-path="/pdf-documents/{{ pdf.id }}/audits"
+              data-api-redirect="{{ url_for('pdf.detail', pdf_document_id=pdf.id) }}"
               class="d-inline">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <button type="submit"
                     class="btn btn-brand"
                     {% if pdf.status.value == 'auditing' %}disabled{% endif %}>
@@ -56,11 +57,12 @@
             </button>
         </form>
         {% if pdf.status.value == 'auditing' %}
-        <form method="POST"
-              action="{{ url_for('pdf.cancel', pdf_document_id=pdf.id) }}"
-              class="d-inline"
-              onsubmit="return confirm('{{ ftl('pdf-cancel-confirm') }}');">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <form data-api-form
+              data-api-method="POST"
+              data-api-path="/pdf-documents/{{ pdf.id }}/audits/latest/cancel"
+              data-api-confirm="{{ ftl('pdf-cancel-confirm') }}"
+              data-api-redirect="{{ url_for('pdf.detail', pdf_document_id=pdf.id) }}"
+              class="d-inline">
             <button type="submit" class="btn btn-medium">
                 <i class="bi bi-x-octagon" aria-hidden="true"></i>
                 {{ ftl('pdf-cancel-button') }}
@@ -94,11 +96,12 @@
             </a>
         </span>
         {% endif %}
-        <form method="POST"
-              action="{{ url_for('pdf.delete', pdf_document_id=pdf.id) }}"
-              class="d-inline"
-              onsubmit="return confirm('{{ ftl('pdf-delete-confirm') }}');">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <form data-api-form
+              data-api-method="DELETE"
+              data-api-path="/pdf-documents/{{ pdf.id }}"
+              data-api-confirm="{{ ftl('pdf-delete-confirm') }}"
+              data-api-redirect="{{ url_for('pdf.list_for_project', project_id=pdf.project_id) if pdf.project_id else url_for('projects.list_projects') }}"
+              class="d-inline">
             <button type="submit" class="btn btn-high">
                 <i class="bi bi-trash" aria-hidden="true"></i>
                 {{ ftl('pdf-delete-button') }}

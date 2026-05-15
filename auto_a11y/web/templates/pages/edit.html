@@ -26,8 +26,7 @@
         <div class="col-md-8">
             <div class="card">
                 <div class="card-body">
-                    <form method="POST" action="{{ url_for('pages.edit_page', page_id=page.id) }}" aria-labelledby="edit-page-heading">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <form id="editPageForm" aria-labelledby="edit-page-heading">
                         <fieldset>
                             <legend class="visually-hidden">{{ ftl('pages-page-details') }}</legend>
                             <div class="mb-3">
@@ -53,12 +52,6 @@
                             </select>
                         </div>
                         
-                        <div class="mb-3">
-                            <label for="notes" class="form-label">{{ ftl('common-notes') }}</label>
-                            <textarea class="form-control" id="notes" name="notes" rows="4"
-                                      placeholder="{{ ftl('pages-add-any-notes-about-this-page') }}">{{ page.notes or '' }}</textarea>
-                        </div>
-
                         <button type="submit" class="btn btn-brand">
                             <i class="bi bi-save" aria-hidden="true"></i> {{ ftl('common-save-changes') }}
                         </button>
@@ -114,4 +107,29 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    const form = document.getElementById('editPageForm');
+    form.addEventListener('submit', async function (ev) {
+        ev.preventDefault();
+        const fd = new FormData(form);
+        const body = {
+            title: ((fd.get('title') || '').toString().trim()) || null,
+            priority: fd.get('priority') || 'normal',
+        };
+        const submit = form.querySelector('button[type="submit"]');
+        if (submit) submit.disabled = true;
+        try {
+            await window.apiClient.patch('/pages/{{ page.id }}', body);
+            window.location.assign('{{ url_for('pages.view_page', page_id=page.id) }}');
+        } catch (err) {
+            if (submit) submit.disabled = false;
+            window.apiClient.showError(err);
+        }
+    });
+})();
+</script>
 {% endblock %}

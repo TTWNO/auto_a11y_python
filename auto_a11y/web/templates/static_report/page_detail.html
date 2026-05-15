@@ -978,6 +978,10 @@
                             class="btn btn-outline-brand state-selector {% if loop.index0 == 0 %}active{% endif %}"
                             data-state-index="{{ loop.index0 }}"
                             onclick="showState({{ loop.index0 }})">
+                        {# @a11y-ignore: decorative bullet icon (aria-hidden);
+                           the tiny-font floor targets readable text and is
+                           overzealous on Bootstrap-Icons glyphs used as state
+                           indicators inside a button label. #}
                         <i class="bi bi-circle-fill" aria-hidden="true" style="font-size: 8px;"></i>
                         <span data-lang="en" lang="en" class="{{ 'lang-active' if language == 'en' else 'lang-inactive' }}">{{ state.description_en or state.description }}</span>
                         <span data-lang="fr" lang="fr" class="{{ 'lang-active' if language == 'fr' else 'lang-inactive' }}">{{ state.description_fr or state.description }}</span>

@@ -432,7 +432,7 @@ A bun-based linter at `scripts/check-css-a11y.ts` runs on every commit (after th
 - **Contrast failures** — any rule that declares both `color:` and `background[-color]:` where the pair is below 4.5:1 (SC 1.4.3). Colour values may be hex literals, `rgb()` / `rgba()` (legacy comma and modern space + slash syntax, with int or percentage channels), `hsl()` / `hsla()` (deg / rad / grad / turn, optional alpha), `var(--name)` resolved against `tokens.css` and any `:root` rules in the file, `var(--name, fallback)`, or CSS named colours. Values with alpha < 1 are composited (foreground over the rule's background; background over white) so semi-transparent colours still produce a real contrast number.
 - **Prohibited Bootstrap colour classes** in HTML/JS/Python — `btn-primary`, `bg-danger`, `text-warning`, etc.
 - **`outline: none` / `outline: 0`** without a replacement focus style (`box-shadow`, `border`, `outline-offset`, or SVG `fill`/`stroke`) — SC 2.4.7
-- **font-size below 12px / 0.75rem / 0.75em** — warn-only, doesn't block
+- **font-size below 12px / 0.75rem / 0.75em** — blocks the commit. Decorative icon glyphs (`aria-hidden="true"`) sized below 12px are an accepted exception; suppress them inline with an `@a11y-ignore` comment that names the reason.
 
 Run manually:
 

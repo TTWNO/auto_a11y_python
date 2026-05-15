@@ -920,7 +920,11 @@ async function main(): Promise<number> {
         );
     }
 
-    return findings.some(f => f.severity === 'error') ? 1 : 0;
+    // Both `error` and `warn` findings fail the run — the pre-commit hook
+    // translates a non-zero exit into "COMMIT BLOCKED". Use the
+    // ``@a11y-ignore`` inline comment to silence individual lines that
+    // a triage has accepted as a documented exception.
+    return findings.length > 0 ? 1 : 0;
 }
 
 process.exit(await main());

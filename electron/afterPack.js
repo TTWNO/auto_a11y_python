@@ -138,8 +138,17 @@ exports.default = async function afterPack(context) {
   // Without this step Playwright's bundled "Google Chrome for Testing.app"
   // and its "Google Chrome for Testing Framework.framework" land in the
   // DMG with stale/missing bundle signatures and the audit step fails.
+  //
+  // Scope is the whole .app (minus the outer bundle itself) because the
+  // outer re-sign below deliberately drops --deep — so anything not signed
+  // explicitly here ships unsigned. That covers Electron's own framework
+  // tree under Contents/Frameworks/ (Electron Framework.framework, the
+  // Helper .apps, Squirrel/Mantle/ReactiveObjC) as well as the bundles
+  // we add under Contents/Resources/. `-mindepth 1` excludes the outer
+  // .app from the find result so we don't sign it twice in different
+  // modes.
   const bundlesOutput = execSync(
-    `find "${resourcesDir}" \\( -name '*.app' -o -name '*.framework' \\) -type d`,
+    `find "${appPath}" -mindepth 1 \\( -name '*.app' -o -name '*.framework' \\) -type d`,
     { encoding: 'utf8', maxBuffer: 50 * 1024 * 1024 },
   );
   const nestedBundles = bundlesOutput.trim().split('\n').filter(Boolean);

@@ -20,7 +20,7 @@ Port the `pythonAudioA11y` video-processing pipeline into `auto_a11y_python` so 
 ## Current state (verified before writing this spec)
 
 - `auto_a11y/models/recording.py` and `recording_issue.py` exist and carry `page_ids: list[str]`, `page_urls: list[str]`, `discovered_page_ids: list[str]` fields that are **about to be removed** (Phase 0 of this spec). These fields existed before this branch and were the basis for the abandoned cross-page rendering. Removing them enforces the "recordings stay separate" rule at the data layer.
-- `auto_a11y/importers/dictaphone_importer.py` (the propagation block at lines 237-246) copies `website_ids`, `page_urls`, `page_ids`, `component_names`, `app_screens`, `device_sections`, `task_description` from the parent `Recording` onto each `RecordingIssue`. **Phase 0 removes ONLY the `page_urls` and `page_ids` assignments**; the surrounding lines (website_ids, component_names, app_screens, device_sections, task_description) are kept — those are recording-internal metadata, not the cross-page linking the user wants removed.
+- `auto_a11y/importers/dictaphone_importer.py` (the propagation block at lines 237-243) copies `website_ids`, `page_urls`, `page_ids`, `component_names`, `app_screens`, `device_sections`, `task_description` from the parent `Recording` onto each `RecordingIssue`. **Phase 0 removes ONLY the `page_urls` and `page_ids` assignments**; the surrounding lines (website_ids, component_names, app_screens, device_sections, task_description) are kept — those are recording-internal metadata, not the cross-page linking the user wants removed.
 - `auto_a11y/web/routes/recordings.py` upload form accepts JSON + HTML content files today; we extend it to also accept MP4 in Phase 7.
 - `auto_a11y/web/templates/recordings/upload.html` carries the page-URL textarea and discovered-page checkboxes today; both removed in Phase 0.
 - `auto_a11y/core/job_manager.py` runs PDF audits and test scrapes today. We add `JobType.VIDEO_PROCESSING` (Phase 6) and reuse the worker pool, concurrency knob, and orphan-recovery hook.
@@ -193,7 +193,7 @@ data/recordings/REC-20260519143022-a1b2c3/
 | `Recording.discovered_page_ids: list[str]` | `auto_a11y/models/recording.py` | **Remove** |
 | `RecordingIssue.page_ids: list[str]` | `auto_a11y/models/recording_issue.py` | **Remove** |
 | `RecordingIssue.page_urls: list[str]` | `auto_a11y/models/recording_issue.py` | **Remove** |
-| Propagation in importer | `auto_a11y/importers/dictaphone_importer.py:237-246` (block) | **Remove ONLY the `page_urls` and `page_ids` lines.** Keep `website_ids`, `component_names`, `app_screens`, `device_sections`, `task_description`. |
+| Propagation in importer | `auto_a11y/importers/dictaphone_importer.py:237-243` (block) | **Remove ONLY the `page_urls` and `page_ids` lines.** Keep `website_ids`, `component_names`, `app_screens`, `device_sections`, `task_description`. |
 | Upload form fields | `routes/recordings.py:263-290` + `templates/recordings/upload.html` | **Remove** the page-URL textarea + discovered-page checkboxes |
 | Edit form | `routes/recordings.py:500-…` + `templates/recordings/edit.html` | **Remove** the page-linking inputs |
 | OpenAPI spec | `docs/openapi.yaml` recording schemas | **Update** to match |

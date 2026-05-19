@@ -242,6 +242,13 @@ from auto_a11y.web.api.schemas.testing_stats import (
     TrendsOut,
     TrendsProgressOut,
 )
+from auto_a11y.web.api.schemas.active_runs import (
+    ActiveTestRunOut,
+    ActiveTestRunsOut,
+    TrendsCompareOut,
+    TrendsDetailedOut,
+    WebsitesListBareOut,
+)
 from auto_a11y.web.api.schemas.test_users import (
     LoginConfigOut,
     ProjectTestUserListOut,
@@ -8427,6 +8434,326 @@ def get_test_runs_trends_progress() -> tuple[TrendsProgressOut, int] | tuple[Res
         get_db(), project_id, website_id, days
     )
     return TrendsProgressOut(root=dict(metrics)), 200
+
+
+# ---------------------------------------------------------------------------
+# Test runs and websites — additional REST entrypoints.
+#
+# - GET /test-runs?status=active        — active TESTING jobs (relocates
+#   /testing/api/active-tests into the REST surface).
+# - GET /websites?project_id=...        — top-level websites listing
+#   (folds /websites/api/list into /api/v1; superadmin may omit
+#   project_id to list across projects).
+# - GET /test-runs/trends/detailed      — rich filter trend grammar.
+# - GET /test-runs/trends/compare       — period-vs-period comparison
+#   (the website-vs-website discriminator on the legacy endpoint is
+#   deferred; this PR ships the period mode).
+#
+# Per docs/REST_API_ROADMAP.md §5.2 and §5.4.
+# ---------------------------------------------------------------------------
+
+
+def _active_test_run_from_job(job: dict[str, Any]) -> ActiveTestRunOut:
+    """Project a TESTING JobManager record to an :class:`ActiveTestRunOut`.
+
+    Mirrors the keys the legacy ``/testing/api/active-tests`` already
+    exposes, with the additional ``website_name`` lookup if a website
+    is attached. ``progress`` here is the worker-emitted integer
+    percentage (a sibling key on the job doc), not the JobManager
+    top-level ``progress`` nested dict — the legacy clients read the
+    flat integer and we preserve that wire byte-for-byte.
+    """
+    started_at = job.get("started_at")
+    website_name: str | None = None
+    website_id_raw = job.get("website_id")
+    if isinstance(website_id_raw, str) and website_id_raw:
+        website = get_db().get_website(website_id_raw)
+        if website is not None:
+            website_name = website.name
+
+    def _as_int(value: object) -> int:
+        if isinstance(value, bool):
+            return int(value)
+        if isinstance(value, (int, float)):
+            return int(value)
+        return 0
+
+    def _as_str(value: object) -> Optional[str]:
+        if value is None:
+            return None
+        if isinstance(value, str):
+            return value
+        return str(value)
+
+    current_page_raw = job.get("current_page")
+    current_page = current_page_raw if isinstance(current_page_raw, str) else ""
+
+    return ActiveTestRunOut(
+        job_id=_as_str(job.get("job_id")),
+        status=_as_str(job.get("status")),
+        website_id=website_id_raw if isinstance(website_id_raw, str) else None,
+        website_name=website_name,
+        progress=_as_int(job.get("progress", 0)),
+        pages_completed=_as_int(job.get("pages_completed", 0)),
+        pages_total=_as_int(job.get("pages_total", 0)),
+        current_page=current_page,
+        violations_found=_as_int(job.get("violations_found", 0)),
+        started_at=(
+            started_at.isoformat() if isinstance(started_at, datetime) else None
+        ),
+        created_at=(
+            job["created_at"].isoformat()
+            if isinstance(job.get("created_at"), datetime)
+            else None
+        ),
+    )
+
+
+@api_bp.route("/test-runs", methods=["GET"])
+@api_endpoint
+@document(
+    response_200=ActiveTestRunsOut,
+    errors=[400, 401, 403],
+    tags=["Test runs"],
+    summary="List test runs",
+    description=(
+        "Currently only ``?status=active`` is supported — it returns "
+        "the active (RUNNING + PENDING) TESTING jobs, with the same "
+        "fields the legacy ``/testing/api/active-tests`` exposes. "
+        "Other statuses (e.g. ``?status=completed``) are reserved "
+        "for a follow-up that paginates over the historical job log; "
+        "without a filter we'd risk returning thousands of rows."
+    ),
+)
+def list_test_runs() -> tuple[ActiveTestRunsOut, int] | tuple[Response, int] | Response:
+    """List test runs (currently only ``?status=active``)."""
+    require_authenticated()
+    status = request.args.get("status", "").strip().lower()
+    if status != "active":
+        raise ValidationError(
+            "status must be 'active'",
+            errors=(
+                _FieldError(
+                    field="status",
+                    code="invalid_value",
+                    message="only status=active is currently supported",
+                ),
+            ),
+        )
+
+    job_manager = JobManager(get_db())
+    jobs = job_manager.get_active_jobs(job_type=JobType.TESTING)
+    rows = [_active_test_run_from_job(j) for j in jobs]
+    return ActiveTestRunsOut(items=rows, count=len(rows)), 200
+
+
+@api_bp.route("/websites", methods=["GET"])
+@api_endpoint
+@document(
+    response_200=WebsitesListBareOut,
+    errors=[400, 401, 403, 404],
+    tags=["Websites"],
+    summary="Top-level websites collection",
+    description=(
+        "Filter by ``?project_id=<id>`` to scope to a single project "
+        "(the common case). Superadmin callers may omit the filter to "
+        "list every website in the system; everyone else must supply "
+        "``project_id`` to avoid a cross-project leak. Bare "
+        "``{items}`` envelope (no pagination) — the per-project "
+        "website count is small enough that callers can read it all "
+        "at once."
+    ),
+)
+def list_websites_top_level() -> tuple[WebsitesListBareOut, int] | tuple[Response, int] | Response:
+    """Top-level websites collection."""
+    require_authenticated()
+    project_id = request.args.get("project_id")
+
+    if project_id:
+        require_project_role(
+            UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT,
+            project_id=project_id,
+        )
+        if get_db().get_project(project_id) is None:
+            raise NotFoundError(f"project {project_id} not found")
+        websites = get_db().get_websites(project_id)
+    else:
+        if not getattr(current_user, "is_superadmin", False):
+            raise ValidationError(
+                "project_id is required",
+                errors=(
+                    _FieldError(
+                        field="project_id",
+                        code="required",
+                        message="required for non-superadmin callers",
+                    ),
+                ),
+            )
+        websites = get_db().get_all_websites()
+
+    return WebsitesListBareOut(
+        items=[_website_to_out(w) for w in websites],
+    ), 200
+
+
+def _parse_iso_date(raw: Any, *, field: str) -> datetime:
+    """Parse YYYY-MM-DD as a datetime at midnight."""
+    if not isinstance(raw, str) or not raw:
+        raise ValidationError(
+            f"{field} is required",
+            errors=(_FieldError(field=field, code="required", message="required"),),
+        )
+    try:
+        return datetime.strptime(raw, "%Y-%m-%d")
+    except ValueError as exc:
+        raise ValidationError(
+            f"{field} must be YYYY-MM-DD",
+            errors=(
+                _FieldError(field=field, code="invalid_format", message=str(exc)),
+            ),
+        ) from exc
+
+
+@api_bp.route("/test-runs/trends/detailed", methods=["GET"])
+@api_endpoint
+@document(
+    response_200=TrendsDetailedOut,
+    errors=[400, 401, 403],
+    tags=["Testing"],
+    summary="Detailed trend data with optional breakdowns and filters",
+    description=(
+        "Query params:\n"
+        "- ``project_id`` / ``website_id`` (optional scope filter; "
+        "mutually exclusive)\n"
+        "- ``start_date`` / ``end_date`` (YYYY-MM-DD, optional)\n"
+        "- ``granularity`` = daily / weekly / monthly (default daily)\n"
+        "- ``include_breakdown`` = true / false (default true)\n"
+        "- ``issue_types[]``, ``impact_levels[]``, ``touchpoints[]``, "
+        "``wcag_criteria[]`` — multi-valued filter lists; both "
+        "``issue_types[]=foo&issue_types[]=bar`` and repeated "
+        "``issue_types=foo&issue_types=bar`` are accepted."
+    ),
+)
+def get_test_runs_trends_detailed() -> tuple[TrendsDetailedOut, int] | tuple[Response, int] | Response:
+    """Detailed trend data with optional breakdowns and rich filters."""
+    from auto_a11y.web.routes.testing import get_detailed_trend_data
+
+    project_id, website_id = _trend_scope_auth()
+
+    granularity = request.args.get("granularity", "daily")
+    if granularity not in {"daily", "weekly", "monthly"}:
+        raise ValidationError(
+            "granularity must be one of daily, weekly, monthly",
+            errors=(
+                _FieldError(
+                    field="granularity",
+                    code="invalid_value",
+                    message="must be daily, weekly, or monthly",
+                ),
+            ),
+        )
+    include_breakdown_raw = request.args.get("include_breakdown", "true")
+    include_breakdown = include_breakdown_raw.lower() != "false"
+
+    start_date: datetime | None = None
+    end_date: datetime | None = None
+    if request.args.get("start_date"):
+        start_date = _parse_iso_date(
+            request.args.get("start_date"), field="start_date"
+        )
+    if request.args.get("end_date"):
+        end_date = _parse_iso_date(
+            request.args.get("end_date"), field="end_date"
+        )
+        end_date = end_date.replace(hour=23, minute=59, second=59)
+
+    filters: dict[str, Any] = {}
+    for key in ("issue_types", "impact_levels", "touchpoints", "wcag_criteria"):
+        values = request.args.getlist(f"{key}[]") or request.args.getlist(key)
+        if values:
+            filters[key] = list(values)
+
+    data = get_detailed_trend_data(
+        get_db(),
+        project_id=project_id,
+        website_id=website_id,
+        start_date=start_date,
+        end_date=end_date,
+        granularity=granularity,
+        include_breakdown=include_breakdown,
+        filters=filters if filters else None,
+    )
+    return TrendsDetailedOut(root=dict(data)), 200
+
+
+@api_bp.route("/test-runs/trends/compare", methods=["GET"])
+@api_endpoint
+@document(
+    response_200=TrendsCompareOut,
+    errors=[400, 401, 403],
+    tags=["Testing"],
+    summary="Period-vs-period trend comparison",
+    description=(
+        "Required: ``period_a_start``, ``period_a_end``, "
+        "``period_b_start``, ``period_b_end`` (all YYYY-MM-DD). "
+        "Optional: ``project_id`` / ``website_id`` to scope the "
+        "comparison. The legacy ``compare_type=websites`` mode "
+        "(compare N websites side by side) is deferred — its response "
+        "shape differs from the period mode's and it's worth treating "
+        "as its own endpoint when revisited."
+    ),
+)
+def get_test_runs_trends_compare() -> tuple[TrendsCompareOut, int] | tuple[Response, int] | Response:
+    """Period-vs-period trend comparison."""
+    from auto_a11y.web.routes.testing import compare_periods
+
+    project_id, website_id = _trend_scope_auth()
+
+    period_a_start = _parse_iso_date(
+        request.args.get("period_a_start"), field="period_a_start"
+    )
+    period_a_end = _parse_iso_date(
+        request.args.get("period_a_end"), field="period_a_end"
+    )
+    period_b_start = _parse_iso_date(
+        request.args.get("period_b_start"), field="period_b_start"
+    )
+    period_b_end = _parse_iso_date(
+        request.args.get("period_b_end"), field="period_b_end"
+    )
+    if period_a_start > period_a_end:
+        raise ValidationError(
+            "period_a_start must be on or before period_a_end",
+            errors=(
+                _FieldError(
+                    field="period_a_start",
+                    code="out_of_order",
+                    message="must be <= period_a_end",
+                ),
+            ),
+        )
+    if period_b_start > period_b_end:
+        raise ValidationError(
+            "period_b_start must be on or before period_b_end",
+            errors=(
+                _FieldError(
+                    field="period_b_start",
+                    code="out_of_order",
+                    message="must be <= period_b_end",
+                ),
+            ),
+        )
+
+    comparison = compare_periods(
+        get_db(),
+        project_id,
+        website_id,
+        period_a_start,
+        period_a_end,
+        period_b_start,
+        period_b_end,
+    )
+    return TrendsCompareOut(root=dict(comparison)), 200
 
 
 # ---------------------------------------------------------------------------

@@ -20,11 +20,11 @@ Port the `pythonAudioA11y` video-processing pipeline into `auto_a11y_python` so 
 ## Current state (verified before writing this spec)
 
 - `auto_a11y/models/recording.py` and `recording_issue.py` exist and carry `page_ids: list[str]`, `page_urls: list[str]`, `discovered_page_ids: list[str]` fields that are **about to be removed** (Phase 0 of this spec). These fields existed before this branch and were the basis for the abandoned cross-page rendering. Removing them enforces the "recordings stay separate" rule at the data layer.
-- `auto_a11y/importers/dictaphone_importer.py` (lines 237-243) propagates the soon-to-be-removed fields from the parent `Recording` onto each `RecordingIssue`. That propagation goes away in Phase 0.
+- `auto_a11y/importers/dictaphone_importer.py` (the propagation block at lines 237-246) copies `website_ids`, `page_urls`, `page_ids`, `component_names`, `app_screens`, `device_sections`, `task_description` from the parent `Recording` onto each `RecordingIssue`. **Phase 0 removes ONLY the `page_urls` and `page_ids` assignments**; the surrounding lines (website_ids, component_names, app_screens, device_sections, task_description) are kept — those are recording-internal metadata, not the cross-page linking the user wants removed.
 - `auto_a11y/web/routes/recordings.py` upload form accepts JSON + HTML content files today; we extend it to also accept MP4 in Phase 7.
 - `auto_a11y/web/templates/recordings/upload.html` carries the page-URL textarea and discovered-page checkboxes today; both removed in Phase 0.
 - `auto_a11y/core/job_manager.py` runs PDF audits and test scrapes today. We add `JobType.VIDEO_PROCESSING` (Phase 6) and reuse the worker pool, concurrency knob, and orphan-recovery hook.
-- `auto_a11y/pdf/storage.py` and `auto_a11y/pdf/runner.py` are the reference patterns for the new `auto_a11y/audio/storage.py` and `runner.py`. The pdfMax effort proved the pattern works.
+- `auto_a11y/pdf/storage.py` and `auto_a11y/pdf/pdfmax_runner.py` are the reference patterns for the new `auto_a11y/audio/storage.py` and `runner.py`. The pdfMax effort proved the pattern works.
 - `pythonAudioA11y/` (sibling repo at `~/Documents/cnib/code/pythonAudioA11y`) is the **source** for the port: `audio_a11y.py` (374 lines, end-to-end orchestrator), `transcription.py` (Deepgram + diarization), `vtt_processor.py` (merge + speaker remap), `speaker_identification.py` (pyannote.audio + agglomerative clustering), `analysis.py` (Claude analysis × 4 passes × 3 contexts × 2 languages), `audio_processor.py` (ffmpeg silence-aware segmentation), `video_processor.py` (callouts overlay). Plus `DESIGN.md`, `DEEPGRAM_OPTIMIZATIONS.md`, `SPEAKER_REMAPPING.md`. JSON output schema is already compatible with `DictaphoneImporter`.
 
 ## Decisions locked in (from brainstorm Q&A)
@@ -61,7 +61,7 @@ auto_a11y/
 │   ├── vtt_processor.py                # merge segments with timestamp offsets, write final captions/<title>.vtt
 │   ├── speaker_identification.py       # pyannote.audio embeddings + agglomerative clustering
 │   ├── analysis.py                     # Claude Opus 4.7 calls — 4 passes × 3 contexts × 2 languages
-│   ├── cost.py                         # ported from audio_a11y.py:9-63 — input/output/cache cost calc
+│   ├── cost.py                         # structural template from audio_a11y.py:9-63; constants re-derived from current Anthropic + Deepgram pricing
 │   ├── prompts/                        # prompt text as separate .txt files (snapshot-tested)
 │   │   ├── audit_issues.txt
 │   │   ├── audit_painpoints.txt
@@ -73,7 +73,7 @@ auto_a11y/
 │   ├── callouts.py                     # optional: ffmpeg drawtext overlay → annotated mp4
 │   ├── storage.py                      # per-Recording dir layout under data/recordings/<id>/
 │   ├── pipeline.py                     # top-level orchestrator: video_path → Recording, sequential A→G
-│   └── runner.py                       # async wrapper used by the job system (analogous to pdf/runner.py)
+│   └── runner.py                       # async wrapper used by the job system (analogous to pdf/pdfmax_runner.py)
 auto_a11y/
 └── core/
     └── preflight.py                    # NEW — central check registry, returns PreflightResult
@@ -193,7 +193,7 @@ data/recordings/REC-20260519143022-a1b2c3/
 | `Recording.discovered_page_ids: list[str]` | `auto_a11y/models/recording.py` | **Remove** |
 | `RecordingIssue.page_ids: list[str]` | `auto_a11y/models/recording_issue.py` | **Remove** |
 | `RecordingIssue.page_urls: list[str]` | `auto_a11y/models/recording_issue.py` | **Remove** |
-| Propagation in importer | `auto_a11y/importers/dictaphone_importer.py:237-243` | **Remove** |
+| Propagation in importer | `auto_a11y/importers/dictaphone_importer.py:237-246` (block) | **Remove ONLY the `page_urls` and `page_ids` lines.** Keep `website_ids`, `component_names`, `app_screens`, `device_sections`, `task_description`. |
 | Upload form fields | `routes/recordings.py:263-290` + `templates/recordings/upload.html` | **Remove** the page-URL textarea + discovered-page checkboxes |
 | Edit form | `routes/recordings.py:500-…` + `templates/recordings/edit.html` | **Remove** the page-linking inputs |
 | OpenAPI spec | `docs/openapi.yaml` recording schemas | **Update** to match |
@@ -219,7 +219,7 @@ data/recordings/REC-20260519143022-a1b2c3/
 | `actual_cost_usd` | `float \| None` | Sum of all Anthropic + Deepgram costs. |
 | `cost_breakdown` | `dict[str, object] \| None` | Per-stage `{stage_name: {usd: float, tokens: int, cache_hit_pct: float}}`. |
 | `error_message` | `str \| None` | Free-text on `failed`. Stack signature for the operator; truncated for the UI. |
-| `manifest_version` | `str` | Pipeline version that produced this recording. Bumped on each release. |
+| `manifest_version` | `str` | Pipeline version that produced this recording. Sourced from `auto_a11y.audio.__version__` — mechanical, no human bumping. |
 | `started_at` / `finished_at` | `datetime \| None` | Job lifecycle timestamps. |
 
 **No new collections.** A Recording is always 1:1 with its job; storing job state separately would add a join with no upside.
@@ -330,7 +330,7 @@ Existing artifacts stay on disk. A future "resume" feature could use them; not i
 
 ## Cost calculation
 
-Port `audio_a11y.py:9-63` into `auto_a11y/audio/cost.py`. Single source of truth for pricing constants.
+`auto_a11y/audio/cost.py` borrows the **structure** of `pythonAudioA11y/audio_a11y.py:9-63` (per-call breakdown, extended-context tiering, cache-aware accounting). Pricing constants are **not** ported as-is — the source pythonAudioA11y file has constants for Opus 4.5 and no cache-token concept. The implementer derives the actual constants from Anthropic's and Deepgram's current published rate sheets, captured below.
 
 **Constants** (as of 2026-05-19):
 
@@ -384,7 +384,7 @@ Estimated count: ~40 new IDs.
 | `audio/cost.py` | Pure-function math against known token counts. |
 | `audio/vtt_processor.py` | Fixture VTTs → correct merged VTT (timestamps offset, speakers remapped). |
 | `audio/storage.py` | Path generation, atomic write semantics, traversal guards. |
-| `audio/prompts/*.txt` | Snapshot tests: each prompt ends with `END_OF_PROMPT` marker and matches a hash captured at commit time. |
+| `audio/prompts/*.txt` | Snapshot tests: each prompt ends with `END_OF_PROMPT` marker and matches a hash captured at commit time. Regeneration: `pytest --snapshot-update tests/audio/test_prompts.py` (the planner wires up a `pytest-snapshot`-style helper). |
 | `audio/analysis.py` | Mock Anthropic SDK; assert prompts sent with right context / language / heuristics. |
 
 **Integration tests** (require real binaries / network):
@@ -454,7 +454,7 @@ The desktop app never ships with a `.env` baked in. Recovery UI writes only to l
 
 ### Cross-platform binary paths
 
-Desktop app bundles ffmpeg / ffprobe inside the .app / .exe (existing `audioA11y/src/audioA11y.js:48-50` uses `@ffmpeg-installer/ffmpeg` — we'll do the equivalent via PyInstaller hooks). Preflight prefers bundled binary; if missing or unrunnable (Gatekeeper, AV-quarantine), recovery UI prompts the user to point at a system-installed ffmpeg. Same for MP4Box.
+Desktop app bundles ffmpeg / ffprobe inside the .app / .exe (existing `audioA11y/src/audioA11y.js:46` uses `@ffmpeg-installer/ffmpeg` — we'll do the equivalent via PyInstaller hooks). Preflight prefers bundled binary; if missing or unrunnable (Gatekeeper, AV-quarantine), recovery UI prompts the user to point at a system-installed ffmpeg. Same for MP4Box.
 
 For the Python desktop bundle, bundled binaries live under `Contents/Resources/bin/` (macOS) or `_internal/bin/` (Windows). `ffmpeg.detect()` checks those locations first, then PATH.
 
@@ -481,7 +481,7 @@ Twelve phases. Each ends in a commit; phases are sequenced so every commit leave
 | 0 | Cleanup | Remove `page_ids` / `page_urls` / `discovered_page_ids` from models, importer, upload + edit forms, OpenAPI, REST schemas, existing tests. Migration script `scripts/migrate_remove_recording_page_fields.py`. |
 | 1 | Foundation | `auto_a11y/audio/` package skeleton (`__init__.py`, `config.py`, `storage.py`, `ffmpeg.py` detection). `auto_a11y/core/preflight.py` (`Check`, `PreflightResult`, registry). |
 | 2 | Audio extraction + segmentation | `audio/segmenter.py` — silence-aware splitting (600 s target, ±30 s window). Tests against fixture ffmpeg output + a real 30-second MP4 (`@pytest.mark.ffmpeg`). |
-| 3 | Deepgram transcription + VTT | `audio/transcription.py` (Deepgram nova-3, diarization on, retry 1 s → 2 s → 4 s) and `audio/vtt_processor.py` (per-segment VTT, merge with offsets, `.words` metadata). |
+| 3 | Deepgram transcription + VTT | `audio/transcription.py` (Deepgram **nova-3** — deliberate upgrade from pythonAudioA11y's nova-2; implementer confirms nova-3 pricing + diarization support at planning time, falls back to nova-2 with a one-line revert if blocked), diarization on, retry 1 s → 2 s → 4 s. `audio/vtt_processor.py` (per-segment VTT, merge with offsets, `.words` metadata). |
 | 4 | Speaker remap | `audio/speaker_identification.py` (pyannote.audio + agglomerative clustering @ 0.7 cosine; `--skip-speaker-remap` short-circuit). Adds `torch`, `torchaudio`, `pyannote.audio`, `scikit-learn` to `requirements.txt`. Optional `HF_TOKEN`. |
 | 5 | Claude analysis + prompts + cost | `audio/analysis.py` (4 passes × 3 contexts × 2 languages; Opus 4.7; `extended_context` toggles betas). `audio/prompts/{audit,livedExperience,navilens}_{issues,painpoints,takeaways,assertions}.txt` + `heuristics.txt` (snapshot-tested). `audio/cost.py` with `AS_OF` constant and frozen `CostEstimate` dataclass. |
 | 6 | Pipeline + runner + JobManager | `audio/pipeline.py` (A → G stage orchestration over disk paths; pure logic). `audio/runner.py` (`VideoRunner`). `JobType.VIDEO_PROCESSING`. `JobManager.recover_orphans()` extension. New `Recording` fields. Index on `recordings.status`. |
@@ -492,6 +492,8 @@ Twelve phases. Each ends in a commit; phases are sequenced so every commit leave
 | 11 | Final verification + manual walkthrough | Full pytest run, type checks, css-a11y. End-to-end walkthrough with a 30-second fixture MP4. Screen-reader pass on upload + progress page. |
 
 Phase 0 first so the new code never accidentally relies on the dead linking model.
+
+**Phase ordering flexibility.** Phases 0 → 6 must run in sequence (each depends on the previous). Phases 7, 8 are also sequential with 6 (UI consumes the new model fields). Phases 9 (callouts) and 10 (Settings Recovery) can ship in **either order** after Phase 8 — neither depends on the other. The implementer should defer whichever runs into more trouble. Phase 10 is large enough that if it grows past the original scope it can be lifted into a sibling sub-project without blocking Phases 0–9 + 11; flag this in the implementation plan.
 
 Estimated commits on branch: ~50 (each phase typically 3-5 TDD commits + code-review followups).
 

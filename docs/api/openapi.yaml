@@ -9079,6 +9079,28 @@ components:
         legacy ``invalid_type`` field-error code.'
       title: TestingConfigPatchIn
       type: object
+    TestingStatsOut:
+      additionalProperties: true
+      description: 'Response body for ``GET /api/v1/testing/stats``.
+
+
+        The shape varies per scope: website-scoped responses always carry
+
+        ``website_count``, ``total_pages``, ``tested_pages``,
+
+        ``untested_pages``, ``total_violations``, ``total_warnings``,
+
+        ``test_coverage``; project- and global-scoped responses surface
+
+        whatever :func:`get_project_stats` / :func:`calculate_aggregate_stats`
+
+        returns. ``completed_today`` is appended unconditionally by the
+
+        handler. Wrapping as a RootModel keeps the wire body the bare object
+
+        the legacy clients expect while preserving the @document contract.'
+      title: TestingStatsOut
+      type: object
     TopLevelTestRunIn:
       additionalProperties: false
       description: 'Request body for ``POST /api/v1/test-runs``.
@@ -9154,6 +9176,73 @@ components:
       - multi_state
       - status
       title: TopLevelTestRunOut
+      type: object
+    TrendPointOut:
+      additionalProperties: false
+      description: 'One day of trend data in the ``trend_data`` array.
+
+
+        Shape mirrors :func:`get_trend_data`''s entries: a date string plus
+
+        integer counters. The legacy helper always emits ``violations``,
+
+        ``warnings``, ``tests``; ``tests`` defaults to 0 so older fixtures
+
+        that never received traffic round-trip cleanly.'
+      properties:
+        date:
+          title: Date
+          type: string
+        tests:
+          default: 0
+          title: Tests
+          type: integer
+        violations:
+          title: Violations
+          type: integer
+        warnings:
+          title: Warnings
+          type: integer
+      required:
+      - date
+      - violations
+      - warnings
+      title: TrendPointOut
+      type: object
+    TrendsOut:
+      additionalProperties: false
+      description: Response body for ``GET /api/v1/test-runs/trends``.
+      properties:
+        days:
+          maximum: 365
+          minimum: 1
+          title: Days
+          type: integer
+        trend_data:
+          items:
+            $ref: '#/components/schemas/TrendPointOut'
+          title: Trend Data
+          type: array
+      required:
+      - days
+      - trend_data
+      title: TrendsOut
+      type: object
+    TrendsProgressOut:
+      additionalProperties: true
+      description: 'Response body for ``GET /api/v1/test-runs/trends/progress``.
+
+
+        :func:`calculate_progress_metrics` returns a free-form dict whose
+
+        keys depend on whether the scope yields tested-page snapshots,
+
+        historical comparisons, or both. RootModel passes the body through
+
+        as a bare object (no ``data`` envelope), matching the legacy
+
+        handler.'
+      title: TrendsProgressOut
       type: object
     UserSearchListOut:
       additionalProperties: false
@@ -16767,6 +16856,82 @@ paths:
       summary: Queue accessibility test runs for several pages
       tags:
       - Test runs
+  /test-runs/trends:
+    get:
+      description: Returns daily ``violations`` / ``warnings`` / ``tests`` counts
+        over the last ``days`` days (default 30, range 1-365). Scope is selected by
+        ``?project_id=`` or ``?website_id=``; without either, the trend aggregates
+        across every project the caller can see.
+      parameters: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrendsOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Daily violation / warning trend points
+      tags:
+      - Testing
+  /test-runs/trends/progress:
+    get:
+      description: Returns per-scope compliance metrics. Either ``?project_id=`` or
+        ``?website_id=`` is required — the underlying metric is per-scope; there is
+        no 'aggregate across everything' variant. The response shape depends on whether
+        the scope yields tested-page snapshots, historical comparisons, or both.
+      parameters: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrendsProgressOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Progress / compliance metrics over the last N days
+      tags:
+      - Testing
   /testing/config:
     get:
       description: Mirrors the legacy GET ``/testing/configure`` form view but emits
@@ -16848,6 +17013,45 @@ paths:
       summary: Update runtime testing config keys
       tags:
       - Testing config
+  /testing/stats:
+    get:
+      description: Returns aggregate testing metrics. With ``?website_id=`` or ``?project_id=``
+        the response is scoped to that resource; without either filter the response
+        aggregates over every project the caller can see. ``completed_today`` is always
+        included. The shape varies per scope — keys present in one scope may be absent
+        in another.
+      parameters: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestingStatsOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Aggregate testing stats (optionally scoped)
+      tags:
+      - Testing
   /users:
     get:
       description: Returns the full list of :class:`AppUser` accounts with no pagination

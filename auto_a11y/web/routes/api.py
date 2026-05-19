@@ -237,6 +237,11 @@ from auto_a11y.web.api.schemas.discovery_runs import (
     DiscoveryRunListOut,
     DiscoveryRunOut,
 )
+from auto_a11y.web.api.schemas.testing_stats import (
+    TestingStatsOut,
+    TrendsOut,
+    TrendsProgressOut,
+)
 from auto_a11y.web.api.schemas.test_users import (
     LoginConfigOut,
     ProjectTestUserListOut,
@@ -8197,6 +8202,231 @@ def cancel_latest_website_test_run(
     if refreshed is None:
         raise ConflictError(f"job {job_id} disappeared after cancel")
     return _job_doc_to_cancel_out(refreshed), 202
+
+
+# ---------------------------------------------------------------------------
+# Testing stats + trends (REST shape — relocates the JSON helpers that
+# previously lived under ``/testing/api/...``).
+#
+# The legacy endpoints stay in place (marked @deprecated with a sunset
+# date) to serve the existing dashboard templates; this block exposes
+# the bare-body REST variants with Problem Details errors and
+# project-role auth.
+#
+# Per docs/REST_API_ROADMAP.md §5.4. The ``trends/detailed`` and
+# ``trends/compare`` legacy endpoints have a rich filter grammar
+# (issue_types[], impact_levels[], touchpoints[], wcag_criteria[],
+# date windows, granularity) and live in PR #54.
+# ---------------------------------------------------------------------------
+
+
+def _trend_scope_auth() -> tuple[str | None, str | None]:
+    """Resolve and authorize the project / website filter on a trends call.
+
+    Returns ``(project_id, website_id)`` — either or both may be None.
+    When no scope filter is supplied (caller asks for aggregate trends
+    across everything they can see), only authentication is required;
+    the underlying helpers already aggregate over the caller's visible
+    universe.
+    """
+    project_id = request.args.get("project_id")
+    website_id = request.args.get("website_id")
+    if project_id:
+        require_project_role(
+            UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT,
+            project_id=project_id,
+        )
+    elif website_id:
+        require_project_role(
+            UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT,
+            website_id=website_id,
+        )
+    else:
+        require_authenticated()
+    return project_id, website_id
+
+
+def _parse_bounded_int(
+    raw: str | None, *, field: str, default: int, lo: int, hi: int,
+) -> int:
+    """Parse a query-string integer with bounds. ``None`` falls back to default."""
+    if raw is None or raw == "":
+        return default
+    try:
+        value = int(raw)
+    except ValueError as exc:
+        raise ValidationError(
+            f"{field} must be an integer",
+            errors=(
+                _FieldError(field=field, code="invalid_type", message=str(exc)),
+            ),
+        ) from exc
+    if value < lo or value > hi:
+        raise ValidationError(
+            f"{field} must be between {lo} and {hi}",
+            errors=(
+                _FieldError(
+                    field=field,
+                    code="out_of_range",
+                    message=f"must be in [{lo}, {hi}]",
+                ),
+            ),
+        )
+    return value
+
+
+@api_bp.route("/testing/stats", methods=["GET"])
+@api_endpoint
+@document(
+    response_200=TestingStatsOut,
+    errors=[401, 403, 404],
+    tags=["Testing"],
+    summary="Aggregate testing stats (optionally scoped)",
+    description=(
+        "Returns aggregate testing metrics. With ``?website_id=`` or "
+        "``?project_id=`` the response is scoped to that resource; "
+        "without either filter the response aggregates over every "
+        "project the caller can see. ``completed_today`` is always "
+        "included. The shape varies per scope — keys present in one "
+        "scope may be absent in another."
+    ),
+)
+def get_testing_stats() -> tuple[TestingStatsOut, int] | tuple[Response, int] | Response:
+    """Aggregate testing stats, optionally scoped to a project or website."""
+    from auto_a11y.models.page import PageStatus
+    from auto_a11y.web.routes.testing import calculate_aggregate_stats
+
+    project_id, website_id = _trend_scope_auth()
+    db = get_db()
+
+    stats: dict[str, object]
+    if website_id:
+        website = db.get_website(website_id)
+        if website is None:
+            raise NotFoundError(f"website {website_id} not found")
+        pages = db.get_pages(website_id)
+        tested = sum(1 for p in pages if p.status == PageStatus.TESTED)
+        tested_ids = [p.id for p in pages if p.status == PageStatus.TESTED]
+        total_violations = 0
+        total_warnings = 0
+        if tested_ids:
+            pipeline: list[Any] = [
+                {"$match": {"page_id": {"$in": tested_ids}}},
+                {"$sort": {"test_date": -1}},
+                {"$group": {
+                    "_id": "$page_id",
+                    "violation_count": {
+                        "$first": {"$ifNull": ["$violation_count", 0]}
+                    },
+                    "warning_count": {
+                        "$first": {"$ifNull": ["$warning_count", 0]}
+                    },
+                }},
+            ]
+            for row in db.test_results.aggregate(pipeline):
+                total_violations += row.get("violation_count", 0)
+                total_warnings += row.get("warning_count", 0)
+        stats = {
+            "website_count": 1,
+            "total_pages": len(pages),
+            "tested_pages": tested,
+            "untested_pages": len(pages) - tested,
+            "total_violations": total_violations,
+            "total_warnings": total_warnings,
+            "test_coverage": (
+                round(tested * 100 / len(pages), 1) if pages else 0
+            ),
+        }
+    elif project_id:
+        if db.get_project(project_id) is None:
+            raise NotFoundError(f"project {project_id} not found")
+        stats = dict(db.get_project_stats(project_id))
+    else:
+        stats = dict(calculate_aggregate_stats(db))
+
+    stats["completed_today"] = db.test_results.count_documents(
+        {
+            "test_date": {
+                "$gte": datetime.now().replace(
+                    hour=0, minute=0, second=0, microsecond=0
+                )
+            }
+        }
+    )
+    return TestingStatsOut(root=stats), 200
+
+
+@api_bp.route("/test-runs/trends", methods=["GET"])
+@api_endpoint
+@document(
+    response_200=TrendsOut,
+    errors=[400, 401, 403],
+    tags=["Testing"],
+    summary="Daily violation / warning trend points",
+    description=(
+        "Returns daily ``violations`` / ``warnings`` / ``tests`` "
+        "counts over the last ``days`` days (default 30, range "
+        "1-365). Scope is selected by ``?project_id=`` or "
+        "``?website_id=``; without either, the trend aggregates "
+        "across every project the caller can see."
+    ),
+)
+def get_test_runs_trends() -> tuple[TrendsOut, int] | tuple[Response, int] | Response:
+    """Daily violation / warning trend points over the last N days."""
+    from auto_a11y.web.routes.testing import get_trend_data
+
+    project_id, website_id = _trend_scope_auth()
+    days = _parse_bounded_int(
+        request.args.get("days"), field="days", default=30, lo=1, hi=365
+    )
+    trend = get_trend_data(get_db(), project_id, website_id, days)
+    return jsonify({"trend_data": trend, "days": days}), 200
+
+
+@api_bp.route("/test-runs/trends/progress", methods=["GET"])
+@api_endpoint
+@document(
+    response_200=TrendsProgressOut,
+    errors=[400, 401, 403],
+    tags=["Testing"],
+    summary="Progress / compliance metrics over the last N days",
+    description=(
+        "Returns per-scope compliance metrics. Either "
+        "``?project_id=`` or ``?website_id=`` is required — the "
+        "underlying metric is per-scope; there is no "
+        "'aggregate across everything' variant. The response shape "
+        "depends on whether the scope yields tested-page snapshots, "
+        "historical comparisons, or both."
+    ),
+)
+def get_test_runs_trends_progress() -> tuple[TrendsProgressOut, int] | tuple[Response, int] | Response:
+    """Progress / compliance metrics over the last N days."""
+    from auto_a11y.web.routes.testing import calculate_progress_metrics
+
+    project_id, website_id = _trend_scope_auth()
+    if not project_id and not website_id:
+        raise ValidationError(
+            "either project_id or website_id is required",
+            errors=(
+                _FieldError(
+                    field="project_id",
+                    code="required",
+                    message="one of project_id or website_id is required",
+                ),
+                _FieldError(
+                    field="website_id",
+                    code="required",
+                    message="one of project_id or website_id is required",
+                ),
+            ),
+        )
+    days = _parse_bounded_int(
+        request.args.get("days"), field="days", default=30, lo=1, hi=365
+    )
+    metrics = calculate_progress_metrics(
+        get_db(), project_id, website_id, days
+    )
+    return TrendsProgressOut(root=dict(metrics)), 200
 
 
 # ---------------------------------------------------------------------------

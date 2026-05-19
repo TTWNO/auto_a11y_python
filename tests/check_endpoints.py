@@ -246,50 +246,37 @@ def build_endpoint_list(ids: dict[str, str | None]) -> list[tuple[str, str]]:
 
 
 def login(session: Any, creds: dict[str, str]) -> bool:
-    """Log in via the auth form and return True on success."""
-    # First GET login page (for CSRF token)
-    resp = session.get(f"{BASE_URL}/auth/login")
-    # Extract CSRF token from form
-    match = re.search(r'name="csrf_token"[^>]*value="([^"]+)"', resp.text)
-    if not match:
-        # Try alternate pattern
-        match = re.search(r'id="csrf_token"[^>]*value="([^"]+)"', resp.text)
-    if not match:
-        match = re.search(r'type="hidden"[^>]*value="([^"]+)"', resp.text)
-    csrf = match.group(1) if match else ""
+    """Log in via the JSON API and return True on success.
 
-    if not csrf:
-        print("  WARNING: No CSRF token found on login page")
-
+    Uses ``POST /api/v1/auth/login`` with ``session: true`` so the response
+    sets a Flask-Login session cookie. Subsequent ``session.get`` calls in
+    this script then authenticate via that cookie. The ``/api/v1`` blueprint
+    is CSRF-exempt (token-auth surface), so no CSRF wrangling is required —
+    the legacy form-based ``/auth/login`` lost its hidden CSRF field when the
+    HTML frontend migrated to the API client.
+    """
     resp = session.post(
-        f"{BASE_URL}/auth/login",
-        data={
+        f"{BASE_URL}/api/v1/auth/login",
+        json={
             "email": creds["USERNAME"],
             "password": creds["PASSWORD"],
-            "csrf_token": csrf,
+            "session": True,
         },
-        allow_redirects=True,
+        allow_redirects=False,
     )
 
-    # Debug: show what happened
-    print(f"  Login POST status: {resp.status_code}, URL: {resp.url}")
+    print(f"  Login POST status: {resp.status_code}")
 
-    # Check we're logged in (should redirect to dashboard, not back to login)
-    if "/dashboard" in resp.url or resp.url == f"{BASE_URL}/":
-        return True
-    # Check if page contains dashboard content
-    if "dashboard" in resp.text.lower() or "projects" in resp.text.lower():
-        return True
+    if resp.status_code != 200:
+        try:
+            problem = resp.json()
+            detail = problem.get("detail") or problem.get("title") or resp.text[:200]
+            print(f"  Login failed: {detail}")
+        except Exception:
+            print(f"  Login failed: {resp.text[:200]}")
+        return False
 
-    # Login failed — show flash messages for diagnosis
-    flash_matches = re.findall(r'class="alert[^"]*"[^>]*>(.*?)</div>', resp.text, re.DOTALL)
-    if flash_matches:
-        for msg in flash_matches:
-            clean = re.sub(r'<[^>]+>', '', msg).strip()
-            if clean:
-                print(f"  Flash message: {clean}")
-
-    return False
+    return True
 
 
 def check_for_errors(text: str, status_code: int) -> list[str]:

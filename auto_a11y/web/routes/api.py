@@ -249,6 +249,16 @@ from auto_a11y.web.api.schemas.active_runs import (
     TrendsDetailedOut,
     WebsitesListBareOut,
 )
+from auto_a11y.web.api.schemas.documents import (
+    DocumentReferenceListOut,
+    DocumentReferenceOut,
+)
+from auto_a11y.web.api.schemas.issue_docs import (
+    IssueDocumentationOut,
+    IssueDocumentationPatch,
+    IssueDocumentationStatsCounts,
+    IssueDocumentationStatsOut,
+)
 from auto_a11y.web.api.schemas.test_users import (
     LoginConfigOut,
     ProjectTestUserListOut,
@@ -2859,6 +2869,7 @@ def clear_website_test_results_rest(
         storage.delete_audit_cache(pdf)
 
     return WebsiteTestResultsClearedOut(
+        website_id=website_id,
         test_results_deleted=int(result.get("test_results_deleted", 0)),
         pages_reset=int(result.get("pages_reset", 0)),
         pdf_documents_reset=int(result.get("pdf_documents_reset", 0)),
@@ -8754,6 +8765,221 @@ def get_test_runs_trends_compare() -> tuple[TrendsCompareOut, int] | tuple[Respo
         period_b_end,
     )
     return TrendsCompareOut(root=dict(comparison)), 200
+
+
+# ---------------------------------------------------------------------------
+# Document references (REST shape — cursor-paginated list).
+#
+# A DocumentReference records a non-HTML resource (PDF, Word doc,
+# spreadsheet, …) linked from a page during crawling. The PDF-document
+# REST surface (§5.9) handles ingestion; this endpoint is a read-only
+# enumeration of every linked document the crawler observed.
+#
+# Per docs/REST_API_ROADMAP.md §5.2.
+# ---------------------------------------------------------------------------
+
+from auto_a11y.models.document_reference import DocumentReference  # noqa: E402
+
+
+def _document_reference_to_out(doc: DocumentReference) -> DocumentReferenceOut:
+    """Project a :class:`DocumentReference` to its wire model.
+
+    Timestamps go to ISO 8601, the Mongo ``_id`` is dropped (the public
+    id is the stringified ``id`` property), and the rest passes through
+    unchanged.
+    """
+
+    def _iso(dt: datetime | None) -> Optional[str]:
+        return dt.isoformat() if dt is not None else None
+
+    return DocumentReferenceOut(
+        id=doc.id,
+        website_id=doc.website_id,
+        document_url=doc.document_url,
+        referring_page_url=doc.referring_page_url,
+        mime_type=doc.mime_type,
+        is_internal=doc.is_internal,
+        link_text=doc.link_text,
+        file_extension=doc.file_extension,
+        language=doc.language,
+        language_confidence=doc.language_confidence,
+        discovered_at=_iso(doc.discovered_at),
+        last_seen=_iso(doc.last_seen),
+        seen_count=doc.seen_count,
+        via_redirect=doc.via_redirect,
+    )
+
+
+@api_bp.route("/websites/<website_id>/documents", methods=["GET"])
+@api_endpoint
+@document(
+    response_200=DocumentReferenceListOut,
+    errors=[400, 401, 403, 404],
+    tags=["Websites"],
+    summary="List document references for a website",
+    description=(
+        "Documents are non-HTML resources (PDFs, Word docs, "
+        "spreadsheets, etc.) linked from pages during crawling. Use "
+        "``?is_internal=true|false`` to filter to same-origin vs. "
+        "external documents. Cursor-paginated using the legacy "
+        "``{items, next_cursor}`` shape shared by every v1 list "
+        "endpoint."
+    ),
+)
+def list_website_documents(
+    website_id: str,
+) -> tuple[DocumentReferenceListOut, int] | tuple[Response, int] | Response:
+    """List document references discovered for a website."""
+    if get_db().get_website(website_id) is None:
+        raise NotFoundError(f"website {website_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT,
+        website_id=website_id,
+    )
+
+    limit = parse_limit(request.args.get("limit"))
+    cursor_raw = request.args.get("cursor")
+    cursor = _Cursor.decode(cursor_raw) if cursor_raw else None
+
+    query: dict[str, Any] = {"website_id": website_id}
+    is_internal_raw = request.args.get("is_internal")
+    if is_internal_raw is not None:
+        lowered = is_internal_raw.strip().lower()
+        if lowered in {"true", "1"}:
+            query["is_internal"] = True
+        elif lowered in {"false", "0"}:
+            query["is_internal"] = False
+        else:
+            raise ValidationError(
+                "is_internal must be true or false",
+                errors=(
+                    _FieldError(
+                        field="is_internal",
+                        code="invalid_value",
+                        message="must be true or false",
+                    ),
+                ),
+            )
+    if cursor is not None:
+        from bson import ObjectId
+        try:
+            query["_id"] = {"$lt": ObjectId(cursor.last_id)}
+        except Exception as exc:
+            raise ValidationError(
+                "cursor.last_id is not a valid ObjectId",
+                errors=(
+                    _FieldError(
+                        field="cursor.last_id",
+                        code="invalid_format",
+                        message=str(exc),
+                    ),
+                ),
+            ) from exc
+
+    docs = list(
+        get_db().document_references.find(query).sort("_id", -1).limit(limit + 1)
+    )
+    refs = [DocumentReference.from_dict(doc) for doc in docs]
+    page = paginate(
+        refs, limit=limit,
+        get_id=lambda d: str(d.mongo_id) if d.mongo_id else "",
+    )
+    return DocumentReferenceListOut(
+        items=[_document_reference_to_out(d) for d in page["items"]],
+        next_cursor=page["next_cursor"],
+    ), 200
+
+
+# ---------------------------------------------------------------------------
+# Issue documentation status (REST shape).
+#
+# The catalog itself is a Python-resident dictionary
+# (``auto_a11y/reporting/issue_catalog.py``); only the
+# ``production_ready`` flag per issue code is persisted. The legacy
+# ``POST /projects/api/test-details/<id>/production-ready`` endpoint had
+# no auth at all — this surface requires superadmin to flip the flag.
+#
+# Per docs/REST_API_ROADMAP.md §5.1.
+# ---------------------------------------------------------------------------
+
+
+@api_bp.route("/issues/documentation-stats", methods=["GET"])
+@api_endpoint
+@document(
+    response_200=IssueDocumentationStatsOut,
+    errors=[401],
+    tags=["Issues"],
+    summary="Issue-catalog documentation status",
+    description=(
+        "Returns counts and code lists describing which "
+        "IssueCatalog entries have been marked production-ready vs. "
+        "still pending documentation. Available to any authenticated "
+        "user."
+    ),
+)
+def get_issue_documentation_stats() -> tuple[IssueDocumentationStatsOut, int] | tuple[Response, int] | Response:
+    """Counts + code lists for issue-catalog documentation status."""
+    require_authenticated()
+    from auto_a11y.reporting.issue_catalog import IssueCatalog
+
+    all_codes = list(IssueCatalog.ISSUES.keys())
+    statuses = get_db().get_all_issue_documentation_statuses()
+    production_ready_count = sum(1 for ready in statuses.values() if ready)
+    total_count = len(all_codes)
+    production_ready_codes = sorted(
+        [code for code, ready in statuses.items() if ready]
+    )
+    pending_codes = sorted([c for c in all_codes if not statuses.get(c, False)])
+    return IssueDocumentationStatsOut(
+        stats=IssueDocumentationStatsCounts(
+            total=total_count,
+            production_ready=production_ready_count,
+            pending=total_count - production_ready_count,
+            percentage_ready=(
+                round(production_ready_count * 100 / total_count, 1)
+                if total_count > 0
+                else 0
+            ),
+        ),
+        production_ready_codes=production_ready_codes,
+        pending_codes=pending_codes,
+    ), 200
+
+
+@api_bp.route("/issues/<issue_code>", methods=["PATCH"])
+@api_endpoint
+@document(
+    request=IssueDocumentationPatch,
+    response_200=IssueDocumentationOut,
+    errors=[400, 401, 403, 404],
+    tags=["Issues"],
+    summary="Update an issue code's documentation flags",
+    description=(
+        "Currently the only mutable flag is ``production_ready``. "
+        "Requires superadmin — the legacy endpoint had no auth at "
+        "all, which the REST surface fixes."
+    ),
+)
+def patch_issue_documentation(
+    issue_code: str, body: IssueDocumentationPatch,
+) -> tuple[IssueDocumentationOut, int] | tuple[Response, int] | Response:
+    """Update the documentation status flags for an issue code."""
+    require_superadmin()
+    from auto_a11y.reporting.issue_catalog import IssueCatalog
+
+    if issue_code not in IssueCatalog.ISSUES:
+        raise NotFoundError(f"issue {issue_code} not found in catalog")
+
+    updated_by = (
+        str(current_user.get_id()) if current_user.is_authenticated else "api"
+    )
+    get_db().set_issue_production_ready(
+        issue_code, body.production_ready, updated_by=updated_by
+    )
+    return IssueDocumentationOut(
+        issue_code=issue_code,
+        production_ready=body.production_ready,
+    ), 200
 
 
 # ---------------------------------------------------------------------------

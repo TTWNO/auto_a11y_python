@@ -181,9 +181,12 @@ class WebsiteTestResultsClearedOut(StrictModel):
     resets their cached counters; mirrors the counts returned by
     :meth:`Database.clear_website_test_results`. Returned with status
     200 (the operation deletes child records but the website itself
-    is preserved).
+    is preserved). ``website_id`` is echoed back so callers can render
+    UI keyed on the resource without having to track which request
+    they made.
     """
 
+    website_id: str
     test_results_deleted: int
     pages_reset: int
     pdf_documents_reset: int

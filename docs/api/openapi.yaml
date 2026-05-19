@@ -1083,6 +1083,114 @@ components:
       - is_latest
       title: DiscoveryRunOut
       type: object
+    DocumentReferenceListOut:
+      additionalProperties: false
+      description: 'Response body for ``GET /api/v1/websites/<id>/documents``.
+
+
+        Cursor-paginated; same ``{items, next_cursor}`` shape as the other
+
+        v1 list endpoints.'
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/DocumentReferenceOut'
+          title: Items
+          type: array
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Next Cursor
+      required:
+      - items
+      title: DocumentReferenceListOut
+      type: object
+    DocumentReferenceOut:
+      additionalProperties: false
+      description: 'Response body for a single document-reference row.
+
+
+        Mirrors :func:`_serialize_document_reference` field-for-field:
+
+        timestamps emitted as ISO 8601 strings, the Mongo ``_id`` exposed
+
+        via the stringified ``id`` property.'
+      properties:
+        discovered_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Discovered At
+        document_url:
+          title: Document Url
+          type: string
+        file_extension:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: File Extension
+        id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Id
+        is_internal:
+          title: Is Internal
+          type: boolean
+        language:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Language
+        language_confidence:
+          anyOf:
+          - type: number
+          - type: 'null'
+          default: null
+          title: Language Confidence
+        last_seen:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Last Seen
+        link_text:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Link Text
+        mime_type:
+          title: Mime Type
+          type: string
+        referring_page_url:
+          title: Referring Page Url
+          type: string
+        seen_count:
+          title: Seen Count
+          type: integer
+        via_redirect:
+          title: Via Redirect
+          type: boolean
+        website_id:
+          title: Website Id
+          type: string
+      required:
+      - website_id
+      - document_url
+      - referring_page_url
+      - mime_type
+      - is_internal
+      - seen_count
+      - via_redirect
+      title: DocumentReferenceOut
+      type: object
     DrupalAuditListOut:
       additionalProperties: false
       description: 'Response body for ``GET /drupal/audits``.
@@ -2524,6 +2632,88 @@ components:
       - ghostscript
       - storage
       title: HealthPdfOut
+      type: object
+    IssueDocumentationOut:
+      additionalProperties: false
+      description: Response body for ``PATCH /api/v1/issues/<code>``.
+      properties:
+        issue_code:
+          title: Issue Code
+          type: string
+        production_ready:
+          title: Production Ready
+          type: boolean
+      required:
+      - issue_code
+      - production_ready
+      title: IssueDocumentationOut
+      type: object
+    IssueDocumentationPatch:
+      additionalProperties: false
+      description: 'Request body for ``PATCH /api/v1/issues/<code>``.
+
+
+        Currently the only mutable flag is ``production_ready``; declared as
+
+        required because the endpoint has no other content. ``StrictBool``
+
+        rejects coerced inputs (``"yes"`` / ``1``) — the legacy endpoint
+
+        silently truthy-checked anything, which is a foot-gun the REST
+
+        surface intentionally closes.'
+      properties:
+        production_ready:
+          title: Production Ready
+          type: boolean
+      required:
+      - production_ready
+      title: IssueDocumentationPatch
+      type: object
+    IssueDocumentationStatsCounts:
+      additionalProperties: false
+      description: Inner ``stats`` block on the documentation-stats response.
+      properties:
+        pending:
+          title: Pending
+          type: integer
+        percentage_ready:
+          title: Percentage Ready
+          type: number
+        production_ready:
+          title: Production Ready
+          type: integer
+        total:
+          title: Total
+          type: integer
+      required:
+      - total
+      - production_ready
+      - pending
+      - percentage_ready
+      title: IssueDocumentationStatsCounts
+      type: object
+    IssueDocumentationStatsOut:
+      additionalProperties: false
+      description: Response body for ``GET /api/v1/issues/documentation-stats``.
+      properties:
+        pending_codes:
+          items:
+            type: string
+          title: Pending Codes
+          type: array
+        production_ready_codes:
+          items:
+            type: string
+          title: Production Ready Codes
+          type: array
+        stats:
+          $ref: '#/components/schemas/IssueDocumentationStatsCounts'
+      required:
+      - stats
+      - production_ready_codes
+      - pending_codes
+      title: IssueDocumentationStatsOut
       type: object
     IssueMessageTemplateOut:
       additionalProperties: false
@@ -9771,7 +9961,11 @@ components:
 
         200 (the operation deletes child records but the website itself
 
-        is preserved).'
+        is preserved). ``website_id`` is echoed back so callers can render
+
+        UI keyed on the resource without having to track which request
+
+        they made.'
       properties:
         pages_reset:
           title: Pages Reset
@@ -9782,7 +9976,11 @@ components:
         test_results_deleted:
           title: Test Results Deleted
           type: integer
+        website_id:
+          title: Website Id
+          type: string
       required:
+      - website_id
       - test_results_deleted
       - pages_reset
       - pdf_documents_reset
@@ -11709,6 +11907,31 @@ paths:
       summary: PDF subsystem health probe
       tags:
       - Health
+  /issues/documentation-stats:
+    get:
+      description: Returns counts and code lists describing which IssueCatalog entries
+        have been marked production-ready vs. still pending documentation. Available
+        to any authenticated user.
+      parameters: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssueDocumentationStatsOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Issue-catalog documentation status
+      tags:
+      - Issues
   /issues/{code}:
     get:
       description: Returns the static catalog entry for ``<code>`` (description, WCAG
@@ -11798,6 +12021,59 @@ paths:
       - bearerAuth: []
       - sessionAuth: []
       summary: Update an issue catalog entry's documentation status
+      tags:
+      - Issues
+  /issues/{issue_code}:
+    patch:
+      description: Currently the only mutable flag is ``production_ready``. Requires
+        superadmin — the legacy endpoint had no auth at all, which the REST surface
+        fixes.
+      parameters:
+      - in: path
+        name: issue_code
+        required: true
+        schema: *id001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueDocumentationPatch'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssueDocumentationOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Update an issue code's documentation flags
       tags:
       - Issues
   /jobs/active:
@@ -18415,6 +18691,54 @@ paths:
       summary: Cancel the latest discovery run for a website
       tags:
       - Test runs
+  /websites/{website_id}/documents:
+    get:
+      description: Documents are non-HTML resources (PDFs, Word docs, spreadsheets,
+        etc.) linked from pages during crawling. Use ``?is_internal=true|false`` to
+        filter to same-origin vs. external documents. Cursor-paginated using the legacy
+        ``{items, next_cursor}`` shape shared by every v1 list endpoint.
+      parameters:
+      - in: path
+        name: website_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentReferenceListOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: List document references for a website
+      tags:
+      - Websites
   /websites/{website_id}/pages:
     get:
       description: Returns pages belonging to ``website_id`` with cursor pagination.

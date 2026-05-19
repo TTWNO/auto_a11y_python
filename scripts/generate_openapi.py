@@ -27,6 +27,11 @@ REPO = Path(__file__).resolve().parent.parent
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
+# Offline doc generation: never touches the AI integration, but transitive
+# imports trigger ``config.validate()`` which otherwise demands CLAUDE_API_KEY.
+# Default the flag off so local devs and CI can run the script without a key.
+os.environ.setdefault("RUN_AI_ANALYSIS", "False")
+
 import yaml
 from flask import Flask
 from openapi_spec_validator import validate_spec

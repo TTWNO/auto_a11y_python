@@ -233,6 +233,10 @@ from auto_a11y.web.api.schemas.test_runs import (
     WebsiteTestRunIn,
     WebsiteTestRunStartedOut,
 )
+from auto_a11y.web.api.schemas.discovery_runs import (
+    DiscoveryRunListOut,
+    DiscoveryRunOut,
+)
 from auto_a11y.web.api.schemas.test_users import (
     LoginConfigOut,
     ProjectTestUserListOut,
@@ -7790,6 +7794,405 @@ def cancel_job_rest(job_id: str) -> tuple[JobCancelOut, int]:
             f"job {job_id} cannot be cancelled (current status: {current_status})"
         )
 
+    refreshed = job_manager.get_job(job_id)
+    if refreshed is None:
+        raise ConflictError(f"job {job_id} disappeared after cancel")
+    return _job_doc_to_cancel_out(refreshed), 202
+
+
+# ---------------------------------------------------------------------------
+# Discovery runs (REST shape — read-only + async-action endpoints).
+#
+# DiscoveryRun documents record a single page-discovery crawl. POSTing
+# to /websites/<id>/discoveries queues a new crawl (see the existing
+# ``discover_pages`` handler earlier in this file); the endpoints here
+# cover read + cancel.
+#
+# Cross-tenant lookups via /discoveries/<id> return 403 (not 404): the
+# existence check happens before auth, so callers who already know the
+# id get a precise status code instead of a vague "not found".
+#
+# Per docs/REST_API_ROADMAP.md §5.2.
+# ---------------------------------------------------------------------------
+
+from auto_a11y.models.discovery_run import DiscoveryRun  # noqa: E402
+
+
+def _discovery_run_to_out(run: DiscoveryRun) -> DiscoveryRunOut:
+    """Project a :class:`DiscoveryRun` to its :class:`DiscoveryRunOut` wire model.
+
+    Mirrors the legacy serializer field-for-field: ``id`` is the
+    stringified Mongo ``_id``, timestamps are ISO 8601, ``status`` is
+    the stringified enum value, and ``failed_pages_details`` is passed
+    through as ``list[dict[str, object]]`` (the failure-reason shape
+    varies per crawler error class and isn't worth a typed model).
+    """
+
+    def _iso(dt: datetime | None) -> Optional[str]:
+        return dt.isoformat() if dt is not None else None
+
+    failed_pages: list[dict[str, object]] = []
+    for entry in run.failed_pages_details:
+        coerced: dict[str, object] = {}
+        for key, value in entry.items():
+            coerced[str(key)] = value
+        failed_pages.append(coerced)
+
+    return DiscoveryRunOut(
+        id=run.id,
+        website_id=run.website_id,
+        started_at=_iso(run.started_at),
+        completed_at=_iso(run.completed_at),
+        status=run.status.value,
+        max_pages=run.max_pages,
+        max_depth=run.max_depth,
+        follow_external=run.follow_external,
+        respect_robots=run.respect_robots,
+        pages_discovered=run.pages_discovered,
+        pages_failed=run.pages_failed,
+        documents_found=run.documents_found,
+        external_links_found=run.external_links_found,
+        failed_pages_details=failed_pages,
+        pages_added=run.pages_added,
+        pages_removed=run.pages_removed,
+        pages_unchanged=run.pages_unchanged,
+        triggered_by=run.triggered_by,
+        job_id=run.job_id,
+        error_message=run.error_message,
+        duration_seconds=run.duration_seconds,
+        is_latest=run.is_latest,
+    )
+
+
+@api_bp.route("/websites/<website_id>/discoveries", methods=["GET"])
+@api_endpoint
+@document(
+    response_200=DiscoveryRunListOut,
+    errors=[400, 401, 403, 404],
+    tags=["Test runs"],
+    summary="List discovery runs for a website",
+    description=(
+        "Returns the discovery runs recorded for ``website_id``, "
+        "newest first. Cursor-paginated using the legacy "
+        "``{items, next_cursor}`` shape shared by every v1 list "
+        "endpoint. The Mongo ObjectId-based ``_id`` sort is the "
+        "tie-breaker, so runs created within the same second are "
+        "ordered deterministically."
+    ),
+)
+def list_website_discoveries(
+    website_id: str,
+) -> tuple[DiscoveryRunListOut, int] | tuple[Response, int] | Response:
+    """List discovery runs for a website, newest first."""
+    if get_db().get_website(website_id) is None:
+        raise NotFoundError(f"website {website_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT,
+        website_id=website_id,
+    )
+
+    limit = parse_limit(request.args.get("limit"))
+    cursor_raw = request.args.get("cursor")
+    cursor = _Cursor.decode(cursor_raw) if cursor_raw else None
+
+    query: dict[str, Any] = {"website_id": website_id}
+    if cursor is not None:
+        from bson import ObjectId
+        try:
+            query["_id"] = {"$lt": ObjectId(cursor.last_id)}
+        except Exception as exc:
+            raise ValidationError(
+                "cursor.last_id is not a valid ObjectId",
+                errors=(
+                    _FieldError(
+                        field="cursor.last_id",
+                        code="invalid_format",
+                        message=str(exc),
+                    ),
+                ),
+            ) from exc
+
+    docs = list(
+        get_db().discovery_runs.find(query).sort("_id", -1).limit(limit + 1)
+    )
+    runs = [DiscoveryRun.from_dict(doc) for doc in docs]
+    page = paginate(
+        runs, limit=limit,
+        get_id=lambda r: str(r.mongo_id) if r.mongo_id else "",
+    )
+    return DiscoveryRunListOut(
+        items=[_discovery_run_to_out(r) for r in page["items"]],
+        next_cursor=page["next_cursor"],
+    ), 200
+
+
+@api_bp.route(
+    "/websites/<website_id>/discoveries/latest", methods=["GET"]
+)
+@api_endpoint
+@document(
+    response_200=DiscoveryRunOut,
+    errors=[401, 403, 404],
+    tags=["Test runs"],
+    summary="Get the latest discovery run for a website",
+    description=(
+        "Returns the most recent discovery run for ``website_id``. "
+        "404 when the website exists but has no recorded runs at all "
+        "— strictly more informative than an empty body, since the "
+        "absence of a run is a state callers want to distinguish "
+        "(e.g. to show the 'Discover pages' CTA instead of 'rerun')."
+    ),
+)
+def get_latest_website_discovery(
+    website_id: str,
+) -> tuple[DiscoveryRunOut, int] | tuple[Response, int] | Response:
+    """Return the latest discovery run for a website."""
+    if get_db().get_website(website_id) is None:
+        raise NotFoundError(f"website {website_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT,
+        website_id=website_id,
+    )
+    run = get_db().get_latest_discovery_run(website_id)
+    if run is None:
+        raise NotFoundError(
+            f"website {website_id} has no recorded discovery runs"
+        )
+    return _discovery_run_to_out(run), 200
+
+
+@api_bp.route("/discoveries/<run_id>", methods=["GET"])
+@api_endpoint
+@document(
+    response_200=DiscoveryRunOut,
+    errors=[401, 403, 404],
+    tags=["Test runs"],
+    summary="Get a discovery run by id",
+    description=(
+        "Returns a single discovery run by its id. Cross-tenant "
+        "callers (authenticated but no membership on the run's "
+        "project) receive 403, not 404 — once the caller knows the "
+        "id, surfacing the richer status code is more useful than "
+        "obscuring existence."
+    ),
+)
+def get_discovery_run_by_id(
+    run_id: str,
+) -> tuple[DiscoveryRunOut, int] | tuple[Response, int] | Response:
+    """Return a single discovery run by its id."""
+    run = get_db().get_discovery_run(run_id)
+    if run is None:
+        raise NotFoundError(f"discovery run {run_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT,
+        website_id=run.website_id,
+    )
+    return _discovery_run_to_out(run), 200
+
+
+def _cancel_discovery_run(run: DiscoveryRun) -> tuple[JobCancelOut, int]:
+    """Cancel the JobManager job backing a DiscoveryRun.
+
+    A DiscoveryRun without a ``job_id`` (legacy data, or one that
+    never registered with the JobManager) is a 409 — there is nothing
+    asynchronously cancellable.
+    """
+    if not run.job_id:
+        raise ConflictError(
+            f"discovery run {run.id} has no associated job to cancel"
+        )
+    job_manager = JobManager(get_db())
+    doc = job_manager.get_job(run.job_id)
+    if doc is None:
+        raise NotFoundError(f"job {run.job_id} not found")
+    requested_by = (
+        str(current_user.get_id()) if current_user.is_authenticated else None
+    )
+    if not job_manager.request_cancellation(run.job_id, requested_by=requested_by):
+        current_status = doc.get("status") if doc else "unknown"
+        raise ConflictError(
+            f"job {run.job_id} cannot be cancelled (current status: {current_status})"
+        )
+    refreshed = job_manager.get_job(run.job_id)
+    if refreshed is None:
+        raise ConflictError(f"job {run.job_id} disappeared after cancel")
+    return _job_doc_to_cancel_out(refreshed), 202
+
+
+@api_bp.route(
+    "/websites/<website_id>/discoveries/latest/cancel", methods=["POST"]
+)
+@api_endpoint
+@document(
+    response_202=JobCancelOut,
+    errors=[401, 403, 404, 409],
+    tags=["Test runs"],
+    summary="Cancel the latest discovery run for a website",
+    description=(
+        "Cancels the most recent discovery run for ``website_id``. "
+        "404 when the website exists but has no recorded runs — "
+        "matches the read-side ``/discoveries/latest`` 404 semantics. "
+        "409 when the latest run has no backing JobManager record "
+        "(legacy data) or is already terminal."
+    ),
+)
+def cancel_latest_website_discovery(
+    website_id: str,
+) -> tuple[JobCancelOut, int] | tuple[Response, int] | Response:
+    """Cancel the latest discovery run for a website."""
+    if get_db().get_website(website_id) is None:
+        raise NotFoundError(f"website {website_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR,
+        website_id=website_id,
+    )
+    run = get_db().get_latest_discovery_run(website_id)
+    if run is None:
+        raise NotFoundError(
+            f"website {website_id} has no recorded discovery runs"
+        )
+    return _cancel_discovery_run(run)
+
+
+@api_bp.route("/discoveries/<run_id>/cancel", methods=["POST"])
+@api_endpoint
+@document(
+    response_202=JobCancelOut,
+    errors=[401, 403, 404, 409],
+    tags=["Test runs"],
+    summary="Cancel a discovery run by id",
+    description=(
+        "Cancels a specific discovery run via its backing JobManager "
+        "record. 409 when the run has no associated job or the job "
+        "is already terminal."
+    ),
+)
+def cancel_discovery_run_rest(
+    run_id: str,
+) -> tuple[JobCancelOut, int] | tuple[Response, int] | Response:
+    """Cancel a specific discovery run by id."""
+    run = get_db().get_discovery_run(run_id)
+    if run is None:
+        raise NotFoundError(f"discovery run {run_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR,
+        website_id=run.website_id,
+    )
+    return _cancel_discovery_run(run)
+
+
+# ---------------------------------------------------------------------------
+# Website-level test-run latest + cancel (async-action endpoints).
+#
+# The page-level equivalents (``/pages/<id>/test-runs/latest`` and
+# ``/pages/<id>/test-runs/latest/cancel``) live earlier in this file
+# next to the other page endpoints. The website-level counterparts
+# below operate on the most recent TESTING JobManager record for a
+# website rather than a per-page status flag.
+#
+# Per docs/REST_API_ROADMAP.md §5.4.
+# ---------------------------------------------------------------------------
+
+
+def _latest_testing_job_for_website(
+    website_id: str,
+) -> dict[str, Any] | None:
+    """Return the newest TESTING job for ``website_id``, or None.
+
+    Newest = highest ``created_at``. Includes every status (PENDING,
+    RUNNING, COMPLETED, CANCELLED, FAILED) so callers can read the
+    final state of the most recent run.
+    """
+    job_manager = JobManager(get_db())
+    doc = job_manager.collection.find_one(
+        {
+            "website_id": website_id,
+            "job_type": JobType.TESTING.value,
+        },
+        sort=[("created_at", -1)],
+    )
+    return doc if doc is not None else None
+
+
+@api_bp.route("/websites/<website_id>/test-runs/latest", methods=["GET"])
+@api_endpoint
+@document(
+    response_200=JobOut,
+    errors=[401, 403, 404],
+    tags=["Test runs"],
+    summary="Get the website's latest test-run job",
+    description=(
+        "Returns the most recent TESTING JobManager record for "
+        "``website_id``, projected through the same ``JobOut`` shape "
+        "the /jobs endpoints use. 404 when the website has no "
+        "recorded TESTING jobs yet — matches the "
+        "/discoveries/latest convention so callers can distinguish "
+        "'never tested' from 'currently testing'."
+    ),
+)
+def get_latest_website_test_run(
+    website_id: str,
+) -> tuple[JobOut, int] | tuple[Response, int] | Response:
+    """Return the latest TESTING JobManager record for a website."""
+    if get_db().get_website(website_id) is None:
+        raise NotFoundError(f"website {website_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT,
+        website_id=website_id,
+    )
+    doc = _latest_testing_job_for_website(website_id)
+    if doc is None:
+        raise NotFoundError(
+            f"website {website_id} has no recorded test runs"
+        )
+    return _job_doc_to_out(doc), 200
+
+
+@api_bp.route(
+    "/websites/<website_id>/test-runs/latest/cancel", methods=["POST"]
+)
+@api_endpoint
+@document(
+    response_202=JobCancelOut,
+    errors=[401, 403, 404, 409],
+    tags=["Test runs"],
+    summary="Cancel the website's latest test-run job",
+    description=(
+        "Cancels the most recent TESTING JobManager record for "
+        "``website_id``. 404 when the website has no recorded "
+        "TESTING jobs; 409 when the latest job is already terminal."
+    ),
+)
+def cancel_latest_website_test_run(
+    website_id: str,
+) -> tuple[JobCancelOut, int] | tuple[Response, int] | Response:
+    """Cancel the latest TESTING job for a website."""
+    if get_db().get_website(website_id) is None:
+        raise NotFoundError(f"website {website_id} not found")
+    require_project_role(
+        UserRole.ADMIN, UserRole.AUDITOR,
+        website_id=website_id,
+    )
+    doc = _latest_testing_job_for_website(website_id)
+    if doc is None:
+        raise NotFoundError(
+            f"website {website_id} has no recorded test runs"
+        )
+    job_id_obj = doc.get("job_id")
+    if not isinstance(job_id_obj, str) or not job_id_obj:
+        raise ConflictError(
+            f"latest test run for website {website_id} has no job_id"
+        )
+    job_id = job_id_obj
+    job_manager = JobManager(get_db())
+    requested_by = (
+        str(current_user.get_id()) if current_user.is_authenticated else None
+    )
+    if not job_manager.request_cancellation(job_id, requested_by=requested_by):
+        current_status = doc.get("status")
+        raise ConflictError(
+            f"job {job_id} cannot be cancelled (current status: {current_status})"
+        )
     refreshed = job_manager.get_job(job_id)
     if refreshed is None:
         raise ConflictError(f"job {job_id} disappeared after cancel")

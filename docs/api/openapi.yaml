@@ -843,6 +843,153 @@ components:
       - url
       title: DiscoveredPagePut
       type: object
+    DiscoveryRunListOut:
+      additionalProperties: false
+      description: 'Response body for ``GET /api/v1/websites/<id>/discoveries``.
+
+
+        Cursor-paginated; same ``{items, next_cursor}`` shape as the other
+
+        v1 list endpoints.'
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/DiscoveryRunOut'
+          title: Items
+          type: array
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Next Cursor
+      required:
+      - items
+      title: DiscoveryRunListOut
+      type: object
+    DiscoveryRunOut:
+      additionalProperties: false
+      description: 'Response body for read endpoints on a single DiscoveryRun.
+
+
+        Mirrors :func:`_serialize_discovery_run` byte-for-byte. ``id`` is
+
+        the stringified Mongo ``_id``; timestamps are ISO 8601 strings;
+
+        ``status`` is the stringified :class:`DiscoveryStatus` enum value.
+
+        ``failed_pages_details`` is kept as ``list[dict[str, object]]``
+
+        because the failure-reason shape varies per crawler error class.'
+      properties:
+        completed_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Completed At
+        documents_found:
+          title: Documents Found
+          type: integer
+        duration_seconds:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          default: null
+          title: Duration Seconds
+        error_message:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Error Message
+        external_links_found:
+          title: External Links Found
+          type: integer
+        failed_pages_details:
+          items:
+            additionalProperties: true
+            type: object
+          title: Failed Pages Details
+          type: array
+        follow_external:
+          title: Follow External
+          type: boolean
+        id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Id
+        is_latest:
+          title: Is Latest
+          type: boolean
+        job_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Job Id
+        max_depth:
+          title: Max Depth
+          type: integer
+        max_pages:
+          title: Max Pages
+          type: integer
+        pages_added:
+          title: Pages Added
+          type: integer
+        pages_discovered:
+          title: Pages Discovered
+          type: integer
+        pages_failed:
+          title: Pages Failed
+          type: integer
+        pages_removed:
+          title: Pages Removed
+          type: integer
+        pages_unchanged:
+          title: Pages Unchanged
+          type: integer
+        respect_robots:
+          title: Respect Robots
+          type: boolean
+        started_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Started At
+        status:
+          title: Status
+          type: string
+        triggered_by:
+          anyOf:
+          - type: string
+          - type: 'null'
+          default: null
+          title: Triggered By
+        website_id:
+          title: Website Id
+          type: string
+      required:
+      - website_id
+      - status
+      - max_pages
+      - max_depth
+      - follow_external
+      - respect_robots
+      - pages_discovered
+      - pages_failed
+      - documents_found
+      - external_links_found
+      - failed_pages_details
+      - pages_added
+      - pages_removed
+      - pages_unchanged
+      - is_latest
+      title: DiscoveryRunOut
+      type: object
     DrupalAuditListOut:
       additionalProperties: false
       description: 'Response body for ``GET /drupal/audits``.
@@ -10393,6 +10540,94 @@ paths:
       summary: Replace a discovered page
       tags:
       - DiscoveredPages
+  /discoveries/{run_id}:
+    get:
+      description: Returns a single discovery run by its id. Cross-tenant callers
+        (authenticated but no membership on the run's project) receive 403, not 404
+        — once the caller knows the id, surfacing the richer status code is more useful
+        than obscuring existence.
+      parameters:
+      - in: path
+        name: run_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscoveryRunOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Get a discovery run by id
+      tags:
+      - Test runs
+  /discoveries/{run_id}/cancel:
+    post:
+      description: Cancels a specific discovery run via its backing JobManager record.
+        409 when the run has no associated job or the job is already terminal.
+      parameters:
+      - in: path
+        name: run_id
+        required: true
+        schema: *id001
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobCancelOut'
+          description: Accepted
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Cancel a discovery run by id
+      tags:
+      - Test runs
   /drupal/audits:
     get:
       description: Lists every audit visible in the configured Drupal instance. Authenticated;
@@ -17476,6 +17711,53 @@ paths:
       tags:
       - Test runs
   /websites/{website_id}/discoveries:
+    get:
+      description: Returns the discovery runs recorded for ``website_id``, newest
+        first. Cursor-paginated using the legacy ``{items, next_cursor}`` shape shared
+        by every v1 list endpoint. The Mongo ObjectId-based ``_id`` sort is the tie-breaker,
+        so runs created within the same second are ordered deterministically.
+      parameters:
+      - in: path
+        name: website_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscoveryRunListOut'
+          description: OK
+        '400':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Bad Request
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: List discovery runs for a website
+      tags:
+      - Test runs
     post:
       description: Queues a page-discovery crawl for a website. Both the legacy ``/discover``
         URL and the canonical ``/discoveries`` URL route here. ``max_pages`` is coerced
@@ -17523,6 +17805,96 @@ paths:
       - bearerAuth: []
       - sessionAuth: []
       summary: Queue a website discovery crawl
+      tags:
+      - Test runs
+  /websites/{website_id}/discoveries/latest:
+    get:
+      description: Returns the most recent discovery run for ``website_id``. 404 when
+        the website exists but has no recorded runs at all — strictly more informative
+        than an empty body, since the absence of a run is a state callers want to
+        distinguish (e.g. to show the 'Discover pages' CTA instead of 'rerun').
+      parameters:
+      - in: path
+        name: website_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscoveryRunOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Get the latest discovery run for a website
+      tags:
+      - Test runs
+  /websites/{website_id}/discoveries/latest/cancel:
+    post:
+      description: Cancels the most recent discovery run for ``website_id``. 404 when
+        the website exists but has no recorded runs — matches the read-side ``/discoveries/latest``
+        404 semantics. 409 when the latest run has no backing JobManager record (legacy
+        data) or is already terminal.
+      parameters:
+      - in: path
+        name: website_id
+        required: true
+        schema: *id001
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobCancelOut'
+          description: Accepted
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Cancel the latest discovery run for a website
       tags:
       - Test runs
   /websites/{website_id}/pages:
@@ -18204,6 +18576,95 @@ paths:
       - bearerAuth: []
       - sessionAuth: []
       summary: Queue a website-wide batch test
+      tags:
+      - Test runs
+  /websites/{website_id}/test-runs/latest:
+    get:
+      description: Returns the most recent TESTING JobManager record for ``website_id``,
+        projected through the same ``JobOut`` shape the /jobs endpoints use. 404 when
+        the website has no recorded TESTING jobs yet — matches the /discoveries/latest
+        convention so callers can distinguish 'never tested' from 'currently testing'.
+      parameters:
+      - in: path
+        name: website_id
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobOut'
+          description: OK
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Get the website's latest test-run job
+      tags:
+      - Test runs
+  /websites/{website_id}/test-runs/latest/cancel:
+    post:
+      description: Cancels the most recent TESTING JobManager record for ``website_id``.
+        404 when the website has no recorded TESTING jobs; 409 when the latest job
+        is already terminal.
+      parameters:
+      - in: path
+        name: website_id
+        required: true
+        schema: *id001
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobCancelOut'
+          description: Accepted
+        '401':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Unauthorized
+        '403':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Forbidden
+        '404':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Not Found
+        '409':
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          description: Conflict
+      security:
+      - bearerAuth: []
+      - sessionAuth: []
+      summary: Cancel the website's latest test-run job
       tags:
       - Test runs
   /websites/{website_id}/test-users:

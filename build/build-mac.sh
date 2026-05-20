@@ -12,6 +12,13 @@ ELECTRON_DIR="$PROJECT_DIR/electron"
 PYTHON_VERSION="3.12.8"
 PYTHON_BUILD_TAG="20250106"
 MONGO_VERSION="7.0.17"
+# ffmpeg: evermeet.cx static builds (x86_64; runs under Rosetta 2 on Apple
+# Silicon — see spec). Pin to a dated release + verify SHA. Placeholders
+# below MUST be replaced with real captured hashes on the macOS release
+# machine (curl -L <url> | shasum -a 256). The build fails on mismatch.
+FFMPEG_MAC_VERSION="7.1"
+FFMPEG_MAC_SHA256="REPLACE_WITH_REAL_SHA256"
+FFPROBE_MAC_SHA256="REPLACE_WITH_REAL_SHA256"
 
 # Detect architecture
 ARCH="$(uname -m)"
@@ -32,7 +39,7 @@ echo "Build staging: $BUILD_DIR"
 
 # Clean previous build
 rm -rf "$BUILD_DIR"
-mkdir -p "$BUILD_DIR"/{python,app,mongodb/bin,chromium}
+mkdir -p "$BUILD_DIR"/{python,app,mongodb/bin,chromium,ffmpeg/bin}
 
 # -------------------------------------------------------
 # 1. Download portable Python
@@ -212,6 +219,56 @@ $PORTABLE_PYTHON -m playwright install chromium chromium-headless-shell
 echo "Chromium installed to $BUILD_DIR/chromium"
 
 # -------------------------------------------------------
+# 5b. Download ffmpeg + ffprobe (static, for audioA11y video pipeline)
+# -------------------------------------------------------
+echo ""
+echo "--- Step 5b: ffmpeg + ffprobe $FFMPEG_MAC_VERSION ---"
+mkdir -p "$BUILD_DIR/ffmpeg/bin"
+
+download_and_verify() {
+    # $1 = url, $2 = expected sha256, $3 = output path
+    local url="$1" expected="$2" out="$3"
+    curl -L -o "$out" "$url"
+    local actual
+    actual="$(shasum -a 256 "$out" | awk '{print $1}')"
+    if [ "$actual" != "$expected" ]; then
+        echo "ERROR: SHA-256 mismatch for $url" >&2
+        echo "  expected: $expected" >&2
+        echo "  actual:   $actual" >&2
+        exit 1
+    fi
+}
+
+FFMPEG_ZIP="$BUILD_DIR/ffmpeg-mac.zip"
+FFPROBE_ZIP="$BUILD_DIR/ffprobe-mac.zip"
+download_and_verify \
+    "https://evermeet.cx/ffmpeg/ffmpeg-${FFMPEG_MAC_VERSION}.zip" \
+    "$FFMPEG_MAC_SHA256" "$FFMPEG_ZIP"
+download_and_verify \
+    "https://evermeet.cx/ffmpeg/ffprobe-${FFMPEG_MAC_VERSION}.zip" \
+    "$FFPROBE_MAC_SHA256" "$FFPROBE_ZIP"
+
+unzip -o "$FFMPEG_ZIP" -d "$BUILD_DIR/ffmpeg/bin"
+unzip -o "$FFPROBE_ZIP" -d "$BUILD_DIR/ffmpeg/bin"
+chmod +x "$BUILD_DIR/ffmpeg/bin/ffmpeg" "$BUILD_DIR/ffmpeg/bin/ffprobe"
+
+# Smoke test: the binary must run on the build host. (On an Apple-Silicon
+# build host this exercises Rosetta; on Intel it's native.)
+"$BUILD_DIR/ffmpeg/bin/ffmpeg" -version | head -1
+"$BUILD_DIR/ffmpeg/bin/ffprobe" -version | head -1
+
+# License file for GPL compliance.
+cat > "$BUILD_DIR/ffmpeg/LICENSE.txt" <<'FFMPEGLIC'
+This product bundles FFmpeg (https://ffmpeg.org), a static build from
+evermeet.cx, licensed under the GNU General Public License v3.
+FFmpeg is invoked as a subprocess and is not linked into Auto A11y.
+Source for the bundled FFmpeg build is available from https://ffmpeg.org
+and https://evermeet.cx/ffmpeg/.
+FFMPEGLIC
+
+echo "ffmpeg + ffprobe staged at $BUILD_DIR/ffmpeg/bin/"
+
+# -------------------------------------------------------
 # 6. Copy application source
 # -------------------------------------------------------
 echo ""
@@ -312,7 +369,8 @@ cat > "$ELECTRON_DIR/build-config.json" <<BUILDCFG
     { "from": "$BUILD_DIR/python", "to": "python" },
     { "from": "$BUILD_DIR/app", "to": "app" },
     { "from": "$BUILD_DIR/mongodb", "to": "mongodb" },
-    { "from": "$BUILD_DIR/chromium", "to": "chromium" }
+    { "from": "$BUILD_DIR/chromium", "to": "chromium" },
+    { "from": "$BUILD_DIR/ffmpeg", "to": "ffmpeg" }
   ],
   "afterPack": "./afterPack.js",
   "mac": {
@@ -395,6 +453,10 @@ missing_paths=()
 [ -d "$RESOURCES_IN_DMG/chromium" ] \
     && [ -n "$(ls -A "$RESOURCES_IN_DMG/chromium" 2>/dev/null)" ] \
     || missing_paths+=("chromium/ (missing or empty)")
+[ -f "$RESOURCES_IN_DMG/ffmpeg/bin/ffmpeg" ] \
+    || missing_paths+=("ffmpeg/bin/ffmpeg")
+[ -f "$RESOURCES_IN_DMG/ffmpeg/bin/ffprobe" ] \
+    || missing_paths+=("ffmpeg/bin/ffprobe")
 [ -d "$RESOURCES_IN_DMG/app/auto_a11y" ] \
     || missing_paths+=("app/auto_a11y/")
 [ -d "$RESOURCES_IN_DMG/python/lib/weasyprint_libs" ] \

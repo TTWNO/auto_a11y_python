@@ -193,4 +193,7 @@ def write_words_json(words: list[Word], path: Path) -> None:
         {"text": w.text, "start": w.start, "end": w.end, "speaker": w.speaker}
         for w in words
     ]
-    path.write_text(json.dumps(payload, indent=2))
+    path.write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )

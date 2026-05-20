@@ -6,6 +6,7 @@ Live Deepgram tests live in test_transcription_live.py (marked
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
@@ -21,17 +22,24 @@ from auto_a11y.audio.transcription import (
 
 
 def _fake_deepgram_response() -> object:
-    """Build a fake response object matching the v5 SDK's PrerecordedResponse shape.
+    """Build a fake response using SimpleNamespace.
 
-    The v5 SDK returns a typed object accessed via attributes
-    (response.results.channels[0].alternatives[0].transcript / .words).
+    SimpleNamespace raises AttributeError for missing attributes — unlike
+    MagicMock which auto-creates them. If _parse ever reads the wrong
+    attribute name, the test must FAIL.
     """
-    word_a = MagicMock(start=0.0, end=0.5, speaker=0, punctuated_word="Hello", word="Hello")
-    word_b = MagicMock(start=0.6, end=1.1, speaker=0, punctuated_word="world", word="world")
-    alt = MagicMock(transcript="Hello world", words=[word_a, word_b])
-    channel = MagicMock(alternatives=[alt])
-    results = MagicMock(channels=[channel])
-    return MagicMock(results=results)
+    word_a = SimpleNamespace(
+        start=0.0, end=0.5, speaker=0,
+        punctuated_word="Hello", word="Hello",
+    )
+    word_b = SimpleNamespace(
+        start=0.6, end=1.1, speaker=0,
+        punctuated_word="world", word="world",
+    )
+    alt = SimpleNamespace(transcript="Hello world", words=[word_a, word_b])
+    channel = SimpleNamespace(alternatives=[alt])
+    results = SimpleNamespace(channels=[channel])
+    return SimpleNamespace(results=results)
 
 
 def _make_audio_file(path: Path) -> Path:

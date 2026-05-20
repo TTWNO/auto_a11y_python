@@ -8,7 +8,9 @@ import re
 from pathlib import Path
 
 
-_CUE_TS = re.compile(r"^(\d{2}:\d{2}:\d{2}\.\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2}\.\d{3})")
+_CUE_TS = re.compile(
+    r"^(\d{2}:\d{2}:\d{2}\.\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2}\.\d{3})(.*)$"
+)
 
 
 def _ts_to_seconds(ts: str) -> float:
@@ -43,14 +45,16 @@ def merge_segment_vtts(
         raise ValueError("segment_paths and segment_offsets_s must align")
 
     lines: list[str] = ["WEBVTT", ""]
-    for path, offset in zip(segment_paths, segment_offsets_s, strict=True):
+    for i, (path, offset) in enumerate(zip(segment_paths, segment_offsets_s, strict=True)):
+        if i > 0 and lines and lines[-1] != "":
+            lines.append("")
         text = path.read_text()
         for line in text.splitlines():
             m = _CUE_TS.match(line)
             if m:
                 start = _ts_to_seconds(m.group(1)) + offset
                 end = _ts_to_seconds(m.group(2)) + offset
-                lines.append(f"{_seconds_to_ts(start)} --> {_seconds_to_ts(end)}")
+                lines.append(f"{_seconds_to_ts(start)} --> {_seconds_to_ts(end)}{m.group(3)}")
             elif line.strip().upper() == "WEBVTT":
                 continue  # already emitted once at the top
             else:

@@ -55,7 +55,7 @@ auto_a11y/
 ├── audio/                              # NEW
 │   ├── __init__.py
 │   ├── config.py                       # API-key + model-name loaders (reads from auto_a11y.core.config)
-│   ├── ffmpeg.py                       # binary detection (mirrors pdf/ghostscript.py), audio extraction, silence detection
+│   ├── ffmpeg.py                       # binary detection (mirrors pdf/audit/ghostscript.py), audio extraction, silence detection
 │   ├── segmenter.py                    # 600 s-target silence-aware splitting → ./audio/*.m4a
 │   ├── transcription.py                # Deepgram client + per-segment .vtt + .words
 │   ├── vtt_processor.py                # merge segments with timestamp offsets, write final captions/<title>.vtt

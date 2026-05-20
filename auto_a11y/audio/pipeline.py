@@ -40,8 +40,13 @@ E. ``analyzing``      — for each (context, language, kind) tuple:
                          atomically.
 
 F. ``callouts``       — optional, gated on ``config.callouts_requested``.
-                         **No-op for Phase 6** — Phase 9 implements the
-                         ffmpeg overlay renderer.
+                         :func:`_render_callouts_stage` reads the
+                         English ``issues`` JSON and shells out to
+                         ffmpeg via
+                         :func:`auto_a11y.audio.callouts.render_callouts_video`.
+                         Raises :class:`CalloutsError` on failure; the
+                         runner catches it and marks only
+                         ``Recording.callouts_status``.
 
 G. ``importing``      — no-op here. The runner handles Mongo ingestion
                          via :func:`import_pipeline_output`.
@@ -55,9 +60,11 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import dataclass
-from typing import Callable, Literal
+from typing import Callable, Literal, TypeGuard
 
 from auto_a11y.audio.analysis import Analyzer
+from auto_a11y.audio.callouts import render_callouts_video
+from auto_a11y.audio.errors import CalloutsError
 from auto_a11y.audio.prompts import Context, Kind
 from auto_a11y.audio.segmenter import Segment, split
 from auto_a11y.audio.speaker_identification import (
@@ -206,17 +213,70 @@ def run_pipeline(
     # === F — callouts (optional) ===================================
     if config.callouts_requested:
         progress("callouts", 6, total)
-        # TODO_PHASE9: render callouts video here. The runner / UI tag
-        # ``Recording.callouts_status`` separately, so a future fill-in
-        # of this branch doesn't need to touch any other phase.
-        logger.info(
-            "callouts requested but stage not implemented (TODO_PHASE9); skipping"
-        )
+        _render_callouts_stage(slot=slot)
 
     # === G — importing =============================================
     progress("importing", 7, total)
     # Mongo ingestion lives in the runner; this stage only writes the
     # progress marker so callers know we've finished the disk work.
+
+
+def _is_str_obj_dict(val: object) -> TypeGuard[dict[str, object]]:
+    """Narrow a ``json.loads`` result to ``dict[str, object]``.
+
+    Matches the same helper in :mod:`auto_a11y.audio.analysis`.
+    ``json.loads`` always produces ``str``-keyed dicts for JSON objects;
+    the runtime check is ``isinstance(val, dict)`` only.
+    """
+    return isinstance(val, dict)
+
+
+def _is_obj_list(val: object) -> TypeGuard[list[object]]:
+    """Narrow ``object`` to ``list[object]`` for nested JSON values."""
+    return isinstance(val, list)
+
+
+def _render_callouts_stage(*, slot: AllocatedSlot) -> None:
+    """Render the optional callouts video from the English issues JSON.
+
+    Reads ``slot.json_path(kind="issues", lang="en")`` (the canonical
+    issues output written by Stage E), parses it, and shells out to
+    ``ffmpeg`` via :func:`render_callouts_video`. Failures are
+    re-raised as :class:`CalloutsError` so the runner can catch them
+    specifically and mark only ``Recording.callouts_status`` (not the
+    whole job) as ``"failed"``.
+    """
+    issues_path = slot.json_path(kind="issues", lang="en")
+    if not issues_path.exists():
+        # No English issues file — Stage E either skipped English or
+        # the runner is running with an unusual config. Nothing to
+        # render; not a failure.
+        logger.info(
+            "callouts: no issues JSON at %s; skipping render", issues_path
+        )
+        return
+
+    try:
+        issues_text = issues_path.read_text(encoding="utf-8")
+        issues_raw: object = json.loads(issues_text)
+    except (OSError, json.JSONDecodeError) as exc:
+        raise CalloutsError(
+            f"Could not read or parse issues JSON at {issues_path}: {exc}"
+        ) from exc
+
+    issues_list: list[dict[str, object]] = []
+    if _is_str_obj_dict(issues_raw):
+        raw_issues = issues_raw.get("issues")
+        if _is_obj_list(raw_issues):
+            for entry in raw_issues:
+                if _is_str_obj_dict(entry):
+                    issues_list.append(entry)
+
+    render_callouts_video(
+        source_mp4=slot.source_mp4,
+        issues=issues_list,
+        output_mp4=slot.callouts_mp4,
+    )
 
 
 def _merge_and_optionally_remap(

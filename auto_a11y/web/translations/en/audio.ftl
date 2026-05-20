@@ -77,3 +77,8 @@ audio-progress-aria-label               = Processing progress: stage { $stage },
 audio-detail-failed-heading             = Processing failed
 audio-detail-cost-panel-heading         = Cost breakdown
 audio-detail-cost-estimated-was         = Estimated cost was
+
+# === Callouts video (Phase 9) ===
+audio-callouts-download                 = Download annotated video
+audio-callouts-failed                   = Annotated video rendering failed; the rest of the audit completed successfully.
+audio-callouts-pending                  = Annotated video rendering in progress…

@@ -105,6 +105,27 @@
     </aside>
     {% endif %}
 
+    {# === Phase 9: callouts video download / status =================== #}
+    {% if recording.callouts_status == 'complete' %}
+    <div class="mb-4">
+        <a href="{{ url_for('recordings.download_callouts_video', recording_id=recording.id) }}"
+           class="btn btn-outline-brand">
+            <i class="bi bi-film" aria-hidden="true"></i>
+            {{ ftl('audio-callouts-download') }}
+        </a>
+    </div>
+    {% elif recording.callouts_status == 'failed' %}
+    <p class="text-muted mb-4">
+        <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+        {{ ftl('audio-callouts-failed') }}
+    </p>
+    {% elif recording.callouts_status == 'pending' and recording.status == 'processing' %}
+    <p class="text-muted mb-4">
+        <i class="bi bi-hourglass-split" aria-hidden="true"></i>
+        {{ ftl('audio-callouts-pending') }}
+    </p>
+    {% endif %}
+
     <!-- Recording Metadata -->
     <div class="row mb-4">
         <div class="col-lg-8">

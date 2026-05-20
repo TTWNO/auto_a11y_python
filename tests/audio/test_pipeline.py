@@ -329,8 +329,10 @@ def test_speaker_remap_writes_mapping_when_build_succeeds(slot: AllocatedSlot) -
 def test_callouts_requested_emits_progress_marker(slot: AllocatedSlot) -> None:
     """``callouts`` stage fires the progress callback when requested.
 
-    Phase 6 doesn't render callouts (Phase 9 does); it just emits the
-    progress marker so the UI can label the bar.
+    Phase 9 actually shells out to ffmpeg via ``render_callouts_video``;
+    we patch that call so the test only asserts the progress-callback
+    sequencing (the rendering itself is covered in
+    ``test_callouts.py``).
     """
     progress_calls: list[str] = []
 
@@ -340,7 +342,8 @@ def test_callouts_requested_emits_progress_marker(slot: AllocatedSlot) -> None:
 
     segments = [_seg(0, 0.0, 30.0)]
     with patch("auto_a11y.audio.pipeline.split", return_value=segments), \
-         patch("auto_a11y.audio.pipeline.merge_segment_vtts") as merge_mock:
+         patch("auto_a11y.audio.pipeline.merge_segment_vtts") as merge_mock, \
+         patch("auto_a11y.audio.pipeline.render_callouts_video") as callouts_mock:
         transcriber = MagicMock()
         transcriber.transcribe.return_value = _stub_transcription_result()
         analyzer = MagicMock()
@@ -375,3 +378,52 @@ def test_callouts_requested_emits_progress_marker(slot: AllocatedSlot) -> None:
     callouts_idx = progress_calls.index("callouts")
     importing_idx = progress_calls.index("importing")
     assert analyzing_idx < callouts_idx < importing_idx
+    # Stage F wrote the English issues JSON (Stage E ran first),
+    # which triggers the render call.
+    callouts_mock.assert_called_once()
+
+
+def test_callouts_error_bubbles_out_of_pipeline(slot: AllocatedSlot) -> None:
+    """A ``CalloutsError`` from Stage F propagates out of ``run_pipeline``.
+
+    The runner is responsible for catching it specifically and tagging
+    ``Recording.callouts_status``; the pipeline must NOT swallow it
+    silently or the runner has no signal.
+    """
+    from auto_a11y.audio.errors import CalloutsError
+
+    segments = [_seg(0, 0.0, 30.0)]
+    with patch("auto_a11y.audio.pipeline.split", return_value=segments), \
+         patch("auto_a11y.audio.pipeline.merge_segment_vtts") as merge_mock, \
+         patch(
+             "auto_a11y.audio.pipeline.render_callouts_video",
+             side_effect=CalloutsError("ffmpeg exploded"),
+         ):
+        transcriber = MagicMock()
+        transcriber.transcribe.return_value = _stub_transcription_result()
+        analyzer = MagicMock()
+        analyzer.analyze.return_value = _stub_analysis_result(
+            {"recording": slot.recording_id, "issues": []}
+        )
+
+        def _do_merge(*, segment_paths: list[Path], segment_offsets_s: list[float], output: Path) -> None:
+            _ = (segment_paths, segment_offsets_s)
+            output.parent.mkdir(parents=True, exist_ok=True)
+            output.write_text("WEBVTT\n", encoding="utf-8")
+        merge_mock.side_effect = _do_merge
+
+        with pytest.raises(CalloutsError, match="ffmpeg exploded"):
+            run_pipeline(
+                slot=slot,
+                config=PipelineConfig(
+                    contexts=["audit"],
+                    languages=["en"],
+                    extended_context=False,
+                    speaker_remap_enabled=False,
+                    callouts_requested=True,
+                    hf_token=None,
+                ),
+                transcriber=transcriber,
+                analyzer=analyzer,
+                progress=_noop_progress,
+            )

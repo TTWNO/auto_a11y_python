@@ -9,8 +9,8 @@ from datetime import datetime
 from typing import Any, cast
 
 from flask import (
-    Blueprint, Response, make_response, render_template, request, redirect,
-    url_for, flash, jsonify, session
+    Blueprint, Response, abort, make_response, render_template, request, redirect,
+    send_file, url_for, flash, jsonify, session
 )
 from auto_a11y.web.api.deprecation import deprecated
 from auto_a11y.web.fluent import ftl
@@ -780,6 +780,34 @@ def process_recording(recording_id: str) -> Response | WerkzeugResponse:
     )
 
     return redirect(url_for('recordings.view_recording', recording_id=recording_id))
+
+
+@recordings_bp.route('/<recording_id>/callouts.mp4')
+def download_callouts_video(recording_id: str) -> Response:
+    """Stream the rendered callouts MP4.
+
+    Phase 9 of the audioA11y integration. Only available when
+    ``Recording.callouts_status == "complete"``; any other state
+    returns 404. The Recording itself is keyed by Mongo id (matching
+    the rest of this blueprint's routes); the on-disk slot is looked
+    up by the recording's ``recording_id`` field.
+    """
+    rec = get_db().get_recording(recording_id)
+    if rec is None or rec.callouts_status != "complete":
+        abort(404)
+    audio_storage = get_audio_storage()
+    if audio_storage is None:
+        abort(404)
+    slot = audio_storage.get(rec.recording_id)
+    if not slot.callouts_mp4.exists():
+        abort(404)
+    download_name = f"{rec.recording_id}.callouts.mp4"
+    return send_file(
+        slot.callouts_mp4,
+        mimetype="video/mp4",
+        as_attachment=False,
+        download_name=download_name,
+    )
 
 
 @recordings_bp.route('/<recording_id>/cancel', methods=['POST'])

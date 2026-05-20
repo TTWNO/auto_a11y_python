@@ -31,6 +31,7 @@ from datetime import datetime
 from auto_a11y.audio import __version__
 from auto_a11y.audio.analysis import Analyzer
 from auto_a11y.audio.config import AudioConfig
+from auto_a11y.audio.errors import CalloutsError
 from auto_a11y.audio.pipeline import PipelineConfig, run_pipeline
 from auto_a11y.audio.storage import AudioStorage
 from auto_a11y.audio.transcription import Transcriber
@@ -111,6 +112,11 @@ class VideoRunner:
         rec.started_at = started_at
         rec.manifest_version = __version__
         rec.error_message = None
+        # Phase 9: callouts_status transitions. The upload route sets
+        # this to "pending" when the box is checked, but be defensive
+        # in case the runner is re-entered (e.g. retry) — re-assert
+        # the right starting value here.
+        rec.callouts_status = "pending" if rec.callouts_requested else "not-requested"
         self._db.update_recording(rec)
 
         def progress(stage: str, current: int, total: int) -> None:
@@ -136,27 +142,44 @@ class VideoRunner:
             self._db.update_recording(rec)
 
         try:
-            run_pipeline(
-                slot=slot,
-                config=PipelineConfig(
-                    contexts=[rec.audit_context],
-                    languages=list(rec.analysis_languages),
-                    extended_context=rec.extended_context,
-                    speaker_remap_enabled=rec.speaker_remap_enabled,
-                    callouts_requested=rec.callouts_requested,
-                    hf_token=self._config.huggingface_token,
-                ),
-                transcriber=Transcriber(
-                    client=deepgram_client,
-                    model=self._config.deepgram_model,
-                ),
-                analyzer=Analyzer(
-                    client=anthropic_client,
-                    model=self._config.claude_model,
-                    extended_context=rec.extended_context,
-                ),
-                progress=progress,
-            )
+            try:
+                run_pipeline(
+                    slot=slot,
+                    config=PipelineConfig(
+                        contexts=[rec.audit_context],
+                        languages=list(rec.analysis_languages),
+                        extended_context=rec.extended_context,
+                        speaker_remap_enabled=rec.speaker_remap_enabled,
+                        callouts_requested=rec.callouts_requested,
+                        hf_token=self._config.huggingface_token,
+                    ),
+                    transcriber=Transcriber(
+                        client=deepgram_client,
+                        model=self._config.deepgram_model,
+                    ),
+                    analyzer=Analyzer(
+                        client=anthropic_client,
+                        model=self._config.claude_model,
+                        extended_context=rec.extended_context,
+                    ),
+                    progress=progress,
+                )
+            except CalloutsError as callouts_exc:
+                # Phase 9: Stage F failures NEVER fail the whole job.
+                # The audit's transcripts, issues, painpoints,
+                # takeaways, and assertions are all on disk already
+                # (Stage E ran before Stage F). Tag the recording so
+                # the UI can show a "rendering failed" badge, then
+                # fall through to Stage G ingestion + status=complete.
+                logger.warning(
+                    "VideoRunner: callouts rendering failed for %s: %s",
+                    recording_id, callouts_exc,
+                )
+                rec.callouts_status = "failed"
+            else:
+                if rec.callouts_requested:
+                    rec.callouts_status = "complete"
+
             # === Stage G — Mongo ingestion ============================
             # The pipeline only writes JSON files; importing them into
             # Mongo is the runner's responsibility (we own the DB

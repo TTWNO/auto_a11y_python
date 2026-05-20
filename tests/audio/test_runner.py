@@ -195,6 +195,107 @@ def test_runner_missing_recording_returns_cleanly(slot: AllocatedSlot, tmp_path:
     db.update_recording.assert_not_called()
 
 
+def test_runner_callouts_failure_marks_only_callouts_status_failed(
+    slot: AllocatedSlot, tmp_path: Path
+) -> None:
+    """A ``CalloutsError`` from Stage F NEVER fails the whole job.
+
+    Runner catches ``CalloutsError`` specifically, sets
+    ``rec.callouts_status='failed'``, then proceeds to Stage G ingest
+    and final ``rec.status='complete'``. The recording's other
+    artefacts (issues, painpoints, etc.) are all on disk already.
+    """
+    from auto_a11y.audio.errors import CalloutsError
+
+    recording_id = slot.recording_id
+    rec = _make_recording(recording_id)
+    rec.callouts_requested = True
+
+    db = MagicMock()
+    db.get_recording_by_recording_id.return_value = rec
+    db.update_recording.return_value = True
+
+    storage = MagicMock()
+    storage.get.return_value = slot
+
+    config = _make_audio_config(tmp_path)
+    runner = VideoRunner(db=db, storage=storage, config=config)
+
+    with patch("auto_a11y.audio.runner._make_anthropic_client", return_value=object()), \
+         patch("auto_a11y.audio.runner._make_deepgram_client", return_value=object()), \
+         patch(
+             "auto_a11y.audio.runner.run_pipeline",
+             side_effect=CalloutsError("drawtext blew up"),
+         ), \
+         patch("auto_a11y.audio.runner.import_pipeline_output", return_value=[]) as import_mock:
+        asyncio.run(runner.run(recording_id))
+
+    # The whole job still completed (other artefacts already on disk).
+    assert rec.status == "complete"
+    # Only the callouts video is marked failed.
+    assert rec.callouts_status == "failed"
+    # The Mongo ingestion still ran.
+    import_mock.assert_called_once()
+
+
+def test_runner_callouts_success_marks_callouts_status_complete(
+    slot: AllocatedSlot, tmp_path: Path
+) -> None:
+    """Successful pipeline with callouts_requested=True → callouts_status='complete'."""
+    recording_id = slot.recording_id
+    rec = _make_recording(recording_id)
+    rec.callouts_requested = True
+
+    db = MagicMock()
+    db.get_recording_by_recording_id.return_value = rec
+    db.update_recording.return_value = True
+
+    storage = MagicMock()
+    storage.get.return_value = slot
+
+    config = _make_audio_config(tmp_path)
+    runner = VideoRunner(db=db, storage=storage, config=config)
+
+    with patch("auto_a11y.audio.runner._make_anthropic_client", return_value=object()), \
+         patch("auto_a11y.audio.runner._make_deepgram_client", return_value=object()), \
+         patch("auto_a11y.audio.runner.run_pipeline") as pipeline_mock, \
+         patch("auto_a11y.audio.runner.import_pipeline_output", return_value=[]):
+        pipeline_mock.return_value = None
+        asyncio.run(runner.run(recording_id))
+
+    assert rec.status == "complete"
+    assert rec.callouts_status == "complete"
+
+
+def test_runner_callouts_not_requested_stays_not_requested(
+    slot: AllocatedSlot, tmp_path: Path
+) -> None:
+    """``callouts_requested=False`` → callouts_status stays 'not-requested'."""
+    recording_id = slot.recording_id
+    rec = _make_recording(recording_id)
+    rec.callouts_requested = False
+
+    db = MagicMock()
+    db.get_recording_by_recording_id.return_value = rec
+    db.update_recording.return_value = True
+
+    storage = MagicMock()
+    storage.get.return_value = slot
+
+    config = _make_audio_config(tmp_path)
+    runner = VideoRunner(db=db, storage=storage, config=config)
+
+    with patch("auto_a11y.audio.runner._make_anthropic_client", return_value=object()), \
+         patch("auto_a11y.audio.runner._make_deepgram_client", return_value=object()), \
+         patch("auto_a11y.audio.runner.run_pipeline") as pipeline_mock, \
+         patch("auto_a11y.audio.runner.import_pipeline_output", return_value=[]):
+        pipeline_mock.return_value = None
+        asyncio.run(runner.run(recording_id))
+
+    assert rec.status == "complete"
+    assert rec.callouts_status == "not-requested"
+
+
 def test_runner_progress_callback_records_stage(slot: AllocatedSlot, tmp_path: Path) -> None:
     """Progress callback writes ``rec.progress`` and persists via update_recording.
 

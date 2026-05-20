@@ -77,3 +77,8 @@ audio-progress-aria-label               = Progression du traitement : étape { $
 audio-detail-failed-heading             = Échec du traitement
 audio-detail-cost-panel-heading         = Détail du coût
 audio-detail-cost-estimated-was         = Coût estimé initialement
+
+# === Vidéo avec annotations (phase 9) ===
+audio-callouts-download                 = Télécharger la vidéo annotée
+audio-callouts-failed                   = La génération de la vidéo annotée a échoué ; le reste de l'audit s'est terminé avec succès.
+audio-callouts-pending                  = Génération de la vidéo annotée en cours…

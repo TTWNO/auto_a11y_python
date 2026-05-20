@@ -81,7 +81,7 @@ def run_deepgram_check() -> CheckOutcome:
         )
     try:
         from deepgram import DeepgramClient
-        DeepgramClient(key)
+        DeepgramClient(api_key=key)
     except Exception as exc:  # pragma: no cover — defensive
         return CheckOutcome.failed(
             f"Deepgram SDK rejected the configured key: {exc}"

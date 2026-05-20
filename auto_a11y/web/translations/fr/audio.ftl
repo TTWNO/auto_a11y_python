@@ -23,6 +23,8 @@ audio-upload-extended-context-label     = Utiliser le contexte étendu Opus 1M
 audio-upload-callouts-label             = Générer la vidéo avec annotations
 audio-upload-submit-button              = Continuer vers l'estimation de coût
 audio-upload-cancel-link                = Annuler
+audio-upload-about-heading              = À propos de l'analyse vidéo
+audio-upload-import-json-instead        = Importer plutôt un fichier JSON Dictaphone
 
 # === Étape de confirmation ===
 audio-confirm-heading                   = Confirmer le traitement

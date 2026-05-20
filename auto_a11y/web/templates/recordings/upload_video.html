@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}{{ ftl('audio-upload-heading') }} - Auto A11y{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="mb-4">
+        <h1 id="upload-video-heading">
+            <i class="bi bi-camera-video" aria-hidden="true"></i> {{ ftl('audio-upload-heading') }}
+        </h1>
+        <p class="text-muted">{{ ftl('audio-upload-intro') }}</p>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <form id="upload-video-form" enctype="multipart/form-data" method="POST"
+                          action="{{ url_for('recordings.upload_video') }}"
+                          aria-labelledby="upload-video-heading">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <fieldset>
+                            <legend class="visually-hidden">{{ ftl('audio-upload-heading') }}</legend>
+
+                            <div class="mb-3">
+                                <label for="video_file" class="form-label">{{ ftl('audio-upload-file-label') }}</label>
+                                <input type="file" class="form-control" id="video_file" name="video_file"
+                                       accept=".mp4,video/mp4" required aria-describedby="video-file-help">
+                                <div class="form-text" id="video-file-help">
+                                    {{ ftl('audio-upload-file-help', max=5120) }}
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="project_id" class="form-label">{{ ftl('audio-upload-project-label') }}</label>
+                                <select class="form-select" id="project_id" name="project_id" required
+                                        aria-describedby="project-id-help">
+                                    <option value="">{{ ftl('recordings-select-a-project') }}</option>
+                                    {% for project in projects %}
+                                    <option value="{{ project.id }}">{{ project.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text" id="project-id-help">
+                                    {{ ftl('audio-upload-project-help') }}
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="title" class="form-label">{{ ftl('audio-upload-title-label') }}</label>
+                                <input type="text" class="form-control" id="title" name="title"
+                                       placeholder="{{ ftl('audio-upload-title-placeholder') }}">
+                            </div>
+
+                            <fieldset class="mb-3">
+                                <legend class="form-label">{{ ftl('audio-upload-context-label') }}</legend>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="audit_context"
+                                           id="audit_context_audit" value="audit" checked>
+                                    <label class="form-check-label" for="audit_context_audit">
+                                        {{ ftl('audio-upload-context-audit') }}
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="audit_context"
+                                           id="audit_context_lived" value="livedExperience">
+                                    <label class="form-check-label" for="audit_context_lived">
+                                        {{ ftl('audio-upload-context-lived-experience') }}
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="audit_context"
+                                           id="audit_context_navilens" value="navilens">
+                                    <label class="form-check-label" for="audit_context_navilens">
+                                        {{ ftl('audio-upload-context-navilens') }}
+                                    </label>
+                                </div>
+                            </fieldset>
+
+                            <fieldset class="mb-3" aria-describedby="languages-help">
+                                <legend class="form-label">{{ ftl('audio-upload-languages-label') }}</legend>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="languages"
+                                           id="lang_en" value="en" checked>
+                                    <label class="form-check-label" for="lang_en">
+                                        {{ ftl('audio-upload-language-en') }}
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="languages"
+                                           id="lang_fr" value="fr">
+                                    <label class="form-check-label" for="lang_fr">
+                                        {{ ftl('audio-upload-language-fr') }}
+                                    </label>
+                                </div>
+                                <div class="form-text" id="languages-help">
+                                    {{ ftl('audio-upload-languages-help') }}
+                                </div>
+                            </fieldset>
+
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" name="speaker_remap_enabled"
+                                       id="speaker_remap_enabled" checked>
+                                <label class="form-check-label" for="speaker_remap_enabled">
+                                    {{ ftl('audio-upload-speaker-remap-label') }}
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" name="extended_context"
+                                       id="extended_context">
+                                <label class="form-check-label" for="extended_context">
+                                    {{ ftl('audio-upload-extended-context-label') }}
+                                </label>
+                            </div>
+                            <div class="form-check mb-4">
+                                <input class="form-check-input" type="checkbox" name="callouts_requested"
+                                       id="callouts_requested">
+                                <label class="form-check-label" for="callouts_requested">
+                                    {{ ftl('audio-upload-callouts-label') }}
+                                </label>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-brand">
+                                    <i class="bi bi-arrow-right-circle" aria-hidden="true"></i> {{ ftl('audio-upload-submit-button') }}
+                                </button>
+                                <a href="{{ url_for('recordings.list_recordings') }}" class="btn btn-outline-neutral">
+                                    {{ ftl('audio-upload-cancel-link') }}
+                                </a>
+                            </div>
+                        </fieldset>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="mb-0">{{ ftl('audio-upload-about-heading') }}</h2>
+                </div>
+                <div class="card-body">
+                    <p class="small">{{ ftl('audio-upload-intro') }}</p>
+                    <p class="small mb-0">
+                        <a href="{{ url_for('recordings.upload_json') }}">
+                            <i class="bi bi-filetype-json" aria-hidden="true"></i> {{ ftl('audio-upload-import-json-instead') }}
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

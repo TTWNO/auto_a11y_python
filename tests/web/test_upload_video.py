@@ -53,7 +53,7 @@ def test_mp4_upload_creates_recording_and_renders_confirm(
         return_value=120.0,
     ):
         resp = client.post(
-            '/recordings/upload',
+            '/recordings/upload/video',
             data={
                 'project_id': 'p-1',
                 'title': 'Audit session 1',
@@ -93,7 +93,7 @@ def test_mp4_upload_rejects_when_no_language_selected(
         return_value=120.0,
     ):
         resp = client.post(
-            '/recordings/upload',
+            '/recordings/upload/video',
             data={
                 'project_id': 'p-1',
                 'title': 'No-language upload',
@@ -119,7 +119,7 @@ def test_mp4_upload_rejects_over_size_cap(
     app.app_config.AUDIO_MAX_SIZE_MB = 0  # any non-empty file exceeds 0 MB
     try:
         resp = client.post(
-            '/recordings/upload',
+            '/recordings/upload/video',
             data={
                 'project_id': 'p-1',
                 'title': 'Oversized upload',

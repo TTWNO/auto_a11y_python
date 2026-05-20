@@ -263,7 +263,7 @@ def _error_response(message_id: str, status: int, **kwargs: object) -> Response:
     """
     flash(ftl(message_id, **kwargs), 'danger')
     projects = get_db().get_all_projects()
-    rendered = render_template('recordings/upload.html', projects=projects)
+    rendered = render_template('recordings/upload_video.html', projects=projects)
     response = make_response(rendered, status)
     return response
 
@@ -385,45 +385,67 @@ def _handle_video_upload(file: FileStorage) -> str | Response | WerkzeugResponse
     )
 
 
-@recordings_bp.route('/upload', methods=['GET', 'POST'])
-def upload_recording() -> str | Response | WerkzeugResponse:
-    """Upload Dictaphone JSON file or an MP4 audit video.
+@recordings_bp.route('/upload', methods=['GET'])
+def upload_recording() -> WerkzeugResponse:
+    """Legacy entry point — redirect to the video upload form.
 
-    The MP4 branch (Phase 7 of the audioA11y integration) auto-generates
-    a ``REC-YYYYMMDDHHMMSS-{6hex}`` id, allocates the per-recording
-    directory tree under ``AUDIO_STORAGE_DIR``, probes the duration via
-    ffprobe, computes a pre-flight cost estimate, and renders the
-    confirm-step template. The user kicks off the actual pipeline by
-    POSTing to ``/recordings/<id>/process``.
+    The combined upload page was split into a video page
+    (:func:`upload_video`) and a Dictaphone-JSON page
+    (:func:`upload_json`). Video is the primary flow, so the old
+    ``/recordings/upload`` URL (bookmarks, external links) lands there.
+    """
+    return redirect(url_for('recordings.upload_video'))
 
-    The JSON / HTML branch is unchanged: it imports a Dictaphone export
-    directly into the recording_issues collection.
+
+@recordings_bp.route('/upload/video', methods=['GET', 'POST'])
+def upload_video() -> str | Response | WerkzeugResponse:
+    """Upload an MP4 audit video → audioA11y pipeline (cost-estimate confirm).
+
+    GET renders the minimal video form. POST locates the uploaded MP4 and
+    dispatches to :func:`_handle_video_upload`, which auto-generates a
+    ``REC-YYYYMMDDHHMMSS-{6hex}`` id, allocates the per-recording directory
+    tree under ``AUDIO_STORAGE_DIR``, probes the duration via ffprobe,
+    computes a pre-flight cost estimate, and renders the confirm-step
+    template. The user kicks off the actual pipeline by POSTing to
+    ``/recordings/<id>/process``. A missing or non-MP4 file is refused with
+    a 400 so the user picks the right file (or the JSON page).
     """
     if request.method == 'GET':
         projects = get_db().get_all_projects()
-        return render_template('recordings/upload.html', projects=projects)
+        return render_template('recordings/upload_video.html', projects=projects)
 
-    # MP4 branch: any uploaded file whose extension / MIME identifies it
-    # as an MP4 dispatches to the video flow before the JSON-import
-    # validation below.
     for upload in request.files.values():
         if _is_mp4_upload(upload):
             return _handle_video_upload(upload)
+    return _error_response('audio-error-file-required', 400)
+
+
+@recordings_bp.route('/upload/json', methods=['GET', 'POST'])
+def upload_json() -> str | Response | WerkzeugResponse:
+    """Import a Dictaphone JSON export directly into the recording_issues collection.
+
+    GET renders the JSON-import form. POST imports the export (English JSON
+    required, French optional) plus any supplementary content files
+    (key takeaways / painpoints / assertions, HTML or JSON, per language).
+    """
+    if request.method == 'GET':
+        projects = get_db().get_all_projects()
+        return render_template('recordings/upload_json.html', projects=projects)
 
     try:
         # Validate file uploads - at least English required
         if 'json_file_en' not in request.files:
             flash(ftl('recordings-english-json-file-is-required'), "danger")
-            return redirect(url_for('recordings.upload_recording'))
+            return redirect(url_for('recordings.upload_json'))
 
         file_en = request.files['json_file_en']
         if file_en.filename == '':
             flash(ftl('recordings-english-json-file-is-required'), "danger")
-            return redirect(url_for('recordings.upload_recording'))
+            return redirect(url_for('recordings.upload_json'))
 
         if not file_en.filename or not file_en.filename.endswith('.json'):
             flash(ftl('recordings-file-must-be-a-json-file'), "danger")
-            return redirect(url_for('recordings.upload_recording'))
+            return redirect(url_for('recordings.upload_json'))
 
         # Optional French file
         file_fr = request.files.get('json_file_fr')
@@ -433,7 +455,7 @@ def upload_recording() -> str | Response | WerkzeugResponse:
         project_id = request.form.get('project_id')
         if not project_id:
             flash(ftl('recordings-project-is-required'), "danger")
-            return redirect(url_for('recordings.upload_recording'))
+            return redirect(url_for('recordings.upload_json'))
 
         # Optional fields
         title = request.form.get('title', '')
@@ -557,7 +579,7 @@ def upload_recording() -> str | Response | WerkzeugResponse:
             recording_id_fr = data_fr.get('recording', '')
             if recording_id_fr != recording_id_value:
                 flash(ftl('recordings-recording-ids-don-t-match-en-en_id-fr-fr_id', en_id=recording_id_value, fr_id=recording_id_fr), "danger")
-                return redirect(url_for('recordings.upload_recording'))
+                return redirect(url_for('recordings.upload_json'))
 
         # If lived experience tester selected but no auditor name, look up tester name
         if lived_experience_tester_id and not auditor_name:
@@ -590,7 +612,7 @@ def upload_recording() -> str | Response | WerkzeugResponse:
         existing = get_db().get_recording_by_recording_id(recording_id_value)
         if existing:
             flash(ftl('recordings-recording-id-already-exists-please-use-a', id=recording_id_value), "danger")
-            return redirect(url_for('recordings.upload_recording'))
+            return redirect(url_for('recordings.upload_json'))
 
         # Process English issues
         tmp_file_en = None
@@ -665,11 +687,11 @@ def upload_recording() -> str | Response | WerkzeugResponse:
     except json.JSONDecodeError as e:
         logger.error(f"Invalid JSON file: {e}")
         flash(ftl('recordings-invalid-json-file-error', error=str(e)), "danger")
-        return redirect(url_for('recordings.upload_recording'))
+        return redirect(url_for('recordings.upload_json'))
     except Exception as e:
         logger.error(f"Error uploading recording: {e}", exc_info=True)
         flash(ftl('recordings-error-uploading-recording-error', error=str(e)), "danger")
-        return redirect(url_for('recordings.upload_recording'))
+        return redirect(url_for('recordings.upload_json'))
 
 
 def _run_video_pipeline(

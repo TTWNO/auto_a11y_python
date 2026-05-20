@@ -284,9 +284,14 @@
             <h2 class="mb-0" id="recordings-heading">
                 <i class="bi bi-mic" aria-hidden="true"></i> {{ ftl('common-recordings') }}
             </h2>
-            <a href="{{ url_for('recordings.upload_recording') }}" class="btn btn-sm btn-brand">
-                <i class="bi bi-plus-circle" aria-hidden="true"></i> <span class="d-none d-sm-inline">{{ ftl('projects-add-recording') }}</span><span class="d-sm-none">{{ ftl('common-add') }}</span>
-            </a>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('recordings.upload_video') }}" class="btn btn-sm btn-brand">
+                    <i class="bi bi-camera-video" aria-hidden="true"></i> <span class="d-none d-sm-inline">{{ ftl('projects-add-recording') }}</span><span class="d-sm-none">{{ ftl('common-add') }}</span>
+                </a>
+                <a href="{{ url_for('recordings.upload_json') }}" class="btn btn-sm btn-outline-neutral" aria-label="{{ ftl('recordings-import-dictaphone-json') }}">
+                    <i class="bi bi-filetype-json" aria-hidden="true"></i> <span class="d-none d-sm-inline">{{ ftl('recordings-import-dictaphone-json') }}</span>
+                </a>
+            </div>
         </div>
         <div class="card-body">
             {% if recordings %}
@@ -403,7 +408,7 @@
                 {% endif %}
             </div>
             {% else %}
-            <p class="text-muted">{{ ftl('projects-no-recordings-added-yet') }} <a href="{{ url_for('recordings.upload_recording') }}">{{ ftl('projects-upload-a-recording') }}</a> {{ ftl('projects-to-track-manual-accessibility-audits') }}</p>
+            <p class="text-muted">{{ ftl('projects-no-recordings-added-yet') }} <a href="{{ url_for('recordings.upload_video') }}">{{ ftl('projects-upload-a-recording') }}</a> {{ ftl('projects-to-track-manual-accessibility-audits') }}</p>
             {% endif %}
         </div>
     </section>

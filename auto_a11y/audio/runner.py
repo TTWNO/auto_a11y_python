@@ -63,7 +63,7 @@ def _make_anthropic_client(api_key: str) -> object:
 def _make_deepgram_client(api_key: str) -> object:
     """Construct a Deepgram v5 SDK client (lazy import; see ``_make_anthropic_client``)."""
     from deepgram import DeepgramClient
-    return DeepgramClient(api_key)
+    return DeepgramClient(api_key=api_key)
 
 
 class VideoRunner:

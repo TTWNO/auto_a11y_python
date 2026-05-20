@@ -8,9 +8,14 @@
         <h1 class="mb-0">
             <i class="bi bi-mic" aria-hidden="true"></i> {{ ftl('common-recordings') }}
         </h1>
-        <a href="{{ url_for('recordings.upload_recording') }}" class="btn btn-brand w-100 w-sm-auto">
-            <i class="bi bi-upload" aria-hidden="true"></i> {{ ftl('recordings-upload-recording') }}
-        </a>
+        <div class="d-flex flex-column flex-sm-row gap-2 w-100 w-sm-auto">
+            <a href="{{ url_for('recordings.upload_video') }}" class="btn btn-brand w-100 w-sm-auto">
+                <i class="bi bi-camera-video" aria-hidden="true"></i> {{ ftl('audio-upload-heading') }}
+            </a>
+            <a href="{{ url_for('recordings.upload_json') }}" class="btn btn-outline-neutral w-100 w-sm-auto">
+                <i class="bi bi-filetype-json" aria-hidden="true"></i> {{ ftl('recordings-import-dictaphone-json') }}
+            </a>
+        </div>
     </div>
 
     <p class="text-muted d-none d-md-block">
@@ -155,7 +160,7 @@
     {% else %}
     <div class="alert alert-info">
         <i class="bi bi-info-circle" aria-hidden="true"></i> {{ ftl('common-no-recordings-found') }}
-        <a href="{{ url_for('recordings.upload_recording') }}">{{ ftl('recordings-upload-your-first-recording') }}</a> {{ ftl('recordings-to-get-started') }}
+        <a href="{{ url_for('recordings.upload_video') }}">{{ ftl('recordings-upload-your-first-recording') }}</a> {{ ftl('recordings-to-get-started') }}
     </div>
     {% endif %}
 </div>

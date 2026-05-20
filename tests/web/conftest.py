@@ -37,6 +37,16 @@ def session_template_dir(tmp_path_factory: pytest.TempPathFactory) -> Path:
     rec_dir.joinpath("upload.html").write_text(
         "<html><body>recordings upload</body></html>"
     )
+    # The combined upload form was split into a video page and a JSON
+    # page (2026-05). The route GET handlers render these; the MP4 error
+    # path re-renders upload_video.html. Field IDs don't matter for the
+    # route-level assertions in this suite.
+    rec_dir.joinpath("upload_video.html").write_text(
+        "<html><body>upload video form</body></html>"
+    )
+    rec_dir.joinpath("upload_json.html").write_text(
+        "<html><body>upload json form</body></html>"
+    )
     rec_dir.joinpath("list.html").write_text(
         "<html><body>recordings list</body></html>"
     )

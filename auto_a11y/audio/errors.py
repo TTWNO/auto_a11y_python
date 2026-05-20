@@ -28,3 +28,7 @@ class AnalysisError(AudioPipelineError):
 
 class CalloutsError(AudioPipelineError):
     """Callouts ffmpeg-overlay rendering failed. NEVER fails the whole job."""
+
+
+class OutsideSlot(AudioPipelineError):
+    """Path is not inside the AllocatedSlot's root."""

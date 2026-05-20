@@ -8,7 +8,7 @@ import pytest
 from auto_a11y.audio.storage import (
     AudioStorage,
 )
-from auto_a11y.audio.errors import InvalidRecordingId
+from auto_a11y.audio.errors import InvalidRecordingId, OutsideSlot
 
 
 @pytest.fixture
@@ -39,3 +39,20 @@ def test_paths_for_known_recording(storage: AudioStorage) -> None:
     assert a.json_path(kind="painpoints", lang="fr") == a.root / "json" / "REC-20260519143022-a1b2c3.painpoints.fr.json"
     assert a.captions_vtt == a.root / "captions" / "REC-20260519143022-a1b2c3.vtt"
     assert a.callouts_mp4 == a.root / "video" / "REC-20260519143022-a1b2c3.callouts.mp4"
+
+
+def test_write_atomic_rejects_path_outside_slot(
+    storage: AudioStorage, tmp_path: Path
+) -> None:
+    slot = storage.allocate("REC-20260519143022-a1b2c3")
+    outside = tmp_path / "evil" / "outside.txt"
+    with pytest.raises(OutsideSlot):
+        slot.write_atomic(outside, b"data")
+    assert not outside.exists()
+
+
+def test_write_atomic_writes_inside_slot(storage: AudioStorage) -> None:
+    slot = storage.allocate("REC-20260519143022-a1b2c3")
+    target = slot.audio_dir / "sample.bin"
+    slot.write_atomic(target, b"hello")
+    assert target.read_bytes() == b"hello"

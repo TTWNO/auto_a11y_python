@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from pathlib import Path
 
 
 @dataclass(frozen=True)
@@ -16,7 +17,7 @@ class AudioConfig:
     claude_model: str          # e.g., "claude-opus-4-7"
     deepgram_model: str        # e.g., "nova-3"
     huggingface_token: str | None  # for pyannote.audio model auth; optional
-    data_dir: str              # absolute path; "data/recordings/" lives under this
+    data_dir: Path             # absolute path; "data/recordings/" lives under this
 
     @classmethod
     def from_env(cls) -> AudioConfig:
@@ -26,5 +27,5 @@ class AudioConfig:
             claude_model=os.environ.get("CLAUDE_MODEL", "claude-opus-4-7"),
             deepgram_model=os.environ.get("DEEPGRAM_MODEL", "nova-3"),
             huggingface_token=os.environ.get("HF_TOKEN") or None,
-            data_dir=os.environ.get("AUTO_A11Y_DATA_DIR", "data"),
+            data_dir=Path(os.environ.get("AUTO_A11Y_DATA_DIR", "data")),
         )

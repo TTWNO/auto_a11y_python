@@ -45,7 +45,7 @@ class CheckResult:
 
     name: str
     description: str
-    ok_: bool
+    passed: bool
     remediation: str
 
 
@@ -57,11 +57,11 @@ class PreflightResult:
 
     @property
     def all_passed(self) -> bool:
-        return all(r.ok_ for r in self.results)
+        return all(r.passed for r in self.results)
 
     @property
     def failures(self) -> list[CheckResult]:
-        return [r for r in self.results if not r.ok_]
+        return [r for r in self.results if not r.passed]
 
 
 class PreflightRegistry:
@@ -75,6 +75,13 @@ class PreflightRegistry:
         self._checks: list[Check] = []
 
     def register(self, check: Check) -> None:
+        """Register a preflight check. Idempotent on ``check.name``.
+
+        Subsystems register at import time; module re-imports (e.g. under
+        the test runner) must not produce duplicate entries.
+        """
+        if any(existing.name == check.name for existing in self._checks):
+            return
         self._checks.append(check)
 
     def run_all(self) -> PreflightResult:
@@ -85,15 +92,21 @@ class PreflightRegistry:
                 results.append(CheckResult(
                     name=check.name,
                     description=check.description,
-                    ok_=outcome.ok_,
+                    passed=outcome.ok_,
                     remediation=outcome.remediation,
                 ))
-            except Exception as e:
+            except Exception:
+                logger.exception(
+                    "Preflight check %r raised an internal error", check.name
+                )
                 results.append(CheckResult(
                     name=check.name,
                     description=check.description,
-                    ok_=False,
-                    remediation=f"{type(e).__name__}: {e}",
+                    passed=False,
+                    remediation=(
+                        f"Preflight check '{check.name}' raised an internal error; "
+                        "see application logs for details."
+                    ),
                 ))
         return PreflightResult(results=results)
 

@@ -283,7 +283,7 @@ EOF
 - Create: `tests/audio/test_storage.py`
 - Create: `tests/audio/test_ffmpeg.py`
 - Create: `tests/audio/test_preflight.py`
-- Modify: `.gitignore` (allowlist `!tests/audio/test_*.py` — matches `tests/core/`, `tests/web/`, `tests/pdf/`)
+- Modify: `.gitignore` (add `!tests/audio/test_*.py` and `!tests/web/test_*.py` — the project gitignores `test_*.py` and per-dir allowlists; the existing entries are `!tests/test_*.py`, `!tests/pdf/test_*.py`, `!tests/api/test_*.py`, `!tests/api/schemas/test_*.py`, `!tests/api/openapi/test_*.py`. We add two more: audio for this branch, web for Phase 7+)
 - Modify: `pyproject.toml` (extend mypy/pyright/ty include lists to cover `auto_a11y/audio/**`, `tests/audio/**`)
 
 ### Task 1.1 — Scaffold + gitignore + pyproject.toml include lists
@@ -296,7 +296,7 @@ touch auto_a11y/audio/__init__.py tests/audio/__init__.py
 echo '# placeholder; populated in Phase 2' > auto_a11y/audio/prompts/.gitkeep
 ```
 
-- [ ] **Step 2: Update `.gitignore`.** Add `!tests/audio/test_*.py` near the existing test-allowlist block (around line 112 — search for `!tests/core/test_*.py`).
+- [ ] **Step 2: Update `.gitignore`.** Add `!tests/audio/test_*.py` and `!tests/web/test_*.py` near the existing test-allowlist block. To find it, search for `!tests/pdf/test_*.py` (currently around line 108) — the new lines go right after the existing block.
 
 - [ ] **Step 3: Update `pyproject.toml`.** Find the `mypy`, `pyright`, and `ty` include lists (search `auto_a11y/**/*.py` or similar). Confirm they already glob `auto_a11y/**/*.py` and `tests/**/*.py` — if so, no change needed. If they're explicit lists, add `auto_a11y/audio/**/*.py` and `tests/audio/**/*.py`.
 
@@ -1436,7 +1436,14 @@ find .venv/lib/python*/site-packages/deepgram -name "py.typed" 2>/dev/null
 - [ ] **Step 2: If missing**, write a minimal stub at `stubs/deepgram/__init__.pyi`:
 
 ```python
-"""Minimal stub for deepgram-sdk 5.3.x — only what we import."""
+"""Minimal stub for deepgram-sdk 5.3.x — only what we import.
+
+The v5 SDK exposes the transcribe-file call as
+    client.listen.v1.media.transcribe_file(request=..., model=..., ...)
+NOT the v3-style client.listen.rest.v("1") chain. PrerecordedOptions
+is a v3 concept and is NOT used in v5 (kwargs are passed directly).
+See pythonAudioA11y/transcription.py:36-46 for the canonical call shape.
+"""
 from __future__ import annotations
 from typing import Any
 
@@ -1444,11 +1451,7 @@ from typing import Any
 class DeepgramClient:
     def __init__(self, api_key: str) -> None: ...
     @property
-    def listen(self) -> Any: ...  # actual: rest.v("1") method chain
-
-
-class PrerecordedOptions:
-    def __init__(self, *, model: str, smart_format: bool = ..., diarize: bool = ...) -> None: ...
+    def listen(self) -> Any: ...  # actual: .v1.media.transcribe_file(...)
 ```
 
 - [ ] **Step 3: Add to `requirements.txt`.**
@@ -1481,25 +1484,23 @@ from auto_a11y.audio.errors import TranscriptionError
 from auto_a11y.audio.transcription import Transcriber, TranscriptionResult
 
 
-def _fake_deepgram_response() -> dict[str, object]:
-    return {
-        "results": {
-            "channels": [{
-                "alternatives": [{
-                    "transcript": "Hello world",
-                    "words": [
-                        {"word": "Hello", "start": 0.0, "end": 0.5, "speaker": 0, "punctuated_word": "Hello"},
-                        {"word": "world", "start": 0.6, "end": 1.1, "speaker": 0, "punctuated_word": "world"},
-                    ],
-                }],
-            }],
-        },
-    }
+def _fake_deepgram_response() -> object:
+    """Build a fake response object matching the v5 SDK's PrerecordedResponse shape.
+
+    The v5 SDK returns a typed object accessed via attributes
+    (response.results.channels[0].alternatives[0].transcript / .words).
+    """
+    word_a = MagicMock(start=0.0, end=0.5, speaker=0, punctuated_word="Hello", word="Hello")
+    word_b = MagicMock(start=0.6, end=1.1, speaker=0, punctuated_word="world", word="world")
+    alt = MagicMock(transcript="Hello world", words=[word_a, word_b])
+    channel = MagicMock(alternatives=[alt])
+    results = MagicMock(channels=[channel])
+    return MagicMock(results=results)
 
 
 def test_transcribe_returns_words_and_transcript() -> None:
     sdk = MagicMock()
-    sdk.listen.rest.v("1").transcribe_file.return_value = _fake_deepgram_response()
+    sdk.listen.v1.media.transcribe_file.return_value = _fake_deepgram_response()
     transcriber = Transcriber(client=sdk, model="nova-3")
 
     result = transcriber.transcribe(Path("/tmp/fake.m4a"))
@@ -1513,7 +1514,7 @@ def test_transcribe_returns_words_and_transcript() -> None:
 
 def test_transcribe_retries_on_5xx(monkeypatch: pytest.MonkeyPatch) -> None:
     sdk = MagicMock()
-    transcribe_file = sdk.listen.rest.v("1").transcribe_file
+    transcribe_file = sdk.listen.v1.media.transcribe_file
     # Two failures, then success
     transcribe_file.side_effect = [
         RuntimeError("Deepgram 503"),
@@ -1530,7 +1531,7 @@ def test_transcribe_retries_on_5xx(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_transcribe_fails_after_max_retries(monkeypatch: pytest.MonkeyPatch) -> None:
     sdk = MagicMock()
-    sdk.listen.rest.v("1").transcribe_file.side_effect = RuntimeError("Deepgram 503")
+    sdk.listen.v1.media.transcribe_file.side_effect = RuntimeError("Deepgram 503")
     monkeypatch.setattr("time.sleep", lambda _: None)
     transcriber = Transcriber(client=sdk, model="nova-3", max_retries=3)
     with pytest.raises(TranscriptionError):
@@ -1556,6 +1557,19 @@ Ported (and upgraded) from pythonAudioA11y/transcription.py:
 - Deepgram model upgraded from nova-2 to nova-3 (spec decision).
 - Retry loop: 1 s → 2 s → 4 s (matches source).
 - Output includes per-word timing + speaker label for downstream diarization.
+
+Uses the deepgram-sdk v5 call shape:
+    response = client.listen.v1.media.transcribe_file(
+        request=audio_buffer,
+        model="nova-3",
+        smart_format=True,
+        diarize=True,
+        ...
+    )
+Response is a typed object accessed via attributes
+(response.results.channels[0].alternatives[0].transcript / .words),
+NOT a dict. The v3-style client.listen.rest.v("1") chain and
+PrerecordedOptions wrapper do not exist in v5.
 """
 from __future__ import annotations
 
@@ -1586,23 +1600,37 @@ class TranscriptionResult:
 
 
 class Transcriber:
-    def __init__(self, *, client: Any, model: str = "nova-3", max_retries: int = 3) -> None:
+    def __init__(self, *, client: Any, model: str = "nova-3", max_retries: int = 3,
+                 language: str = "en", timeout_min_seconds: int = 300) -> None:
         self._client = client
         self._model = model
         self._max_retries = max_retries
+        self._language = language
+        self._timeout_min_seconds = timeout_min_seconds
 
     def transcribe(self, audio_path: Path) -> TranscriptionResult:
         """Transcribe one audio segment with diarization + smart formatting."""
-        from deepgram import PrerecordedOptions
+        file_size_mb = audio_path.stat().st_size / (1024 * 1024)
+        # Mirror pythonAudioA11y's dynamic timeout: max(300s, file_size_mb * 60).
+        timeout_seconds = max(self._timeout_min_seconds, int(file_size_mb * 60))
 
-        options = PrerecordedOptions(model=self._model, smart_format=True, diarize=True)
         backoff = 1.0
         last_exc: Exception | None = None
         for attempt in range(self._max_retries):
             try:
                 with open(audio_path, "rb") as fp:
-                    body = {"buffer": fp}
-                    response = self._client.listen.rest.v("1").transcribe_file(body, options)
+                    audio_buffer = fp.read()
+                response = self._client.listen.v1.media.transcribe_file(
+                    request=audio_buffer,
+                    model=self._model,
+                    language=self._language,
+                    smart_format=True,
+                    diarize=True,
+                    punctuate=True,
+                    paragraphs=True,
+                    utterances=True,
+                    request_options={"timeout_in_seconds": timeout_seconds},
+                )
                 return self._parse(response)
             except Exception as e:
                 last_exc = e
@@ -1614,20 +1642,22 @@ class Transcriber:
 
     @staticmethod
     def _parse(response: Any) -> TranscriptionResult:
+        """Parse the v5 SDK's typed response object into our internal records."""
         try:
-            alt = response["results"]["channels"][0]["alternatives"][0]
-            transcript = str(alt.get("transcript", ""))
+            alt = response.results.channels[0].alternatives[0]
+            transcript = str(getattr(alt, "transcript", ""))
+            words_attr = getattr(alt, "words", []) or []
             words = [
                 Word(
-                    text=str(w.get("punctuated_word", w.get("word", ""))),
-                    start=float(w["start"]),
-                    end=float(w["end"]),
-                    speaker=int(w.get("speaker", 0)),
+                    text=str(getattr(w, "punctuated_word", None) or getattr(w, "word", "")),
+                    start=float(w.start),
+                    end=float(w.end),
+                    speaker=int(getattr(w, "speaker", 0) or 0),
                 )
-                for w in alt.get("words", [])
+                for w in words_attr
             ]
             return TranscriptionResult(transcript=transcript, words=words)
-        except (KeyError, TypeError, ValueError) as e:
+        except (AttributeError, IndexError, TypeError, ValueError) as e:
             raise TranscriptionError(f"Malformed Deepgram response: {e}") from e
 
 
@@ -1802,7 +1832,11 @@ audio: Deepgram transcription + VTT segment merging
 auto_a11y/audio/transcription.py:
 - Transcriber.transcribe(audio_path) — Deepgram nova-3 (upgraded from
   pythonAudioA11y's nova-2 per spec), diarization on, smart-format on,
-  retry 1 s → 2 s → 4 s on transient failures.
+  retry 1 s → 2 s → 4 s on transient failures. Uses the deepgram-sdk
+  v5 call shape: client.listen.v1.media.transcribe_file(request=...,
+  model=..., smart_format=True, diarize=True, ...). Response is a typed
+  object (response.results.channels[0].alternatives[0].transcript /
+  .words), NOT a dict. Mirrors pythonAudioA11y/transcription.py:36-46.
 - words_to_vtt(words, offset_s) — render Word records as WebVTT.
 - write_words_json(words, path) — persist per-word timing for
   downstream speaker remap.

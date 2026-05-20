@@ -15,7 +15,7 @@ import json
 import logging
 import re
 from dataclasses import dataclass
-from typing import Any, Literal, TypeGuard, cast
+from typing import Any, Literal, TypeGuard
 
 from auto_a11y.audio.cost import AnthropicUsage, cost_for_anthropic_call
 from auto_a11y.audio.errors import AnalysisError
@@ -33,28 +33,19 @@ _FRENCH_PREFIX = (
 )
 
 
-def _is_str_keyed_dict(val: object) -> TypeGuard[dict[str, Any]]:
-    """Narrow a ``json.loads`` result to ``dict[str, Any]``.
+def _is_str_obj_dict(val: object) -> TypeGuard[dict[str, object]]:
+    """Narrow a ``json.loads`` result to ``dict[str, object]``.
 
-    JSON objects always have string keys at runtime; we still check the
-    runtime shape so pyright's TypeGuard machinery can flow the type.
-    The local ``val_any`` rebinding launders the narrowed ``dict`` to
-    ``dict[Any, Any]`` so the iterator yields ``Any`` rather than
-    pyright's strict-mode ``Unknown``.
+    ``json.loads`` always produces ``str``-keyed dicts for JSON objects;
+    the runtime check is ``isinstance(val, dict)`` only. Matches the
+    same helper in ``auto_a11y/audio/speaker_identification.py``.
     """
-    if not isinstance(val, dict):
-        return False
-    # cast launders pyright's strict-mode ``dict[Unknown, Unknown]`` to a
-    # parametric ``dict[Any, Any]`` so the iterator yields a typed key.
-    # Not an ``Any`` workaround for a type error — the narrow already
-    # succeeded; this is the standard json-decoded-blob idiom.
-    val_typed: dict[Any, Any] = cast(dict[Any, Any], val)
-    return all(isinstance(k, str) for k in val_typed)
+    return isinstance(val, dict)
 
 
 @dataclass(frozen=True)
 class AnalysisResult:
-    json_payload: dict[str, Any]
+    json_payload: dict[str, object]
     html_text: str | None
     cost_usd: float
     input_tokens: int
@@ -142,7 +133,7 @@ class Analyzer:
         )
 
     @staticmethod
-    def _extract_json(text: str, recording_id: str) -> dict[str, Any]:
+    def _extract_json(text: str, recording_id: str) -> dict[str, object]:
         """Find the JSON object in the response.
 
         Prompts instruct Claude to emit either a raw JSON object or one
@@ -161,13 +152,13 @@ class Analyzer:
                 )
             payload = text[first : last + 1]
         try:
-            parsed: object = json.loads(payload)
+            raw: object = json.loads(payload)
         except json.JSONDecodeError as e:
             raise AnalysisError(
                 f"Failed to parse JSON for recording {recording_id}: {e}"
             ) from e
-        if not _is_str_keyed_dict(parsed):
+        if not _is_str_obj_dict(raw):
             raise AnalysisError(
-                f"JSON payload for {recording_id} is not a string-keyed object (got {type(parsed).__name__})"
+                f"JSON payload for {recording_id} is not a JSON object (got {type(raw).__name__})"
             )
-        return parsed
+        return raw

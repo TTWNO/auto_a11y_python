@@ -40,9 +40,38 @@ def session_template_dir(tmp_path_factory: pytest.TempPathFactory) -> Path:
     rec_dir.joinpath("list.html").write_text(
         "<html><body>recordings list</body></html>"
     )
-    rec_dir.joinpath("detail.html").write_text(
-        "<html><body>recording {{ recording.recording_id }}</body></html>"
-    )
+    # Stub mirrors the Phase-8 branching of the real ``detail.html`` so
+    # tests for the progress page / cost panel / failure alert can assert
+    # the right markup without pulling in the issues/scores deps the real
+    # template uses. The real ``_progress_card.html`` is loaded from a
+    # ``ChoiceLoader`` configured in the ``app`` fixture below.
+    _detail_template_parts = [
+        "<html><body>",
+        "<p>recording {{ recording.recording_id }}</p>",
+        "{% if recording.status in ('processing', 'cancelling',",
+        " 'cancelled', 'failed') %}",
+        "{% include 'recordings/_progress_card.html' %}",
+        "{% endif %}",
+        "{% if recording.status == 'failed' %}",
+        "<div class='alert alert-medium' role='alert'>",
+        "<h2>{{ ftl('audio-detail-failed-heading') }}</h2>",
+        "{% if recording.error_message %}",
+        "<p>{{ recording.error_message }}</p>",
+        "{% endif %}</div>",
+        "{% endif %}",
+        "{% if recording.status == 'complete' and recording.cost_breakdown %}",
+        "<aside><h2>{{ ftl('audio-detail-cost-panel-heading') }}</h2>",
+        "<p>{{ ftl('audio-cost-total') }}: ",
+        "${{ '%.4f' | format(recording.actual_cost_usd or 0) }}</p>",
+        "</aside>",
+        "{% endif %}",
+        "{% if recording.status == 'complete' %}",
+        "<section class='issues'>issue list for "
+        + "{{ issues|length }} issues</section>",
+        "{% endif %}",
+        "</body></html>",
+    ]
+    rec_dir.joinpath("detail.html").write_text("".join(_detail_template_parts))
     rec_dir.joinpath("combined.html").write_text(
         "<html><body>combined</body></html>"
     )
@@ -79,13 +108,39 @@ def app(
     fresh mocks.
     """
     from auto_a11y.audio.storage import AudioStorage
+    from jinja2 import ChoiceLoader, FileSystemLoader
 
     flask_app = Flask(
         __name__,
         template_folder=str(session_template_dir),
     )
+    # Resolve real partials (e.g. ``recordings/_progress_card.html``) from
+    # the production templates folder so we don't have to duplicate the
+    # markup we want to assert against in tests.
+    real_templates = (
+        Path(__file__).resolve().parents[2]
+        / 'auto_a11y' / 'web' / 'templates'
+    )
+    # ``Flask.jinja_loader`` is typed as a cached_property; assigning a
+    # ChoiceLoader at runtime is supported and what Flask documents, but
+    # the type stub forbids it. ``setattr`` is the documented Flask idiom.
+    setattr(
+        flask_app,
+        'jinja_loader',
+        ChoiceLoader([
+            FileSystemLoader(str(session_template_dir)),
+            FileSystemLoader(str(real_templates)),
+        ]),
+    )
     flask_app.testing = True
     flask_app.secret_key = 'test'
+    # ``csrf_token()`` is referenced by ``_progress_card.html`` and the
+    # confirm/upload templates. We initialise Flask-WTF's CSRF extension
+    # so the template global exists, but turn enforcement off so tests
+    # don't have to round-trip a token.
+    flask_app.config['WTF_CSRF_ENABLED'] = False
+    from flask_wtf.csrf import CSRFProtect
+    CSRFProtect(flask_app)
 
     cfg = MagicMock()
     cfg.AUDIO_STORAGE_DIR = str(session_storage_dir)

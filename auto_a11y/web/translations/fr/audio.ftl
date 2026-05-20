@@ -49,3 +49,31 @@ audio-error-no-project                  = Le projet est obligatoire.
 audio-error-no-project-access           = Vous n'avez pas accès à ce projet.
 audio-error-runner-not-configured       = Le processus vidéo n'est pas configuré sur le serveur.
 audio-error-already-processing          = Cet enregistrement n'est pas à l'état « téléversé » et ne peut pas être traité.
+
+# === Étiquettes d'étape du pipeline ===
+audio-stage-segmenting                  = Extraction audio
+audio-stage-transcribing                = Transcription
+audio-stage-speaker-remap               = Identification des intervenants
+audio-stage-merging-vtt                 = Fusion des sous-titres
+audio-stage-analyzing                   = Analyse
+audio-stage-callouts                    = Génération de la vidéo avec annotations
+audio-stage-importing                   = Importation des problèmes
+
+# === Étiquettes d'état d'enregistrement ===
+audio-status-uploaded                   = Téléversé
+audio-status-processing                 = En cours de traitement
+audio-status-complete                   = Terminé
+audio-status-failed                     = Échec
+audio-status-cancelling                 = Annulation en cours
+audio-status-cancelled                  = Annulé
+
+# === Carte de progression (phase 8) ===
+audio-progress-elapsed                  = Temps écoulé
+audio-progress-running-cost             = Coût jusqu'à présent
+audio-progress-cancel                   = Annuler
+audio-progress-aria-label               = Progression du traitement : étape { $stage }, { $current } sur { $total }
+
+# === Page de détail (phase 8) ===
+audio-detail-failed-heading             = Échec du traitement
+audio-detail-cost-panel-heading         = Détail du coût
+audio-detail-cost-estimated-was         = Coût estimé initialement

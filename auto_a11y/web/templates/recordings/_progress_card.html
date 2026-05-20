@@ -1,0 +1,96 @@
+{# Progress card partial — audioA11y Phase 8.
+
+   Renders the in-flight progress UI for a Recording whose ``status`` is
+   one of ``processing``, ``cancelling``, ``failed``, or ``cancelled``.
+
+   Inputs (Jinja context):
+     - ``recording``: ``Recording`` instance (uses ``status``, ``progress``,
+       ``actual_cost_usd``, ``recording_id``, ``id``).
+
+   Accessibility:
+     - The whole block is wrapped in ``<section role="status"
+       aria-live="polite">`` so screen-reader users hear stage changes
+       announced when the page meta-refreshes.
+     - The progress bar exposes ``aria-valuemin/max/now`` and an
+       ``aria-label`` that names the stage and counts.
+#}
+{% set _status = recording.status %}
+{% set _progress = recording.progress or {} %}
+{% set _stage = _progress.get('stage', '') if _progress else '' %}
+{% set _current = _progress.get('current', 0) if _progress else 0 %}
+{% set _total = _progress.get('total', 0) if _progress else 0 %}
+{% set _elapsed_ms = _progress.get('elapsed_ms', 0) if _progress else 0 %}
+{# Stage IDs use underscores in Python (``speaker_remap``) but the
+   Fluent message IDs use hyphens (``audio-stage-speaker-remap``).  #}
+{% set _stage_id = _stage|replace('_', '-') if _stage else '' %}
+{% set _percent = ((_current / _total) * 100)|round|int if _total else 0 %}
+{# Elapsed time: render as MM:SS for short runs, HH:MM:SS for longer. #}
+{% set _elapsed_s = (_elapsed_ms // 1000) if _elapsed_ms else 0 %}
+{% set _hh = _elapsed_s // 3600 %}
+{% set _mm = (_elapsed_s % 3600) // 60 %}
+{% set _ss = _elapsed_s % 60 %}
+{% if _hh > 0 %}
+    {% set _elapsed_human = '%d:%02d:%02d'|format(_hh, _mm, _ss) %}
+{% else %}
+    {% set _elapsed_human = '%d:%02d'|format(_mm, _ss) %}
+{% endif %}
+
+{% if _status in ('processing', 'cancelling') %}
+{# Meta-refresh ONLY for in-flight states; terminal pages stay static. #}
+<meta http-equiv="refresh" content="3">
+{% endif %}
+
+<section class="card mb-4" role="status" aria-live="polite" aria-labelledby="recording-progress-heading">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 id="recording-progress-heading" class="h4 mb-0">
+                <i class="bi bi-hourglass-split" aria-hidden="true"></i>
+                <span class="badge badge-discovery">{{ ftl('audio-status-' ~ _status) }}</span>
+            </h2>
+            {% if _status == 'processing' %}
+            <form method="POST"
+                  action="{{ url_for('recordings.cancel_recording', recording_id=recording.id) }}"
+                  class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm btn-outline-high">
+                    <i class="bi bi-x-octagon" aria-hidden="true"></i>
+                    {{ ftl('audio-progress-cancel') }}
+                </button>
+            </form>
+            {% endif %}
+        </div>
+
+        {% if _stage_id %}
+        <p class="mb-2">
+            <strong>{{ ftl('audio-stage-' ~ _stage_id) }}</strong>
+            {% if _total %}
+            <span class="text-muted">({{ _current }} / {{ _total }})</span>
+            {% endif %}
+        </p>
+        {% endif %}
+
+        {% if _total %}
+        <div class="progress mb-3" style="height: 12px;">
+            <div class="progress-bar progress-pass"
+                 role="progressbar"
+                 style="width: {{ _percent }}%"
+                 aria-valuemin="0"
+                 aria-valuemax="{{ _total }}"
+                 aria-valuenow="{{ _current }}"
+                 aria-label="{{ ftl('audio-progress-aria-label', stage=(ftl('audio-stage-' ~ _stage_id) if _stage_id else ''), current=_current, total=_total) }}">
+            </div>
+        </div>
+        {% endif %}
+
+        <dl class="row mb-0">
+            <dt class="col-sm-4 text-muted">{{ ftl('audio-progress-elapsed') }}</dt>
+            <dd class="col-sm-8 mb-2"><code>{{ _elapsed_human }}</code></dd>
+            {% if recording.actual_cost_usd is not none %}
+            <dt class="col-sm-4 text-muted">{{ ftl('audio-progress-running-cost') }}</dt>
+            <dd class="col-sm-8 mb-0">
+                <span class="badge badge-brand">${{ '%.4f' | format(recording.actual_cost_usd) }}</span>
+            </dd>
+            {% endif %}
+        </dl>
+    </div>
+</section>

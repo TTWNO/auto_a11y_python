@@ -782,6 +782,30 @@ def process_recording(recording_id: str) -> Response | WerkzeugResponse:
     return redirect(url_for('recordings.view_recording', recording_id=recording_id))
 
 
+@recordings_bp.route('/<recording_id>/cancel', methods=['POST'])
+def cancel_recording(recording_id: str) -> WerkzeugResponse:
+    """Flip a ``processing`` Recording's status to ``cancelling``.
+
+    Phase 8 of the audioA11y integration. The running ``VideoRunner``
+    polls ``Recording.status`` between pipeline stages and raises
+    ``_Cancelled`` (which it maps to a final ``cancelled`` state) when
+    it sees the flag flipped. This endpoint is idempotent — a second
+    POST (e.g. from a double-clicked button) is a no-op, and POSTing
+    against any non-``processing`` Recording is also a safe no-op so
+    the UI never 4xx's on a stale page.
+    """
+    recording = get_db().get_recording(recording_id)
+    if recording is None:
+        flash(ftl('recordings-recording-not-found'), 'danger')
+        return redirect(url_for('recordings.list_recordings'))
+
+    if recording.status == 'processing':
+        recording.status = 'cancelling'
+        get_db().update_recording(recording)
+
+    return redirect(url_for('recordings.view_recording', recording_id=recording_id))
+
+
 @recordings_bp.route('/<recording_id>/delete', methods=['POST'])
 def delete_recording(recording_id: str) -> WerkzeugResponse:
     """Delete a recording"""

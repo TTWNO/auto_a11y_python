@@ -32,6 +32,78 @@
         </div>
     </div>
 
+    {# === Phase 8: pipeline progress / failure / cost panel branching ===
+       Recording.status drives which blocks render:
+         - processing / cancelling / cancelled → progress card partial
+         - failed                              → progress card + error alert
+         - complete                            → cost-breakdown panel below
+         - uploaded                            → none (manual import path)
+    #}
+    {% if recording.status in ('processing', 'cancelling', 'cancelled', 'failed') %}
+    {% include 'recordings/_progress_card.html' %}
+    {% endif %}
+
+    {% if recording.status == 'failed' %}
+    <div class="alert alert-medium" role="alert">
+        <h2 class="h5 alert-heading">
+            <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+            {{ ftl('audio-detail-failed-heading') }}
+        </h2>
+        {% if recording.error_message %}
+        <p class="mb-0">{{ recording.error_message }}</p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if recording.status == 'complete' and recording.cost_breakdown %}
+    <aside aria-labelledby="recording-cost-panel-heading" class="mb-4">
+        <div class="card">
+            <div class="card-header card-header-neutral">
+                <h2 id="recording-cost-panel-heading" class="h5 mb-0">
+                    <i class="bi bi-currency-dollar" aria-hidden="true"></i>
+                    {{ ftl('audio-detail-cost-panel-heading') }}
+                </h2>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tbody>
+                        {% set _breakdown = recording.cost_breakdown or {} %}
+                        {% if 'deepgram' in _breakdown %}
+                        <tr>
+                            <td>{{ ftl('audio-cost-deepgram') }}</td>
+                            <td class="text-end">${{ '%.4f' | format(_breakdown['deepgram']) }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if 'claude_en' in _breakdown %}
+                        <tr>
+                            <td>{{ ftl('audio-cost-claude-en') }}</td>
+                            <td class="text-end">${{ '%.4f' | format(_breakdown['claude_en']) }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if 'claude_fr' in _breakdown %}
+                        <tr>
+                            <td>{{ ftl('audio-cost-claude-fr') }}</td>
+                            <td class="text-end">${{ '%.4f' | format(_breakdown['claude_fr']) }}</td>
+                        </tr>
+                        {% endif %}
+                        {% if recording.actual_cost_usd is not none %}
+                        <tr>
+                            <th scope="row">{{ ftl('audio-cost-total') }}</th>
+                            <th class="text-end">${{ '%.4f' | format(recording.actual_cost_usd) }}</th>
+                        </tr>
+                        {% endif %}
+                        {% if recording.estimated_cost_usd is not none %}
+                        <tr>
+                            <td class="text-muted">{{ ftl('audio-detail-cost-estimated-was') }}</td>
+                            <td class="text-end text-muted">${{ '%.4f' | format(recording.estimated_cost_usd) }}</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </aside>
+    {% endif %}
 
     <!-- Recording Metadata -->
     <div class="row mb-4">
@@ -332,6 +404,10 @@
         </div>
     </div>
 
+    {# Phase 8: only render issues/takeaways/painpoints once the pipeline
+       has finished. While processing, the progress card above is the
+       only useful content. #}
+    {% if recording.status == 'complete' %}
     <!-- Recording Content Accordion (Key Takeaways, Painpoints, Assertions, Issues) -->
     <div class="accordion mb-4" id="recordingContentAccordion">
         <!-- Key Takeaways -->
@@ -600,6 +676,7 @@
             </div> <!-- Close accordion-collapse -->
         </div> <!-- Close accordion-item -->
     </div> <!-- Close accordion #recordingContentAccordion -->
+    {% endif %} {# Phase 8: end recording.status == 'complete' guard #}
 </div>
 
 <script>

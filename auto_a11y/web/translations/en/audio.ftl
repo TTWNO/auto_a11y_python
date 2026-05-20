@@ -49,3 +49,31 @@ audio-error-no-project                  = Project is required.
 audio-error-no-project-access           = You do not have access to this project.
 audio-error-runner-not-configured       = Video runner is not configured on the server.
 audio-error-already-processing          = This recording is not in the uploaded state and cannot be processed.
+
+# === Pipeline stage labels ===
+audio-stage-segmenting                  = Extracting audio
+audio-stage-transcribing                = Transcribing
+audio-stage-speaker-remap               = Identifying speakers
+audio-stage-merging-vtt                 = Merging captions
+audio-stage-analyzing                   = Analyzing
+audio-stage-callouts                    = Rendering callouts video
+audio-stage-importing                   = Importing issues
+
+# === Recording status labels ===
+audio-status-uploaded                   = Uploaded
+audio-status-processing                 = Processing
+audio-status-complete                   = Complete
+audio-status-failed                     = Failed
+audio-status-cancelling                 = Cancelling
+audio-status-cancelled                  = Cancelled
+
+# === Progress card (Phase 8) ===
+audio-progress-elapsed                  = Elapsed
+audio-progress-running-cost             = Cost so far
+audio-progress-cancel                   = Cancel
+audio-progress-aria-label               = Processing progress: stage { $stage }, { $current } of { $total }
+
+# === Detail page (Phase 8) ===
+audio-detail-failed-heading             = Processing failed
+audio-detail-cost-panel-heading         = Cost breakdown
+audio-detail-cost-estimated-was         = Estimated cost was

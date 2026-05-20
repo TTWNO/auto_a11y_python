@@ -843,3 +843,7 @@ common-try-again = Réessayer
 
 # Generic actions
 common-remove-filter = Supprimer le filtre
+
+# Third-party software attribution (About page)
+common-third-party-software = Logiciels tiers
+common-this-application-bundles-ffmpeg = Cette application intègre FFmpeg (https://ffmpeg.org), sous licence GNU General Public License v3, utilisé pour traiter les enregistrements audio et vidéo. FFmpeg est appelé comme un programme distinct et n'est pas lié au code d'Auto A11y.

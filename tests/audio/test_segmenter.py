@@ -50,6 +50,69 @@ def test_pick_split_points_falls_back_to_target_when_no_silence_in_window() -> N
     assert splits == [600.0]
 
 
+def test_pick_split_points_drops_last_when_tail_too_short() -> None:
+    # 1250s total, target 600s → 3 segments → 2 ideal splits at 600, 1200.
+    # No silences; both splits are hard. After splitting, tail = 1250 - 1200 = 50s.
+    # 50s < min_last_segment_s=300s → drop the 1200 split.
+    splits = pick_split_points(
+        total_duration=1250.0,
+        silences=[],
+        target_s=600.0,
+        window_s=30.0,
+        min_last_segment_s=300.0,
+    )
+    assert splits == [600.0]
+
+
+def test_pick_split_points_keeps_last_when_tail_long_enough() -> None:
+    # 1800s total, target 600s → 3 segments → 2 ideal splits at 600, 1200.
+    # Tail = 1800 - 1200 = 600s ≥ 300s → keep both.
+    splits = pick_split_points(
+        total_duration=1800.0, silences=[], target_s=600.0, window_s=30.0,
+        min_last_segment_s=300.0,
+    )
+    assert splits == [600.0, 1200.0]
+
+
+def test_pick_split_points_drop_uses_nudged_value() -> None:
+    # Silence nudges the 1200 split forward to 1205.4 (within window).
+    # Tail = 1250 - 1205.4 = 44.6s < 300s → still drop.
+    splits = pick_split_points(
+        total_duration=1250.0,
+        silences=[SilencePoint(start=1205.0, end=1205.4, duration=0.4)],
+        target_s=600.0, window_s=30.0,
+        min_last_segment_s=300.0,
+    )
+    assert splits == [600.0]
+
+
+def test_segment_duration_s_property() -> None:
+    seg = Segment(index=0, start_s=10.0, end_s=85.5)
+    assert seg.duration_s == 75.5
+
+
+def test_pick_split_points_when_total_under_target() -> None:
+    # Recording shorter than one target segment → no splits at all.
+    splits = pick_split_points(
+        total_duration=300.0, silences=[], target_s=600.0, window_s=30.0,
+    )
+    assert splits == []
+
+
+def test_parse_silencedetect_output_handles_unmatched_start() -> None:
+    # silence_start with no matching silence_end → discarded.
+    raw = (
+        "[silencedetect] silence_start: 100.0\n"
+        "[silencedetect] silence_start: 200.0\n"
+        "[silencedetect] silence_end: 200.5 | silence_duration: 0.5\n"
+    )
+    points = parse_silencedetect_output(raw)
+    # First silence_start is paired with the only silence_end; second start lingers.
+    assert len(points) == 1
+    assert points[0].start == 100.0
+    assert points[0].end == 200.5
+
+
 def test_segments_from_splits() -> None:
     segments = segments_from_splits(total_duration=1500.0, splits=[600.0, 1200.0])
     assert segments == [

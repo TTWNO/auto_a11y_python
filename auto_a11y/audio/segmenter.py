@@ -14,6 +14,7 @@ segments far more reliably than huge files, so the value is deliberate.
 from __future__ import annotations
 
 import json
+import logging
 import math
 import re
 import subprocess
@@ -22,6 +23,8 @@ from pathlib import Path
 
 from auto_a11y.audio.ffmpeg import detect_ffmpeg, detect_ffprobe
 from auto_a11y.audio.storage import AllocatedSlot
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -87,6 +90,7 @@ def pick_split_points(
     silences: list[SilencePoint],
     target_s: float = 600.0,
     window_s: float = 30.0,
+    min_last_segment_s: float = 300.0,
 ) -> list[float]:
     """Pick split points near each multiple of ``target_s``.
 
@@ -101,6 +105,12 @@ def pick_split_points(
     - 1`` — i.e., enough to produce ``ceil(total_duration / target_s)``
     segments. The trailing piece is never assigned its own boundary, so
     a 2400 s source split at 600 s produces 3 splits (4 segments), not 4.
+
+    After silence-nudging, if the trailing segment (between the final
+    split and ``total_duration``) would be shorter than
+    ``min_last_segment_s``, the final split is dropped so the tail gets
+    absorbed into the previous segment. Mirrors
+    ``pythonAudioA11y/audio_processor.py:148-154``.
     """
     num_segments = math.ceil(total_duration / target_s)
     ideal_points = [i * target_s for i in range(1, num_segments)]
@@ -116,6 +126,12 @@ def pick_split_points(
             splits.append(best.end)
         else:
             splits.append(ideal)
+
+    # Match source: re-check the tail *after* silence-nudging may have
+    # moved the final split. If the trailing segment is too short, drop
+    # the final split so it merges into the previous segment.
+    if splits and (total_duration - splits[-1]) < min_last_segment_s:
+        splits.pop()
     return splits
 
 
@@ -174,7 +190,16 @@ def detect_silences(
         text=True,
         check=False,
     )
-    return parse_silencedetect_output(result.stderr)
+    parsed = parse_silencedetect_output(result.stderr)
+    if result.returncode != 0 and not parsed:
+        # ffmpeg exited with error AND produced no silence detections —
+        # likely a corrupt or unreadable input file. Log so the runner
+        # can surface it (the pipeline still falls back to ideal points).
+        logger.warning(
+            "detect_silences: ffmpeg returncode=%s for %s; stderr tail: %s",
+            result.returncode, input_mp4.name, result.stderr[-500:],
+        )
+    return parsed
 
 
 def extract_segment(
@@ -183,7 +208,7 @@ def extract_segment(
     slot: AllocatedSlot,
     segment: Segment,
 ) -> Path:
-    """Extract one segment as an m4a (AAC, 128 kbps, no video)."""
+    """Extract one segment as an m4a, stream-copying the source audio."""
     ffmpeg = detect_ffmpeg(raise_if_missing=True)
     assert ffmpeg is not None  # raise_if_missing=True guarantees non-None
     out = slot.segment_m4a(segment.index)
@@ -195,9 +220,11 @@ def extract_segment(
             "-i", str(input_mp4),
             "-ss", f"{segment.start_s:.3f}",
             "-to", f"{segment.end_s:.3f}",
-            "-vn",
-            "-c:a", "aac",
-            "-b:a", "128k",
+            # Stream-copy: no re-encode. Matches
+            # pythonAudioA11y/audio_processor.py and avoids generational
+            # lossy re-encode of source AAC; ~30-60x faster on a typical
+            # 1-hour audit recording.
+            "-vn", "-acodec", "copy", "-map", "0:a",
             str(out),
         ],
         capture_output=True,
@@ -226,12 +253,17 @@ def split(
     )
     segments = segments_from_splits(total_duration=duration, splits=splits_at)
 
-    for seg in segments:
-        extract_segment(input_mp4=input_mp4, slot=slot, segment=seg)
-
+    # Write the manifest *before* extraction: it's planning data, so a
+    # crash mid-loop still leaves an inspectable record of what was
+    # supposed to be extracted. ``segment_m4a(i).exists()`` is the
+    # source of truth for what actually got produced.
     manifest_path = slot.audio_dir / "segments.json"
     manifest_bytes = json.dumps(
         [asdict(s) for s in segments], indent=2
     ).encode("utf-8")
     slot.write_atomic(manifest_path, manifest_bytes)
+
+    for seg in segments:
+        extract_segment(input_mp4=input_mp4, slot=slot, segment=seg)
+
     return segments

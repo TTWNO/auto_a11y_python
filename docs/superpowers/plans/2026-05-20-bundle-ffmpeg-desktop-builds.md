@@ -468,7 +468,7 @@ These should be unaffected (no Python/CSS changes), confirming we didn't break t
 - CI automation for Linux/Windows builds.
 - MP4Box bundling.
 - pyannote model bundling.
-- A Flask-side About/help page (the credit lives on the Electron splash for now).
+- Wiring a `/about` route to the existing (orphaned) `about.html` — the ffmpeg credit is added to that template now (Task 3.1), but making it reachable is a separate follow-up.
 
 ## When you're done
 

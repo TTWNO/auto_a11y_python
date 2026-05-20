@@ -78,7 +78,12 @@ def recovery_app(
     the only remaining failure is the Mongo one; that keeps the test
     focused on the recovery routing rather than on which check fired.
     """
-    _ = recovery_settings_path, monkeypatch
+    _ = recovery_settings_path
+    # The preflight Mongo check reads MONGODB_URI from os.environ — the
+    # broken URI on the config dataclass alone isn't enough when the test
+    # process inherits a working MONGODB_URI from its shell. Force the
+    # check to see the broken value too.
+    monkeypatch.setenv("MONGODB_URI", broken_mongo_config.MONGODB_URI)
     from auto_a11y.core import preflight_registrations
     from auto_a11y.audio import ffmpeg as audio_ffmpeg
 

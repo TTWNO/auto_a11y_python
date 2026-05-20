@@ -259,8 +259,6 @@ class Issue:
             who=recording_issue.who,
             remediation=recording_issue.remediation,
             project_id=recording_issue.project_id,
-            page_urls=recording_issue.page_urls,
-            page_ids=recording_issue.page_ids,
             component_names=recording_issue.component_names,
             source_type="manual",
             detection_method="dictaphone",

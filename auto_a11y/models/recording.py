@@ -53,9 +53,6 @@ class Recording:
 
     # Component/Section references (context-specific based on project type)
     website_ids: list[str] = field(default_factory=lambda: [])  # Specific websites (for WEBSITE projects)
-    page_urls: list[str] = field(default_factory=lambda: [])  # Specific page URLs
-    page_ids: list[str] = field(default_factory=lambda: [])  # Specific page IDs (from database)
-    discovered_page_ids: list[str] = field(default_factory=lambda: [])  # Discovered page IDs (from database)
     component_names: list[str] = field(default_factory=lambda: [])  # Common components (header, nav, footer, etc.)
     app_screens: list[str] = field(default_factory=lambda: [])  # Specific screens/views (for APP projects)
     device_sections: list[str] = field(default_factory=lambda: [])  # Device sections (for TANGIBLE_DEVICE projects)
@@ -161,9 +158,6 @@ class Recording:
             'testing_scope': self.testing_scope,
             'project_id': self.project_id,
             'website_ids': self.website_ids,
-            'page_urls': self.page_urls,
-            'page_ids': self.page_ids,
-            'discovered_page_ids': self.discovered_page_ids,
             'component_names': self.component_names,
             'app_screens': self.app_screens,
             'device_sections': self.device_sections,
@@ -215,9 +209,6 @@ class Recording:
             testing_scope=data.get('testing_scope', {}),
             project_id=data.get('project_id'),
             website_ids=data.get('website_ids', []),
-            page_urls=data.get('page_urls', []),
-            page_ids=data.get('page_ids', []),
-            discovered_page_ids=data.get('discovered_page_ids', []),
             component_names=data.get('component_names', []),
             app_screens=data.get('app_screens', []),
             device_sections=data.get('device_sections', []),

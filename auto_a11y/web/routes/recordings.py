@@ -129,26 +129,12 @@ def view_recording(recording_id: str) -> str | Response | WerkzeugResponse:
         if recording.project_id:
             project = get_db().get_project(recording.project_id)
 
-        # Get discovered pages for this recording
-        discovered_pages: list[Any] = []
-        if recording.discovered_page_ids:
-            from bson import ObjectId
-            from auto_a11y.models import DiscoveredPage
-            for page_id in recording.discovered_page_ids:
-                try:
-                    page_doc = get_db().discovered_pages.find_one({'_id': ObjectId(page_id)})
-                    if page_doc:
-                        discovered_pages.append(DiscoveredPage.from_dict(page_doc))
-                except Exception as e:
-                    logger.warning(f"Could not load discovered page {page_id}: {e}")
-
         return render_template(
             'recordings/detail.html',
             recording=recording,
             issues=issues,
             issues_by_touchpoint=issues_by_touchpoint,
             project=project,
-            discovered_pages=discovered_pages,
             scores=scores,
             all_criteria=all_criteria,
             applicable_criteria=applicable_criteria,
@@ -260,7 +246,6 @@ def upload_recording() -> str | Response | WerkzeugResponse:
         recording_type = request.form.get('recording_type', 'audit')
         lived_experience_tester_id = request.form.get('lived_experience_tester_id', '').strip() or None
         test_supervisor_id = request.form.get('test_supervisor_id', '').strip() or None
-        page_urls_str = request.form.get('page_urls', '')
         component_names_str = request.form.get('component_names', '')
         app_screens_str = request.form.get('app_screens', '')
         device_sections_str = request.form.get('device_sections', '')
@@ -281,13 +266,9 @@ def upload_recording() -> str | Response | WerkzeugResponse:
         }
 
         # Parse multi-line fields
-        page_urls = [url.strip() for url in page_urls_str.split('\n') if url.strip()]
         component_names = [c.strip() for c in component_names_str.split('\n') if c.strip()]
         app_screens = [s.strip() for s in app_screens_str.split('\n') if s.strip()]
         device_sections = [d.strip() for d in device_sections_str.split('\n') if d.strip()]
-
-        # Get discovered page IDs (from checkboxes)
-        discovered_page_ids = request.form.getlist('discovered_page_ids')
 
         # Process HTML or JSON content files (key takeaways, painpoints, assertions) - Multi-language
         from auto_a11y.parsers import (
@@ -424,8 +405,6 @@ def upload_recording() -> str | Response | WerkzeugResponse:
             recording, issues_en = importer.import_from_file(
                 tmp_file_en,
                 project_id=project_id,
-                page_urls=page_urls,
-                discovered_page_ids=discovered_page_ids,
                 component_names=component_names,
                 app_screens=app_screens,
                 device_sections=device_sections,
@@ -451,8 +430,6 @@ def upload_recording() -> str | Response | WerkzeugResponse:
                     _, issues_fr = importer.import_from_file(
                         tmp_file_fr,
                         project_id=project_id,
-                        page_urls=page_urls,
-                        discovered_page_ids=discovered_page_ids,
                         component_names=component_names,
                         app_screens=app_screens,
                         device_sections=device_sections,
@@ -495,54 +472,6 @@ def upload_recording() -> str | Response | WerkzeugResponse:
         logger.error(f"Error uploading recording: {e}", exc_info=True)
         flash(ftl('recordings-error-uploading-recording-error', error=str(e)), "danger")
         return redirect(url_for('recordings.upload_recording'))
-
-
-@recordings_bp.route('/<recording_id>/edit', methods=['POST'])
-def edit_recording(recording_id: str) -> Response | WerkzeugResponse | tuple[Response, int]:
-    """Edit a recording's page URLs and discovered pages"""
-    try:
-        recording = get_db().get_recording(recording_id)
-        if not recording:
-            return jsonify({'success': False, 'error': ftl('recordings-recording-not-found')}), 404
-
-        # Get form data
-        data = request.get_json() if request.is_json else request.form
-
-        # Update page_urls
-        page_urls_str = data.get('page_urls', '')
-        if isinstance(page_urls_str, str):
-            recording.page_urls = [url.strip() for url in page_urls_str.split('\n') if url.strip()]
-        else:
-            recording.page_urls = page_urls_str
-
-        # Update discovered_page_ids
-        discovered_page_ids: str | list[str] = data.get('discovered_page_ids', [])
-        if isinstance(discovered_page_ids, str):
-            # Handle comma-separated string
-            recording.discovered_page_ids = [dpid.strip() for dpid in discovered_page_ids.split(',') if dpid.strip()]
-        else:
-            recording.discovered_page_ids = discovered_page_ids
-
-        # Update timestamp
-        from datetime import datetime
-        recording.updated_at = datetime.now()
-
-        # Save to database
-        get_db().update_recording(recording)
-
-        if request.is_json:
-            return jsonify({'success': True, 'message': ftl('recordings-recording-updated-successfully')})
-        else:
-            flash(ftl('recordings-recording-updated-successfully'), 'success')
-            return redirect(url_for('recordings.view_recording', recording_id=recording_id))
-
-    except Exception as e:
-        logger.error(f"Error updating recording: {e}")
-        if request.is_json:
-            return jsonify({'success': False, 'error': str(e)}), 500
-        else:
-            flash(ftl('recordings-error-updating-recording-error', error=str(e)), 'error')
-            return redirect(url_for('recordings.view_recording', recording_id=recording_id))
 
 
 @recordings_bp.route('/<recording_id>/delete', methods=['POST'])

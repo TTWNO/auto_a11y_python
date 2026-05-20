@@ -53,8 +53,6 @@ class RecordingIssue:
 
     # Component/Section references (same as Recording model)
     website_ids: list[str] = field(default_factory=lambda: [])  # Specific websites
-    page_urls: list[str] = field(default_factory=lambda: [])  # Specific page URLs where issue occurs
-    page_ids: list[str] = field(default_factory=lambda: [])  # Specific page IDs
     component_names: list[str] = field(default_factory=lambda: [])  # Common components affected
     app_screens: list[str] = field(default_factory=lambda: [])  # App screens where issue occurs
     device_sections: list[str] = field(default_factory=lambda: [])  # Device sections affected
@@ -121,8 +119,6 @@ class RecordingIssue:
             'html': self.html,
             'project_id': self.project_id,
             'website_ids': self.website_ids,
-            'page_urls': self.page_urls,
-            'page_ids': self.page_ids,
             'component_names': self.component_names,
             'app_screens': self.app_screens,
             'device_sections': self.device_sections,
@@ -190,8 +186,6 @@ class RecordingIssue:
             html=data.get('html'),
             project_id=data.get('project_id'),
             website_ids=data.get('website_ids', []),
-            page_urls=data.get('page_urls', []),
-            page_ids=data.get('page_ids', []),
             component_names=data.get('component_names', []),
             app_screens=data.get('app_screens', []),
             device_sections=data.get('device_sections', []),

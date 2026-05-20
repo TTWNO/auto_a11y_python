@@ -595,7 +595,6 @@ def test_recordings_upload_happy_path_returns_201(
             "title": "Manual audit walkthrough",
             "auditor_name": "Alice",
             "recording_type": "audit",
-            "page_urls": "https://a.test/p1\nhttps://a.test/p2",
             "recording_json_en": (
                 io.BytesIO(json.dumps(_dictaphone_json(rec_id)).encode("utf-8")),
                 "rec.json",

@@ -6187,9 +6187,9 @@ def _parse_multiline_form_field(value: str | None) -> list[str]:
     """Split a textarea-style form field (one item per line) to a list.
 
     Empty input yields an empty list; whitespace-only lines are
-    dropped. Used by the recordings upload route for the page_urls /
-    component_names / app_screens / device_sections fields the legacy
-    multipart form accepts.
+    dropped. Used by the recordings upload route for the component_names
+    / app_screens / device_sections fields the legacy multipart form
+    accepts.
     """
     if not value:
         return []
@@ -6222,9 +6222,6 @@ def _recording_to_out(recording: Recording) -> RecordingOut:
         project_id=recording.project_id,
         testing_scope=dict(recording.testing_scope),
         website_ids=list(recording.website_ids),
-        page_urls=list(recording.page_urls),
-        page_ids=list(recording.page_ids),
-        discovered_page_ids=list(recording.discovered_page_ids),
         component_names=list(recording.component_names),
         app_screens=list(recording.app_screens),
         device_sections=list(recording.device_sections),
@@ -6284,8 +6281,6 @@ def _recording_issue_to_out(issue: RecordingIssue) -> RecordingIssueOut:
         html=issue.html,
         project_id=issue.project_id,
         website_ids=list(issue.website_ids),
-        page_urls=list(issue.page_urls),
-        page_ids=list(issue.page_ids),
         component_names=list(issue.component_names),
         app_screens=list(issue.app_screens),
         device_sections=list(issue.device_sections),
@@ -6337,22 +6332,6 @@ def _apply_recording_patch_pyd(
         recording.tags = list(body.tags)
     if "notes" in fields_set:
         recording.notes = body.notes
-    if "page_urls" in fields_set:
-        raw_urls = body.page_urls
-        if isinstance(raw_urls, str):
-            recording.page_urls = [u.strip() for u in raw_urls.split("\n") if u.strip()]
-        elif raw_urls is None:
-            recording.page_urls = []
-        else:
-            recording.page_urls = [u.strip() for u in raw_urls if u.strip()]
-    if "discovered_page_ids" in fields_set:
-        raw_ids = body.discovered_page_ids
-        if isinstance(raw_ids, str):
-            recording.discovered_page_ids = [d.strip() for d in raw_ids.split(",") if d.strip()]
-        elif raw_ids is None:
-            recording.discovered_page_ids = []
-        else:
-            recording.discovered_page_ids = [d.strip() for d in raw_ids if d.strip()]
     recording.updated_at = datetime.now()
     return recording
 
@@ -6552,13 +6531,9 @@ def create_recording_rest(
         "drag_drop": form.scope_drag_drop == "on",
     }
 
-    page_urls = _parse_multiline_form_field(form.page_urls)
     component_names = _parse_multiline_form_field(form.component_names)
     app_screens = _parse_multiline_form_field(form.app_screens)
     device_sections = _parse_multiline_form_field(form.device_sections)
-    # Multi-value form key: read directly off ``request.form`` since the
-    # @document decorator collapses repeated keys via ``form.items()``.
-    discovered_page_ids = request.form.getlist("discovered_page_ids")
     task_description = (
         form.task_description.strip()
         if form.task_description is not None and form.task_description.strip()
@@ -6577,8 +6552,6 @@ def create_recording_rest(
         recording, issues_en = importer.import_from_file(
             str(tmp_paths[0]),
             project_id=project_id_raw,
-            page_urls=page_urls,
-            discovered_page_ids=discovered_page_ids,
             component_names=component_names,
             app_screens=app_screens,
             device_sections=device_sections,
@@ -6599,8 +6572,6 @@ def create_recording_rest(
             _, issues_fr = importer.import_from_file(
                 str(tmp_paths[1]),
                 project_id=project_id_raw,
-                page_urls=page_urls,
-                discovered_page_ids=discovered_page_ids,
                 component_names=component_names,
                 app_screens=app_screens,
                 device_sections=device_sections,
@@ -14480,17 +14451,11 @@ def drupal_upload_rest(
                 continue
             recording = Recording.from_dict(rec_doc)
 
-            discovered_page_uuids: list[str] = []
-            for pid in recording.discovered_page_ids:
-                try:
-                    p_doc = db.discovered_pages.find_one({"_id": ObjectId(pid)})
-                    if p_doc and isinstance(p_doc.get("drupal_uuid"), str):
-                        discovered_page_uuids.append(p_doc["drupal_uuid"])
-                except Exception:  # noqa: BLE001
-                    pass
-
+            # Cross-page linking from recording to discovered pages was
+            # removed; pass an empty list so the Drupal exporter does
+            # not attempt to attach page references.
             rec_res = recording_exporter.export_from_recording_model(
-                recording, audit_uuid, discovered_page_uuids,
+                recording, audit_uuid, [],
                 include_french=include_french,
             )
             if rec_res.get("success"):

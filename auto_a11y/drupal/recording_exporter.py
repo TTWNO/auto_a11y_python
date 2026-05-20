@@ -161,9 +161,6 @@ class RecordingExporter:
         if recording.component_names:
             html_parts.append(f"<p><strong>Components:</strong> {self._escape_html(', '.join(recording.component_names))}</p>")
 
-        if recording.page_urls:
-            html_parts.append(f"<p><strong>Pages tested:</strong> {len(recording.page_urls)}</p>")
-
         # Auditor metadata (since we can't use separate fields)
         metadata_parts: list[str] = []
         if recording.auditor_name:

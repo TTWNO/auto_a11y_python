@@ -5523,10 +5523,10 @@ components:
           title: Max Pages
         project_user_ids:
           anyOf:
+          - type: string
           - items:
               type: string
             type: array
-          - type: string
           - type: 'null'
           default: null
           title: Project User Ids
@@ -5550,10 +5550,10 @@ components:
           title: Untested Only
         website_user_ids:
           anyOf:
+          - type: string
           - items:
               type: string
             type: array
-          - type: string
           - type: 'null'
           default: null
           title: Website User Ids
@@ -5898,16 +5898,6 @@ components:
         language:
           title: Language
           type: string
-        page_ids:
-          items:
-            type: string
-          title: Page Ids
-          type: array
-        page_urls:
-          items:
-            type: string
-          title: Page Urls
-          type: array
         project_id:
           anyOf:
           - type: string
@@ -6013,8 +6003,6 @@ components:
       - timecodes
       - wcag
       - website_ids
-      - page_urls
-      - page_ids
       - component_names
       - app_screens
       - device_sections
@@ -6117,11 +6105,6 @@ components:
             type: string
           title: Device Sections
           type: array
-        discovered_page_ids:
-          items:
-            type: string
-          title: Discovered Page Ids
-          type: array
         duration:
           anyOf:
           - type: string
@@ -6149,16 +6132,6 @@ components:
           - type: 'null'
           default: null
           title: Notes
-        page_ids:
-          items:
-            type: string
-          title: Page Ids
-          type: array
-        page_urls:
-          items:
-            type: string
-          title: Page Urls
-          type: array
         project_id:
           anyOf:
           - type: string
@@ -6216,9 +6189,6 @@ components:
       - recording_type
       - testing_scope
       - website_ids
-      - page_urls
-      - page_ids
-      - discovered_page_ids
       - component_names
       - app_screens
       - device_sections
@@ -6234,26 +6204,13 @@ components:
       description: 'Request body for partial recording updates.
 
 
-        Editable fields cover human-facing metadata plus two scope fields
-
-        that the legacy ``/recordings/<id>/edit`` form has always written:
-
-        ``page_urls`` (free-form URL list) and ``discovered_page_ids``
-
-        (cross-reference to discovered-pages). Server-managed fields
+        Editable fields cover human-facing metadata. Server-managed fields
 
         (counts, project_id, recording_id, recording_type, media_file_path,
 
         Drupal sync, and the multi-language content arrays) are not patchable
 
         here.
-
-
-        ``page_urls`` accepts either a list of strings or a single newline-
-
-        separated string; the handler normalises to a list. Same shape
-
-        flexibility for ``discovered_page_ids`` (list-or-comma-separated).
 
 
         The PATCH body is *partial* — only fields the client sends are
@@ -6280,30 +6237,12 @@ components:
           - type: 'null'
           default: null
           title: Description
-        discovered_page_ids:
-          anyOf:
-          - items:
-              type: string
-            type: array
-          - type: string
-          - type: 'null'
-          default: null
-          title: Discovered Page Ids
         notes:
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Notes
-        page_urls:
-          anyOf:
-          - items:
-              type: string
-            type: array
-          - type: string
-          - type: 'null'
-          default: null
-          title: Page Urls
         tags:
           anyOf:
           - items:
@@ -6336,18 +6275,12 @@ components:
         \ — optional task summary.\n- ``test_user_account``, ``lived_experience_tester_id``,\n\
         \  ``test_supervisor_id`` — optional auditor-context ids; the handler\n  collapses\
         \ empty strings to ``None``.\n- ``media_file_path`` — optional pointer to\
-        \ the underlying MP4.\n- ``page_urls`` / ``component_names`` / ``app_screens``\
-        \ /\n  ``device_sections`` — optional newline-separated lists parsed by\n\
-        \  ``_parse_multiline_form_field`` in the handler.\n- ``discovered_page_ids``\
-        \ — optional. Multipart forms send list\n  fields as repeated entries with\
-        \ the same key; the handler reads\n  that via ``request.form.getlist(\"discovered_page_ids\"\
-        )``. We\n  accept the legacy single-key shape here (the value is the *last*\n\
-        \  submitted entry, which is what ``dict(request.form.items())``\n  yields);\
-        \ the handler still reads the full list via ``getlist``\n  so multi-entry\
-        \ posts continue to work end-to-end.\n- ``scope_forms`` … ``scope_drag_drop``\
-        \ — checkbox booleans. The\n  browser idiom sends the literal string ``\"\
-        on\"`` for true and\n  omits the field entirely for false; we accept ``Optional[str]``\n\
-        \  to preserve that wire and let the handler interpret it."
+        \ the underlying MP4.\n- ``component_names`` / ``app_screens`` / ``device_sections``\
+        \ —\n  optional newline-separated lists parsed by\n  ``_parse_multiline_form_field``\
+        \ in the handler.\n- ``scope_forms`` … ``scope_drag_drop`` — checkbox booleans.\
+        \ The\n  browser idiom sends the literal string ``\"on\"`` for true and\n\
+        \  omits the field entirely for false; we accept ``Optional[str]``\n  to preserve\
+        \ that wire and let the handler interpret it."
       properties:
         app_screens: &id006
           anyOf:
@@ -6385,112 +6318,100 @@ components:
           - type: 'null'
           default: null
           title: Device Sections
-        discovered_page_ids: &id012
-          anyOf:
-          - type: string
-          - type: 'null'
-          default: null
-          title: Discovered Page Ids
-        lived_experience_tester_id: &id013
+        lived_experience_tester_id: &id012
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Lived Experience Tester Id
-        media_file_path: &id014
+        media_file_path: &id013
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Media File Path
-        page_urls: &id015
-          anyOf:
-          - type: string
-          - type: 'null'
-          default: null
-          title: Page Urls
-        project_id: &id016
+        project_id: &id014
           title: Project Id
           type: string
-        recording_type: &id017
+        recording_type: &id015
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Recording Type
-        scope_drag_drop: &id018
+        scope_drag_drop: &id016
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Scope Drag Drop
-        scope_forms: &id019
+        scope_forms: &id017
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Scope Forms
-        scope_live_multimedia: &id020
+        scope_live_multimedia: &id018
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Scope Live Multimedia
-        scope_motion_actuation: &id021
+        scope_motion_actuation: &id019
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Scope Motion Actuation
-        scope_multilingual: &id022
+        scope_multilingual: &id020
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Scope Multilingual
-        scope_orientation: &id023
+        scope_orientation: &id021
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Scope Orientation
-        scope_timeouts: &id024
+        scope_timeouts: &id022
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Scope Timeouts
-        scope_video: &id025
+        scope_video: &id023
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Scope Video
-        scope_zoom: &id026
+        scope_zoom: &id024
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Scope Zoom
-        task_description: &id027
+        task_description: &id025
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Task Description
-        test_supervisor_id: &id028
+        test_supervisor_id: &id026
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Test Supervisor Id
-        test_user_account: &id029
+        test_user_account: &id027
           anyOf:
           - type: string
           - type: 'null'
           default: null
           title: Test User Account
-        title: &id030
+        title: &id028
           anyOf:
           - type: string
           - type: 'null'
@@ -9652,19 +9573,19 @@ components:
           title: Max Pages
         project_user_ids:
           anyOf:
+          - type: string
           - items:
               type: string
             type: array
-          - type: string
           - type: 'null'
           default: null
           title: Project User Ids
         website_user_ids:
           anyOf:
+          - type: string
           - items:
               type: string
             type: array
-          - type: string
           - type: 'null'
           default: null
           title: Website User Ids
@@ -10015,10 +9936,10 @@ components:
           title: Max Pages
         project_user_ids:
           anyOf:
+          - type: string
           - items:
               type: string
             type: array
-          - type: string
           - type: 'null'
           default: null
           title: Project User Ids
@@ -10042,10 +9963,10 @@ components:
           title: Untested Only
         website_user_ids:
           anyOf:
+          - type: string
           - items:
               type: string
             type: array
-          - type: string
           - type: 'null'
           default: null
           title: Website User Ids
@@ -15927,31 +15848,29 @@ paths:
                 component_names: *id009
                 description: *id010
                 device_sections: *id011
-                discovered_page_ids: *id012
-                lived_experience_tester_id: *id013
-                media_file_path: *id014
-                page_urls: *id015
-                project_id: *id016
+                lived_experience_tester_id: *id012
+                media_file_path: *id013
+                project_id: *id014
                 recording_json_en:
                   format: binary
                   type: string
                 recording_json_fr:
                   format: binary
                   type: string
-                recording_type: *id017
-                scope_drag_drop: *id018
-                scope_forms: *id019
-                scope_live_multimedia: *id020
-                scope_motion_actuation: *id021
-                scope_multilingual: *id022
-                scope_orientation: *id023
-                scope_timeouts: *id024
-                scope_video: *id025
-                scope_zoom: *id026
-                task_description: *id027
-                test_supervisor_id: *id028
-                test_user_account: *id029
-                title: *id030
+                recording_type: *id015
+                scope_drag_drop: *id016
+                scope_forms: *id017
+                scope_live_multimedia: *id018
+                scope_motion_actuation: *id019
+                scope_multilingual: *id020
+                scope_orientation: *id021
+                scope_timeouts: *id022
+                scope_video: *id023
+                scope_zoom: *id024
+                task_description: *id025
+                test_supervisor_id: *id026
+                test_user_account: *id027
+                title: *id028
               required:
               - project_id
               - recording_json_en

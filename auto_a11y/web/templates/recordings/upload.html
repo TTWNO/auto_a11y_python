@@ -209,27 +209,6 @@
                             </select>
                         </div>
 
-                        <!-- Page URLs -->
-                        <div class="mb-4">
-                            <label for="page_urls" class="form-label">{{ ftl('recordings-page-urls-covered') }}</label>
-                            <textarea class="form-control" id="page_urls" name="page_urls" rows="3"
-                                      placeholder="https://example.com/&#10;https://example.com/about&#10;https://example.com/contact" aria-describedby="page-urls-help"></textarea>
-                            <div class="form-text" id="page-urls-help">
-                                {{ ftl('recordings-optional-enter-one-url-per-line-for-specific') }}
-                            </div>
-                        </div>
-
-                        <!-- Discovered Pages -->
-                        <fieldset class="mb-4">
-                            <legend class="form-label">{{ ftl('common-discovered-pages') }}</legend>
-                            <div class="form-text mb-2" id="discovered-pages-help">
-                                {{ ftl('recordings-optional-select-discovered-pages-related-to-this') }}
-                            </div>
-                            <div id="discovered-pages-container" class="border-table" aria-describedby="discovered-pages-help" style="max-height: 200px; overflow-y: auto; border: 1px solid; border-radius: 0.25rem; padding: 0.5rem;">
-                                <p class="text-muted small mb-0">{{ ftl('recordings-select-a-project-to-see-discovered-pages') }}</p>
-                            </div>
-                        </fieldset>
-
                         <!-- Common Components -->
                         <div class="mb-4">
                             <label for="component_names" class="form-label">{{ ftl('common-common-components') }}</label>
@@ -426,20 +405,15 @@ document.getElementById('project_id').addEventListener('change', function() {
     const testerHelp = document.getElementById('tester-help');
     const supervisorSelect = document.getElementById('test_supervisor_id');
     const supervisorHelp = document.getElementById('supervisor-help');
-    const discoveredPagesContainer = document.getElementById('discovered-pages-container');
-    const discoveredPagesHelp = document.getElementById('discovered-pages-help');
-
     // Reset all dropdowns
     testUserSelect.innerHTML = '<option value="">' + {{ ftl('recordings-select-a-test-user') | tojson }} + '</option>';
     testerSelect.innerHTML = '<option value="">' + {{ ftl('recordings-select-a-tester') | tojson }} + '</option>';
     supervisorSelect.innerHTML = '<option value="">' + {{ ftl('recordings-select-a-supervisor') | tojson }} + '</option>';
-    discoveredPagesContainer.innerHTML = '<p class="text-muted small mb-0">' + {{ ftl('recordings-loading-discovered-pages') | tojson }} + '</p>';
 
     if (!projectId) {
         testUserHelp.textContent = {{ ftl('recordings-optional-select-the-test-account-used-during-this') | tojson }};
         testerHelp.textContent = {{ ftl('recordings-select-the-lived-experience-tester-who-performed') | tojson }};
         supervisorHelp.textContent = {{ ftl('recordings-select-the-supervisor-who-oversaw-this-test') | tojson }};
-        discoveredPagesContainer.innerHTML = '<p class="text-muted small mb-0">' + {{ ftl('recordings-select-a-project-to-see-discovered-pages') | tojson }} + '</p>';
         return;
     }
 
@@ -512,49 +486,6 @@ document.getElementById('project_id').addEventListener('change', function() {
             supervisorHelp.textContent = {{ ftl('recordings-error-loading-supervisors') | tojson }};
         });
 
-    // Fetch discovered pages for this project
-    window.apiClient.get(`/projects/${projectId}/discovered-pages`)
-        .then(data => {
-            const pages = (data && data.items) || [];
-            if (pages.length > 0) {
-                discoveredPagesContainer.innerHTML = '';
-                pages.forEach(page => {
-                    const div = document.createElement('div');
-                    div.className = 'form-check';
-
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.className = 'form-check-input';
-                    checkbox.name = 'discovered_page_ids';
-                    checkbox.value = page.id;
-                    checkbox.id = `dp_${page.id}`;
-
-                    const label = document.createElement('label');
-                    label.className = 'form-check-label';
-                    label.htmlFor = `dp_${page.id}`;
-                    label.textContent = page.title;
-
-                    if (page.url) {
-                        const urlSmall = document.createElement('small');
-                        urlSmall.className = 'text-muted d-block';
-                        urlSmall.textContent = page.url;
-                        label.appendChild(urlSmall);
-                    }
-
-                    div.appendChild(checkbox);
-                    div.appendChild(label);
-                    discoveredPagesContainer.appendChild(div);
-                });
-                discoveredPagesHelp.textContent = {{ ftl('recordings-optional-select-discovered-pages-related-to-this-2') | tojson }};
-            } else {
-                discoveredPagesContainer.innerHTML = '<p class="text-muted small mb-0">' + {{ ftl('recordings-no-discovered-pages-found-for-this-project') | tojson }} + '</p>';
-                discoveredPagesHelp.textContent = {{ ftl('recordings-optional-no-discovered-pages-available-for-this') | tojson }};
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching discovered pages:', error);
-            discoveredPagesContainer.innerHTML = '<p class="text-muted small mb-0">' + {{ ftl('recordings-error-loading-discovered-pages') | tojson }} + '</p>';
-        });
 });
 
 // Recording upload submit -> POST /api/v1/recordings (multipart), then

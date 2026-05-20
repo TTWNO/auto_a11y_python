@@ -37,9 +37,6 @@ class DictaphoneImporter:
         json_file_path: str,
         project_id: str,
         website_ids: list[str] | None = None,
-        page_urls: list[str] | None = None,
-        page_ids: list[str] | None = None,
-        discovered_page_ids: list[str] | None = None,
         component_names: list[str] | None = None,
         app_screens: list[str] | None = None,
         device_sections: list[str] | None = None,
@@ -56,9 +53,6 @@ class DictaphoneImporter:
             json_file_path: Path to dictaphone JSON file
             project_id: AutoA11y project ID to attach to
             website_ids: Optional website IDs this recording covers
-            page_urls: Optional specific page URLs discussed in recording
-            page_ids: Optional specific page IDs from database
-            discovered_page_ids: Optional discovered page IDs from database
             component_names: Optional common component names (header, nav, footer, etc.)
             app_screens: Optional app screens/views covered
             device_sections: Optional device sections covered
@@ -89,9 +83,6 @@ class DictaphoneImporter:
             data,
             project_id=project_id,
             website_ids=website_ids or [],
-            page_urls=page_urls or [],
-            page_ids=page_ids or [],
-            discovered_page_ids=discovered_page_ids or [],
             component_names=component_names or [],
             app_screens=app_screens or [],
             device_sections=device_sections or [],
@@ -111,9 +102,6 @@ class DictaphoneImporter:
         data: dict[str, Any] | list[dict[str, Any]],
         project_id: str,
         website_ids: list[str],
-        page_urls: list[str],
-        page_ids: list[str],
-        discovered_page_ids: list[str],
         component_names: list[str],
         app_screens: list[str],
         device_sections: list[str],
@@ -130,7 +118,6 @@ class DictaphoneImporter:
             data: Parsed JSON dict from Dictaphone (or list for Claude-generated format)
             project_id: Project ID to link to
             website_ids: Website IDs
-            page_urls: Page URLs
             auditor_info: Auditor information
             recording_type: Type of recording
 
@@ -204,9 +191,6 @@ class DictaphoneImporter:
             test_supervisor_id=auditor_info.get('test_supervisor_id'),
             project_id=project_id,
             website_ids=website_ids,
-            page_urls=page_urls,
-            page_ids=page_ids,
-            discovered_page_ids=discovered_page_ids,
             component_names=component_names,
             app_screens=app_screens,
             device_sections=device_sections,
@@ -235,8 +219,6 @@ class DictaphoneImporter:
                 )
                 # Add component references from recording
                 parsed_issue.website_ids = website_ids
-                parsed_issue.page_urls = page_urls
-                parsed_issue.page_ids = page_ids
                 parsed_issue.component_names = component_names
                 parsed_issue.app_screens = app_screens
                 parsed_issue.device_sections = device_sections

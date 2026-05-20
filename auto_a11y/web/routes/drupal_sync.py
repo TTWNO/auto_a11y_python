@@ -431,22 +431,11 @@ def upload_to_drupal(project_id: str) -> Response:
                         'status': 'exporting'
                     }) + '\n'
 
-                    # Fetch discovered page UUIDs if recording has discovered pages
-                    discovered_page_uuids: list[str] = []
-                    if recording.discovered_page_ids:
-                        for page_id in recording.discovered_page_ids:
-                            try:
-                                page_doc = db.discovered_pages.find_one({'_id': ObjectId(page_id)})
-                                if page_doc and page_doc.get('drupal_uuid'):
-                                    discovered_page_uuids.append(page_doc['drupal_uuid'])
-                                elif page_doc:
-                                    logger.warning(f"Discovered page {page_id} ({page_doc.get('title', 'Unknown')}) has not been synced to Drupal yet")
-                            except Exception as e:
-                                logger.error(f"Error fetching discovered page {page_id}: {e}")
-
-                    # Export recording with optional French content
+                    # Cross-page linking from recording to discovered pages
+                    # was removed; pass an empty UUID list so the Drupal
+                    # exporter does not attempt to attach page references.
                     include_french = options.get('include_french', False)
-                    result = recording_exporter.export_from_recording_model(recording, audit_uuid, discovered_page_uuids, include_french=include_french)
+                    result = recording_exporter.export_from_recording_model(recording, audit_uuid, [], include_french=include_french)
 
                     if result.get('success'):
                         # Update database with Drupal UUID

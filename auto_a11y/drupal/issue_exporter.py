@@ -307,8 +307,9 @@ class IssueExporter:
         # Extract WCAG criteria strings
         wcag_criteria: list[str] = [w.criteria for w in recording_issue.wcag]
 
-        # Get first page URL if available
-        url: str | None = recording_issue.page_urls[0] if recording_issue.page_urls else None
+        # Recording issues no longer carry per-page URLs; the Drupal
+        # ``url`` field is intentionally left empty here.
+        url: str | None = None
 
         # Log the exact value being passed to export_issue
         logger.warning(f"🚀 CALLING export_issue() for '{recording_issue.title}':")

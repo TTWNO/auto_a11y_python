@@ -45,7 +45,7 @@ Decisions worth flagging
 """
 from __future__ import annotations
 
-from typing import Optional, Union
+from typing import Optional
 
 from pydantic import RootModel
 
@@ -80,16 +80,9 @@ class RecordingUploadIn(StrictModel):
       ``test_supervisor_id`` — optional auditor-context ids; the handler
       collapses empty strings to ``None``.
     - ``media_file_path`` — optional pointer to the underlying MP4.
-    - ``page_urls`` / ``component_names`` / ``app_screens`` /
-      ``device_sections`` — optional newline-separated lists parsed by
+    - ``component_names`` / ``app_screens`` / ``device_sections`` —
+      optional newline-separated lists parsed by
       ``_parse_multiline_form_field`` in the handler.
-    - ``discovered_page_ids`` — optional. Multipart forms send list
-      fields as repeated entries with the same key; the handler reads
-      that via ``request.form.getlist("discovered_page_ids")``. We
-      accept the legacy single-key shape here (the value is the *last*
-      submitted entry, which is what ``dict(request.form.items())``
-      yields); the handler still reads the full list via ``getlist``
-      so multi-entry posts continue to work end-to-end.
     - ``scope_forms`` … ``scope_drag_drop`` — checkbox booleans. The
       browser idiom sends the literal string ``"on"`` for true and
       omits the field entirely for false; we accept ``Optional[str]``
@@ -109,11 +102,9 @@ class RecordingUploadIn(StrictModel):
     test_supervisor_id: Optional[str] = None
     media_file_path: Optional[str] = None
 
-    page_urls: Optional[str] = None
     component_names: Optional[str] = None
     app_screens: Optional[str] = None
     device_sections: Optional[str] = None
-    discovered_page_ids: Optional[str] = None
 
     scope_forms: Optional[str] = None
     scope_video: Optional[str] = None
@@ -134,17 +125,10 @@ class RecordingUploadIn(StrictModel):
 class RecordingPatch(StrictModel):
     """Request body for partial recording updates.
 
-    Editable fields cover human-facing metadata plus two scope fields
-    that the legacy ``/recordings/<id>/edit`` form has always written:
-    ``page_urls`` (free-form URL list) and ``discovered_page_ids``
-    (cross-reference to discovered-pages). Server-managed fields
+    Editable fields cover human-facing metadata. Server-managed fields
     (counts, project_id, recording_id, recording_type, media_file_path,
     Drupal sync, and the multi-language content arrays) are not patchable
     here.
-
-    ``page_urls`` accepts either a list of strings or a single newline-
-    separated string; the handler normalises to a list. Same shape
-    flexibility for ``discovered_page_ids`` (list-or-comma-separated).
 
     The PATCH body is *partial* — only fields the client sends are
     applied. Pydantic's ``model_fields_set`` is the signal the handler
@@ -157,8 +141,6 @@ class RecordingPatch(StrictModel):
     auditor_role: Optional[str] = None
     tags: Optional[list[str]] = None
     notes: Optional[str] = None
-    page_urls: Optional[Union[list[str], str]] = None
-    discovered_page_ids: Optional[Union[list[str], str]] = None
 
 
 # ---------------------------------------------------------------------------
@@ -203,9 +185,6 @@ class RecordingOut(StrictModel):
     project_id: Optional[str] = None
     testing_scope: dict[str, bool]
     website_ids: list[str]
-    page_urls: list[str]
-    page_ids: list[str]
-    discovered_page_ids: list[str]
     component_names: list[str]
     app_screens: list[str]
     device_sections: list[str]
@@ -272,8 +251,6 @@ class RecordingIssueOut(StrictModel):
     html: Optional[str] = None
     project_id: Optional[str] = None
     website_ids: list[str]
-    page_urls: list[str]
-    page_ids: list[str]
     component_names: list[str]
     app_screens: list[str]
     device_sections: list[str]

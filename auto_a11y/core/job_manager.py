@@ -25,6 +25,7 @@ class JobType(Enum):
     REPORT_GENERATION = "report_generation"
     BULK_TEST = "bulk_test"
     PDF_AUDIT = "pdf_audit"
+    VIDEO_PROCESSING = "video_processing"
 
 
 class JobStatus(Enum):

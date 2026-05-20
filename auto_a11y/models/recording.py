@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal, cast
 from enum import Enum
 from bson import ObjectId
 from .page import DrupalSyncStatus
@@ -19,6 +19,95 @@ class RecordingType(Enum):
     LIVED_EXPERIENCE_APP = "lived_experience_app"
     LIVED_EXPERIENCE_TANGIBLE_DEVICE = "lived_experience_tangible_device"
     LIVED_EXPERIENCE_NAV_AND_WAYFINDING = "lived_experience_nav_and_wayfinding"
+
+
+# Literal type aliases for the audio pipeline state fields. Defined at
+# module scope so ``from_dict`` can refer to them when narrowing the
+# Mongo-stored strings back into Literals via ``match`` statements.
+AuditContext = Literal["audit", "livedExperience", "navilens"]
+AnalysisLanguage = Literal["en", "fr"]
+CalloutsStatus = Literal["not-requested", "pending", "complete", "failed"]
+RecordingStatus = Literal[
+    "uploaded", "processing", "complete", "failed", "cancelling", "cancelled"
+]
+
+
+# Per-Literal value tuples are repeated below so each ``in`` check
+# returns a narrowed type. ty's match-statement narrowing is weaker
+# than mypy / pyright; explicit per-value returns keep all three
+# checkers happy without ``cast``.
+
+def _narrow_audit_context(raw: str) -> AuditContext:
+    """Narrow a stored string to ``AuditContext``; fall back to ``audit``."""
+    if raw == "audit":
+        return "audit"
+    if raw == "livedExperience":
+        return "livedExperience"
+    if raw == "navilens":
+        return "navilens"
+    return "audit"
+
+
+def _narrow_analysis_language(item: str) -> AnalysisLanguage | None:
+    """Narrow one Mongo-stored string to an ``AnalysisLanguage``."""
+    if item == "en":
+        return "en"
+    if item == "fr":
+        return "fr"
+    return None
+
+
+def _narrow_analysis_languages(raw: list[object]) -> list[AnalysisLanguage]:
+    """Narrow a list of Mongo-stored strings to ``list[AnalysisLanguage]``.
+
+    Unknown values are dropped. If nothing valid remains, fall back to
+    ``["en"]`` so the runner always has at least one language to process.
+    """
+    out: list[AnalysisLanguage] = []
+    for item in raw:
+        if isinstance(item, str):
+            narrowed = _narrow_analysis_language(item)
+            if narrowed is not None:
+                out.append(narrowed)
+    if not out:
+        return ["en"]
+    return out
+
+
+def _narrow_callouts_status(raw: str) -> CalloutsStatus:
+    """Narrow a stored string to ``CalloutsStatus``; default to ``not-requested``."""
+    if raw == "not-requested":
+        return "not-requested"
+    if raw == "pending":
+        return "pending"
+    if raw == "complete":
+        return "complete"
+    if raw == "failed":
+        return "failed"
+    return "not-requested"
+
+
+def _narrow_recording_status(raw: str) -> RecordingStatus:
+    """Narrow a stored string to ``RecordingStatus``; default to ``uploaded``.
+
+    A Mongo document that pre-dates the audio pipeline migration won't
+    have ``status`` at all; ``from_dict`` substitutes ``"uploaded"`` in
+    that case, and this helper handles the case where some legacy or
+    hand-edited value sneaks in.
+    """
+    if raw == "uploaded":
+        return "uploaded"
+    if raw == "processing":
+        return "processing"
+    if raw == "complete":
+        return "complete"
+    if raw == "failed":
+        return "failed"
+    if raw == "cancelling":
+        return "cancelling"
+    if raw == "cancelled":
+        return "cancelled"
+    return "uploaded"
 
 
 @dataclass
@@ -84,6 +173,24 @@ class Recording:
     drupal_sync_status: DrupalSyncStatus = DrupalSyncStatus.NOT_SYNCED
     drupal_last_synced: datetime | None = None
     drupal_error_message: str | None = None
+
+    # === Audio pipeline state (added by Phase 6 of audioA11y integration) ===
+    source_video_path: str | None = None
+    audit_context: AuditContext = "audit"
+    analysis_languages: list[AnalysisLanguage] = field(default_factory=lambda: ["en"])
+    extended_context: bool = False
+    speaker_remap_enabled: bool = True
+    callouts_requested: bool = False
+    callouts_status: CalloutsStatus = "not-requested"
+    status: RecordingStatus = "uploaded"
+    progress: dict[str, object] | None = None
+    estimated_cost_usd: float | None = None
+    actual_cost_usd: float | None = None
+    cost_breakdown: dict[str, object] | None = None
+    error_message: str | None = None
+    manifest_version: str = ""  # populated from ``auto_a11y.audio.__version__``
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
 
     _id: ObjectId | None = None
 
@@ -177,7 +284,24 @@ class Recording:
             'drupal_video_nid': self.drupal_video_nid,
             'drupal_sync_status': self.drupal_sync_status.value,
             'drupal_last_synced': self.drupal_last_synced,
-            'drupal_error_message': self.drupal_error_message
+            'drupal_error_message': self.drupal_error_message,
+            # === Audio pipeline state ===
+            'source_video_path': self.source_video_path,
+            'audit_context': self.audit_context,
+            'analysis_languages': list(self.analysis_languages),
+            'extended_context': self.extended_context,
+            'speaker_remap_enabled': self.speaker_remap_enabled,
+            'callouts_requested': self.callouts_requested,
+            'callouts_status': self.callouts_status,
+            'status': self.status,
+            'progress': self.progress,
+            'estimated_cost_usd': self.estimated_cost_usd,
+            'actual_cost_usd': self.actual_cost_usd,
+            'cost_breakdown': self.cost_breakdown,
+            'error_message': self.error_message,
+            'manifest_version': self.manifest_version,
+            'started_at': self.started_at,
+            'finished_at': self.finished_at,
         }
         if self._id:
             data['_id'] = self._id
@@ -192,6 +316,51 @@ class Recording:
         # Parse recording_type enum (with backward compatibility for old audit_type field)
         recording_type_value = data.get('recording_type') or data.get('audit_type', 'audit')
         recording_type = RecordingType(recording_type_value) if recording_type_value else RecordingType.AUDIT
+
+        # Narrow audio-pipeline Literal-typed fields from their Mongo-
+        # stored ``str`` form. Missing fields fall back to dataclass
+        # defaults so pre-Phase-6 documents deserialize cleanly.
+        audit_context_raw = data.get('audit_context', 'audit')
+        if not isinstance(audit_context_raw, str):
+            audit_context_raw = 'audit'
+
+        # ``analysis_languages`` may be missing on legacy docs (defaults
+        # to ``['en']``) or non-list (treated the same). Cast launders
+        # pyright's ``list[Unknown]`` element type to ``list[object]`` —
+        # ``_narrow_analysis_languages`` does per-element isinstance
+        # checks regardless of the static element type.
+        analysis_languages_raw_any: Any = data.get('analysis_languages', ['en'])
+        analysis_languages_raw: list[object] = (
+            cast(list[object], analysis_languages_raw_any)
+            if isinstance(analysis_languages_raw_any, list)
+            else ['en']
+        )
+
+        callouts_status_raw = data.get('callouts_status', 'not-requested')
+        if not isinstance(callouts_status_raw, str):
+            callouts_status_raw = 'not-requested'
+
+        status_raw = data.get('status', 'uploaded')
+        if not isinstance(status_raw, str):
+            status_raw = 'uploaded'
+
+        # ``progress`` / ``cost_breakdown`` are blobs from the pipeline.
+        # Mongo round-trips them as JSON-shaped dicts; we coerce missing
+        # / non-dict values to ``None``. The ``cast`` launders pyright's
+        # ``Unknown`` element type to ``object`` (the canonical shape
+        # used elsewhere — see ``_is_str_obj_dict`` in audio/).
+        progress_raw: object = data.get('progress')
+        progress_val: dict[str, object] | None = (
+            cast(dict[str, object], progress_raw)
+            if isinstance(progress_raw, dict)
+            else None
+        )
+        cost_breakdown_raw: object = data.get('cost_breakdown')
+        cost_breakdown_val: dict[str, object] | None = (
+            cast(dict[str, object], cost_breakdown_raw)
+            if isinstance(cost_breakdown_raw, dict)
+            else None
+        )
 
         return cls(
             recording_id=data['recording_id'],
@@ -229,6 +398,23 @@ class Recording:
             drupal_sync_status=DrupalSyncStatus(data.get('drupal_sync_status', 'not_synced')),
             drupal_last_synced=data.get('drupal_last_synced'),
             drupal_error_message=data.get('drupal_error_message'),
+            # === Audio pipeline state ===
+            source_video_path=data.get('source_video_path'),
+            audit_context=_narrow_audit_context(audit_context_raw),
+            analysis_languages=_narrow_analysis_languages(analysis_languages_raw),
+            extended_context=bool(data.get('extended_context', False)),
+            speaker_remap_enabled=bool(data.get('speaker_remap_enabled', True)),
+            callouts_requested=bool(data.get('callouts_requested', False)),
+            callouts_status=_narrow_callouts_status(callouts_status_raw),
+            status=_narrow_recording_status(status_raw),
+            progress=progress_val,
+            estimated_cost_usd=data.get('estimated_cost_usd'),
+            actual_cost_usd=data.get('actual_cost_usd'),
+            cost_breakdown=cost_breakdown_val,
+            error_message=data.get('error_message'),
+            manifest_version=data.get('manifest_version', ''),
+            started_at=data.get('started_at'),
+            finished_at=data.get('finished_at'),
             _id=obj_id
         )
 

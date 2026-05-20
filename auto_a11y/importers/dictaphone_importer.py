@@ -9,12 +9,19 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from auto_a11y.models import (
     Recording, RecordingIssue, RecordingType,
     Timecode, ImpactLevel
 )
+
+if TYPE_CHECKING:
+    # Imported lazily for type-checking only to avoid an import cycle:
+    # ``auto_a11y.audio.runner`` imports this module, which would otherwise
+    # need to import the audio storage helper to type the function below.
+    from auto_a11y.audio.storage import AllocatedSlot
+    from auto_a11y.core.database import Database
 
 logger = logging.getLogger(__name__)
 
@@ -412,3 +419,241 @@ class DictaphoneImporter:
                 return False, f"Issue {i}: 'wcag' must be an array"
 
         return True, None
+
+
+# === Phase 6 (audioA11y) — pipeline-output ingestion =====================
+#
+# ``import_pipeline_output`` is the bridge between the on-disk JSON
+# produced by ``auto_a11y.audio.pipeline.run_pipeline`` and the existing
+# Mongo collections (``recordings`` + ``recording_issues``). It's a free
+# function (not a method) so :class:`auto_a11y.audio.runner.VideoRunner`
+# can call it without instantiating ``DictaphoneImporter``.
+#
+# Output layout (set by ``AllocatedSlot.json_path``):
+#
+#   <slot>/json/<recording_id>.issues.json            (English issues)
+#   <slot>/json/<recording_id>.issues.fr.json         (French issues)
+#   <slot>/json/<recording_id>.painpoints.json        (etc.)
+#   <slot>/json/<recording_id>.painpoints.fr.json
+#   <slot>/json/<recording_id>.takeaways[.fr].json
+#   <slot>/json/<recording_id>.assertions[.fr].json
+#
+# A missing file is treated as "nothing to import for this slot" — a
+# warning is logged but the runner does not fail. A file that exists
+# but fails to parse logs an error and is skipped likewise; the runner
+# completes the rest of the languages / kinds rather than aborting
+# everything because Claude returned malformed JSON for one combo.
+
+
+def _read_pipeline_json(path: Path) -> dict[str, object] | None:
+    """Read one Claude-emitted JSON file. Returns ``None`` for missing / bad.
+
+    Catches parse and IO errors so a single mangled output doesn't
+    bring down the import for the other (kind, lang) combos.
+    """
+    if not path.exists():
+        logger.info("import_pipeline_output: missing %s; skipping", path)
+        return None
+    try:
+        with path.open("r", encoding="utf-8") as f:
+            payload: object = json.load(f)
+    except OSError as exc:
+        logger.error("import_pipeline_output: read failed for %s: %s", path, exc)
+        return None
+    except json.JSONDecodeError as exc:
+        logger.error("import_pipeline_output: malformed JSON in %s: %s", path, exc)
+        return None
+    if not isinstance(payload, dict):
+        logger.error(
+            "import_pipeline_output: %s payload is %s, not an object; skipping",
+            path,
+            type(payload).__name__,
+        )
+        return None
+    # ``json.loads`` always produces ``str``-keyed dicts for JSON objects;
+    # the runtime check above is ``isinstance(payload, dict)``. Cast to
+    # the canonical ``dict[str, object]`` shape so downstream typing is
+    # explicit (matches the ``_is_str_obj_dict`` pattern in audio/).
+    return cast(dict[str, object], payload)
+
+
+def _ingest_issues_file(
+    db: "Database",
+    recording: Recording,
+    path: Path,
+    language: str,
+) -> list[RecordingIssue]:
+    """Parse an ``issues.json`` file → RecordingIssues → DB.
+
+    Reuses :meth:`RecordingIssue.from_dictaphone_issue` so we get the
+    same parsing semantics as the manual JSON-upload route. Returns the
+    list of issues created (empty on missing file or parse failure).
+    """
+    payload = _read_pipeline_json(path)
+    if payload is None:
+        return []
+    issues_data: object = payload.get("issues")
+    if not isinstance(issues_data, list):
+        logger.error(
+            "import_pipeline_output: %s 'issues' is not a list; skipping",
+            path,
+        )
+        return []
+
+    created: list[RecordingIssue] = []
+    # ``issues_data`` is ``list[object]`` after the isinstance check; we
+    # narrow each element to ``dict[str, Any]`` (the shape
+    # ``RecordingIssue.from_dictaphone_issue`` expects) before passing it on.
+    issues_list: list[object] = cast(list[object], issues_data)
+    for issue_data in issues_list:
+        if not isinstance(issue_data, dict):
+            logger.warning(
+                "import_pipeline_output: skipping non-object issue in %s", path
+            )
+            continue
+        issue_dict: dict[str, Any] = cast(dict[str, Any], issue_data)
+        try:
+            parsed = RecordingIssue.from_dictaphone_issue(
+                issue_dict,
+                recording_id=recording.recording_id,
+                project_id=recording.project_id or "",
+                language=language,
+            )
+            parsed.website_ids = list(recording.website_ids)
+            parsed.component_names = list(recording.component_names)
+            parsed.app_screens = list(recording.app_screens)
+            parsed.device_sections = list(recording.device_sections)
+            parsed.task_description = recording.task_description
+            created.append(parsed)
+        except Exception as exc:  # noqa: BLE001 — keep going on one bad issue
+            logger.error(
+                "import_pipeline_output: failed to parse one issue in %s: %s",
+                path, exc,
+            )
+    if created:
+        db.create_recording_issues_bulk(created)
+        logger.info(
+            "import_pipeline_output: inserted %d %s issues from %s",
+            len(created), language, path.name,
+        )
+    return created
+
+
+def _ingest_content_kind(
+    payload_key: str,
+    recording_attr: dict[str, list[dict[str, Any]]],
+    path: Path,
+    language: str,
+) -> bool:
+    """Read painpoints / takeaways / assertions into the Recording dict.
+
+    ``payload_key`` is the top-level JSON key Claude emits
+    (``"pain_points"``, ``"takeaways"``, ``"assertions"``);
+    ``recording_attr`` is the per-language dict on the Recording that
+    gets mutated in place. Returns True on a successful read so the
+    caller knows to persist the Recording.
+    """
+    payload = _read_pipeline_json(path)
+    if payload is None:
+        return False
+    items: object = payload.get(payload_key)
+    if not isinstance(items, list):
+        logger.error(
+            "import_pipeline_output: %s '%s' is not a list; skipping",
+            path, payload_key,
+        )
+        return False
+    # Coerce to ``list[dict[str, Any]]`` — Claude is instructed to emit
+    # objects only; defensively drop anything else rather than letting
+    # a stray scalar poison the in-memory shape.
+    items_list: list[object] = cast(list[object], items)
+    typed_items: list[dict[str, Any]] = []
+    for item in items_list:
+        if isinstance(item, dict):
+            typed_items.append(cast(dict[str, Any], item))
+    recording_attr[language] = typed_items
+    return True
+
+
+def import_pipeline_output(
+    db: "Database",
+    slot: "AllocatedSlot",
+    recording: Recording,
+) -> list[RecordingIssue]:
+    """Import the audio pipeline's JSON outputs into Mongo.
+
+    Walks ``recording.analysis_languages`` × the four analysis kinds
+    (``issues``, ``painpoints``, ``takeaways``, ``assertions``):
+
+    - **issues**: inserts into the ``recording_issues`` collection via
+      :meth:`Database.create_recording_issues_bulk`. The existing
+      :meth:`RecordingIssue.from_dictaphone_issue` parser handles
+      timecodes / WCAG / impact mapping.
+    - **painpoints / takeaways / assertions**: written onto the
+      Recording itself (``user_painpoints[lang]`` / ``key_takeaways[lang]``
+      / ``user_assertions[lang]``). The Recording is persisted via
+      :meth:`Database.update_recording` once at the end if any content
+      kind was populated.
+
+    Returns the list of :class:`RecordingIssue` objects created (empty
+    if no issues files were present).
+
+    Missing files: logged at INFO level and skipped. Files that fail to
+    parse: logged at ERROR level and skipped; **does not raise** —
+    runner-level failure handling is reserved for unrecoverable errors.
+    """
+    all_issues: list[RecordingIssue] = []
+    any_content_updated = False
+
+    for lang in recording.analysis_languages:
+        # Issues — into the recording_issues collection.
+        issues_path = slot.json_path(kind="issues", lang=lang)
+        all_issues.extend(_ingest_issues_file(db, recording, issues_path, lang))
+
+        # Content kinds — onto the Recording's per-language dicts.
+        painpoints_path = slot.json_path(kind="painpoints", lang=lang)
+        if _ingest_content_kind(
+            payload_key="pain_points",
+            recording_attr=recording.user_painpoints,
+            path=painpoints_path,
+            language=lang,
+        ):
+            any_content_updated = True
+
+        takeaways_path = slot.json_path(kind="takeaways", lang=lang)
+        if _ingest_content_kind(
+            payload_key="takeaways",
+            recording_attr=recording.key_takeaways,
+            path=takeaways_path,
+            language=lang,
+        ):
+            any_content_updated = True
+
+        assertions_path = slot.json_path(kind="assertions", lang=lang)
+        if _ingest_content_kind(
+            payload_key="assertions",
+            recording_attr=recording.user_assertions,
+            path=assertions_path,
+            language=lang,
+        ):
+            any_content_updated = True
+
+    # Recompute the impact tallies from the freshly inserted issues so
+    # the recording-list view shows correct counts.
+    if all_issues:
+        recording.total_issues = len(all_issues)
+        recording.high_impact_count = sum(
+            1 for i in all_issues if i.impact == ImpactLevel.HIGH
+        )
+        recording.medium_impact_count = sum(
+            1 for i in all_issues if i.impact == ImpactLevel.MEDIUM
+        )
+        recording.low_impact_count = sum(
+            1 for i in all_issues if i.impact == ImpactLevel.LOW
+        )
+        any_content_updated = True
+
+    if any_content_updated:
+        db.update_recording(recording)
+
+    return all_issues

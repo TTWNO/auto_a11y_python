@@ -183,6 +183,10 @@ class Database:
         self.recordings.create_index([("project_id", 1), ("recorded_date", -1)])
         self.recordings.create_index("drupal_video_uuid")  # For Drupal sync
         self.recordings.create_index("drupal_sync_status")
+        # Phase 6 of audioA11y: looking up Recordings by pipeline status
+        # (e.g. ``processing`` documents on server restart) is a routine
+        # query path for the runner / recovery code.
+        self.recordings.create_index("status")
 
         # Discovered pages (for Drupal export)
         self.discovered_pages.create_index("project_id")

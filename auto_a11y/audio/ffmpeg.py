@@ -100,7 +100,7 @@ def detect_ffprobe(
 # --- Preflight registration ---------------------------------------------------
 
 
-def _ffmpeg_check() -> CheckOutcome:
+def run_ffmpeg_check() -> CheckOutcome:
     if detect_ffmpeg() is None:
         return CheckOutcome.failed(
             "Install ffmpeg and ensure it is on PATH (e.g., `apt install ffmpeg` or `brew install ffmpeg`).",
@@ -108,7 +108,7 @@ def _ffmpeg_check() -> CheckOutcome:
     return CheckOutcome.ok()
 
 
-def _ffprobe_check() -> CheckOutcome:
+def run_ffprobe_check() -> CheckOutcome:
     if detect_ffprobe() is None:
         return CheckOutcome.failed(
             "Install ffprobe (ships with ffmpeg) and ensure it is on PATH."
@@ -119,10 +119,10 @@ def _ffprobe_check() -> CheckOutcome:
 get_registry().register(Check(
     name="ffmpeg",
     description="ffmpeg binary on PATH (required for audio extraction).",
-    run=_ffmpeg_check,
+    run=run_ffmpeg_check,
 ))
 get_registry().register(Check(
     name="ffprobe",
     description="ffprobe binary on PATH (required for duration probing).",
-    run=_ffprobe_check,
+    run=run_ffprobe_check,
 ))

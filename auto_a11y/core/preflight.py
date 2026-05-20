@@ -74,6 +74,17 @@ class PreflightRegistry:
     def __init__(self) -> None:
         self._checks: list[Check] = []
 
+    def replace_all(self, checks: list[Check]) -> None:
+        """Replace the entire registered check list.
+
+        Intended for tests that want a deterministic set of checks regardless
+        of which subsystem modules have been imported by other tests in the
+        same session. Production code never calls this — :meth:`register`
+        (which is idempotent on ``check.name``) is the only supported way to
+        add a check at import time.
+        """
+        self._checks = list(checks)
+
     def register(self, check: Check) -> None:
         """Register a preflight check. Idempotent on ``check.name``.
 

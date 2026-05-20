@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     from auto_a11y.audio.storage import AudioStorage
     from auto_a11y.core.database import Database
     from auto_a11y.core.job_manager import JobManager
+    from auto_a11y.core.preflight import CheckResult
     from auto_a11y.core.scheduler import SchedulerService
     from auto_a11y.testing.pdf_runner import PdfRunner
     from auto_a11y.web.api.idempotency import IdempotencyStore
@@ -80,6 +81,21 @@ def get_video_runner() -> VideoRunner | None:
     test contexts where the audio surface has not been wired up.
     """
     return cast("VideoRunner | None", getattr(current_app, "video_runner", None))
+
+
+def get_preflight_failures() -> list[CheckResult]:
+    """Return ``current_app.preflight_failures`` (set by recovery-mode startup).
+
+    Empty list when preflight passed (the attribute is not set in that
+    case). Used by :mod:`auto_a11y.web.routes.recovery` to render the
+    list of failed checks on the recovery page.
+    """
+    from auto_a11y.core.preflight import CheckResult as _CheckResult
+    raw: Any = getattr(current_app, "preflight_failures", None)
+    if not isinstance(raw, list):
+        return []
+    raw_list = cast("list[object]", raw)
+    return [f for f in raw_list if isinstance(f, _CheckResult)]
 
 
 def get_idempotency_store() -> IdempotencyStore:

@@ -82,3 +82,24 @@ audio-detail-cost-estimated-was         = Estimated cost was
 audio-callouts-download                 = Download annotated video
 audio-callouts-failed                   = Annotated video rendering failed; the rest of the audit completed successfully.
 audio-callouts-pending                  = Annotated video rendering in progress…
+
+# === Settings Recovery (Phase 10) ===
+recovery-title                          = Settings Recovery
+recovery-intro                          = Some configuration is missing or incorrect. Fix the highlighted items below to start the application.
+recovery-failed-checks-heading          = Failed checks
+recovery-settings-form-heading          = Settings
+recovery-check-failed                   = Failed
+recovery-check-passed                   = Passed
+recovery-test-button                    = Test
+recovery-test-working                   = Working…
+recovery-test-success                   = OK
+recovery-test-failed                    = Not working
+recovery-save                           = Save
+recovery-save-success                   = Settings saved. Please quit and reopen the application.
+recovery-save-failed                    = Failed to write settings file.
+recovery-form-mongo                     = MongoDB URI
+recovery-form-anthropic                 = Anthropic API key
+recovery-form-deepgram                  = Deepgram API key
+recovery-form-ffmpeg                    = ffmpeg binary path
+recovery-form-ffprobe                   = ffprobe binary path
+recovery-form-huggingface               = HuggingFace token (optional)

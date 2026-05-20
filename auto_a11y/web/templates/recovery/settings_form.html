@@ -1,0 +1,101 @@
+{# Settings form for the recovery page. Expects ``settings`` in scope. #}
+<section aria-labelledby="settings-form-heading" class="mb-4">
+    <h2 id="settings-form-heading" class="h4 mb-3">{{ ftl('recovery-settings-form-heading') }}</h2>
+    <form id="recovery-settings-form" action="{{ url_for('recovery.save') }}" method="POST" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="mb-3">
+            <label for="recovery-mongodb-uri" class="form-label">{{ ftl('recovery-form-mongo') }}</label>
+            <div class="input-group">
+                <input type="text" class="form-control" id="recovery-mongodb-uri"
+                       name="mongodb_uri" value="{{ settings.mongodb_uri or '' }}"
+                       autocomplete="off" spellcheck="false"
+                       aria-describedby="recovery-mongo-result">
+                <button type="button" class="btn btn-outline-brand"
+                        data-test-endpoint="{{ url_for('recovery.test_mongo') }}"
+                        data-result-id="recovery-mongo-result">
+                    {{ ftl('recovery-test-button') }}
+                </button>
+            </div>
+            <div id="recovery-mongo-result" class="alert mt-2 small" role="status" hidden></div>
+        </div>
+
+        <div class="mb-3">
+            <label for="recovery-anthropic-key" class="form-label">{{ ftl('recovery-form-anthropic') }}</label>
+            <div class="input-group">
+                <input type="password" class="form-control" id="recovery-anthropic-key"
+                       name="anthropic_api_key" value="{{ settings.anthropic_api_key or '' }}"
+                       autocomplete="off" spellcheck="false"
+                       aria-describedby="recovery-anthropic-result">
+                <button type="button" class="btn btn-outline-brand"
+                        data-test-endpoint="{{ url_for('recovery.test_anthropic') }}"
+                        data-result-id="recovery-anthropic-result">
+                    {{ ftl('recovery-test-button') }}
+                </button>
+            </div>
+            <div id="recovery-anthropic-result" class="alert mt-2 small" role="status" hidden></div>
+        </div>
+
+        <div class="mb-3">
+            <label for="recovery-deepgram-key" class="form-label">{{ ftl('recovery-form-deepgram') }}</label>
+            <div class="input-group">
+                <input type="password" class="form-control" id="recovery-deepgram-key"
+                       name="deepgram_api_key" value="{{ settings.deepgram_api_key or '' }}"
+                       autocomplete="off" spellcheck="false"
+                       aria-describedby="recovery-deepgram-result">
+                <button type="button" class="btn btn-outline-brand"
+                        data-test-endpoint="{{ url_for('recovery.test_deepgram') }}"
+                        data-result-id="recovery-deepgram-result">
+                    {{ ftl('recovery-test-button') }}
+                </button>
+            </div>
+            <div id="recovery-deepgram-result" class="alert mt-2 small" role="status" hidden></div>
+        </div>
+
+        <div class="mb-3">
+            <label for="recovery-ffmpeg-path" class="form-label">{{ ftl('recovery-form-ffmpeg') }}</label>
+            <div class="input-group">
+                <input type="text" class="form-control" id="recovery-ffmpeg-path"
+                       name="ffmpeg_path" value="{{ settings.ffmpeg_path or '' }}"
+                       autocomplete="off" spellcheck="false"
+                       aria-describedby="recovery-ffmpeg-result">
+                <button type="button" class="btn btn-outline-brand"
+                        data-test-endpoint="{{ url_for('recovery.test_ffmpeg') }}"
+                        data-result-id="recovery-ffmpeg-result">
+                    {{ ftl('recovery-test-button') }}
+                </button>
+            </div>
+            <div id="recovery-ffmpeg-result" class="alert mt-2 small" role="status" hidden></div>
+        </div>
+
+        <div class="mb-3">
+            <label for="recovery-ffprobe-path" class="form-label">{{ ftl('recovery-form-ffprobe') }}</label>
+            <div class="input-group">
+                <input type="text" class="form-control" id="recovery-ffprobe-path"
+                       name="ffprobe_path" value="{{ settings.ffprobe_path or '' }}"
+                       autocomplete="off" spellcheck="false"
+                       aria-describedby="recovery-ffprobe-result">
+                <button type="button" class="btn btn-outline-brand"
+                        data-test-endpoint="{{ url_for('recovery.test_ffprobe') }}"
+                        data-result-id="recovery-ffprobe-result">
+                    {{ ftl('recovery-test-button') }}
+                </button>
+            </div>
+            <div id="recovery-ffprobe-result" class="alert mt-2 small" role="status" hidden></div>
+        </div>
+
+        <div class="mb-3">
+            <label for="recovery-huggingface-token" class="form-label">{{ ftl('recovery-form-huggingface') }}</label>
+            <input type="password" class="form-control" id="recovery-huggingface-token"
+                   name="huggingface_token" value="{{ settings.huggingface_token or '' }}"
+                   autocomplete="off" spellcheck="false">
+        </div>
+
+        <div id="recovery-save-status" class="alert mt-2" role="status" hidden></div>
+
+        <button type="submit" class="btn btn-brand">
+            <i class="bi bi-save" aria-hidden="true"></i>
+            {{ ftl('recovery-save') }}
+        </button>
+    </form>
+</section>

@@ -15,6 +15,13 @@ import logging
 import atexit
 
 from auto_a11y.core import Database
+from auto_a11y.core import user_settings
+from auto_a11y.core.preflight import get_registry
+# Import for the side-effect of registering Mongo / Deepgram / Anthropic
+# checks; ffmpeg + ffprobe checks register via the audio package import.
+from auto_a11y.core import preflight_registrations as _preflight_registrations
+from auto_a11y.audio import ffmpeg as _audio_ffmpeg
+_ = (_preflight_registrations, _audio_ffmpeg)  # keep imports for side-effect
 from auto_a11y.web.routes import (
     projects_bp,
     websites_bp,
@@ -40,9 +47,75 @@ from auto_a11y.web.routes import (
     admin_settings_bp,
 )
 from auto_a11y.web.routes.demo import demo_bp
+from auto_a11y.web.routes.recovery import recovery_bp
 from auto_a11y.web.typed_app import redirect
 
 logger = logging.getLogger(__name__)
+
+
+def _build_recovery_only_app(
+    app: Flask,
+    config: Any,
+    failures: list[Any],
+) -> Flask:
+    """Wire ``app`` for Settings Recovery mode and return it.
+
+    Called from :func:`create_app` when preflight reports any failure.
+    Only the recovery blueprint is registered, and a ``before_request``
+    interceptor 302-redirects every non-``/recovery/`` / non-``/static``
+    path to ``/recovery/`` so the user always lands on the recovery page
+    until the underlying configuration is fixed and the app is restarted.
+    """
+    _ = config  # currently unused; kept for symmetry with create_app
+    # Stash the failed CheckResults via setattr so the recovery blueprint
+    # can read them as a typed ``list[CheckResult]`` rather than via the
+    # untyped ``app.config`` dict.
+    setattr(app, 'preflight_failures', failures)
+
+    # CSRF was installed earlier in create_app. Look up the existing
+    # extension instance and exempt the recovery blueprint from CSRF
+    # so the JSON test/save endpoints work without round-tripping a
+    # token through the JS fetch() calls (the page itself is unauthenticated
+    # at this point — there is no Flask-Login user yet).
+    csrf_ext = app.extensions.get('csrf')
+    if isinstance(csrf_ext, CSRFProtect):
+        csrf_ext.exempt(recovery_bp)
+
+    # Make get_locale available to the recovery templates.
+    from auto_a11y.web.fluent import get_current_locale as get_locale
+
+    @app.context_processor
+    def inject_recovery_globals() -> dict[str, Any]:
+        return dict(
+            get_locale=get_locale,
+            show_error_codes=False,
+            current_user=None,
+            microsoft_sso_enabled=False,
+            google_sso_enabled=False,
+            smtp_enabled=False,
+            user_has_projects=False,
+            is_superadmin=False,
+        )
+    _ = inject_recovery_globals  # registered by @app.context_processor
+
+    app.register_blueprint(recovery_bp)
+
+    @app.before_request
+    def force_recovery() -> Response | None:
+        """Send every URL except ``/recovery/...`` / ``/static/...`` to /recovery/."""
+        path = request.path
+        if path.startswith("/recovery"):
+            return None
+        if path.startswith("/static"):
+            return None
+        return redirect("/recovery/")
+    _ = force_recovery  # registered by @app.before_request
+
+    logger.warning(
+        "Flask app started in Settings Recovery mode (%d preflight failure(s)).",
+        len(failures),
+    )
+    return app
 
 
 def create_app(config: Any) -> Flask:
@@ -91,6 +164,27 @@ def create_app(config: Any) -> Flask:
     # Initialize Fluent (Project Fluent) — sole i18n system
     from auto_a11y.web.fluent import init_fluent
     init_fluent(app)
+
+    # Overlay the user-settings file onto os.environ *before* preflight,
+    # so that values the user saved via the Settings Recovery blueprint
+    # are visible to the Mongo / Deepgram / Anthropic checks. The config
+    # object on this Flask app was built earlier from os.environ; we
+    # therefore also patch in the same Mongo URI override so the
+    # ``Database(...)`` constructor below sees the user's choice on the
+    # very first start after they save settings.
+    _user_settings = user_settings.read()
+    user_settings.apply_to_environment(_user_settings)
+    if _user_settings.mongodb_uri:
+        config.MONGODB_URI = _user_settings.mongodb_uri
+
+    # Settings Recovery (Phase 10): if preflight detects any missing or
+    # broken configuration, register only the recovery blueprint and a
+    # 302-everything interceptor so the user can fix things via the web
+    # UI without having to edit env vars by hand. The full app finishes
+    # initialising only once preflight passes.
+    preflight_result = get_registry().run_all()
+    if not preflight_result.all_passed:
+        return _build_recovery_only_app(app, config, preflight_result.failures)
 
     # Initialize database connection (needed before Flask-Login)
     db = Database(config.MONGODB_URI, config.DATABASE_NAME)

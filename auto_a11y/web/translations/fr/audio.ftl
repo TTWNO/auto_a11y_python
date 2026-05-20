@@ -82,3 +82,24 @@ audio-detail-cost-estimated-was         = Coût estimé initialement
 audio-callouts-download                 = Télécharger la vidéo annotée
 audio-callouts-failed                   = La génération de la vidéo annotée a échoué ; le reste de l'audit s'est terminé avec succès.
 audio-callouts-pending                  = Génération de la vidéo annotée en cours…
+
+# === Récupération des paramètres (phase 10) ===
+recovery-title                          = Récupération des paramètres
+recovery-intro                          = Certains paramètres de configuration sont manquants ou incorrects. Corrigez les éléments signalés ci-dessous pour démarrer l'application.
+recovery-failed-checks-heading          = Vérifications échouées
+recovery-settings-form-heading          = Paramètres
+recovery-check-failed                   = Échec
+recovery-check-passed                   = Réussi
+recovery-test-button                    = Tester
+recovery-test-working                   = En cours…
+recovery-test-success                   = OK
+recovery-test-failed                    = Ne fonctionne pas
+recovery-save                           = Enregistrer
+recovery-save-success                   = Paramètres enregistrés. Veuillez quitter et rouvrir l'application.
+recovery-save-failed                    = Impossible d'écrire le fichier de paramètres.
+recovery-form-mongo                     = URI MongoDB
+recovery-form-anthropic                 = Clé d'API Anthropic
+recovery-form-deepgram                  = Clé d'API Deepgram
+recovery-form-ffmpeg                    = Chemin du binaire ffmpeg
+recovery-form-ffprobe                   = Chemin du binaire ffprobe
+recovery-form-huggingface               = Jeton HuggingFace (facultatif)

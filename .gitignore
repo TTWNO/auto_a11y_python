@@ -117,6 +117,9 @@ adapt_*.py
 # Video/audio files from ticketA11y
 ticketA11y/
 
+# audioA11y test fixtures (downloaded on demand by scripts/fetch_audio_fixtures.py)
+tests/audio/fixtures/*.mp4
+
 # Large binary files - never commit these
 *.mp4
 *.png

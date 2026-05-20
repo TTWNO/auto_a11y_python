@@ -217,3 +217,16 @@ possibly-missing-import = "error"
 possibly-unresolved-reference = "error"
 # unsupported-dynamic-base: escalate — dynamic bases obscure type errors
 unsupported-dynamic-base = "error"
+
+# =========================================================================
+# pytest configuration — markers for opt-in integration tests.
+# Run subsets via `pytest -m "ffmpeg"`, `pytest -m "not slow"`, etc.
+# =========================================================================
+[tool.pytest.ini_options]
+markers = [
+    "ffmpeg: integration tests that shell out to ffmpeg",
+    "deepgram: integration tests that hit Deepgram",
+    "anthropic: integration tests that hit Anthropic",
+    "slow: end-to-end tests (mp4 → JSON)",
+    "network: requires network access",
+]

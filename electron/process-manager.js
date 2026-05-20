@@ -30,6 +30,7 @@ class ProcessManager {
       appDir: path.join(resourcesPath, 'app'),
       appDirDev: projectRoot,
       chromium: path.join(resourcesPath, 'chromium'),
+      ffmpegBin: path.join(resourcesPath, 'ffmpeg', 'bin'),
     };
   }
 
@@ -233,6 +234,13 @@ class ProcessManager {
     // Set Playwright browsers path if bundled chromium exists
     if (fs.existsSync(paths.chromium)) {
       env.PLAYWRIGHT_BROWSERS_PATH = paths.chromium;
+    }
+
+    // Prepend the bundled ffmpeg/ffprobe dir so the audio pipeline's
+    // detect_ffmpeg() (shutil.which) resolves the bundled binary first.
+    if (fs.existsSync(paths.ffmpegBin)) {
+      const sep = process.platform === 'win32' ? ';' : ':';
+      env.PATH = paths.ffmpegBin + sep + (env.PATH || process.env.PATH || '');
     }
 
     // Determine python path: wrapper (macOS) → bundled → project venv → system

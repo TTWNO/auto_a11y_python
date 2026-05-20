@@ -122,6 +122,8 @@ That's the ONLY code change outside build scripts. `detect_ffmpeg()`'s `shutil.w
 
 ffmpeg GPL static builds ship a license file. Each platform bundle includes `resources/ffmpeg/LICENSE.txt`. The app's existing About box gains a line crediting ffmpeg + the bundled version + a pointer to the license file. (GPL redistribution of unmodified static binaries alongside our own separately-licensed app is standard; the binaries are not linked into our code — they're invoked as subprocesses, so this does not impose GPL on auto_a11y itself.)
 
+**i18n obligation:** the About-box credit is the one user-visible string this sub-project adds. Per the repo's mandatory bilingual rule, it MUST be a Fluent message added to BOTH `auto_a11y/web/translations/en/*.ftl` and `fr/*.ftl` (whichever feature file the About box uses), not a hardcoded literal. `python tests/validate_translations.py` must pass.
+
 ## Error handling / fallback
 
 If the bundled ffmpeg is somehow missing or unrunnable (corrupt download survived the build smoke-test, Gatekeeper quarantine, missing Rosetta on Apple Silicon), the existing preflight `run_ffmpeg_check` / `run_ffprobe_check` fail and Settings Recovery routes the user to `/recovery/` with a "point at a system ffmpeg" form. So bundling is an optimisation over the recovery flow, not a replacement — the safety net stays.

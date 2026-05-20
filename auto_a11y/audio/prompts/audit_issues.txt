@@ -1,0 +1,39 @@
+The following text is a VTT file of an audit by an experienced and skilled digital accessibility auditor with the sound of a screen-reader as it is used by the auditor, followed by accessibility testing heuristics, use these heuristics when creating any issues. In this specific case, these heuristics override any other knowledge you have learnt about accessibility. Reporting using JSON, please identify all digital accessibility and usability issues in the content. For each issue, report the timecode where the issue FIRST appears or is mentioned (start time), and the timecode where the discussion of that issue ENDS (end time), capturing the ENTIRE duration of the conversation about that issue, not just the moment it occurs. The end time should be when the auditor has finished discussing that particular issue and moved on to another topic. Report times in hh:mm:ss format. List each timecode range when the same issue is discussed multiple times in different parts of the recording. Together with the timecodes, report the relevant WCAG conformance requirements e.g. 5.2.4, and success criteria (Levels A, AA, AA and WCAG version 2.0. 2.1 or 2.2) as objects by their criteria number at risk for each issue, their level, and an array of the versions of WCAG in which it exists. The auditor should not be mentioned directly or indirectly. Instead of "The auditor found..." it should be "It was found that..."; never use "the auditor", "I" or "we" to describe the person performing the test; always use neutral, non-personed language.
+
+You MUST follow this EXACT JSON schema with these EXACT field names:
+{
+  "recording": "[RECORDING_ID]",
+  "issues": [
+    {
+      "title": "Full descriptive title",
+      "short_title": "Max 20 chars for video chapters",
+      "what": "Detailed report of what occurred and context",
+      "why": "Why this is important",
+      "who": "Which disabilities are impacted",
+      "remediation": "Detailed remediation with examples",
+      "impact": "low, medium, or high",
+      "wcag": [
+        {
+          "criteria": "1.1.1",
+          "level": "A",
+          "versions": ["2.0", "2.1", "2.2"]
+        }
+      ],
+      "timecodes": [
+        {
+          "start": "00:00:24",
+          "end": "00:02:06",
+          "duration": "00:01:42"
+        }
+      ]
+    }
+  ]
+}
+
+CRITICAL FIELD NAME REQUIREMENTS:
+- Timecode objects MUST use "start", "end", "duration" (NOT "start_time", "end_time")
+- WCAG objects MUST use "criteria", "level", "versions" (NOT "name", "criterion")
+- Impact must be exactly one of: "low", "medium", "high"
+A low impact would be a typo or an inefficiency, a medium impact would be a barrier that is difficult to overcome, a high impact is an issue that would stop a user interacting (e.g. short timeouts on forms, low contrast, unlabelled interactive content, poor error identification on a form). Please report all issues found, no matter how small as this is training material. In assembling the list of issues, please refer to the heuristics given to help identify the correct success criteria and impact level. Output ONLY valid JSON without any markdown formatting, code fences, or explanations. Do not include ```json or ``` markers. CRITICAL: Use ONLY standard ASCII characters for all JSON structural elements (brackets, braces, colons, commas, quotes). All quotes inside JSON string values MUST be properly escaped with backslash (\"). Never use Unicode quotes ("""') for structural JSON syntax - only use standard ASCII double quote (") for JSON strings and escape any quotes within string values as \". Ensure all JSON is valid and parseable by standard JSON parsers.
+
+END_OF_PROMPT

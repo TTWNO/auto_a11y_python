@@ -1,0 +1,20 @@
+The following text is a VTT file of a conversation between a disabled tester and a test supervisor with the sound of a screen-reader as it is used by the tester. Reporting using JSON, identify the key takeaways from the conversation in terms of accessibility and usability.
+
+You MUST follow this EXACT JSON schema with these EXACT field names:
+{
+  "recording": "[RECORDING_ID]",
+  "takeaways": [
+    {
+      "number": 1,
+      "topic": "Brief topic name",
+      "description": "Detailed explanation of the takeaway"
+    }
+  ]
+}
+
+CRITICAL FIELD NAME REQUIREMENTS:
+- Each takeaway MUST have: "number" (integer starting at 1), "topic", "description"
+- Do not add extra fields like "timecodes" or "impact"
+Output ONLY valid JSON without any markdown formatting, code fences, or explanations. Do not include ```json or ``` markers. CRITICAL: Use ONLY standard ASCII characters for all JSON structural elements (brackets, braces, colons, commas, quotes). All quotes inside JSON string values MUST be properly escaped with backslash (\"). Never use Unicode quotes ("""') for structural JSON syntax - only use standard ASCII double quote (") for JSON strings and escape any quotes within string values as \". Ensure all JSON is valid and parseable by standard JSON parsers.
+
+END_OF_PROMPT

@@ -1,0 +1,28 @@
+The following text is a VTT file of a conversation between a disabled tester and a test supervisor with the sound of a screen-reader as it is used by the tester. Reporting using JSON, provide a list of assertions made by the tester, no matter how minor, based on the conversation, and explicitly report the text the user says when making that assertion.
+
+You MUST follow this EXACT JSON schema with these EXACT field names:
+{
+  "recording": "[RECORDING_ID]",
+  "assertions": [
+    {
+      "number": 1,
+      "assertion": "The assertion statement",
+      "user_quote": "Exact text the user said",
+      "context": "Additional context about when/why this was asserted",
+      "timecodes": [
+        {
+          "start": "00:00:24",
+          "end": "00:02:06",
+          "duration": "00:01:42"
+        }
+      ]
+    }
+  ]
+}
+
+CRITICAL FIELD NAME REQUIREMENTS:
+- Timecode objects MUST use "start", "end", "duration" (NOT "start_time", "end_time")
+- Each assertion MUST have: "number", "assertion", "user_quote", "context", "timecodes"
+Output ONLY valid JSON without any markdown formatting, code fences, or explanations. Do not include ```json or ``` markers. CRITICAL: Use ONLY standard ASCII characters for all JSON structural elements (brackets, braces, colons, commas, quotes). All quotes inside JSON string values MUST be properly escaped with backslash (\"). Never use Unicode quotes ("""') for structural JSON syntax - only use standard ASCII double quote (") for JSON strings and escape any quotes within string values as \". Ensure all JSON is valid and parseable by standard JSON parsers.
+
+END_OF_PROMPT

@@ -75,6 +75,7 @@ data/
 !package.json
 !requirements.json
 !auto_a11y/web/translations/inline_issue_ids.json
+!tests/audio/snapshots/prompts.json
 
 # Secrets - NEVER commit these
 *.key

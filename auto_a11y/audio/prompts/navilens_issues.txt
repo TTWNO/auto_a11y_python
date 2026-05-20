@@ -1,0 +1,40 @@
+The following text is a VTT file of a NaviLens accessibility testing session. NaviLens uses special QR-like codes for wayfinding and navigation assistance for blind and visually impaired users. The tester is evaluating NaviLens code placement, functionality, and information quality. Reporting using JSON, please identify ALL issues related to NaviLens implementation, including: 1) Detection issues (codes not found, detection range problems, angle limitations), 2) Physical code problems (damaged, peeling, obscured, poorly placed codes), 3) Co-siting issues where multiple codes are detected simultaneously causing confusion, 4) Contradictory or confusing directional information when multiple codes give different directions, 5) Information quality issues (unclear, incorrect, outdated, or missing information), 6) Navigation problems (incorrect directions, missing landmarks, poor route guidance), 7) Emergency egress issues (missing or inadequate emergency exit information), 8) Real-time information problems (for transit or dynamic content), 9) Language or localization issues, 10) Integration problems with screen readers or other assistive technology.
+
+You MUST follow this EXACT JSON schema with these EXACT field names:
+{
+  "recording": "[RECORDING_ID]",
+  "issues": [
+    {
+      "title": "Full descriptive title",
+      "short_title": "Max 20 chars for video chapters",
+      "what": "Detailed description of the issue",
+      "why": "Why this matters",
+      "who": "Affected users",
+      "remediation": "How to fix",
+      "impact": "low, medium, or high",
+      "wcag": [
+        {
+          "criteria": "1.1.1 or NaviLens Best Practice",
+          "level": "A",
+          "versions": ["2.0", "2.1", "2.2"]
+        }
+      ],
+      "timecodes": [
+        {
+          "start": "00:00:24",
+          "end": "00:02:06",
+          "duration": "00:01:42"
+        }
+      ]
+    }
+  ]
+}
+
+CRITICAL FIELD NAME REQUIREMENTS:
+- Timecode objects MUST use "start", "end", "duration" (NOT "start_time", "end_time")
+- WCAG objects MUST use "criteria", "level", "versions" (NOT "name", "criterion")
+- For NaviLens-specific issues without WCAG mapping, use criteria: "NaviLens Best Practice"
+- Impact must be exactly one of: "low", "medium", "high" (high for safety/navigation blocking)
+Output ONLY valid JSON without any markdown formatting or code fences. CRITICAL: Use ONLY standard ASCII characters for all JSON structural elements (brackets, braces, colons, commas, quotes). All quotes inside JSON string values MUST be properly escaped with backslash (\"). Never use Unicode quotes ("""') for structural JSON syntax - only use standard ASCII double quote (") for JSON strings and escape any quotes within string values as \". Ensure all JSON is valid and parseable by standard JSON parsers.
+
+END_OF_PROMPT

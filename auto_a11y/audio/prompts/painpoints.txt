@@ -1,0 +1,27 @@
+The following text is a VTT file of a conversation between a disabled tester and a test supervisor with the sound of a screen-reader as it is used by the tester. Reporting using JSON, provide a list of usability-related user pain points, no matter how minor, based on the conversation, and explicitly report the text the user says when speaking of that pain point.
+
+You MUST follow this EXACT JSON schema with these EXACT field names:
+{
+  "recording": "[RECORDING_ID]",
+  "pain_points": [
+    {
+      "title": "Descriptive name of the pain point",
+      "user_quote": "Exact text the user said",
+      "impact": "low, medium, or high",
+      "timecodes": [
+        {
+          "start": "00:00:24",
+          "end": "00:02:06",
+          "duration": "00:01:42"
+        }
+      ]
+    }
+  ]
+}
+
+CRITICAL FIELD NAME REQUIREMENTS:
+- Timecode objects MUST use "start", "end", "duration" (NOT "start_time", "end_time")
+- Impact must be exactly one of: "low", "medium", "high"
+Output ONLY valid JSON without any markdown formatting, code fences, or explanations. Do not include ```json or ``` markers. CRITICAL: Use ONLY standard ASCII characters for all JSON structural elements (brackets, braces, colons, commas, quotes). All quotes inside JSON string values MUST be properly escaped with backslash (\"). Never use Unicode quotes ("""') for structural JSON syntax - only use standard ASCII double quote (") for JSON strings and escape any quotes within string values as \". Ensure all JSON is valid and parseable by standard JSON parsers.
+
+END_OF_PROMPT

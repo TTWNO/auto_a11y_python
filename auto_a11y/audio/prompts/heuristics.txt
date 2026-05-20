@@ -1,0 +1,11 @@
+HEURISTICS:
+1. Skipped and missing heading levels have a high impact on screen-reader usage.
+2. Missing landmarks have a high impact on screen-reader usage.
+3. Issues that have a high impact on screen-reader and screen-magnifier usage mean that the website fails conformance according to WCAG 5.2.4. In this case 5.2.4 counts as a WCAG success criteria when reporting issues.
+4. Issues that impact the visibility of focus indications/outlines have a high impact on keyboard users including screen-reader users.
+5. Issues related to white space and magnifier use have a high impact on screen-magnifier usage.
+6. Issues related to placement of important content towards the bottom of the page have a high impact on screen-magnifier usage.
+7. Issues related to font/text size, block capitalization, and italics do not fail any WCAG success criteria but fail best practice. In this case, best practice counts as a WCAG success criteria at level where reporting issues.
+8. If a WCAG success criteria fail has been identified, for an issue, then a 5.2.4 fail is not given as it is superfluous.
+
+END_OF_PROMPT

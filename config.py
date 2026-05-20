@@ -187,6 +187,16 @@ class Config:
         ])
     )
 
+    # AudioA11y pipeline (see docs/superpowers/plans/2026-05-19-audioa11y-integration.md).
+    # AUDIO_STORAGE_DIR mirrors PDF_STORAGE_DIR: relative env values anchor at
+    # BASE_DIR, absolute env values pass through.
+    AUDIO_STORAGE_DIR: str = (
+        str(Path(os.environ['AUDIO_STORAGE_DIR']))
+        if os.environ.get('AUDIO_STORAGE_DIR') and Path(os.environ['AUDIO_STORAGE_DIR']).is_absolute()
+        else str(BASE_DIR / (os.environ.get('AUDIO_STORAGE_DIR') or 'data/recordings'))
+    )
+    AUDIO_MAX_SIZE_MB: int = int(os.getenv('AUDIO_MAX_SIZE_MB', 5120))  # 5 GB default
+
     # Paths
     SCRIPTS_DIR: Path = SCRIPTS_DIR
     DATA_DIR: Path = DATA_DIR

@@ -20,6 +20,8 @@ from flask import Flask, Response, current_app
 from flask import redirect as _flask_redirect
 
 if TYPE_CHECKING:
+    from auto_a11y.audio.runner import VideoRunner
+    from auto_a11y.audio.storage import AudioStorage
     from auto_a11y.core.database import Database
     from auto_a11y.core.job_manager import JobManager
     from auto_a11y.core.scheduler import SchedulerService
@@ -60,6 +62,24 @@ def get_pdf_runner() -> PdfRunner | None:
     ``None`` in test contexts where the runner has not been wired up.
     """
     return cast("PdfRunner | None", getattr(current_app, "pdf_runner", None))
+
+
+def get_audio_storage() -> AudioStorage | None:
+    """Return ``current_app.audio_storage`` (an :class:`AudioStorage` or ``None``).
+
+    Set during :func:`auto_a11y.web.app.create_app`. May be ``None`` in
+    test contexts where the audio surface has not been wired up.
+    """
+    return cast("AudioStorage | None", getattr(current_app, "audio_storage", None))
+
+
+def get_video_runner() -> VideoRunner | None:
+    """Return ``current_app.video_runner`` (a :class:`VideoRunner` or ``None``).
+
+    Set during :func:`auto_a11y.web.app.create_app`. May be ``None`` in
+    test contexts where the audio surface has not been wired up.
+    """
+    return cast("VideoRunner | None", getattr(current_app, "video_runner", None))
 
 
 def get_idempotency_store() -> IdempotencyStore:

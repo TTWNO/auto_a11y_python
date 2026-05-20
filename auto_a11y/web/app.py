@@ -171,6 +171,22 @@ def create_app(config: Any) -> Flask:
         ghostscript_path_override=config.GHOSTSCRIPT_PATH,
     ))
 
+    # Initialize AudioA11y video runner (Phase 7 of audioA11y integration).
+    # Exposed via ``current_app.audio_storage`` / ``current_app.video_runner``
+    # (see ``typed_app.get_audio_storage`` / ``get_video_runner``). API keys
+    # may be empty here — they are only consulted at ``VideoRunner.run`` time
+    # when an actual pipeline run is started.
+    from auto_a11y.audio.config import AudioConfig as _AudioConfig
+    from auto_a11y.audio.runner import VideoRunner as _VideoRunner
+    from auto_a11y.audio.storage import AudioStorage as _AudioStorage
+    _audio_storage = _AudioStorage(root=_Path(config.AUDIO_STORAGE_DIR))
+    setattr(app, 'audio_storage', _audio_storage)
+    setattr(app, 'video_runner', _VideoRunner(
+        db=db,
+        storage=_audio_storage,
+        config=_AudioConfig.from_env(),
+    ))
+
     # Initialize scheduler for scheduled testing
     if config.SCHEDULER_ENABLED:
         from auto_a11y.core.scheduler import SchedulerService

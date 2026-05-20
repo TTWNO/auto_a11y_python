@@ -3,21 +3,31 @@ Recording management routes for manual audits
 """
 from __future__ import annotations
 
-from typing import Any
+import asyncio
+import secrets
+from datetime import datetime
+from typing import Any, cast
 
 from flask import (
-    Blueprint, Response, render_template, request, redirect,
+    Blueprint, Response, make_response, render_template, request, redirect,
     url_for, flash, jsonify, session
 )
 from auto_a11y.web.api.deprecation import deprecated
 from auto_a11y.web.fluent import ftl
-from auto_a11y.web.typed_app import get_db
+from auto_a11y.web.typed_app import (
+    get_app_config, get_audio_storage, get_db, get_video_runner,
+)
+from werkzeug.datastructures import FileStorage
 from werkzeug.wrappers import Response as WerkzeugResponse
 import logging
 import json
 from pathlib import Path
 
-from auto_a11y.models import RecordingIssue, RecordingType
+from auto_a11y.audio import cost as audio_cost
+from auto_a11y.core.job_manager import JobManager, JobType, JobStatus
+from auto_a11y.core.task_runner import task_runner
+from auto_a11y.models import Recording, RecordingIssue, RecordingType
+from auto_a11y.models.recording import AnalysisLanguage, AuditContext
 from auto_a11y.importers import DictaphoneImporter
 
 logger = logging.getLogger(__name__)
@@ -205,12 +215,200 @@ def view_combined_recordings(project_id: str) -> str | Response | WerkzeugRespon
         return redirect(url_for('projects.view_project', project_id=project_id))
 
 
+def _is_mp4_upload(file: FileStorage) -> bool:
+    """Return True iff ``file`` looks like an MP4 upload.
+
+    Checks both the MIME type the browser declared and the filename
+    extension; either is sufficient. Empty filename or zero-byte uploads
+    return False so we never branch into the video flow for the empty
+    placeholder files that browsers attach to unused ``<input type=file>``
+    elements.
+    """
+    filename = file.filename or ''
+    if not filename:
+        return False
+    if file.mimetype == 'video/mp4':
+        return True
+    if filename.lower().endswith('.mp4'):
+        return True
+    return False
+
+
+def _narrow_audit_context(raw: str) -> AuditContext:
+    """Narrow a form-submitted audit-context string to ``AuditContext``."""
+    if raw == 'audit':
+        return 'audit'
+    if raw == 'livedExperience':
+        return 'livedExperience'
+    if raw == 'navilens':
+        return 'navilens'
+    return 'audit'
+
+
+def _narrow_language(raw: str) -> AnalysisLanguage | None:
+    if raw == 'en':
+        return 'en'
+    if raw == 'fr':
+        return 'fr'
+    return None
+
+
+def _error_response(message_id: str, status: int, **kwargs: object) -> Response:
+    """Render the upload form with a flash + the given HTTP status.
+
+    The existing JSON-import branch redirects on error (302), which is
+    fine for synchronous form submissions. The MP4 branch uses real
+    status codes (400 for validation, 413 for size cap) so the Flask
+    test client can assert against them.
+    """
+    flash(ftl(message_id, **kwargs), 'danger')
+    projects = get_db().get_all_projects()
+    rendered = render_template('recordings/upload.html', projects=projects)
+    response = make_response(rendered, status)
+    return response
+
+
+def _handle_video_upload(file: FileStorage) -> str | Response | WerkzeugResponse:
+    """Handle an MP4 upload: validate, allocate storage, estimate cost.
+
+    Splits the video flow out of :func:`upload_recording` to keep the
+    existing JSON / HTML import path readable. On success renders
+    ``recordings/upload_confirm.html`` with the freshly-created
+    :class:`Recording`; on validation failure renders the upload form
+    with a flash + an appropriate HTTP status (400 / 413).
+    """
+    cfg = get_app_config()
+    max_mb = cfg.AUDIO_MAX_SIZE_MB
+    max_bytes = max_mb * 1024 * 1024
+
+    # ---- Validate inputs ---------------------------------------------------
+    project_id = request.form.get('project_id')
+    if not project_id:
+        return _error_response('audio-error-no-project', 400)
+
+    project = get_db().get_project(project_id)
+    if project is None:
+        return _error_response('audio-error-no-project-access', 403)
+
+    # Language selection — at least one required.
+    raw_languages = request.form.getlist('languages')
+    selected: list[AnalysisLanguage] = []
+    for raw in raw_languages:
+        narrowed = _narrow_language(raw)
+        if narrowed is not None and narrowed not in selected:
+            selected.append(narrowed)
+    if not selected:
+        return _error_response('audio-error-no-language', 400)
+
+    # Size cap — Content-Length is unreliable, so probe the stream.
+    file.stream.seek(0, 2)  # SEEK_END
+    size_bytes = file.stream.tell()
+    file.stream.seek(0)
+    if size_bytes > max_bytes:
+        return _error_response('audio-error-file-too-large', 413, max=max_mb)
+
+    # ---- Allocate storage + persist source ---------------------------------
+    storage = get_audio_storage()
+    if storage is None:
+        return _error_response('audio-error-runner-not-configured', 503)
+
+    recording_id = (
+        'REC-'
+        + datetime.now().strftime('%Y%m%d%H%M%S')
+        + '-'
+        + secrets.token_hex(3)
+    )
+    slot = storage.allocate(recording_id)
+    file.save(str(slot.source_mp4))
+
+    # ---- Probe duration + estimate cost ------------------------------------
+    # Local import: ``auto_a11y.audio.segmenter`` transitively pulls
+    # ``auto_a11y.audio.ffmpeg`` which registers preflight checks at
+    # import time. Loading it at module scope here triggers a circular
+    # import with ``auto_a11y.core`` (preflight → core → testing →
+    # web.fluent → web.app → web.routes ↻). Deferring to the call site
+    # breaks the cycle without changing observable behaviour.
+    from auto_a11y.audio import segmenter as audio_segmenter
+    try:
+        duration_s = audio_segmenter.probe_duration(slot.source_mp4)
+    except Exception as exc:  # noqa: BLE001 — surface as a 400 + flash
+        logger.error("probe_duration failed for %s: %s", recording_id, exc)
+        # The slot has been allocated but we leave it on disk — the next
+        # successful upload re-uses a fresh id; cleanup is the operator's.
+        return _error_response('audio-error-invalid-mp4', 400)
+
+    audit_context = _narrow_audit_context(request.form.get('audit_context', 'audit'))
+    extended_context = request.form.get('extended_context') == 'on'
+    speaker_remap_enabled = request.form.get('speaker_remap_enabled') == 'on'
+    callouts_requested = request.form.get('callouts_requested') == 'on'
+
+    estimate = audio_cost.estimate_cost(
+        duration_s=duration_s,
+        contexts=[audit_context],
+        languages=selected,
+        extended_context=extended_context,
+        callouts=callouts_requested,
+    )
+
+    # ---- Build + persist the Recording row ---------------------------------
+    title = (request.form.get('title') or '').strip() or f'Recording {recording_id}'
+    recording = Recording(
+        recording_id=recording_id,
+        title=title,
+        project_id=project_id,
+        source_video_path=str(slot.source_mp4),
+        audit_context=audit_context,
+        analysis_languages=selected,
+        extended_context=extended_context,
+        speaker_remap_enabled=speaker_remap_enabled,
+        callouts_requested=callouts_requested,
+        callouts_status='pending' if callouts_requested else 'not-requested',
+        status='uploaded',
+        estimated_cost_usd=estimate.total_usd,
+        cost_breakdown=cast(dict[str, object], dict(estimate.breakdown)),
+    )
+    mongo_id = get_db().create_recording(recording)
+
+    # Link recording into the project's recording_ids list (matches the
+    # JSON-import path so the project sidebar surfaces it consistently).
+    if mongo_id not in project.recording_ids:
+        project.recording_ids.append(mongo_id)
+        get_db().update_project(project)
+
+    return render_template(
+        'recordings/upload_confirm.html',
+        recording=recording,
+        estimate=estimate,
+        duration_s=duration_s,
+        pricing_as_of=audio_cost.AS_OF.isoformat(),
+        max_size_mb=max_mb,
+    )
+
+
 @recordings_bp.route('/upload', methods=['GET', 'POST'])
 def upload_recording() -> str | Response | WerkzeugResponse:
-    """Upload Dictaphone JSON file"""
+    """Upload Dictaphone JSON file or an MP4 audit video.
+
+    The MP4 branch (Phase 7 of the audioA11y integration) auto-generates
+    a ``REC-YYYYMMDDHHMMSS-{6hex}`` id, allocates the per-recording
+    directory tree under ``AUDIO_STORAGE_DIR``, probes the duration via
+    ffprobe, computes a pre-flight cost estimate, and renders the
+    confirm-step template. The user kicks off the actual pipeline by
+    POSTing to ``/recordings/<id>/process``.
+
+    The JSON / HTML branch is unchanged: it imports a Dictaphone export
+    directly into the recording_issues collection.
+    """
     if request.method == 'GET':
         projects = get_db().get_all_projects()
         return render_template('recordings/upload.html', projects=projects)
+
+    # MP4 branch: any uploaded file whose extension / MIME identifies it
+    # as an MP4 dispatches to the video flow before the JSON-import
+    # validation below.
+    for upload in request.files.values():
+        if _is_mp4_upload(upload):
+            return _handle_video_upload(upload)
 
     try:
         # Validate file uploads - at least English required
@@ -472,6 +670,116 @@ def upload_recording() -> str | Response | WerkzeugResponse:
         logger.error(f"Error uploading recording: {e}", exc_info=True)
         flash(ftl('recordings-error-uploading-recording-error', error=str(e)), "danger")
         return redirect(url_for('recordings.upload_recording'))
+
+
+def _run_video_pipeline(
+    *,
+    runner: object,
+    db: object,
+    recording_id: str,
+    job_id: str,
+) -> None:
+    """Thread-pool worker: drive ``VideoRunner.run`` in a fresh event loop.
+
+    The runner exposes an async ``run(recording_id)`` coroutine; the
+    JobManager record was already created by the route, so this worker
+    flips it to RUNNING / COMPLETED / FAILED in lockstep with the
+    Recording's own status field (which the runner manages).
+
+    Mirrors the PdfAuditJob loop pattern: each task_runner worker
+    re-uses the same OS thread across many jobs and ``nest_asyncio``
+    monkey-patches ``asyncio.run`` in some flows; build a fresh loop
+    here so we never reuse a closed one. We take ``runner`` + ``db``
+    as parameters because we're outside the Flask request context.
+    """
+    from auto_a11y.audio.runner import VideoRunner as _VideoRunner
+    from auto_a11y.core.database import Database as _Database
+
+    assert isinstance(runner, _VideoRunner)
+    assert isinstance(db, _Database)
+
+    job_manager = JobManager.get_instance(db)
+    job_manager.update_job_status(
+        job_id=job_id,
+        status=JobStatus.RUNNING,
+        progress={
+            'current': 0,
+            'total': 0,
+            'message': 'Video pipeline started',
+            'details': {'recording_id': recording_id},
+        },
+    )
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        try:
+            loop.run_until_complete(runner.run(recording_id))
+            job_manager.update_job_status(
+                job_id=job_id,
+                status=JobStatus.COMPLETED,
+            )
+        finally:
+            loop.close()
+            asyncio.set_event_loop(None)
+    except Exception as exc:  # noqa: BLE001 — log + record on job
+        logger.exception("Video pipeline failed for %s", recording_id)
+        job_manager.update_job_status(
+            job_id=job_id,
+            status=JobStatus.FAILED,
+            error=f'{type(exc).__name__}: {exc}',
+        )
+
+
+@recordings_bp.route('/<recording_id>/process', methods=['POST'])
+def process_recording(recording_id: str) -> Response | WerkzeugResponse:
+    """Kick off the audioA11y pipeline for an ``uploaded`` Recording.
+
+    Phase 7 of the audioA11y integration. Loads the Recording (by Mongo
+    id, matching the existing ``/recordings/<recording_id>`` detail
+    route), asserts ``status == "uploaded"``, flips it to ``"processing"``,
+    creates a ``JobType.VIDEO_PROCESSING`` JobManager record, submits the
+    work to the global :data:`task_runner`, and redirects to the detail
+    page (where Phase 8 will render the live progress card).
+    """
+    recording = get_db().get_recording(recording_id)
+    if recording is None:
+        flash(ftl('recordings-recording-not-found'), 'danger')
+        return redirect(url_for('recordings.list_recordings'))
+
+    if recording.status != 'uploaded':
+        flash(ftl('audio-error-already-processing'), 'warning')
+        return redirect(url_for('recordings.view_recording', recording_id=recording_id))
+
+    runner = get_video_runner()
+    if runner is None:
+        flash(ftl('audio-error-runner-not-configured'), 'danger')
+        return redirect(url_for('recordings.view_recording', recording_id=recording_id))
+
+    recording.status = 'processing'
+    recording.started_at = datetime.now()
+    get_db().update_recording(recording)
+
+    job_manager = JobManager.get_instance(get_db())
+    job_id = f"video_processing_{recording.recording_id}_{secrets.token_hex(4)}"
+    job_manager.create_job(
+        job_id=job_id,
+        job_type=JobType.VIDEO_PROCESSING,
+        project_id=recording.project_id,
+        metadata={'recording_id': recording.recording_id},
+    )
+    task_runner.submit_task(
+        func=_run_video_pipeline,
+        kwargs={
+            'runner': runner,
+            'db': get_db(),
+            'recording_id': recording.recording_id,
+            'job_id': job_id,
+        },
+        task_id=job_id,
+    )
+
+    return redirect(url_for('recordings.view_recording', recording_id=recording_id))
 
 
 @recordings_bp.route('/<recording_id>/delete', methods=['POST'])

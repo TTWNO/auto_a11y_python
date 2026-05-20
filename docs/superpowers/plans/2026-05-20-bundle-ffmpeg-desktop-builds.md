@@ -355,13 +355,56 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 
 ## Phase 3 — Credit + final verification
 
-**Files:** Modify `electron/splash.html` (or the closest credits surface).
+**Files:** Modify `auto_a11y/web/templates/about.html` (the Fluent-based About page — primary), `auto_a11y/web/translations/{en,fr}/common.ftl`, and `electron/splash.html` (bonus splash credit).
 
-### Task 3.1 — ffmpeg credit
+### Task 3.1 — ffmpeg credit (Fluent About page + splash)
 
-There is no Flask-side About box today; the closest user-visible surface is `electron/splash.html`. Since that's an Electron-static HTML page (NOT rendered through Flask/Fluent), the bilingual Fluent rule does NOT apply to it — it's outside the Flask i18n system.
+A Flask-side About page **does exist**: `auto_a11y/web/templates/about.html`. It extends `base.html`, uses the `common-*` Fluent prefix, and already has a "WCAG Data Attribution" section — the conventional home for a third-party-software credit. (It is currently orphaned — no `/about` route links to it — but the credit belongs there per the spec and will be live the moment it's routed. Wiring a route is an out-of-scope follow-up.)
 
-- [ ] **Step 1: Add a small credit line** to `electron/splash.html` near the existing `.version` div (`splash.html:75`). Keep it minimal and non-colour-tokened (it's the Electron splash, not the Flask app):
+Per the spec's i18n obligation, the About-page credit MUST be a Fluent message in EN + FR.
+
+- [ ] **Step 1: Add the Fluent strings** to BOTH `common.ftl` files. In `auto_a11y/web/translations/en/common.ftl`:
+
+```ftl
+common-third-party-software = Third-party software
+common-this-application-bundles-ffmpeg = This application bundles FFmpeg (https://ffmpeg.org), licensed under the GNU General Public License v3, used to process audio and video recordings. FFmpeg is invoked as a separate program and is not linked into Auto A11y.
+```
+
+In `auto_a11y/web/translations/fr/common.ftl` (direct French):
+
+```ftl
+common-third-party-software = Logiciels tiers
+common-this-application-bundles-ffmpeg = Cette application intègre FFmpeg (https://ffmpeg.org), sous licence GNU General Public License v3, utilisé pour traiter les enregistrements audio et vidéo. FFmpeg est appelé comme un programme distinct et n'est pas lié au code d'Auto A11y.
+```
+
+- [ ] **Step 2: Add a "Third-party software" section to `about.html`.** After the WCAG Data Attribution `</section>` (find it via `grep -n "wcag-attribution-heading" auto_a11y/web/templates/about.html`), add a parallel section using the existing card markup pattern:
+
+```html
+            <!-- Third-party software attribution -->
+            <section aria-labelledby="third-party-heading">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h2 id="third-party-heading" class="mb-0"><i class="bi bi-file-text" aria-hidden="true"></i> {{ ftl('common-third-party-software') }}</h2>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0">{{ ftl('common-this-application-bundles-ffmpeg') }}</p>
+                    </div>
+                </div>
+            </section>
+```
+
+Match the surrounding indentation + card classes (structural Bootstrap only; no colour utilities). Confirm the heading level continues the page's hierarchy (the existing sections use `h2` inside `card-header`).
+
+- [ ] **Step 3: Validate translations.**
+
+```bash
+source .venv/bin/activate
+python tests/validate_translations.py
+```
+
+Expected: PASS (every EN id has an FR id).
+
+- [ ] **Step 4: Add the bonus splash credit** to `electron/splash.html` near the `.version` div (`splash.html:75`). The splash is Electron-static (NOT Flask-rendered), so it's outside the Fluent system — a plain English credit is acceptable here as a supplement, not a substitute for the Fluent About-page credit:
 
 ```html
   <div class="version">Accessibility Testing Platform</div>
@@ -370,21 +413,29 @@ There is no Flask-side About box today; the closest user-visible surface is `ele
   </div>
 ```
 
-> **If a Flask-side help/about page is later added,** the ffmpeg credit there MUST use Fluent EN+FR per the repo rule. The splash credit is exempt because it's Electron-static. Document this in the commit.
-
-- [ ] **Step 2: Syntax sanity** (it's HTML; just confirm it renders — open in a browser or `node --check` won't apply). Visual check deferred to the macOS build.
-
-- [ ] **Step 3: Commit.**
+- [ ] **Step 5: Commit.**
 
 ```bash
-git add electron/splash.html
-git commit --no-gpg-sign -m "electron: credit bundled FFmpeg/MongoDB/Chromium on the splash screen
+git add auto_a11y/web/templates/about.html \
+        auto_a11y/web/translations/en/common.ftl \
+        auto_a11y/web/translations/fr/common.ftl \
+        electron/splash.html
+git commit --no-gpg-sign -m "$(cat <<'EOF'
+feat: credit bundled FFmpeg on the About page (Fluent EN+FR) + splash
 
-The splash is Electron-static (not Flask-rendered), so the bilingual
-Fluent rule does not apply. A future Flask-side about page must use
-Fluent EN+FR for the same credit.
+Primary credit lives in about.html (the existing Fluent-based About
+page) as a "Third-party software" section, with common-third-party-*
+strings in EN + FR per the bilingual rule. about.html is currently
+orphaned (no /about route) — routing it is an out-of-scope follow-up,
+but the credit is ready when it lands.
 
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
+Bonus: a plain-English credit line on the Electron splash, which is
+Electron-static (outside the Flask Fluent system) so a literal is
+acceptable there.
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
+EOF
+)"
 ```
 
 ### Task 3.2 — Owner-side verification checklist (macOS release machine)

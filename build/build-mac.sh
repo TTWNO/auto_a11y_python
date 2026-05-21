@@ -17,8 +17,8 @@ MONGO_VERSION="7.0.17"
 # below MUST be replaced with real captured hashes on the macOS release
 # machine (curl -L <url> | shasum -a 256). The build fails on mismatch.
 FFMPEG_MAC_VERSION="7.1"
-FFMPEG_MAC_SHA256="REPLACE_WITH_REAL_SHA256"
-FFPROBE_MAC_SHA256="REPLACE_WITH_REAL_SHA256"
+FFMPEG_MAC_SHA256="5a1303c7babaffff3c32c141ff49c7f44bd3b3b3e7dcea992fd7d04b6558ef43"
+FFPROBE_MAC_SHA256="fc289c963346d7dc0891cbaed02ba270e8abec54df9259e22d59559018b25709"
 
 # Detect architecture
 ARCH="$(uname -m)"

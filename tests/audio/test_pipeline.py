@@ -10,8 +10,8 @@ call and writes the file the next stage expects. The tests assert:
   (stage_name, current, total) triple.
 - The optional stages (speaker_remap, callouts) honour their config
   toggles.
-- The ``NotImplementedError`` fallback in stage C logs the warning and
-  proceeds without remap (no exception bubbles out).
+- The ``SpeakerRemapUnavailable`` fallback in stage C logs the warning
+  and proceeds without remap (no exception bubbles out).
 - The analyze loop iterates over the full contexts × languages × kinds
   cartesian product and writes one JSON file per combination.
 """
@@ -26,7 +26,10 @@ import pytest
 
 from auto_a11y.audio.pipeline import PipelineConfig, run_pipeline
 from auto_a11y.audio.segmenter import Segment
-from auto_a11y.audio.speaker_identification import SpeakerMapping
+from auto_a11y.audio.speaker_identification import (
+    SpeakerMapping,
+    SpeakerRemapUnavailable,
+)
 from auto_a11y.audio.storage import AllocatedSlot
 from auto_a11y.audio.transcription import TranscriptionResult, Word
 
@@ -230,20 +233,20 @@ def test_speaker_remap_disabled_skips_build_mapping(slot: AllocatedSlot) -> None
     build_mock.assert_not_called()
 
 
-def test_speaker_remap_falls_back_when_embed_stub_raises(slot: AllocatedSlot) -> None:
-    """Stage C catches NotImplementedError from the TODO_PHASE4 stub.
+def test_speaker_remap_falls_back_when_model_unavailable(slot: AllocatedSlot) -> None:
+    """Stage C catches SpeakerRemapUnavailable and proceeds with no-remap.
 
-    ``build_mapping`` currently raises NotImplementedError via
-    ``_embed_speaker_audio``. The pipeline must catch it and proceed
-    with no-remap so end-to-end runs aren't blocked on the Phase 4
-    follow-up.
+    ``build_mapping`` raises ``SpeakerRemapUnavailable`` when the gated
+    ``pyannote/embedding`` model can't be loaded (no/invalid HF_TOKEN,
+    terms not accepted, or offline). The pipeline must catch it and
+    proceed without remap so the rest of the audit still completes.
     """
     segments = [_seg(0, 0.0, 30.0)]
     with patch("auto_a11y.audio.pipeline.split", return_value=segments), \
          patch("auto_a11y.audio.pipeline.merge_segment_vtts") as merge_mock, \
          patch(
              "auto_a11y.audio.pipeline.build_mapping",
-             side_effect=NotImplementedError("TODO_PHASE4 stub"),
+             side_effect=SpeakerRemapUnavailable("no HF_TOKEN; gated repo"),
          ) as build_mock:
         transcriber = MagicMock()
         transcriber.transcribe.return_value = _stub_transcription_result()

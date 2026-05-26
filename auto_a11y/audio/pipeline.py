@@ -23,11 +23,14 @@ C. ``speaker_remap``  — optional, gated on
                          ``config.speaker_remap_enabled``.
                          :func:`build_mapping` extracts pyannote
                          embeddings and clusters them; writes the
-                         mapping JSON to ``slot.speaker_map``.
-                         **Phase 4 caveat:** ``_embed_speaker_audio``
-                         is currently ``NotImplementedError``. The
-                         pipeline catches that and falls back to no-
-                         remap so end-to-end runs proceed.
+                         mapping JSON to ``slot.speaker_map``. Loading
+                         the gated ``pyannote/embedding`` model needs an
+                         ``HF_TOKEN`` whose account has accepted the
+                         model terms; when it can't be loaded (no/invalid
+                         token, or offline) :func:`build_mapping` raises
+                         :class:`SpeakerRemapUnavailable`, which the
+                         pipeline catches to fall back to no-remap so the
+                         rest of the run still proceeds.
 
 D. ``merging_vtt``    — :func:`merge_segment_vtts` writes
                          ``slot.captions_vtt``. If stage C produced a
@@ -50,10 +53,6 @@ F. ``callouts``       — optional, gated on ``config.callouts_requested``.
 
 G. ``importing``      — no-op here. The runner handles Mongo ingestion
                          via :func:`import_pipeline_output`.
-
-TODO_PHASE4: when ``_embed_speaker_audio`` is implemented, stage C will
-stop falling back. The fallback log line is the trigger for ripping the
-``try / except NotImplementedError`` out.
 """
 from __future__ import annotations
 
@@ -69,6 +68,7 @@ from auto_a11y.audio.prompts import Context, Kind
 from auto_a11y.audio.segmenter import Segment, split
 from auto_a11y.audio.speaker_identification import (
     SpeakerMapping,
+    SpeakerRemapUnavailable,
     build_mapping,
     remap_speaker_ids_in_vtt,
 )
@@ -173,16 +173,15 @@ def run_pipeline(
                 slot.speaker_map,
                 json.dumps(mapping.to_dict(), indent=2).encode("utf-8"),
             )
-        except NotImplementedError:
-            # TODO_PHASE4: ``_embed_speaker_audio`` is a stub. Fall back
-            # to no-remap so end-to-end runs proceed; the merged VTT
+        except SpeakerRemapUnavailable as exc:
+            # The gated pyannote model couldn't be loaded (no/invalid
+            # HF_TOKEN, terms not accepted, or offline). Fall back to
+            # no-remap so the rest of the audit proceeds; the merged VTT
             # keeps its per-segment ``Segment_i_Speaker_j`` voice tags.
-            msg = (
-                "speaker_remap: _embed_speaker_audio is a TODO_PHASE4 stub; "
-                + "falling back to no-remap. Merged VTT will retain per-segment "
-                + "speaker tags."
+            logger.warning(
+                "speaker_remap unavailable (%s); falling back to no-remap. "
+                + "Merged VTT will retain per-segment speaker tags.", exc,
             )
-            logger.warning(msg)
             mapping = None
 
     # === D — merging_vtt ===========================================

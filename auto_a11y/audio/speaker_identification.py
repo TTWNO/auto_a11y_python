@@ -18,12 +18,47 @@ import logging
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, TypeGuard
+from typing import TYPE_CHECKING, Any, Protocol, TypeGuard
 
 import numpy as np
 from numpy.typing import NDArray
 
+if TYPE_CHECKING:
+    from pyannote.audio import Inference
+    from pyannote.core import Segment
+
 logger = logging.getLogger(__name__)
+
+
+class _SupportsCrop(Protocol):
+    """The slice of ``pyannote.audio.Inference`` that embedding needs.
+
+    Typing :func:`_embed_speaker_audio` against this protocol (rather than
+    the concrete ``Inference``) keeps the heavy pyannote import lazy and
+    lets tests pass a lightweight crop stub. The real ``Inference``
+    satisfies it structurally.
+    """
+
+    def crop(
+        self, file: str | Path, chunk: Segment
+    ) -> NDArray[np.floating[Any]]: ...
+
+# Utterances shorter than this are skipped before embedding: the
+# pyannote model needs a little context, and sub-half-second crops add
+# noise (and sometimes raise) for no benefit.
+_MIN_UTTERANCE_S = 0.5
+
+
+class SpeakerRemapUnavailable(Exception):
+    """Raised when cross-segment speaker remapping cannot run.
+
+    Signals a *recoverable* condition — most commonly that the gated
+    ``pyannote/embedding`` model could not be obtained (no/invalid
+    ``HF_TOKEN``, or the model's terms have not been accepted) or the
+    machine is offline. Callers catch this and fall back to no-remap so
+    the rest of the audit still completes; the merged VTT then keeps its
+    per-segment ``Segment_i_Speaker_j`` voice tags.
+    """
 
 
 def _is_str_obj_dict(val: object) -> TypeGuard[dict[str, object]]:
@@ -150,26 +185,21 @@ def extract_speaker_embeddings(
     numpy array (or an empty array of shape ``(0,)`` when no speakers
     are found).
 
-    The pyannote.audio model load is a multi-gigabyte download. The
-    embedding extraction is stubbed for now — see ``_embed_speaker_audio``.
+    Loads the gated ``pyannote/embedding`` model (a multi-gigabyte
+    download on first use that requires an ``HF_TOKEN`` whose account has
+    accepted the model's terms at
+    https://huggingface.co/pyannote/embedding) and runs
+    ``Inference(window="whole")`` over each speaker's utterances.
 
-    TODO_PHASE4: port the per-speaker audio-snippet embedding logic from
-    ``pythonAudioA11y/speaker_identification.py`` lines 135-163
-    (``_extract_speaker_embedding_from_audio``). Until that lands the
-    end-to-end pipeline stage falls back to ``--skip-speaker-remap``.
+    Raises :class:`SpeakerRemapUnavailable` when the model cannot be
+    obtained (missing/invalid token, gated terms not accepted, or
+    offline) so callers can fall back to no-remap instead of failing the
+    whole audit.
     """
-    from pyannote.audio import Model  # lazy import — multi-GB model load
-
     if len(segment_audio_paths) != len(words_paths):
         raise ValueError("segment_audio_paths and words_paths must align")
 
-    model: object = Model.from_pretrained("pyannote/embedding", token=hf_token)
-    if model is None:
-        msg = (
-            "pyannote.audio Model.from_pretrained returned None for "
-            + "'pyannote/embedding' — check HF_TOKEN and model availability."
-        )
-        raise RuntimeError(msg)
+    inference = _load_embedding_inference(hf_token)
     labels: list[str] = []
     vectors: list[NDArray[np.floating[Any]]] = []
     for seg_idx, (audio_path, words_path) in enumerate(
@@ -183,8 +213,8 @@ def extract_speaker_embeddings(
             continue
         # SDK boundary: word records are our own JSON output from
         # transcription.py:write_words_json. ``Any`` is permitted per
-        # CLAUDE.md for parameter types at SDK boundaries; downstream
-        # ``_embed_speaker_audio`` validates the per-field shape.
+        # CLAUDE.md for parameter types at SDK boundaries; the helpers
+        # below validate each per-field shape.
         words: list[dict[str, Any]] = []
         for entry in raw:
             if not _is_str_obj_dict(entry):
@@ -196,7 +226,12 @@ def extract_speaker_embeddings(
             if sid is not None:
                 speaker_ids.add(sid)
         for spk in sorted(speaker_ids):
-            vec = _embed_speaker_audio(model, audio_path, words, spk)
+            vec = _embed_speaker_audio(inference, audio_path, words, spk)
+            if vec is None:
+                # Speaker had no usable audio in this segment (no spans
+                # long enough, or every crop failed). Skip — keeping
+                # labels and vectors aligned for clustering.
+                continue
             labels.append(f"Segment_{seg_idx}_Speaker_{spk}")
             vectors.append(vec)
     if not vectors:
@@ -204,28 +239,126 @@ def extract_speaker_embeddings(
     return labels, np.asarray(vectors)
 
 
+def _load_embedding_inference(hf_token: str | None) -> Inference:
+    """Load ``pyannote/embedding`` and wrap it in a whole-window Inference.
+
+    Translates HuggingFace download failures (gated repo / auth / offline)
+    into :class:`SpeakerRemapUnavailable` so the pipeline degrades to
+    no-remap rather than crashing.
+    """
+    from huggingface_hub.errors import HfHubHTTPError, LocalEntryNotFoundError
+    from pyannote.audio import Inference, Model
+
+    try:
+        model = Model.from_pretrained("pyannote/embedding", token=hf_token)
+    except (HfHubHTTPError, LocalEntryNotFoundError) as exc:
+        raise SpeakerRemapUnavailable(
+            "Could not load the gated 'pyannote/embedding' model. Set HF_TOKEN "
+            + "to a HuggingFace token whose account has accepted the model "
+            + "terms at https://huggingface.co/pyannote/embedding (and check "
+            + f"network access). Underlying error: {exc}"
+        ) from exc
+    if model is None:
+        raise SpeakerRemapUnavailable(
+            "pyannote.audio Model.from_pretrained returned None for "
+            + "'pyannote/embedding'."
+        )
+    return Inference(model, window="whole")
+
+
 def _embed_speaker_audio(
-    model: object,
+    inference: _SupportsCrop,
     audio_path: Path,
     words: list[dict[str, Any]],
     speaker: int,
-) -> NDArray[np.floating[Any]]:
-    """Extract one speaker's audio in one segment, return the embedding vector.
+) -> NDArray[np.floating[Any]] | None:
+    """Return the mean embedding for one speaker within one segment.
 
-    TODO_PHASE4: port the pyannote ``Inference(model, window="whole")``
-    + ``.crop(audio_path, Segment(start, end))`` + np.mean averaging
-    logic from
-    ``pythonAudioA11y/speaker_identification.py``
-    lines 135-163 (``_extract_speaker_embedding_from_audio``). The
-    current stub means ``build_mapping`` cannot run end-to-end yet, and
-    the pipeline falls back to ``--skip-speaker-remap`` until this is
-    filled in.
+    Groups the speaker's words into contiguous utterance spans (mirroring
+    the cue grouping in ``transcription.words_to_vtt``), embeds each span
+    with ``Inference.crop`` (window="whole"), and averages the per-span
+    vectors. Returns ``None`` when the speaker has no usable audio — no
+    spans long enough, or every crop failed.
+
+    Ported from ``pythonAudioA11y/speaker_identification.py``
+    ``_extract_speaker_embedding_from_audio`` (lines 135-163).
     """
-    msg = (
-        "TODO_PHASE4: port _embed_speaker_audio from "
-        + "pythonAudioA11y/speaker_identification.py"
-    )
-    raise NotImplementedError(msg)
+    from pyannote.core import Segment
+
+    vectors: list[NDArray[np.floating[Any]]] = []
+    for start, end in _speaker_utterance_spans(words, speaker):
+        if end - start < _MIN_UTTERANCE_S:
+            continue
+        try:
+            vec = inference.crop(audio_path, Segment(start, end))
+        except Exception as exc:
+            # pyannote/torch raise a wide, version-dependent set of
+            # exceptions on awkward crops (e.g. a span near the file
+            # boundary). A single bad utterance must not abort the whole
+            # audit, so we log and skip it rather than narrowing to a
+            # fragile exception tuple.
+            logger.warning(
+                "Embedding crop failed for %s [%.2f-%.2f]: %s",
+                audio_path.name, start, end, exc,
+            )
+            continue
+        vectors.append(np.asarray(vec, dtype=np.float64).ravel())
+    if not vectors:
+        return None
+    stacked: NDArray[np.float64] = np.asarray(vectors, dtype=np.float64)
+    return np.asarray(stacked.mean(axis=0), dtype=np.float64)
+
+
+def _word_time(word: dict[str, Any], key: str) -> float | None:
+    """Read a float timestamp (``start``/``end``) from a word record.
+
+    Word records come from ``transcription.write_words_json`` where the
+    value is a ``float``; be defensive about ints and numeric strings,
+    and skip anything else.
+    """
+    raw = word.get(key)
+    if isinstance(raw, bool):  # bool is an int subclass — not a timestamp
+        return None
+    if isinstance(raw, (int, float)):
+        return float(raw)
+    if isinstance(raw, str):
+        try:
+            return float(raw)
+        except ValueError:
+            return None
+    return None
+
+
+def _speaker_utterance_spans(
+    words: list[dict[str, Any]], speaker: int
+) -> list[tuple[float, float]]:
+    """Contiguous ``(start, end)`` spans where ``speaker`` is talking.
+
+    Adjacent words by the same speaker form one span (matching the cue
+    grouping in ``transcription.words_to_vtt``). Words with a missing or
+    invalid speaker or timestamp break the current run and are skipped.
+    """
+    spans: list[tuple[float, float]] = []
+    run_start: float | None = None
+    run_end: float | None = None
+
+    def flush() -> None:
+        nonlocal run_start, run_end
+        if run_start is not None and run_end is not None:
+            spans.append((run_start, run_end))
+        run_start = run_end = None
+
+    for w in words:
+        start = _word_time(w, "start")
+        end = _word_time(w, "end")
+        if _speaker_id(w) == speaker and start is not None and end is not None:
+            if run_start is None:
+                run_start = start
+            run_end = end
+        else:
+            flush()
+    flush()
+    return spans
 
 
 def build_mapping(

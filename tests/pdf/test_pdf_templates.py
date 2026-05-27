@@ -188,6 +188,7 @@ def app(session_storage_dir: Path) -> Flask:
     app.add_url_rule('/', endpoint='index', view_func=_empty_view)
     app.add_url_rule('/dashboard', endpoint='dashboard', view_func=_empty_view)
     app.add_url_rule('/help', endpoint='help', view_func=_empty_view)
+    app.add_url_rule('/accessibility-statement', endpoint='accessibility_statement', view_func=_empty_view)
 
     # Helper that builds a Blueprint pre-populated with all its endpoints
     # before registration — Flask forbids add_url_rule after register.

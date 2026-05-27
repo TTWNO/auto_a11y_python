@@ -13,22 +13,27 @@
     {{ bootstrap_icons_css|safe }}
     </style>
     <style>
+    /* Category header gradients. White text sits on the whole header (title
+       and 0.95rem meta), so BOTH stops of every gradient meet WCAG 2.2 AA
+       (>= 4.5:1 against white); the hues stay distinct per component type.
+       See GH #50 — replaced the previous pastel gradients (white text on
+       light end-stops was as low as 1.1:1). */
     .component-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #1a5276 0%, #154360 100%);
         color: white;
         padding: 2rem;
         border-radius: 8px;
         margin-bottom: 2rem;
     }
 
-    .component-header.navigation { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-    .component-header.header { background: linear-gradient(135deg, #8e2de2 0%, #4a00e0 100%); }
-    .component-header.footer { background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%); }
-    .component-header.form { background: linear-gradient(135deg, #f77062 0%, #fe5196 100%); }
-    .component-header.aside { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
-    .component-header.section { background: linear-gradient(135deg, #30cfd0 0%, #330867 100%); }
-    .component-header.search { background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%); }
-    .component-header.none { background: linear-gradient(135deg, #757F9A 0%, #D7DDE8 100%); }
+    .component-header.navigation { background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%); }
+    .component-header.header { background: linear-gradient(135deg, #6d28d9 0%, #5b21b6 100%); }
+    .component-header.footer { background: linear-gradient(135deg, #15803d 0%, #166534 100%); }
+    .component-header.form { background: linear-gradient(135deg, #be123c 0%, #9f1239 100%); }
+    .component-header.aside { background: linear-gradient(135deg, #a21caf 0%, #86198f 100%); }
+    .component-header.section { background: linear-gradient(135deg, #0e7490 0%, #155e75 100%); }
+    .component-header.search { background: linear-gradient(135deg, #b45309 0%, #92400e 100%); }
+    .component-header.none { background: linear-gradient(135deg, #475569 0%, #334155 100%); }
 
     .back-link {
         color: white;
@@ -287,17 +292,20 @@
 
     /* Severity color utility classes */
     :root {
-        --color-severity-high: #dc3545;
-        --color-severity-high-gradient-end: #c82333;
+        /* Aligned to tokens.css light-mode values so report text/badges meet
+           WCAG 2.2 AA; previous Bootstrap-ish values (e.g. #dc3545 = 4.0:1,
+           #ffc107 used as a header bg) failed contrast. See GH #50. */
+        --color-severity-high: #922b21;
+        --color-severity-high-gradient-end: #7b241c;
         --color-severity-high-bg: #fdedec;
-        --color-severity-medium: #ffc107;
-        --color-severity-medium-gradient-end: #e0a800;
+        --color-severity-medium: #7d6608;
+        --color-severity-medium-gradient-end: #5e4d06;
         --color-severity-medium-bg: #fff3cd;
-        --color-severity-pass: #198754;
-        --color-severity-pass-bg: #eafaf1;
+        --color-severity-pass: #1a7a3e;
+        --color-severity-pass-bg: #f0fcf5;
         --color-info: #0e7490;
-        --color-info-gradient-end: #0aa2c0;
-        --color-info-bg: #e7f3ff;
+        --color-info-gradient-end: #0b5a70;
+        --color-info-bg: #e0f3f8;
         --color-discovery: #6f42c1;
         --color-discovery-gradient-end: #5a32a3;
         --color-discovery-bg: #f3eefa;
@@ -320,7 +328,7 @@
     }
     .severity-header-medium {
         background: linear-gradient(135deg, var(--color-severity-medium), var(--color-severity-medium-gradient-end));
-        color: var(--color-text);
+        color: var(--color-text-inverse); /* white on dark gold (#50) */
     }
     .severity-header-info {
         background: linear-gradient(135deg, var(--color-info), var(--color-info-gradient-end));

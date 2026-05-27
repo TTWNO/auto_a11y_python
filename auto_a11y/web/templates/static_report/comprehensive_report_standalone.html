@@ -1025,7 +1025,7 @@
                                 {% else %}
                                     {% set impact = 'medium' %}
                                 {% endif %}
-                                <span class="badge" style="background-color: {% if impact == 'high' %}var(--color-severity-high){% elif impact == 'medium' %}var(--color-severity-medium); color: var(--color-text);{% else %}var(--color-info-alt){% endif %}">
+                                <span class="badge" style="color: #fff; background-color: {% if impact == 'high' %}var(--color-severity-high){% elif impact == 'medium' %}var(--color-severity-medium){% else %}var(--color-info){% endif %};">
                                     {{ impact|title }}
                                 </span>
                             </td>

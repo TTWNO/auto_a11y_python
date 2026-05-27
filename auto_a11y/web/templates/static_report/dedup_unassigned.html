@@ -242,17 +242,20 @@
 
     /* Severity color utility classes */
     :root {
-        --color-severity-high: #dc3545;
-        --color-severity-high-gradient-end: #c82333;
+        /* Aligned to tokens.css light-mode values so report text/badges meet
+           WCAG 2.2 AA; previous Bootstrap-ish values (e.g. #dc3545 = 4.0:1,
+           #ffc107 used as a header bg) failed contrast. See GH #50. */
+        --color-severity-high: #922b21;
+        --color-severity-high-gradient-end: #7b241c;
         --color-severity-high-bg: #fdedec;
-        --color-severity-medium: #ffc107;
-        --color-severity-medium-gradient-end: #e0a800;
+        --color-severity-medium: #7d6608;
+        --color-severity-medium-gradient-end: #5e4d06;
         --color-severity-medium-bg: #fff3cd;
-        --color-severity-pass: #198754;
-        --color-severity-pass-bg: #eafaf1;
+        --color-severity-pass: #1a7a3e;
+        --color-severity-pass-bg: #f0fcf5;
         --color-info: #0e7490;
-        --color-info-gradient-end: #0aa2c0;
-        --color-info-bg: #e7f3ff;
+        --color-info-gradient-end: #0b5a70;
+        --color-info-bg: #e0f3f8;
         --color-discovery: #6f42c1;
         --color-discovery-gradient-end: #5a32a3;
         --color-discovery-bg: #f3eefa;
@@ -275,7 +278,7 @@
     }
     .severity-header-medium {
         background: linear-gradient(135deg, var(--color-severity-medium), var(--color-severity-medium-gradient-end));
-        color: var(--color-text);
+        color: var(--color-text-inverse); /* white on dark gold (#50) */
     }
     .severity-header-info {
         background: linear-gradient(135deg, var(--color-info), var(--color-info-gradient-end));

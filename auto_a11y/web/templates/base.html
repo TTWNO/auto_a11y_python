@@ -115,6 +115,9 @@
                             <li role="none"><a class="dropdown-item" role="menuitem" href="{{ url_for('help') }}" {% if request.endpoint and request.endpoint.startswith('help') %}aria-current="page"{% endif %}>
                                 <i class="bi bi-question-circle" aria-hidden="true"></i> {{ ftl('common-help') }}
                             </a></li>
+                            <li role="none"><a class="dropdown-item" role="menuitem" href="{{ url_for('accessibility_statement') }}" {% if request.endpoint == 'accessibility_statement' %}aria-current="page"{% endif %}>
+                                <i class="bi bi-universal-access" aria-hidden="true"></i> {{ ftl('common-accessibility-statement') }}
+                            </a></li>
                             {% if current_user.is_authenticated and (is_superadmin or user_has_projects) %}
                             <li role="separator"><hr class="dropdown-divider"></li>
                             <li role="none"><a class="dropdown-item" role="menuitem" href="{{ url_for('testing.configure_testing') }}" {% if request.endpoint == 'testing.configure_testing' %}aria-current="page"{% endif %}>
@@ -235,6 +238,8 @@
     <footer class="footer mt-auto py-3 bg-subtle">
         <div class="container text-center">
             <span class="text-muted">{{ ftl('common-auto-a11y') }} &copy; 2025 | {{ ftl('common-canadian-national-institute-for-the-blind') }}</span>
+            <span class="text-muted" aria-hidden="true"> | </span>
+            <a href="{{ url_for('accessibility_statement') }}" {% if request.endpoint == 'accessibility_statement' %}aria-current="page"{% endif %}>{{ ftl('common-accessibility-statement') }}</a>
         </div>
     </footer>
 

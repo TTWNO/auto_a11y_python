@@ -426,7 +426,10 @@ def create_app(config: Any) -> Flask:
             # public — documenting the documentation is the whole point.
             'api.openapi_json', 'api.openapi_yaml',
             'static', 'health', 'set_language',
-            'desktop.shutdown'
+            'desktop.shutdown',
+            # The accessibility statement (incl. how to report barriers) must be
+            # reachable without an account — requiring login is itself a barrier.
+            'accessibility_statement',
         ]
         if request.endpoint and request.endpoint in allowed_endpoints:
             return None
@@ -635,6 +638,11 @@ def create_app(config: Any) -> Flask:
         """Help and documentation page"""
         return render_template('help.html')
 
+    @app.route('/accessibility-statement')
+    def accessibility_statement() -> str:
+        """Accessibility statement: conformance, measures, and known limitations"""
+        return render_template('accessibility_statement.html')
+
     @app.route('/screenshots/<path:filename>')
     @limiter.exempt
     def serve_screenshot(filename: str) -> Response | tuple[Response, int]:
@@ -713,7 +721,7 @@ def create_app(config: Any) -> Flask:
         add_security_headers,
         error_code_only, wcag_understanding_url, wcag_quickref_url,
         wcag_name, translate_issue,
-        index, dashboard, health, help, serve_screenshot,
+        index, dashboard, health, help, accessibility_statement, serve_screenshot,
         forbidden, not_found, internal_error, cleanup,
     )
     del _framework_callbacks

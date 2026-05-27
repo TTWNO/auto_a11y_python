@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}{{ ftl('a11y-statement-page-title') }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="mb-2">
+        <i class="bi bi-universal-access-circle" aria-hidden="true"></i> {{ ftl('a11y-statement-heading') }}
+    </h1>
+    <p class="text-muted">
+        {{ ftl('a11y-statement-last-reviewed-label') }}: {{ ftl('a11y-statement-last-reviewed-date') }}
+    </p>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <p class="lead">{{ ftl('a11y-statement-intro') }}</p>
+
+            <!-- Conformance status -->
+            <section aria-labelledby="conformance-heading">
+            <div class="card mb-4">
+                <div class="card-header bg-brand text-inverse">
+                    <h2 id="conformance-heading" class="mb-0"><i class="bi bi-patch-check" aria-hidden="true"></i> {{ ftl('a11y-statement-conformance-heading') }}</h2>
+                </div>
+                <div class="card-body">
+                    <p>{{ ftl('a11y-statement-conformance-standard') }}</p>
+                    <p>{{ ftl('a11y-statement-conformance-level') }}</p>
+                    <p class="mb-0">{{ ftl('a11y-statement-conformance-note') }}</p>
+                </div>
+            </div>
+            </section>
+
+            <!-- Measures -->
+            <section aria-labelledby="measures-heading">
+            <div class="card mb-4">
+                <div class="card-header card-header-pass">
+                    <h2 id="measures-heading" class="mb-0"><i class="bi bi-shield-check" aria-hidden="true"></i> {{ ftl('a11y-statement-measures-heading') }}</h2>
+                </div>
+                <div class="card-body">
+                    <p>{{ ftl('a11y-statement-measures-intro') }}</p>
+                    <ul class="mb-0">
+                        <li>{{ ftl('a11y-statement-measures-tokens') }}</li>
+                        <li>{{ ftl('a11y-statement-measures-contrast-lint') }}</li>
+                        <li>{{ ftl('a11y-statement-measures-semantics') }}</li>
+                        <li>{{ ftl('a11y-statement-measures-keyboard') }}</li>
+                        <li>{{ ftl('a11y-statement-measures-live-regions') }}</li>
+                        <li>{{ ftl('a11y-statement-measures-bilingual') }}</li>
+                        <li>{{ ftl('a11y-statement-measures-reflow') }}</li>
+                    </ul>
+                </div>
+            </div>
+            </section>
+
+            <!-- Compatibility -->
+            <section aria-labelledby="compatibility-heading">
+            <div class="card mb-4">
+                <div class="card-header card-header-info">
+                    <h2 id="compatibility-heading" class="mb-0"><i class="bi bi-window-stack" aria-hidden="true"></i> {{ ftl('a11y-statement-compatibility-heading') }}</h2>
+                </div>
+                <div class="card-body">
+                    <p>{{ ftl('a11y-statement-compatibility-intro') }}</p>
+                    <ul>
+                        <li>{{ ftl('a11y-statement-compatibility-browsers') }}</li>
+                        <li>{{ ftl('a11y-statement-compatibility-screenreaders') }}</li>
+                    </ul>
+                    <p class="mb-0">{{ ftl('a11y-statement-compatibility-note') }}</p>
+                </div>
+            </div>
+            </section>
+
+            <!-- Technical specifications -->
+            <section aria-labelledby="tech-heading">
+            <div class="card mb-4">
+                <div class="card-header card-header-info">
+                    <h2 id="tech-heading" class="mb-0"><i class="bi bi-code-slash" aria-hidden="true"></i> {{ ftl('a11y-statement-tech-heading') }}</h2>
+                </div>
+                <div class="card-body">
+                    <p>{{ ftl('a11y-statement-tech-intro') }}</p>
+                    <p><strong>{{ ftl('a11y-statement-tech-list') }}</strong></p>
+                    <p class="mb-0">{{ ftl('a11y-statement-tech-note') }}</p>
+                </div>
+            </div>
+            </section>
+
+            <!-- Known limitations -->
+            <section aria-labelledby="limitations-heading">
+            <div class="card mb-4 border-medium">
+                <div class="card-header card-header-medium">
+                    <h2 id="limitations-heading" class="mb-0"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> {{ ftl('a11y-statement-limitations-heading') }}</h2>
+                </div>
+                <div class="card-body">
+                    <p>{{ ftl('a11y-statement-limitations-intro') }}</p>
+                    <ul class="mb-0">
+                        <li>{{ ftl('a11y-statement-limitations-pdf') }}</li>
+                        <li>{{ ftl('a11y-statement-limitations-screenshots') }}</li>
+                        <li>{{ ftl('a11y-statement-limitations-tested-content') }}</li>
+                        <li>{{ ftl('a11y-statement-limitations-manual-testing') }}</li>
+                        <li>{{ ftl('a11y-statement-limitations-charts') }}</li>
+                    </ul>
+                </div>
+            </div>
+            </section>
+
+            <!-- Assessment -->
+            <section aria-labelledby="assessment-heading">
+            <div class="card mb-4">
+                <div class="card-header card-header-neutral">
+                    <h2 id="assessment-heading" class="mb-0"><i class="bi bi-clipboard-check" aria-hidden="true"></i> {{ ftl('a11y-statement-assessment-heading') }}</h2>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">{{ ftl('a11y-statement-assessment-text') }}</p>
+                </div>
+            </div>
+            </section>
+
+            <!-- Feedback -->
+            <section aria-labelledby="feedback-heading">
+            <div class="card mb-4">
+                <div class="card-header bg-brand text-inverse">
+                    <h2 id="feedback-heading" class="mb-0"><i class="bi bi-chat-left-text" aria-hidden="true"></i> {{ ftl('a11y-statement-feedback-heading') }}</h2>
+                </div>
+                <div class="card-body">
+                    <p>{{ ftl('a11y-statement-feedback-intro') }}</p>
+                    <ul>
+                        <li>
+                            <strong>{{ ftl('a11y-statement-feedback-email-label') }}:</strong>
+                            <a href="mailto:{{ ftl('a11y-statement-feedback-email') }}">{{ ftl('a11y-statement-feedback-email') }}</a>
+                        </li>
+                        <li>
+                            <strong>{{ ftl('a11y-statement-feedback-org-label') }}:</strong>
+                            {{ ftl('a11y-statement-feedback-org') }}
+                        </li>
+                    </ul>
+                    <p class="mb-0">{{ ftl('a11y-statement-feedback-response') }}</p>
+                </div>
+            </div>
+            </section>
+        </div>
+
+        <!-- Sidebar -->
+        <aside class="col-lg-4">
+            <div class="card sticky-top" style="top: 20px;">
+                <div class="card-header card-header-neutral">
+                    <h2 class="mb-0"><i class="bi bi-info-square" aria-hidden="true"></i> {{ ftl('a11y-statement-sidebar-heading') }}</h2>
+                </div>
+                <div class="card-body">
+                    <p class="small mb-1">
+                        <strong>{{ ftl('a11y-statement-sidebar-target') }}:</strong><br>
+                        {{ ftl('a11y-statement-sidebar-target-value') }}
+                    </p>
+                    <p class="small">
+                        <strong>{{ ftl('a11y-statement-sidebar-status') }}:</strong>
+                        <span class="badge badge-medium">{{ ftl('a11y-statement-sidebar-status-value') }}</span>
+                    </p>
+
+                    <hr>
+
+                    <h3 class="h6">{{ ftl('a11y-statement-related-heading') }}</h3>
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('help') }}" class="btn btn-brand btn-sm">
+                            <i class="bi bi-question-circle" aria-hidden="true"></i> {{ ftl('common-help') }}
+                        </a>
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-neutral btn-sm">
+                            <i class="bi bi-speedometer2" aria-hidden="true"></i> {{ ftl('common-dashboard') }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+</div>
+{% endblock %}

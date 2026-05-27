@@ -847,3 +847,6 @@ common-remove-filter = Remove filter
 # Third-party software attribution (About page)
 common-third-party-software = Third-party software
 common-this-application-bundles-ffmpeg = This application bundles FFmpeg (https://ffmpeg.org), licensed under the GNU General Public License v3, used to process audio and video recordings. FFmpeg is invoked as a separate program and is not linked into Auto A11y.
+
+# Accessibility statement (navigation and footer)
+common-accessibility-statement = Accessibility statement

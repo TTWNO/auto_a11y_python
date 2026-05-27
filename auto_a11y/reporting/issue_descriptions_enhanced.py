@@ -3920,7 +3920,16 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
                         return match.group(0)
                     step = nav[part]
                     if part_idx == len(parts) - 1:
-                        return str(step) if step is not None else match.group(0)
+                        # Leave empty / placeholder values literal so the
+                        # downstream translation layer can substitute a readable
+                        # fallback (and try camel/snake variants) instead of
+                        # emitting an empty fragment such as '<h>' or '""'.
+                        if step is None:
+                            return match.group(0)
+                        leaf = str(step).strip()
+                        if leaf == '' or leaf.lower() in ('none', 'null', 'undefined'):
+                            return match.group(0)
+                        return str(step)
                     if not hasattr(step, 'get'):
                         return match.group(0)
                     nav = {str(k): v for k, v in step.items()}

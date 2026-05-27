@@ -52,13 +52,13 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
     # Generated descriptions from template
     descriptions: dict[str, dict[str, str | list[str]]] = {
         'ErrAccordionWithoutARIA': {
-            'title': "Accordion element \"{element_text}\" lacks proper ARIA markup",
-            'what': "An accordion-style widget (\"{element_text}\") was found in which the headers expand and collapse content, but the markup lacks aria-expanded, aria-controls, and appropriate button/heading roles.",
-            'why': "Without aria-expanded and proper roles, users cannot determine if sections are expanded or collapsed",
-            'who': "Screen reader users, keyboard users",
+            'title': "Accordion \"{element_text}\" is missing its ARIA markup",
+            'what': "An accordion-style widget (\"{element_text}\") was found in which the headers expand and collapse content, but the markup lacks aria-expanded, aria-controls, and the appropriate button or heading roles.",
+            'why': "Without aria-expanded, assistive technology cannot tell whether a section is open or closed; without aria-controls and a button role, users cannot tell that a header is an operable control or which panel it reveals. This fails WCAG 4.1.2 Name, Role, Value, 1.3.1 Info and Relationships, and 2.1.1 Keyboard, leaving the accordion confusing or unusable non-visually.",
+            'who': "Screen reader users who cannot perceive the open/closed state, and keyboard users who cannot tell the headers are operable controls.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['2.1.1', '4.1.2', '1.3.1'],
-            'remediation': "Add button role to headers, aria-expanded to indicate state, and aria-controls to link headers to panels"
+            'remediation': "Make each accordion header a <button> (placed inside a heading element at the correct level). Add aria-expanded=\"true\"/\"false\" reflecting the panel state, and aria-controls referencing the id of the panel it toggles. Update aria-expanded in JavaScript on each toggle, and ensure the header is operable with Enter and Space."
         },
         'ErrCarouselWithoutARIA': {
             'title': "Carousel or slider lacks proper ARIA markup and controls",
@@ -71,13 +71,13 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "An accessible carousel should include: (1) role=\"region\" or role=\"group\" on the carousel container with an aria-label describing its purpose, (2) aria-roledescription=\"carousel\" to help users understand what they're interacting with, (3) each slide should have role=\"group\" with aria-roledescription=\"slide\" and aria-label indicating position (e.g., '1 of 5'), (4) Previous/Next buttons with clear accessible names, (5) aria-live=\"polite\" region to announce slide changes, (6) if auto-rotating: a pause/play button and the carousel should pause on hover/focus. Consider using the WAI-ARIA Authoring Practices carousel pattern."
         },
         'ErrClickableWithoutKeyboard': {
-            'title': "Element with onclick handler is not keyboard accessible",
-            'what': "An element has an onclick handler (or similar JavaScript click listener) but no role, no tabindex, and no keyboard event handlers — so it can be clicked but not activated with a keyboard.",
-            'why': "Keyboard users cannot activate this control",
-            'who': "Keyboard users, users who cannot use a mouse",
+            'title': "Element with a click handler has no keyboard support",
+            'what': "An element has an onclick handler (or similar JavaScript click listener) but no role, no tabindex, and no keyboard event handlers, so it can be clicked but not activated with a keyboard.",
+            'why': "Because the element is neither focusable nor wired to respond to key presses, a keyboard-only user cannot reach or operate it, and the action it performs becomes mouse-only. This fails WCAG 2.1.1 Keyboard, which requires every function to be operable through a keyboard interface.",
+            'who': "Keyboard-only users and people with motor or dexterity disabilities who cannot use a mouse or pointing device, and screen reader users navigating with the keyboard.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['2.1.1'],
-            'remediation': "Add tabindex=\"0\" and implement onkeypress/onkeydown handlers for Enter and Space keys"
+            'remediation': "Use a native interactive element such as <button> so keyboard support comes for free. If you must keep the current element, add tabindex=\"0\" to make it focusable, add an appropriate role such as role=\"button\", and add keydown handlers that run the same action on Enter and Space (and Escape where applicable)."
         },
         'AI_ErrDialogWithoutARIA': {
             'title': "Element appears to be a dialog/modal but lacks proper ARIA markup",
@@ -100,24 +100,24 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Add aria-haspopup=\"true\", aria-expanded state, and role=\"menu\" with role=\"menuitem\" for options"
         },
         'AI_ErrHeadingLevelMismatch': {
-            'title': "Heading \"{heading_text}\" is <h{current_level}> but should be <h{suggested_level}>",
-            'what': "Heading \"{heading_text}\" is marked as <h{current_level}> but its visual prominence suggests it should be <h{suggested_level}>",
-            'why': "Incorrect heading levels create confusing document structure for screen reader users who navigate by headings",
-            'what_generic': "Heading level doesn't match visual hierarchy",
-            'who': "Screen reader users, users who navigate by headings",
+            'title': "Heading \"{heading_text}\" is <h{current_level}> but its visual rank suggests <h{suggested_level}>",
+            'what': "Heading \"{heading_text}\" is marked as <h{current_level}> but its visual prominence (size, weight, position) suggests it should be <h{suggested_level}>.",
+            'why': "When the coded heading level does not match the visual hierarchy, the programmatic outline screen reader users hear diverges from the structure sighted users see. A subsection can sound like a top-level section, or vice versa, so users lose track of where they are. This violates WCAG 1.3.1 Info and Relationships (visual structure must be conveyed in markup) and 2.4.1 Bypass Blocks / heading navigation, undermining the ability to navigate by heading level.",
+            'what_generic': "A heading's coded level does not match its visual hierarchy.",
+            'who': "Screen reader users who navigate by heading level and rely on the level number to understand nesting; users with cognitive disabilities who need the audible structure to match the visible one.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['1.3.1', '2.4.1'],
-            'remediation': "Change the heading from <h{current_level}> to <h{suggested_level}> to match the visual hierarchy"
+            'remediation': "Decide the correct level from the page outline, then change the heading from <h{current_level}> to <h{suggested_level}> so the markup matches the visual rank. For example, rewrite <h{current_level}>...</h{current_level}> as <h{suggested_level}>...</h{suggested_level}>. Use CSS, not the heading level, to control appearance."
         },
         'AI_ErrHeadingIssue': {
-            'title': "Heading structure has accessibility issues",
-            'what': "AI analysis detected a heading-related accessibility issue",
-            'what_generic': "Heading structure has accessibility issues",
-            'why': "Proper heading structure is essential for screen reader users to navigate and understand page content",
-            'who': "Screen reader users, users who navigate by headings",
+            'title': "AI visual analysis found a heading structure problem",
+            'what': "AI analysis of the rendered page detected a heading-related accessibility issue, such as a missing, mislabeled, or out-of-order heading that the DOM-only checks did not flag.",
+            'what_generic': "The page contains a heading structure problem identified through visual analysis.",
+            'why': "Headings form the outline screen reader users rely on to skim and navigate a page. When the heading structure is broken, users cannot jump between sections, build a mental model of the content, or understand how topics relate. This violates WCAG 1.3.1 Info and Relationships (the visual structure must be exposed programmatically) and 2.4.6 Headings and Labels (headings must describe their sections). The result is slower, more confusing heading navigation.",
+            'who': "Screen reader users who navigate page-to-page by pulling up a list of headings or jumping heading-to-heading; users with cognitive disabilities who depend on a clear, consistent visual and structural outline to follow content.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['1.3.1', '2.4.6'],
-            'remediation': "Review and fix the heading structure to ensure proper hierarchy and semantic markup"
+            'remediation': "Review the flagged region against the rest of the page. Confirm that every visual section title is a real heading element, that heading levels descend without gaps, and that each heading text describes its section. For example, replace a styled paragraph acting as a section title with a true heading: <h2>Billing details</h2>. Re-run the test after correcting the markup."
         },
         'AI_ErrAccessibilityIssue': {
             'title': "AI flagged an accessibility issue that needs manual classification",
@@ -140,32 +140,32 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Use semantic HTML elements or add appropriate ARIA roles and keyboard support"
         },
         'ErrMenuWithoutARIA': {
-            'title': "Navigation menu lacks proper ARIA markup",
-            'what': "A navigation menu (e.g., a flyout or mega-menu) was detected without the appropriate ARIA pattern — no role=\"menu\"/role=\"menuitem\" structure and no roving-tabindex keyboard handling.",
-            'why': "Screen readers won\'t recognize this as a navigation menu",
-            'who': "Screen reader users",
+            'title': "Navigation menu lacks the expected ARIA pattern",
+            'what': "A navigation menu (such as a flyout or mega-menu) was detected without the appropriate ARIA pattern: there is no menu/menuitem structure or navigation landmark, and no roving-tabindex keyboard handling for moving between items.",
+            'why': "Without the correct roles and keyboard model, assistive technology does not recognize the component as a navigation menu, cannot announce how many items it contains or which is current, and arrow-key navigation between items does not work. This relates to WCAG 4.1.2 Name, Role, Value and makes the menu hard to perceive and operate non-visually.",
+            'who': "Screen reader users who rely on landmark and menu semantics to find and navigate menus, and keyboard users who expect arrow-key movement within the menu.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['4.1.2'],
-            'remediation': "Add role=\"navigation\" to container and appropriate ARIA attributes for menu items"
+            'remediation': "Wrap site navigation in a <nav> landmark (or role=\"navigation\") with an accessible name, and structure the links as a list. For a true application menu, follow the ARIA menu pattern (role=\"menu\" with role=\"menuitem\" children) and implement roving tabindex with arrow-key navigation; for standard site navigation, a labelled <nav> with a list of links is usually sufficient."
         },
         'AI_ErrMissingFocusIndicator': {
-            'title': "Interactive element lacks visible focus indicator",
-            'what': "When the element receives keyboard focus, no visible change occurs — no outline, border, background-colour, or box-shadow is applied.",
-            'why': "Users can\'t see which element has keyboard focus",
-            'who': "Keyboard users, users with attention or memory issues",
+            'title': "Focusable control shows no visible focus indicator",
+            'what': "Visual analysis detected an interactive element that produces no perceptible visual change when it receives keyboard focus. No outline, border, background-colour, or box-shadow is applied on focus, so the focused state is indistinguishable from the unfocused state.",
+            'why': "Without a visible focus indicator, keyboard users cannot tell which control currently has focus as they Tab through the page, so they lose their place and may activate the wrong control. This fails WCAG 2.4.7 Focus Visible: any keyboard-operable interface must show which element is focused. The consequence is that keyboard navigation becomes guesswork.",
+            'who': "Keyboard-only users who navigate with Tab and Enter/Space and rely entirely on a visible focus ring to track position; sighted users with attention, memory, or cognitive differences who need a clear anchor on screen; low-vision users who scan the page visually rather than relying on a screen reader.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['2.4.7'],
-            'remediation': "Add CSS :focus styles with visible outline, border, or background change"
+            'remediation': "Provide a clearly visible focus style. Prefer :focus-visible so the indicator appears for keyboard users without flashing on mouse click, and never remove the default outline without supplying a replacement. Example:\n\nbutton:focus-visible,\na:focus-visible {\n  outline: 2px solid #1a5fb4;\n  outline-offset: 2px;\n}\n\nEnsure the indicator contrasts at least 3:1 against the adjacent background."
         },
         'ErrMissingInteractiveRole': {
-            'title': "Interactive {element_tag} element lacks appropriate ARIA role",
-            'what': "An interactive <{element_tag}> element (with click handlers or other interactive behaviour) has no ARIA role declaring what it is — screen readers cannot tell users whether it's a button, link, switch, etc.",
-            'why': "Screen readers won\'t announce this as an interactive control",
-                    'what_generic': "Interactive element lacks appropriate ARIA role",
-            'who': "Screen reader users",
+            'title': "Interactive <{element_tag}> element has no ARIA role",
+            'what': "An interactive <{element_tag}> element (with click handlers or other interactive behaviour) has no ARIA role declaring what it is, so screen readers cannot tell users whether it is a button, link, switch, or other control.",
+            'why': "Without a role, assistive technology announces the element as generic content and gives no hint about how to operate it. The user does not know it is actionable, what activating it will do, or what state it is in. This fails WCAG 4.1.2 Name, Role, Value, which requires that the role of a user interface component be programmatically determinable.",
+                    'what_generic': "An interactive element does not declare an ARIA role describing what it is.",
+            'who': "Screen reader users, who are not told that the element is an interactive control or what kind of control it is.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['4.1.2'],
-            'remediation': "Add appropriate ARIA role (button, link, checkbox, etc.) to the element"
+            'remediation': "Prefer a native element whose role is implicit, such as <button> or <a href>. If you must keep the current element, add the ARIA role that matches its behaviour (role=\"button\", role=\"link\", role=\"checkbox\", etc.), make it focusable with tabindex=\"0\", expose any state (such as aria-checked), and add keyboard handlers."
         },
         'ErrDialogMissingRole': {
             'title': "Dialog/modal element lacks proper role attribute",
@@ -222,33 +222,33 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Add role=\"tree\" to container, role=\"treeitem\" to each item, aria-expanded to expandable items, and proper keyboard navigation (arrow keys, Enter, Space)"
         },
         'AI_ErrModalFocusTrap': {
-            'title': "Modal/dialog \"{element_text}\" does not properly trap focus",
-            'what': "While the modal is open, Tab/Shift+Tab can move focus to elements outside the dialog instead of cycling through controls inside it.",
-            'why': "Without focus trapping, keyboard users can navigate outside the modal while it\'s open, causing confusion",
-                    'what_generic': "Modal or dialog does not properly trap focus",
-            'who': "Keyboard users, screen reader users",
+            'title': "Open modal \"{element_text}\" lets keyboard focus escape to the page behind it",
+            'what': "While the modal is open, pressing Tab or Shift+Tab can move focus to elements outside the dialog rather than cycling through the controls inside it. Focus is not confined to the modal as it should be.",
+            'why': "WCAG 2.4.3 Focus Order and 2.1.2 No Keyboard Trap (and the dialog design pattern) require that while a modal is open, keyboard focus stay within it and return to the triggering element on close. When focus leaks to the page behind the modal, sighted keyboard users lose track of the focus indicator and screen reader users are read background content that is supposed to be unavailable, making the dialog confusing and the underlying task hard to complete.",
+                    'what_generic': "An open modal does not keep keyboard focus inside the dialog.",
+            'who': "Keyboard-only users, who can tab into hidden background content and lose the visible focus position; screen reader users, who hear out-of-context background content while the modal is supposedly active.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['2.1.2', '2.4.3'],
-            'remediation': "Implement focus trap to keep focus within modal while open, and return focus to trigger element on close"
+            'remediation': "Implement a focus trap: on open, move focus into the dialog and remember the trigger element; intercept Tab/Shift+Tab so that focus cycles between the first and last focusable elements inside the dialog; on close, return focus to the trigger. Example handler: if (e.key === 'Tab') { if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); } else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); } }. Marking the background inert (the inert attribute or aria-hidden=\"true\") also keeps focus contained."
         },
         'AI_ErrReadingOrderMismatch': {
-            'title': "Visual reading order doesn\'t match DOM order - content may be read out of sequence",
-            'what': "The on-screen reading order produced by the visual layout differs from the DOM source order that screen readers and keyboard users follow.",
-            'why': "Screen readers follow DOM order, which may not match the visual layout, causing confusion",
-            'who': "Screen reader users",
+            'title': "Visual reading order differs from the DOM source order",
+            'what': "The on-screen reading order produced by the visual layout (for example, repositioned with CSS flexbox order, grid placement, floats, or absolute positioning) differs from the DOM source order that screen readers and keyboard navigation follow.",
+            'why': "Screen readers and the keyboard tab sequence move through content in DOM order, not visual order. When the two disagree, content is announced and focused in a sequence that does not match what is seen on screen, so meaning, instructions, or form steps can be received out of order. This fails WCAG 1.3.2 Meaningful Sequence and 2.4.3 Focus Order, causing confusion and errors.",
+            'who': "Screen reader users who hear content in DOM order, and keyboard users who tab through it in DOM order.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['1.3.2', '2.4.3'],
-            'remediation': "Reorder DOM elements to match the visual reading flow or use CSS flexbox/grid with proper order"
+            'remediation': "Make the DOM source order match the intended reading order, then use CSS for visual presentation only. Avoid reordering content with the CSS order property, grid placement, or positioning when it changes the meaningful sequence; if the layout requires it, restructure the markup so the logical order is preserved."
         },
         'AI_ErrSkippedHeading': {
-            'title': "Heading level skipped from h{current_level} to h{next_level}",
+            'title': "Heading hierarchy jumps from h{current_level} to h{next_level}, skipping levels",
             'what': "The heading hierarchy jumps from h{current_level} directly to h{next_level} without using the intermediate level(s) in between.",
-            'why': "Skipped heading levels break the logical document structure and make navigation difficult",
-                    'what_generic': "Heading levels are skipped in the document hierarchy",
-            'who': "Screen reader users, users who navigate by headings",
+            'why': "Heading levels should descend one step at a time so the document forms a logical nested outline. Skipping a level leaves a gap that makes screen reader users think a section is missing or that content is nested under the wrong parent. This violates WCAG 1.3.1 Info and Relationships, because the programmatic outline no longer reflects the true content hierarchy, and it breaks heading-by-heading navigation.",
+                    'what_generic': "The document skips one or more heading levels in its hierarchy.",
+            'who': "Screen reader users who navigate by headings and use the level sequence to understand nesting and depth; users with cognitive disabilities who rely on a predictable, gap-free outline.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['1.3.1'],
-            'remediation': "Use sequential heading levels without skipping (h1, h2, h3, not h1, h3)"
+            'remediation': "Insert the missing intermediate heading level(s) or adjust the level numbers so the hierarchy steps down one at a time. For example, a section under an h2 should be an h3, not an h4: <h2>Section</h2><h3>Subsection</h3>. Use CSS for visual sizing rather than picking a level to achieve a look."
         },
         'AI_ErrTabsWithoutARIA': {
             'title': "Tab interface \"{element_text}\" lacks proper ARIA markup",
@@ -261,13 +261,13 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Add role=\"tablist\" to container, role=\"tab\" to tabs, role=\"tabpanel\" to panels, and manage aria-selected states"
         },
         'AI_ErrToggleWithoutState': {
-            'title': "Toggle button doesn\'t indicate its state (expanded/collapsed)",
-            'what': "A button toggles content open/closed or on/off, but it does not expose its current state via aria-expanded or aria-pressed.",
-            'why': "Users don\'t know the current state of the control",
-            'who': "Screen reader users, cognitive disability users",
+            'title': "Toggle control does not expose its on/off or expanded state",
+            'what': "A button toggles content open and closed or switches a setting on and off, but it does not expose its current state through aria-expanded or aria-pressed, so the state exists only visually.",
+            'why': "Because the state is conveyed only by appearance, assistive technology announces the control the same way whether it is on or off, expanded or collapsed. A screen reader user cannot tell the current state or confirm that their action took effect. This fails WCAG 4.1.2 Name, Role, Value, which requires that the state of user interface components be programmatically determinable.",
+            'who': "Screen reader users who cannot perceive the visual state, and people with cognitive disabilities who need explicit confirmation of the current state.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['4.1.2'],
-            'remediation': "Add aria-expanded=\"true/false\" and update it when state changes"
+            'remediation': "For a show/hide disclosure, add aria-expanded=\"false\" (set to \"true\" when open) and aria-controls pointing to the toggled region. For an on/off toggle, use aria-pressed=\"false\"/\"true\". Update the attribute in JavaScript every time the state changes so the announced state always matches the visual one."
         },
         'AI_ErrInteractiveElementIssue': {
             'title': "Interactive element has accessibility issues",
@@ -280,50 +280,50 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Ensure the element is keyboard accessible (can be focused and activated with Enter/Space), has appropriate ARIA roles and states, and provides feedback to assistive technologies"
         },
         'AI_ErrVisualHeadingNotMarked': {
-            'title': "Text \"{visual_text}\" appears as a heading but uses <{element_tag}> instead of <h{suggested_level}>",
-            'what': "Text \"{visual_text}\" appears visually as a heading but uses <{element_tag}> instead of proper heading markup",
-            'why': "Screen reader users won't recognize this text as a heading, breaking navigation and document structure",
-            'what_generic': "Text appears visually as a heading but is not marked up with proper heading tags",
-            'who': "Screen reader users, users who navigate by headings",
+            'title': "Text \"{visual_text}\" looks like a heading but is coded as <{element_tag}>, not <h{suggested_level}>",
+            'what': "Text \"{visual_text}\" appears visually as a heading (large, bold, set apart) but is marked up with <{element_tag}> instead of a proper heading element.",
+            'why': "Visual styling alone does not make text a heading in the accessibility tree. Because the text uses a non-heading element rather than a heading element, screen readers do not announce it as a heading and it never appears in the headings list. This violates WCAG 1.3.1 Info and Relationships (the visible heading relationship must exist in markup), 2.4.1, and 2.4.6 Headings and Labels, leaving these users unable to navigate to or recognize the section.",
+            'what_generic': "Text is styled to look like a heading but is not marked up with a heading element.",
+            'who': "Screen reader users who navigate by headings and skip styled text that carries no heading semantics; users with cognitive disabilities who expect visible section titles to behave as real headings.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['1.3.1', '2.4.1', '2.4.6'],
-            'remediation': "Change the <{element_tag}> to <h{suggested_level}> to properly mark this text as a heading"
+            'remediation': "Replace the <{element_tag}> with the appropriate heading element so the structure is exposed programmatically. For example, use <h{suggested_level}>...</h{suggested_level}> with the same text. Keep the visual appearance with CSS if needed, but the element itself must be a heading."
         },
         'AI_InfoVisualCue': {
-            'title': "Information conveyed only through visual cues (color, position, size)",
-            'what': "Information appears to be conveyed only by a visual property (colour, icon position, shape, or font weight) without an accompanying text label or non-visual cue.",
-            'why': "Users who can\'t perceive visual cues miss important information",
-            'who': "Blind users, colorblind users",
+            'title': "Information appears to be conveyed by a visual property alone",
+            'what': "Information appears to be conveyed only by a visual property (colour, icon position, shape, or font weight) without an accompanying text label or other non-visual cue.",
+            'why': "If meaning is carried only by appearance, anyone who cannot perceive that visual property misses it entirely. This relates to WCAG 1.4.1 Use of Color and 1.3.3 Sensory Characteristics, which require that information not depend on colour or sensory traits alone. This is flagged for manual review because automated tools cannot always confirm whether a redundant text cue is present.",
+            'who': "Blind and low-vision users, and users with colour vision deficiency who cannot distinguish the colour or visual cue being used.",
             'impact': ImpactScale.LOW.value,
             'wcag': ['1.3.3', '1.4.1'],
-            'remediation': "Provide text alternatives or additional cues beyond just visual ones"
+            'remediation': "Review the flagged content and confirm there is a non-visual equivalent. Add a visible text label, an accessible name, or another distinguishing cue (such as text, an icon with a label, or a pattern) so the information does not rely on colour, position, shape, or weight alone."
         },
         'AI_WarnMixedLanguage': {
-            'title': "Mixed language content detected without proper language declarations",
-            'what': "Text in more than one language was detected on the page, but the secondary-language passages are not wrapped in elements that carry a lang attribute.",
-            'why': "Screen readers may pronounce text incorrectly without language declarations",
-            'who': "Screen reader users who speak multiple languages",
+            'title': "Passages in a secondary language are not marked with a lang attribute",
+            'what': "Text in more than one language was detected on the page, but the secondary-language passages are not wrapped in elements that carry a lang attribute identifying their language.",
+            'why': "WCAG 3.1.2 Language of Parts requires that the language of each passage differing from the page default be programmatically determinable. Without a lang attribute on those passages, a screen reader keeps using the page's default voice, so foreign-language words and phrases are pronounced with the wrong phonetics and may be unrecognizable to listeners.",
+            'who': "Screen reader users, especially multilingual users who would otherwise hear each passage in its correct voice; users who rely on automatic translation.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['3.1.2'],
-            'remediation': "Add lang attributes to elements containing different languages"
+            'remediation': "Wrap each foreign-language passage in an element carrying the matching lang attribute. For inline phrases use <span>, for blocks use <p>, <div>, <section>, or <blockquote>. For example: <p>The motto is <span lang=\"fr\">Je me souviens</span>.</p>"
         },
         'AI_WarnModalMissingLabel': {
-            'title': "Modal dialog lacks accessible name or description",
-            'what': "A modal/dialog is open but its container element has no aria-label, aria-labelledby, or other source of an accessible name.",
-            'why': "Screen readers won\'t announce what the dialog is for",
-            'who': "Screen reader users",
+            'title': "Open modal dialog provides no accessible name",
+            'what': "A modal dialog is currently open, but its container element has no aria-label, no aria-labelledby pointing to a visible title, and no other source of an accessible name. The dialog is exposed to assistive technology with an empty name.",
+            'why': "WCAG 4.1.2 Name, Role, Value requires every component, including dialogs, to expose an accessible name. When focus enters a modal, screen readers announce its name to tell the user what they are looking at. With no name, the user hears only that a dialog opened, with no clue whether it is a confirmation, a form, a subscription prompt, or an error \u2014 making it hard to decide how to respond.",
+            'who': "Screen reader users, who rely on the announced name to understand the dialog's purpose when it opens; voice-control users who address the dialog by name.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['4.1.2'],
-            'remediation': "Add aria-label or aria-labelledby to the dialog element"
+            'remediation': "Provide an accessible name. If the modal has a visible heading, reference it with aria-labelledby; otherwise supply an aria-label. Example: <div role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"dlg-title\"><h2 id=\"dlg-title\">Subscribe to newsletter</h2> ...</div>. An aria-describedby pointing to the dialog's body text can add a useful description."
         },
         'AI_WarnModalWithoutFocusTrap': {
-            'title': "Modal dialog doesn\'t trap focus within the dialog",
-            'what': "Pressing Tab from within an open modal allows focus to escape back to the underlying page content instead of cycling within the dialog.",
-            'why': "Keyboard users can tab out of the modal into the page behind it",
-            'who': "Keyboard users, screen reader users",
+            'title': "Open modal does not confine Tab navigation to the dialog",
+            'what': "Pressing Tab from within an open modal allows focus to escape back to the underlying page content instead of cycling among the focusable elements within the dialog. The modal does not implement a focus trap.",
+            'why': "WCAG 2.4.3 Focus Order and the dialog design pattern call for focus to remain inside an open modal and return to the trigger when it closes. When Tab moves focus into the page behind the modal, keyboard users lose the focus indicator in content they cannot see clearly, and screen reader users are read background material that should be inactive, making the dialog disorienting and the task harder to finish.",
+            'who': "Keyboard-only users, who tab out of the modal into background content and lose their place; screen reader users, who encounter out-of-context background content while the modal is open.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['2.1.2', '2.4.3'],
-            'remediation': "Implement focus trap that keeps tab navigation within the modal"
+            'remediation': "Add a focus trap so that Tab and Shift+Tab cycle only through the dialog's focusable elements, and restore focus to the triggering control on close. Example: keep references to the first and last focusable elements and, on Tab at the last (or Shift+Tab at the first), preventDefault() and wrap to the other end. Setting the rest of the page to inert while the modal is open prevents focus from leaving in the first place."
         },
         'AI_ErrVisualHierarchyInconsistent': {
             'title': "Visual heading sizes don\'t follow a logical hierarchy",
@@ -336,74 +336,74 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Ensure visual heading sizes decrease consistently with heading levels (h1 largest, h6 smallest)"
         },
         'AI_ErrVisualGroupingBroken': {
-            'title': "Related content appears grouped visually but is separated in DOM",
-            'what': "Related content appears grouped visually but is separated in the DOM order",
-            'what_generic': "Visual grouping doesn\'t match DOM structure",
-            'why': "Screen readers read content in DOM order, so visually related items may be announced out of context",
-            'who': "Screen reader users",
+            'title': "Items grouped visually are not associated in the DOM",
+            'what': "Content that appears to form a group visually (for example, a label and its value, or a card and its caption) is separated in the DOM order or lacks any programmatic relationship tying the parts together.",
+            'what_generic': "Items that look grouped on screen are not grouped or associated in the markup.",
+            'why': "Screen readers convey content in DOM order and through programmatic relationships, not by visual proximity. When the grouping exists only visually, related items are announced out of context and the connection a sighted user perceives is lost. This fails WCAG 1.3.2 Meaningful Sequence (and related Info and Relationships requirements), making the content harder to understand non-visually.",
+            'who': "Screen reader users, and people with cognitive disabilities who depend on related information being presented together.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['1.3.2'],
-            'remediation': "Restructure the DOM so related content is adjacent, or use ARIA to establish programmatic relationships"
+            'remediation': "Restructure the DOM so grouped items are adjacent and nested within a common container, and reflect the grouping programmatically, for example with a <fieldset>/<legend>, a list, a heading that introduces the group, or ARIA attributes such as aria-labelledby and aria-describedby to associate the related parts."
         },
         'AI_ErrDialogMissingRole': {
-            'title': "Visible modal dialog lacks role=\"dialog\" or role=\"alertdialog\"",
-            'what': "Visual analysis identified a modal-style overlay, but the container element has no role=\"dialog\" or role=\"alertdialog\" attribute.",
-            'what_generic': "Modal dialog is missing dialog role",
-            'why': "Screen readers won\'t announce this as a dialog or provide appropriate navigation",
-            'who': "Screen reader users",
+            'title': "Modal overlay is not exposed as a dialog to assistive technology",
+            'what': "Visual analysis identified an overlay that behaves like a modal dialog (centred panel over a dimmed backdrop), but the container element carries no role=\"dialog\" or role=\"alertdialog\" attribute, and it is not a native <dialog> element. Assistive technology sees only a generic block of content.",
+            'what_generic': "A modal dialog is not given a dialog role.",
+            'why': "WCAG 4.1.2 Name, Role, Value requires that a component's role be exposed programmatically. The dialog role tells screen readers and other assistive technology that the content is a self-contained dialog, triggering the expected announcement and navigation behaviour. Without it, the overlay is treated as ordinary page content: the user is not told a dialog opened, the boundaries of the dialog are unclear, and modal semantics such as background suppression are not applied.",
+            'who': "Screen reader users, who depend on the dialog role to be told a dialog has opened and to navigate it as a contained region; users of assistive technology that adjusts behaviour for dialogs.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['4.1.2'],
-            'remediation': "Add role=\"dialog\" or role=\"alertdialog\" to the modal container element"
+            'remediation': "Add role=\"dialog\" to the modal container (or role=\"alertdialog\" if it requires an immediate response, such as an error or confirmation), pair it with aria-modal=\"true\", and give it an accessible name. Example: <div role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"dlg-title\"><h2 id=\"dlg-title\">Settings</h2> ...</div>. Where possible, prefer the native <dialog> element with showModal()."
         },
         'AI_ErrDialogMissingLabel': {
-            'title': "Dialog has role but no accessible name",
-            'what': "Dialog has role=\"dialog\" but no aria-label or aria-labelledby",
-            'what_generic': "Dialog is missing an accessible name",
-            'why': "Screen readers won\'t announce what the dialog is for",
-            'who': "Screen reader users",
+            'title': "Dialog with role=\"dialog\" has no accessible name",
+            'what': "An element exposing role=\"dialog\" was found, but it has neither an aria-label nor an aria-labelledby attribute, and no other mechanism (such as a referenced visible heading) supplies an accessible name. The dialog therefore reaches assistive technology with an empty name.",
+            'what_generic': "A dialog has the dialog role but is not given an accessible name.",
+            'why': "Under WCAG 4.1.2 Name, Role, Value, every user interface component must expose a name programmatically. When a dialog opens, screen readers announce its role and name so the user understands the context they have just entered. With no name, the user hears only \"dialog\" with no indication of its purpose (for example a login form, a confirmation prompt, or a cookie notice), leaving them disoriented about what to do.",
+            'who': "Screen reader users, who rely on the announced dialog name to orient themselves when focus moves into the dialog; users of voice-control software that targets components by name.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['4.1.2'],
-            'remediation': "Add aria-label or aria-labelledby pointing to the dialog\'s visible title"
+            'remediation': "Give the dialog an accessible name. If the dialog has a visible title, reference it with aria-labelledby; if not, provide an aria-label. Example: <div role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"dlg-title\"><h2 id=\"dlg-title\">Confirm deletion</h2> ...</div>. Ensure the referenced element actually contains visible text."
         },
         'AI_ErrDialogNoCloseButton': {
-            'title': "Modal has no visible close mechanism",
-            'what': "Modal dialog has no visible close button, X, or other dismiss mechanism",
-            'what_generic': "Modal has no visible way to close it",
-            'why': "Users may feel trapped if they can\'t figure out how to dismiss the modal",
-            'who': "All users, especially keyboard users and users with cognitive disabilities",
+            'title': "Modal provides no visible way to dismiss it",
+            'what': "A modal dialog was detected that offers no visible close affordance \u2014 no labelled close button, no \"X\" control, and no Cancel or Done action. Nothing on screen tells the user how to leave the dialog.",
+            'what_generic': "A modal has no visible mechanism to close it.",
+            'why': "A modal covers the underlying page and usually suppresses interaction with it, so the user must be able to dismiss the dialog to continue. With no visible close control, users who do not know about the Escape key \u2014 or for whom Escape is not wired up \u2014 are stranded in the dialog, unable to return to the page. This frustrates task completion and, when combined with a focus trap, leaves keyboard users with no escape route.",
+            'who': "All users, and especially keyboard-only users who need a reachable control to close the dialog, and users with cognitive disabilities who may not discover hidden dismissal methods.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['2.1.2'],
-            'remediation': "Add a visible close button and ensure Escape key also closes the dialog"
+            'remediation': "Provide a clearly visible, labelled close control inside the dialog and also support the Escape key. Example: <button type=\"button\" aria-label=\"Close dialog\" onclick=\"closeDialog()\">&times;</button>, plus a keydown handler that calls closeDialog() when event.key === 'Escape'. Move focus back to the element that opened the dialog after it closes."
         },
         'AI_WarnDialogBackgroundNotInert': {
-            'title': "Content behind modal appears still interactive",
-            'what': "Content behind the modal dialog appears to still be interactive (not properly disabled)",
-            'what_generic': "Background content behind modal is not properly inert",
-            'why': "Users might interact with background content while the modal is open, causing confusion",
-            'who': "Keyboard users, screen reader users",
+            'title': "Page content behind the modal remains operable",
+            'what': "While the modal dialog is open, the content behind it appears to remain interactive \u2014 links, buttons, and form fields in the background are not disabled, hidden from assistive technology, or marked inert.",
+            'what_generic': "Background content behind a modal is not made inert.",
+            'why': "A modal dialog is meant to be the only operable region while it is open. If the background stays active, screen reader and keyboard users can move into content that sighted users perceive as blocked, breaking the expected focus order (WCAG 2.4.3 Focus Order) and producing confusing, inconsistent behaviour. The user may interact with controls behind the dialog without realising the modal is still present.",
+            'who': "Keyboard-only users, who can tab into background controls that should be unavailable; screen reader users, who can read and operate background content that is visually obscured by the modal.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['2.4.3'],
-            'remediation': "Add aria-hidden=\"true\" to background content or use the inert attribute when modal is open"
+            'remediation': "Make the background inert while the modal is open. Prefer the inert attribute on the main page container (e.g. <main inert> ... </main>) or, for broader support, set aria-hidden=\"true\" on all sibling content outside the dialog. Remove the attribute when the dialog closes. Example: document.getElementById('page').setAttribute('inert', ''); on open and removeAttribute('inert') on close."
         },
         'AI_ErrPageLanguageMissing': {
-            'title': "Page is missing lang attribute on <html> element",
-            'what': "No lang attribute found on the <html> element",
-            'what_generic': "Page language is not declared",
-            'why': "Screen readers may use incorrect pronunciation rules for the entire page",
-            'who': "Screen reader users",
+            'title': "<html> element has no lang attribute declaring the page language",
+            'what': "The <html> element on this page does not carry a lang attribute, so no default human language is declared for the document.",
+            'what_generic': "The document has no declared default human language.",
+            'why': "WCAG 3.1.1 Language of Page requires the default human language of each page to be programmatically determinable. Without a lang attribute, a screen reader cannot select the correct speech engine and pronunciation rules, so it falls back to its default voice. English content read with French rules (or vice versa) becomes garbled and often incomprehensible, and braille translation, automatic translation, and font selection can all behave incorrectly.",
+            'who': "Screen reader users, who hear the entire page spoken with the wrong pronunciation rules; braille display users; and users who rely on automatic translation tools.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['3.1.1'],
-            'remediation': "Add lang=\"en\" (or appropriate language code) to the <html> element"
+            'remediation': "Add a lang attribute to the <html> element with the BCP 47 / ISO 639 code for the page's primary language. For example: <html lang=\"en\"> for English or <html lang=\"fr\"> for French. Use a region subtag only when needed, such as lang=\"en-CA\" or lang=\"fr-CA\"."
         },
         'AI_ErrPageLanguageWrong': {
-            'title': "Page lang attribute doesn\'t match visible content language",
-            'what': "Page lang=\"{html_lang}\" but content appears to be in a different language",
-            'what_generic': "Page language declaration doesn\'t match actual content",
-            'why': "Screen readers will use wrong pronunciation rules, making content hard to understand",
-            'who': "Screen reader users",
+            'title': "Declared page language does not match the visible content language",
+            'what': "The <html> element declares lang=\"{html_lang}\", but the visible page content appears to be written in a different language.",
+            'what_generic': "The declared page language does not match the language of the visible content.",
+            'why': "WCAG 3.1.1 Language of Page requires the declared default language to be the one actually used on the page. When the declaration is wrong, a screen reader loads the speech engine for the declared language and applies its pronunciation rules to text in another language. For example, French text spoken with English phonetics is largely unintelligible, defeating the purpose of having a lang attribute at all.",
+            'who': "Screen reader users, who hear the content mispronounced because the wrong speech engine is loaded; users of automatic translation tools that translate from the wrong source language.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['3.1.1'],
-            'remediation': "Update the lang attribute to match the primary language of the page content"
+            'remediation': "Set the lang attribute on <html> to the BCP 47 / ISO 639 code matching the primary language readers actually see. If the page is in French, use <html lang=\"fr\">; if in English, use <html lang=\"en\">. If the page truly mixes languages, declare the main language here and mark the other passages individually with their own lang attributes."
         },
         'AI_ErrForeignTextUnmarked': {
             'title': "{detected_language} text \"{text_sample}\" missing lang attribute",
@@ -426,94 +426,94 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Add lang=\"{detected_language}\" attribute to the element containing \"{text_sample}\" (e.g., <span lang=\"{detected_language}\">{text_sample}</span>)"
         },
         'AI_ErrInfiniteAnimationNoPause': {
-            'title': "Infinite animation has no pause control",
-            'what': "Infinite CSS animation \"{animation_name}\" has no mechanism to pause or stop",
-            'what_generic': "Infinite animation cannot be paused",
-            'why': "Continuous motion can be distracting or cause discomfort for some users",
-            'who': "Users with vestibular disorders, attention disorders, or cognitive disabilities",
+            'title': "Looping animation runs forever with no pause control",
+            'what': "The CSS animation \"{animation_name}\" loops infinitely and provides no mechanism for the user to pause, stop, or hide it.",
+            'what_generic': "A continuously looping animation runs indefinitely and cannot be paused, stopped, or hidden.",
+            'why': "WCAG 2.2.2 Pause, Stop, Hide requires that any moving, blinking, or auto-updating content that starts automatically, lasts more than 5 seconds, and is presented alongside other content can be paused, stopped, or hidden by the user. Persistent motion is impossible to escape, draws the eye away from the rest of the page, and can provoke nausea, dizziness, or disorientation. It also makes reading nearby text difficult for many people.",
+            'who': "Users with vestibular disorders who experience nausea or dizziness from sustained motion, users with attention disorders (ADHD) or cognitive disabilities who cannot focus while content moves, and users with reading or processing difficulties distracted by the ongoing animation.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['2.2.2'],
-            'remediation': "Add a pause/stop control or use prefers-reduced-motion media query to disable animation"
+            'remediation': "Provide a visible, keyboard-operable control to pause or stop the animation, and/or honour the user's system setting with a reduced-motion media query. Example: @media (prefers-reduced-motion: reduce) { .banner { animation: none; } } combined with a button such as <button aria-pressed=\"false\">Pause animation</button> that toggles animation-play-state."
         },
         'AI_ErrAutoPlayingMedia': {
-            'title': "Auto-playing video or audio without controls",
-            'what': "Auto-playing video or audio detected without visible controls to stop it",
-            'what_generic': "Auto-playing media cannot be controlled",
-            'why': "Unexpected audio can interfere with screen readers; auto-playing video can be disorienting",
-            'who': "Screen reader users, users with cognitive disabilities, users in quiet environments",
+            'title': "Media autoplays with no visible stop control",
+            'what': "A video or audio element begins playing automatically when the page loads, and no visible button or control to pause, stop, or mute it is present within the first few seconds of playback.",
+            'what_generic': "Automatically playing media starts on its own and offers no visible way to pause, stop, or mute it.",
+            'why': "WCAG 1.4.2 Audio Control requires that any sound playing automatically for more than 3 seconds can be paused, stopped, or have its volume controlled independently of the system volume. Unexpected audio competes with screen reader speech, making the page impossible to navigate by listening, and autoplaying video pulls focus and attention away from the task. Both create a disorienting, hard-to-escape experience.",
+            'who': "Screen reader users whose synthesized speech is drowned out by the audio, users with cognitive disabilities or attention disorders (ADHD) who are distracted by unexpected motion and sound, users with vestibular disorders affected by autoplaying video, and anyone in a quiet or shared environment.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['1.4.2'],
-            'remediation': "Remove autoplay or provide visible pause/stop controls within first 3 seconds"
+            'remediation': "Remove the autoplay attribute, or provide a clearly visible pause/stop/mute control that works within the first 3 seconds of playback. Prefer requiring an explicit user action to start media. Example: <video controls> instead of <video autoplay>, or start muted with a visible toggle: <video autoplay muted controls>."
         },
         'AI_WarnNoReducedMotion': {
-            'title': "Animations don\'t respect prefers-reduced-motion preference",
-            'what': "Animations detected but no @media (prefers-reduced-motion) query found",
-            'what_generic': "Site doesn\'t respect reduced motion preference",
-            'why': "Users who need reduced motion won\'t get relief from animations",
-            'who': "Users with vestibular disorders, motion sensitivity, or cognitive disabilities",
+            'title': "Animations ignore the user's reduced-motion system setting",
+            'what': "One or more CSS animations or transitions were detected, but the stylesheet contains no @media (prefers-reduced-motion) query to disable or tone them down for users who have requested reduced motion.",
+            'what_generic': "The site animates content but never checks whether the user has asked their system to reduce motion.",
+            'why': "WCAG 2.3.3 Animation from Interactions and the broader Pause, Stop, Hide guidance expect sites to honour the operating-system 'reduce motion' preference. When that setting is ignored, users who have explicitly asked their device to minimize motion still receive the full animations, which can cause nausea, dizziness, or migraine and offers them no way to get relief.",
+            'who': "Users with vestibular disorders and motion sensitivity who have enabled the system reduced-motion setting, users prone to motion-triggered migraine, and users with cognitive disabilities or attention disorders distracted by movement.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['2.3.3'],
-            'remediation': "Add @media (prefers-reduced-motion: reduce) to disable or reduce animations"
+            'remediation': "Wrap motion-related declarations in a reduced-motion media query that disables or shortens them when the preference is set. Example: @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; } } and override individual decorative animations as needed."
         },
         'AI_WarnPotentialFlashing': {
-            'title': "Animation may cause flashing content",
-            'what': "Animation detected that may cause rapid flashing or strobing effects",
-            'what_generic': "Potential flashing content detected",
-            'why': "Flashing content can trigger seizures in people with photosensitive epilepsy",
-            'who': "Users with photosensitive epilepsy",
+            'title': "Animation may flash fast enough to trigger seizures",
+            'what': "An animation was detected whose speed and contrast changes could produce rapid flashing or strobing that approaches or exceeds the seizure-risk threshold.",
+            'what_generic': "Content appears to flash or strobe rapidly enough to be a potential seizure risk.",
+            'why': "WCAG 2.3.1 Three Flashes or Below Threshold prohibits content that flashes more than three times in any one-second period (above the general and red flash thresholds). Flashing in this range can trigger photosensitive seizures, which are a direct health and safety hazard rather than merely an inconvenience.",
+            'who': "Users with photosensitive epilepsy and other photosensitive seizure conditions, who can suffer a seizure from a single exposure to flashing content.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['2.3.1'],
-            'remediation': "Ensure content doesn\'t flash more than 3 times per second, or reduce flash intensity"
+            'remediation': "Confirm the content never flashes more than 3 times in any 1-second window, and reduce the size, contrast, or speed of the flash so it stays below the general and red flash thresholds. Where motion is decorative, disable it for reduced-motion users. Example: @media (prefers-reduced-motion: reduce) { .strobe { animation: none; } } and slow remaining effects to no more than 3 cycles per second."
         },
         'AI_ErrNonSemanticButton': {
-            'title': "Element styled as button but uses non-semantic HTML",
-            'what': "<{element_tag}> element styled as a button with onclick - should use <button>",
-            'what_generic': "Non-semantic element used as a button",
-            'why': "Non-semantic buttons lack keyboard accessibility and screen reader announcements",
-            'who': "Keyboard users, screen reader users",
+            'title': "Generic element styled and used as a button instead of <button>",
+            'what': "A <{element_tag}> element is styled to look like a button and carries an onclick handler, but it is not a real <button>, so it does not inherit the button's built-in role, focusability, or keyboard behaviour.",
+            'what_generic': "A non-semantic element is being used as a button instead of a real <button>.",
+            'why': "A generic element used as a button is not in the tab order and cannot be activated with Enter or Space, and a screen reader announces it as plain content rather than \"button\". This fails WCAG 4.1.2 Name, Role, Value and 2.1.1 Keyboard, leaving the control unusable for anyone not using a mouse.",
+            'who': "Keyboard-only users and people with motor disabilities who cannot activate it, and screen reader users who are never told it is a button.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['4.1.2', '2.1.1'],
-            'remediation': "Replace with <button> element, or add role=\"button\", tabindex=\"0\", and keyboard event handlers"
+            'remediation': "Replace the element with a native <button>, which provides the role, focusability, and Enter/Space activation automatically: <button type=\"button\">Save</button>. If replacement is not possible, add role=\"button\", tabindex=\"0\", and keydown handlers that fire on Enter and Space."
         },
         'AI_ErrNonSemanticLink': {
-            'title': "Element styled as link but uses non-semantic HTML",
-            'what': "<{element_tag}> element styled as a link - should use <a> with href",
-            'what_generic': "Non-semantic element used as a link",
-            'why': "Non-semantic links won\'t be announced as links or work with keyboard navigation",
-            'who': "Keyboard users, screen reader users",
+            'title': "Generic element styled and used as a link instead of <a>",
+            'what': "A <{element_tag}> element is styled to look and behave like a hyperlink, but it is not an <a> element with an href, so it lacks the link role, keyboard activation, and standard navigation behaviour.",
+            'what_generic': "A non-semantic element is being used as a link instead of a real <a href>.",
+            'why': "Without a real anchor, the element is not announced as a link, is not in the tab order, does not respond to Enter, and cannot be opened in a new tab or added to a screen reader's links list. This fails WCAG 4.1.2 Name, Role, Value and 2.1.1 Keyboard, breaking a fundamental navigation control.",
+            'who': "Keyboard-only users who cannot reach or activate it, and screen reader users who rely on link semantics and the links list to navigate.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['4.1.2', '2.1.1'],
-            'remediation': "Replace with <a href=\"...\"> element, or add role=\"link\", tabindex=\"0\", and keyboard handlers"
+            'remediation': "Use a real anchor with a destination: <a href=\"/page\">Read more</a>, which provides the role, focus, and Enter activation automatically. If the action is navigation, an anchor is correct; if it performs an in-page action, use a <button> instead. Only as a last resort add role=\"link\", tabindex=\"0\", and keyboard handlers."
         },
         'AI_ErrCustomControlNoARIA': {
-            'title': "Custom widget lacks proper ARIA roles and states",
-            'what': "Custom widget (tabs, accordion, dropdown) lacks proper ARIA roles and states",
-            'what_generic': "Custom control is missing ARIA attributes",
-            'why': "Screen readers can\'t convey the control\'s purpose, state, or how to interact with it",
-            'who': "Screen reader users",
+            'title': "Custom interactive widget exposes no ARIA role or state",
+            'what': "A custom interactive widget (such as a tab set, accordion, dropdown, or menu built from generic elements) was detected, but it carries none of the ARIA roles and states that describe what it is and how it behaves.",
+            'what_generic': "A custom interactive control is built without the ARIA roles and states needed to describe it.",
+            'why': "With no role, the widget is announced as plain text or a generic element, and with no states (such as aria-expanded, aria-selected, or aria-checked) the assistive technology cannot tell the user whether a section is open, which tab is active, or how to operate the control. This fails WCAG 4.1.2 Name, Role, Value and 1.3.1 Info and Relationships, so screen reader users cannot understand or reliably use the component.",
+            'who': "Screen reader users, and people with cognitive disabilities who rely on clear, announced state changes to understand the interface.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['4.1.2', '1.3.1'],
-            'remediation': "Add appropriate ARIA roles (tablist, tab, accordion, etc.) and states (aria-expanded, aria-selected)"
+            'remediation': "Apply the ARIA Authoring Practices pattern that matches the widget. For example, a tab set uses role=\"tablist\" on the container, role=\"tab\" with aria-selected on each tab, and role=\"tabpanel\" on each panel; an accordion uses a <button> header with aria-expanded and aria-controls. Update the state attributes in JavaScript whenever the widget changes, and implement the expected keyboard interaction."
         },
         'AI_ErrClickableNotFocusable': {
-            'title': "Clickable element is not keyboard focusable",
-            'what': "Element has click handler but cannot receive keyboard focus (no tabindex)",
-            'what_generic': "Clickable element can\'t be reached by keyboard",
-            'why': "Keyboard users cannot interact with this element",
-            'who': "Keyboard users, users who cannot use a mouse",
+            'title': "Click handler on element that cannot receive keyboard focus",
+            'what': "The element has a JavaScript click handler that triggers an action, but it is not in the keyboard tab order: it is a non-interactive element (such as a div or span) with no tabindex and no native focusability.",
+            'what_generic': "An element responds to mouse clicks but cannot be reached or focused using the keyboard.",
+            'why': "Because the element never receives focus, a keyboard-only user can neither tab to it nor press Enter or Space to fire its action, so the functionality is mouse-only. This fails WCAG 2.1.1 Keyboard, which requires all functionality to be operable through a keyboard interface, and leaves part of the interface completely inoperable.",
+            'who': "Keyboard-only users, people with motor or dexterity disabilities who cannot use a mouse or pointing device, and screen reader users who navigate by Tab and arrow keys.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['2.1.1'],
-            'remediation': "Add tabindex=\"0\" to make element focusable, and handle Enter/Space key events"
+            'remediation': "Prefer a native interactive element: replace the container with a <button> so focus and keyboard activation are handled automatically. If you must keep the current element, add tabindex=\"0\" to put it in the tab order, add an appropriate role (for example role=\"button\"), and add keydown handlers that activate it on Enter and Space."
         },
         'AI_WarnFocusIndicatorWeak': {
-            'title': "Focus indicator appears too subtle or missing",
-            'what': "Interactive element\'s focus indicator is too subtle or not visible",
-            'what_generic': "Focus indicator is hard to see or missing",
-            'why': "Users can\'t see which element has keyboard focus",
-            'who': "Keyboard users, users with low vision",
+            'title': "Focus indicator present but too faint to perceive reliably",
+            'what': "Visual analysis found that an interactive element does change appearance on keyboard focus, but the change is very subtle \u2014 for example a 1px low-contrast outline or a barely-shifted background \u2014 so the focused state is hard to distinguish from neighbouring elements.",
+            'what_generic': "A focus indicator exists but is too low-contrast or too thin to be clearly seen against its surroundings.",
+            'why': "A focus indicator that is technically present but visually weak still leaves keyboard users uncertain about where focus is, especially on busy or low-contrast backgrounds. WCAG 2.4.7 Focus Visible requires a focus indicator that is actually perceivable; a faint one undermines that. The consequence is hesitation, lost position, and accidental activation of the wrong control.",
+            'who': "Keyboard-only users tracking focus as they Tab through the interface; low-vision users who may not perceive thin or low-contrast outlines; users in poor lighting or on low-quality displays where subtle cues disappear.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['2.4.7'],
-            'remediation': "Add visible focus styles with sufficient contrast (3:1 ratio) using outline, border, or background"
+            'remediation': "Strengthen the focus style so it stands out clearly. Use a thicker outline (at least 2px), a colour with at least 3:1 contrast against the adjacent background, and outline-offset to separate it from the element edge. Example:\n\n.control:focus-visible {\n  outline: 3px solid #1a5fb4;\n  outline-offset: 2px;\n}"
         },
         'WarnProblematicAnimation': {
             'title': "Animation detected that may cause accessibility issues",
@@ -554,13 +554,13 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Evaluate the SVG\'s purpose and complexity - for simple images add <title> with aria-labelledby or role=\"img\" with aria-label, for decorative graphics use aria-hidden=\"true\", for data visualizations provide <title> and <desc> plus consider adjacent detailed text alternatives, for interactive content ensure all controls are keyboard accessible with proper ARIA labels and focus management, for complex simulations provide instructions and state changes announcements, and test with screen readers to verify the experience matches visual functionality"
         },
         'DiscoFoundJS': {
-            'title': "JavaScript detected on page",
-            'what': "The page loads or executes one or more <script> elements. Verify that the page's essential functionality still works when JavaScript is disabled or fails to load.",
-            'why': "Functionality should work without JavaScript",
-            'who': "Users with JavaScript disabled",
+            'title': "JavaScript present on the page (manual review)",
+            'what': "The page loads or executes one or more <script> elements. This is a discovery notice, not a defect: it flags that scripting is in use so a reviewer can verify the page degrades gracefully.",
+            'why': "JavaScript can fail to load, be blocked, or error out. When essential content or functionality depends on scripts that do not run, those users are left with a broken page. Verifying graceful degradation supports robust, resilient access for everyone.",
+            'who': "Users on networks or devices that block or fail to load scripts, users of assistive technology affected by script timing, and users in low-bandwidth or restricted environments.",
             'impact': ImpactScale.INFO.value,
             'wcag': [],
-            'remediation': "Ensure progressive enhancement"
+            'remediation': "Manually verify that the page's essential content and core tasks still work, or fail safely with a clear message, when JavaScript is disabled or does not load. Apply progressive enhancement: serve meaningful content and navigation in the base HTML, then layer scripted behaviour on top."
         },
         'DiscoNavFound': {
             'title': "Navigation region detected (signature: {navSignature}) - requires manual accessibility review",
@@ -650,22 +650,22 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Ensure PDFs are accessible (tagged, structured, with text content) or provide HTML alternatives"
         },
         'DiscoStyleAttrOnElements': {
-            'title': "Inline styles detected",
-            'what': "One or more elements use an inline style=\"...\" attribute. Inline styles override stylesheets and can interfere with user style sheets, high-contrast modes, dark mode, or text-resizing adjustments.",
-            'why': "May affect responsive design and user customization",
-            'who': "Users with custom stylesheets",
+            'title': "Inline style attributes detected (manual review)",
+            'what': "One or more elements use an inline style=\"...\" attribute. This is a discovery notice: inline styles override stylesheets and can interfere with user style sheets, high-contrast modes, dark mode, or text-resizing adjustments.",
+            'why': "Inline styles carry high specificity and are difficult for users to override with their own style sheets or reader modes. When colours, fonts, or spacing are hard-coded inline, customizations that some users depend on may be ignored, which can undermine readability and adaptation requirements.",
+            'who': "Users who apply custom style sheets, high-contrast or dark mode, or increased text size and spacing to read comfortably, including low-vision users and some users with dyslexia.",
             'impact': ImpactScale.INFO.value,
             'wcag': [],
-            'remediation': "Consider moving to CSS classes"
+            'remediation': "Review the inline styles and confirm they do not block user customization. Where practical, move presentational rules into CSS classes in a stylesheet so users can override them, and verify the content remains usable when custom styles, high-contrast mode, and increased text spacing are applied."
         },
         'DiscoStyleElementOnPage': {
-            'title': "Style element found in page",
-            'what': "A <style> block was found embedded in the page rather than supplied via an external stylesheet. Embedded styles cannot be overridden by user style sheets or browser extensions in the same way external CSS can.",
-            'why': "Embedded styles harder to override",
-            'who': "Users needing custom styles",
+            'title': "Embedded <style> block detected (manual review)",
+            'what': "A <style> block was found embedded in the page rather than supplied via an external stylesheet. This is a discovery notice: embedded styles cannot be overridden by user style sheets or browser extensions in the same way external CSS can.",
+            'why': "Styles embedded in the document are harder for users to replace or disable than linked external CSS, which can interfere with custom style sheets, reader modes, and contrast adjustments that some users rely on to read content. It can also work against caching and maintainability.",
+            'who': "Users who depend on custom style sheets, reader or high-contrast modes, or text and spacing adjustments to read comfortably, including low-vision users and some users with cognitive disabilities.",
             'impact': ImpactScale.INFO.value,
             'wcag': [],
-            'remediation': "Consider external stylesheets"
+            'remediation': "Review the embedded styles and confirm they do not prevent user customization. Where practical, move them to an external stylesheet so users and extensions can override them, and verify the page remains usable when custom or high-contrast styles are applied."
         },
         'DiscoResponsiveBreakpoints': {
             'title': "Responsive breakpoints detected on page",
@@ -715,31 +715,31 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Review each auto-starting timer to determine if it creates a time limit for users. If the timer controls content updates, animations, or session timeouts, ensure users can pause, stop, or extend the time limit. Consider whether the timer is essential for functionality or could be replaced with user-initiated actions. Timers used purely for technical purposes (like polyfills or performance monitoring) that don't affect user interaction are acceptable."
         },
         'ErrBannerLandmarkAccessibleNameIsBlank': {
-            'title': "Banner landmark has blank accessible name",
-            'what': "A banner landmark (<header> at top level, or role=\"banner\") was found whose aria-label or aria-labelledby value resolves to an empty string.",
-            'why': "Multiple banners need labels to distinguish them",
-            'who': "Screen reader users",
+            'title': "Banner landmark's accessible name is empty",
+            'what': "A banner landmark (a top-level <header> element, or an element with role=\"banner\") carries an aria-label or aria-labelledby attribute whose computed value resolves to an empty string. The landmark therefore exposes an empty accessible name to assistive technology.",
+            'why': "When a page contains more than one banner, or when authors deliberately add a label to a banner, that label is what distinguishes the region in a screen reader's landmarks list. An empty aria-label or an aria-labelledby that points at missing or empty content produces a region announced with no name (or just \"banner\"), defeating the purpose of the label and violating WCAG 1.3.1 (Info and Relationships) and 2.4.6 (Headings and Labels). The empty attribute also signals an authoring error that may hide a region the author intended to identify.",
+            'who': "Screen reader users who navigate by landmarks (for example using the rotor in VoiceOver or the landmarks list in NVDA/JAWS) cannot tell labelled banners apart and lose the orientation cue the author tried to provide.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['1.3.1', '2.4.6'],
-            'remediation': "Add aria-label or aria-labelledby"
+            'remediation': "Either remove the empty labelling attribute so the region uses its default \"banner\" name, or give it a meaningful, non-empty name. For aria-labelledby, make sure the referenced element exists and contains visible text. Example: <header aria-label=\"Site header\"> ... </header> or <header aria-labelledby=\"site-title\"><h1 id=\"site-title\">Acme Corp</h1></header>."
         },
         'ErrBannerLandmarkHasAriaLabelAndAriaLabelledByAttrs': {
-            'title': "Banner landmark has both aria-label and aria-labelledby",
-            'what': "A banner landmark element has both aria-label and aria-labelledby attributes set. aria-labelledby wins, but the presence of both indicates conflicting labelling intent.",
-            'why': "Conflicting labeling methods",
-            'who': "Screen reader users",
+            'title': "Banner landmark declares both aria-label and aria-labelledby",
+            'what': "A banner landmark element has both an aria-label and an aria-labelledby attribute set at the same time. Per the accessible name computation, aria-labelledby takes precedence and aria-label is ignored, but supplying both signals conflicting labelling intent.",
+            'why': "Having two labelling mechanisms on one element is an authoring defect: the aria-label is silently discarded, so any wording an author put there will never be announced. This makes the exposed name unpredictable for the author and may mean the announced name is not the one they intended, working against WCAG 4.1.2 (Name, Role, Value), which requires that names be programmatically determinable and accurate.",
+            'who': "Screen reader users hear only the aria-labelledby text; if the author's true intent was in the aria-label, they receive a misleading or wrong region name, undermining their ability to orient on the page.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['4.1.2'],
-            'remediation': "Use only one labeling method"
+            'remediation': "Choose a single labelling method and remove the other. If a visible heading or element already names the region, keep aria-labelledby pointing to it and delete aria-label. Otherwise keep aria-label with the desired text and remove aria-labelledby. Example: <header aria-labelledby=\"hdr-title\"><h1 id=\"hdr-title\">Acme Corp</h1></header> (no aria-label)."
         },
         'ErrBannerLandmarkMayNotBeChildOfAnotherLandmark': {
-            'title': "Banner landmark nested inside another landmark",
-            'what': "A banner landmark element appears nested inside another landmark (e.g., inside <main>, <nav>, or <aside>), which the ARIA spec disallows.",
-            'why': "Invalid nesting breaks page structure",
-            'who': "Screen reader users",
+            'title': "Banner landmark is nested inside another landmark",
+            'what': "A banner landmark (top-level <header> or role=\"banner\") is rendered inside another landmark region such as <main>, <nav>, or <aside>. The ARIA Landmark specification requires the banner to be a top-level region of the document and not contained within another landmark.",
+            'why': "A banner represents site-wide identifying content (logo, site title, primary masthead) and is meant to apply to the whole page. When it is nested inside another landmark, the document's landmark structure becomes invalid: assistive technologies may demote, drop, or mis-report the banner, and the landmark map no longer matches the page's actual regions. This breaks the programmatically determined structure and relationships required by WCAG 1.3.1 (Info and Relationships).",
+            'who': "Screen reader users who rely on a correct landmark structure to jump to the page header lose a dependable way to find it; the banner may not appear where expected in the landmarks list, or may be skipped entirely.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['1.3.1'],
-            'remediation': "Move banner to top level"
+            'remediation': "Move the banner so it is a direct top-level region of the page rather than a descendant of another landmark. A single banner should sit outside <main>, <nav>, <aside>, and <footer>. Example: <body><header>...site masthead...</header><nav>...</nav><main>...</main></body> \u2014 note the <header> is a sibling of, not a child of, the other landmarks."
         },
         'ErrButtonFocusContrastFail': {
             'title': "Button focus outline has insufficient contrast",
@@ -931,31 +931,31 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Move all color definitions from <style> tags to external CSS files loaded via <link rel=\"stylesheet\"> elements. Create a centralized color system using CSS custom properties (variables) for consistency and easy updates. Group related color definitions in external files that can be cached and reused across pages. Keep <style> tags only for critical above-the-fold CSS if you're optimizing initial render time. Ensure all color combinations in your external stylesheets meet WCAG contrast requirements (4.5:1 for normal text, 3:1 for large text and UI components). Use CSS preprocessor variables (Sass/Less) or CSS custom properties to define colors once and reference them throughout your stylesheets. Test color contrast systematically using tools that can scan entire stylesheets rather than manually checking each embedded style block."
         },
         'ErrComplementaryLandmarkAccessibleNameIsBlank': {
-            'title': "Complementary landmark has blank accessible name",
-            'what': "A complementary landmark (<aside> or role=\"complementary\") was found whose aria-label or aria-labelledby resolves to an empty string, leaving the landmark unnamed.",
-            'why': "Empty labels provide no information",
-            'who': "Screen reader users",
+            'title': "Complementary landmark's accessible name is empty",
+            'what': "A complementary landmark (an <aside> element or an element with role=\"complementary\") has an aria-label or aria-labelledby attribute whose computed value resolves to an empty string, leaving the landmark with no accessible name.",
+            'why': "Pages frequently contain several complementary regions (related links, sidebars, pull quotes). A label is how a screen reader distinguishes them in the landmarks list. An empty label produces a region announced only as \"complementary\", which is indistinguishable from every other unlabelled complementary region and provides no orientation value, contrary to WCAG 1.3.1 (Info and Relationships) and 2.4.6 (Headings and Labels). An aria-labelledby that resolves to nothing usually points to a missing or empty target \u2014 an authoring bug.",
+            'who': "Screen reader users navigating by landmarks cannot identify or differentiate complementary regions and may be unable to find the specific sidebar or related content they want.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['1.3.1', '2.4.6'],
-            'remediation': "Add meaningful label text"
+            'remediation': "Provide a meaningful, non-empty name, or remove the empty attribute if no distinguishing label is needed. For aria-labelledby, confirm the referenced id exists and holds visible text. Example: <aside aria-label=\"Related articles\"> ... </aside> or <aside aria-labelledby=\"rel-h\"><h2 id=\"rel-h\">Related articles</h2> ... </aside>."
         },
         'ErrComplementaryLandmarkHasAriaLabelAndAriaLabelledByAttrs': {
-            'title': "Complementary landmark has both aria-label and aria-labelledby",
-            'what': "A complementary landmark element has both aria-label and aria-labelledby attributes set, even though only one labelling mechanism should be used.",
-            'why': "Conflicting labeling methods may cause confusion",
-            'who': "Screen reader users",
+            'title': "Complementary landmark declares both aria-label and aria-labelledby",
+            'what': "A complementary landmark element has both aria-label and aria-labelledby attributes set simultaneously, even though only one labelling mechanism should be used. In the accessible name computation aria-labelledby wins and aria-label is ignored.",
+            'why': "Because aria-labelledby overrides aria-label, the aria-label text is silently dropped and never announced. If the author put the intended wording in aria-label, the region will be announced with a different (or wrong) name, making the exposed name unreliable and conflicting with WCAG 4.1.2 (Name, Role, Value), which requires accurate, programmatically determinable names.",
+            'who': "Screen reader users hear only the aria-labelledby value; when the author's real label was in aria-label, they receive a misleading region name and may misidentify the complementary content.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['4.1.2'],
-            'remediation': "Use only one labeling method"
+            'remediation': "Keep a single labelling method. If a visible element already names the region, retain aria-labelledby pointing to it and delete aria-label. Otherwise keep aria-label and remove aria-labelledby. Example: <aside aria-label=\"Author bio\"> ... </aside> (no aria-labelledby)."
         },
         'ErrComplementaryLandmarkMayNotBeChildOfAnotherLandmark': {
             'title': "Complementary landmark is nested inside another landmark",
-            'what': "A complementary landmark is nested inside another landmark element. The ARIA spec requires complementary regions to sit at the top level of the document.",
-            'why': "Invalid nesting breaks landmark structure",
-            'who': "Screen reader users",
+            'what': "A complementary landmark (<aside> or role=\"complementary\") is contained within another landmark element. The ARIA Landmark specification requires complementary regions to be top-level regions of the document, not nested inside banner, navigation, main, or other landmarks.",
+            'why': "A complementary region is meant to be a self-contained, page-level section that supports but is separable from the main content. Nesting it inside another landmark produces an invalid landmark hierarchy: assistive technologies may fail to expose it as a distinct region, may re-parent it, or may omit it from the landmarks list. This corrupts the programmatically determined structure required by WCAG 1.3.1 (Info and Relationships).",
+            'who': "Screen reader users who navigate by landmarks may not find the complementary region in the expected place, or may miss it entirely, losing a reliable shortcut to supporting content such as sidebars or related material.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['1.3.1'],
-            'remediation': "Move complementary landmark outside of other landmarks"
+            'remediation': "Move the complementary landmark so it is a top-level region, a sibling of the other landmarks rather than a descendant. Example: <body><main>...</main><aside aria-label=\"Related links\">...</aside></body> \u2014 the <aside> sits outside <main>, not inside it."
         },
         'ErrCompletelyEmptyNavLandmark': {
             'title': "Navigation landmark contains no content",
@@ -967,22 +967,22 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Add navigation content or remove empty landmark"
         },
         'ErrContentInfoLandmarkAccessibleNameIsBlank': {
-            'title': "Contentinfo landmark has blank accessible name",
-            'what': "A contentinfo landmark (<footer> at top level, or role=\"contentinfo\") has an aria-label or aria-labelledby that resolves to an empty string.",
-            'why': "Blank labels provide no information",
-            'who': "Screen reader users",
+            'title': "Contentinfo landmark's accessible name is empty",
+            'what': "A contentinfo landmark (a top-level <footer> element, or an element with role=\"contentinfo\") has an aria-label or aria-labelledby attribute whose computed value resolves to an empty string, so the landmark has no accessible name.",
+            'why': "When an author adds a label to a contentinfo region, or when a page exposes more than one footer-type region, the label distinguishes it in the landmarks list. An empty aria-label or an aria-labelledby pointing at missing or empty content yields a region announced with no name (just \"contentinfo\"), which removes the orientation value the author intended and breaches WCAG 1.3.1 (Info and Relationships) and 2.4.6 (Headings and Labels). The empty value is also a likely authoring error.",
+            'who': "Screen reader users navigating by landmarks cannot identify the labelled footer region and lose a deliberate orientation cue, making it harder to reach footer content such as copyright, contact, or policy links.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['1.3.1', '2.4.6'],
-            'remediation': "Add meaningful label text"
+            'remediation': "Give the region a meaningful, non-empty name, or remove the empty attribute so it uses the default \"contentinfo\" name. For aria-labelledby, ensure the referenced element exists and contains visible text. Example: <footer aria-label=\"Site footer\"> ... </footer> or <footer aria-labelledby=\"foot-h\"><h2 id=\"foot-h\">Site footer</h2> ... </footer>."
         },
         'ErrContentInfoLandmarkHasAriaLabelAndAriaLabelledByAttrs': {
-            'title': "Contentinfo landmark has both aria-label and aria-labelledby",
-            'what': "A contentinfo landmark element has both aria-label and aria-labelledby attributes set. aria-labelledby wins, but the duplication suggests confused authoring.",
-            'why': "Conflicting labeling methods",
-            'who': "Screen reader users",
+            'title': "Contentinfo landmark declares both aria-label and aria-labelledby",
+            'what': "A contentinfo landmark element has both aria-label and aria-labelledby attributes set at the same time. The accessible name computation gives precedence to aria-labelledby and ignores aria-label, so the duplication reflects confused authoring.",
+            'why': "Because aria-label is discarded when aria-labelledby is present, any wording the author placed in aria-label will never be announced. If that aria-label held the intended name, the footer region will be announced with a different or incorrect name, making the exposed name unpredictable and conflicting with WCAG 4.1.2 (Name, Role, Value), which requires accurate, programmatically determinable names.",
+            'who': "Screen reader users hear only the aria-labelledby text; if the author's intended label was in aria-label, they receive a misleading footer region name and may misjudge its purpose.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['4.1.2'],
-            'remediation': "Use only one labeling method"
+            'remediation': "Use only one labelling method. If a visible element already names the footer, keep aria-labelledby referencing it and remove aria-label; otherwise keep aria-label and remove aria-labelledby. Example: <footer aria-labelledby=\"foot-h\"><h2 id=\"foot-h\">Site footer</h2> ... </footer> (no aria-label)."
         },
         'ErrContentObscuring': {
             'title': "Non-modal floating element obscures interactive content",
@@ -996,12 +996,12 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrContentinfoLandmarkMayNotBeChildOfAnotherLandmark': {
             'title': "Contentinfo landmark is nested inside another landmark",
-            'what': "A contentinfo landmark appears nested inside another landmark (e.g., inside <main> or <nav>). The ARIA spec disallows this — contentinfo must be at the top level.",
-            'why': "Invalid nesting breaks landmark structure",
-            'who': "Screen reader users",
+            'what': "A contentinfo landmark (top-level <footer> or role=\"contentinfo\") is rendered inside another landmark such as <main> or <nav>. The ARIA Landmark specification disallows this: contentinfo must be a top-level region of the document.",
+            'why': "Contentinfo represents information about the whole page (copyright, author, related links) and is expected to apply at the document level. Nesting it inside another landmark invalidates the landmark structure, causing assistive technologies to misclassify, re-parent, or drop the footer region. The page's programmatically determined structure no longer matches its visual organization, violating WCAG 1.3.1 (Info and Relationships).",
+            'who': "Screen reader users who navigate by landmarks may be unable to reach the footer reliably, or may find it announced in an unexpected location, losing a dependable shortcut to page-level information.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['1.3.1'],
-            'remediation': "Move contentinfo to top level"
+            'remediation': "Move the contentinfo region so it is a top-level region, a sibling of the other landmarks. A single contentinfo footer should sit outside <main> and <nav>. Example: <body><main>...</main><footer>...copyright, contact...</footer></body> \u2014 the <footer> is not inside <main>."
         },
         'ErrDivMapMissingAttributes': {
             'title': "Map container div is missing required accessibility attributes",
@@ -1013,67 +1013,67 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Add appropriate ARIA labels and descriptions, provide text alternatives for map information, ensure all map controls are keyboard accessible."
         },
         'ErrDuplicateLabelForBannerLandmark': {
-            'title': "Multiple banner landmarks have the same label",
-            'what': "Two or more banner landmarks on the page share the same accessible name, so screen reader users cannot distinguish between them in the landmarks list.",
-            'why': "Users cannot distinguish between different banners",
-            'who': "Screen reader users",
+            'title': "Two or more banner landmarks share the same label",
+            'what': "The page exposes more than one banner landmark and at least two of them have the same accessible name. In the screen reader's landmarks list they appear as identical entries.",
+            'why': "Landmark labels exist precisely so users can tell regions of the same type apart. When two banners carry the identical name, the landmarks list shows duplicate, indistinguishable entries and a user cannot predict which one a given entry leads to, undermining WCAG 1.3.1 (Info and Relationships) and 2.4.6 (Headings and Labels). In most cases a page should have only one banner, so duplicates often also signal a structural problem.",
+            'who': "Screen reader users navigating by landmarks cannot choose between the identically named banners and may jump to the wrong region, wasting time and losing orientation.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['1.3.1', '2.4.6'],
-            'remediation': "Only one banner should typically exist per page"
+            'remediation': "A page should normally contain a single banner; if multiple top-level <header>/role=\"banner\" regions exist, reconsider the structure and reduce to one. If more than one is genuinely required, give each a unique, descriptive name. Example: aria-label=\"Site header\" on one and aria-label=\"Section header\" on the other."
         },
         'ErrDuplicateLabelForComplementaryLandmark': {
-            'title': "Multiple complementary landmarks have the same label",
-            'what': "Two or more complementary landmarks on the page share the same accessible name. Each complementary region needs a unique label so users can tell them apart.",
-            'why': "Users cannot distinguish between different complementary sections",
-            'who': "Screen reader users",
+            'title': "Two or more complementary landmarks share the same label",
+            'what': "The page contains more than one complementary landmark and at least two of them have an identical accessible name, so they cannot be told apart in the landmarks list.",
+            'why': "Each complementary region needs a distinct name so users can choose the one they want. Identical labels create duplicate landmark entries that give no basis for choosing between them, leaving users unable to predict where each leads \u2014 a failure of WCAG 1.3.1 (Info and Relationships) and 2.4.6 (Headings and Labels).",
+            'who': "Screen reader users navigating by landmarks cannot distinguish the complementary regions (for example two sidebars both named \"Related\") and may open the wrong one repeatedly.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['1.3.1', '2.4.6'],
-            'remediation': "Provide unique labels for each complementary landmark"
+            'remediation': "Give each complementary landmark a unique, descriptive name that reflects its actual content. Example: aria-label=\"Related articles\" on one <aside> and aria-label=\"Author information\" on the other."
         },
         'ErrDuplicateLabelForContentinfoLandmark': {
-            'title': "Multiple contentinfo landmarks have the same label",
-            'what': "Two or more contentinfo (footer) landmarks on the page share the same accessible name, making them indistinguishable in the landmarks list.",
-            'why': "Users cannot distinguish between different footer areas",
-            'who': "Screen reader users",
+            'title': "Two or more contentinfo landmarks share the same label",
+            'what': "The page exposes more than one contentinfo (footer) landmark and at least two of them have the same accessible name, making them indistinguishable in the landmarks list.",
+            'why': "Labels are how a screen reader differentiates regions of the same type. Two footers with identical names produce duplicate landmark entries the user cannot tell apart, and since a page normally has a single contentinfo region, duplicates usually indicate a structural error as well. This works against WCAG 1.3.1 (Info and Relationships) and 2.4.6 (Headings and Labels).",
+            'who': "Screen reader users navigating by landmarks cannot determine which footer entry leads where and may land in the wrong region when seeking copyright, contact, or policy information.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['1.3.1', '2.4.6'],
-            'remediation': "Typically only one contentinfo should exist per page"
+            'remediation': "A page should normally have only one contentinfo region; if multiple footer landmarks exist, reduce to one or give each a unique, descriptive name. Example: aria-label=\"Site footer\" and aria-label=\"Article footer\"."
         },
         'ErrDuplicateLabelForFormLandmark': {
-            'title': "Multiple form landmarks have the same label",
-            'what': "Two or more form landmarks on the page share the same accessible name, so users cannot tell from the landmarks list which form is which.",
-            'why': "Users cannot distinguish between different forms",
-            'who': "Screen reader users",
+            'title': "Two or more form landmarks share the same label",
+            'what': "The page contains more than one form landmark and at least two of them have the same accessible name, so users cannot tell from the landmarks list which form each entry corresponds to.",
+            'why': "A form is only exposed as a landmark when it has an accessible name, and that name is what distinguishes one form from another in the landmarks list. Identical names produce duplicate entries that give no clue which form (e.g. login versus newsletter signup) is which, undermining WCAG 1.3.1 (Info and Relationships) and 2.4.6 (Headings and Labels).",
+            'who': "Screen reader users navigating by landmarks cannot select the intended form and may begin filling out the wrong one, leading to errors and frustration.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['1.3.1', '2.4.6'],
-            'remediation': "Provide unique labels for each form"
+            'remediation': "Give each form landmark a unique, descriptive name matching its purpose. Example: <form aria-label=\"Login\"> ... </form> and <form aria-label=\"Newsletter signup\"> ... </form>."
         },
         'ErrDuplicateLabelForNavLandmark': {
-            'title': "Multiple navigation landmarks have the same label",
-            'what': "Two or more <nav> landmarks share the same accessible name (e.g., both labelled \"Main navigation\"), so users cannot distinguish them in the landmarks list.",
-            'why': "Users cannot distinguish between different navigation areas",
-            'who': "Screen reader users",
+            'title': "Two or more navigation landmarks share the same label",
+            'what': "Two or more <nav> (navigation) landmarks have the same accessible name \u2014 for example both labelled \"Main navigation\" \u2014 so they appear as identical entries in the landmarks list.",
+            'why': "Pages commonly have several navigation regions (primary nav, breadcrumb, footer links, in-page menu). Distinct labels are how a screen reader tells them apart. Identical names create duplicate landmark entries the user cannot differentiate, so they cannot reliably jump to the navigation they want, in breach of WCAG 1.3.1 (Info and Relationships) and 2.4.6 (Headings and Labels).",
+            'who': "Screen reader users navigating by landmarks cannot choose between the identically named navigation regions and may repeatedly enter the wrong menu.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['1.3.1', '2.4.6'],
-            'remediation': "Provide unique labels like \"Main navigation\" and \"Footer navigation\""
+            'remediation': "Give each navigation landmark a unique label describing its role. Example: <nav aria-label=\"Main navigation\"> ... </nav> and <nav aria-label=\"Footer navigation\"> ... </nav>."
         },
         'ErrDuplicateLabelForRegionLandmark': {
-            'title': "Multiple region landmarks have the same label",
-            'what': "Two or more region landmarks on the page share the same accessible name, so they cannot be told apart in the landmarks list.",
-            'why': "Users cannot distinguish between different regions",
-            'who': "Screen reader users",
+            'title': "Two or more region landmarks share the same label",
+            'what': "The page contains more than one region landmark (an element with role=\"region\", or a <section> with an accessible name) and at least two of them have an identical accessible name, so they cannot be told apart in the landmarks list.",
+            'why': "A generic region is only exposed as a landmark when it has a name, and that name is the sole way to distinguish it from other regions. Duplicate names produce indistinguishable landmark entries, defeating the purpose of marking the regions and conflicting with WCAG 1.3.1 (Info and Relationships) and 2.4.6 (Headings and Labels).",
+            'who': "Screen reader users navigating by landmarks cannot tell the identically named regions apart and cannot reliably reach the specific content they are looking for.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['1.3.1', '2.4.6'],
-            'remediation': "Provide unique labels for each region"
+            'remediation': "Give each region landmark a unique, descriptive name that reflects its content. Example: <section aria-label=\"Pricing\"> ... </section> and <section aria-label=\"Features\"> ... </section>."
         },
         'ErrDuplicateLabelForSearchLandmark': {
-            'title': "Multiple search landmarks have the same label",
-            'what': "Two or more search landmarks share the same accessible name. If multiple search areas exist, each needs a unique label (e.g., \"Site search\", \"Product search\").",
-            'why': "Users cannot distinguish between different search areas",
-            'who': "Screen reader users",
+            'title': "Two or more search landmarks share the same label",
+            'what': "The page exposes more than one search landmark (role=\"search\" or the <search> element) and at least two share the same accessible name, so they cannot be distinguished in the landmarks list.",
+            'why': "When a page offers several search facilities (site-wide search, in-section product search, help search), distinct labels are what let a screen reader differentiate them. Identical names produce duplicate landmark entries that give no basis for choosing the right one, breaching WCAG 1.3.1 (Info and Relationships) and 2.4.6 (Headings and Labels).",
+            'who': "Screen reader users navigating by landmarks cannot tell which search region is which and may submit their query to the wrong search.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['1.3.1', '2.4.6'],
-            'remediation': "Provide unique labels for each search landmark"
+            'remediation': "Give each search landmark a unique label describing its scope. Example: role=\"search\" with aria-label=\"Site search\" on one and aria-label=\"Product search\" on the other."
         },
         'ErrDuplicateLandmarkWithoutName': {
             'title': "Found {totalCount} {role} landmarks - this one lacks unique accessible name",
@@ -1104,49 +1104,49 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Add valid language code (e.g., lang=\"fr\" for French) or remove empty lang attribute"
         },
         'ErrElementNotContainedInALandmark': {
-            'title': "Content exists outside of any landmark",
-            'what': "A piece of substantive page content sits outside every landmark region (banner, nav, main, complementary, contentinfo, region, search, form). Users navigating by landmarks will skip past it.",
-            'why': "Content may be missed when navigating by landmarks",
-            'who': "Screen reader users using landmark navigation",
+            'title': "Page content sits outside every landmark region",
+            'what': "A piece of substantive page content is located outside all landmark regions (banner, navigation, main, complementary, contentinfo, region, search, and form). It belongs to none of the page's defined regions.",
+            'why': "Many screen reader users move through a page by jumping from landmark to landmark rather than reading top to bottom. Content that lives outside every landmark is skipped by this navigation method, so users may never encounter it. A well-formed page places all meaningful content inside an appropriate landmark; orphaned content breaks the complete, programmatically determined structure expected under WCAG 1.3.1 (Info and Relationships).",
+            'who': "Screen reader users who navigate by landmarks (and keyboard users relying on landmark-based shortcuts) can miss the orphaned content entirely, never learning it exists.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['1.3.1'],
-            'remediation': "Ensure all content is within appropriate landmarks"
+            'remediation': "Ensure every block of meaningful content is enclosed in an appropriate landmark. Primary page content belongs in <main>; supporting content in <aside>; site identification in <header>; footer details in <footer>; navigation in <nav>. Example: wrap stray content that is the page's primary content in <main> ... </main>, or place secondary content in an appropriately labelled <aside>."
         },
         'ErrElementPrimaryLangNotRecognized': {
-            'title': "Element has unrecognized language code",
+            'title': "Element's lang attribute uses an unrecognized primary language subtag",
             'what': "A descendant element's lang attribute uses a primary language subtag that is not a recognised ISO 639 language code.",
-            'why': "Language changes won\'t be announced properly",
-            'who': "Screen reader users",
+            'why': "WCAG 3.1.2 Language of Parts (and 3.1.1 for the page level) requires that the language of content be programmatically determinable using a valid language tag. An unrecognised primary subtag cannot be matched to any speech engine, so the screen reader ignores the declared language change and keeps reading with the inherited voice, mispronouncing the passage.",
+            'who': "Screen reader users, who do not get the intended voice switch for the passage; users of automatic translation tools.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['3.1.1', '3.1.2'],
-            'remediation': "Use valid language codes"
+            'remediation': "Replace the invalid subtag with a valid BCP 47 / ISO 639 code. Use the two-letter ISO 639-1 code where one exists (for example lang=\"fr\" or lang=\"es\"), adding a region subtag only when needed, such as lang=\"fr-CA\"."
         },
         'ErrElementRegionQualifierNotRecognized': {
-            'title': "Element lang attribute has unrecognized region qualifier",
-            'what': "The region subtag of an element's lang attribute (e.g., the \"ZZ\" in lang=\"en-ZZ\") is not a recognised ISO 3166-1 country code.",
-            'why': "Invalid region codes may affect pronunciation",
-            'who': "Screen reader users",
+            'title': "Element's lang attribute uses an unrecognized region subtag",
+            'what': "An element's lang attribute includes a region subtag that is not a valid ISO 3166-1 country code \u2014 for example the \"ZZ\" in lang=\"en-ZZ\". The language part may be valid, but the region qualifier after the hyphen is not recognised.",
+            'why': "Assistive technologies use the lang value to select the correct pronunciation rules, voice, and dialect for the content. A region subtag that is not a recognised country code may be ignored or mishandled, so a screen reader can apply the wrong regional pronunciation or fail to refine it as intended. While the base language usually still resolves, the invalid qualifier weakens the programmatic language information required by WCAG 3.1.2 (Language of Parts).",
+            'who': "Screen reader users \u2014 particularly those who depend on accurate pronunciation of regional variants \u2014 may hear content read with an unexpected accent or pronunciation, reducing comprehension of that passage.",
             'impact': ImpactScale.LOW.value,
             'wcag': ['3.1.2'],
-            'remediation': "Use valid ISO 3166-1 region codes"
+            'remediation': "Replace the region subtag with a valid ISO 3166-1 alpha-2 country code, or remove the region subtag entirely if no regional distinction is needed. Example: change lang=\"en-ZZ\" to lang=\"en-CA\" for Canadian English, or simply lang=\"en\"."
         },
         'ErrEmptyAriaLabelOnField': {
-            'title': "Form field has empty aria-label attribute",
-            'what': "A form field has an aria-label attribute, but its value is an empty string, so the field has no accessible name even though the attribute is present.",
-            'why': "Empty labels provide no information about the field",
-            'who': "Screen reader users",
+            'title': "Field's aria-label attribute is present but empty",
+            'what': "A form field carries an aria-label attribute whose value is an empty string (aria-label=\"\" or only whitespace). Because aria-label, when present, overrides other naming sources, the field ends up with no accessible name at all even though it appears to be labelled.",
+            'why': "An empty aria-label suppresses any other potential name (such as a wrapping label or placeholder) and supplies nothing in its place, so assistive technology announces only the field's role (\"edit text\") with no indication of what to enter. This violates WCAG 1.3.1 Info and Relationships and 3.3.2 Labels or Instructions. The consequence is that users cannot tell what data the field expects and may skip or misfill it.",
+            'who': "Screen reader users, who hear an unnamed control and have no way to know its purpose; voice-control users, who have no accessible name to target by voice.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['1.3.1', '3.3.2'],
-            'remediation': "Add descriptive text to aria-label or use visible label"
+            'remediation': "Either give aria-label a meaningful value describing the field, or remove aria-label and provide a visible associated <label>. Prefer a visible label where a visual prompt exists. For example: <label for=\"email\">Email address</label><input id=\"email\" type=\"email\">, or, when no visible label fits: <input type=\"search\" aria-label=\"Search products\">."
         },
         'ErrEmptyAriaLabelledByOnField': {
-            'title': "Form field has empty aria-labelledby attribute",
-            'what': "A form field has an aria-labelledby attribute, but its value is empty, so no element is being referenced for the accessible name.",
-            'why': "Empty labelledby provides no field description",
-            'who': "Screen reader users",
+            'title': "Field's aria-labelledby attribute is present but empty",
+            'what': "A form field has an aria-labelledby attribute whose value is empty or only whitespace, so it references no element. No accessible name is computed from it, leaving the field effectively unnamed.",
+            'why': "An aria-labelledby with no token references nothing, so the browser computes no name from it; if no other naming source exists, the field has no accessible name. This violates WCAG 1.3.1 Info and Relationships and 3.3.2 Labels or Instructions. The consequence is that assistive technology announces only the control type, and users cannot determine what to enter.",
+            'who': "Screen reader users, who encounter a control with no announced purpose; voice-control users, who have no name to reference when commanding the field.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['1.3.1', '3.3.2'],
-            'remediation': "Reference valid element IDs or use direct labeling"
+            'remediation': "Set aria-labelledby to the id (or space-separated ids) of one or more visible elements that contain the label text, or remove it and use a direct <label>. For example: <span id=\"phone-lbl\">Phone number</span><input type=\"tel\" aria-labelledby=\"phone-lbl\">. Confirm every referenced id exists and has non-empty text."
         },
         'ErrEmptyHeading': {
             'title': "Heading element contains only whitespace or special characters: \"{text}\"",
@@ -1234,22 +1234,22 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Add descriptive text to the <title> element. A good page title should be: (1) Unique - different from other pages on your site, (2) Descriptive - clearly identifies the page content, (3) Concise - ideally 20-60 characters, (4) Front-loaded - most important info first, (5) Contextual - includes site name for orientation. Use the pattern \"Page Topic - Section - Site Name\" or \"Specific Content - Site Name\". Examples: \"Shopping Cart - Acme Store\", \"Privacy Policy - Company Name\", \"Product Name - Category - Store\". Avoid generic titles like \"Home\", \"Page\", or \"Untitled\"."
         },
         'ErrEmptyTitleAttr': {
-            'title': "Empty title attribute",
-            'what': "An element has a title attribute, but its value is empty, providing no tooltip or fallback accessible name.",
-            'why': "Empty titles provide no information and add unnecessary markup",
-            'who': "Users expecting tooltip information",
+            'title': "Empty title attribute provides no information",
+            'what': "An element has a title attribute, but its value is empty (title=\"\"), so it provides no tooltip text and no fallback accessible name.",
+            'why': "An empty title contributes nothing: it supplies no tooltip for mouse and keyboard users and no accessible name for assistive technology, while still adding meaningless markup. Where a title is the only thing intended to name a control, an empty value leaves it unnamed, which conflicts with WCAG 4.1.2 Name, Role, Value.",
+            'who': "Screen reader users who would expect the title to contribute an accessible name, and sighted users who would expect a tooltip and receive none.",
             'impact': ImpactScale.LOW.value,
             'wcag': ['4.1.2'],
-            'remediation': "Remove empty title attributes or provide meaningful descriptive text"
+            'remediation': "If the title was meant to convey information, give it meaningful descriptive text. If it serves no purpose, remove the empty attribute entirely. Do not rely on title as the sole accessible name for a control; use a visible label or aria-label instead."
         },
         'ErrEmptyXmlLangAttr': {
-            'title': "xml:lang attribute is empty",
-            'what': "An xml:lang attribute is present but has an empty value, providing no language information to consumers that read xml:lang.",
-            'why': "Empty xml:lang provides no language information",
-            'who': "Screen reader users using XML/XHTML parsers",
+            'title': "xml:lang attribute is present but its value is empty",
+            'what': "An xml:lang attribute is present on an element but has an empty value, providing no language information to consumers that read xml:lang.",
+            'why': "WCAG 3.1.1 Language of Page (and 3.1.2 for parts) requires the language to be programmatically determinable. In XML and XHTML processing, xml:lang takes precedence over lang, so an empty xml:lang can override a valid lang value and leave assistive technology with no usable language tag, forcing it back to a default voice and incorrect pronunciation.",
+            'who': "Screen reader users using XML/XHTML parsers, who lose the correct pronunciation when the empty xml:lang overrides a valid lang.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['3.1.1'],
-            'remediation': "Add valid language code to xml:lang attribute"
+            'remediation': "Give xml:lang a valid BCP 47 / ISO 639 value that matches the lang attribute, or remove it if it serves no purpose. For example: <html lang=\"en\" xml:lang=\"en\"> rather than xml:lang=\"\"."
         },
         'ErrFakeListImplementation': {
             'title': "Visual list created without proper list markup",
@@ -1272,13 +1272,13 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Remove the icon font elements (e.g., <i class=\"fa-...\"></i>) from list items and instead use the CSS list-style-type property or ::before pseudo-elements with CSS content to style the bullets. For example: li::before {{ content: '\\2022'; color: #your-color; }} or use list-style-type with custom images."
         },
         'ErrFielLabelledBySomethingNotALabel': {
-            'title': "Field is labeled by an element that is not a proper label",
-            'what': "A field's aria-labelledby points to an element that is not a <label> and not a heading-like element (e.g., it points to a <div> with no role), making the labelling source unreliable.",
-            'why': "Non-label elements may not provide appropriate semantic relationships",
-            'who': "Screen reader users",
+            'title': "Field's aria-labelledby points to a non-label element",
+            'what': "A field's aria-labelledby references an element that is not a <label> nor a heading-like or text-bearing element with a meaningful name (for example, it points to a generic <div> or an empty container with no role). The element supplies an unreliable or absent accessible name.",
+            'why': "While aria-labelledby may technically point to almost any element, referencing a container with no semantic label text produces a fragile or empty name, and the relationship is unclear to maintainers and to the accessibility tree. This relates to WCAG 1.3.1 Info and Relationships and 3.3.2 Labels or Instructions. The consequence is that the field may be announced with no name, the wrong name, or surrounding noise that does not describe its purpose.",
+            'who': "Screen reader users, who may hear an empty, misleading, or overly verbose name; voice-control users, who may be unable to target the field by its visible prompt.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['1.3.1', '3.3.2'],
-            'remediation': "Use proper <label> elements or appropriate ARIA labeling"
+            'remediation': "Reference an element that genuinely holds the label text, or use a proper <label>. Prefer a real label: <label for=\"city\">City</label><input id=\"city\">. If you must use aria-labelledby, point it at the element whose text is the label: <span id=\"city-lbl\">City</span><input aria-labelledby=\"city-lbl\">."
         },
         'ErrFieldAriaRefDoesNotExist': {
             'title': "aria-labelledby references non-existent element ID \'{found}\'",
@@ -1291,67 +1291,67 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Either create an element with id=\"{found}\" to serve as the label, fix the ID reference to point to an existing element, or use a different labeling method like a <label> element"
         },
         'ErrFieldLabelledUsingAriaLabel': {
-            'title': "Field labeled using aria-label instead of visible label",
-            'what': "A form field uses aria-label as its accessible name even though a visible <label> would be feasible. Visible labels are required for fields that have a visible textual prompt.",
-            'why': "Visible labels benefit all users, not just screen reader users",
-            'who': "Users with cognitive disabilities, all users",
+            'title': "Field named with aria-label where a visible label belongs",
+            'what': "A form field uses aria-label to provide its accessible name even though it has, or could reasonably have, a visible textual prompt that should be marked up as a real <label>. The aria-label hides the labelling from sighted users while satisfying only assistive technology.",
+            'why': "A visible, programmatically associated label benefits everyone: it stays on screen, can be clicked to focus the field, and keeps the visible and accessible names in sync. Replacing it with an invisible aria-label removes those benefits and risks drift between what is shown and what is announced. This relates to WCAG 3.3.2 Labels or Instructions (and 2.5.3 Label in Name when a visible prompt exists). The consequence is reduced clarity for sighted users and a larger click/tap target lost.",
+            'who': "People with cognitive or learning disabilities who rely on persistent visible labels; users with motor impairments who benefit from a clickable label expanding the target; sighted users generally, who lose the on-screen labelling cue.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['3.3.2'],
-            'remediation': "Use visible <label> elements instead of aria-label when possible"
+            'remediation': "When a visible prompt exists or is appropriate, mark it up as a <label> tied to the field with for/id and drop the aria-label. For example, replace <input aria-label=\"Full name\"> with <label for=\"name\">Full name</label><input id=\"name\">. Reserve aria-label for cases where no visible label is feasible (e.g., an icon-only search field)."
         },
         'ErrFieldReferenceDoesNotExist': {
-            'title': "Label for attribute references non-existent field",
-            'what': "A <label>'s for attribute points to an id that does not exist anywhere in the page, leaving the label unattached to any field.",
-            'why': "Label is not associated with any form field",
-            'who': "Screen reader users",
+            'title': "Label's for attribute references a non-existent field",
+            'what': "A <label> element has a for attribute whose value does not match the id of any element anywhere on the page. The label therefore points to nothing and is not associated with any form control.",
+            'why': "When for references a missing id, the browser cannot link the label to a field, so the control gets no accessible name from it and the label text is announced as orphaned content. This violates WCAG 1.3.1 Info and Relationships. The consequence is that screen reader users hear an unnamed field, and clicking the label does not focus any control, removing an expected interaction for everyone.",
+            'who': "Screen reader users, who reach a control with no programmatic name; people with motor impairments who rely on the enlarged click target a properly associated label provides.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['1.3.1'],
-            'remediation': "Fix the for/id relationship"
+            'remediation': "Make the label's for value exactly match the field's id (case-sensitive), or wrap the field inside the label. For example: <label for=\"zip\">Postal code</label><input id=\"zip\" type=\"text\">. Confirm the id is unique and present in the rendered DOM, including after any dynamic rendering."
         },
         'ErrFormAriaLabelledByIsBlank': {
-            'title': "Form aria-labelledby references blank or empty element",
-            'what': "A <form> element has an aria-labelledby attribute, but the referenced element's text content (or the aria-labelledby value itself) is empty.",
-            'why': "No accessible name is provided",
-            'who': "Screen reader users",
+            'title': "Form's aria-labelledby resolves to blank text",
+            'what': "A <form> element has an aria-labelledby attribute, but either the attribute value is empty or the referenced element contains no text content, so the form's computed accessible name is blank.",
+            'why': "A form that declares aria-labelledby but resolves to empty text presents itself as named in the markup while exposing nothing to assistive technology. This relates to WCAG 1.3.1 Info and Relationships and 4.1.2 Name, Role, Value. The consequence is that screen reader users cannot distinguish this form from other regions or understand its purpose when navigating by form or landmark.",
+            'who': "Screen reader users who navigate by landmarks/forms and rely on an accessible name to identify each region; users of assistive technology that lists forms on the page.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['1.3.1', '4.1.2'],
-            'remediation': "Reference element with actual text content"
+            'remediation': "Point aria-labelledby at an element that actually contains visible, non-empty text, such as the form's heading. For example: <h2 id=\"signup-h\">Create your account</h2><form aria-labelledby=\"signup-h\"> ... </form>. Alternatively, give the form an aria-label with descriptive text. Confirm the referenced element's text is non-empty in the rendered DOM."
         },
         'ErrFormAriaLabelledByReferenceDIsHidden': {
-            'title': "Form aria-labelledby references hidden element",
-            'what': "A <form> element's aria-labelledby points to an element that is hidden via display:none, visibility:hidden, or the hidden attribute, leaving no announced accessible name.",
-            'why': "Hidden elements may not provide accessible names",
-            'who': "Screen reader users",
+            'title': "Form's aria-labelledby points to a hidden element",
+            'what': "A <form> element's aria-labelledby references an element that is hidden via display:none, visibility:hidden, or the hidden attribute. Although aria-labelledby can use hidden text for naming, relying on display:none/visibility:hidden content is fragile and the relationship is easily broken or removed.",
+            'why': "Text hidden with display:none or visibility:hidden is generally not rendered in the accessibility tree as part of the name, so the form may end up with no accessible name; and even where it works, a hidden source is invisible to maintainers and likely to be deleted or restructured. This relates to WCAG 1.3.1 Info and Relationships and 4.1.2 Name, Role, Value. The consequence is an unnamed or unstably named form region.",
+            'who': "Screen reader users who depend on a reliable accessible name to identify the form when navigating by landmark or form list.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['1.3.1', '4.1.2'],
-            'remediation': "Reference visible elements only"
+            'remediation': "Reference a visible element that holds the label text, or provide aria-label directly. For example: <h2 id=\"contact-h\">Contact us</h2><form aria-labelledby=\"contact-h\"> ... </form>. If the label must remain visually hidden, use a screen-reader-only technique (clip/position off-screen) rather than display:none or visibility:hidden so the text stays in the accessibility tree."
         },
         'ErrFormAriaLabelledByReferenceDoesNotExist': {
-            'title': "Form aria-labelledby references non-existent element",
-            'what': "A <form> element's aria-labelledby references an id that does not exist anywhere on the page, so no accessible name is computed.",
-            'why': "Broken reference provides no accessible name",
-            'who': "Screen reader users",
+            'title': "Form's aria-labelledby references a non-existent id",
+            'what': "A <form> element's aria-labelledby contains an id that matches no element anywhere on the page. The reference is broken, so the browser computes no accessible name from it.",
+            'why': "A dangling aria-labelledby reference resolves to nothing, so unless another naming source exists the form has no accessible name, while the markup misleadingly implies it is labelled. This relates to WCAG 1.3.1 Info and Relationships and 4.1.2 Name, Role, Value. The consequence is that screen reader users cannot identify or distinguish the form when navigating by landmark or form list.",
+            'who': "Screen reader users who rely on a programmatic name to recognize the form region; users of assistive technology that enumerates the page's forms.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['1.3.1', '4.1.2'],
-            'remediation': "Fix ID reference or use different labeling method"
+            'remediation': "Correct the id so aria-labelledby points to an element that exists and contains visible text, or switch to aria-label. For example: <h2 id=\"search-h\">Search the catalogue</h2><form aria-labelledby=\"search-h\"> ... </form>. Verify the id is present and unique in the rendered DOM, including after dynamic updates."
         },
         'ErrFormAriaLabelledByReferenceDoesNotReferenceAHeading': {
-            'title': "Form aria-labelledby doesn\'t reference a heading element",
-            'what': "A <form> uses aria-labelledby to point at an element that is not a heading (<h1>–<h6>). Best practice is to label a form landmark with the heading that introduces it.",
-            'why': "Best practice is to reference headings for form landmarks",
-            'who': "Screen reader users",
+            'title': "Form's aria-labelledby points to a non-heading element",
+            'what': "A <form> uses aria-labelledby to reference an element that is not a heading (<h1>-<h6>). The form landmark is being named by text that is not the section heading introducing it.",
+            'why': "Form landmarks are best labeled by the heading that introduces them, so screen reader users hear a consistent name whether they land on the form via the landmark list or the heading list. Referencing a non-heading element produces a label that may not align with the visible section title, weakening the programmatic relationships described by WCAG 1.3.1 Info and Relationships and making the form harder to identify when navigating by headings.",
+            'who': "Screen reader users who move between landmarks and headings and expect a form's accessible name to match its visible heading.",
             'impact': ImpactScale.LOW.value,
             'wcag': ['1.3.1'],
-            'remediation': "Reference a heading element when possible"
+            'remediation': "Point aria-labelledby at the id of the heading that introduces the form, rather than another element. For example: <h2 id=\"contact-heading\">Contact us</h2><form aria-labelledby=\"contact-heading\">...</form>."
         },
         'ErrFormEmptyHasNoChildNodes': {
-            'title': "Form element is completely empty with no child nodes",
-            'what': "A <form> element exists in the DOM but has no child nodes at all — no inputs, no text, no markup of any kind inside it.",
-            'why': "Empty forms serve no purpose and confuse assistive technology users",
-            'who': "Screen reader users, keyboard users",
+            'title': "Form element is entirely empty",
+            'what': "A <form> element exists in the DOM but contains no child nodes whatsoever: no inputs, no buttons, no text, and no markup of any kind between its tags.",
+            'why': "An empty form serves no functional purpose yet still appears in the accessibility tree and may be announced as a form region, creating confusion. If the form is meant to be populated dynamically but has not been, users encounter a dead region with nothing to operate. This relates to WCAG 1.3.1 Info and Relationships. The consequence is wasted navigation, misleading structure, and a region that promises interaction but offers none.",
+            'who': "Screen reader users who navigate to a form region and find nothing inside it; keyboard users who tab toward an interactive area that contains no operable controls.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['1.3.1'],
-            'remediation': "Remove empty form elements or add appropriate form controls"
+            'remediation': "Remove the <form> element if it is not used, or populate it with the intended controls and a submit mechanism. If it is filled dynamically, ensure content is present before the form is exposed, or defer rendering the <form> until its controls exist. For example, a real form should contain at least one labelled control: <form> <label for=\"q\">Search</label><input id=\"q\"><button type=\"submit\">Go</button> </form>."
         },
         'ErrFormEmptyHasNoInteractiveElements': {
             'title': "Form has content but no interactive elements",
@@ -1363,22 +1363,22 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Add appropriate input fields, buttons, or other form controls"
         },
         'ErrFormLandmarkAccessibleNameIsBlank': {
-            'title': "Form landmark has blank accessible name",
-            'what': "A form landmark (<form> with an accessible name source, or role=\"form\") has an aria-label or aria-labelledby that resolves to an empty string.",
-            'why': "Forms need clear identification",
-            'who': "Screen reader users",
+            'title': "Form landmark's accessible name resolves to empty",
+            'what': "A form landmark (a <form> element with an accessible name source, or an element with role=\"form\") has an aria-label or aria-labelledby attribute that resolves to an empty string. The label was supplied but evaluates to nothing useful (for example aria-label=\"\" or aria-labelledby pointing to an element that has no text).",
+            'why': "A <form> element only becomes an exposed form landmark when it has an accessible name. When that name is blank, the landmark either disappears from the landmark list or is announced with no identifying text, so a screen reader user moving by landmark cannot tell what the form is for or distinguish it from other forms on the page. This violates WCAG 1.3.1 (Info and Relationships) because the programmatic structure is incomplete, and 2.4.6 (Headings and Labels) because the label does not describe the form's purpose.",
+            'who': "Screen reader users who navigate by landmarks (using rotor or landmark shortcut keys in JAWS, NVDA, VoiceOver) rely on the announced name to locate and identify forms; a blank name leaves them disoriented. Users with cognitive disabilities also benefit from a clear, consistent label that states what the form does.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['1.3.1', '2.4.6'],
-            'remediation': "Add meaningful label describing form purpose"
+            'remediation': "Give the form landmark a short, meaningful accessible name that describes its purpose. Either set a non-empty aria-label (for example aria-label=\"Newsletter signup\"), or use aria-labelledby to reference visible text such as a heading, and make sure that referenced element actually contains text. Example: <form aria-label=\"Search the site\"> or <form aria-labelledby=\"contactHeading\"><h2 id=\"contactHeading\">Contact us</h2> ...</form>. Remove empty label attributes that contribute nothing."
         },
         'ErrFormLandmarkHasAriaLabelAndAriaLabelledByAttrs': {
-            'title': "Form landmark has both aria-label and aria-labelledby",
-            'what': "A form landmark element has both aria-label and aria-labelledby attributes set. Only one labelling method should be used per element.",
-            'why': "Conflicting labeling methods",
-            'who': "Screen reader users",
+            'title': "Form landmark declares both aria-label and aria-labelledby",
+            'what': "A form landmark element has both an aria-label attribute and an aria-labelledby attribute set at the same time. These are two competing ways to provide an accessible name, and only one should be used on a given element.",
+            'why': "When both attributes are present, the accessible name computation in the ARIA spec gives aria-labelledby priority and ignores aria-label entirely. Authors who set both often expect aria-label to apply, so the form may be announced with a different name than intended. This is a structural/semantics defect under WCAG 4.1.2 (Name, Role, Value): the exposed name may not match what the author or user expects, leading to a confusing or wrong announcement.",
+            'who': "Screen reader users hear whichever name aria-labelledby produces, which may not be the intended one; if the labelledby target is wrong or empty, the form may be announced incorrectly or unhelpfully. This is especially disorienting for users navigating by landmarks who depend on accurate names.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['4.1.2'],
-            'remediation': "Use only one labeling method"
+            'remediation': "Decide which labelling mechanism is correct and remove the other. Use aria-labelledby when visible on-screen text should serve as the name; use aria-label when no suitable visible text exists. Example: keep <form aria-labelledby=\"formTitle\"> and delete the aria-label, or keep <form aria-label=\"Payment details\"> and delete the aria-labelledby. Verify the resulting announced name in a screen reader."
         },
         'ErrFormUsesAriaLabelInsteadOfVisibleElement': {
             'title': "Form uses aria-label instead of visible heading or label",
@@ -1390,31 +1390,31 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Use visible heading with aria-labelledby"
         },
         'ErrFormUsesTitleAttribute': {
-            'title': "Form uses title attribute for labeling",
-            'what': "A <form> element relies on the title attribute as its accessible name. The title attribute is exposed inconsistently — screen readers and mobile users may never receive it.",
-            'why': "Title attributes are not reliably accessible",
-            'who': "Screen reader users, mobile users",
+            'title': "Form relies on the title attribute for its name",
+            'what': "A <form> element uses the title attribute as its sole source of accessible name. The title attribute is exposed inconsistently across browsers and assistive technologies, and it is unavailable to touch-only and mobile users who cannot hover.",
+            'why': "The title attribute is an unreliable labelling mechanism: many screen readers do not announce it by default, and it never appears for keyboard or touch users without a hover. Depending on it for the form's name means the name may simply never reach the user. This relates to WCAG 4.1.2 Name, Role, Value. The consequence is a form region that is effectively unnamed for a large share of users.",
+            'who': "Screen reader users whose software does not announce title by default; mobile and touch users who cannot trigger hover-only tooltips; keyboard users who never see the title.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['4.1.2'],
-            'remediation': "Use aria-label or aria-labelledby instead"
+            'remediation': "Provide the form's name with aria-labelledby pointing to a visible heading, or with aria-label. For example: <h2 id=\"order-h\">Place your order</h2><form aria-labelledby=\"order-h\"> ... </form>, or <form aria-label=\"Newsletter sign-up\"> ... </form>. Reserve title only for supplementary, non-essential hints."
         },
         'ErrFoundAriaLevelButNoRoleAppliedAtAll': {
-            'title': "aria-level attribute without role=\"heading\"",
-            'what': "An element has an aria-level attribute but no role attribute at all. aria-level is only meaningful when paired with role=\"heading\".",
-            'why': "aria-level only works with heading role",
-            'who': "Screen reader users",
+            'title': "aria-level present but no role=\"heading\" on the element",
+            'what': "An element carries an aria-level attribute but has no role attribute at all. aria-level is only meaningful when paired with role=\"heading\".",
+            'why': "aria-level supplies the level number for an element acting as a heading, but it does nothing on its own. Without role=\"heading\" (or a native heading element), assistive technology never treats the element as a heading, so the intended heading is invisible in the headings list. This breaks the programmatic structure required by WCAG 1.3.1 Info and Relationships and the name/role/value expectations of 4.1.2, so heading navigation skips the element entirely.",
+            'who': "Screen reader users who navigate by headings and never encounter an element that lacks a heading role.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['1.3.1', '4.1.2'],
-            'remediation': "Add role=\"heading\" or use native heading element"
+            'remediation': "Add role=\"heading\" alongside the aria-level, or better, use a native heading element and drop the ARIA. For example: <div role=\"heading\" aria-level=\"2\">Section title</div>, or simply <h2>Section title</h2>."
         },
         'ErrFoundAriaLevelButRoleIsNotHeading': {
-            'title': "aria-level on element without heading role",
-            'what': "An element has an aria-level attribute set, but its role is not \"heading\" and it is not a native <h1>–<h6>. aria-level only has meaning on heading-role elements.",
-            'why': "aria-level requires heading role to work",
-            'who': "Screen reader users",
+            'title': "aria-level set on an element whose role is not \"heading\"",
+            'what': "An element has an aria-level attribute, but its role is not \"heading\" and it is not a native <h1>-<h6>. aria-level only has meaning on heading-role elements.",
+            'why': "aria-level is defined only for elements with role=\"heading\". On any other role (for example a button or list item) it is ignored, so the element is never announced as a heading and contributes nothing to the headings list. The intended structure is lost, violating WCAG 1.3.1 Info and Relationships and the name/role/value requirement of 4.1.2, and heading-based navigation cannot reach the content.",
+            'who': "Screen reader users who navigate by headings and depend on a correct role/level pairing to find sections.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['1.3.1', '4.1.2'],
-            'remediation': "Add role=\"heading\" or remove aria-level"
+            'remediation': "Either change the element's role to \"heading\" (keeping aria-level), or remove aria-level if the element is not meant to be a heading. For a real heading, prefer native markup: <h2>Section title</h2> instead of role-and-level on a non-heading element."
         },
         'ErrHeaderMissingScope': {
             'title': "Table header (th) element missing scope attribute",
@@ -1426,22 +1426,22 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Add scope=\"col\" for column headers and scope=\"row\" for row headers to all th elements."
         },
         'ErrHreflangAttrEmpty': {
-            'title': "hreflang attribute is empty on link",
+            'title': "Link's hreflang attribute is present but empty",
             'what': "A link's hreflang attribute is present but its value is an empty string, so the language of the linked resource is not declared.",
-            'why': "Empty hreflang provides no language information for the linked resource",
-            'who': "Screen reader users, search engines",
+            'why': "The hreflang attribute is meant to declare the language of the destination resource. An empty value supplies no language information, so assistive technology and other consumers cannot announce or use the target language. While this does not directly fail WCAG 3.1.1 for the current page, it removes useful language metadata that screen readers and search engines rely on.",
+            'who': "Screen reader users who would benefit from knowing the linked resource's language, and search engines that use hreflang for language and regional targeting.",
             'impact': ImpactScale.LOW.value,
             'wcag': ['3.1.1'],
-            'remediation': "Add valid language code or remove empty hreflang attribute"
+            'remediation': "Either give hreflang a valid BCP 47 / ISO 639 value matching the destination language, or remove the empty attribute entirely. For example: <a href=\"/fr/\" hreflang=\"fr\">Version francaise</a>."
         },
         'ErrHreflangNotOnLink': {
-            'title': "hreflang attribute on non-link element",
-            'what': "An hreflang attribute was found on an element that is not an <a>, <area>, or <link>. hreflang is only meaningful on link elements.",
-            'why': "hreflang only works on links",
-            'who': "Screen reader users",
+            'title': "hreflang attribute used on an element that is not a link",
+            'what': "An hreflang attribute was found on an element that is not an <a>, <area>, or <link>. The hreflang attribute is only meaningful on link elements.",
+            'why': "The hreflang attribute describes the language of a resource reached through a hyperlink, so it is only defined on <a>, <area>, and <link>. On any other element it is ignored by browsers and assistive technology, providing no language information and signalling a likely authoring mistake (it does not change how the element's own text is announced).",
+            'who': "Screen reader users and search engines that expect hreflang to describe linked resources; the attribute provides no benefit where it is placed.",
             'impact': ImpactScale.LOW.value,
             'wcag': ['3.1.1'],
-            'remediation': "Move hreflang to anchor elements only"
+            'remediation': "Move hreflang onto the relevant link element. If the goal was to mark the language of the element's own text content, use the lang attribute instead. For example: <a href=\"/fr/\" hreflang=\"fr\">Francais</a> for a link, or <span lang=\"fr\">bonjour</span> for inline text."
         },
         'ErrIframeWithNoTitleAttr': {
             'title': "Iframe element is missing the required title attribute",
@@ -1507,13 +1507,13 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Use nav element or role=\"navigation\" for site navigation, reserve role=\"menu\" for actual application menus with proper ARIA patterns."
         },
         'ErrIncorrectlyFormattedPrimaryLang': {
-            'title': "Language code incorrectly formatted",
-            'what': "The primary language code on the page (e.g., on <html lang=\"...\">) is structurally malformed — wrong number of characters, wrong case for a region subtag, or an invalid separator.",
-            'why': "Malformed codes may not work properly",
-            'who': "Screen reader users",
+            'title': "Page language code is structurally malformed",
+            'what': "The primary language code on the page (for example on <html lang=\"...\">) is structurally malformed, with the wrong number of characters, wrong case for a region subtag, or an invalid separator.",
+            'why': "WCAG 3.1.1 Language of Page requires a valid language tag conforming to BCP 47. A malformed tag such as \"en_US\" (underscore instead of hyphen) or \"eng-USA\" may not be parsed correctly, so a screen reader can fail to match it to a speech engine and fall back to the wrong default voice and pronunciation rules.",
+            'who': "Screen reader users, who may get the wrong voice when the malformed tag cannot be parsed; users of automatic translation tools.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['3.1.1'],
-            'remediation': "Use correct format: \"en-US\" or \"en\""
+            'remediation': "Use a well-formed BCP 47 tag: a two-letter primary subtag, optionally followed by a hyphen and a region subtag. Correct examples: lang=\"en\", lang=\"en-US\", lang=\"fr-CA\". Avoid underscores, three-letter codes where a two-letter code exists, and uppercase primary subtags."
         },
         'ErrInfiniteAnimation': {
             'title': "Animation '{animationName}' runs infinitely without pause controls",
@@ -1526,13 +1526,13 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Provide pause/stop controls for all animations, respect prefers-reduced-motion settings, or limit animation-iteration-count to a finite number. Current CSS:\n{animationCSS}"
         },
         'ErrInvalidAriaLevel': {
-            'title': "Invalid aria-level value (not 1-6)",
-            'what': "An element's aria-level value is outside the valid heading-level range — values must be integers from 1 to 6.",
-            'why': "Invalid levels break heading hierarchy",
-            'who': "Screen reader users",
+            'title': "aria-level value falls outside the valid 1-6 range",
+            'what': "An element's aria-level value is outside the valid heading range; values must be integers from 1 to 6.",
+            'why': "Heading levels map to a six-level outline (h1 through h6). An aria-level outside 1-6 (such as 0, 7, or a non-integer) cannot be placed in that outline, so assistive technology may ignore the level, default it, or expose an inconsistent structure. This undermines the programmatic hierarchy required by WCAG 1.3.1 Info and Relationships and the valid name/role/value expectation of 4.1.2, confusing users who navigate by heading level.",
+            'who': "Screen reader users who navigate by headings and rely on the level number to gauge nesting depth.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['1.3.1', '4.1.2'],
-            'remediation': "Use aria-level values 1 through 6 only"
+            'remediation': "Set aria-level to an integer from 1 to 6 that reflects the heading's place in the outline, or use a native heading element. For example: <div role=\"heading\" aria-level=\"3\">Subsection</div>, or simply <h3>Subsection</h3>."
         },
         'ErrInvalidLanguageCode': {
             'title': "Language attribute contains invalid code \'{found}\' that doesn\'t conform to ISO 639 standards",
@@ -1564,13 +1564,13 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Split the label so each of the {count} fields has its own dedicated label. Use fieldset and legend for grouped fields if they\'re related."
         },
         'ErrLabelMismatchOfAccessibleNameAndLabelText': {
-            'title': "Accessible name doesn\'t match visible label",
-            'what': "A field's computed accessible name does not start with the visible label text. Voice-control users who say the visible text may fail to activate the field.",
-            'why': "Confusing for voice control users",
-            'who': "Voice control users",
+            'title': "Visible label text is not contained in the accessible name",
+            'what': "A field's computed accessible name does not begin with, or contain, the text of its visible label. The name announced to assistive technology and used by voice control differs from what a sighted user reads on screen.",
+            'why': "When the accessible name omits the visible label text, voice-control users who speak the visible words cannot activate or focus the field, and screen reader users hear a name that conflicts with what others describe. This violates WCAG 2.5.3 Label in Name. The consequence is failed voice commands and confusion when sighted and non-sighted users try to communicate about the same control.",
+            'who': "Voice-control users (e.g., Dragon, Voice Control) who target controls by their visible text; screen reader users comparing what they hear to what a sighted helper sees.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['2.5.3'],
-            'remediation': "Make accessible name match visible text"
+            'remediation': "Ensure the accessible name includes the visible label text, ideally at the start. If a control shows \"Search\", do not name it \"Find products\" via aria-label; instead use the visible word: <button>Search</button>, or <input aria-label=\"Search\" ...> matching the visible \"Search\" text. When extra context is needed, append it after the visible text rather than replacing it."
         },
         'ErrLargeTextContrastAA': {
             'title': "Large text ({fontSize}px) fails WCAG AA contrast: {ratio}:1 (required: 3:1)",
@@ -1728,22 +1728,22 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Use fully opaque colors (alpha = 1.0) for link focus indicators: a:focus { outline: 2px solid rgb(0, 102, 204); outline-offset: 2px; } or a:focus { outline: 2px solid #0066cc; }. Choose colors with verified 3:1+ contrast against all backgrounds where links appear (navigation backgrounds, content backgrounds, footer backgrounds). If transparency is desired for aesthetic subtlety, use it for supplementary effects only with an opaque primary indicator: a:focus { outline: 2px solid #0066cc; box-shadow: 0 0 8px rgba(0,102,204,0.3); } - the outline provides accessibility, the shadow provides aesthetic glow. Never rely on transparency alone. Test links in all contexts: in-content links, navigation links, footer links, links over images, links in modals/overlays. If alpha < 1 is required, ensure alpha >= 0.8 and manually verify contrast in every context where links appear. Consider using CSS custom properties to define focus styles centrally and apply consistently across all link types."
         },
         'ErrMainLandmarkHasAriaLabelAndAriaLabelledByAttrs': {
-            'title': "Main landmark has both aria-label and aria-labelledby attributes",
-            'what': "The <main> (or role=\"main\") element has both aria-label and aria-labelledby attributes set, even though only one labelling mechanism is needed.",
-            'why': "Conflicting labeling methods may cause confusion",
-            'who': "Screen reader users",
+            'title': "Main landmark declares both aria-label and aria-labelledby",
+            'what': "The <main> element (or an element with role=\"main\") has both an aria-label attribute and an aria-labelledby attribute set simultaneously. Only one accessible-name mechanism should be applied to the element.",
+            'why': "Per the ARIA accessible name computation, aria-labelledby takes precedence and aria-label is discarded when both are present. If the author intended the aria-label to be the name, the main landmark will be announced differently than expected. This is a Name, Role, Value defect (WCAG 4.1.2): the exposed name may be inconsistent with the author's intent, producing an unexpected announcement for the page's primary content region.",
+            'who': "Screen reader users who jump to the main content by landmark hear whichever name aria-labelledby resolves to, which may be wrong or empty. Because there should be only one main landmark per page, an incorrect or unexpected name on it is particularly disorienting.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['4.1.2'],
-            'remediation': "Use only one labeling method - either aria-label or aria-labelledby"
+            'remediation': "Remove whichever of the two attributes is not needed. Most pages have a single <main> and may not need any label at all; if you do label it, choose one method. Example: keep <main aria-labelledby=\"pageHeading\"> and remove aria-label, or keep <main aria-label=\"Main content\"> and remove aria-labelledby. Confirm the announced name is correct in a screen reader."
         },
         'ErrMainLandmarkHasTabindexOfZeroCanOnlyHaveMinusOneAtMost': {
-            'title': "Main landmark has tabindex=\"0\" which is inappropriate",
-            'what': "The <main> element has tabindex=\"0\", which inserts it into the keyboard tab order. Landmarks should not be tab stops themselves — at most they may use tabindex=\"-1\" to receive programmatic focus.",
-            'why': "Landmarks should not be in the tab order",
-            'who': "Keyboard users",
+            'title': "Main landmark placed in the tab order with tabindex=\"0\"",
+            'what': "The <main> element has tabindex=\"0\", which inserts the landmark container itself into the sequential keyboard tab order. Landmark containers are not meant to be tab stops; at most they may carry tabindex=\"-1\" so script can move focus to them programmatically (for example from a skip link).",
+            'why': "Adding tabindex=\"0\" to a large structural container makes the whole region a focusable stop. Keyboard users must Tab onto an element that has no operable action, screen readers may announce the entire region oddly, and the focus order becomes confusing and longer than necessary. This works against WCAG 2.4.3 (Focus Order), which requires a logical, meaningful focus sequence; a non-interactive landmark in the tab order is a meaningless stop.",
+            'who': "Keyboard-only users (including people with motor disabilities and many screen reader users) encounter an extra, purposeless Tab stop and have to press Tab more times to reach real controls. Screen reader users may also hear the main region announced in an unexpected way when it receives focus.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['2.4.3'],
-            'remediation': "Remove tabindex or use tabindex=\"-1\" if programmatic focus is needed"
+            'remediation': "Remove the tabindex attribute from <main> entirely if nothing focuses it programmatically. If you need to move focus to the main content (for instance from a \"skip to main content\" link), use tabindex=\"-1\" instead, which allows scripted/programmatic focus without adding a tab stop. Example: <main id=\"main\" tabindex=\"-1\"> with a skip link href=\"#main\"."
         },
         'ErrMainLandmarkIsHidden': {
             'title': "Main landmark is hidden from view",
@@ -1756,12 +1756,12 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
         },
         'ErrMainLandmarkMayNotbeChildOfAnotherLandmark': {
             'title': "Main landmark nested inside another landmark",
-            'what': "The <main> element (or role=\"main\") appears nested inside another landmark such as <nav>, <aside>, or <header>. <main> must be a top-level landmark.",
-            'why': "Invalid landmark nesting breaks structure",
-            'who': "Screen reader users",
+            'what': "The <main> element (or an element with role=\"main\") is contained within another landmark region such as <nav>, <aside>, <header>/role=\"banner\", <footer>/role=\"contentinfo\", or another landmark. The main landmark must be a top-level region and cannot be a descendant of another landmark.",
+            'why': "The <main> landmark identifies the page's primary content and is expected to sit at the top of the landmark hierarchy. Nesting it inside another landmark produces an invalid structure: assistive technologies may not list the main landmark correctly, the \"skip to main\" behaviour can break, and the relationship between page regions becomes ambiguous. This violates WCAG 1.3.1 (Info and Relationships) because the conveyed structure no longer matches a valid programmatic relationship.",
+            'who': "Screen reader users who rely on the main landmark to jump straight to primary content may not find it, or may land in the wrong region, when it is buried inside another landmark. Users with cognitive disabilities who depend on predictable, well-organised page structure are also affected.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['1.3.1'],
-            'remediation': "Move main outside of other landmarks"
+            'remediation': "Move the <main> element so it is a top-level landmark, a direct child of <body> (or otherwise outside all other landmarks), and ensure each landmark closes before <main> begins. Example structure: <body><header>...</header><nav>...</nav><main>...</main><footer>...</footer></body>. Have exactly one <main> per page and do not place it inside <nav>, <header>, <aside>, or <footer>."
         },
         'ErrMapAriaHidden': {
             'title': "Interactive map hidden with aria-hidden creates silent focus trap",
@@ -1836,13 +1836,13 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Ensure equivalent information is provided in accessible format elsewhere on the page, or remove aria-hidden/role=\"presentation\" and make the map itself accessible."
         },
         'DiscoMapFound': {
-            'title': "Digital map discovered on page",
-            'what': "Digital map detected with metadata about provider, type, and accessibility features",
-            'why': "Discovery report providing information about maps found on the page for accessibility review.",
-            'who': "Developers and accessibility testers.",
+            'title': "Digital map detected (manual review)",
+            'what': "A digital map was detected on the page, along with metadata about its provider, type, and any apparent accessibility features. This is a discovery notice for review, not a confirmed defect.",
+            'why': "Interactive maps are frequently inaccessible: panning, zooming, and markers may be mouse-only, and the geographic information they convey is often available only visually. Reviewing the map confirms whether keyboard operation and a text or tabular alternative for the underlying information are provided.",
+            'who': "Screen reader users and blind users who cannot perceive the visual map, keyboard-only users who need to operate map controls without a mouse, and users with cognitive disabilities.",
             'impact': ImpactScale.INFO.value,
             'wcag': ['Informational'],
-            'remediation': "Review the map\'s accessibility features and ensure proper implementation."
+            'remediation': "Manually review the map's accessibility. Confirm that map controls are keyboard operable and properly labelled, and that the essential information conveyed by the map (such as locations, directions, or addresses) is also available in an accessible text or tabular form."
         },
         'ErrMissingAccessibleName': {
             'title': "Interactive element has no accessible name",
@@ -1975,22 +1975,22 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Manually test that every mouse-driven interaction on the page can be triggered using only the keyboard. Document keyboard equivalents and ensure any global shortcut handlers do not conflict with assistive-technology key bindings."
         },
         'ErrMultipleBannerLandmarks': {
-            'title': "Multiple banner landmarks found",
-            'what': "More than one banner landmark was found at the top level of the page. The ARIA spec allows only a single banner landmark per page.",
-            'why': "Multiple headers confuse page structure",
-            'who': "Screen reader users",
+            'title': "More than one banner landmark on the page",
+            'what': "More than one banner landmark was detected at the top level of the page. A banner landmark is created by a <header> element that is not nested inside <article>, <aside>, <main>, <nav>, or <section>, or by an element with role=\"banner\". The ARIA model expects at most one banner landmark per page.",
+            'why': "The banner landmark is meant to mark the single, site-wide header region (logo, site title, primary navigation). When multiple banner landmarks exist, screen reader landmark lists show duplicate \"banner\" entries with no way to tell them apart, undermining the purpose of landmarks for orientation. This breaks the expected document structure under WCAG 1.3.1 (Info and Relationships).",
+            'who': "Screen reader users who navigate by landmarks rely on a single, predictable banner to find the top of the page; duplicate banners create ambiguity and force extra exploration to determine which is the real header. Users with cognitive disabilities also lose the benefit of a consistent, unambiguous page structure.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['1.3.1'],
-            'remediation': "Use only one banner landmark"
+            'remediation': "Keep only one top-level banner landmark. Convert the additional ones to non-landmark containers (use a plain <div>) or scope them inside an appropriate sectioning element so they no longer generate a banner. If two header regions are genuinely needed, give each a distinct accessible name with aria-label so they are at least distinguishable, but prefer a single banner. Example: change the secondary <header> to <div class=\"sub-header\">."
         },
         'ErrMultipleContentinfoLandmarks': {
-            'title': "Multiple contentinfo landmarks found",
-            'what': "More than one contentinfo landmark was found at the top level of the page. The ARIA spec allows only a single contentinfo (footer) landmark per page.",
-            'why': "Multiple footers confuse page structure",
-            'who': "Screen reader users",
+            'title': "More than one contentinfo landmark on the page",
+            'what': "More than one contentinfo landmark was detected at the top level of the page. A contentinfo landmark is created by a <footer> element that is not nested inside <article>, <aside>, <main>, <nav>, or <section>, or by an element with role=\"contentinfo\". The ARIA model expects at most one contentinfo landmark per page.",
+            'why': "The contentinfo landmark identifies the single, page-level footer region (copyright, legal links, site-wide info). Multiple contentinfo landmarks produce duplicate, indistinguishable \"contentinfo\" entries in the screen reader landmark list, so users cannot rely on it to jump to the real footer. This breaks the expected document structure under WCAG 1.3.1 (Info and Relationships).",
+            'who': "Screen reader users who navigate by landmarks to reach footer content (such as accessibility statements or legal links) are confused by duplicate contentinfo landmarks and must hunt for the correct one. Users with cognitive disabilities also lose the benefit of a clear, single, predictable footer.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['1.3.1'],
-            'remediation': "Use only one contentinfo landmark"
+            'remediation': "Keep only one top-level contentinfo landmark. Demote extra page-level footers to plain <div> containers, or scope them inside a sectioning element (<article>, <section>, <aside>) so they no longer count as contentinfo. If multiple footer regions are unavoidable, give each a distinct aria-label, but prefer a single contentinfo. Example: change a secondary page footer to <div class=\"sub-footer\">."
         },
         'ErrMultipleH1': {
             'title': "Page contains {count} h1 elements instead of just one",
@@ -2040,13 +2040,13 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Add controls attribute to all video elements, or provide custom accessible controls."
         },
         'ErrNavLandmarkAccessibleNameIsBlank': {
-            'title': "Navigation landmark has blank accessible name",
-            'what': "A navigation landmark (<nav> or role=\"navigation\") has an aria-label or aria-labelledby that resolves to an empty string, so screen readers cannot tell this nav apart from any others.",
-            'why': "Multiple nav areas need labels",
-            'who': "Screen reader users",
+            'title': "Navigation landmark's accessible name resolves to empty",
+            'what': "A navigation landmark (a <nav> element or an element with role=\"navigation\") has an aria-label or aria-labelledby attribute that resolves to an empty string. A labelling attribute is present but produces no text, so the nav has no usable accessible name.",
+            'why': "When a page has more than one navigation region (for example a primary menu, a footer menu, and breadcrumbs), each needs a distinct accessible name so screen reader users can tell them apart in the landmark list. A blank name means several nav landmarks all announce simply as \"navigation\", with no way to distinguish their purpose. This violates WCAG 1.3.1 (Info and Relationships) and 2.4.6 (Headings and Labels), which requires labels that describe purpose.",
+            'who': "Screen reader users navigating by landmarks cannot identify which navigation region they are in, making it hard to choose the right menu and easy to get lost between several identically-named \"navigation\" entries. Users with cognitive disabilities also benefit from clearly named, distinguishable navigation areas.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['1.3.1', '2.4.6'],
-            'remediation': "Add aria-label like \"Main navigation\" or \"Footer navigation\""
+            'remediation': "Give each navigation landmark a non-empty, descriptive accessible name. Use aria-label such as aria-label=\"Main navigation\", aria-label=\"Footer navigation\", or aria-label=\"Breadcrumb\"; or reference visible heading text with aria-labelledby and ensure that target has text. Example: <nav aria-label=\"Main navigation\"> ... </nav>. Remove empty label attributes that resolve to nothing."
         },
         'ErrNavLandmarkContainsOnlyWhiteSpace': {
             'title': "Navigation landmark contains only whitespace",
@@ -2058,13 +2058,13 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Add navigation links or remove the landmark"
         },
         'ErrNavLandmarkHasAriaLabelAndAriaLabelledByAttrs': {
-            'title': "Navigation landmark has both aria-label and aria-labelledby",
-            'what': "A navigation landmark element has both aria-label and aria-labelledby attributes set. Use only one labelling method per element.",
-            'why': "Conflicting labeling methods",
-            'who': "Screen reader users",
+            'title': "Navigation landmark declares both aria-label and aria-labelledby",
+            'what': "A navigation landmark element (<nav> or role=\"navigation\") has both an aria-label attribute and an aria-labelledby attribute set at the same time. These are two competing accessible-name mechanisms; only one should be used per element.",
+            'why': "When both are present, the ARIA accessible name computation uses aria-labelledby and ignores aria-label. If the author intended the aria-label text to name the nav, it will instead be announced with whatever aria-labelledby resolves to, which may be wrong or empty. This is a Name, Role, Value defect (WCAG 4.1.2): the exposed name can be inconsistent with the author's intent, producing a confusing label in the landmark list.",
+            'who': "Screen reader users hear the name produced by aria-labelledby, not the intended aria-label; if the labelledby target is incorrect or missing, the navigation region may be announced inaccurately, making it harder to choose the right menu when navigating by landmark.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['4.1.2'],
-            'remediation': "Use only one labeling method"
+            'remediation': "Pick a single labelling method and remove the other. Use aria-labelledby when visible text (such as a heading) should be the name; use aria-label when there is no suitable visible text. Example: keep <nav aria-label=\"Footer navigation\"> and remove aria-labelledby, or keep <nav aria-labelledby=\"navHeading\"> and remove aria-label. Verify the announced name in a screen reader."
         },
         'ErrNavMissingAccessibleName': {
             'title': "Navigation element lacks accessible name to distinguish it",
@@ -2085,22 +2085,22 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Add aria-label or aria-labelledby to nav element to identify its purpose (e.g., \"Main navigation\", \"Site navigation\")."
         },
         'ErrNegativeTabindex': {
-            'title': "Negative tabindex on interactive element",
-            'what': "An interactive element has a negative tabindex (e.g., tabindex=\"-1\"), which removes it from the keyboard tab order even though it remains visible and clickable.",
-            'why': "Element removed from tab order",
-            'who': "Keyboard users",
+            'title': "Interactive control pulled out of the tab order by negative tabindex",
+            'what': "An interactive element carries a negative tabindex such as tabindex=\"-1\". The element stays visible and clickable with a mouse, but the negative value removes it from the sequential keyboard tab order so Tab will skip past it.",
+            'why': "Because the control is no longer in the tab order, a keyboard user can see and conceptually use it but can never reach it with the keyboard. This fails WCAG 2.1.1 Keyboard and disrupts WCAG 2.4.3 Focus Order, since a functional control becomes operable only by pointer. The consequence is that part of the interface is locked to mouse users only.",
+            'who': "Keyboard-only users who cannot Tab to the control; switch-device and other assistive-technology users who depend on the tab order; screen reader users navigating interactively rather than through reading mode.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['2.4.3'],
-            'remediation': "Use tabindex=\"0\" for interactive elements"
+            'remediation': "If the element is meant to be reachable by keyboard, use tabindex=\"0\" (or remove tabindex entirely for natively focusable elements like <button> and <a href>). Reserve tabindex=\"-1\" for elements that should receive focus only programmatically via element.focus(). Example:\n\n<button tabindex=\"0\">Save</button>"
         },
         'ErrNestedNavLandmarks': {
-            'title': "Navigation landmarks are nested",
-            'what': "A <nav> (or role=\"navigation\") element appears inside another <nav> landmark. Nesting navigation landmarks creates an ambiguous structure for landmark-by-landmark navigation.",
-            'why': "Confusing navigation structure",
-            'who': "Screen reader users",
+            'title': "Navigation landmark nested inside another navigation landmark",
+            'what': "A <nav> element (or element with role=\"navigation\") is contained inside another navigation landmark. The detected nav appears as a child of an outer nav, producing nested navigation landmarks.",
+            'why': "Landmarks are intended to provide a flat, top-level map of page regions. When one navigation landmark is nested inside another, the landmark list shows overlapping or redundant \"navigation\" entries, and landmark-by-landmark navigation becomes ambiguous: it is unclear whether the inner nav is a separate region or part of the outer one. This undermines the predictable structure required by WCAG 1.3.1 (Info and Relationships).",
+            'who': "Screen reader users who move between landmarks encounter confusing, overlapping navigation regions and may skip content or revisit the same links, making orientation harder. Users with cognitive disabilities are also affected by the unclear, redundant structure.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['1.3.1'],
-            'remediation': "Flatten navigation structure"
+            'remediation': "Flatten the navigation structure so navigation landmarks are siblings, not nested. Keep the outer <nav> as a single landmark and convert the inner one to a non-landmark container such as <div> or <ul>, or move it out so it is a separate top-level <nav> with its own distinct aria-label. Example: replace the inner <nav> with <div> when it is simply a sub-section of the same menu."
         },
         'ErrNoAlt': {
             'title': "Image missing alt attribute entirely",
@@ -2322,13 +2322,13 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Wrap navigation menu regions with <nav> elements or apply role=\"navigation\" to containers holding navigation links. Use <nav> for primary site navigation, secondary navigation, breadcrumb navigation, pagination, and in-page table of contents. If you have multiple navigation regions, give each a unique accessible name using aria-label (e.g., <nav aria-label=\"Main navigation\">, <nav aria-label=\"Footer navigation\">) so users can distinguish between them. The primary navigation should typically appear near the top of the page before the main content. Breadcrumb navigation, if present, often appears above the main content. Pagination controls are typically marked as navigation below content listings."
         },
         'ErrNoOutlineOffsetDefined': {
-            'title': "No outline offset defined for focus",
-            'what': "A focus outline is supplied via CSS but no outline-offset is defined, so the outline may be obscured by the element's own background or border.",
-            'why': "Focus indicator may be hard to see",
-            'who': "Keyboard users",
+            'title': "Focus outline defined without outline-offset, risking obscured indicator",
+            'what': "A focus outline is supplied through CSS but no outline-offset is declared, so the outline is drawn flush against the element. Depending on the element's own border, padding, or background, the outline can be partially or fully obscured.",
+            'why': "When the focus ring sits directly on the element edge it can blend into the border or background and become hard to perceive, weakening the focus indicator required by WCAG 2.4.7 Focus Visible. The consequence is that keyboard users may not clearly see which control is focused even though an outline technically exists.",
+            'who': "Keyboard-only users tracking focus through the page; low-vision users for whom an outline merged with the element edge is hard to discern; users on small or low-contrast displays.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['2.4.7'],
-            'remediation': "Add outline-offset for better visibility"
+            'remediation': "Add a small positive outline-offset so the ring sits clear of the element edge, and keep the outline contrast at 3:1 or better. Example:\n\n.control:focus-visible {\n  outline: 2px solid #1a5fb4;\n  outline-offset: 2px;\n}"
         },
         'ErrNoPageLanguage': {
             'title': "HTML element is missing the lang attribute, preventing assistive technologies from determining the primary language of the page",
@@ -2368,13 +2368,13 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Remove tabindex=\"0\" from non-interactive elements, only make elements focusable if they have functionality."
         },
         'ErrOrphanLabelWithNoId': {
-            'title': "Label element exists but has no for attribute",
-            'what': "A <label> element exists but has no for attribute. It does not implicitly wrap a field, so the label is not associated with any control.",
-            'why': "Label is not programmatically associated with any field",
-            'who': "Screen reader users",
+            'title': "Label has no for attribute and wraps no field",
+            'what': "A <label> element has no for attribute and does not implicitly contain a form control inside it. The label is therefore not associated with any field and provides no programmatic name to a control.",
+            'why': "A label must be tied to its field either by a matching for/id pair or by wrapping the control; without either, the label text is just floating content and the field it visually accompanies has no accessible name. This violates WCAG 1.3.1 Info and Relationships. The consequence is that screen reader users hear an unnamed control and clicking the label does not move focus to any field.",
+            'who': "Screen reader users, who reach a field with no announced name; people with motor impairments who lose the enlarged, clickable target a properly associated label provides.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['1.3.1'],
-            'remediation': "Add for attribute pointing to field ID"
+            'remediation': "Associate the label with its field by adding a for attribute that matches the field's id, or by nesting the control inside the label. For example: <label for=\"dob\">Date of birth</label><input id=\"dob\" type=\"date\">, or <label>Date of birth <input type=\"date\"></label>."
         },
         'ErrOutlineIsNoneOnInteractiveElement': {
             'title': "Interactive element has CSS outline:none removing the default focus indicator",
@@ -2404,40 +2404,40 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Remove positive tabindex values and use only tabindex=\"0\" (adds element to natural tab order) or tabindex=\"-1\" (removes from tab order but allows programmatic focus). Let the DOM order determine tab order - if elements need to be reached in a different order, rearrange them in the HTML. If visual order must differ from DOM order for design reasons, consider using CSS Grid or Flexbox with the order property, but be cautious as this can still cause accessibility issues. NOTE: Positive tabindex may be acceptable within interactive SVG widgets (maps, diagrams, data visualizations) where custom navigation flows guide users through different content journeys - these cases generate warnings rather than errors."
         },
         'ErrPrimaryHrefLangNotRecognized': {
-            'title': "hreflang language code not recognized",
+            'title': "Link's hreflang uses an unrecognized primary language subtag",
             'what': "A link's hreflang attribute uses a primary language subtag that is not a recognised ISO 639 language code.",
-            'why': "Invalid hreflang codes provide incorrect information about linked resources",
-            'who': "Screen reader users, search engines",
+            'why': "The hreflang attribute should declare the destination resource's language with a valid tag. An unrecognised primary subtag conveys incorrect or unusable information about the linked resource, so screen readers cannot announce the destination language reliably and search engines cannot perform correct language and regional targeting.",
+            'who': "Screen reader users who rely on accurate destination-language metadata, and search engines that use hreflang for language and regional targeting.",
             'impact': ImpactScale.LOW.value,
             'wcag': ['3.1.1'],
-            'remediation': "Use valid ISO 639-1 language codes"
+            'remediation': "Replace the invalid subtag with a valid BCP 47 / ISO 639-1 code matching the destination language, adding a region subtag only when needed. For example: <a href=\"/fr-ca/\" hreflang=\"fr-CA\">Francais (Canada)</a>."
         },
         'ErrPrimaryLangAndXmlLangMismatch': {
-            'title': "lang and xml:lang attributes don\'t match",
-            'what': "The element has both a lang and an xml:lang attribute, but their values disagree. The HTML spec requires them to match exactly when both are present.",
-            'why': "Conflicting language information",
-            'who': "Screen reader users",
+            'title': "lang and xml:lang attributes declare different languages",
+            'what': "The element has both a lang and an xml:lang attribute, but their values disagree. The HTML specification requires them to match exactly when both are present.",
+            'why': "WCAG 3.1.1 Language of Page depends on a single, unambiguous language declaration. When lang and xml:lang conflict, different processors pick different values (XHTML/XML processing favours xml:lang, HTML parsing favours lang), so the language a screen reader actually applies becomes unpredictable, risking the wrong pronunciation.",
+            'who': "Screen reader users, who may get an unpredictable voice depending on how the document is parsed; users of automatic translation tools.",
             'impact': ImpactScale.LOW.value,
             'wcag': ['3.1.1'],
-            'remediation': "Ensure both attributes have same value"
+            'remediation': "Make both attributes carry the identical, valid BCP 47 / ISO 639 value, or remove one of them. For example: <html lang=\"en\" xml:lang=\"en\"> rather than lang=\"en\" with xml:lang=\"fr\"."
         },
         'ErrPrimaryLangUnrecognized': {
-            'title': "Language code not recognized",
-            'what': "The primary language subtag (e.g., the \"xx\" in lang=\"xx-CA\") is not a recognised ISO 639 language code.",
-            'why': "Invalid language codes prevent proper pronunciation",
-            'who': "Screen reader users",
+            'title': "Page lang attribute uses an unrecognized primary language subtag",
+            'what': "The primary language subtag (for example the \"xx\" in lang=\"xx-CA\") is not a recognised ISO 639 language code.",
+            'why': "WCAG 3.1.1 Language of Page requires the page's default language to be declared with a valid language tag. If the primary subtag is unrecognised, a screen reader cannot match it to any speech engine and reverts to its default voice, so the entire page is read with the wrong pronunciation rules and may be hard or impossible to follow.",
+            'who': "Screen reader users, who hear the whole page in the wrong voice; braille display users and users of automatic translation tools.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['3.1.1'],
-            'remediation': "Use valid ISO 639-1 language codes"
+            'remediation': "Use a valid BCP 47 / ISO 639-1 primary subtag, with a region subtag only when needed. For example: lang=\"en\", lang=\"fr\", or lang=\"fr-CA\" instead of an invented or mistyped code."
         },
         'ErrPrimaryXmlLangUnrecognized': {
-            'title': "xml:lang language code not recognized",
+            'title': "xml:lang attribute uses an unrecognized primary language subtag",
             'what': "The primary language subtag inside an xml:lang attribute is not a recognised ISO 639 language code.",
-            'why': "Invalid xml:lang codes prevent proper pronunciation",
-            'who': "Screen reader users in XML/XHTML contexts",
+            'why': "WCAG 3.1.1 Language of Page requires a valid language tag. In XML and XHTML processing, xml:lang takes precedence over lang, so an unrecognised xml:lang subtag can override an otherwise valid lang value and leave the screen reader with no usable language, forcing its default voice and incorrect pronunciation across the affected content.",
+            'who': "Screen reader users in XML/XHTML contexts, who get the wrong voice when the unrecognised xml:lang overrides a valid lang; users of automatic translation tools.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['3.1.1'],
-            'remediation': "Use valid ISO 639-1 language codes"
+            'remediation': "Use a valid BCP 47 / ISO 639-1 primary subtag in xml:lang, matching the lang attribute. For example: <html lang=\"en\" xml:lang=\"en\"> rather than an unrecognised code such as xml:lang=\"xx\"."
         },
         'ErrRedundantAlt': {
             'title': "Alt text contains redundant words like \"image of\" or \"picture of\"",
@@ -2449,49 +2449,49 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Remove \"image of\", \"picture of\", \"graphic of\" from alt text; describe the content directly."
         },
         'ErrRegionLandmarkHasAriaLabelAndAriaLabelledByAttrs': {
-            'title': "Region landmark has both aria-label and aria-labelledby",
-            'what': "A region landmark element has both aria-label and aria-labelledby attributes set. Choose one labelling method, not both.",
-            'why': "Conflicting labeling methods",
-            'who': "Screen reader users",
+            'title': "Region landmark declares both aria-label and aria-labelledby",
+            'what': "A region landmark element (role=\"region\", or a <section> that has an accessible-name source) has both an aria-label attribute and an aria-labelledby attribute set at the same time. Only one accessible-name mechanism should be used on the element.",
+            'why': "When both are present, the ARIA accessible name computation honours aria-labelledby and discards aria-label. A region landmark only stays exposed when it has an accessible name, so if the author relied on aria-label but aria-labelledby resolves to nothing, the region may lose its name or be announced with the wrong text. This is a Name, Role, Value defect (WCAG 4.1.2): the exposed name may not match the author's intent.",
+            'who': "Screen reader users navigating by landmarks hear whatever aria-labelledby produces, which can be incorrect or empty, making it hard to identify and choose the region. Users with cognitive disabilities depend on accurate region names to understand page organisation.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['4.1.2'],
-            'remediation': "Use only one labeling method"
+            'remediation': "Keep one labelling method and delete the other. Use aria-labelledby when visible text (such as the section's heading) should name the region; use aria-label when no suitable visible text exists. Example: keep <section aria-labelledby=\"statsHeading\"> and remove aria-label, or keep <section aria-label=\"Quarterly statistics\"> and remove aria-labelledby. Confirm the announced name in a screen reader."
         },
         'ErrRegionQualifierForHreflangUnrecognized': {
-            'title': "hreflang region qualifier not recognized",
-            'what': "The region subtag inside a link's hreflang attribute is not a recognised ISO 3166-1 country code.",
-            'why': "Invalid region codes in hreflang attributes",
-            'who': "Screen reader users, search engines",
+            'title': "Unrecognized region subtag in a link's hreflang value",
+            'what': "The region (country) subtag inside a link's hreflang attribute is not a valid ISO 3166-1 alpha-2 country code. For example, a link declares hreflang=\"en-XY\" where \"XY\" is not an assigned country code.",
+            'why': "The hreflang attribute tells assistive technologies and search engines the language and regional variant of the linked resource. A region subtag that is not a recognised ISO 3166-1 code is invalid, so consumers may ignore the whole tag or misinterpret the target's locale. While the impact on direct page reading is limited, it weakens the programmatic language information that supports WCAG 3.1.1 (Language of Page) and correct localisation.",
+            'who': "Screen reader users benefit when language and region metadata is valid because it supports correct pronunciation and locale handling of linked content; an invalid region code undermines that. Search engines and other tools that use hreflang to serve the right regional version are also misled.",
             'impact': ImpactScale.LOW.value,
             'wcag': ['3.1.1'],
-            'remediation': "Use valid ISO 3166-1 region codes"
+            'remediation': "Replace the invalid region subtag with a valid ISO 3166-1 alpha-2 country code, or drop the region subtag and keep just the language code. Examples: use hreflang=\"en-US\", hreflang=\"en-GB\", or hreflang=\"fr-CA\"; if only language matters, use hreflang=\"en\". Verify codes against the official ISO 3166-1 list."
         },
         'ErrRegionQualifierForPrimaryLangNotRecognized': {
-            'title': "Region qualifier in primary language code not recognized (e",
-            'what': "Region qualifier in primary language code not recognized (e.g., \"en-XY\")",
-            'why': "Invalid region codes may cause incorrect pronunciation",
-            'who': "Screen reader users",
+            'title': "Unrecognized region subtag in the page's primary lang value",
+            'what': "The region (country) subtag in the page's primary language declaration (the lang attribute, e.g. on <html>) is not a recognised ISO 3166-1 alpha-2 country code, for example lang=\"en-XY\". The language part may be valid, but the region qualifier after the hyphen is not.",
+            'why': "Screen readers use the document's lang value to select the correct voice, pronunciation rules, and accent. When the region subtag is invalid, the language tag may be rejected or misinterpreted, so the synthesizer can fall back to the wrong locale, mispronouncing words or applying the wrong accent. This weakens compliance with WCAG 3.1.1 (Language of Page), which requires a valid, programmatically determinable page language.",
+            'who': "Screen reader users are directly affected: an invalid region code can cause text to be read with the wrong pronunciation or accent, reducing comprehension. Users relying on automatic translation or locale-aware tools may also get incorrect results.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['3.1.1'],
-            'remediation': "Use valid ISO 3166-1 region codes like \"en-US\", \"en-GB\""
+            'remediation': "Use a valid ISO 3166-1 alpha-2 region subtag, or omit the region and keep only the language. Examples: lang=\"en-US\", lang=\"en-GB\", lang=\"en-CA\", or simply lang=\"en\". Check the region code against the official ISO 3166-1 list and ensure the full tag is a well-formed BCP 47 language tag."
         },
         'ErrRegionQualifierForPrimaryXmlLangNotRecognized': {
-            'title': "Region qualifier in xml:lang not recognized",
-            'what': "The region subtag inside an xml:lang attribute is not a recognised ISO 3166-1 country code.",
-            'why': "Invalid region codes in xml:lang may cause issues",
-            'who': "Screen reader users",
+            'title': "Unrecognized region subtag in the xml:lang value",
+            'what': "The region (country) subtag inside an xml:lang attribute is not a recognised ISO 3166-1 alpha-2 country code, for example xml:lang=\"en-XY\". The language portion may be valid, but the region qualifier after the hyphen is not assigned.",
+            'why': "The xml:lang attribute declares language for XML/XHTML processing and is used alongside or instead of lang to determine pronunciation and locale. An invalid region subtag makes the language tag malformed, so assistive technologies may ignore it or pick the wrong voice and pronunciation rules. This weakens conformance with WCAG 3.1.1 (Language of Page), which requires a valid, programmatically determinable language.",
+            'who': "Screen reader users may hear text pronounced with the wrong accent or rules when the language tag is invalid, reducing comprehension. Tools that depend on language metadata for translation or locale handling are also misled.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['3.1.1'],
-            'remediation': "Use valid ISO 3166-1 region codes"
+            'remediation': "Use a valid ISO 3166-1 alpha-2 region subtag in xml:lang, or remove the region and keep just the language. Examples: xml:lang=\"en-US\", xml:lang=\"fr-CA\", or xml:lang=\"en\". Keep xml:lang and lang consistent on the same element, and validate the full tag as well-formed BCP 47."
         },
         'ErrRoleOfHeadingButNoLevelGiven': {
-            'title': "role=\"heading\" without aria-level",
-            'what': "An element has role=\"heading\" but no aria-level attribute. Without aria-level, assistive tech cannot determine the heading's hierarchy level.",
-            'why': "Heading level is undefined",
-            'who': "Screen reader users",
+            'title': "role=\"heading\" declared without an aria-level",
+            'what': "An element has role=\"heading\" but no aria-level attribute. Without aria-level, assistive technology cannot determine the heading's place in the hierarchy.",
+            'why': "An ARIA heading has no implicit level the way <h1>-<h6> do, so role=\"heading\" requires aria-level to state where it sits in the outline. Without it, screen readers may default to level 2 or announce no level at all, producing an ambiguous or wrong structure. This weakens the programmatic hierarchy required by WCAG 1.3.1 Info and Relationships and the complete name/role/value expectation of 4.1.2, so users navigating by level cannot tell how the heading nests.",
+            'who': "Screen reader users who navigate by headings and use the level number to understand nesting and section depth.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['1.3.1', '4.1.2'],
-            'remediation': "Add aria-level attribute with value 1-6"
+            'remediation': "Add an aria-level from 1 to 6, or replace the ARIA with a native heading that carries an implicit level. For example: <div role=\"heading\" aria-level=\"2\">Section title</div>, or simply <h2>Section title</h2>."
         },
         'ErrSVGNoAccessibleName': {
             'title': "Inline SVG lacks accessible name and proper context-specific handling",
@@ -2550,13 +2550,13 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Manually review this interactive SVG for: (1) Keyboard accessibility - all interactive elements must be keyboard operable with logical tab order, use tabindex=\"0\" for custom focusable elements, avoid positive tabindex values; (2) Focus indicators - ensure visible focus on all interactive elements; (3) ARIA implementation - use appropriate roles (button, link, etc.) for interactive elements, provide aria-label or aria-labelledby for all controls, announce state changes with aria-live regions; (4) Instructions - provide visible or aria-describedby instructions for complex interaction patterns; (5) Alternative access - consider providing equivalent functionality in standard HTML for complex interactions. Test thoroughly with keyboard-only navigation and screen readers (NVDA, JAWS, VoiceOver). For simple interactive SVGs, consider using standard HTML controls instead."
         },
         'ErrTTabindexOnNonInteractiveElement': {
-            'title': "Tabindex attribute on non-interactive element",
-            'what': "A tabindex attribute is set on a non-interactive element (e.g., <div>, <p>, <section>) without an accompanying role or keyboard handler, so focus lands on an element that does nothing.",
-            'why': "Non-interactive elements should not be in tab order unless they serve a specific purpose",
-            'who': "Keyboard users",
+            'title': "Non-interactive element forced into tab order by tabindex",
+            'what': "A tabindex attribute is set on a non-interactive element such as <div>, <p>, or <section> that has no ARIA role and no keyboard event handler. Focus therefore lands on an element that performs no action and exposes no control.",
+            'why': "Adding a non-functional element to the tab order creates a confusing dead stop: keyboard users Tab onto something that looks like a control but does nothing, which breaks the logical WCAG 2.4.3 Focus Order and wastes keystrokes. The consequence is a navigation path cluttered with meaningless stops.",
+            'who': "Keyboard-only users who must Tab through extra empty stops; screen reader users who hear a focusable element announced with no role or action; users with cognitive differences confused by focus landing on inert content.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['2.4.3'],
-            'remediation': "Remove tabindex from non-interactive elements or make them properly interactive"
+            'remediation': "If the element is not interactive, remove the tabindex so it stays out of the tab order. If it genuinely needs to behave as a control, give it a proper role, keyboard handlers, and tabindex=\"0\" \u2014 or better, use a native interactive element. Example:\n\n<div>Read-only content</div>  <!-- no tabindex -->\n<button type=\"button\">Activate</button>  <!-- real control -->"
         },
         'ErrTabOrderViolation': {
             'title': "Tab order diverges: <{currentElement.tag}> visually left of previous element but tabs after it",
@@ -2579,13 +2579,13 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Manually verify the visual layout: 1) If these elements appear on the same horizontal row, fix the DOM order to match visual left-to-right order. 2) If they're on clearly different rows (e.g., header navigation vs main content), the current order may be correct and you can ignore this warning. Consider adding more vertical spacing between rows to avoid ambiguous overlap."
         },
         'ErrTabindexOfZeroOnNonInteractiveElement': {
-            'title': "tabindex=\"0\" on non-interactive element",
-            'what': "A non-interactive element (e.g., <div>, <span>, <p>) has tabindex=\"0\", inserting it into the tab order even though it has no role, keyboard handlers, or apparent reason to receive focus.",
-            'why': "Non-interactive elements in tab order",
-            'who': "Keyboard users",
+            'title': "Static element added to tab order with tabindex=\"0\"",
+            'what': "A non-interactive element such as <div>, <span>, or <p> has tabindex=\"0\", inserting it into the natural keyboard tab order even though it has no role, no keyboard handlers, and no apparent reason to receive focus.",
+            'why': "tabindex=\"0\" makes the element a tab stop, so keyboard users land on static content that offers nothing to do. This adds noise to the WCAG 2.4.3 Focus Order and, for screen reader users, announces a focusable item with no role. The consequence is slower, more confusing keyboard navigation.",
+            'who': "Keyboard-only users who hit needless tab stops; screen reader users who encounter a focusable element with no role or purpose; users with cognitive differences who expect focus to mean an actionable control.",
             'impact': ImpactScale.LOW.value,
             'wcag': ['2.4.3'],
-            'remediation': "Remove tabindex from non-interactive elements"
+            'remediation': "Remove tabindex=\"0\" from purely presentational content. Only static elements that legitimately need programmatic focus (e.g., a region focused after navigation) should instead use tabindex=\"-1\". Example:\n\n<p>Informational text</p>  <!-- no tabindex -->"
         },
         'ErrTabindexNoVisibleFocus': {
             'title': "Interactive element with tabindex lacks a visible focus indicator",
@@ -2778,13 +2778,13 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Replace border-based or box-shadow-based focus with outline: [tabindex]:focus { outline: 2px solid #0066cc; outline-offset: 2px; }. Provides clear indication without layout shift. If box-shadow or border preferred, ensure: (1) zero offset for complete coverage (box-shadow: 0 0 0 3px #color), (2) sufficient thickness (at least 2px), (3) 3:1+ contrast, (4) not clipped by parent overflow:hidden. Can combine: [tabindex]:focus { outline: 2px solid #0066cc; outline-offset: 2px; box-shadow: 0 0 0 4px rgba(0,102,204,0.2); }. Test by tabbing through custom widgets to verify: (1) no layout shift occurs, (2) focus is immediately visible, (3) widget functionality not disrupted by focus indicator. For tab panels, ensure tabs don't resize on focus. For accordions, ensure headers don't shift on focus."
         },
         'ErrTableMissingCaption': {
-            'title': "Data table lacks caption element to describe its content",
+            'title': "Data table has no <caption> describing its content",
             'what': "A <table> presenting data has no <caption> element to describe what the table contains.",
-            'why': "Without captions, users may not understand the table\'s purpose or content before navigating through it.",
-            'who': "Screen reader users who need table context, users with cognitive disabilities.",
+            'why': "A caption acts as the table's accessible title and is announced when a screen reader user enters the table. Without it, users have no summary of the table's purpose before navigating cell by cell, making it harder to decide whether the table is relevant and to keep oriented within it. This relates to WCAG 1.3.1 Info and Relationships.",
+            'who': "Screen reader users who need context before reading a table cell by cell, and users with cognitive disabilities who benefit from a clear description of the table's purpose.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['1.3.1'],
-            'remediation': "Add <caption> element as first child of table describing what data the table contains."
+            'remediation': "Add a <caption> as the first child of the <table>, briefly describing the data it presents, for example: <table><caption>Quarterly sales by region</caption> ... </table>. Keep it concise and specific to the table's content."
         },
         'ErrTableNoColumnHeaders': {
             'title': "Data table has no column headers (th elements)",
@@ -2891,13 +2891,13 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Add descriptive title attribute to video iframes describing the video content."
         },
         'ErrWrongTabindexForInteractiveElement': {
-            'title': "Inappropriate tabindex on interactive element",
-            'what': "An interactive element (e.g., a custom widget) has a tabindex value inconsistent with its role — for example, tabindex=\"-1\" on something the user is supposed to be able to tab to.",
-            'why': "Tab order doesn\'t match visual order",
-            'who': "Keyboard users",
+            'title': "Interactive element has tabindex inconsistent with its role",
+            'what': "An interactive element, such as a custom widget, carries a tabindex value that conflicts with how it must behave \u2014 for example tabindex=\"-1\" on a control the user is expected to be able to Tab to, or a positive value that reorders it away from its visual position.",
+            'why': "When a control's tabindex contradicts its role, the focus sequence no longer matches the visual and logical layout, breaking WCAG 2.4.3 Focus Order and potentially WCAG 2.1.1 Keyboard if the element drops out of the tab order entirely. The consequence is unpredictable keyboard navigation that does not follow the order users see.",
+            'who': "Keyboard-only users who expect Tab to follow the visible layout; screen reader users navigating interactively; users with cognitive differences who depend on a predictable, logical focus path.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['2.4.3'],
-            'remediation': "Let natural tab order work, avoid tabindex"
+            'remediation': "Let the natural DOM order drive the tab sequence: use tabindex=\"0\" for custom controls that should be reachable and avoid positive tabindex values entirely. Reserve tabindex=\"-1\" for roving-tabindex composite widgets where it is part of the pattern. Example:\n\n<div role=\"button\" tabindex=\"0\">Custom action</div>"
         },
         'WarnFieldLabelledUsingAriaLabel': {
             'title': "Field is labeled using aria-label, which is valid but may have usability considerations",
@@ -2938,13 +2938,13 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Implement CSS prefers-contrast media query to detect and support user\'s OS contrast preference. Add @media (prefers-contrast: more) { } rules with increased contrast ratios for high contrast mode. Ensure significantly higher contrast ratios in high contrast mode (ideally 7:1 or higher for normal text). Test with actual OS high contrast mode enabled across different browsers and operating systems (Windows High Contrast Mode, macOS Increase Contrast). Consider using CSS custom properties (variables) to make contrast adjustments more maintainable. Example: @media (prefers-contrast: more) { body { background: #000; color: #fff; } a { color: #0ff; text-decoration: underline; } }. Ensure all UI elements including borders, buttons, and form controls have sufficient contrast in high contrast mode."
         },
         'RegionLandmarkAccessibleNameIsBlank': {
-            'title': "Region landmark has blank accessible name",
-            'what': "An element with role=\"region\" (or a <section> with an accessible name source) was found whose aria-label or aria-labelledby value resolves to an empty string, so the landmark has no announced name.",
-            'why': "Blank labels provide no information",
-            'who': "Screen reader users",
+            'title': "Region landmark's accessible name resolves to empty",
+            'what': "An element with role=\"region\" (or a <section> that has an accessible-name source) was found whose aria-label or aria-labelledby value resolves to an empty string, so the landmark has no announced name.",
+            'why': "A generic region only becomes an exposed landmark when it carries an accessible name; without one, a <section> is not a landmark at all, and a role=\"region\" with a blank name appears in the landmark list as an unlabelled \"region\" that conveys nothing. Screen reader users cannot tell what the region contains or distinguish it from other regions. This violates WCAG 1.3.1 (Info and Relationships) and 2.4.6 (Headings and Labels), which require descriptive labels.",
+            'who': "Screen reader users who navigate by landmarks cannot identify or purposefully jump to the region, and unlabelled regions add clutter to the landmark list without helping orientation. Users with cognitive disabilities also rely on named regions to understand how the page is organised.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['1.3.1', '2.4.6'],
-            'remediation': "Add meaningful label text"
+            'remediation': "Provide a short, meaningful accessible name. Set a non-empty aria-label (for example aria-label=\"Search results\"), or use aria-labelledby to point at visible heading text that actually contains characters. Example: <section aria-labelledby=\"resultsHeading\"><h2 id=\"resultsHeading\">Search results</h2> ...</section>. If a section does not need to be a landmark, remove role=\"region\" and the empty label rather than leaving a nameless region."
         },
         'ErrHeadingAccessibleNameMismatch': {
             'title': "Visible heading text doesn\'t match its accessible name",
@@ -2956,22 +2956,22 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Ensure visible text starts the accessible name (e.g., visible 'Support' should be at the start of aria-label, like 'Support: Customer Service')"
         },
         'WarnAnchorTargetTabindex': {
-            'title': "Anchor target element has unnecessary tabindex",
-            'what': "An element that is the target of an in-page anchor link has tabindex set unnecessarily. Modern browsers focus anchor targets without tabindex.",
-            'why': "Elements that are link targets don\'t need tabindex; adding it may create confusion.",
-            'who': "Keyboard users encountering unexpected tab stops.",
+            'title': "Anchor link target carries an unnecessary tabindex",
+            'what': "An element that serves as the destination of an in-page anchor link has a tabindex attribute set even though it is not itself an interactive control. Modern browsers move focus to anchor targets without requiring tabindex.",
+            'why': "Adding tabindex to a non-interactive link target can insert it as an extra tab stop, so keyboard users encounter an unexpected stop on content that does nothing, cluttering the WCAG 2.4.3 Focus Order and conflicting with the keyboard expectations of WCAG 2.1.1 Keyboard. The consequence is a confusing extra stop during Tab navigation.",
+            'who': "Keyboard-only users who meet an unexpected tab stop; screen reader users who hear a focusable element announced without a role; users who navigate primarily with the Tab key.",
             'impact': ImpactScale.LOW.value,
             'wcag': ['2.1.1'],
-            'remediation': "Remove tabindex from elements that are only link targets, not interactive controls."
+            'remediation': "If the element is only the target of a skip or in-page link and is not interactive, remove tabindex; browsers will still focus it on navigation. If you must guarantee programmatic focus across older browsers, use tabindex=\"-1\" rather than tabindex=\"0\". Example:\n\n<h2 id=\"section\" tabindex=\"-1\">Section heading</h2>"
         },
         'WarnBannerLandmarkAccessibleNameUsesBanner': {
-            'title': "Banner landmark uses generic term \"banner\" in label",
-            'what': "A banner landmark's accessible name contains the word \"banner\" (e.g., \"Site banner\"). Screen readers already announce the role as \"banner\", so this duplicates information.",
-            'why': "Redundant labeling",
-            'who': "Screen reader users",
+            'title': "Banner landmark's name repeats the word \"banner\"",
+            'what': "A banner landmark's accessible name contains the word \"banner\" (for example aria-label=\"Site banner\"). Screen readers already announce the landmark's role as \"banner\", so including the word in the name repeats that role.",
+            'why': "Assistive technologies announce both the accessible name and the role, so a name like \"Site banner\" is heard as roughly \"Site banner, banner\". This redundancy adds noise and provides no extra information, working against the intent of WCAG 2.4.6 (Headings and Labels) that labels be useful and descriptive rather than repetitive.",
+            'who': "Screen reader users hear the role term twice, which is verbose and slightly slows navigation; while not blocking, it reduces the efficiency that clear labels are meant to provide.",
             'impact': ImpactScale.LOW.value,
             'wcag': ['2.4.6'],
-            'remediation': "Use descriptive label or rely on implicit role"
+            'remediation': "Remove the redundant role word from the name, or drop the label entirely if the role already conveys the meaning. A single banner per page usually needs no label at all. If a name is helpful, describe the content rather than the role. Example: change aria-label=\"Site banner\" to no label, or to a meaningful distinguishing name only when there is a real need."
         },
         'WarnButtonGenericText': {
             'title': "Button uses generic text like \"Click here\", \"Submit\", or \"OK\" without context",
@@ -3010,40 +3010,40 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Move color styles to external CSS files linked with <link> tags. Organize colors using CSS custom properties for easy theming. Implement user preference support with @media (prefers-color-scheme) and similar queries. Consider providing theme switcher functionality. Ensure your external stylesheets are properly cached for performance."
         },
         'WarnComplementaryLandmarkAccessibleNameUsesComplementary': {
-            'title': "Complementary landmark label uses generic term \"complementary\"",
-            'what': "A complementary landmark's accessible name contains the word \"complementary\". Screen readers already announce the role, so this duplicates information.",
-            'why': "Generic labels don\'t describe specific content",
-            'who': "Screen reader users",
+            'title': "Complementary landmark's name repeats the word \"complementary\"",
+            'what': "A complementary landmark's accessible name contains the word \"complementary\" (for example aria-label=\"Complementary content\"). Screen readers already announce the landmark's role as \"complementary\", so the name duplicates the role.",
+            'why': "Because assistive technologies announce both name and role, a label such as \"Complementary content\" is heard alongside the role and effectively repeats it, while telling the user nothing about what the region actually contains. This conflicts with WCAG 2.4.6 (Headings and Labels), which calls for descriptive labels that help users understand purpose.",
+            'who': "Screen reader users hear redundant role terminology and still cannot tell what is inside the region, making it harder to decide whether to enter it; the lack of a meaningful name reduces navigation efficiency.",
             'impact': ImpactScale.LOW.value,
             'wcag': ['2.4.6'],
-            'remediation': "Use descriptive labels like \"Related articles\" or \"Sidebar\""
+            'remediation': "Replace the generic label with one that describes the content, or remove it and rely on the role if the region is unambiguous. Examples: aria-label=\"Related articles\", aria-label=\"Author bio\", or aria-label=\"Sidebar\". Avoid repeating the role word \"complementary\" in the name."
         },
         'WarnComplementaryLandmarkHasNoLabel': {
-            'title': "Complementary landmark lacks a label",
-            'what': "A complementary landmark exists without an aria-label or aria-labelledby. If the page has multiple complementary regions, users won't be able to tell them apart.",
-            'why': "Hard to distinguish multiple complementary sections",
-            'who': "Screen reader users",
+            'title': "Complementary landmark has no accessible name",
+            'what': "A complementary landmark (an <aside> element or an element with role=\"complementary\") exists with no aria-label or aria-labelledby, so it has no accessible name. If the page contains more than one complementary region, the unlabelled ones cannot be told apart.",
+            'why': "When a page has several complementary regions (such as a sidebar, a related-links box, and a promotional panel), all of them announce simply as \"complementary\" in the landmark list unless each has a distinct name. Without labels, users navigating by landmark cannot identify or choose among them. This relates to WCAG 1.3.1 (Info and Relationships) and 2.4.6 (Headings and Labels), which support distinguishable, well-named regions.",
+            'who': "Screen reader users who navigate by landmarks struggle to differentiate multiple identically-announced complementary regions and may not know which one holds the content they want. Users with cognitive disabilities also benefit from clearly named, distinguishable regions.",
             'impact': ImpactScale.LOW.value,
             'wcag': ['1.3.1', '2.4.6'],
-            'remediation': "Add aria-label or aria-labelledby to identify the purpose"
+            'remediation': "Add a descriptive accessible name to each complementary landmark, especially when more than one is present. Use aria-label (for example aria-label=\"Related articles\") or aria-labelledby pointing at a visible heading. Example: <aside aria-label=\"Newsletter signup\"> ... </aside>. A single complementary region on a page may not strictly need a name, but labelling it still aids clarity."
         },
         'WarnContentInfoLandmarkHasNoLabel': {
-            'title': "Contentinfo landmark lacks a label",
-            'what': "A contentinfo (footer) landmark has no aria-label or aria-labelledby. While usually there is only one footer, an explicit label still helps screen reader users orient.",
-            'why': "May be harder to identify purpose",
-            'who': "Screen reader users",
+            'title': "Contentinfo landmark has no accessible name",
+            'what': "A contentinfo (footer) landmark was detected that has neither an aria-label nor an aria-labelledby attribute, so it has no explicit accessible name. A page typically has only one contentinfo region, but an explicit label still helps screen reader users confirm what they have jumped to when navigating the landmark list.",
+            'why': "When a contentinfo landmark has no accessible name, screen readers announce only its role (\"contentinfo\") in the landmarks list. If the page ever exposes more than one contentinfo region, or the user is scanning a long list of landmarks, the unlabelled region is harder to recognise and tell apart from other footer-like areas. WCAG 2.4.6 Headings and Labels and 1.3.1 Info and Relationships expect that meaningful regions are programmatically identifiable, so a missing label weakens orientation and slows navigation.",
+            'who': "Screen reader users who navigate by landmarks (people who are blind or have low vision), and users of voice-control or assistive technologies that rely on accessible names to jump to or describe page regions.",
             'impact': ImpactScale.LOW.value,
             'wcag': ['1.3.1', '2.4.6'],
-            'remediation': "Add descriptive label if multiple contentinfo exist"
+            'remediation': "Give the contentinfo landmark a concise, descriptive accessible name with aria-label or aria-labelledby, especially if more than one contentinfo region can appear on the page. Reference a visible heading where one exists, for example: <footer aria-labelledby=\"footer-heading\"><h2 id=\"footer-heading\">Site footer</h2>...</footer>, or use <footer aria-label=\"Site footer\">. Avoid including the word \"footer\" or \"contentinfo\" as the only content of the label, since the role is already announced."
         },
         'WarnContentOutsideLandmarks': {
-            'title': "Content exists outside of landmark regions - DEPRECATED, use ErrContentOutsideLandmarks",
-            'what': "Content exists outside of landmark regions",
-            'why': "Content outside landmarks is harder to find and navigate for screen reader users.",
-            'who': "Screen reader users who navigate by landmarks.",
+            'title': "Content rendered outside all landmark regions (deprecated check)",
+            'what': "Page content was found that is not contained within any landmark region such as banner/header, navigation, main, contentinfo/footer, or complementary/aside. Note: this check is deprecated and superseded by ErrContentOutsideLandmarks; new findings should be reported under that code.",
+            'why': "Screen reader users frequently navigate by jumping between landmarks rather than reading top to bottom. Content placed outside every landmark is skipped over by this landmark-based navigation, so it can be missed entirely or only encountered by accident. WCAG 1.3.1 Info and Relationships requires that the structure and relationships of content be programmatically determinable; orphaned content breaks the expected page structure and makes the page harder to scan and understand.",
+            'who': "Screen reader users who navigate by landmarks (people who are blind or have low vision), and keyboard or switch-device users who rely on a predictable, well-structured region order.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['1.3.1'],
-            'remediation': "Ensure all content is within appropriate landmarks (header, nav, main, footer, aside)."
+            'remediation': "Ensure every meaningful piece of content sits inside an appropriate landmark. Wrap primary content in <main>, site header/branding in <header> (banner), site-wide links in <nav>, footer information in <footer> (contentinfo), and supporting content in <aside> (complementary). For example, move stray content into the existing <main> element, or wrap it: <main><p>Previously orphaned content</p></main>. Verify there is exactly one <main> and that no significant content remains outside the landmark set."
         },
         'ErrContentOutsideLandmarks': {
             'title': "Content exists outside of landmark regions, making it invisible to screen reader landmark navigation",
@@ -3055,13 +3055,13 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Place all meaningful page content within appropriate HTML5 landmarks or ARIA landmark roles: (1) Main content in <main> or role=\"main\"; (2) Site navigation in <nav> or role=\"navigation\"; (3) Page header/masthead in <header> or role=\"banner\" (when direct child of body); (4) Page footer in <footer> or role=\"contentinfo\" (when direct child of body); (5) Complementary content in <aside> or role=\"complementary\"; (6) Search functionality in role=\"search\"; (7) Forms in <form> with accessible name to create form landmark. Acceptable exceptions: skip links at the very top of <body>, hidden content (aria-hidden=\"true\" or display:none), and scripts/noscript elements. Test by navigating the page using only landmark navigation to ensure all content is discoverable. NOTE: This is a WCAG Conformance Requirement 5.2.4 Accessibility Supported failure - the HTML structure is not being used in an accessibility-supported way."
         },
         'WarnContentinfoLandmarkAccessibleNameUsesContentinfo': {
-            'title': "Contentinfo landmark uses generic term \"contentinfo\" in label",
-            'what': "A contentinfo landmark's accessible name contains the word \"contentinfo\". Screen readers already announce the role, so this duplicates information and exposes a technical term to users.",
-            'why': "Redundant labeling",
-            'who': "Screen reader users",
+            'title': "Contentinfo label repeats the technical role word \"contentinfo\"",
+            'what': "A contentinfo landmark's accessible name (set via aria-label or aria-labelledby) contains the word \"contentinfo\". Screen readers already announce the role of this region, so including the role word in the label duplicates that information and exposes an internal technical term that means nothing to most users.",
+            'why': "Assistive technologies announce both the accessible name and the role, so a label like \"Contentinfo\" is read as something close to \"Contentinfo, contentinfo landmark\". This redundancy adds verbosity without adding meaning, and the term \"contentinfo\" is jargon that ordinary users do not recognise. WCAG 2.4.6 Headings and Labels calls for labels that describe topic or purpose; a label echoing the role fails to describe what the region actually contains.",
+            'who': "Screen reader users (people who are blind or have low vision) who hear the redundant, jargon-laden announcement, and cognitive-accessibility users who are confused by unfamiliar technical terminology.",
             'impact': ImpactScale.LOW.value,
             'wcag': ['2.4.6'],
-            'remediation': "Use descriptive label or rely on implicit role"
+            'remediation': "Replace the role word with a description of the region's purpose, or simply omit the label and rely on the implicit role when there is only one footer. For example, use <footer aria-label=\"Company information and legal links\"> instead of <footer aria-label=\"Contentinfo\">, or reference a meaningful visible heading with aria-labelledby. Do not include \"contentinfo\" (or \"footer\" alone) in the accessible name."
         },
         'WarnCustomBulletStyling': {
             'title': "List uses custom bullet styling that may not be accessible",
@@ -3140,13 +3140,13 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Remove the word \"form\" from the accessible name. Use concise, descriptive labels that state the purpose without the element type. Examples: Use \"Login\" instead of \"Login form\", \"Contact\" instead of \"Contact form\", \"Search\" instead of \"Search form\", \"Newsletter signup\" instead of \"Newsletter signup form\". The screen reader will automatically announce the role, resulting in natural speech like \"Login form\" or \"Search form\"."
         },
         'WarnGenericAccessibleName': {
-            'title': "Element has generic accessible name that doesn\'t describe its purpose",
-            'what': "An element's computed accessible name is generic (e.g., \"link\", \"button\", \"image\") rather than describing the element's specific purpose or destination.",
-            'why': "Generic names like \"button\" or \"link\" don\'t help users understand element purpose.",
-            'who': "Screen reader users, voice control users.",
+            'title': "Interactive element's accessible name is a generic word like \"button\" or \"link\"",
+            'what': "An element's computed accessible name resolves to a generic, non-descriptive term such as \"link\", \"button\", \"image\", \"click here\", or \"read more\" rather than text that conveys the element's specific function or destination. The name may come from the element's text content, an aria-label, aria-labelledby, alt text, or a title attribute.",
+            'why': "Under WCAG 2.4.6 (Headings and Labels), an accessible name must describe the topic or purpose of a control. A name of \"button\" or \"link\" tells the user that an interactive element exists but gives no indication of what it does or where it leads. Screen reader users frequently pull up a list of all links or form controls on a page to navigate; when several entries all read \"link\" or \"read more\", that list becomes useless and the user cannot tell the items apart or predict the outcome of activating them.",
+            'who': "Screen reader users who navigate by element lists (links, buttons, form fields) hear only the generic name out of context and cannot distinguish or choose between controls. Voice control users (e.g. Dragon, Voice Control) speak a control's visible name to activate it, so several identical generic names create ambiguous or unusable voice commands. Users with cognitive disabilities also rely on meaningful labels to understand what an action will do before performing it.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['2.4.6'],
-            'remediation': "Provide descriptive accessible names that explain the element\'s specific purpose."
+            'remediation': "Give each interactive element a name that states its specific purpose or destination, ideally usable out of context. Prefer descriptive visible text; if the visible text is unavoidably short, supplement it with an aria-label or visually hidden text. For example, replace <a href=\"/report.pdf\">Read more</a> with <a href=\"/report.pdf\">Read the 2024 annual report (PDF)</a>, or keep the short visible text and add context: <a href=\"/report.pdf\" aria-label=\"Read more about the 2024 annual report\">Read more</a>. Avoid names like \"click here\", \"link\", \"button\", or \"image\"."
         },
         'WarnGenericDocumentLinkText': {
             'title': "Document link uses generic text like \"PDF\" without describing content",
@@ -3158,31 +3158,31 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Include document title and format in link text (e.g., \"Annual Report 2023 (PDF, 2MB)\")."
         },
         'WarnHeadingFoundInLandmarkButIsLabelledByAnAriaLabelledBy': {
-            'title': "Landmark has heading but uses different element for label",
-            'what': "A landmark contains a heading at the start, but the landmark's aria-labelledby points to a different element instead of using that heading as its label.",
-            'why': "Confusing when heading doesn\'t match landmark label",
-            'who': "Screen reader users",
+            'title': "Landmark labelled by a different element than its leading heading",
+            'what': "A landmark contains a heading at or near its start that could naturally name the region, but the landmark's aria-labelledby points to a different element instead of that heading. The visible heading and the programmatic label therefore come from two different sources.",
+            'why': "When the heading a sighted user sees at the top of a region is not the source of that region's accessible name, screen reader users may hear a landmark name that does not match the visible heading. This mismatch breaks the relationship between the visible structure and what assistive technology announces, undermining WCAG 1.3.1 Info and Relationships, and can make it harder to correlate spoken navigation with the on-screen content.",
+            'who': "Screen reader users (people who are blind or have low vision) who rely on consistent landmark names, and users with cognitive disabilities who are confused when the announced region name does not match the visible heading.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['1.3.1'],
-            'remediation': "Use the heading as the landmark label"
+            'remediation': "Point the landmark's aria-labelledby at the id of the leading heading so the visible heading and the accessible name are the same text. For example: <section aria-labelledby=\"sec-title\"><h2 id=\"sec-title\">Latest news</h2>...</section>. If a separate element must supply the label, ensure its text matches the visible heading so users are not given conflicting names."
         },
         'WarnHeadingFoundInsideLandmarkButDoesntLabelLandmark': {
-            'title': "Heading inside landmark doesn\'t label the landmark",
-            'what': "A landmark contains a heading that could naturally serve as its label, but the landmark has no aria-labelledby pointing to it (and no other accessible name).",
-            'why': "Missed opportunity for clear landmark labeling",
-            'who': "Screen reader users",
+            'title': "Leading heading inside landmark is not used as the landmark label",
+            'what': "A landmark contains a heading that could naturally serve as its accessible name, but the landmark has no aria-labelledby pointing to that heading and no other accessible name. The descriptive heading text is present but not connected to the region programmatically.",
+            'why': "An unlabelled landmark is announced only by its role in the landmarks list, even though a perfectly good descriptive heading already sits at the top of it. Connecting that heading as the landmark's name would give screen reader users a clear, meaningful region name at no extra authoring cost. Leaving them disconnected is a missed opportunity that makes WCAG 1.3.1 Info and Relationships orientation weaker than it could be, particularly when several landmarks of the same role exist.",
+            'who': "Screen reader users who navigate by landmarks (people who are blind or have low vision) and benefit from descriptive region names when scanning the landmarks list.",
             'impact': ImpactScale.LOW.value,
             'wcag': ['1.3.1'],
-            'remediation': "Consider using heading as landmark label via aria-labelledby"
+            'remediation': "Add an id to the heading and reference it from the landmark with aria-labelledby so the region inherits the heading text as its accessible name. For example: <section aria-labelledby=\"reports-h\"><h2 id=\"reports-h\">Quarterly reports</h2>...</section>. This keeps the visible heading and the announced landmark name in sync with no duplicated text."
         },
         'WarnHeadingInsideDisplayNone': {
-            'title': "Heading is hidden with display:none",
-            'what': "A heading element exists in the DOM but is hidden via display:none. Most screen readers skip display:none content, so the heading does not appear in the headings list.",
-            'why': "Hidden headings may affect document structure",
-            'who': "Screen reader users (varies by implementation)",
+            'title': "Heading present in the DOM but hidden with display:none",
+            'what': "A heading element exists in the DOM but is hidden via display:none. Most screen readers skip display:none content, so the heading does not appear in the headings list or the accessibility tree.",
+            'why': "Headings hidden with display:none are removed from the accessibility tree by most assistive technology, so they neither announce nor count toward the outline. If the heading is meant to structure visible content, that structure is lost; if it is leftover or decorative, it can still cause confusion when implementations differ. This relates to WCAG 1.3.1 Info and Relationships, since the intended structure may not be conveyed consistently for users navigating by headings.",
+            'who': "Screen reader users navigating by headings (behavior varies by browser and assistive technology); users with cognitive disabilities who may experience an inconsistent or incomplete outline.",
             'impact': ImpactScale.LOW.value,
             'wcag': ['1.3.1'],
-            'remediation': "Remove unused headings or make them visible"
+            'remediation': "If the heading is needed for structure, make it visible, or use a screen-reader-only technique (a visually-hidden class with clip/position rather than display:none) so it stays in the accessibility tree. If it is unused, remove it. For example, replace display:none with a visually-hidden utility on the <h2> so it remains announced."
         },
         'WarnHeadingOver60CharsLong': {
             'title': "Heading text is {length} characters long, exceeding the recommended {limit} character limit",
@@ -3195,13 +3195,13 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Shorten the heading from {length} to under {limit} characters while preserving its meaning. Current text: \"{text}\" - Consider breaking into a shorter heading with explanatory text below, or focus on the key message. Use descriptive but concise language."
         },
         'WarnHighTabindex': {
-            'title': "Very high tabindex value used (over 10)",
-            'what': "An element has a tabindex greater than 10, indicating a manually orchestrated tab order. Such sequences are fragile and easy to break when the page changes.",
-            'why': "High tabindex values indicate attempts to control tab order that likely create confusing navigation.",
-            'who': "Keyboard users experiencing unexpected tab order.",
+            'title': "Positive tabindex greater than 10 imposes a fragile manual order",
+            'what': "An element uses a tabindex value above 10, which signals a manually orchestrated tab sequence. Any positive tabindex pulls the element ahead of all elements with tabindex=\"0\" or none, and large values usually mean a hand-numbered order that is fragile and easy to break when the page changes.",
+            'why': "Positive tabindex values override the natural DOM order, so the focus sequence no longer follows the visual reading order and breaks the moment a single element is added, removed, or renumbered. This undermines WCAG 2.4.3 Focus Order. The consequence is a tab path that jumps around the page unpredictably and is hard to maintain.",
+            'who': "Keyboard-only users who experience focus jumping in an illogical order; screen reader users navigating interactively; users with cognitive differences who rely on a predictable focus path.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['2.4.3'],
-            'remediation': "Remove positive tabindex values, restructure DOM for natural tab order."
+            'remediation': "Remove the positive tabindex values and instead order the elements in the DOM so the natural tab sequence matches the visual order. Use only tabindex=\"0\" (to make a custom control focusable) or tabindex=\"-1\" (for programmatic focus). Example:\n\n<input name=\"first\">\n<input name=\"second\">  <!-- order follows the DOM, no positive tabindex -->"
         },
         'WarnIframeTitleNotDescriptive': {
             'title': "Iframe has a title attribute but it\'s generic or not descriptive (e",
@@ -3233,13 +3233,13 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Replace lang=\"{found}\" with a valid ISO 639 language code. Valid formats are two-letter codes (\"en\", \"fr\", \"es\") or two-letter codes with region subtags (\"en-US\", \"fr-CA\", \"es-MX\"). Common corrections: \"fre\" → \"fr\", \"French\" → \"fr\", \"en-us\" → \"en-US\", \"EN-CA\" → \"en-CA\". Test with screen readers to ensure language changes are announced and pronounced correctly."
         },
         'WarnItalicText': {
-            'title': "Italic text used extensively which can reduce readability",
-            'what': "A substantial block of body text is rendered in italics. Italic body text reduces reading speed, particularly for users with dyslexia or low vision.",
-            'why': "Italic text is harder to read, especially for users with dyslexia.",
-            'who': "Users with dyslexia, users with low vision.",
+            'title': "Long passage of body text set entirely in italics",
+            'what': "A substantial block of running text (for example a paragraph or longer) is rendered in italics, using <i>, <em>, or a CSS font-style: italic rule applied to body-level content rather than to a short phrase.",
+            'why': "Italicized type slants the letterforms and reduces the contrast between character shapes, which slows reading and increases errors over long passages. WCAG 1.4.8 (Visual Presentation) recommends presentation that supports comfortable reading of blocks of text. Sustained italics work against that goal: emphasis loses meaning when entire passages are italicized, and the reduced legibility compounds over the length of the block.",
+            'who': "Users with dyslexia, who already work harder to decode text, are slowed further by the irregular, slanted letter shapes of italics. Users with low vision and those who rely on screen magnification find italic strokes thinner and harder to resolve. Older readers and anyone reading in suboptimal conditions also read italic body text more slowly.",
             'impact': ImpactScale.LOW.value,
             'wcag': ['1.4.8'],
-            'remediation': "Limit italic text to short emphasis, use bold for stronger emphasis."
+            'remediation': "Reserve italics for short emphasis (a word or phrase), titles of works, or other conventional uses, and set running body text upright. If you need to signal stronger emphasis across a longer span, use bold (<strong>) or a distinct text style instead of italics, or restructure the content (e.g. a blockquote or callout box) so the emphasis comes from layout rather than slanting an entire passage."
         },
         'WarnJustifiedText': {
             'title': "Text uses full justification affecting readability",
@@ -3280,13 +3280,13 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Shorten animation-duration to 5 seconds or less, or provide pause/stop controls. Consider respecting prefers-reduced-motion media query. Current CSS:\n{animationCSS}"
         },
         'WarnMissingAriaLabelledby': {
-            'title': "Form field could benefit from aria-labelledby for complex labeling",
-            'what': "A form field has a simple label, but the surrounding context (instructions, error messages, units) suggests it could benefit from aria-labelledby/aria-describedby to bring in the additional context.",
-            'why': "Complex forms may need multiple labels or descriptions for clarity.",
-            'who': "Screen reader users needing additional context.",
+            'title': "Field may need aria-describedby for surrounding context",
+            'what': "A form field has a basic label, but nearby content (instructions, formatting requirements, units, or error text) appears related to the field and is not programmatically connected to it. The field could benefit from aria-labelledby for a composite name or aria-describedby for the supporting guidance.",
+            'why': "When instructions or constraints sit visually next to a field but are not linked with aria-describedby/aria-labelledby, screen reader users may never hear them, completing the field without knowing its format rules or current error. This relates to WCAG 1.3.1 Info and Relationships and supports 3.3.2 Labels or Instructions. The consequence is avoidable input errors and repeated submission failures for users who miss the unlinked guidance.",
+            'who': "Screen reader users who do not perceive nearby instructions unless they are programmatically associated; people with cognitive disabilities who need the help text spoken together with the field.",
             'impact': ImpactScale.LOW.value,
             'wcag': ['1.3.1'],
-            'remediation': "Use aria-labelledby to associate multiple labels or aria-describedby for help text."
+            'remediation': "Connect the supporting text to the field. Use aria-describedby for hints/errors and aria-labelledby when multiple elements form the name. For example: <label for=\"pw\">Password</label><input id=\"pw\" type=\"password\" aria-describedby=\"pw-help\"><span id=\"pw-help\">At least 12 characters</span>."
         },
         'WarnMissingAriaModal': {
             'title': "Modal dialog missing aria-modal=\"true\"",
@@ -3298,31 +3298,31 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Add aria-modal=\"true\" to modal containers along with proper focus management."
         },
         'WarnMissingBannerLandmark': {
-            'title': "Page missing banner landmark for header content",
-            'what': "The page appears to have a header area visually (logo, top navigation) but no <header> at the top level and no element with role=\"banner\".",
-            'why': "Banner landmark helps users quickly navigate to page header/branding.",
-            'who': "Screen reader users navigating by landmarks.",
+            'title': "Page appears to have header content but no banner landmark",
+            'what': "The page visually presents a header area (such as a logo, site title, or top-level navigation) but has no top-level <header> element and no element with role=\"banner\", so this content is not exposed as a banner landmark.",
+            'why': "Screen reader users rely on the banner landmark to jump straight to a page's branding and primary header content. Without it, that area cannot be reached by landmark navigation and the user must hunt through the content to find the site identity or top navigation. This weakens the programmatically determinable structure expected by WCAG 1.3.1 Info and Relationships and reduces navigation efficiency.",
+            'who': "Screen reader users who navigate by landmarks (people who are blind or have low vision), and keyboard users who benefit from a clearly defined, jump-to-able header region.",
             'impact': ImpactScale.LOW.value,
             'wcag': ['1.3.1'],
-            'remediation': "Use <header> element or role=\"banner\" for page header content."
+            'remediation': "Wrap the page's header content in a top-level <header> element (which maps to the banner role when it is not nested inside <main>, <article>, <section>, or <aside>), or add role=\"banner\" to the appropriate container. For example: <header><img src=\"logo.svg\" alt=\"Acme\"><nav aria-label=\"Primary\">...</nav></header>. Use only one banner landmark per page unless multiple are clearly labelled."
         },
         'WarnMissingContentinfoLandmark': {
-            'title': "Page missing contentinfo landmark for footer",
-            'what': "The page appears to have a footer area visually (copyright, secondary links) but no <footer> at the top level and no element with role=\"contentinfo\".",
-            'why': "Contentinfo landmark helps users find footer information like copyright and links.",
-            'who': "Screen reader users navigating by landmarks.",
+            'title': "Page appears to have footer content but no contentinfo landmark",
+            'what': "The page visually presents a footer area (such as copyright notices, legal text, or secondary links) but has no top-level <footer> element and no element with role=\"contentinfo\", so this content is not exposed as a contentinfo landmark.",
+            'why': "Screen reader users use the contentinfo landmark to jump directly to footer-level information such as copyright, privacy links, and contact details. Without it, that information cannot be reached through landmark navigation and the user must read or scan to the very end of the page to find it. This reduces the programmatically determinable structure expected by WCAG 1.3.1 Info and Relationships and slows navigation to important supplementary information.",
+            'who': "Screen reader users who navigate by landmarks (people who are blind or have low vision), and keyboard users who benefit from being able to jump straight to footer information.",
             'impact': ImpactScale.LOW.value,
             'wcag': ['1.3.1'],
-            'remediation': "Use <footer> element or role=\"contentinfo\" for page footer."
+            'remediation': "Wrap the page's footer content in a top-level <footer> element (which maps to the contentinfo role when it is not nested inside <main>, <article>, <section>, or <aside>), or add role=\"contentinfo\" to the appropriate container. For example: <footer><p>&copy; 2026 Acme Inc.</p><nav aria-label=\"Legal\">...</nav></footer>. Use only one contentinfo landmark per page unless multiple are clearly labelled."
         },
         'WarnMissingRequiredIndication': {
-            'title': "Required form fields not clearly indicated",
-            'what': "A form field has the required attribute (or aria-required=\"true\") but no visible \"required\" indicator near the label, so sighted users do not know the field is mandatory.",
-            'why': "Users need to know which fields are required before submitting forms.",
-            'who': "All users, especially those using screen readers.",
+            'title': "Required field lacks a visible required indicator",
+            'what': "A form field is marked mandatory programmatically (the required attribute or aria-required=\"true\") but shows no visible \"required\" indicator near its label, so sighted users cannot tell the field must be completed before submission.",
+            'why': "When a field is required only in code and not visibly marked, sighted users discover the requirement only after a failed submission, and the visual and programmatic signals are out of sync. This relates to WCAG 3.3.2 Labels or Instructions. The consequence is form-filling errors, frustration, and repeated submission attempts, particularly on long forms.",
+            'who': "Sighted users, including those with cognitive or learning disabilities, who need an upfront visual cue; low-vision users scanning the form who may otherwise miss the obligation; all users completing the form, who benefit from knowing requirements before submitting.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['3.3.2'],
-            'remediation': "Mark required fields with aria-required=\"true\" and visual indicators."
+            'remediation': "Mark required fields both visually and programmatically, and keep them in sync. Add a visible indicator (e.g., an asterisk with an explained legend, or the word \"required\") and aria-required=\"true\" or the required attribute. For example: <label for=\"email\">Email (required)</label><input id=\"email\" type=\"email\" required aria-required=\"true\">."
         },
         'WarnModalMissingAriaLabelledby': {
             'title': "Modal lacks aria-labelledby pointing to its heading",
@@ -3334,58 +3334,58 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "If a visible heading exists in the modal, add aria-labelledby pointing to that heading\'s ID: <div role=\"dialog\" aria-labelledby=\"modal-title\"><h2 id=\"modal-title\">Modal Title</h2>...</div>. This is preferred over aria-label because it ensures the programmatic name matches the visible label. If using aria-label, ensure the text exactly matches the visible heading to avoid confusion."
         },
         'WarnModalMissingAriaModal': {
-            'title': "Modal dialog missing aria-modal attribute",
-            'what': "A modal dialog overlay is showing but its container is missing aria-modal=\"true\". Some assistive tech may continue to surface background content as a result.",
-            'why': "aria-modal helps assistive technologies understand modal boundaries.",
-            'who': "Screen reader users navigating modal content.",
+            'title': "Modal dialog is missing the aria-modal=\"true\" attribute",
+            'what': "A modal dialog overlay is displayed, but its container does not carry aria-modal=\"true\". Without this attribute some assistive technologies may continue to expose the background page content as if it were still available.",
+            'why': "aria-modal=\"true\" tells assistive technology that content outside the dialog is inert while it is open, helping it define the modal's boundaries (relevant to WCAG 4.1.2 Name, Role, Value and to predictable focus order). Without it, a screen reader's virtual cursor may wander into background content, blurring where the dialog begins and ends and undermining the modal experience.",
+            'who': "Screen reader users navigating modal content, who may stray into background material when the dialog's modal boundary is not declared.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['4.1.2'],
-            'remediation': "Add aria-modal=\"true\" to modal containers."
+            'remediation': "Add aria-modal=\"true\" to the dialog container alongside role=\"dialog\" and an accessible name. Example: <div role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"dlg-title\"> ... </div>. Because aria-modal alone does not stop focus from leaving, also implement a focus trap and, ideally, mark the background inert."
         },
         'WarnModalNoFocusableElements': {
-            'title': "Modal has no focusable elements",
-            'what': "A modal/dialog is open but contains no focusable elements at all — no buttons, no links, no inputs. Keyboard users cannot move focus inside the dialog.",
-            'why': "Modals without focusable elements trap keyboard focus with no actions available.",
-            'who': "Keyboard users unable to interact with modal.",
+            'title': "Open modal contains no focusable elements",
+            'what': "A modal dialog is open but contains no focusable elements at all \u2014 no buttons, no links, and no form inputs. There is nothing inside the dialog that a keyboard user can move focus to.",
+            'why': "WCAG 2.1.1 Keyboard requires all functionality to be operable from the keyboard. When a modal opens, focus should move into it, but if the dialog holds no focusable element there is nowhere for focus to land or move, and no keyboard-operable way to act on or dismiss the dialog. Keyboard and screen reader users can become stranded with no available action.",
+            'who': "Keyboard-only users, who cannot place focus inside the dialog or reach any control to dismiss it; screen reader users navigating by focusable controls.",
             'impact': ImpactScale.HIGH.value,
             'wcag': ['2.1.1'],
-            'remediation': "Ensure modals contain at least one focusable element (close button, form fields, etc.)."
+            'remediation': "Ensure every modal contains at least one focusable element and move focus to it when the dialog opens. At minimum provide a close button: <div role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"dlg-title\"><h2 id=\"dlg-title\">Notice</h2><p>...</p><button type=\"button\">Close</button></div>. For purely informational dialogs, make the dialog container or its heading focusable (tabindex=\"-1\") and focus it on open."
         },
         'WarnMultipleBannerLandmarksButNotAllHaveLabels': {
-            'title': "Multiple banner landmarks exist but not all have labels",
-            'what': "The page has more than one banner landmark, but at least one of them has no aria-label or aria-labelledby. All banners need labels when more than one exists.",
-            'why': "Inconsistent labeling makes navigation difficult",
-            'who': "Screen reader users",
+            'title': "Multiple banner landmarks present but some are unlabelled",
+            'what': "More than one banner landmark was found on the page, but at least one of them has neither an aria-label nor an aria-labelledby attribute. When more than one landmark of the same role exists, each instance needs a unique accessible name to be distinguishable.",
+            'why': "When several banner landmarks share the same role and some lack labels, the landmarks list shows repeated identical entries (\"banner\", \"banner\") with no way to tell them apart. Screen reader users cannot predict which banner leads where, so navigation becomes guesswork. WCAG 2.4.6 Headings and Labels and 1.3.1 Info and Relationships expect distinguishable, descriptive region names when duplicates exist.",
+            'who': "Screen reader users who navigate by landmarks (people who are blind or have low vision) and rely on unique region names to choose where to go.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['1.3.1', '2.4.6'],
-            'remediation': "Ensure all banner landmarks have labels or reduce to single banner"
+            'remediation': "Give each banner landmark a unique, descriptive accessible name with aria-label or aria-labelledby, or reduce the page to a single top-level banner if the duplication is not intentional. For example: <header aria-label=\"Site header\">...</header> and <header aria-label=\"Article header\">...</header>. Note that the page normally has only one top-level banner; verify the extra banners are genuinely needed."
         },
         'WarnMultipleComplementaryLandmarksButNotAllHaveLabels': {
-            'title': "Multiple complementary landmarks but not all labeled",
-            'what': "The page has more than one complementary landmark, but at least one of them has no aria-label or aria-labelledby.",
-            'why': "Inconsistent labeling makes navigation difficult",
-            'who': "Screen reader users",
+            'title': "Multiple complementary landmarks present but some are unlabelled",
+            'what': "More than one complementary landmark (such as <aside> or role=\"complementary\") was found on the page, but at least one of them has neither an aria-label nor an aria-labelledby attribute. With multiple landmarks of the same role, each needs a unique accessible name.",
+            'why': "Multiple complementary regions all announced simply as \"complementary\" are indistinguishable in the landmarks list. Screen reader users cannot tell a related-articles sidebar from an advertising panel or an author bio, so they cannot choose where to jump efficiently. WCAG 2.4.6 Headings and Labels and 1.3.1 Info and Relationships expect each duplicated landmark to carry a descriptive, unique label.",
+            'who': "Screen reader users who navigate by landmarks (people who are blind or have low vision) and need unique region names to choose between sidebars and supporting panels.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['1.3.1', '2.4.6'],
-            'remediation': "Ensure all complementary landmarks have unique labels"
+            'remediation': "Give each complementary landmark a unique, descriptive accessible name with aria-label or aria-labelledby. For example: <aside aria-label=\"Related articles\">...</aside> and <aside aria-label=\"Author biography\">...</aside>. Prefer referencing a visible heading with aria-labelledby where one exists so the visible and announced names match."
         },
         'WarnMultipleContentInfoLandmarksButNotAllHaveLabels': {
-            'title': "Multiple contentinfo landmarks exist but not all have labels",
-            'what': "The page has more than one contentinfo landmark, but at least one of them has no aria-label or aria-labelledby.",
-            'why': "Inconsistent labeling makes navigation difficult",
-            'who': "Screen reader users",
+            'title': "Multiple contentinfo landmarks present but some are unlabelled",
+            'what': "More than one contentinfo landmark was found on the page, but at least one of them has neither an aria-label nor an aria-labelledby attribute. When multiple landmarks of the same role exist, each instance needs a unique accessible name.",
+            'why': "Several contentinfo regions all announced as \"contentinfo\" appear as identical, indistinguishable entries in the landmarks list. Screen reader users cannot tell which footer they are jumping to, so navigation is unpredictable. WCAG 2.4.6 Headings and Labels and 1.3.1 Info and Relationships expect duplicate landmarks to be uniquely labelled; note also that a page typically should have only one top-level contentinfo.",
+            'who': "Screen reader users who navigate by landmarks (people who are blind or have low vision) and rely on unique region names to distinguish footer areas.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['1.3.1', '2.4.6'],
-            'remediation': "Ensure all contentinfo landmarks have labels or reduce to single contentinfo"
+            'remediation': "Give each contentinfo landmark a unique, descriptive accessible name with aria-label or aria-labelledby, or reduce the page to a single top-level contentinfo if the duplication is unintentional. For example: <footer aria-label=\"Site footer\">...</footer> and <footer aria-label=\"Article footer\">...</footer>. Verify the additional contentinfo regions are genuinely required."
         },
         'WarnMultipleNavLandmarksButNotAllHaveLabels': {
-            'title': "Multiple navigation landmarks but not all labeled",
-            'what': "The page has more than one navigation landmark, but at least one of them has no aria-label or aria-labelledby to distinguish it.",
-            'why': "Users cannot distinguish between navigation areas",
-            'who': "Screen reader users",
+            'title': "Multiple navigation landmarks present but some are unlabelled",
+            'what': "More than one navigation landmark (<nav> or role=\"navigation\") was found on the page, but at least one of them has neither an aria-label nor an aria-labelledby attribute to distinguish it from the others.",
+            'why': "When a page has primary navigation, breadcrumb navigation, footer navigation, and so on, all announced simply as \"navigation\", screen reader users see a list of identical entries and cannot tell which set of links each leads to. Choosing the right navigation becomes trial and error. WCAG 2.4.6 Headings and Labels and 1.3.1 Info and Relationships expect each navigation region to be uniquely and descriptively named when more than one exists.",
+            'who': "Screen reader users who navigate by landmarks (people who are blind or have low vision) and rely on unique navigation names to find the right set of links.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['1.3.1', '2.4.6'],
-            'remediation': "Label all navigation landmarks uniquely"
+            'remediation': "Give every navigation landmark a unique, descriptive accessible name with aria-label or aria-labelledby. For example: <nav aria-label=\"Primary\">...</nav>, <nav aria-label=\"Breadcrumb\">...</nav>, and <nav aria-label=\"Footer links\">...</nav>. Do not include the word \"navigation\" in the label, since the role is already announced."
         },
         'WarnMultipleNavNeedsLabel': {
             'title': "Multiple navigation landmarks found without distinguishing labels",
@@ -3397,13 +3397,13 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Add unique aria-label attributes to each <nav> element or role=\"navigation\" container. Use descriptive labels like aria-label=\"Main menu\", aria-label=\"Footer links\", aria-label=\"Breadcrumb\", aria-label=\"Related articles\". The labels should clearly indicate the purpose or location of each navigation. Test with screen readers to ensure each navigation is announced with its unique label."
         },
         'WarnMultipleRegionLandmarksButNotAllHaveLabels': {
-            'title': "Multiple region landmarks but not all labeled",
-            'what': "The page has more than one region landmark, but at least one of them has no aria-label or aria-labelledby. All regions need labels when more than one exists.",
-            'why': "Regions without labels are not exposed as landmarks",
-            'who': "Screen reader users",
+            'title': "Multiple region landmarks present but some are unlabelled",
+            'what': "More than one region landmark was found on the page, but at least one of them has neither an aria-label nor an aria-labelledby attribute. A <section> or role=\"region\" element only becomes an exposed landmark when it has an accessible name, so an unlabelled one is dropped from landmark navigation.",
+            'why': "Region landmarks require an accessible name to appear in the landmarks list at all. When some regions are labelled and others are not, the unlabelled ones silently disappear from landmark navigation while the labelled ones remain, producing an inconsistent and incomplete map of the page. This breaks the programmatically determinable structure required by WCAG 1.3.1 Info and Relationships and the descriptive-labelling expectation of 2.4.6 Headings and Labels.",
+            'who': "Screen reader users who navigate by landmarks (people who are blind or have low vision) and miss regions that are not exposed because they lack a name.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['1.3.1', '2.4.6'],
-            'remediation': "Ensure all regions have labels or use different elements"
+            'remediation': "Give every region a unique, descriptive accessible name with aria-label or aria-labelledby, or use a more appropriate element/role for content that does not need to be a landmark. For example: <section aria-labelledby=\"stats-h\"><h2 id=\"stats-h\">Key statistics</h2>...</section>. If a block does not warrant being a landmark, use a plain <div> instead of <section>."
         },
         'WarnMultipleTitleElements': {
             'title': "{count} <title> elements found in the document head, which may cause unpredictable behavior",
@@ -3416,31 +3416,31 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Remove {count-1} duplicate <title> elements, keeping only one in the document head. Check for scripts that might be adding titles dynamically. Ensure your CMS or framework isn\'t creating duplicate titles."
         },
         'WarnNavLandmarkAccessibleNameUsesNavigation': {
-            'title': "Navigation landmark uses generic term \"navigation\" in label",
-            'what': "A <nav> landmark's accessible name contains the word \"navigation\" (e.g., \"Main navigation\"). Screen readers already announce the role as \"navigation\", so this is redundant.",
-            'why': "Generic labels don\'t describe specific purpose",
-            'who': "Screen reader users",
+            'title': "Navigation label repeats the role word \"navigation\"",
+            'what': "A <nav> landmark's accessible name (for example \"Main navigation\") contains the word \"navigation\". Screen readers already announce the role of this region as \"navigation\", so including that word in the label is redundant and does not describe what the navigation actually leads to.",
+            'why': "Assistive technologies read both the accessible name and the role, so a label of \"Main navigation\" is announced as something like \"Main navigation, navigation\". The repetition adds verbosity, and \"navigation\" alone does not tell the user what set of links the region contains. WCAG 2.4.6 Headings and Labels calls for labels that describe purpose; a label echoing the role gives no purpose-specific information, which is especially unhelpful when several nav regions exist.",
+            'who': "Screen reader users (people who are blind or have low vision) who hear the redundant announcement and cannot distinguish navigation regions by purpose.",
             'impact': ImpactScale.LOW.value,
             'wcag': ['2.4.6'],
-            'remediation': "Use more descriptive labels like \"Product categories\" or \"User account menu\""
+            'remediation': "Name the navigation by what it contains rather than by its role. Replace generic labels with purpose-specific ones such as <nav aria-label=\"Product categories\">, <nav aria-label=\"User account menu\">, or <nav aria-label=\"Breadcrumb\">. Do not include the word \"navigation\" (or \"nav\") in the accessible name."
         },
         'WarnNavLandmarkHasNoLabel': {
-            'title': "Navigation landmark lacks label",
-            'what': "A <nav> landmark has no aria-label or aria-labelledby. If the page has more than one nav, users will have trouble distinguishing it.",
-            'why': "Hard to distinguish multiple navigation areas",
-            'who': "Screen reader users",
+            'title': "Navigation landmark has no accessible name",
+            'what': "A <nav> landmark was found that has neither an aria-label nor an aria-labelledby attribute, so it has no explicit accessible name. If the page contains more than one navigation region, this one cannot be distinguished from the others in the landmarks list.",
+            'why': "When a navigation landmark lacks a name, screen readers announce only its role (\"navigation\"). As soon as a second nav appears on the page, the user faces two identical \"navigation\" entries with no way to tell which leads to the primary menu and which to, say, breadcrumbs or footer links. WCAG 2.4.6 Headings and Labels and 1.3.1 Info and Relationships expect navigation regions to be distinguishable through descriptive names, so a missing label undermines efficient navigation.",
+            'who': "Screen reader users who navigate by landmarks (people who are blind or have low vision) and rely on descriptive names to choose the right navigation region.",
             'impact': ImpactScale.LOW.value,
             'wcag': ['1.3.1', '2.4.6'],
-            'remediation': "Add descriptive aria-label"
+            'remediation': "Add a concise, purpose-describing accessible name with aria-label or aria-labelledby, for example <nav aria-label=\"Primary\">...</nav> or <nav aria-label=\"Breadcrumb\">...</nav>. Use a different label for each navigation region, and do not include the word \"navigation\" since the role is already announced."
         },
         'WarnNegativeTabindex': {
-            'title': "Interactive element has negative tabindex",
-            'what': "An interactive element (e.g., a link or button) has a negative tabindex such as tabindex=\"-1\". This is intentional in some patterns (modals, custom widgets) but often signals a mistake.",
-            'why': "Negative tabindex removes elements from keyboard navigation, potentially making them inaccessible.",
-            'who': "Keyboard users who cannot reach the element.",
+            'title': "Interactive element carries a negative tabindex",
+            'what': "An interactive element such as a link or button has a negative tabindex like tabindex=\"-1\". This is legitimate in some patterns (focus management in modals, roving tabindex in composite widgets) but frequently signals that a control was unintentionally removed from keyboard navigation.",
+            'why': "A negative tabindex removes the element from the sequential tab order, so if it is a control the user is meant to operate, keyboard users can no longer reach it \u2014 a failure of WCAG 2.1.1 Keyboard and a disruption to WCAG 2.4.3 Focus Order. The consequence is that an apparently usable control may be operable only by pointer.",
+            'who': "Keyboard-only users who cannot Tab to the control; switch and other assistive-technology users relying on the tab order; screen reader users navigating interactively.",
             'impact': ImpactScale.LOW.value,
             'wcag': ['2.1.1'],
-            'remediation': "Use tabindex=\"0\" for keyboard-accessible elements, only use -1 for programmatic focus."
+            'remediation': "Confirm whether the element should be keyboard-reachable. If so, use tabindex=\"0\" (or remove tabindex for natively focusable elements). Keep tabindex=\"-1\" only when the element is focused programmatically via element.focus() as part of a managed pattern. Example:\n\n<button tabindex=\"0\">Continue</button>"
         },
         'ErrNegativeTabIndex': {
             'title': "Negative tabindex on interactive element removes it from keyboard navigation sequence",
@@ -3488,13 +3488,13 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Use the HTML5 <footer> element for your page footer (it has an implicit role of contentinfo when it\'s not nested inside article, aside, main, nav, or section elements). Alternatively, add role=\"contentinfo\" to the container holding your footer content. Ensure there\'s only one contentinfo landmark per page at the top level. The footer should contain information about the page or site, not primary content."
         },
         'WarnNoCurrentPageIndicator': {
-            'title': "Navigation doesn\'t indicate current page - DEPRECATED, use ErrNoCurrentPageIndicatorScreenReader and ErrNoCurrentPageIndicatorMagnification",
-            'what': "Navigation doesn\'t indicate current page",
-            'why': "Users need to know their current location within the site navigation.",
-            'who': "Users with cognitive disabilities, screen reader users.",
+            'title': "Current page not indicated in navigation (DEPRECATED \u2013 replaced by ErrNoCurrentPageIndicatorScreenReader and ErrNoCurrentPageIndicatorMagnification)",
+            'what': "A site navigation region does not mark which item corresponds to the page the user is currently viewing. Note: this check is deprecated and has been split into ErrNoCurrentPageIndicatorScreenReader (no programmatic indicator such as aria-current) and ErrNoCurrentPageIndicatorMagnification (no sufficient visual indicator); use those codes instead.",
+            'why': "WCAG 2.4.8 (Location) calls for information that helps users understand where they are within a set of pages. When navigation gives no current-page indicator, users lose their sense of place: they cannot confirm which link they followed, whether they have already visited a section, or where they sit in the site hierarchy. This makes orientation and wayfinding harder, particularly on large sites.",
+            'who': "Users with cognitive disabilities rely on a clear \"you are here\" cue to stay oriented and avoid disorientation or repeated navigation. Screen reader users need a programmatic indicator (aria-current=\"page\") announced as they move through the nav, since they cannot perceive purely visual highlighting. Users with low vision or attention-related difficulties similarly depend on an obvious, persistent marker of the current location.",
             'impact': ImpactScale.LOW.value,
             'wcag': ['2.4.8'],
-            'remediation': "Use aria-current=\"page\" and visual styling to indicate current page in navigation."
+            'remediation': "Mark the current page both programmatically and visually. Add aria-current=\"page\" to the navigation item that represents the current page so screen readers announce it as \"current page\", and apply a clearly distinguishable visual treatment (not colour alone \u2013 use weight, an icon, or an underline plus colour). For example: <a href=\"/about\" aria-current=\"page\">About</a>. Because this code is deprecated, address the underlying issue via ErrNoCurrentPageIndicatorScreenReader and ErrNoCurrentPageIndicatorMagnification."
         },
         'ErrNoCurrentPageIndicatorScreenReader': {
             'title': "Navigation lacks aria-current=\"page\" indicator, forcing screen reader users through entire menu to discover current location",
@@ -3515,13 +3515,13 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Apply distinctive visual styling to the current page link in navigation - use a combination of multiple visual indicators for robust identification: (1) Background color change: .current-page { background-color: #003366; color: white; }; (2) Border or underline: border-left: 4px solid blue or text-decoration: underline; (3) Font weight: font-weight: bold; (4) Icon or symbol: prepend/append a visual indicator. Combine with aria-current=\"page\" for screen reader users. Ensure visual indicators have sufficient contrast (4.5:1 for text, 3:1 for non-text). The visual distinction should be immediately recognizable when viewing only the navigation area at high magnification. Test by zooming to 400% and viewing only the navigation - the current page should be unmistakably identified without seeing page content. Common pattern: <a href=\"/about\" aria-current=\"page\" class=\"current-page\">About Us</a> with CSS targeting both [aria-current=\"page\"] and .current-page for backwards compatibility."
         },
         'WarnNoCursorPointer': {
-            'title': "Clickable element doesn\'t show pointer cursor",
-            'what': "An element behaves like a clickable control (has a click handler or interactive role) but its CSS does not set cursor: pointer, so mouse users get no hover affordance.",
-            'why': "Cursor changes help users identify interactive elements.",
-            'who': "Mouse users who rely on cursor changes.",
+            'title': "Clickable element does not show a pointer cursor on hover",
+            'what': "An element behaves like a clickable control \u2014 it has a click handler or an interactive role \u2014 but its CSS does not set cursor: pointer, so the mouse cursor stays a default arrow and gives no hover affordance that the element can be activated.",
+            'why': "The cursor change is a key visual cue that an element is clickable; without it, mouse users may not realise the control exists or is interactive, weakening the discoverability that supports operable controls (related to WCAG 2.1.1 Keyboard's expectation that controls behave like controls). The consequence is reduced discoverability and missed interactions for pointer users.",
+            'who': "Mouse and trackpad users who rely on the pointer cursor to identify clickable elements; users with cognitive differences who depend on consistent affordances; touch users on hybrid devices that also show a cursor.",
             'impact': ImpactScale.LOW.value,
             'wcag': ['2.1.1'],
-            'remediation': "Add cursor: pointer CSS to all clickable elements."
+            'remediation': "Add cursor: pointer to elements that act as controls \u2014 and prefer native interactive elements (<button>, <a>) that get this and keyboard support automatically. Example:\n\n.clickable {\n  cursor: pointer;\n}"
         },
         'WarnNoFieldset': {
             'title': "Related form fields not grouped with fieldset",
@@ -3533,13 +3533,13 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Use fieldset and legend elements to group related form fields like radio buttons."
         },
         'WarnNoLegend': {
-            'title': "Fieldset missing legend element",
-            'what': "A <fieldset> element exists but has no <legend> child, so the group has no accessible name describing what its fields are for.",
-            'why': "Legends provide context for grouped form fields.",
-            'who': "Screen reader users who need group labels.",
+            'title': "Fieldset has no legend to name the group",
+            'what': "A <fieldset> element groups related controls but has no <legend> child, so the grouping has no accessible name describing what the contained fields collectively represent.",
+            'why': "A <legend> provides the group's accessible name, which screen readers announce together with each control inside the fieldset, supplying shared context (for example, \"Shipping address\" before each address field). Without it, grouped controls like a set of radio buttons lose the question they answer. This relates to WCAG 1.3.1 Info and Relationships. The consequence is that screen reader users hear individual options without the overarching prompt and cannot tell what choice they are making.",
+            'who': "Screen reader users who rely on the group label to understand a set of related controls (radio groups, checkbox groups, address blocks); people with cognitive disabilities who need explicit grouping context.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['1.3.1'],
-            'remediation': "Add legend as first child of fieldset to label the group."
+            'remediation': "Add a <legend> as the first child of the <fieldset>, describing the group. For example: <fieldset> <legend>Preferred contact method</legend> <label><input type=\"radio\" name=\"contact\"> Email</label> <label><input type=\"radio\" name=\"contact\"> Phone</label> </fieldset>."
         },
         'WarnNoNavigationLandmark': {
             'title': "Page has no navigation landmarks to identify navigation regions",
@@ -3571,31 +3571,31 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Expand \"{found}\" to be more descriptive by including the site name and page purpose. Aim for 20-60 characters that clearly describe the page content. Ensure each page has a unique, descriptive title that makes sense out of context."
         },
         'WarnRegionLandmarkAccessibleNameUsesNavigation': {
-            'title': "Region landmark incorrectly uses \"navigation\" in its label",
-            'what': "A region landmark's accessible name contains the word \"navigation\" (e.g., \"Site navigation region\"), confusing users about whether this is a region or a nav landmark.",
-            'why': "Confusing landmark type and purpose",
-            'who': "Screen reader users",
+            'title': "Region label incorrectly contains the word \"navigation\"",
+            'what': "A region landmark's accessible name (for example \"Site navigation region\") contains the word \"navigation\", even though this element is a region and not a navigation landmark. The label implies a navigation role that the element does not actually have.",
+            'why': "Screen readers announce this element as a region while its name says \"navigation\", giving the user contradictory information about what kind of area it is. Users expecting a set of navigational links may instead find unrelated content, and the mislabel undermines the descriptive-labelling intent of WCAG 2.4.6 Headings and Labels. If the content really is navigation, it should be marked up as a nav landmark rather than a labelled region.",
+            'who': "Screen reader users (people who are blind or have low vision) who are misled about the region's type and purpose, and users with cognitive disabilities who are confused by the mismatch between role and label.",
             'impact': ImpactScale.LOW.value,
             'wcag': ['2.4.6'],
-            'remediation': "Use appropriate label or change to nav landmark"
+            'remediation': "If the content is genuinely navigation, mark it up as a navigation landmark (<nav> or role=\"navigation\") with a descriptive label. If it is a region, rename it to describe its content without the word \"navigation\", for example <section aria-label=\"Quick links\"> rather than \"Site navigation region\". Keep the label consistent with the element's actual role."
         },
         'WarnRegionLandmarkHasNoLabelSoIsNotConsideredALandmark': {
-            'title': "Region landmark lacks required label to be considered a landmark",
-            'what': "A <section> element has no aria-label, aria-labelledby, or title attribute. Per the ARIA spec, an unlabeled <section> is NOT exposed as a region landmark, so it won't appear in landmark navigation.",
-            'why': "Regions without labels are not exposed as landmarks",
-            'who': "Screen reader users",
+            'title': "Unlabelled section is not exposed as a region landmark",
+            'what': "A <section> element was found with no aria-label, aria-labelledby, or title attribute. Per the ARIA specification, a <section> only maps to the region landmark role when it has an accessible name, so this unlabelled section is not exposed as a landmark and will not appear in the landmarks list.",
+            'why': "An author who uses <section> usually intends to create a navigable region, but without a name the browser does not expose it as one. Screen reader users navigating by landmarks therefore never see it, and the content effectively becomes structurally invisible in landmark navigation. This breaks the programmatically determinable structure required by WCAG 1.3.1 Info and Relationships, because the intended region relationship is not conveyed to assistive technology.",
+            'who': "Screen reader users who navigate by landmarks (people who are blind or have low vision) and miss the region entirely, plus anyone relying on a consistent, complete set of page landmarks.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['1.3.1'],
-            'remediation': "Add aria-label or aria-labelledby, or use a different landmark type"
+            'remediation': "If the section is meant to be a landmark, give it an accessible name with aria-label or aria-labelledby, ideally referencing a visible heading: <section aria-labelledby=\"news-h\"><h2 id=\"news-h\">Latest news</h2>...</section>. If it does not need to be a landmark, use a plain <div> instead of <section>, or choose a more specific landmark element (such as <nav> or <aside>) that matches the content."
         },
         'WarnRightAlignedText': {
-            'title': "Body text is right-aligned affecting readability",
-            'what': "Body text in a primarily left-to-right page is rendered with text-align: right, which disrupts the expected reading flow.",
-            'why': "Right-aligned text is difficult to read for extended content.",
-            'who': "Users with dyslexia, users with reading disabilities.",
+            'title': "Block of body text is right-aligned on a left-to-right page",
+            'what': "A block of running body text is rendered with text-align: right (or dir/styling that right-aligns it) on a page whose primary language reads left to right, so each line ends flush right and begins at a ragged left edge.",
+            'why': "In a left-to-right script, the eye returns to a consistent left margin to start each new line. Right-aligned body text produces a ragged, unpredictable left edge, so the reader must hunt for the start of every line, which slows reading and causes lines to be skipped or re-read. WCAG 1.4.8 (Visual Presentation) calls for text that is not justified and that supports easy tracking from line to line; a shifting left margin works directly against that.",
+            'who': "Users with dyslexia and other reading disabilities are most affected, because locating the start of each line is already effortful and the inconsistent margin makes it worse. Users with low vision or using screen magnification, who see only a small portion of a line at a time, can lose the start of the next line entirely. Users with attention-related difficulties also struggle to track lines that do not begin at a predictable position.",
             'impact': ImpactScale.LOW.value,
             'wcag': ['1.4.8'],
-            'remediation': "Use left alignment for body text in left-to-right languages."
+            'remediation': "Set running body text in left-to-right languages to left alignment (text-align: left or the default). Reserve right alignment for genuinely right-to-left content (where the document or element direction is set with dir=\"rtl\") or for short, deliberate elements such as numeric table columns. Avoid right-aligning paragraphs or long passages of LTR text."
         },
         'WarnSmallLineHeight': {
             'title': "Line height less than 1.5x font size",
@@ -3617,13 +3617,13 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Review whether this positive tabindex serves a clear purpose for keyboard navigation within an interactive SVG widget (map, diagram, data visualization). If the SVG is interactive and the tab order creates a logical navigation flow for different content \"journeys\", this usage may be acceptable. If the SVG is decorative or the custom tab order doesn't provide clear value, remove the positive tabindex and use tabindex=\"0\" to add to natural tab order or tabindex=\"-1\" to remove from tab order but allow programmatic focus. Ensure any custom tab order is thoroughly tested with keyboard-only users."
         },
         'WarnTableMissingThead': {
-            'title': "Table missing thead element for headers",
-            'what': "A <table> uses <th> cells in its first row instead of grouping them inside a <thead> element. Browsers can still associate headers, but the structure is harder for assistive tech to navigate.",
-            'why': "Thead helps screen readers distinguish headers from data rows.",
-            'who': "Screen reader users navigating tables.",
+            'title': "Data table places header cells in the first row without a <thead>",
+            'what': "A <table> uses <th> header cells in its first row but does not group them inside a <thead> element, and the body rows are not wrapped in <tbody>. The header and data rows are siblings within the table rather than being grouped into distinct row sections.",
+            'why': "Grouping header rows in <thead> and data rows in <tbody> makes the table's structure explicit. While browsers can still associate <th> with the right scope, the row-group semantics help assistive technology distinguish the header region from the data region, support reliable table navigation, and keep headers anchored when the table scrolls or is paginated/printed. WCAG 1.3.1 (Info and Relationships) requires that structural relationships conveyed visually also be available programmatically; an explicit thead/tbody grouping reinforces that relationship.",
+            'who': "Screen reader users navigating tables cell by cell benefit from clear row-group boundaries, which help their software announce and re-announce column headers and confirm when they have moved from the header area into data. Users of assistive tools and reading modes that rely on table structure (including some magnification and reflow tools) also navigate more reliably when header and body rows are properly grouped.",
             'impact': ImpactScale.LOW.value,
             'wcag': ['1.3.1'],
-            'remediation': "Wrap header rows in thead element, data rows in tbody."
+            'remediation': "Wrap the header row(s) in a <thead> element and the data rows in a <tbody> element, and use scope on the header cells. For example:\n<table>\n  <thead>\n    <tr><th scope=\"col\">Name</th><th scope=\"col\">Role</th></tr>\n  </thead>\n  <tbody>\n    <tr><td>Ada</td><td>Engineer</td></tr>\n  </tbody>\n</table>"
         },
         'WarnRedundantTitleAttr': {
             'title': "Title attribute duplicates visible text, creating inaccessible tooltip",
@@ -3654,13 +3654,13 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Add an accessible name to the form using one of these methods: (1) aria-label: <form aria-label=\"Contact form\"> - provides a clear, concise label; (2) aria-labelledby: <h2 id=\"contact-heading\">Contact Us</h2> <form aria-labelledby=\"contact-heading\"> - references a visible heading; (3) title attribute: <form title=\"Newsletter signup\"> - less preferred but acceptable. Choose descriptive names that distinguish multiple forms on the same page: 'Login form', 'Search site', 'Newsletter signup', 'Contact form'. The name should be concise (2-4 words) and describe the form's purpose. Avoid generic names like 'Form 1' or 'Main form' that don't convey meaning. For pages with a single form, the name can be general ('Contact form'), but multiple forms require specific, distinguishing names. NOTE: This is a WCAG Conformance Requirement 5.2.4 Accessibility Supported failure, not a specific success criterion failure."
         },
         'WarnUnlabelledRegion': {
-            'title': "Region landmark lacks accessible name",
-            'what': "An element with role=\"region\" is missing an aria-label or aria-labelledby. Without a label, the region cannot be distinguished in the landmarks list.",
-            'why': "Named regions help users understand content structure.",
-            'who': "Screen reader users navigating by landmarks.",
+            'title': "Region role element has no accessible name",
+            'what': "An element with role=\"region\" was found that is missing both aria-label and aria-labelledby, so it has no accessible name. An element with role=\"region\" requires an accessible name to be exposed as a landmark, so without one it cannot be identified or distinguished in the landmarks list.",
+            'why': "A region landmark only earns its place in landmark navigation if it has a name. Without one, the element is either dropped from the landmarks list or listed as an anonymous \"region\" that the user cannot tell apart from any other. This deprives screen reader users of a meaningful structural cue and breaks the programmatically determinable structure required by WCAG 1.3.1 Info and Relationships.",
+            'who': "Screen reader users who navigate by landmarks (people who are blind or have low vision) and rely on named regions to understand and move through the page's structure.",
             'impact': ImpactScale.LOW.value,
             'wcag': ['1.3.1'],
-            'remediation': "Add aria-label or aria-labelledby to region landmarks."
+            'remediation': "Add a descriptive accessible name with aria-label or aria-labelledby, referencing a visible heading where one exists: <div role=\"region\" aria-labelledby=\"summary-h\"><h2 id=\"summary-h\">Account summary</h2>...</div>. If the content does not need to be a landmark, remove role=\"region\" instead of leaving it unnamed."
         },
         'WarnVagueTitleAttribute': {
             'title': "Title attribute contains vague or generic text that provides no useful information",
@@ -3699,13 +3699,13 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "Ensure visual presentation matches HTML semantic structure."
         },
         'WarnZeroOutlineOffset': {
-            'title': "Outline offset is set to zero",
-            'what': "A focus outline uses outline-offset: 0, meaning the outline sits flush against the element. Depending on background colours, the outline may visually merge with the element's border.",
-            'why': "Focus indicator touches element edge",
-            'who': "Keyboard users with low vision",
+            'title': "Focus outline uses outline-offset: 0 and may merge with the element edge",
+            'what': "A focus indicator is defined with outline-offset: 0, so the outline sits flush against the element. Depending on the element's border and the surrounding colours, the focus ring can visually merge with the element edge and become hard to distinguish.",
+            'why': "When the focus ring touches the element edge it can blend into the border or background, reducing how clearly the focus indicator stands out and weakening WCAG 2.4.7 Focus Visible. The consequence is that keyboard users, especially those with low vision, may struggle to see which control is focused.",
+            'who': "Keyboard-only users tracking focus across the page; low-vision users for whom an outline merged with the element edge is difficult to perceive; users on low-contrast or small displays.",
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['2.4.7'],
-            'remediation': "Use positive outline-offset value"
+            'remediation': "Set a small positive outline-offset so the focus ring is separated from the element edge, keeping the outline at 3:1 contrast against the adjacent background. Example:\n\n.control:focus-visible {\n  outline: 2px solid #1a5fb4;\n  outline-offset: 2px;\n}"
         },
         '[unique_identifier]': {
             'title': "[what the issue is]",
@@ -3717,13 +3717,13 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'remediation': "[remediation steps]"
         },
         'DiscoNoSubmitButton': {
-            'title': "Form may lack clear submit button",
-            'what': "A <form> was found that does not contain an obvious submit control (no <button type=\"submit\">, <input type=\"submit\">, or <input type=\"image\">). Verify that the form can still be submitted in an accessible way.",
-            'why': "Users may not know how to submit the form",
-            'who': "Users with cognitive disabilities, keyboard users",
+            'title': "Form has no detectable submit control",
+            'what': "A <form> element was found that contains no recognizable submit control: there is no <button type=\"submit\">, no <input type=\"submit\">, and no <input type=\"image\">. The form may instead rely on a scripted submit triggered by a <div>, a link, or the Enter key, which automated detection cannot confirm. Verify manually that the form can be submitted through an accessible, keyboard-operable control.",
+            'why': "If a form has no clearly identifiable submit control, users cannot be certain how to send their data, and a control built from non-semantic markup (such as a clickable <div>) may not be reachable or operable by keyboard. This relates to WCAG 3.3.2 Labels or Instructions and 4.1.2 Name, Role, Value. The consequence is that people may complete a form and then be unable to submit it, or may submit it accidentally, losing their work.",
+            'who': "Keyboard-only users who cannot reach a non-focusable scripted control; screen reader users who hear no submit button announced and do not know how to complete the form; people with cognitive or learning disabilities who rely on an explicit, predictable \"submit\" action.",
             'impact': ImpactScale.INFO.value,
             'wcag': ['3.3.2'],
-            'remediation': "Ensure form has clear submit mechanism"
+            'remediation': "Provide an explicit submit control using a native element so it is focusable, keyboard-operable, and announced with the correct role. For example: <form> ... <button type=\"submit\">Send message</button> </form>. Avoid relying on the Enter key alone or on click handlers attached to <div> or <span> elements. Give the control a clear text label describing the action (\"Submit application\", \"Search\")."
         },
         'ErrListitemEmpty': {
             'title': "Empty list item provides no content",

@@ -223,6 +223,13 @@ unsupported-dynamic-base = "error"
 # Run subsets via `pytest -m "ffmpeg"`, `pytest -m "not slow"`, etc.
 # =========================================================================
 [tool.pytest.ini_options]
+# Only collect the real test suite under tests/. Several production modules
+# match pytest's default test_*.py pattern (auto_a11y/testing/touchpoint_tests/
+# test_<touchpoint>.py define the JS-test entry points, not pytest tests), and
+# pytest otherwise tries to collect them and errors with "fixture 'page' not
+# found". All real tests live in tests/ (verified: pytest tests/ collects the
+# full suite), so scoping collection here is exact.
+testpaths = ["tests"]
 markers = [
     "ffmpeg: integration tests that shell out to ffmpeg",
     "deepgram: integration tests that hit Deepgram",

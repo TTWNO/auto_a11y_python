@@ -90,7 +90,8 @@
 
     .component-header.form {
         background-color: #fff3e0;
-        border-left-color: #f57c00;
+        /* darkened from #f57c00 (2.47:1) to meet SC 1.4.11 3:1 on the bg (#50) */
+        border-left-color: #b45309;
     }
 
     .component-header.aside {
@@ -100,7 +101,8 @@
 
     .component-header.section {
         background-color: #f1f8e9;
-        border-left-color: #689f38;
+        /* darkened from #689f38 (2.93:1) to meet SC 1.4.11 3:1 on the bg (#50) */
+        border-left-color: #3f6212;
     }
 
     /* Filter Panel Styling */
@@ -191,12 +193,14 @@
         margin-right: 0.5rem;
     }
 
+    /* White badge text: footer/form/section darkened to meet WCAG AA 4.5:1
+       (were 4.12 / 2.70 / 3.18). See GH #50. */
     .component-badge.navigation { background-color: #1976d2; }
     .component-badge.header { background-color: #7b1fa2; }
-    .component-badge.footer { background-color: #388e3c; }
-    .component-badge.form { background-color: #f57c00; }
+    .component-badge.footer { background-color: #2e7d32; }
+    .component-badge.form { background-color: #b45309; }
     .component-badge.aside { background-color: #c2185b; }
-    .component-badge.section { background-color: #689f38; }
+    .component-badge.section { background-color: #3f6212; }
     .component-badge.none { background-color: var(--color-text-muted); }
 
     /* Page list styling */

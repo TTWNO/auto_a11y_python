@@ -37,6 +37,7 @@ _PLACEHOLDER_FALLBACKS_EN: dict[str, str] = {
     'firstHeadingLevel': '?',
     'current_level': '?',
     'suggested_level': '?',
+    'next_level': '?',
     'heading_text': 'this heading',
     'headingText': 'this heading',
     'element': 'an element',
@@ -71,6 +72,7 @@ _PLACEHOLDER_FALLBACKS_FR: dict[str, str] = {
     'firstHeadingLevel': '?',
     'current_level': '?',
     'suggested_level': '?',
+    'next_level': '?',
     'heading_text': 'ce titre',
     'headingText': 'ce titre',
     'element': 'un élément',
@@ -95,22 +97,89 @@ _PLACEHOLDER_FALLBACKS_FR: dict[str, str] = {
 }
 
 
+def _is_meaningful(value: Any) -> bool:
+    """True when a metadata value is worth substituting.
+
+    Empty strings, ``None`` and the literal strings ``"none"``/``"null"``/
+    ``"undefined"`` (which the JS tests and AI analyzer emit for absent data)
+    are treated as missing so the caller falls back to readable prose instead
+    of rendering an empty fragment such as ``<h>`` or ``Heading ""``.
+    """
+    if value is None:
+        return False
+    text = str(value).strip()
+    return text != '' and text.lower() not in ('none', 'null', 'undefined')
+
+
+def _style_variants(key: str) -> list[str]:
+    """Return ``key`` plus its camelCase/snake_case counterpart(s).
+
+    Description templates and the metadata that fills them don't always agree
+    on a naming style — e.g. a template asks for ``{current_level}`` while the
+    test emits ``currentLevel``. Trying both styles recovers the real value
+    instead of dropping to a fallback.
+    """
+    variants = [key]
+    if '_' in key:
+        head, *rest = key.split('_')
+        camel = head + ''.join(w[:1].upper() + w[1:] for w in rest if w)
+        if camel and camel not in variants:
+            variants.append(camel)
+    snake = re.sub(r'(?<!^)(?=[A-Z])', '_', key).lower()
+    if snake not in variants:
+        variants.append(snake)
+    return variants
+
+
 def _placeholder_fallback(key: str, locale: str) -> str:
     """Return a sensible fallback when a placeholder can't be filled from metadata.
 
     Prevents literal '{key}' strings from leaking into rendered reports. The
-    fallback table is consulted with the raw key first, then with the leading
-    dotted/underscore segment (so e.g. 'currentElement.tag' falls back via
-    'currentElement' if present).
+    fallback table is consulted with the raw key (and its camel/snake variants)
+    first, then with the leading dotted/underscore segment (so e.g.
+    'currentElement.tag' falls back via 'currentElement' if present).
     """
     table = _PLACEHOLDER_FALLBACKS_FR if locale == 'fr' else _PLACEHOLDER_FALLBACKS_EN
-    if key in table:
-        return table[key]
+    for variant in _style_variants(key):
+        if variant in table:
+            return table[variant]
     base = key.split('.')[0]
-    if base in table:
-        return table[base]
+    for variant in _style_variants(base):
+        if variant in table:
+            return table[variant]
     base = base.split('_')[0]
     return table.get(base, '')
+
+
+def _metadata_lookup(metadata: dict[str, Any], path: str) -> str | None:
+    """Resolve a (possibly dotted) placeholder path against ``metadata``.
+
+    Walks each segment trying camelCase/snake_case variants, and treats
+    empty/placeholder values as missing. Returns the stringified leaf value or
+    ``None`` when nothing meaningful is found.
+    """
+    current: Any = metadata
+    parts = path.split('.')
+    for idx, segment in enumerate(parts):
+        if not hasattr(current, 'get'):
+            return None
+        # ``.get`` only (no ``in``/subscript) so strict type-checkers don't
+        # choke on the ``hasattr``-narrowed protocol type. An absent key and an
+        # explicit ``None`` value are treated identically (both → skip variant).
+        value: Any = None
+        for variant in _style_variants(segment):
+            candidate: Any = current.get(variant)
+            if candidate is not None:
+                value = candidate
+                break
+        if value is None:
+            return None
+        if idx == len(parts) - 1:
+            if not _is_meaningful(value):
+                return None
+            return str(value)
+        current = value
+    return None
 
 
 def _load_translations(lang: str) -> dict[str, dict[str, str]]:
@@ -195,38 +264,6 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
                 translated_desc[field] = issue_trans[field]
 
     return _apply_metadata(translated_desc, metadata)
-
-
-def _resolve_dotted_path(data: dict[str, Any], keys: list[str]) -> str | None:
-    """Walk a dotted key path (e.g. ``["currentElement", "tag"]``) through
-    nested dicts and return the stringified leaf value, or ``None``.
-
-    Uses ``dict.get`` exclusively (no ``isinstance`` narrowing) so
-    pyright strict mode does not produce ``Unknown`` from dict type
-    parameter narrowing.
-    """
-    if not keys:
-        return None
-    first: Any = data.get(keys[0])
-    if first is None:
-        return None
-    if len(keys) == 1:
-        return str(first)
-    # Second level
-    if not hasattr(first, 'get'):
-        return None
-    second: Any = first.get(keys[1])
-    if second is None:
-        return None
-    if len(keys) == 2:
-        return str(second)
-    # Third level (deepest used in practice)
-    if not hasattr(second, 'get'):
-        return None
-    third: Any = second.get(keys[2])
-    if third is None:
-        return None
-    return str(third)
 
 
 def _apply_metadata(desc: dict[str, Any], metadata: dict[str, Any] | None) -> dict[str, Any]:
@@ -348,9 +385,7 @@ def _apply_metadata(desc: dict[str, Any], metadata: dict[str, Any] | None) -> di
                             'linkCount_plural']:
                     return match.group(0)
 
-                parts = path.split('.')
-
-                result = _resolve_dotted_path(metadata, parts)
+                result = _metadata_lookup(metadata, path)
                 if result is not None:
                     return result
                 logger.debug("Placeholder {%s} missing from metadata; using fallback.", path)
@@ -394,10 +429,10 @@ def _apply_metadata(desc: dict[str, Any], metadata: dict[str, Any] | None) -> di
                         return 's'
                     return ''
 
-                # Look up value in metadata
-                value = metadata.get(key)
-                if value is not None:
-                    return str(value)
+                # Look up value in metadata (camel/snake aware, empty == missing)
+                resolved = _metadata_lookup(metadata, key)
+                if resolved is not None:
+                    return resolved
                 logger.debug("Placeholder %%(%s)s missing from metadata; using fallback.", key)
                 return _placeholder_fallback(key, locale)
 

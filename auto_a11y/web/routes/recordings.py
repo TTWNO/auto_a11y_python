@@ -21,6 +21,7 @@ from auto_a11y.web.typed_app import (
     get_app_config, get_audio_storage, get_db, get_video_runner,
 )
 from werkzeug.datastructures import FileStorage
+from werkzeug.exceptions import HTTPException
 from werkzeug.wrappers import Response as WerkzeugResponse
 import logging
 import json
@@ -732,6 +733,13 @@ def upload_json() -> str | Response | WerkzeugResponse:
             if tmp_file_en:
                 Path(tmp_file_en).unlink(missing_ok=True)
 
+    except HTTPException:
+        # Authorization aborts (e.g. ``abort(403)`` from ``_can_edit_project``)
+        # and any other ``abort(...)`` must reach the client with their real
+        # status, not be swallowed by the broad ``except Exception`` below and
+        # downgraded to a 302 redirect. Without this, the in-handler IDOR guard
+        # was silently neutered.
+        raise
     except json.JSONDecodeError as e:
         logger.error(f"Invalid JSON file: {e}")
         flash(ftl('recordings-invalid-json-file-error', error=str(e)), "danger")

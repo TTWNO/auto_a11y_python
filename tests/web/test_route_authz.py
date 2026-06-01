@@ -783,6 +783,99 @@ def test_recordings_issue_status_forbidden_for_client(
     assert resp.status_code == 403
 
 
+# ---------------------------------------------------------------------------
+# Task 1.6 (cont.): in-handler upload authorization (_can_edit_project)
+# ---------------------------------------------------------------------------
+#
+# ``upload_video`` / ``upload_json`` take ``project_id`` from a POST form field,
+# not a URL kwarg, so ``project_role_required`` cannot guard them and they are
+# excluded from the per-route introspection sweep (``_RECORDINGS_UNRESOLVABLE``).
+# Authorization instead lives INSIDE the handler: both call
+# ``_can_edit_project(project_id)`` ->
+# ``user_has_permission(user, project_id, 'test_results', 'create')`` (with a
+# superadmin bypass) and ``abort(403)`` on failure. That in-handler check has no
+# coverage from the introspection test, so these tests lock it directly.
+#
+# We target ``upload_json`` because it is the cleanest path to the check: it
+# spawns no browser and runs no heavyweight processing (that is the video /
+# ``/process`` path). The handler's check order is: english JSON file present
+# (redirect 302 if missing) -> filename ends ``.json`` (302) -> ``project_id``
+# present (302) -> ``_can_edit_project`` (abort 403). So to *reach* the
+# membership gate we must POST a ``.json``-named file in ``json_file_en`` plus a
+# ``project_id`` form field; only then does the tier decide 403-vs-not.
+#
+# The harness patch grants edit tier (``test_results:create``) to ``auditor``
+# (and ``admin``) but not to ``client`` (``projects:read`` only) or ``None`` --
+# exactly mirroring ``_can_edit_project``'s requirement.
+
+
+def _upload_json_post(
+    monkeypatch: pytest.MonkeyPatch, role: Role | None,
+) -> Response:
+    """POST a minimal valid JSON import to ``/recordings/upload/json``.
+
+    Sends a ``.json``-named file in ``json_file_en`` (valid JSON body, so an
+    authorized request gets *past* the membership gate before any parse error)
+    plus a ``project_id`` form field -- the two inputs required to reach
+    ``_can_edit_project``. Returns the raw response for status assertions.
+    """
+    import io
+
+    client = _recordings_client(monkeypatch, role=role)
+    return client.post(
+        '/recordings/upload/json',
+        data={
+            'project_id': 'proj-abc',
+            'json_file_en': (io.BytesIO(b'{"recording": "REC-X"}'), 'export.json'),
+        },
+        content_type='multipart/form-data',
+    )
+
+
+def test_recordings_upload_json_in_handler_authz_forbids_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """In-handler ``_can_edit_project`` rejects a CLIENT-tier user with 403.
+
+    ``client`` has only ``projects:read``, not the ``test_results:create`` that
+    ``_can_edit_project`` requires, so the handler must ``abort(403)`` before
+    persisting anything -- closing the IDOR where a read-only member could
+    attach a recording to a project they cannot edit.
+    """
+    resp = _upload_json_post(monkeypatch, role='client')
+
+    assert resp.status_code == 403
+
+
+def test_recordings_upload_json_in_handler_authz_forbids_no_role(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """In-handler ``_can_edit_project`` rejects a non-member (no role) with 403."""
+    resp = _upload_json_post(monkeypatch, role=None)
+
+    assert resp.status_code == 403
+
+
+def test_recordings_upload_json_in_handler_authz_admits_auditor(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An AUDITOR (edit tier) is NOT rejected by the membership gate.
+
+    ``auditor`` holds ``test_results:create``, so ``_can_edit_project`` returns
+    True and the handler proceeds past the 403 abort. Downstream the body runs
+    against the MagicMock db and fails for unrelated reasons (converted to a
+    non-403 status by ``PROPAGATE_EXCEPTIONS=False``). We assert the auditor's
+    status differs from the client's and is specifically NOT 403 -- proving the
+    distinction is the membership check, not the request shape.
+    """
+    auditor_resp = _upload_json_post(monkeypatch, role='auditor')
+    client_resp = _upload_json_post(monkeypatch, role='client')
+
+    assert client_resp.status_code == 403
+    assert auditor_resp.status_code != 403
+    assert auditor_resp.status_code != client_resp.status_code
+
+
 def test_api_list_recordings_scopes_to_accessible_projects(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

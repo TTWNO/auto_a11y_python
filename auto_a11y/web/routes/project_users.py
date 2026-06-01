@@ -9,7 +9,9 @@ from flask import Blueprint, Response, render_template, request, redirect, url_f
 from werkzeug.wrappers import Response as WerkzeugResponse
 from auto_a11y.web.api.deprecation import deprecated
 from auto_a11y.web.fluent import ftl
+from auto_a11y.web.routes.auth import project_role_required
 from auto_a11y.web.typed_app import get_db, get_app_config
+from auto_a11y.models.app_user import UserRole
 from auto_a11y.models.project_user import ProjectUser, LoginConfig, AuthenticationMethod
 from auto_a11y.core.browser_manager import BrowserManager
 from auto_a11y.testing.login_automation import LoginAutomation
@@ -21,6 +23,7 @@ project_users_bp = Blueprint('project_users', __name__)
 
 
 @project_users_bp.route('/projects/<project_id>/users')
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def list_users(project_id: str) -> str | Response | WerkzeugResponse:
     """List all test users for a project"""
     project = get_db().get_project(project_id)
@@ -41,6 +44,7 @@ def list_users(project_id: str) -> str | Response | WerkzeugResponse:
 
 
 @project_users_bp.route('/projects/<project_id>/users/create', methods=['GET', 'POST'])
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def create_user(project_id: str) -> str | Response | WerkzeugResponse:
     """Create a new test user"""
     project = get_db().get_project(project_id)
@@ -102,6 +106,7 @@ def create_user(project_id: str) -> str | Response | WerkzeugResponse:
 
 
 @project_users_bp.route('/projects/users/<user_id>')
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def view_user(user_id: str) -> str | Response | WerkzeugResponse:
     """View user details"""
     user = get_db().get_project_user(user_id)
@@ -117,6 +122,7 @@ def view_user(user_id: str) -> str | Response | WerkzeugResponse:
 
 
 @project_users_bp.route('/projects/users/<user_id>/edit', methods=['GET', 'POST'])
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def edit_user(user_id: str) -> str | Response | WerkzeugResponse:
     """Edit a test user"""
     user = get_db().get_project_user(user_id)
@@ -180,6 +186,7 @@ def edit_user(user_id: str) -> str | Response | WerkzeugResponse:
 
 
 @project_users_bp.route('/projects/users/<user_id>/delete', methods=['POST'])
+@project_role_required(UserRole.ADMIN)
 def delete_user(user_id: str) -> Response | tuple[Response, int]:
     """Delete a test user"""
     user = get_db().get_project_user(user_id)
@@ -200,6 +207,7 @@ def delete_user(user_id: str) -> Response | tuple[Response, int]:
 
 
 @project_users_bp.route('/projects/users/<user_id>/test-login', methods=['POST'])
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def test_login(user_id: str) -> Response | tuple[Response, int]:
     """Test login for a project user without running a full test"""
     user = get_db().get_project_user(user_id)
@@ -267,6 +275,7 @@ def test_login(user_id: str) -> Response | tuple[Response, int]:
 
 
 @project_users_bp.route('/projects/users/<user_id>/toggle', methods=['POST'])
+@project_role_required(UserRole.ADMIN)
 def toggle_user(user_id: str) -> Response | tuple[Response, int]:
     """Enable/disable a test user"""
     user = get_db().get_project_user(user_id)
@@ -292,6 +301,7 @@ def toggle_user(user_id: str) -> Response | tuple[Response, int]:
     successor="/api/v1/project-test-users/<user_id>/session-cache",
     sunset="2026-09-01",
 )
+@project_role_required(UserRole.ADMIN)
 def clear_cache(user_id: str) -> Response | tuple[Response, int]:
     """Delete the cached manual-login session for this project user."""
     from auto_a11y.testing.login_automation import clear_session_cache

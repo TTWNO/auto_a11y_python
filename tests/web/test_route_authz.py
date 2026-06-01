@@ -24,6 +24,7 @@ from werkzeug.wrappers import Response
 from auto_a11y.models.app_user import UserRole
 from auto_a11y.web.routes.auth import project_role_required
 from auto_a11y.web.routes.pages import pages_bp
+from auto_a11y.web.routes.project_users import project_users_bp
 from auto_a11y.web.routes.websites import websites_bp
 
 from tests.web._authz_helpers import StubUser, Role, make_app_with_blueprint
@@ -431,3 +432,193 @@ def test_every_websites_route_is_guarded() -> None:
         and endpoint != 'websites.api_list_websites'
     ]
     assert not unguarded, f'unguarded websites_bp routes: {unguarded}'
+
+
+# ---------------------------------------------------------------------------
+# Task 1.5: project_users_bp per-project authorization (IDOR fix)
+# ---------------------------------------------------------------------------
+#
+# project_users_bp manages stored test-site login CREDENTIALS, so it uses the
+# stricter tiering: NO CLIENT access on any route. Routes are keyed on either
+# ``project_id`` (list_users, create_user) or ``user_id`` (view/edit/delete/
+# test-login/toggle/clear-cache). ``resolve_project_id`` turns ``user_id`` into
+# the owning project's id by looking it up via the MagicMock db (truthy), then
+# the patched ``user_has_permission`` seam decides the effective role.
+# Destructive/state-changing routes (delete_user, toggle_user, clear_cache) are
+# ADMIN-only; the rest are ADMIN/AUDITOR.
+
+
+def _project_users_client(
+    monkeypatch: pytest.MonkeyPatch, role: Role | None,
+) -> FlaskClient:
+    """Authenticated test client for ``project_users_bp`` (no url_prefix).
+
+    The blueprint declares full ``/projects/...`` paths itself, so it is
+    registered without a prefix. Exception propagation is disabled so an
+    authorized request that passes the guard and 404s/500s against the
+    MagicMock db yields a non-403 status rather than bubbling out.
+    """
+    app = make_app_with_blueprint(
+        project_users_bp, role=role, monkeypatch=monkeypatch,
+    )
+    app.config['PROPAGATE_EXCEPTIONS'] = False
+    return _authenticated_client(app)
+
+
+def test_project_users_list_forbidden_without_role(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """project_id-scoped route (list_users): no role -> 403."""
+    client = _project_users_client(monkeypatch, role=None)
+
+    resp = client.get('/projects/proj-abc/users')
+
+    assert resp.status_code == 403
+
+
+def test_project_users_list_forbidden_for_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """list_users is credential-tier (ADMIN/AUDITOR): a client is rejected."""
+    client = _project_users_client(monkeypatch, role='client')
+
+    resp = client.get('/projects/proj-abc/users')
+
+    assert resp.status_code == 403
+
+
+def test_project_users_list_allowed_for_admin(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """list_users admits ADMIN: guard lets the request through (not 403)."""
+    client = _project_users_client(monkeypatch, role='admin')
+
+    resp = client.get('/projects/proj-abc/users')
+
+    assert resp.status_code != 403
+
+
+def test_project_users_view_forbidden_without_role(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """user_id-scoped route (view_user): no role -> 403."""
+    client = _project_users_client(monkeypatch, role=None)
+
+    resp = client.get('/projects/users/user-abc')
+
+    assert resp.status_code == 403
+
+
+def test_project_users_view_forbidden_for_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """view_user is credential-tier (ADMIN/AUDITOR): a client is rejected.
+
+    Credential routes expose stored login secrets, so CLIENT never has access.
+    """
+    client = _project_users_client(monkeypatch, role='client')
+
+    resp = client.get('/projects/users/user-abc')
+
+    assert resp.status_code == 403
+
+
+def test_project_users_view_allowed_for_admin(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """view_user admits ADMIN: guard lets the request through (not 403)."""
+    client = _project_users_client(monkeypatch, role='admin')
+
+    resp = client.get('/projects/users/user-abc')
+
+    assert resp.status_code != 403
+
+
+def test_project_users_delete_forbidden_for_auditor(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """delete_user is ADMIN-only: an auditor must be rejected."""
+    client = _project_users_client(monkeypatch, role='auditor')
+
+    resp = client.post('/projects/users/user-abc/delete')
+
+    assert resp.status_code == 403
+
+
+def test_project_users_delete_forbidden_for_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """delete_user is ADMIN-only: a client must be rejected."""
+    client = _project_users_client(monkeypatch, role='client')
+
+    resp = client.post('/projects/users/user-abc/delete')
+
+    assert resp.status_code == 403
+
+
+def test_project_users_delete_allowed_for_admin(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """delete_user admits ADMIN: guard lets the request through (not 403)."""
+    client = _project_users_client(monkeypatch, role='admin')
+
+    resp = client.post('/projects/users/user-abc/delete')
+
+    assert resp.status_code != 403
+
+
+def test_every_project_users_route_enforces_authz(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Per-route introspection: EVERY project_users_bp route 403s for role=None.
+
+    Stronger than a ``__wrapped__`` check: it proves real authorization runs on
+    every route. We iterate the url_map, turn each rule's path pattern into a
+    concrete URL by filling every ``<param>`` placeholder with a dummy value
+    (the MagicMock db makes ``resolve_project_id`` truthy for both
+    ``project_id`` and ``user_id``), drive an allowed method, and assert 403.
+    role=None never reaches the view body, so this is safe to drive for real.
+
+    If a new credential route is added without a guard it will return non-403
+    here and fail -- this catches additions the per-route tests above don't.
+    """
+    import re
+
+    client = _project_users_client(monkeypatch, role=None)
+
+    endpoints: set[str] = set()
+    for rule in client.application.url_map.iter_rules():
+        endpoint = str(rule.endpoint)
+        if not endpoint.startswith('project_users.'):
+            continue
+        endpoints.add(endpoint)
+
+        # ``str(rule)`` is the path pattern, e.g. ``/projects/users/<user_id>``.
+        # Replace each ``<...>`` placeholder with a concrete dummy segment.
+        path = re.sub(r'<[^>]+>', 'x', str(rule))
+
+        # ``rule.methods`` may be ``None``; pick a concrete, non-automatic verb.
+        rule_methods = rule.methods
+        usable = (set(rule_methods) if rule_methods is not None else {'GET'}) - {
+            'HEAD', 'OPTIONS',
+        }
+        method = 'GET' if 'GET' in usable else sorted(usable)[0]
+
+        resp = client.open(path, method=method)
+        assert resp.status_code == 403, (
+            f'{endpoint} ({method} {path}) returned '
+            f'{resp.status_code}, expected 403 for role=None'
+        )
+
+    # Every documented credential route was exercised; if this set ever grows,
+    # a contributor must add its guard (or this test fails for the new route).
+    assert endpoints == {
+        'project_users.list_users',
+        'project_users.create_user',
+        'project_users.view_user',
+        'project_users.edit_user',
+        'project_users.delete_user',
+        'project_users.test_login',
+        'project_users.toggle_user',
+        'project_users.clear_cache',
+    }

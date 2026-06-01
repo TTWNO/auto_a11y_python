@@ -160,7 +160,9 @@ def _resolve_project_id(**kwargs: Any) -> str | None:
             return issue_project_id
         issue_recording_id: str | None = getattr(issue, 'recording_id', None)
         if issue_recording_id:
-            recording = db.get_recording(issue_recording_id)
+            # RecordingIssue.recording_id holds the human Recording.recording_id
+            # (e.g. 'NED-A'), not the Mongo _id, so look it up by that field.
+            recording = db.get_recording_by_recording_id(issue_recording_id)
             return recording.project_id if recording else None
         return None
 

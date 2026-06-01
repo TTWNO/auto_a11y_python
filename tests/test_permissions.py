@@ -98,6 +98,7 @@ class _FakeDb:
         websites: dict[str, _Obj] | None = None,
         recording_issues: dict[str, _Obj] | None = None,
         recordings: dict[str, _Obj] | None = None,
+        recordings_by_recording_id: dict[str, _Obj] | None = None,
     ) -> None:
         self._project_users = project_users or {}
         self._scripts = scripts or {}
@@ -106,6 +107,7 @@ class _FakeDb:
         self._websites = websites or {}
         self._recording_issues = recording_issues or {}
         self._recordings = recordings or {}
+        self._recordings_by_recording_id = recordings_by_recording_id or {}
 
     def get_project_user(self, user_id: str) -> _Obj | None:
         return self._project_users.get(user_id)
@@ -127,6 +129,9 @@ class _FakeDb:
 
     def get_recording(self, recording_id: str) -> _Obj | None:
         return self._recordings.get(recording_id)
+
+    def get_recording_by_recording_id(self, recording_id: str) -> _Obj | None:
+        return self._recordings_by_recording_id.get(recording_id)
 
 
 def test_resolve_project_id_from_user_id(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -167,10 +172,17 @@ def test_resolve_project_id_from_issue_id_direct_project(
 def test_resolve_project_id_from_issue_id_via_recording(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """An issue lacking ``project_id`` resolves via its recording."""
+    """An issue lacking ``project_id`` resolves via its recording.
+
+    ``RecordingIssue.recording_id`` holds the *human* recording id
+    (``Recording.recording_id``, e.g. 'NED-A'), so the fallback must look it
+    up via ``get_recording_by_recording_id`` (the ``recording_id`` field),
+    not ``get_recording`` (the Mongo ``_id``). Seed only the by-recording-id
+    map so this test fails if the resolver uses ``get_recording``.
+    """
     db = _FakeDb(
-        recording_issues={"i1": _Obj(project_id=None, recording_id="rec1")},
-        recordings={"rec1": _Obj(project_id="p1")},
+        recording_issues={"i1": _Obj(project_id=None, recording_id="NED-A")},
+        recordings_by_recording_id={"NED-A": _Obj(project_id="p1")},
     )
     monkeypatch.setattr("auto_a11y.core.permissions._get_db", lambda: db)
     from auto_a11y.core.permissions import resolve_project_id as _resolve_project_id

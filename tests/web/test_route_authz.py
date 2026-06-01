@@ -14,6 +14,8 @@ If this fails, the bug is in the HARNESS, not the production decorator.
 """
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pytest
 from flask import Blueprint, Flask, jsonify
 from flask.testing import FlaskClient
@@ -22,6 +24,7 @@ from werkzeug.wrappers import Response
 from auto_a11y.models.app_user import UserRole
 from auto_a11y.web.routes.auth import project_role_required
 from auto_a11y.web.routes.pages import pages_bp
+from auto_a11y.web.routes.websites import websites_bp
 
 from tests.web._authz_helpers import StubUser, Role, make_app_with_blueprint
 
@@ -218,3 +221,213 @@ def test_every_pages_route_is_guarded() -> None:
         if not hasattr(view, '__wrapped__')
     ]
     assert not unguarded, f'unguarded pages_bp routes: {unguarded}'
+
+
+# ---------------------------------------------------------------------------
+# Task 1.4: websites_bp per-project authorization (IDOR fix)
+# ---------------------------------------------------------------------------
+#
+# Every websites_bp route except ``api_list_websites`` takes a ``website_id``
+# URL param. ``resolve_project_id`` turns that into the owning project's id by
+# looking it up via the MagicMock db, then the patched ``user_has_permission``
+# seam decides the effective role. ``api_list_websites`` has no resource to
+# resolve and is instead protected by filtering its result to the current
+# user's accessible projects (verified separately).
+
+
+def _websites_client(
+    monkeypatch: pytest.MonkeyPatch, role: Role | None,
+) -> FlaskClient:
+    """Authenticated test client for ``websites_bp`` at ``/websites`` prefix."""
+    app = make_app_with_blueprint(
+        websites_bp, role=role, monkeypatch=monkeypatch, url_prefix='/websites',
+    )
+    app.config['PROPAGATE_EXCEPTIONS'] = False
+    return _authenticated_client(app)
+
+
+def test_websites_view_forbidden_without_role(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Read route (view_website) IDOR guard: no role -> 403."""
+    client = _websites_client(monkeypatch, role=None)
+
+    resp = client.get('/websites/web-abc')
+
+    assert resp.status_code == 403
+
+
+@pytest.mark.parametrize('role', ['admin', 'auditor', 'client'])
+def test_websites_test_status_allowed_for_authorized_roles(
+    role: Role,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """test_status (read tier) admits admin/auditor/client.
+
+    A read-tier route with a fast body (no template render / heavyweight
+    work) so a non-403 cleanly proves the guard let the request through.
+    """
+    client = _websites_client(monkeypatch, role=role)
+
+    resp = client.get('/websites/web-abc/test-status')
+
+    assert resp.status_code != 403
+
+
+def test_websites_clear_results_forbidden_without_role(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Destructive route (clear_test_results) IDOR guard: no role -> 403."""
+    client = _websites_client(monkeypatch, role=None)
+
+    resp = client.post('/websites/web-abc/clear-test-results')
+
+    assert resp.status_code == 403
+
+
+def test_websites_clear_results_forbidden_for_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """clear_test_results is ADMIN-only: a client must be rejected."""
+    client = _websites_client(monkeypatch, role='client')
+
+    resp = client.post('/websites/web-abc/clear-test-results')
+
+    assert resp.status_code == 403
+
+
+def test_websites_clear_results_forbidden_for_auditor(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """clear_test_results is ADMIN-only: an auditor must be rejected."""
+    client = _websites_client(monkeypatch, role='auditor')
+
+    resp = client.post('/websites/web-abc/clear-test-results')
+
+    assert resp.status_code == 403
+
+
+def test_websites_clear_results_allowed_for_admin(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """clear_test_results admits ADMIN: guard lets the request through."""
+    client = _websites_client(monkeypatch, role='admin')
+
+    resp = client.post('/websites/web-abc/clear-test-results')
+
+    assert resp.status_code != 403
+
+
+def test_websites_discover_forbidden_for_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """discover_pages is edit tier (ADMIN/AUDITOR): a client is rejected.
+
+    The guard fires before the body, so the discovery job is never queued
+    (asserting on the body would spawn real crawl work; we only need the 403).
+    """
+    client = _websites_client(monkeypatch, role='client')
+
+    resp = client.post('/websites/web-abc/discover')
+
+    assert resp.status_code == 403
+
+
+def test_websites_add_page_forbidden_for_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """add_page is edit tier (ADMIN/AUDITOR): a client is rejected."""
+    client = _websites_client(monkeypatch, role='client')
+
+    resp = client.post('/websites/web-abc/add-page')
+
+    assert resp.status_code == 403
+
+
+def test_websites_add_page_allowed_for_auditor(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """add_page admits AUDITOR (edit tier).
+
+    With no ``url`` form field the body returns a fast 400, proving the guard
+    let the request through without doing any heavyweight work.
+    """
+    client = _websites_client(monkeypatch, role='auditor')
+
+    resp = client.post('/websites/web-abc/add-page')
+
+    assert resp.status_code != 403
+
+
+def test_api_list_websites_scopes_to_accessible_projects(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """``api_list_websites`` must not leak websites from other tenants.
+
+    Two websites live in two different projects; the stub user is a member of
+    only one. The endpoint must return only the website in the accessible
+    project, with the JSON shape unchanged.
+    """
+    app = make_app_with_blueprint(
+        websites_bp, role='client', monkeypatch=monkeypatch,
+        url_prefix='/websites',
+    )
+
+    accessible = SimpleNamespace(
+        id='web-1', name='Accessible', url='https://a.example',
+        project_id='proj-accessible',
+    )
+    hidden = SimpleNamespace(
+        id='web-2', name='Hidden', url='https://b.example',
+        project_id='proj-hidden',
+    )
+    accessible_project = SimpleNamespace(
+        id='proj-accessible', name='Accessible', description='',
+    )
+
+    db = getattr(app, 'db')
+    db.get_all_websites.return_value = [accessible, hidden]
+    db.get_projects_for_user.return_value = [accessible_project]
+
+    client = _authenticated_client(app)
+    resp = client.get('/websites/api/list')
+
+    assert resp.status_code == 200
+    body = resp.get_json()
+    assert body['success'] is True
+    returned_ids = {w['id'] for w in body['websites']}
+    assert returned_ids == {'web-1'}
+    # Shape unchanged: each entry still carries the same keys.
+    assert set(body['websites'][0].keys()) == {
+        'id', 'name', 'url', 'project_id',
+    }
+
+
+def test_every_websites_route_is_guarded() -> None:
+    """Every websites_bp view is wrapped by project_role_required.
+
+    ``api_list_websites`` is the sole exception: it has no per-resource id to
+    resolve and is instead protected by filtering its result to the user's
+    accessible projects, so it is excluded from the wrapping requirement.
+    """
+    app = Flask(__name__)
+    setattr(app, 'db', None)
+    app.register_blueprint(websites_bp, url_prefix='/websites')
+
+    websites_endpoints = [
+        (rule.endpoint, view)
+        for rule, view in (
+            (rule, app.view_functions[rule.endpoint])
+            for rule in app.url_map.iter_rules()
+            if rule.endpoint.startswith('websites.')
+        )
+    ]
+    assert websites_endpoints, 'no websites_bp routes registered'
+
+    unguarded = [
+        endpoint
+        for endpoint, view in websites_endpoints
+        if not hasattr(view, '__wrapped__')
+        and endpoint != 'websites.api_list_websites'
+    ]
+    assert not unguarded, f'unguarded websites_bp routes: {unguarded}'

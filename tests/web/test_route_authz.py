@@ -21,6 +21,7 @@ from werkzeug.wrappers import Response
 
 from auto_a11y.models.app_user import UserRole
 from auto_a11y.web.routes.auth import project_role_required
+from auto_a11y.web.routes.pages import pages_bp
 
 from tests.web._authz_helpers import StubUser, Role, make_app_with_blueprint
 
@@ -100,3 +101,120 @@ def test_unauthenticated_request_is_rejected(
                       content_type='application/json')
 
     assert resp.status_code == 401
+
+
+# ---------------------------------------------------------------------------
+# Task 1.3: pages_bp per-project authorization (IDOR fix)
+# ---------------------------------------------------------------------------
+#
+# Every pages_bp route takes a ``page_id`` URL param. In the harness the
+# MagicMock ``db`` makes ``resolve_project_id`` return a (truthy MagicMock)
+# project id without touching real Mongo, so the patched ``user_has_permission``
+# seam alone decides the effective role: ``role=None`` -> 403, granted -> not 403.
+
+
+def _pages_client(monkeypatch: pytest.MonkeyPatch, role: Role | None) -> FlaskClient:
+    """Authenticated test client for ``pages_bp`` at ``/pages`` prefix.
+
+    Exception propagation is disabled so that when an *authorized* request
+    passes the guard and runs the view body, any error raised by the body
+    against the MagicMock db (e.g. a ``url_for`` ``BuildError`` for an
+    endpoint that lives in another, unregistered blueprint) is converted to a
+    500 response instead of bubbling out of the test client. The guard's own
+    403 is returned before the body runs, so it is never masked by this.
+    """
+    app = make_app_with_blueprint(
+        pages_bp, role=role, monkeypatch=monkeypatch, url_prefix='/pages',
+    )
+    app.config['PROPAGATE_EXCEPTIONS'] = False
+    return _authenticated_client(app)
+
+
+def test_pages_view_forbidden_without_role(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Read route (view_page) IDOR guard: no role -> 403, body never runs."""
+    client = _pages_client(monkeypatch, role=None)
+
+    resp = client.get('/pages/page-abc')
+
+    assert resp.status_code == 403
+
+
+@pytest.mark.parametrize('role', ['admin', 'auditor', 'client'])
+def test_pages_view_allowed_for_authorized_roles(
+    role: Role,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """view_page admits admin/auditor/client (read tier).
+
+    A non-403 status proves the guard let the request through to the body
+    (which then 404s/500s against the MagicMock db -- that's fine here).
+    """
+    client = _pages_client(monkeypatch, role=role)
+
+    resp = client.get('/pages/page-abc')
+
+    assert resp.status_code != 403
+
+
+def test_pages_delete_forbidden_without_role(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Destructive route (delete_page) IDOR guard: no role -> 403."""
+    client = _pages_client(monkeypatch, role=None)
+
+    resp = client.post('/pages/page-abc/delete')
+
+    assert resp.status_code == 403
+
+
+def test_pages_delete_forbidden_for_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """delete_page is ADMIN-only: a client (read tier) must be rejected."""
+    client = _pages_client(monkeypatch, role='client')
+
+    resp = client.post('/pages/page-abc/delete')
+
+    assert resp.status_code == 403
+
+
+def test_pages_delete_allowed_for_admin(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """delete_page admits ADMIN: guard lets the request through (not 403)."""
+    client = _pages_client(monkeypatch, role='admin')
+
+    resp = client.post('/pages/page-abc/delete')
+
+    assert resp.status_code != 403
+
+
+def test_every_pages_route_is_guarded() -> None:
+    """Inspection: every pages_bp view is wrapped by project_role_required.
+
+    The decorator uses ``functools.wraps``, so a guarded view exposes a
+    ``__wrapped__`` attribute pointing at the original module function. An
+    unguarded route would register the bare function (no ``__wrapped__``).
+    """
+    app = Flask(__name__)
+    setattr(app, 'db', None)
+    app.register_blueprint(pages_bp, url_prefix='/pages')
+
+    pages_endpoints = [
+        (rule.endpoint, view)
+        for rule, view in (
+            (rule, app.view_functions[rule.endpoint])
+            for rule in app.url_map.iter_rules()
+            if rule.endpoint.startswith('pages.')
+        )
+    ]
+    assert pages_endpoints, 'no pages_bp routes registered'
+
+    unguarded = [
+        endpoint
+        for endpoint, view in pages_endpoints
+        if not hasattr(view, '__wrapped__')
+    ]
+    assert not unguarded, f'unguarded pages_bp routes: {unguarded}'

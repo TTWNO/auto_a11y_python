@@ -3,6 +3,7 @@ AI-powered executive summary generator for accessibility reports
 """
 from __future__ import annotations
 
+import html
 import logging
 from typing import Any
 from datetime import datetime
@@ -460,16 +461,16 @@ class AIExecutiveSummaryGenerator:
         }
         rating_color = rating_colors.get(assessment.get('rating', 'Unknown'), '#4a4a4a')
         
-        html = f"""
+        summary_html = f"""
         <section class="executive-summary-analysis">
             
             <div class="assessment-card" style="border-left: 5px solid {rating_color};">
                 <h3>Overall Accessibility Assessment</h3>
                 <div class="rating-display">
                     <span class="rating-value" style="color: {rating_color}; font-size: 2em; font-weight: bold;">
-                        {assessment.get('rating', 'Unknown')}
+                        {html.escape(str(assessment.get('rating', 'Unknown')))}
                     </span>
-                    <p>{assessment.get('explanation', '')}</p>
+                    <p>{html.escape(str(assessment.get('explanation', '')))}</p>
                 </div>
             </div>
             
@@ -477,14 +478,14 @@ class AIExecutiveSummaryGenerator:
                 <div class="summary-section">
                     <h3>✅ Key Strengths</h3>
                     <ul>
-                        {"".join(f"<li>{strength}</li>" for strength in ai_summary.get('key_strengths', []))}
+                        {"".join(f"<li>{html.escape(str(strength))}</li>" for strength in ai_summary.get('key_strengths', []))}
                     </ul>
                 </div>
                 
                 <div class="summary-section critical">
                     <h3>⚠️ Critical Risk Areas</h3>
                     <ul>
-                        {"".join(f"<li>{risk}</li>" for risk in ai_summary.get('critical_risks', []))}
+                        {"".join(f"<li>{html.escape(str(risk))}</li>" for risk in ai_summary.get('critical_risks', []))}
                     </ul>
                 </div>
             </div>
@@ -501,7 +502,7 @@ class AIExecutiveSummaryGenerator:
                         <span class="level {'active' if maturity.get('level') == 'Advanced' else ''}">Advanced</span>
                         <span class="level {'active' if maturity.get('level') == 'Leading' else ''}">Leading</span>
                     </div>
-                    <p class="maturity-description">{maturity.get('description', '')}</p>
+                    <p class="maturity-description">{html.escape(str(maturity.get('description', '')))}</p>
                 </div>
             </div>
             
@@ -516,16 +517,16 @@ class AIExecutiveSummaryGenerator:
                 <h3>Legal & Compliance Risk</h3>
                 <div class="risk-level">
                     <span class="risk-badge" style="background: {self._get_risk_color(legal_risk.get('level', 'Unknown'))};">
-                        {legal_risk.get('level', 'Unknown')} Risk
+                        {html.escape(str(legal_risk.get('level', 'Unknown')))} Risk
                     </span>
-                    <p>{legal_risk.get('explanation', '')}</p>
+                    <p>{html.escape(str(legal_risk.get('explanation', '')))}</p>
                 </div>
             </div>
             
             <div class="prioritization-section">
                 <h3>Recommended Prioritization</h3>
                 <ol class="priority-list">
-                    {"".join(f'<li class="priority-item">{item}</li>' for item in ai_summary.get('prioritization', []))}
+                    {"".join(f'<li class="priority-item">{html.escape(str(item))}</li>' for item in ai_summary.get('prioritization', []))}
                 </ol>
             </div>
             
@@ -535,21 +536,21 @@ class AIExecutiveSummaryGenerator:
                 <div class="recommendation-category">
                     <h4>🎯 Quick Wins (Immediate)</h4>
                     <ul>
-                        {"".join(f"<li>{item}</li>" for item in recommendations.get('quick_wins', []))}
+                        {"".join(f"<li>{html.escape(str(item))}</li>" for item in recommendations.get('quick_wins', []))}
                     </ul>
                 </div>
                 
                 <div class="recommendation-category">
                     <h4>📅 Short-term Goals (1-3 months)</h4>
                     <ul>
-                        {"".join(f"<li>{item}</li>" for item in recommendations.get('short_term', []))}
+                        {"".join(f"<li>{html.escape(str(item))}</li>" for item in recommendations.get('short_term', []))}
                     </ul>
                 </div>
                 
                 <div class="recommendation-category">
                     <h4>🎯 Long-term Strategy (3-12 months)</h4>
                     <ul>
-                        {"".join(f"<li>{item}</li>" for item in recommendations.get('long_term', []))}
+                        {"".join(f"<li>{html.escape(str(item))}</li>" for item in recommendations.get('long_term', []))}
                     </ul>
                 </div>
             </div>
@@ -557,20 +558,20 @@ class AIExecutiveSummaryGenerator:
             <div class="training-section">
                 <h3>Recommended Training</h3>
                 <ul class="training-list">
-                    {"".join(f'<li class="training-item">{item}</li>' for item in ai_summary.get('training_needs', []))}
+                    {"".join(f'<li class="training-item">{html.escape(str(item))}</li>' for item in ai_summary.get('training_needs', []))}
                 </ul>
             </div>
         </section>
         """
-        
-        return html
+
+        return summary_html
     
     def _format_show_stoppers(self, show_stoppers: list[str]) -> str:
         """Format show stopper issues"""
         if not show_stoppers:
             return ""
         
-        items = "".join(f"<li class='show-stopper-item'>{item}</li>" for item in show_stoppers)
+        items = "".join(f"<li class='show-stopper-item'>{html.escape(str(item))}</li>" for item in show_stoppers)
         return f"""
         <div class="show-stoppers-alert">
             <h3>🚫 Show Stoppers - Immediate Action Required</h3>
@@ -596,8 +597,8 @@ class AIExecutiveSummaryGenerator:
             <div class="impact-item">
                 <span class="impact-icon">{icon}</span>
                 <div class="impact-details">
-                    <strong>{key.title()} Impairments</strong>
-                    <p>{value}</p>
+                    <strong>{html.escape(str(key).title())} Impairments</strong>
+                    <p>{html.escape(str(value))}</p>
                 </div>
             </div>
             """

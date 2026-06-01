@@ -630,10 +630,9 @@ class ComprehensiveReportGenerator:
         total_tests = total_passes + total_violations
         compliance_score = (total_passes / total_tests * 100) if total_tests > 0 else 0
 
-        # Debug logging and print to help troubleshoot
+        # Debug logging to help troubleshoot compliance calculation
         logger.info(f"COMPLIANCE CALCULATION: passes={total_passes}, errors={total_errors}, warnings={total_warnings}, total_violations={total_violations}, total_tests={total_tests}, score={compliance_score:.1f}%")
-        print(f"DEBUG COMPLIANCE: passes={total_passes}, errors={total_errors}, warnings={total_warnings}, total_violations={total_violations}, total_tests={total_tests}, score={compliance_score:.1f}%")
-        print(f"DEBUG STATS DICT: {stats}")
+        logger.debug(f"STATS DICT: {stats}")
 
         return f"""
         <section class="executive-summary">

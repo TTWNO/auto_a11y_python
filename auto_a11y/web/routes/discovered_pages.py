@@ -11,7 +11,8 @@ from bson import ObjectId
 from datetime import datetime
 import logging
 
-from auto_a11y.models import DiscoveredPage, DrupalSyncStatus
+from auto_a11y.models import DiscoveredPage, DrupalSyncStatus, UserRole
+from auto_a11y.web.routes.auth import discovered_page_role_required
 from auto_a11y.drupal import DrupalJSONAPIClient, DiscoveredPageTaxonomies
 from auto_a11y.drupal.config import get_drupal_config
 
@@ -20,6 +21,7 @@ discovered_pages_bp = Blueprint('discovered_pages', __name__)
 
 
 @discovered_pages_bp.route('/discovered-pages/<page_id>')
+@discovered_page_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def view_discovered_page(page_id: str) -> str | Response | WerkzeugResponse:
     """View and edit a discovered page"""
     try:
@@ -76,6 +78,7 @@ def view_discovered_page(page_id: str) -> str | Response | WerkzeugResponse:
 
 
 @discovered_pages_bp.route('/discovered-pages/<page_id>/edit', methods=['POST'])
+@discovered_page_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def edit_discovered_page(page_id: str) -> Response | WerkzeugResponse | tuple[Response, int]:
     """Update a discovered page"""
     try:
@@ -149,6 +152,7 @@ def edit_discovered_page(page_id: str) -> Response | WerkzeugResponse | tuple[Re
 
 
 @discovered_pages_bp.route('/discovered-pages/<page_id>/delete', methods=['POST'])
+@discovered_page_role_required(UserRole.ADMIN)
 def delete_discovered_page(page_id: str) -> Response | WerkzeugResponse | tuple[Response, int]:
     """Delete a discovered page"""
     try:

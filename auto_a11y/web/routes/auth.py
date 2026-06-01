@@ -150,6 +150,64 @@ def project_role_required(*roles: UserRole) -> Callable[..., Any]:
     return decorator
 
 
+def discovered_page_role_required(*roles: UserRole) -> Callable[..., Any]:
+    """Per-project guard for the ``discovered_pages`` blueprint.
+
+    A DEDICATED decorator is required here because the blueprint's ``page_id``
+    URL param is a **DiscoveredPage** ObjectId, NOT a regular ``Page`` id. The
+    central ``resolve_project_id`` (used by ``project_role_required``) would
+    treat ``page_id`` as a regular page -- ``db.get_page(page_id)`` -- and
+    resolve the WRONG project (or none), so it cannot be reused here.
+
+    Instead this decorator resolves the owning project via
+    ``db.get_discovered_page_by_id(page_id).project_id``. A ``DiscoveredPage``
+    carries its ``project_id`` directly (see
+    ``auto_a11y/models/discovered_page.py``), so no further hop is needed.
+
+    Behaviour mirrors ``project_role_required``: require auth (401 JSON / login
+    redirect), let a superadmin through, resolve the project from ``page_id``
+    (None -> 403), then delegate the permission decision to
+    ``get_effective_role`` and ``abort(403)`` / 403-JSON when the role is not in
+    ``roles``.
+    """
+    def decorator(f: Callable[..., Any]) -> Callable[..., Any]:
+        @wraps(f)
+        def decorated_function(*args: Any, **kwargs: Any) -> Any:
+            if not current_user.is_authenticated:
+                if request.is_json:
+                    return jsonify({'error': ftl('common-authentication-required')}), 401
+                flash(ftl('common-please-log-in-to-access-this-page'), 'warning')
+                return redirect(url_for('auth.login', next=request.url))
+
+            if getattr(current_user, 'is_superadmin', False):
+                g.effective_role = UserRole.ADMIN
+                return f(*args, **kwargs)
+
+            # Resolve the owning project via the DISCOVERED-page accessor, not
+            # the regular-page resolver, to avoid the page_id collision.
+            project_id: str | None = None
+            page_id = kwargs.get('page_id')
+            if page_id:
+                discovered_page = _get_db().get_discovered_page_by_id(page_id)
+                if discovered_page is not None:
+                    project_id = discovered_page.project_id
+
+            effective_role = get_effective_role(
+                current_user, request, project_id=project_id
+            )
+
+            if effective_role not in roles:
+                if request.is_json:
+                    return jsonify({'error': ftl('common-insufficient-permissions')}), 403
+                flash(ftl('common-you-do-not-have-permission-to-access-this-resource'), 'danger')
+                abort(403)
+
+            g.effective_role = effective_role
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+
 def project_admin_required(f: Callable[..., Any]) -> Callable[..., Any]:
     """Legacy decorator -- checks project_members:delete permission."""
     @wraps(f)

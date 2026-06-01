@@ -126,11 +126,17 @@ class DiscoveryRun:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> DiscoveryRun:
         """Create from MongoDB document"""
+        # Backward compatibility: tolerate unknown/legacy status strings
+        status_value = data.get('status', 'running')
+        try:
+            status = DiscoveryStatus(status_value)
+        except ValueError:
+            status = DiscoveryStatus.RUNNING
         return cls(
             website_id=data['website_id'],
             started_at=data.get('started_at', datetime.now()),
             completed_at=data.get('completed_at'),
-            status=DiscoveryStatus(data.get('status', 'running')),
+            status=status,
             max_pages=data.get('max_pages', 999999),
             max_depth=data.get('max_depth', 10),
             follow_external=data.get('follow_external', False),
@@ -149,6 +155,6 @@ class DiscoveryRun:
             job_id=data.get('job_id'),
             error_message=data.get('error_message'),
             duration_seconds=data.get('duration_seconds'),
-            is_latest=data.get('is_latest', False),
+            is_latest=data.get('is_latest', True),
             _id=data.get('_id')
         )

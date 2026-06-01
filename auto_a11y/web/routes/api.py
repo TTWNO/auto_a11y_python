@@ -812,6 +812,7 @@ def test_page(
         "those nested types."
     ),
 )
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def get_test_result(
     result_id: str,
 ) -> tuple[Response, int] | Response:
@@ -1448,6 +1449,7 @@ def cleanup_page_counts() -> tuple[JobsCleanupOut, int] | tuple[Response, int] |
         "records whose keys depend on the trigger."
     ),
 )
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def get_test_result_states(
     result_id: str,
 ) -> tuple[TestResultStatesOut, int] | tuple[Response, int] | Response:

@@ -24,6 +24,8 @@ from auto_a11y.drupal import (
 )
 from auto_a11y.drupal.config import get_drupal_config
 from auto_a11y.web.routes.pages import enrich_test_result_with_catalog
+from auto_a11y.web.routes.auth import project_role_required
+from auto_a11y.models.app_user import UserRole
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +33,7 @@ bp = Blueprint('automated_tests', __name__, url_prefix='/automated_tests')
 
 
 @bp.route('/projects/<project_id>/filter-options')
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def get_filter_options(project_id: str) -> Response | tuple[Response, int]:
     """Get available filter options for automated tests."""
     db = get_db()
@@ -91,6 +94,7 @@ def get_filter_options(project_id: str) -> Response | tuple[Response, int]:
 
 
 @bp.route('/projects/<project_id>')
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def project_automated_tests(project_id: str) -> str | Response | tuple[str, int]:
     """View automated test results for a project with filtering options."""
     db = get_db()
@@ -177,6 +181,7 @@ def project_automated_tests(project_id: str) -> str | Response | tuple[str, int]
 
 
 @bp.route('/projects/<project_id>/filter', methods=['POST'])
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def filter_test_results(project_id: str) -> Response:
     """Filter test results based on user criteria."""
     db = get_db()
@@ -253,6 +258,7 @@ def filter_test_results(project_id: str) -> Response:
 
 
 @bp.route('/projects/<project_id>/upload', methods=['POST'])
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def upload_to_drupal(project_id: str) -> Response:
     """
     Upload filtered automated test results to Drupal with streaming progress.

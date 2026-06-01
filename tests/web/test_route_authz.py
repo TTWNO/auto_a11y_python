@@ -23,6 +23,7 @@ from werkzeug.wrappers import Response
 
 from auto_a11y.models.app_user import UserRole
 from auto_a11y.web.routes.auth import project_role_required
+from auto_a11y.web.routes.automated_tests import bp as automated_tests_bp
 from auto_a11y.web.routes.pages import pages_bp
 from auto_a11y.web.routes.project_users import project_users_bp
 from auto_a11y.web.routes.recordings import recordings_bp
@@ -980,4 +981,184 @@ def test_every_recordings_route_enforces_authz(
         'recordings.api_list_recordings',
         'recordings.api_recording_issues',
         'recordings.api_update_issue_status',
+    }
+
+
+# ---------------------------------------------------------------------------
+# Task 1.7: automated_tests_bp per-project authorization (IDOR fix)
+# ---------------------------------------------------------------------------
+#
+# The automated-tests blueprint exposes four project-scoped routes, every one
+# keyed on ``<project_id>`` in the URL, so ``project_role_required`` (resolving
+# directly from the ``project_id`` kwarg) guards all of them -- there are NO
+# unresolvable routes here, unlike recordings.
+#
+# Tiering:
+#   * reads -> ADMIN/AUDITOR/CLIENT
+#       - get_filter_options       GET  /projects/<id>/filter-options
+#       - project_automated_tests  GET  /projects/<id>
+#       - filter_test_results      POST /projects/<id>/filter (read-only query;
+#         returns filtered results, mutates nothing -> client allowed)
+#   * external push -> ADMIN/AUDITOR
+#       - upload_to_drupal         POST /projects/<id>/upload (writes results to
+#         an external Drupal system -> client excluded)
+#
+# ``upload_to_drupal`` returns a streaming ``Response(generate())`` whose body
+# is a generator wrapped in a broad ``try/except Exception``. The guard runs
+# BEFORE the view function returns (so before the generator is ever iterated):
+# a role=None / client request 403s at the decorator and ``generate()`` never
+# executes, so the broad except cannot swallow the abort. Verified by the
+# role=None and client tests below both yielding a clean 403.
+
+
+def _automated_tests_client(
+    monkeypatch: pytest.MonkeyPatch, role: Role | None,
+) -> FlaskClient:
+    """Authenticated test client for ``automated_tests_bp`` at /automated_tests."""
+    app = make_app_with_blueprint(
+        automated_tests_bp, role=role, monkeypatch=monkeypatch,
+        url_prefix='/automated_tests',
+    )
+    app.config['PROPAGATE_EXCEPTIONS'] = False
+    return _authenticated_client(app)
+
+
+def test_automated_tests_view_forbidden_without_role(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Read route (project_automated_tests) IDOR guard: no role -> 403."""
+    client = _automated_tests_client(monkeypatch, role=None)
+
+    resp = client.get('/automated_tests/projects/proj-abc')
+
+    assert resp.status_code == 403
+
+
+@pytest.mark.parametrize('role', ['admin', 'auditor', 'client'])
+def test_automated_tests_filter_options_allowed_for_authorized_roles(
+    role: Role,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """get_filter_options admits admin/auditor/client (read tier).
+
+    Read-tier route keyed on ``project_id``; its body runs against the
+    MagicMock db (no real Mongo) and returns a non-403 status, proving the
+    guard let every authorized tier through.
+    """
+    client = _automated_tests_client(monkeypatch, role=role)
+
+    resp = client.get('/automated_tests/projects/proj-abc/filter-options')
+
+    assert resp.status_code != 403
+
+
+def test_automated_tests_filter_forbidden_without_role(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """filter_test_results (read-only query) IDOR guard: no role -> 403."""
+    client = _automated_tests_client(monkeypatch, role=None)
+
+    resp = client.post('/automated_tests/projects/proj-abc/filter', json={})
+
+    assert resp.status_code == 403
+
+
+def test_automated_tests_filter_allowed_for_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """filter_test_results is read tier: a client must NOT be rejected."""
+    client = _automated_tests_client(monkeypatch, role='client')
+
+    resp = client.post('/automated_tests/projects/proj-abc/filter', json={})
+
+    assert resp.status_code != 403
+
+
+def test_automated_tests_upload_forbidden_without_role(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """upload_to_drupal (external push) IDOR guard: no role -> 403.
+
+    The guard fires before the streaming generator is ever iterated, so the
+    generator's broad ``except Exception`` cannot swallow the abort.
+    """
+    client = _automated_tests_client(monkeypatch, role=None)
+
+    resp = client.post('/automated_tests/projects/proj-abc/upload', json={})
+
+    assert resp.status_code == 403
+
+
+def test_automated_tests_upload_forbidden_for_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """upload_to_drupal is edit tier (ADMIN/AUDITOR): a client is rejected.
+
+    Confirms the abort is the decorator's, not anything inside the streaming
+    body -- the broad ``except`` never runs because the guard short-circuits.
+    """
+    client = _automated_tests_client(monkeypatch, role='client')
+
+    resp = client.post('/automated_tests/projects/proj-abc/upload', json={})
+
+    assert resp.status_code == 403
+
+
+def test_automated_tests_upload_allowed_for_auditor(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """upload_to_drupal admits AUDITOR: the guard lets the request through.
+
+    An auditor holds the edit tier, so the decorator passes and the streaming
+    Response is returned (status 200; the generator body fails downstream
+    against the MagicMock db but that is inside the stream, not the guard).
+    """
+    client = _automated_tests_client(monkeypatch, role='auditor')
+
+    resp = client.post('/automated_tests/projects/proj-abc/upload', json={})
+
+    assert resp.status_code != 403
+
+
+def test_every_automated_tests_route_enforces_authz(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Per-route introspection: EVERY automated_tests_bp route 403s for
+    role=None.
+
+    Iterate the url_map, fill each ``<param>`` with a dummy segment (the
+    MagicMock db makes ``resolve_project_id`` truthy for ``project_id``), drive
+    an allowed method, and assert 403. Every route is project-keyed, so there
+    are no exclusions; the endpoint set is asserted exhaustively so any new
+    route added without a guard fails here.
+    """
+    import re
+
+    client = _automated_tests_client(monkeypatch, role=None)
+
+    endpoints: set[str] = set()
+    for rule in client.application.url_map.iter_rules():
+        endpoint = str(rule.endpoint)
+        if not endpoint.startswith('automated_tests.'):
+            continue
+        endpoints.add(endpoint)
+
+        path = re.sub(r'<[^>]+>', 'x', str(rule))
+        rule_methods = rule.methods
+        usable = (set(rule_methods) if rule_methods is not None else {'GET'}) - {
+            'HEAD', 'OPTIONS',
+        }
+        method = 'GET' if 'GET' in usable else sorted(usable)[0]
+
+        resp = client.open(path, method=method, json={})
+        assert resp.status_code == 403, (
+            f'{endpoint} ({method} {path}) returned '
+            f'{resp.status_code}, expected 403 for role=None'
+        )
+
+    assert endpoints == {
+        'automated_tests.get_filter_options',
+        'automated_tests.project_automated_tests',
+        'automated_tests.filter_test_results',
+        'automated_tests.upload_to_drupal',
     }

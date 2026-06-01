@@ -9,7 +9,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from werkzeug.wrappers import Response
 from auto_a11y.web.fluent import ftl
 from auto_a11y.web.typed_app import get_db
-from flask_login import current_user
+from flask_login import current_user, login_required
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from auto_a11y.models import (
@@ -27,21 +27,48 @@ schedules_bp = Blueprint('schedules', __name__)
 
 
 @schedules_bp.route('/schedules')
+@login_required
 def schedules_dashboard() -> str:
-    """Global schedules dashboard - shows all schedules across all projects"""
+    """Global schedules dashboard - shows schedules for the caller's projects.
+
+    Aggregates across projects, so it must be scoped to the projects the
+    caller can access (superadmins see everything). Without this scoping the
+    dashboard would leak every tenant's websites and schedules to any
+    authenticated user.
+    """
     # Get filter parameters
     project_id = request.args.get('project_id')
 
-    # Get all projects for filter dropdown
-    projects = get_db().get_projects()
+    is_superadmin = getattr(current_user, 'is_superadmin', False)
 
-    # Get selected project
+    # Projects the caller may see -- superadmins see all, everyone else only
+    # the projects they're a member of.
+    if is_superadmin:
+        projects = get_db().get_projects()
+        accessible_project_ids: set[str] | None = None  # None => no filtering
+    else:
+        projects = get_db().get_projects_for_user(str(current_user.get_id()))
+        accessible_project_ids = {p.id for p in projects if p.id}
+
+    # Get selected project (only if the caller may access it)
     selected_project = None
-    if project_id:
+    if project_id and (accessible_project_ids is None or project_id in accessible_project_ids):
         selected_project = get_db().get_project(project_id)
+    elif project_id and accessible_project_ids is not None:
+        # Caller asked to filter by a project they cannot access -- ignore it.
+        project_id = None
 
     # Get all schedules (optionally filtered by project)
     schedules = get_db().get_all_test_schedules(project_id=project_id)
+
+    # Scope schedules to the caller's accessible projects (superadmin sees all).
+    if accessible_project_ids is not None:
+        scoped: list[TestSchedule] = []
+        for schedule in schedules:
+            website = get_db().get_website(schedule.website_id)
+            if website and website.project_id in accessible_project_ids:
+                scoped.append(schedule)
+        schedules = scoped
 
     # Enrich schedules with website and project info
     for schedule in schedules:

@@ -98,6 +98,7 @@ def api_project_websites(project_id: str) -> Response | tuple[Response, int]:
 
 
 @projects_bp.route('/api/test-details/<test_id>')
+@login_required
 @deprecated(successor="/api/v1/issues/<code>", sunset="2026-09-01")
 def api_test_details(test_id: str) -> Response | tuple[Response, int]:
     """API endpoint to get detailed information about a test"""
@@ -598,6 +599,7 @@ def view_project(project_id: str) -> str | Response:
 
 
 @projects_bp.route('/<project_id>/edit', methods=['GET', 'POST'])
+@project_role_required(UserRole.ADMIN)
 def edit_project(project_id: str) -> str | Response:
     """Edit project"""
     project = get_db().get_project(project_id)
@@ -762,6 +764,7 @@ def edit_project(project_id: str) -> str | Response:
 
 
 @projects_bp.route('/<project_id>/delete', methods=['POST'])
+@project_role_required(UserRole.ADMIN)
 def delete_project(project_id: str) -> Response:
     """Delete project"""
     project = get_db().get_project(project_id)
@@ -817,6 +820,7 @@ def add_website(project_id: str) -> Response | tuple[Response, int]:
 
 
 @projects_bp.route('/<project_id>/test-all', methods=['POST'])
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def test_project(project_id: str) -> Response:
     """Test all websites in a project"""
     import asyncio
@@ -942,6 +946,8 @@ def generate_project_report(project_id: str) -> Response:
 
 
 @projects_bp.route('/api/<project_id>/users')
+@login_required
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 @deprecated(successor="/api/v1/projects/<project_id>/users", sunset="2026-09-01")
 def api_get_project_users(project_id: str) -> Response | tuple[Response, int]:
     """API endpoint to get project users"""
@@ -965,6 +971,8 @@ def api_get_project_users(project_id: str) -> Response | tuple[Response, int]:
 
 
 @projects_bp.route('/api/<project_id>/details')
+@login_required
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 @deprecated(successor="/api/v1/projects/<project_id>", sunset="2026-09-01")
 def api_get_project(project_id: str) -> Response | tuple[Response, int]:
     """API endpoint to get project details including testers and supervisors"""
@@ -990,6 +998,8 @@ def api_get_project(project_id: str) -> Response | tuple[Response, int]:
 
 
 @projects_bp.route('/api/<project_id>/discovered-pages')
+@login_required
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 @deprecated(successor="/api/v1/projects/<project_id>/discovered-pages", sunset="2026-09-01")
 def api_get_discovered_pages(project_id: str) -> Response | tuple[Response, int]:
     """API endpoint to get discovered pages for a project"""

@@ -172,6 +172,12 @@ class Issue:
             impact_value = impact_mapping[impact_value]
         impact = ImpactLevel(impact_value)
 
+        # Guard Drupal sync status against legacy/unknown values
+        try:
+            drupal_sync_status = DrupalSyncStatus(data.get('drupal_sync_status', 'not_synced'))
+        except ValueError:
+            drupal_sync_status = DrupalSyncStatus.NOT_SYNCED
+
         return cls(
             title=data['title'],
             description=data['description'],
@@ -204,7 +210,7 @@ class Issue:
             drupal_issue_id=data.get('drupal_issue_id'),
             drupal_uuid=data.get('drupal_uuid'),
             drupal_nid=data.get('drupal_nid'),
-            drupal_sync_status=DrupalSyncStatus(data.get('drupal_sync_status', 'not_synced')),
+            drupal_sync_status=drupal_sync_status,
             drupal_last_synced=data.get('drupal_last_synced'),
             drupal_error_message=data.get('drupal_error_message'),
             _id=obj_id

@@ -96,12 +96,16 @@ class _FakeDb:
         results: dict[str, _Obj] | None = None,
         pages: dict[str, _Obj] | None = None,
         websites: dict[str, _Obj] | None = None,
+        recording_issues: dict[str, _Obj] | None = None,
+        recordings: dict[str, _Obj] | None = None,
     ) -> None:
         self._project_users = project_users or {}
         self._scripts = scripts or {}
         self._results = results or {}
         self._pages = pages or {}
         self._websites = websites or {}
+        self._recording_issues = recording_issues or {}
+        self._recordings = recordings or {}
 
     def get_project_user(self, user_id: str) -> _Obj | None:
         return self._project_users.get(user_id)
@@ -117,6 +121,12 @@ class _FakeDb:
 
     def get_website(self, website_id: str) -> _Obj | None:
         return self._websites.get(website_id)
+
+    def get_recording_issue(self, issue_id: str) -> _Obj | None:
+        return self._recording_issues.get(issue_id)
+
+    def get_recording(self, recording_id: str) -> _Obj | None:
+        return self._recordings.get(recording_id)
 
 
 def test_resolve_project_id_from_user_id(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -144,6 +154,29 @@ def test_resolve_project_id_from_result_id(monkeypatch: pytest.MonkeyPatch) -> N
     assert _resolve_project_id(result_id="r1") == "p1"
 
 
+def test_resolve_project_id_from_issue_id_direct_project(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A recording issue carrying ``project_id`` resolves to it directly."""
+    db = _FakeDb(recording_issues={"i1": _Obj(project_id="p1", recording_id="REC-A")})
+    monkeypatch.setattr("auto_a11y.core.permissions._get_db", lambda: db)
+    from auto_a11y.core.permissions import resolve_project_id as _resolve_project_id
+    assert _resolve_project_id(issue_id="i1") == "p1"
+
+
+def test_resolve_project_id_from_issue_id_via_recording(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An issue lacking ``project_id`` resolves via its recording."""
+    db = _FakeDb(
+        recording_issues={"i1": _Obj(project_id=None, recording_id="rec1")},
+        recordings={"rec1": _Obj(project_id="p1")},
+    )
+    monkeypatch.setattr("auto_a11y.core.permissions._get_db", lambda: db)
+    from auto_a11y.core.permissions import resolve_project_id as _resolve_project_id
+    assert _resolve_project_id(issue_id="i1") == "p1"
+
+
 def test_resolve_project_id_unknown_returns_none(monkeypatch: pytest.MonkeyPatch) -> None:
     db = _FakeDb()
     monkeypatch.setattr("auto_a11y.core.permissions._get_db", lambda: db)
@@ -151,6 +184,7 @@ def test_resolve_project_id_unknown_returns_none(monkeypatch: pytest.MonkeyPatch
     assert _resolve_project_id(user_id="missing") is None
     assert _resolve_project_id(script_id="missing") is None
     assert _resolve_project_id(result_id="missing") is None
+    assert _resolve_project_id(issue_id="missing") is None
     assert _resolve_project_id() is None
 
 

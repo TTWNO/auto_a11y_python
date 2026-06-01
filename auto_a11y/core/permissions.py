@@ -150,6 +150,20 @@ def _resolve_project_id(**kwargs: Any) -> str | None:
         recording = db.get_recording(recording_id)
         return recording.project_id if recording else None
 
+    issue_id: str | None = kwargs.get('issue_id')
+    if issue_id:
+        issue = db.get_recording_issue(issue_id)
+        if not issue:
+            return None
+        issue_project_id: str | None = getattr(issue, 'project_id', None)
+        if issue_project_id:
+            return issue_project_id
+        issue_recording_id: str | None = getattr(issue, 'recording_id', None)
+        if issue_recording_id:
+            recording = db.get_recording(issue_recording_id)
+            return recording.project_id if recording else None
+        return None
+
     user_id: str | None = kwargs.get('user_id')
     if user_id:
         pu = db.get_project_user(user_id)

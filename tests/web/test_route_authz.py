@@ -25,6 +25,7 @@ from auto_a11y.models.app_user import UserRole
 from auto_a11y.web.routes.auth import project_role_required
 from auto_a11y.web.routes.pages import pages_bp
 from auto_a11y.web.routes.project_users import project_users_bp
+from auto_a11y.web.routes.recordings import recordings_bp
 from auto_a11y.web.routes.websites import websites_bp
 
 from tests.web._authz_helpers import StubUser, Role, make_app_with_blueprint
@@ -621,4 +622,269 @@ def test_every_project_users_route_enforces_authz(
         'project_users.test_login',
         'project_users.toggle_user',
         'project_users.clear_cache',
+    }
+
+
+# ---------------------------------------------------------------------------
+# Task 1.6: recordings_bp per-project authorization (IDOR fix)
+# ---------------------------------------------------------------------------
+#
+# Recordings are project-scoped manual-audit artefacts. Routes are keyed on
+# ``recording_id`` (view/process/cancel/delete/callouts/issues), ``project_id``
+# (combined view), or ``issue_id`` (update-issue-status). ``resolve_project_id``
+# turns any of those into the owning project's id via the MagicMock db (truthy),
+# then the patched ``user_has_permission`` seam decides the effective role.
+#
+# Tiering: read/download (view, combined, callouts, issues list) ->
+# ADMIN/AUDITOR/CLIENT; state-changing (process, cancel, issue-status) ->
+# ADMIN/AUDITOR; destructive (delete) -> ADMIN.
+#
+# Routes with NO resolvable project id in URL kwargs -- the all-recordings
+# listings (``list_recordings``, ``api_list_recordings``) and the upload flows
+# (``upload_recording``, ``upload_video``, ``upload_json``) -- cannot use
+# ``project_role_required``. The listings are scoped to the user's accessible
+# projects (verified separately); the uploads are ``@login_required`` and
+# resolve/validate the target project inside the handler from a form field.
+
+_RECORDINGS_UNRESOLVABLE = {
+    'recordings.list_recordings',
+    'recordings.api_list_recordings',
+    'recordings.upload_recording',
+    'recordings.upload_video',
+    'recordings.upload_json',
+}
+
+
+def _recordings_client(
+    monkeypatch: pytest.MonkeyPatch, role: Role | None,
+) -> FlaskClient:
+    """Authenticated test client for ``recordings_bp`` at ``/recordings``."""
+    app = make_app_with_blueprint(
+        recordings_bp, role=role, monkeypatch=monkeypatch,
+        url_prefix='/recordings',
+    )
+    app.config['PROPAGATE_EXCEPTIONS'] = False
+    return _authenticated_client(app)
+
+
+def test_recordings_view_forbidden_without_role(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Read route (view_recording) IDOR guard: no role -> 403."""
+    client = _recordings_client(monkeypatch, role=None)
+
+    resp = client.get('/recordings/rec-abc')
+
+    assert resp.status_code == 403
+
+
+@pytest.mark.parametrize('role', ['admin', 'auditor', 'client'])
+def test_recordings_issues_api_allowed_for_authorized_roles(
+    role: Role,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """api_recording_issues admits admin/auditor/client (read tier).
+
+    Read-tier route keyed on ``recording_id`` whose body fails fast against
+    the MagicMock db (a non-403 status), so it cleanly proves the guard let
+    the request through without running the heavyweight detail-page scorer.
+    """
+    client = _recordings_client(monkeypatch, role=role)
+
+    resp = client.get('/recordings/api/rec-abc/issues')
+
+    assert resp.status_code != 403
+
+
+def test_recordings_process_forbidden_without_role(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """State-changing route (process_recording): no role -> 403."""
+    client = _recordings_client(monkeypatch, role=None)
+
+    resp = client.post('/recordings/rec-abc/process')
+
+    assert resp.status_code == 403
+
+
+def test_recordings_process_forbidden_for_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """process_recording is edit tier (ADMIN/AUDITOR): a client is rejected."""
+    client = _recordings_client(monkeypatch, role='client')
+
+    resp = client.post('/recordings/rec-abc/process')
+
+    assert resp.status_code == 403
+
+
+def test_recordings_cancel_forbidden_for_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """cancel_recording is edit tier (ADMIN/AUDITOR): a client is rejected."""
+    client = _recordings_client(monkeypatch, role='client')
+
+    resp = client.post('/recordings/rec-abc/cancel')
+
+    assert resp.status_code == 403
+
+
+def test_recordings_delete_forbidden_for_auditor(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """delete_recording is ADMIN-only: an auditor must be rejected."""
+    client = _recordings_client(monkeypatch, role='auditor')
+
+    resp = client.post('/recordings/rec-abc/delete')
+
+    assert resp.status_code == 403
+
+
+def test_recordings_delete_allowed_for_admin(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """delete_recording admits ADMIN: guard lets the request through."""
+    client = _recordings_client(monkeypatch, role='admin')
+
+    resp = client.post('/recordings/rec-abc/delete')
+
+    assert resp.status_code != 403
+
+
+def test_recordings_issue_status_keyed_on_issue_id_forbidden_without_role(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """api_update_issue_status resolves via issue_id: no role -> 403.
+
+    Sent as JSON so the guard's JSON 403 branch fires (and so the body, if it
+    ran, would read ``request.json``). With role=None the body never runs.
+    """
+    client = _recordings_client(monkeypatch, role=None)
+
+    resp = client.post(
+        '/recordings/api/issue/issue-abc/status',
+        json={'status': 'open'},
+    )
+
+    assert resp.status_code == 403
+
+
+def test_recordings_issue_status_forbidden_for_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """api_update_issue_status is edit tier (ADMIN/AUDITOR): client rejected."""
+    client = _recordings_client(monkeypatch, role='client')
+
+    resp = client.post(
+        '/recordings/api/issue/issue-abc/status',
+        json={'status': 'open'},
+    )
+
+    assert resp.status_code == 403
+
+
+def test_api_list_recordings_scopes_to_accessible_projects(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """``api_list_recordings`` must not leak recordings from other tenants.
+
+    Two recordings live in two different projects; the stub user is a member of
+    only one. The endpoint must return only the recording in the accessible
+    project, with the JSON shape unchanged.
+    """
+    from auto_a11y.models import RecordingType
+
+    app = make_app_with_blueprint(
+        recordings_bp, role='client', monkeypatch=monkeypatch,
+        url_prefix='/recordings',
+    )
+
+    accessible = SimpleNamespace(
+        id='rec-1', recording_id='REC-A', title='Accessible',
+        auditor_name='a', auditor_role='r',
+        recording_type=RecordingType.AUDIT, total_issues=0,
+        high_impact_count=0, medium_impact_count=0, low_impact_count=0,
+        duration=0, recorded_date=None, project_id='proj-accessible',
+    )
+    hidden = SimpleNamespace(
+        id='rec-2', recording_id='REC-B', title='Hidden',
+        auditor_name='a', auditor_role='r',
+        recording_type=RecordingType.AUDIT, total_issues=0,
+        high_impact_count=0, medium_impact_count=0, low_impact_count=0,
+        duration=0, recorded_date=None, project_id='proj-hidden',
+    )
+    accessible_project = SimpleNamespace(
+        id='proj-accessible', name='Accessible', description='',
+    )
+
+    db = getattr(app, 'db')
+    db.get_recordings.return_value = [accessible, hidden]
+    db.get_projects_for_user.return_value = [accessible_project]
+
+    client = _authenticated_client(app)
+    resp = client.get('/recordings/api/list')
+
+    assert resp.status_code == 200
+    body = resp.get_json()
+    assert body['success'] is True
+    returned_ids = {r['id'] for r in body['recordings']}
+    assert returned_ids == {'rec-1'}
+
+
+def test_every_recordings_route_enforces_authz(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Per-route introspection: EVERY resolvable recordings_bp route 403s for
+    role=None.
+
+    Iterate the url_map, fill each ``<param>`` with a dummy segment (the
+    MagicMock db makes ``resolve_project_id`` truthy for recording_id /
+    project_id / issue_id), drive an allowed method, and assert 403. Routes
+    with no resolvable project id (the all-recordings listings + upload flows)
+    are excluded -- they are ``@login_required`` and scoped/validated inside
+    the handler -- but are still asserted to exist in the endpoint set.
+    """
+    import re
+
+    client = _recordings_client(monkeypatch, role=None)
+
+    endpoints: set[str] = set()
+    for rule in client.application.url_map.iter_rules():
+        endpoint = str(rule.endpoint)
+        if not endpoint.startswith('recordings.'):
+            continue
+        endpoints.add(endpoint)
+
+        if endpoint in _RECORDINGS_UNRESOLVABLE:
+            continue
+
+        path = re.sub(r'<[^>]+>', 'x', str(rule))
+        rule_methods = rule.methods
+        usable = (set(rule_methods) if rule_methods is not None else {'GET'}) - {
+            'HEAD', 'OPTIONS',
+        }
+        method = 'GET' if 'GET' in usable else sorted(usable)[0]
+
+        # JSON content-type so the issue-status POST body (if ever reached)
+        # reads cleanly; role=None means the guard fires before the body.
+        resp = client.open(path, method=method, json={})
+        assert resp.status_code == 403, (
+            f'{endpoint} ({method} {path}) returned '
+            f'{resp.status_code}, expected 403 for role=None'
+        )
+
+    assert endpoints == {
+        'recordings.list_recordings',
+        'recordings.view_recording',
+        'recordings.view_combined_recordings',
+        'recordings.upload_recording',
+        'recordings.upload_video',
+        'recordings.upload_json',
+        'recordings.process_recording',
+        'recordings.download_callouts_video',
+        'recordings.cancel_recording',
+        'recordings.delete_recording',
+        'recordings.api_list_recordings',
+        'recordings.api_recording_issues',
+        'recordings.api_update_issue_status',
     }

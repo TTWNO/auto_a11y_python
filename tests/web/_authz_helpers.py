@@ -35,31 +35,26 @@ from flask_login import LoginManager, UserMixin
 
 Role = Literal['admin', 'auditor', 'client']
 
-#: Minimum ``(resource, action)`` pair that each tier must satisfy in
-#: ``user_has_permission``, taken verbatim from ``get_effective_role``.
-_TIER_REQUIREMENTS: dict[Role, tuple[str, str]] = {
-    'admin': ('project_members', 'delete'),
-    'auditor': ('test_results', 'create'),
-    'client': ('projects', 'read'),
-}
+#: Single source of truth: the minimum ``(resource, action)`` pair each tier
+#: must satisfy in ``user_has_permission``, taken verbatim from
+#: ``get_effective_role``. Ordered highest-privilege first because
+#: ``get_effective_role`` probes admin, then auditor, then client.
+_TIER_REQUIREMENTS: tuple[tuple[Role, tuple[str, str]], ...] = (
+    ('admin', ('project_members', 'delete')),
+    ('auditor', ('test_results', 'create')),
+    ('client', ('projects', 'read')),
+)
 
-#: For a granted tier, which lower-tier ``(resource, action)`` checks also
-#: return True. ``get_effective_role`` probes admin first, then auditor, then
-#: client, so an admin must also satisfy the auditor and client probes for the
-#: function to short-circuit at the admin branch.
+#: For a granted tier, which ``(resource, action)`` checks return True. Derived
+#: from ``_TIER_REQUIREMENTS`` so there is no drift: a tier grants its own
+#: requirement plus every lower tier's requirement. ``get_effective_role``
+#: probes admin first, then auditor, then client, so an admin must also satisfy
+#: the auditor and client probes for the function to short-circuit at the admin
+#: branch. Because ``_TIER_REQUIREMENTS`` is ordered highest-privilege first,
+#: each tier accumulates the pairs at and after its position.
 _TIER_GRANTS: dict[Role, set[tuple[str, str]]] = {
-    'admin': {
-        ('project_members', 'delete'),
-        ('test_results', 'create'),
-        ('projects', 'read'),
-    },
-    'auditor': {
-        ('test_results', 'create'),
-        ('projects', 'read'),
-    },
-    'client': {
-        ('projects', 'read'),
-    },
+    role: {pair for _role, pair in _TIER_REQUIREMENTS[i:]}
+    for i, (role, _pair) in enumerate(_TIER_REQUIREMENTS)
 }
 
 
@@ -123,6 +118,10 @@ def make_app_with_blueprint(
     # ``resolve_project_id`` and ``user_has_permission`` both call
     # ``permissions._get_db()`` -> ``current_app.db``. A MagicMock satisfies
     # the attribute; for a ``project_id`` URL param it is never queried.
+    # NOTE: ``setattr`` (not ``app.db = ...``) is deliberate -- Flask has no
+    # declared ``db`` attribute, so the strict type-checkers reject direct
+    # assignment. Do not "clean this up" to ``app.db =`` or it reintroduces a
+    # type error.
     setattr(app, 'db', MagicMock())
 
     login_manager = LoginManager()
@@ -151,16 +150,3 @@ def make_app_with_blueprint(
     app.register_blueprint(blueprint, url_prefix=url_prefix)
 
     return app
-
-
-def login_stub_user(app: Flask) -> None:
-    """Pre-seat the stub user into the session for ``test_request_context``.
-
-    Most tests instead drive requests through ``app.test_client()`` with a
-    session transaction; this helper is provided for callers that need to log
-    the user in imperatively. It is a thin convenience around setting the
-    Flask-Login ``_user_id`` session key.
-    """
-    with app.test_request_context():
-        from flask import session
-        session['_user_id'] = StubUser().id

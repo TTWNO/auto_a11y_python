@@ -17,7 +17,7 @@ Token strings never appear in logs — only the SHA-256 hashes do.
 """
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
 from auto_a11y.models.api_token import (
@@ -74,7 +74,7 @@ def resolve_token(database: Database, raw_token: str) -> AppUser | None:
     if user is None or not user.is_active:
         return None
 
-    token.last_used_at = datetime.now()
+    token.last_used_at = datetime.now(timezone.utc)
     try:
         database.update_api_token(token)
     except Exception:  # noqa: BLE001
@@ -94,7 +94,7 @@ def revoke_token_by_hash(
     token = database.get_api_token_by_hash(hash_token(raw_token))
     if token is None or token.revoked_at is not None:
         return False
-    token.revoked_at = datetime.now()
+    token.revoked_at = datetime.now(timezone.utc)
     return database.update_api_token(token)
 
 

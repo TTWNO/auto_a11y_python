@@ -131,6 +131,7 @@ class ProjectReport:
         # User-entered free text must be HTML-escaped to prevent stored XSS.
         project_name = html_module.escape(self.project.name or '')
         project_description = html_module.escape(self.project.description or 'No description')
+        wcag_level = html_module.escape(str(self.report_data['wcag_level']))
 
         html = f"""
 <!DOCTYPE html>
@@ -187,7 +188,7 @@ class ProjectReport:
                     <h3>{project_name}</h3>
                     <p class="text-muted">
                         {project_description}<br>
-                        <strong>WCAG Level:</strong> {self.report_data['wcag_level']}<br>
+                        <strong>WCAG Level:</strong> {wcag_level}<br>
                         <strong>Generated:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
                     </p>
                 </div>

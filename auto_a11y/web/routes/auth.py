@@ -132,12 +132,10 @@ def project_role_required(*roles: UserRole) -> Callable[..., Any]:
                 g.effective_role = UserRole.ADMIN
                 return f(*args, **kwargs)
 
-            project_id = kwargs.get('project_id')
-            website_id = kwargs.get('website_id')
-            page_id = kwargs.get('page_id')
-
+            from auto_a11y.core.permissions import resolve_project_id
+            project_id = resolve_project_id(**kwargs)  # handles every ID kind
             effective_role = get_effective_role(
-                current_user, request, project_id, website_id, page_id
+                current_user, request, project_id=project_id
             )
 
             if effective_role not in roles:

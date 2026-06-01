@@ -150,6 +150,34 @@ def _resolve_project_id(**kwargs: Any) -> str | None:
         recording = db.get_recording(recording_id)
         return recording.project_id if recording else None
 
+    user_id: str | None = kwargs.get('user_id')
+    if user_id:
+        pu = db.get_project_user(user_id)
+        return pu.project_id if pu else None
+
+    script_id: str | None = kwargs.get('script_id')
+    if script_id:
+        script = db.get_page_setup_script(script_id)  # NB: not get_page_script
+        if script and getattr(script, 'page_id', None):
+            page = db.get_page(script.page_id)
+            if page:
+                website = db.get_website(page.website_id)
+                return website.project_id if website else None
+        if script and getattr(script, 'website_id', None):
+            website = db.get_website(script.website_id)
+            return website.project_id if website else None
+        return None
+
+    result_id: str | None = kwargs.get('result_id')
+    if result_id:
+        result = db.get_test_result(result_id)
+        if result:
+            page = db.get_page(result.page_id)
+            if page:
+                website = db.get_website(page.website_id)
+                return website.project_id if website else None
+        return None
+
     return None
 
 

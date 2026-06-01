@@ -78,6 +78,80 @@ class TestWebsiteMembers:
 
 
 from unittest.mock import MagicMock, patch
+import types
+import pytest
+
+
+class _Obj(types.SimpleNamespace):
+    """Trivial attribute holder for seeding the fake db."""
+
+
+class _FakeDb:
+    """Minimal in-memory db exposing the accessors used by _resolve_project_id."""
+
+    def __init__(
+        self,
+        project_users: dict[str, _Obj] | None = None,
+        scripts: dict[str, _Obj] | None = None,
+        results: dict[str, _Obj] | None = None,
+        pages: dict[str, _Obj] | None = None,
+        websites: dict[str, _Obj] | None = None,
+    ) -> None:
+        self._project_users = project_users or {}
+        self._scripts = scripts or {}
+        self._results = results or {}
+        self._pages = pages or {}
+        self._websites = websites or {}
+
+    def get_project_user(self, user_id: str) -> _Obj | None:
+        return self._project_users.get(user_id)
+
+    def get_page_setup_script(self, script_id: str) -> _Obj | None:
+        return self._scripts.get(script_id)
+
+    def get_test_result(self, result_id: str) -> _Obj | None:
+        return self._results.get(result_id)
+
+    def get_page(self, page_id: str) -> _Obj | None:
+        return self._pages.get(page_id)
+
+    def get_website(self, website_id: str) -> _Obj | None:
+        return self._websites.get(website_id)
+
+
+def test_resolve_project_id_from_user_id(monkeypatch: pytest.MonkeyPatch) -> None:
+    db = _FakeDb(project_users={"u1": _Obj(project_id="p1")})
+    monkeypatch.setattr("auto_a11y.core.permissions._get_db", lambda: db)
+    from auto_a11y.core.permissions import resolve_project_id as _resolve_project_id
+    assert _resolve_project_id(user_id="u1") == "p1"
+
+
+def test_resolve_project_id_from_script_id(monkeypatch: pytest.MonkeyPatch) -> None:
+    db = _FakeDb(scripts={"s1": _Obj(page_id="pg1")},
+                 pages={"pg1": _Obj(website_id="w1")},
+                 websites={"w1": _Obj(project_id="p1")})
+    monkeypatch.setattr("auto_a11y.core.permissions._get_db", lambda: db)
+    from auto_a11y.core.permissions import resolve_project_id as _resolve_project_id
+    assert _resolve_project_id(script_id="s1") == "p1"
+
+
+def test_resolve_project_id_from_result_id(monkeypatch: pytest.MonkeyPatch) -> None:
+    db = _FakeDb(results={"r1": _Obj(page_id="pg1")},
+                 pages={"pg1": _Obj(website_id="w1")},
+                 websites={"w1": _Obj(project_id="p1")})
+    monkeypatch.setattr("auto_a11y.core.permissions._get_db", lambda: db)
+    from auto_a11y.core.permissions import resolve_project_id as _resolve_project_id
+    assert _resolve_project_id(result_id="r1") == "p1"
+
+
+def test_resolve_project_id_unknown_returns_none(monkeypatch: pytest.MonkeyPatch) -> None:
+    db = _FakeDb()
+    monkeypatch.setattr("auto_a11y.core.permissions._get_db", lambda: db)
+    from auto_a11y.core.permissions import resolve_project_id as _resolve_project_id
+    assert _resolve_project_id(user_id="missing") is None
+    assert _resolve_project_id(script_id="missing") is None
+    assert _resolve_project_id(result_id="missing") is None
+    assert _resolve_project_id() is None
 
 
 def _make_user(role: UserRole = UserRole.AUDITOR, user_id: str = "user1") -> MagicMock:

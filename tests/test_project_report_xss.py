@@ -40,6 +40,32 @@ def _build_report() -> ProjectReport:
     )
 
 
+def _build_report_with_wcag_level(wcag_level: str) -> ProjectReport:
+    """Construct a ProjectReport with a malicious ``wcag_level`` config value."""
+    project = Project(
+        name='Safe Project',
+        description='Safe description',
+        status=ProjectStatus.ACTIVE,
+        config={'wcag_level': wcag_level},
+    )
+    return ProjectReport(
+        database=cast(Database, None),
+        project=project,
+        websites=[],
+        pages_by_website={},
+    )
+
+
+def test_wcag_level_is_escaped() -> None:
+    html = _build_report_with_wcag_level('<script>alert("wcag")</script>').to_html()
+
+    # Raw script payload from the wcag_level config must not survive.
+    assert '<script>alert("wcag")</script>' not in html
+
+    # The escaped form must be present instead.
+    assert '&lt;script&gt;alert(&quot;wcag&quot;)&lt;/script&gt;' in html
+
+
 def test_project_name_and_description_are_escaped() -> None:
     html = _build_report().to_html()
 

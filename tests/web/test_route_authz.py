@@ -197,33 +197,63 @@ def test_pages_delete_allowed_for_admin(
     assert resp.status_code != 403
 
 
-def test_every_pages_route_is_guarded() -> None:
-    """Inspection: every pages_bp view is wrapped by project_role_required.
+def test_every_pages_route_enforces_authz(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Per-route introspection: EVERY pages_bp route 403s for role=None.
 
-    The decorator uses ``functools.wraps``, so a guarded view exposes a
-    ``__wrapped__`` attribute pointing at the original module function. An
-    unguarded route would register the bare function (no ``__wrapped__``).
+    Stronger than a ``__wrapped__`` check (which any ``functools.wraps``-based
+    decorator -- ``@login_required``, ``@deprecated`` -- would also satisfy
+    without enforcing authorization). We iterate the url_map, turn each rule's
+    path pattern into a concrete URL by filling every ``<param>`` placeholder
+    with a dummy value (the MagicMock db makes ``resolve_project_id`` truthy for
+    the ``page_id`` every pages_bp route keys on), drive an allowed method, and
+    assert 403. role=None never reaches the view body, so this is safe to drive
+    for real.
+
+    If a new pages route is added without a guard it returns non-403 here and
+    fails; the endpoint-set assertion likewise fails for an unrecognised route.
     """
-    app = Flask(__name__)
-    setattr(app, 'db', None)
-    app.register_blueprint(pages_bp, url_prefix='/pages')
+    import re
 
-    pages_endpoints = [
-        (rule.endpoint, view)
-        for rule, view in (
-            (rule, app.view_functions[rule.endpoint])
-            for rule in app.url_map.iter_rules()
-            if rule.endpoint.startswith('pages.')
+    client = _pages_client(monkeypatch, role=None)
+
+    endpoints: set[str] = set()
+    for rule in client.application.url_map.iter_rules():
+        endpoint = str(rule.endpoint)
+        if not endpoint.startswith('pages.'):
+            continue
+        endpoints.add(endpoint)
+
+        # ``str(rule)`` is the path pattern, e.g. ``/pages/<page_id>/delete``.
+        # Replace each ``<...>`` placeholder with a concrete dummy segment.
+        path = re.sub(r'<[^>]+>', 'x', str(rule))
+
+        # ``rule.methods`` may be ``None``; pick a concrete, non-automatic verb.
+        rule_methods = rule.methods
+        usable = (set(rule_methods) if rule_methods is not None else {'GET'}) - {
+            'HEAD', 'OPTIONS',
+        }
+        method = 'GET' if 'GET' in usable else sorted(usable)[0]
+
+        resp = client.open(path, method=method)
+        assert resp.status_code == 403, (
+            f'{endpoint} ({method} {path}) returned '
+            f'{resp.status_code}, expected 403 for role=None'
         )
-    ]
-    assert pages_endpoints, 'no pages_bp routes registered'
 
-    unguarded = [
-        endpoint
-        for endpoint, view in pages_endpoints
-        if not hasattr(view, '__wrapped__')
-    ]
-    assert not unguarded, f'unguarded pages_bp routes: {unguarded}'
+    # Every documented pages route was exercised; if this set ever grows, a
+    # contributor must add its guard (or this test fails for the new route).
+    assert endpoints == {
+        'pages.view_page',
+        'pages.edit_page',
+        'pages.delete_page',
+        'pages.test_page',
+        'pages.cancel_test',
+        'pages.test_status',
+        'pages.view_violations',
+        'pages.configure_test_matrix',
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -406,34 +436,92 @@ def test_api_list_websites_scopes_to_accessible_projects(
     }
 
 
-def test_every_websites_route_is_guarded() -> None:
-    """Every websites_bp view is wrapped by project_role_required.
+# ``api_list_websites`` has no per-resource id to resolve, so it cannot use
+# ``project_role_required``. It is ``@login_required`` and instead filters its
+# result to the user's accessible projects (verified by
+# ``test_api_list_websites_scopes_to_accessible_projects``). It is therefore
+# excluded from the role=None->403 sweep below but still asserted to exist in
+# the endpoint set -- mirroring how ``_RECORDINGS_UNRESOLVABLE`` handles the
+# recordings listings/upload flows.
+_WEBSITES_UNRESOLVABLE = {
+    'websites.api_list_websites',
+}
 
-    ``api_list_websites`` is the sole exception: it has no per-resource id to
-    resolve and is instead protected by filtering its result to the user's
-    accessible projects, so it is excluded from the wrapping requirement.
+
+def test_every_websites_route_enforces_authz(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Per-route introspection: EVERY resolvable websites_bp route 403s for
+    role=None.
+
+    Stronger than a ``__wrapped__`` check (which any ``functools.wraps``-based
+    decorator would also satisfy without enforcing authorization). We iterate
+    the url_map, fill each ``<param>`` placeholder with a dummy segment (the
+    MagicMock db makes ``resolve_project_id`` truthy for the ``website_id``
+    every guarded route keys on, plus the ``run_id`` on the discovery-run
+    route), drive an allowed method, and assert 403. role=None never reaches
+    the view body, so this is safe to drive for real.
+
+    ``api_list_websites`` is excluded (see ``_WEBSITES_UNRESOLVABLE``) but is
+    still asserted to exist in the endpoint set. If a new resolvable route is
+    added without a guard it returns non-403 here and fails; the endpoint-set
+    assertion likewise fails for an unrecognised route.
     """
-    app = Flask(__name__)
-    setattr(app, 'db', None)
-    app.register_blueprint(websites_bp, url_prefix='/websites')
+    import re
 
-    websites_endpoints = [
-        (rule.endpoint, view)
-        for rule, view in (
-            (rule, app.view_functions[rule.endpoint])
-            for rule in app.url_map.iter_rules()
-            if rule.endpoint.startswith('websites.')
+    client = _websites_client(monkeypatch, role=None)
+
+    endpoints: set[str] = set()
+    for rule in client.application.url_map.iter_rules():
+        endpoint = str(rule.endpoint)
+        if not endpoint.startswith('websites.'):
+            continue
+        endpoints.add(endpoint)
+
+        if endpoint in _WEBSITES_UNRESOLVABLE:
+            continue
+
+        # ``str(rule)`` is the path pattern, e.g. ``/websites/<website_id>``.
+        # Replace each ``<...>`` placeholder with a concrete dummy segment.
+        path = re.sub(r'<[^>]+>', 'x', str(rule))
+
+        # ``rule.methods`` may be ``None``; pick a concrete, non-automatic verb.
+        rule_methods = rule.methods
+        usable = (set(rule_methods) if rule_methods is not None else {'GET'}) - {
+            'HEAD', 'OPTIONS',
+        }
+        method = 'GET' if 'GET' in usable else sorted(usable)[0]
+
+        resp = client.open(path, method=method)
+        assert resp.status_code == 403, (
+            f'{endpoint} ({method} {path}) returned '
+            f'{resp.status_code}, expected 403 for role=None'
         )
-    ]
-    assert websites_endpoints, 'no websites_bp routes registered'
 
-    unguarded = [
-        endpoint
-        for endpoint, view in websites_endpoints
-        if not hasattr(view, '__wrapped__')
-        and endpoint != 'websites.api_list_websites'
-    ]
-    assert not unguarded, f'unguarded websites_bp routes: {unguarded}'
+    # Every documented websites route was exercised; if this set ever grows, a
+    # contributor must add its guard (or this test fails for the new route).
+    assert endpoints == {
+        'websites.view_website',
+        'websites.edit_website',
+        'websites.delete_website',
+        'websites.discover_pages',
+        'websites.cancel_discovery',
+        'websites.discovery_status',
+        'websites.view_discovery_history',
+        'websites.view_discovery_run',
+        'websites.add_page',
+        'websites.test_all_pages',
+        'websites.cancel_testing',
+        'websites.test_status',
+        'websites.clear_test_results',
+        'websites.view_documents',
+        'websites.manual_session_start',
+        'websites.manual_session_status',
+        'websites.manual_session_capture',
+        'websites.manual_session_test',
+        'websites.manual_session_stop',
+        'websites.api_list_websites',
+    }
 
 
 # ---------------------------------------------------------------------------

@@ -97,7 +97,8 @@ class Website:
             'last_scraped': self.last_scraped,
             'last_tested': self.last_tested,
             'page_count': self.page_count,
-            'scraping_config': self.scraping_config.to_dict()
+            'scraping_config': self.scraping_config.to_dict(),
+            'discovery_history': self.discovery_history
         }
         data['members'] = [m.to_dict() for m in self.members]
         if self._id:

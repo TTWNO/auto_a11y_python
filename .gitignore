@@ -106,6 +106,7 @@ test_*.py
 !auto_a11y/testing/touchpoint_tests/test_*.py
 !auto_a11y/web/api/schemas/test_*.py
 !tests/test_*.py
+!tests/core/test_*.py
 !tests/pdf/test_*.py
 !tests/api/test_*.py
 !tests/api/schemas/test_*.py

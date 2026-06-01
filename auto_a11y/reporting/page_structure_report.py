@@ -5,6 +5,8 @@ Generates a tree view of website pages based on URL hierarchy
 from __future__ import annotations
 
 import logging
+import os
+from pathlib import Path
 from typing import Any, Callable, TYPE_CHECKING
 from urllib.parse import urlparse, unquote
 from datetime import datetime
@@ -20,6 +22,35 @@ if TYPE_CHECKING:
     from auto_a11y.models import Website, Project
 
 logger = logging.getLogger(__name__)
+
+
+def resolve_reports_dir() -> Path:
+    """Resolve the directory reports are written to.
+
+    Resolution order:
+    1. The Flask ``current_app``'s ``app_config.REPORTS_DIR`` when an
+       application context is active and exposes it.
+    2. The ``REPORTS_DIR`` environment variable.
+    3. A repo-relative ``reports`` directory (mirrors the default used by
+       ``ReportGenerator`` in ``report_generator.py``).
+
+    Returns:
+        Path to the reports directory (not guaranteed to exist yet).
+    """
+    # Try getting from Flask current_app if available.
+    try:
+        from flask import current_app
+        if current_app and hasattr(current_app, 'app_config'):
+            app_cfg = getattr(current_app, 'app_config')
+            return Path(str(getattr(app_cfg, 'REPORTS_DIR')))
+    except Exception as exc:
+        # No active app context, or app_config missing/raising — fall through
+        # to the env-var/default resolution below. Narrowed from a bare
+        # ``except`` so KeyboardInterrupt/SystemExit still propagate.
+        logger.debug("Flask current_app REPORTS_DIR lookup failed: %s", exc)
+
+    # Fall back to environment variable, then a repo-relative default.
+    return Path(os.environ.get('REPORTS_DIR', 'reports'))
 
 
 class PageNode:
@@ -917,34 +948,15 @@ class PageStructureReport:
     def save(self, format: str = 'html') -> str:
         """
         Save report to file
-        
+
         Args:
             format: Output format (html, json, csv, pdf)
-            
+
         Returns:
             Path to saved file
         """
-        from pathlib import Path
-        import os
-        
-        # Get reports directory - check multiple possible locations
-        # First try to get from app config if available
-        reports_dir = None
-        
-        # Try getting from Flask current_app if available
-        try:
-            from flask import current_app
-            if current_app and hasattr(current_app, 'app_config'):
-                app_cfg = getattr(current_app, 'app_config')
-                reports_dir = Path(str(getattr(app_cfg, 'REPORTS_DIR')))
-        except:
-            pass
-        
-        # Fall back to environment variable or default
-        if not reports_dir:
-            reports_dir_str = os.environ.get('REPORTS_DIR', '/Users/bob3/Desktop/auto_a11y_python/reports')
-            reports_dir = Path(reports_dir_str)
-        
+        reports_dir = resolve_reports_dir()
+
         # Ensure directory exists
         reports_dir.mkdir(parents=True, exist_ok=True)
         

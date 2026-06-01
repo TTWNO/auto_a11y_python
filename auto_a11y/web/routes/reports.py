@@ -9,7 +9,6 @@ from typing import Any, cast
 from flask import Blueprint, Flask, Response, abort, render_template, request, jsonify, send_file, current_app, url_for, redirect, session
 from flask_login import current_user, login_required
 from werkzeug.exceptions import HTTPException
-from werkzeug.utils import secure_filename
 from werkzeug.wrappers import Response as WerkzeugResponse
 from auto_a11y.web.fluent import ftl, force_locale, get_current_locale as get_locale
 from auto_a11y.models import PageStatus
@@ -25,6 +24,7 @@ from auto_a11y.web.typed_app import get_db, get_app_config
 from datetime import datetime, timedelta
 from uuid import uuid4
 import logging
+import os
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -113,15 +113,49 @@ def _authorize_job_record(job: dict[str, Any], *roles: UserRole) -> None:
 
     The ``<job_id>`` URL param isn't resolvable by the central resolver (the
     job id is not a project/website/page id), so we read the scope the job was
-    created with -- ``project_id`` / ``website_id`` -- off the record and gate
-    on the effective role there. Jobs with neither id are cross-project
-    ("all projects") roll-ups and require superadmin, exactly like
-    ``_authorize_report_record`` / ``_authorize_body_scope``.
+    created with off the record and gate on the effective role there. The scope
+    can be carried three ways, mirroring ``api.py``'s ``_authorize_report_record``
+    so the two stay consistent:
+
+    * top-level ``project_id`` -> check that project;
+    * top-level ``website_id`` -> check that website (resolved to its project);
+    * ``metadata.page_id`` (PAGE-scoped jobs, which carry neither top-level id)
+      -> resolve the page to its ``website_id`` and check THAT. Without this
+      hop a page job would fall through to the "all projects" roll-up branch
+      and 403 the ADMIN/AUDITOR/CLIENT who legitimately made it (the bug this
+      fixes).
+
+    Jobs with no scope at all are cross-project ("all projects") roll-ups and
+    require superadmin, exactly like ``_authorize_report_record`` /
+    ``_authorize_body_scope``. Fail-closed: a ``page_id`` that no longer
+    resolves (page deleted) falls back to whatever top-level scope remains,
+    which for a page job is none -> superadmin only.
     """
     project_id_any: Any = job.get('project_id')
     website_id_any: Any = job.get('website_id')
+    metadata_any: Any = job.get('metadata') or {}
+    # ``isinstance`` narrows to ``dict[Unknown, Unknown]`` under strict
+    # checking; a job's metadata is always a str-keyed JSON object, so cast to
+    # the concrete element type (not ``Any`` as a workaround) -- the same
+    # pattern ``_json_body`` and api.py's ``_authorize_report_record`` use.
+    metadata: dict[str, Any] = (
+        cast("dict[str, Any]", metadata_any) if isinstance(metadata_any, dict) else {}
+    )
+    page_id_any: Any = metadata.get('page_id')
+
     project_id = project_id_any if isinstance(project_id_any, str) else None
     website_id = website_id_any if isinstance(website_id_any, str) else None
+    page_id = page_id_any if isinstance(page_id_any, str) else None
+
+    # PAGE-scoped jobs carry the scope as metadata.page_id. Resolve it to the
+    # owning website so the scope check below has something to gate on; if the
+    # page is gone, leave website_id as-is (None for a page job -> fail-closed
+    # to the superadmin roll-up branch in _authorize_body_scope).
+    if page_id and not website_id and not project_id:
+        page = get_db().get_page(page_id)
+        if page is not None:
+            website_id = page.website_id
+
     _authorize_body_scope(project_id, website_id, *roles)
 
 
@@ -532,27 +566,51 @@ def _build_restart_generator(scope: str | None, report_type: str, project_id: st
 def _safe_report_path(filename: str) -> Path | None:
     """Resolve ``filename`` strictly inside ``REPORTS_DIR``.
 
-    CONTAINMENT IS CHECKED BEFORE EXISTENCE: we ``resolve()`` the candidate and
-    verify it is relative to the resolved reports dir *first*, so a traversing
-    or absolute filename is refused without ever probing the filesystem outside
-    the reports directory (the previous order did ``.exists()`` first, which
-    leaks whether an out-of-tree file exists and could stream it). We also run
-    the name through ``secure_filename`` and reject any value that changes it,
-    which strips ``..`` / path separators entirely.
+    THE SECURITY BOUNDARY IS PATH CONTAINMENT, NOT ``secure_filename``: we
+    ``resolve()`` the candidate and verify it is relative to the resolved
+    reports dir, which by itself rejects ``..`` traversal, absolute paths, and
+    embedded separators after resolution. CONTAINMENT IS CHECKED BEFORE
+    EXISTENCE so a traversing/absolute filename is refused without ever probing
+    the filesystem outside the reports directory (the previous order did
+    ``.exists()`` first, which leaks whether an out-of-tree file exists and
+    could stream it).
+
+    We deliberately do NOT run the name through ``secure_filename`` and reject
+    on inequality: ``secure_filename`` transliterates non-ASCII (e.g. ``Café``
+    -> ``Cafe``), but report files are named via
+    ``report_generator._sanitize_filename`` which only strips ``<>:"/\\|?*``
+    and collapses whitespace -- it preserves accented characters. So a project
+    named ``Café Réseau`` yields the on-disk file
+    ``website_Café_Réseau_<ts>.xlsx``; a ``secure_filename`` equality gate
+    would 403 that legitimate download/delete. This is a bilingual (EN/FR)
+    product, so accented names are expected and MUST be allowed.
+
+    As a cheap pre-resolve reject we still refuse any value carrying a path
+    separator (``/`` or the OS separator) or that IS a relative-traversal
+    segment (``.`` / ``..``) -- a fast-path defence only; the containment check
+    below is the real guarantee. We do NOT reject on a ``..`` substring: a
+    legitimate report name may contain consecutive dots (``A..B.xlsx``), and
+    with separators already excluded such a name cannot traverse out of the
+    reports dir -- ``resolve()`` keeps it inside.
 
     Returns the safe ``Path`` if it is inside the reports dir, else ``None``
     (caller maps ``None`` -> 403/404).
     """
-    reports_dir = Path(get_app_config().REPORTS_DIR).resolve()
-
-    # secure_filename collapses traversal/separators; if it changed the input,
-    # the original was unsafe -> reject outright.
-    sanitized = secure_filename(filename)
-    if not sanitized or sanitized != filename:
+    # Cheap pre-resolve reject for obvious traversal/separators. Non-ASCII is
+    # NOT rejected here (see docstring) -- only structural path characters.
+    if (
+        not filename
+        or filename in {'.', '..'}
+        or '/' in filename
+        or os.sep in filename
+        or (os.altsep is not None and os.altsep in filename)
+    ):
         return None
 
-    candidate = (reports_dir / sanitized).resolve()
-    # Containment check BEFORE any existence probe.
+    reports_dir = Path(get_app_config().REPORTS_DIR).resolve()
+
+    candidate = (reports_dir / filename).resolve()
+    # Containment check (the real security boundary) BEFORE any existence probe.
     if not candidate.is_relative_to(reports_dir):
         return None
     return candidate
@@ -668,10 +726,20 @@ def generate_page_report(page_id: str) -> tuple[Response, int] | Response:
 
     job_id = f"report_{uuid4().hex[:8]}"
     job_manager = JobManager(db)
+    # Persist the page's scope onto the job so status/drop/restart can authorize
+    # the page's project members (not just superadmin). We store both the
+    # resolved website_id (top-level, the scope _authorize_job_record gates on)
+    # and the page_id in metadata, mirroring api.py's report-record shape.
     job_manager.create_job(
         job_id=job_id,
         job_type=JobType.REPORT_GENERATION,
-        metadata={'report_type': format, 'scope': 'page', 'display_name': f'Page Report - {page.title or page.url}'}
+        website_id=str(page.website_id),
+        metadata={
+            'report_type': format,
+            'scope': 'page',
+            'page_id': page_id,
+            'display_name': f'Page Report - {page.title or page.url}',
+        },
     )
 
     def wrapper() -> None:

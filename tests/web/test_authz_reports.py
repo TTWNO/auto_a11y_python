@@ -26,10 +26,12 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 from flask import Flask
 from flask.testing import FlaskClient
+from flask_login import LoginManager
 
 from auto_a11y.web.routes.reports import reports_bp
 
@@ -325,3 +327,467 @@ def test_every_scope_param_route_enforces_authz(
         'reports.generate_deduplicated_report',
         'reports.generate_recordings_report',
     }
+
+
+# ---------------------------------------------------------------------------
+# Part D: negative-path tests for the in-handler authz helpers
+# (``_authorize_body_scope`` / ``_authorize_job_record``).
+#
+# The shared harness grants a role tier regardless of *which* project the
+# request names (its ``user_has_permission`` ignores ``project_id``). To prove
+# CROSS-PROJECT denial we re-patch that single seam with a project-aware
+# replacement: the stub user only holds the granted tier on ``OWNED_PROJECT``;
+# every other project resolves to no role. We never edit the harness itself.
+# ---------------------------------------------------------------------------
+
+OWNED_PROJECT = 'proj-owned'
+OTHER_PROJECT = 'proj-other'
+OWNED_WEBSITE = 'web-owned'
+OWNED_PAGE = 'page-owned'
+
+#: The ``(resource, action)`` pairs ``get_effective_role`` probes for each tier
+#: (taken from ``get_effective_role`` / the harness's ``_TIER_GRANTS``). A tier
+#: grants its own probe plus every lower tier's, so the function short-circuits
+#: at the right branch. Defined here (not imported from the harness's private
+#: ``_TIER_GRANTS``) to keep the project-aware seam self-contained.
+_TIER_GRANTS: dict[Role, set[tuple[str, str]]] = {
+    'admin': {
+        ('project_members', 'delete'),
+        ('test_results', 'create'),
+        ('projects', 'read'),
+    },
+    'auditor': {('test_results', 'create'), ('projects', 'read')},
+    'client': {('projects', 'read')},
+}
+
+
+def _patch_project_aware_permissions(
+    monkeypatch: pytest.MonkeyPatch, role: Role,
+) -> None:
+    """Re-patch ``user_has_permission`` so the tier is granted ONLY on
+    ``OWNED_PROJECT`` (every other project -> no role).
+
+    Applied AFTER ``make_app_with_blueprint`` (which installs the
+    project-agnostic seam) so this overrides it for the test.
+    """
+    granted: set[tuple[str, str]] = _TIER_GRANTS[role]
+
+    def _check(
+        _user: object,
+        project_id: str | None,
+        resource: str,
+        required_level: str,
+    ) -> bool:
+        if project_id != OWNED_PROJECT:
+            return False
+        return (resource, required_level) in granted
+
+    monkeypatch.setattr(
+        'auto_a11y.core.permissions.user_has_permission', _check,
+    )
+
+
+def _superadmin_client(app: Flask) -> FlaskClient:
+    """Test client whose loaded user is a SUPERADMIN.
+
+    The harness's user loader returns a fixed non-superadmin ``StubUser``; we
+    re-register a loader that returns a superadmin stand-in so the in-handler
+    helpers exercise the ``is_superadmin`` bypass branch.
+    """
+    superadmin = StubUser(user_id='super-user')
+    superadmin.is_superadmin = True
+
+    # ``LoginManager.init_app`` stores itself on ``app.login_manager``; Flask
+    # has no declared attribute for it, so read via ``getattr`` (mirrors the
+    # harness's ``setattr(app, 'db', ...)`` rationale) to satisfy strict typing.
+    login_manager: LoginManager = getattr(app, 'login_manager')
+
+    def _load_super(user_id: str) -> StubUser | None:
+        return superadmin if user_id == superadmin.id else None
+
+    login_manager.user_loader(_load_super)
+
+    client = app.test_client()
+    with client.session_transaction() as sess:
+        sess['_user_id'] = superadmin.id
+    return client
+
+
+def _seed_job(app: Flask, job: dict[str, object] | None) -> None:
+    """Make ``JobManager(get_db()).get_job(...)`` return ``job``.
+
+    ``get_job`` does ``database.db['jobs'].find_one(...)``; the harness ``db``
+    is a MagicMock, so we wire the chain's ``find_one`` return value.
+    """
+    db: MagicMock = getattr(app, 'db')  # MagicMock from the harness
+    db.db['jobs'].find_one.return_value = job
+
+
+# --- Body-param route: cross-project / no-role denial ----------------------
+
+
+def test_generate_body_route_forbidden_role_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """``/generate`` with a project_id body 403s for a user with no role."""
+    client = _reports_client(monkeypatch, role=None)
+
+    resp = client.post('/reports/generate', json={'project_id': OWNED_PROJECT})
+
+    assert resp.status_code == 403
+
+
+def test_generate_body_route_forbidden_for_other_project_member(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A member of a DIFFERENT project cannot generate a report scoped to a
+    project they have no role on."""
+    app = make_app_with_blueprint(
+        reports_bp, role='admin', monkeypatch=monkeypatch, url_prefix='/reports',
+    )
+    app.config['PROPAGATE_EXCEPTIONS'] = False
+    _patch_project_aware_permissions(monkeypatch, role='admin')
+    client = _authenticated_client(app)
+
+    resp = client.post('/reports/generate', json={'project_id': OTHER_PROJECT})
+
+    assert resp.status_code == 403
+
+
+# --- Body-param route: superadmin roll-up (no scope) -----------------------
+
+
+def test_generate_rollup_no_scope_allowed_for_superadmin(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The cross-project roll-up (no project_id/website_id) is allowed for a
+    superadmin -- NOT 403."""
+    app = make_app_with_blueprint(
+        reports_bp, role=None, monkeypatch=monkeypatch, url_prefix='/reports',
+    )
+    app.config['PROPAGATE_EXCEPTIONS'] = False
+    # The roll-up path runs on to generation/config; stub config so it doesn't
+    # 500 in the Mongo-free harness. We only assert it is NOT 403.
+    monkeypatch.setattr(
+        'auto_a11y.web.routes.reports.get_app_config',
+        lambda: _StubAppConfig(),
+    )
+    client = _superadmin_client(app)
+
+    resp = client.post('/reports/generate', json={})
+
+    assert resp.status_code != 403
+
+
+def test_generate_rollup_no_scope_forbidden_for_member(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The cross-project roll-up is 403 for a normal project member (even an
+    admin on some project): it spans every project -> superadmin only."""
+    client = _reports_client(monkeypatch, role='admin')
+
+    resp = client.post('/reports/generate', json={})
+
+    assert resp.status_code == 403
+
+
+# --- Job route: cross-project denial ---------------------------------------
+
+
+def test_job_status_forbidden_for_other_project_scope(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """``/job/<id>/status`` 403s when the job's project scope belongs to a
+    project the user lacks a role on."""
+    app = make_app_with_blueprint(
+        reports_bp, role='admin', monkeypatch=monkeypatch, url_prefix='/reports',
+    )
+    app.config['PROPAGATE_EXCEPTIONS'] = False
+    _patch_project_aware_permissions(monkeypatch, role='admin')
+    _seed_job(app, {
+        'job_id': 'job-x', 'status': 'completed', 'project_id': OTHER_PROJECT,
+        'website_id': None, 'metadata': {},
+    })
+    client = _authenticated_client(app)
+
+    resp = client.get('/reports/job/job-x/status')
+
+    assert resp.status_code == 403
+
+
+def test_job_drop_forbidden_for_other_project_scope(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """``/job/<id>/drop`` 403s when the job's project scope belongs to a
+    project the user lacks a role on (mutation tier)."""
+    app = make_app_with_blueprint(
+        reports_bp, role='admin', monkeypatch=monkeypatch, url_prefix='/reports',
+    )
+    app.config['PROPAGATE_EXCEPTIONS'] = False
+    _patch_project_aware_permissions(monkeypatch, role='admin')
+    _seed_job(app, {
+        'job_id': 'job-x', 'status': 'running', 'project_id': OTHER_PROJECT,
+        'website_id': None, 'metadata': {},
+    })
+    client = _authenticated_client(app)
+
+    resp = client.post('/reports/job/job-x/drop', json={})
+
+    assert resp.status_code == 403
+
+
+def test_job_status_allowed_for_owned_project_scope(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A job scoped to the user's OWN project is readable -- NOT 403."""
+    app = make_app_with_blueprint(
+        reports_bp, role='client', monkeypatch=monkeypatch, url_prefix='/reports',
+    )
+    app.config['PROPAGATE_EXCEPTIONS'] = False
+    _patch_project_aware_permissions(monkeypatch, role='client')
+    _seed_job(app, {
+        'job_id': 'job-x', 'status': 'completed', 'project_id': OWNED_PROJECT,
+        'website_id': None, 'metadata': {}, 'updated_at': None,
+    })
+    client = _authenticated_client(app)
+
+    resp = client.get('/reports/job/job-x/status')
+
+    assert resp.status_code != 403
+
+
+# --- Job route: cross-project roll-up (no scope) ---------------------------
+
+
+def test_job_rollup_no_scope_allowed_for_superadmin(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A job with NO scope (all-projects roll-up) is readable by a superadmin."""
+    app = make_app_with_blueprint(
+        reports_bp, role=None, monkeypatch=monkeypatch, url_prefix='/reports',
+    )
+    app.config['PROPAGATE_EXCEPTIONS'] = False
+    _seed_job(app, {
+        'job_id': 'job-x', 'status': 'completed', 'project_id': None,
+        'website_id': None, 'metadata': {}, 'updated_at': None,
+    })
+    client = _superadmin_client(app)
+
+    resp = client.get('/reports/job/job-x/status')
+
+    assert resp.status_code != 403
+
+
+def test_job_rollup_no_scope_forbidden_for_member(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A job with NO scope is 403 for a normal project member."""
+    app = make_app_with_blueprint(
+        reports_bp, role='admin', monkeypatch=monkeypatch, url_prefix='/reports',
+    )
+    app.config['PROPAGATE_EXCEPTIONS'] = False
+    _seed_job(app, {
+        'job_id': 'job-x', 'status': 'completed', 'project_id': None,
+        'website_id': None, 'metadata': {}, 'updated_at': None,
+    })
+    client = _authenticated_client(app)
+
+    resp = client.get('/reports/job/job-x/status')
+
+    assert resp.status_code == 403
+
+
+# --- Issue 2 regression: PAGE-scoped job is accessible to its project's
+#     members, not just superadmin. --------------------------------------
+
+
+class _StubPage:
+    """Minimal page stand-in carrying the ``website_id`` the resolver needs."""
+
+    def __init__(self, website_id: str) -> None:
+        self.website_id = website_id
+
+
+class _StubWebsite:
+    """Minimal website stand-in carrying the ``project_id`` the resolver needs."""
+
+    def __init__(self, project_id: str) -> None:
+        self.project_id = project_id
+
+
+def _seed_page_chain(app: Flask) -> None:
+    """Wire ``db.get_page(OWNED_PAGE) -> page(OWNED_WEBSITE)`` and
+    ``db.get_website(OWNED_WEBSITE) -> website(OWNED_PROJECT)`` so a page-scoped
+    job resolves to ``OWNED_PROJECT``."""
+    db: MagicMock = getattr(app, 'db')
+
+    def _get_page(page_id: str) -> _StubPage | None:
+        return _StubPage(OWNED_WEBSITE) if page_id == OWNED_PAGE else None
+
+    def _get_website(website_id: str) -> _StubWebsite | None:
+        return _StubWebsite(OWNED_PROJECT) if website_id == OWNED_WEBSITE else None
+
+    db.get_page.side_effect = _get_page
+    db.get_website.side_effect = _get_website
+
+
+@pytest.mark.parametrize('role', ['admin', 'auditor', 'client'])
+def test_page_scoped_job_accessible_to_project_member(
+    role: Role, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """REGRESSION (Issue 2): a PAGE-scoped report job -- created with no
+    top-level project_id/website_id but ``metadata.page_id`` -- must be
+    readable by the page's project ADMIN/AUDITOR/CLIENT, not only superadmin.
+
+    Before the fix, ``_authorize_job_record`` saw neither project_id nor
+    website_id and routed to the superadmin-only roll-up branch, 403ing the
+    legitimate member who made the page report.
+    """
+    app = make_app_with_blueprint(
+        reports_bp, role=role, monkeypatch=monkeypatch, url_prefix='/reports',
+    )
+    app.config['PROPAGATE_EXCEPTIONS'] = False
+    _patch_project_aware_permissions(monkeypatch, role=role)
+    _seed_page_chain(app)
+    _seed_job(app, {
+        'job_id': 'job-page', 'status': 'completed',
+        'project_id': None, 'website_id': None,
+        'metadata': {'scope': 'page', 'page_id': OWNED_PAGE},
+        'updated_at': None,
+    })
+    client = _authenticated_client(app)
+
+    resp = client.get('/reports/job/job-page/status')
+
+    assert resp.status_code != 403, (
+        f'page-scoped job 403d a project {role}; Issue-2 regression'
+    )
+
+
+def test_page_scoped_job_forbidden_for_other_project_member(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A page-scoped job is still 403 for a member of a DIFFERENT project
+    (the fix must stay fail-closed across the page->website->project hop)."""
+    app = make_app_with_blueprint(
+        reports_bp, role='admin', monkeypatch=monkeypatch, url_prefix='/reports',
+    )
+    app.config['PROPAGATE_EXCEPTIONS'] = False
+    # Grant admin only on a project that is NOT the page's project.
+    granted: set[tuple[str, str]] = _TIER_GRANTS['admin']
+
+    def _check(
+        _user: object, project_id: str | None, resource: str, level: str,
+    ) -> bool:
+        # Page resolves to OWNED_PROJECT; user only holds OTHER_PROJECT.
+        if project_id != OTHER_PROJECT:
+            return False
+        return (resource, level) in granted
+
+    monkeypatch.setattr(
+        'auto_a11y.core.permissions.user_has_permission', _check,
+    )
+    _seed_page_chain(app)
+    _seed_job(app, {
+        'job_id': 'job-page', 'status': 'completed',
+        'project_id': None, 'website_id': None,
+        'metadata': {'scope': 'page', 'page_id': OWNED_PAGE},
+        'updated_at': None,
+    })
+    client = _authenticated_client(app)
+
+    resp = client.get('/reports/job/job-page/status')
+
+    assert resp.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# Issue 1: accented (non-ASCII) report filenames must NOT be rejected, while
+# traversal is still blocked WITHOUT an FS side effect.
+# ---------------------------------------------------------------------------
+
+
+def test_download_accented_filename_inside_reports_dir_allowed(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+) -> None:
+    """A French/accented report filename that resolves INSIDE ``REPORTS_DIR``
+    is served (not 403d by an over-zealous ``secure_filename`` gate).
+
+    ``report_generator._sanitize_filename`` does NOT transliterate accents, so
+    on-disk names like ``website_Café_Réseau_<ts>.xlsx`` are legitimate.
+    """
+    reports_dir = tmp_path / 'reports'
+    reports_dir.mkdir()
+    accented_name = 'website_Café_Réseau_20260101.xlsx'
+    (reports_dir / accented_name).write_text('accented report body')
+
+    app = make_app_with_blueprint(
+        reports_bp, role='admin', monkeypatch=monkeypatch, url_prefix='/reports',
+    )
+    app.config['PROPAGATE_EXCEPTIONS'] = False
+    monkeypatch.setattr(
+        'auto_a11y.web.routes.reports.get_app_config',
+        lambda: _StubConfig(reports_dir),
+    )
+    client = _authenticated_client(app)
+
+    resp = client.get(f'/reports/download/{accented_name}')
+
+    assert resp.status_code == 200, (
+        f'accented filename returned {resp.status_code}; the secure_filename '
+        f'equality gate is rejecting a legitimate French report name'
+    )
+    assert b'accented report body' in resp.data
+
+
+def test_delete_accented_filename_inside_reports_dir_allowed(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+) -> None:
+    """Deleting an accented report filename inside ``REPORTS_DIR`` succeeds."""
+    reports_dir = tmp_path / 'reports'
+    reports_dir.mkdir()
+    accented_name = 'website_Café_Réseau_20260101.xlsx'
+    target = reports_dir / accented_name
+    target.write_text('accented report body')
+
+    app = make_app_with_blueprint(
+        reports_bp, role='admin', monkeypatch=monkeypatch, url_prefix='/reports',
+    )
+    app.config['PROPAGATE_EXCEPTIONS'] = False
+    monkeypatch.setattr(
+        'auto_a11y.web.routes.reports.get_app_config',
+        lambda: _StubConfig(reports_dir),
+    )
+    client = _authenticated_client(app)
+
+    resp = client.post(f'/reports/{accented_name}/delete', json={})
+
+    assert resp.status_code == 200
+    assert not target.exists()
+
+
+def test_delete_traversal_blocked_no_fs_side_effect(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+) -> None:
+    """A ``..`` traversal delete is refused (403/404) WITHOUT unlinking the
+    out-of-tree file."""
+    reports_dir = tmp_path / 'reports'
+    reports_dir.mkdir()
+    secret = tmp_path / 'secret.txt'
+    secret.write_text('top secret')
+
+    app = make_app_with_blueprint(
+        reports_bp, role='admin', monkeypatch=monkeypatch, url_prefix='/reports',
+    )
+    app.config['PROPAGATE_EXCEPTIONS'] = False
+    monkeypatch.setattr(
+        'auto_a11y.web.routes.reports.get_app_config',
+        lambda: _StubConfig(reports_dir),
+    )
+    client = _authenticated_client(app)
+
+    resp = client.post('/reports/..%2Fsecret.txt/delete', json={})
+
+    assert resp.status_code in (403, 404)
+    # The out-of-tree file must NOT have been unlinked.
+    assert secret.exists()

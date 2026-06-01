@@ -14,12 +14,43 @@ from __future__ import annotations
 
 import logging
 import uuid
-from typing import Any
+from typing import Any, cast
 
 from auto_a11y.models import DiscoveredPage
 from auto_a11y.core.database import Database
 
 logger = logging.getLogger(__name__)
+
+
+def extract_violation_xpath(violation: object) -> str | None:
+    """
+    Extract an xpath from a violation that may be a dict or an object.
+
+    Looks for a top-level ``xpath`` first, then ``metadata['xpath']``,
+    supporting both dict-shaped and attribute-bearing violations.
+
+    Args:
+        violation: A violation as a dict or an object.
+
+    Returns:
+        The xpath string if present, otherwise None.
+    """
+    def _get(v: object, key: str) -> object:
+        if isinstance(v, dict):
+            return cast("dict[object, object]", v).get(key)
+        return getattr(v, key, None)
+
+    xpath = _get(violation, 'xpath')
+    if isinstance(xpath, str) and xpath:
+        return xpath
+
+    metadata = _get(violation, 'metadata')
+    if metadata is not None:
+        meta_xpath = _get(metadata, 'xpath')
+        if isinstance(meta_xpath, str) and meta_xpath:
+            return meta_xpath
+
+    return None
 
 
 class AutomatedTestDeduplicationService:
@@ -489,7 +520,8 @@ class AutomatedTestDeduplicationService:
                         discovered_page_id: str | None = None
 
                         # Check if violation is in a common component
-                        violation_xpath: str | None = getattr(violation, 'xpath', None) or getattr(violation, 'metadata', {}).get('xpath')
+                        # (violations may be dict- or object-shaped)
+                        violation_xpath: str | None = extract_violation_xpath(violation)
 
                         if violation_xpath:
                             # Try to match to a component by checking if xpath is within component

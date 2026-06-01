@@ -310,6 +310,159 @@ def test_schedules_dashboard_anonymous_redirected_to_login(
 
 
 # ---------------------------------------------------------------------------
+# schedules.py — schedules_dashboard per-project scoping BEHAVIOUR.
+# ---------------------------------------------------------------------------
+#
+# The anonymous test above only proves the @login_required gate fires. These
+# tests prove the in-handler scoping: a non-superadmin sees ONLY schedules whose
+# website belongs to a project they're a member of, and an out-of-scope
+# ?project_id= param cannot widen that. A superadmin sees everything.
+#
+# The route ends in ``render_template('schedules/dashboard.html', ...)`` and the
+# harness app has no template search path for the real app, so we install a
+# tiny stub template that emits the per-schedule website ids the route enriched
+# onto each schedule. Asserting on those ids (rather than full HTML) keeps the
+# test robust against dashboard markup changes.
+
+
+_SCHEDULES_STUB_TEMPLATE = (
+    'PROJECTS:{% for p in projects %}{{ p.id }},{% endfor %}|'
+    'SCHEDULES:{% for s in schedules %}{{ s._website_id }},{% endfor %}'
+)
+
+
+def _schedule(schedule_id: str, website_id: str) -> SimpleNamespace:
+    """A minimal TestSchedule-shaped object the route can enrich and stat."""
+    return SimpleNamespace(
+        id=schedule_id,
+        website_id=website_id,
+        enabled=False,
+        next_run_at=None,
+        schedule_type=SimpleNamespace(value='daily'),
+    )
+
+
+def _make_schedules_app(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    is_superadmin: bool,
+) -> Flask:
+    """Build a schedules_bp app seeded with two projects' worth of schedules.
+
+    Project ``A`` owns website ``wA`` (schedule ``sA``); project ``B`` owns
+    website ``wB`` (schedule ``sB``). ``get_all_test_schedules`` always returns
+    BOTH so any narrowing in the response is the route's in-handler scoping, not
+    a pre-filtered db return. ``get_projects_for_user`` reports membership in
+    project ``A`` ONLY.
+    """
+    from jinja2 import ChoiceLoader, DictLoader
+    from auto_a11y.web.routes.schedules import schedules_bp
+
+    # The harness builds its StubUser inside make_app_with_blueprint and pins
+    # is_superadmin=False per instance, so a class-level patch would be shadowed.
+    # Patch __init__ BEFORE the app is built so the loaded user gets the flag the
+    # route reads via getattr(current_user, 'is_superadmin', False).
+    if is_superadmin:
+        original_init = StubUser.__init__
+
+        def _superadmin_init(self: StubUser, user_id: str = 'stub-user') -> None:
+            original_init(self, user_id)
+            self.is_superadmin = True
+
+        monkeypatch.setattr(StubUser, '__init__', _superadmin_init)
+
+    app = make_app_with_blueprint(
+        schedules_bp, role='client', monkeypatch=monkeypatch, url_prefix='',
+    )
+    app.config['PROPAGATE_EXCEPTIONS'] = False
+    # ``Flask.jinja_loader`` is a read-only ``cached_property``; install the stub
+    # template on the live jinja environment's loader instead (a plain
+    # ``BaseLoader`` slot), which the type-checkers accept.
+    app.jinja_env.loader = ChoiceLoader(
+        [DictLoader({'schedules/dashboard.html': _SCHEDULES_STUB_TEMPLATE})],
+    )
+
+    project_a = SimpleNamespace(id='pA', name='Project A')
+    project_b = SimpleNamespace(id='pB', name='Project B')
+    website_a = SimpleNamespace(id='wA', name='Website A', project_id='pA')
+    website_b = SimpleNamespace(id='wB', name='Website B', project_id='pB')
+    schedules = [_schedule('sA', 'wA'), _schedule('sB', 'wB')]
+
+    websites: dict[str, SimpleNamespace] = {'wA': website_a, 'wB': website_b}
+    projects_by_id: dict[str, SimpleNamespace] = {'pA': project_a, 'pB': project_b}
+
+    def _get_website(website_id: str) -> SimpleNamespace | None:
+        return websites.get(website_id)
+
+    def _get_project(project_id: str) -> SimpleNamespace | None:
+        return projects_by_id.get(project_id)
+
+    db = getattr(app, 'db')
+    db.get_all_test_schedules.return_value = schedules
+    db.get_website.side_effect = _get_website
+    db.get_project.side_effect = _get_project
+    # Member of project A only (superadmins take the get_projects() branch).
+    db.get_projects_for_user.return_value = [project_a]
+    db.get_projects.return_value = [project_a, project_b]
+    return app
+
+
+def test_schedules_dashboard_scopes_to_member_projects(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A non-superadmin member of project A sees A's schedule, not B's."""
+    app = _make_schedules_app(monkeypatch, is_superadmin=False)
+    client = _authenticated_client(app)
+
+    resp = client.get('/schedules')
+
+    assert resp.status_code == 200
+    body = resp.get_data(as_text=True)
+    # The dropdown only offers project A; in-scope website wA is listed, the
+    # out-of-scope website wB is filtered out of the schedule list.
+    assert 'PROJECTS:pA,|' in body
+    assert 'wA,' in body
+    assert 'wB' not in body
+
+
+def test_schedules_dashboard_ignores_out_of_scope_project_id_param(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An out-of-scope ?project_id=pB cannot leak project B's schedules."""
+    app = _make_schedules_app(monkeypatch, is_superadmin=False)
+    client = _authenticated_client(app)
+
+    resp = client.get('/schedules?project_id=pB')
+
+    assert resp.status_code == 200
+    body = resp.get_data(as_text=True)
+    # The param names a project the caller cannot access: it is ignored, so the
+    # response is identical to the unfiltered member view -- only wA, never wB.
+    assert 'wA,' in body
+    assert 'wB' not in body
+    # And get_all_test_schedules must NOT have been invoked with project_id='pB'
+    # (the route nulls the param before querying).
+    db = getattr(app, 'db')
+    for call in db.get_all_test_schedules.call_args_list:
+        assert call.kwargs.get('project_id') != 'pB'
+
+
+def test_schedules_dashboard_superadmin_sees_all_projects(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A superadmin sees schedules across BOTH projects (no scoping)."""
+    app = _make_schedules_app(monkeypatch, is_superadmin=True)
+    client = _authenticated_client(app)
+
+    resp = client.get('/schedules')
+
+    assert resp.status_code == 200
+    body = resp.get_data(as_text=True)
+    assert 'wA,' in body
+    assert 'wB,' in body
+
+
+# ---------------------------------------------------------------------------
 # Introspection sweep over the NEWLY-guarded projects_bp routes.
 # ---------------------------------------------------------------------------
 #

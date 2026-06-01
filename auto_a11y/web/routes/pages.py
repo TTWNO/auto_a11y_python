@@ -10,8 +10,10 @@ from werkzeug.wrappers import Response
 from auto_a11y.web.fluent import ftl, lazy_ftl, force_locale
 from auto_a11y.web.typed_app import get_db, get_app_config
 from auto_a11y.models import PageStatus
+from auto_a11y.models.app_user import UserRole
 from auto_a11y.reporting.issue_catalog import IssueCatalog
 from auto_a11y.models.test_result import Violation
+from auto_a11y.web.routes.auth import project_role_required
 import logging
 
 logger = logging.getLogger(__name__)
@@ -129,6 +131,7 @@ def enrich_test_result_with_catalog(test_result: Any) -> Any:
 
 
 @pages_bp.route('/<page_id>')
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def view_page(page_id: str) -> str | Response:
     """View page details and test results"""
     page = get_db().get_page(page_id)
@@ -279,6 +282,7 @@ def view_page(page_id: str) -> str | Response:
 
 
 @pages_bp.route('/<page_id>/edit', methods=['GET', 'POST'])
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def edit_page(page_id: str) -> str | Response:
     """Edit page details"""
     page = get_db().get_page(page_id)
@@ -311,6 +315,7 @@ def edit_page(page_id: str) -> str | Response:
 
 
 @pages_bp.route('/<page_id>/test', methods=['POST'])
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def test_page(page_id: str) -> Response | tuple[Response, int]:
     """Run accessibility test on page."""
     from auto_a11y.core.test_run_service import (
@@ -353,6 +358,7 @@ def test_page(page_id: str) -> Response | tuple[Response, int]:
 
 
 @pages_bp.route('/<page_id>/test-status')
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def test_status(page_id: str) -> Response | tuple[Response, int]:
     """Check test job status"""
     page = get_db().get_page(page_id)
@@ -366,6 +372,7 @@ def test_status(page_id: str) -> Response | tuple[Response, int]:
 
 
 @pages_bp.route('/<page_id>/cancel-test', methods=['POST'])
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def cancel_test(page_id: str) -> Response | tuple[Response, int]:
     """Cancel a queued or running page test"""
     from auto_a11y.core.task_runner import task_runner
@@ -427,6 +434,7 @@ def cancel_test(page_id: str) -> Response | tuple[Response, int]:
 
 
 @pages_bp.route('/<page_id>/delete', methods=['POST'])
+@project_role_required(UserRole.ADMIN)
 def delete_page(page_id: str) -> Response:
     """Delete page"""
     page = get_db().get_page(page_id)
@@ -445,12 +453,14 @@ def delete_page(page_id: str) -> Response:
 
 
 @pages_bp.route('/<page_id>/violations')
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def view_violations(page_id: str) -> Response:
     """View detailed violations for page — redirects to page view which shows violations inline."""
     return redirect(url_for('pages.view_page', page_id=page_id))
 
 
 @pages_bp.route('/<page_id>/matrix', methods=['GET', 'POST'])
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def configure_test_matrix(page_id: str) -> str | Response:
     """Configure test state matrix for page"""
     from auto_a11y.models import TestStateMatrix, ScriptStateDefinition

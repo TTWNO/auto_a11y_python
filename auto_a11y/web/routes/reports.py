@@ -4,12 +4,16 @@ Report generation routes
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any
+from typing import Any, cast
 
-from flask import Blueprint, Flask, Response, render_template, request, jsonify, send_file, current_app, url_for, redirect, session
+from flask import Blueprint, Flask, Response, abort, render_template, request, jsonify, send_file, current_app, url_for, redirect, session
+from flask_login import current_user, login_required
+from werkzeug.exceptions import HTTPException
 from werkzeug.wrappers import Response as WerkzeugResponse
 from auto_a11y.web.fluent import ftl, force_locale, get_current_locale as get_locale
 from auto_a11y.models import PageStatus
+from auto_a11y.models.app_user import UserRole
+from auto_a11y.web.routes.auth import get_effective_role, project_role_required
 from auto_a11y.reporting import ReportGenerator, PageStructureReport
 from auto_a11y.reporting.discovery_report import DiscoveryReportGenerator
 from auto_a11y.reporting.static_html_generator import StaticHTMLReportGenerator
@@ -20,6 +24,7 @@ from auto_a11y.web.typed_app import get_db, get_app_config
 from datetime import datetime, timedelta
 from uuid import uuid4
 import logging
+import os
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -35,7 +40,127 @@ def _get_real_app() -> Flask:
 reports_bp = Blueprint('reports', __name__)
 
 
+def _json_body() -> dict[str, Any]:
+    """Return the request's JSON body as a dict, or ``{}`` if absent/invalid.
+
+    ``request.json`` raises (415/400 -> 500 inside a broad except) when the
+    request has no JSON body or the body is not valid JSON. ``get_json(silent=
+    True)`` returns ``None`` instead; we additionally coerce a non-dict body
+    (e.g. a bare JSON list/number) to ``{}`` so callers can ``.get(...)``
+    safely. Annotated to a concrete dict so the strict type-checkers don't see
+    an ``Any``-tainted ``.get``.
+    """
+    raw: object = request.get_json(silent=True)
+    if not isinstance(raw, dict):
+        return {}
+    # ``raw`` narrows to ``dict[Unknown, Unknown]``; a parsed JSON object always
+    # has str keys, so cast to the concrete element type (not ``Any``) to shed
+    # the Unknowns under strict checking. ``api.py`` uses the same pattern.
+    return cast("dict[str, Any]", raw)
+
+
+def _body_format(default: str = 'html') -> str:
+    """Read ``format`` from form data or JSON body without exploding on a
+    missing/invalid JSON body. Form data wins when present (matches the legacy
+    precedence ``request.form.get('format', ...)``).
+    """
+    body = _json_body()
+    fmt: object = request.form.get('format') or body.get('format', default)
+    return str(fmt)
+
+
+def _authorize_body_scope(
+    project_id: str | None,
+    website_id: str | None,
+    *roles: UserRole,
+) -> None:
+    """In-handler scope authorization for routes that take their scope ids from
+    the request BODY (form/JSON) rather than a resolvable URL param.
+
+    Mirrors ``project_role_required`` / ``_authorize_report_record``:
+
+    * superadmin -> always allowed.
+    * a project- or website-scoped request -> the effective role on that scope
+      must be one of ``roles`` (default ADMIN/AUDITOR/CLIENT).
+    * an "all projects" roll-up (no project_id and no website_id) -> superadmin
+      only, since it spans every project.
+
+    Aborts 403 otherwise. Raised as a real ``HTTPException`` so callers that
+    wrap generation in ``except Exception`` must re-raise it (see the
+    ``except HTTPException: raise`` guards) rather than swallowing it into a
+    500.
+    """
+    if getattr(current_user, 'is_superadmin', False):
+        return
+
+    if not project_id and not website_id:
+        # Cross-project roll-up: only a superadmin may span every project.
+        abort(403)
+
+    effective_role = get_effective_role(
+        current_user,
+        request,
+        project_id=project_id,
+        website_id=website_id if not project_id else None,
+    )
+    allowed = roles or (UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
+    if effective_role not in allowed:
+        abort(403)
+
+
+def _authorize_job_record(job: dict[str, Any], *roles: UserRole) -> None:
+    """Authorize access to a report job by the scope on its record.
+
+    The ``<job_id>`` URL param isn't resolvable by the central resolver (the
+    job id is not a project/website/page id), so we read the scope the job was
+    created with off the record and gate on the effective role there. The scope
+    can be carried three ways, mirroring ``api.py``'s ``_authorize_report_record``
+    so the two stay consistent:
+
+    * top-level ``project_id`` -> check that project;
+    * top-level ``website_id`` -> check that website (resolved to its project);
+    * ``metadata.page_id`` (PAGE-scoped jobs, which carry neither top-level id)
+      -> resolve the page to its ``website_id`` and check THAT. Without this
+      hop a page job would fall through to the "all projects" roll-up branch
+      and 403 the ADMIN/AUDITOR/CLIENT who legitimately made it (the bug this
+      fixes).
+
+    Jobs with no scope at all are cross-project ("all projects") roll-ups and
+    require superadmin, exactly like ``_authorize_report_record`` /
+    ``_authorize_body_scope``. Fail-closed: a ``page_id`` that no longer
+    resolves (page deleted) falls back to whatever top-level scope remains,
+    which for a page job is none -> superadmin only.
+    """
+    project_id_any: Any = job.get('project_id')
+    website_id_any: Any = job.get('website_id')
+    metadata_any: Any = job.get('metadata') or {}
+    # ``isinstance`` narrows to ``dict[Unknown, Unknown]`` under strict
+    # checking; a job's metadata is always a str-keyed JSON object, so cast to
+    # the concrete element type (not ``Any`` as a workaround) -- the same
+    # pattern ``_json_body`` and api.py's ``_authorize_report_record`` use.
+    metadata: dict[str, Any] = (
+        cast("dict[str, Any]", metadata_any) if isinstance(metadata_any, dict) else {}
+    )
+    page_id_any: Any = metadata.get('page_id')
+
+    project_id = project_id_any if isinstance(project_id_any, str) else None
+    website_id = website_id_any if isinstance(website_id_any, str) else None
+    page_id = page_id_any if isinstance(page_id_any, str) else None
+
+    # PAGE-scoped jobs carry the scope as metadata.page_id. Resolve it to the
+    # owning website so the scope check below has something to gate on; if the
+    # page is gone, leave website_id as-is (None for a page job -> fail-closed
+    # to the superadmin roll-up branch in _authorize_body_scope).
+    if page_id and not website_id and not project_id:
+        page = get_db().get_page(page_id)
+        if page is not None:
+            website_id = page.website_id
+
+    _authorize_body_scope(project_id, website_id, *roles)
+
+
 @reports_bp.route('/dashboard')
+@login_required
 def reports_dashboard() -> str:
     """Reports dashboard"""
     # Get available reports
@@ -109,12 +234,21 @@ def reports_dashboard() -> str:
 
 
 @reports_bp.route('/generate', methods=['POST'])
+@login_required
 def generate_report() -> tuple[Response, int] | Response:
     """Generate accessibility report (background job)"""
-    data = request.get_json()
-    project_id = data.get('project_id')
-    website_id = data.get('website_id')
-    report_type = data.get('type', 'xlsx')
+    data = _json_body()
+    project_id_any: object = data.get('project_id')
+    website_id_any: object = data.get('website_id')
+    project_id = project_id_any if isinstance(project_id_any, str) else None
+    website_id = website_id_any if isinstance(website_id_any, str) else None
+    report_type_any: object = data.get('type', 'xlsx')
+    report_type = report_type_any if isinstance(report_type_any, str) else 'xlsx'
+
+    # Scope ids come from the JSON body, not a resolvable URL param, so the
+    # decorator can't gate this; authorize the resolved scope in-handler.
+    # An "all projects" roll-up (no project_id/website_id) requires superadmin.
+    _authorize_body_scope(project_id, website_id)
 
     scope = 'all'
     scope_id = None
@@ -159,6 +293,7 @@ def generate_report() -> tuple[Response, int] | Response:
                 format_map = {'excel': 'xlsx'}
                 fmt = format_map.get(report_type, report_type)
                 func: Callable[..., Any]
+                kwargs: dict[str, Any]
                 if scope == 'all':
                     func = generator.generate_all_projects_report
                     kwargs = {'format': fmt}
@@ -182,12 +317,16 @@ def generate_report() -> tuple[Response, int] | Response:
 
 
 @reports_bp.route('/job/<job_id>/status')
+@login_required
 def job_status(job_id: str) -> tuple[Response, int] | Response:
     """Get report job status"""
     job_manager = JobManager(get_db())
     job = job_manager.get_job(job_id)
     if not job:
         return jsonify({'error': 'Job not found'}), 404
+    # job_id isn't resolvable by the central resolver; authorize by the scope
+    # recorded on the job (read tier: ADMIN/AUDITOR/CLIENT).
+    _authorize_job_record(job, UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
     response = {
         'job_id': job['job_id'],
         'status': job['status'],
@@ -201,6 +340,7 @@ def job_status(job_id: str) -> tuple[Response, int] | Response:
 
 
 @reports_bp.route('/job/<job_id>/drop', methods=['POST'])
+@login_required
 def drop_job(job_id: str) -> tuple[Response, int] | Response:
     """Drop/cancel an in-progress report job.
 
@@ -219,22 +359,33 @@ def drop_job(job_id: str) -> tuple[Response, int] | Response:
             # Idempotent: already gone is success from the user's view.
             return jsonify({'success': True, 'already_gone': True})
 
+        # Dropping a job is a mutation -> ADMIN/AUDITOR on the job's scope.
+        _authorize_job_record(job, UserRole.ADMIN, UserRole.AUDITOR)
+
         if job.get('status') in (JobStatus.PENDING.value, JobStatus.RUNNING.value):
             job_manager.request_cancellation(job_id)
 
         return jsonify({'success': True})
+    except HTTPException:
+        # Re-raise authz/HTTP aborts so the generic handler below doesn't
+        # swallow a 403/404 into a 500.
+        raise
     except Exception as e:
         logger.error(f"Error dropping job {job_id}: {e}", exc_info=True)
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @reports_bp.route('/job/<job_id>/restart', methods=['POST'])
+@login_required
 def restart_job(job_id: str) -> tuple[Response, int] | Response:
     """Restart a stalled report job from scratch"""
     job_manager = JobManager(get_db())
     old_job = job_manager.get_job(job_id)
     if not old_job:
         return jsonify({'error': 'Job not found'}), 404
+
+    # Restarting re-runs generation -> mutation: ADMIN/AUDITOR on job scope.
+    _authorize_job_record(old_job, UserRole.ADMIN, UserRole.AUDITOR)
 
     metadata = old_job.get('metadata', {})
     scope = metadata.get('scope')
@@ -412,38 +563,106 @@ def _build_restart_generator(scope: str | None, report_type: str, project_id: st
         raise ValueError(f'Unknown report scope: {scope}')
 
 
+def _safe_report_path(filename: str) -> Path | None:
+    """Resolve ``filename`` strictly inside ``REPORTS_DIR``.
+
+    THE SECURITY BOUNDARY IS PATH CONTAINMENT, NOT ``secure_filename``: we
+    ``resolve()`` the candidate and verify it is relative to the resolved
+    reports dir, which by itself rejects ``..`` traversal, absolute paths, and
+    embedded separators after resolution. CONTAINMENT IS CHECKED BEFORE
+    EXISTENCE so a traversing/absolute filename is refused without ever probing
+    the filesystem outside the reports directory (the previous order did
+    ``.exists()`` first, which leaks whether an out-of-tree file exists and
+    could stream it).
+
+    We deliberately do NOT run the name through ``secure_filename`` and reject
+    on inequality: ``secure_filename`` transliterates non-ASCII (e.g. ``Café``
+    -> ``Cafe``), but report files are named via
+    ``report_generator._sanitize_filename`` which only strips ``<>:"/\\|?*``
+    and collapses whitespace -- it preserves accented characters. So a project
+    named ``Café Réseau`` yields the on-disk file
+    ``website_Café_Réseau_<ts>.xlsx``; a ``secure_filename`` equality gate
+    would 403 that legitimate download/delete. This is a bilingual (EN/FR)
+    product, so accented names are expected and MUST be allowed.
+
+    As a cheap pre-resolve reject we still refuse any value carrying a path
+    separator (``/`` or the OS separator) or that IS a relative-traversal
+    segment (``.`` / ``..``) -- a fast-path defence only; the containment check
+    below is the real guarantee. We do NOT reject on a ``..`` substring: a
+    legitimate report name may contain consecutive dots (``A..B.xlsx``), and
+    with separators already excluded such a name cannot traverse out of the
+    reports dir -- ``resolve()`` keeps it inside.
+
+    Returns the safe ``Path`` if it is inside the reports dir, else ``None``
+    (caller maps ``None`` -> 403/404).
+    """
+    # Cheap pre-resolve reject for obvious traversal/separators. Non-ASCII is
+    # NOT rejected here (see docstring) -- only structural path characters.
+    if (
+        not filename
+        or filename in {'.', '..'}
+        or '/' in filename
+        or os.sep in filename
+        or (os.altsep is not None and os.altsep in filename)
+    ):
+        return None
+
+    reports_dir = Path(get_app_config().REPORTS_DIR).resolve()
+
+    candidate = (reports_dir / filename).resolve()
+    # Containment check (the real security boundary) BEFORE any existence probe.
+    if not candidate.is_relative_to(reports_dir):
+        return None
+    return candidate
+
+
 @reports_bp.route('/download/<filename>')
+@login_required
 def download_report(filename: str) -> tuple[Response, int] | Response | WerkzeugResponse:
-    """Download generated report"""
-    reports_dir = get_app_config().REPORTS_DIR
-    file_path = reports_dir / filename
-    
+    """Download generated report.
+
+    AUTHORIZATION GAP (documented): reports on disk are keyed only by
+    ``filename`` with no per-file scope record to authorize against (the API
+    surface ``/api/.../reports/<report_id>/file`` keys on a JobManager record
+    and DOES scope-check via ``_authorize_report_record`` -- this filesystem
+    route has no such record). We therefore gate it with ``@login_required``
+    plus strict path-traversal containment only; any authenticated user can
+    download any report file. Tightening this to per-report scope requires
+    persisting a scope alongside each generated file (future work).
+    """
+    file_path = _safe_report_path(filename)
+    if file_path is None:
+        # Out-of-tree / traversing name -- refuse WITHOUT touching the FS.
+        return jsonify({'error': 'Invalid file path'}), 403
+
     if not file_path.exists():
         return jsonify({'error': 'Report not found'}), 404
-    
-    # Security check - ensure file is in reports directory
-    if not file_path.resolve().is_relative_to(reports_dir.resolve()):
-        return jsonify({'error': 'Invalid file path'}), 403
-    
+
     return send_file(
         file_path,
         as_attachment=True,
-        download_name=filename
+        download_name=file_path.name
     )
 
 
 @reports_bp.route('/<filename>/delete', methods=['POST'])
+@login_required
 def delete_report(filename: str) -> tuple[Response, int] | Response:
-    """Delete a generated report"""
-    reports_dir = get_app_config().REPORTS_DIR
-    file_path = reports_dir / filename
+    """Delete a generated report.
+
+    AUTHORIZATION GAP (documented): like ``download_report``, on-disk reports
+    carry no per-file scope record, so we cannot mirror the API's
+    ``_authorize_report_mutation`` ADMIN/AUDITOR scope check here. Gated with
+    ``@login_required`` plus strict path-traversal containment; tightening to
+    per-report ADMIN scope requires persisting a scope per file (future work).
+    """
+    file_path = _safe_report_path(filename)
+    if file_path is None:
+        # Out-of-tree / traversing name -- refuse WITHOUT touching the FS.
+        return jsonify({'error': 'Invalid file path'}), 403
 
     if not file_path.exists():
         return jsonify({'error': 'Report not found'}), 404
-
-    # Security check - ensure file is in reports directory
-    if not file_path.resolve().is_relative_to(reports_dir.resolve()):
-        return jsonify({'error': 'Invalid file path'}), 403
 
     try:
         file_path.unlink()
@@ -454,18 +673,29 @@ def delete_report(filename: str) -> tuple[Response, int] | Response:
 
 
 @reports_bp.route('/project/<project_id>/summary')
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def project_summary(project_id: str) -> Response | WerkzeugResponse:
     """Project summary -- redirects to the project report page."""
     return redirect(url_for('projects.generate_project_report', project_id=project_id))
 
 
 @reports_bp.route('/export-csv', methods=['POST'])
+@login_required
 def export_csv() -> Response:
-    """Export data as CSV"""
-    data = request.get_json()
-    
-    _export_type = data.get('type')  # violations, pages, summary
-    _filters = data.get('filters', {})
+    """Export data as CSV.
+
+    NOTE: this is currently an unimplemented stub — it returns a canned
+    ``download_url`` and does NOT yet read any project/website/page from the
+    body, so there is no scope to authorize against. It is gated with
+    ``@login_required`` only; when real CSV generation lands here it MUST
+    resolve the requested scope and run ``_authorize_body_scope`` (or a
+    ``project_role_required`` decorator if the scope moves to a URL param)
+    before emitting any data.
+    """
+    data = _json_body()
+
+    _export_type: object = data.get('type')  # violations, pages, summary
+    _filters: object = data.get('filters', {})
     
     # Generate CSV based on type
     # This would be implemented with actual CSV generation
@@ -478,9 +708,10 @@ def export_csv() -> Response:
 
 
 @reports_bp.route('/generate/page/<page_id>', methods=['POST'])
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def generate_page_report(page_id: str) -> tuple[Response, int] | Response:
     """Generate report for a single page (background job)"""
-    format = request.form.get('format', request.json.get('format', 'html') if request.is_json else 'html')
+    format = _body_format()
     include_ai = request.form.get('include_ai', 'true') == 'true'
 
     page = get_db().get_page(page_id)
@@ -495,10 +726,20 @@ def generate_page_report(page_id: str) -> tuple[Response, int] | Response:
 
     job_id = f"report_{uuid4().hex[:8]}"
     job_manager = JobManager(db)
+    # Persist the page's scope onto the job so status/drop/restart can authorize
+    # the page's project members (not just superadmin). We store both the
+    # resolved website_id (top-level, the scope _authorize_job_record gates on)
+    # and the page_id in metadata, mirroring api.py's report-record shape.
     job_manager.create_job(
         job_id=job_id,
         job_type=JobType.REPORT_GENERATION,
-        metadata={'report_type': format, 'scope': 'page', 'display_name': f'Page Report - {page.title or page.url}'}
+        website_id=str(page.website_id),
+        metadata={
+            'report_type': format,
+            'scope': 'page',
+            'page_id': page_id,
+            'display_name': f'Page Report - {page.title or page.url}',
+        },
     )
 
     def wrapper() -> None:
@@ -520,9 +761,10 @@ def generate_page_report(page_id: str) -> tuple[Response, int] | Response:
 
 
 @reports_bp.route('/generate/website/<website_id>', methods=['POST'])
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def generate_website_report(website_id: str) -> tuple[Response, int] | Response:
     """Generate report for entire website (background job)"""
-    format = request.form.get('format', request.json.get('format', 'html') if request.is_json else 'html')
+    format = _body_format()
     include_ai = request.form.get('include_ai', 'true') == 'true'
 
     website = get_db().get_website(website_id)
@@ -563,9 +805,10 @@ def generate_website_report(website_id: str) -> tuple[Response, int] | Response:
 
 
 @reports_bp.route('/generate/project/<project_id>', methods=['POST'])
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def generate_project_report(project_id: str) -> tuple[Response, int] | Response:
     """Generate report for entire project (background job)"""
-    format = request.form.get('format', request.json.get('format', 'html') if request.is_json else 'html')
+    format = _body_format()
 
     project = get_db().get_project(project_id)
     if not project:
@@ -605,9 +848,10 @@ def generate_project_report(project_id: str) -> tuple[Response, int] | Response:
 
 
 @reports_bp.route('/generate/page-structure/<website_id>', methods=['POST'])
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def generate_page_structure_report_download(website_id: str) -> tuple[Response, int] | Response:
     """Generate site structure tree report for website (background job)"""
-    format = request.form.get('format', request.json.get('format', 'html') if request.is_json else 'html')
+    format = _body_format()
 
     # Validate inputs in route handler
     website = get_db().get_website(website_id)
@@ -657,20 +901,22 @@ def generate_page_structure_report_download(website_id: str) -> tuple[Response, 
 
 
 @reports_bp.route('/generate/page-structure', methods=['POST'])
+@login_required
 def generate_page_structure_report() -> tuple[Response, int] | Response:
     """Generate site structure tree report (background job)"""
     # Accept both JSON and form data
-    if request.is_json:
-        data = request.get_json()
-        website_id = data.get('website_id')
-        format = data.get('format', 'html')
-    else:
-        website_id = request.form.get('website_id')
-        format = request.form.get('format', 'html')
+    data = _json_body()
+    website_id_any: object = request.form.get('website_id') or data.get('website_id')
+    website_id = website_id_any if isinstance(website_id_any, str) else None
+    format_any: object = request.form.get('format') or data.get('format', 'html')
+    format = format_any if isinstance(format_any, str) else 'html'
 
     # Validate inputs in route handler
     if not website_id:
         return jsonify({'success': False, 'error': 'Website ID required'}), 400
+
+    # website_id comes from the body, not a URL param, so authorize in-handler.
+    _authorize_body_scope(None, website_id)
     website = get_db().get_website(website_id)
     if not website:
         return jsonify({'success': False, 'error': 'Website not found'}), 404
@@ -718,9 +964,10 @@ def generate_page_structure_report() -> tuple[Response, int] | Response:
 
 
 @reports_bp.route('/generate/discovery/website/<website_id>', methods=['POST'])
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def generate_discovery_website_report(website_id: str) -> tuple[Response, int] | Response:
     """Generate discovery report for a website (background job)"""
-    format = request.form.get('format', request.json.get('format', 'html') if request.is_json else 'html')
+    format = _body_format()
 
     website = get_db().get_website(website_id)
     if not website:
@@ -760,9 +1007,10 @@ def generate_discovery_website_report(website_id: str) -> tuple[Response, int] |
 
 
 @reports_bp.route('/generate/discovery/project/<project_id>', methods=['POST'])
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def generate_discovery_project_report(project_id: str) -> tuple[Response, int] | Response:
     """Generate discovery report for an entire project (background job)"""
-    format = request.form.get('format', request.json.get('format', 'html') if request.is_json else 'html')
+    format = _body_format()
 
     project = get_db().get_project(project_id)
     if not project:
@@ -801,11 +1049,17 @@ def generate_discovery_project_report(project_id: str) -> tuple[Response, int] |
     return jsonify({'success': True, 'job_id': job_id})
 
 @reports_bp.route('/generate/static-html', methods=['POST'])
+@login_required
 def generate_static_html_report() -> tuple[Response, int] | Response:
     """Generate static HTML report (background job)"""
     # Get data from form submission
     project_id = request.form.get('project_id')
     website_id = request.form.get('website_id')
+
+    # Scope ids come from the form body, not a URL param. Authorize the scope
+    # in-handler; an "all projects" roll-up (neither id) requires superadmin.
+    _authorize_body_scope(project_id, website_id)
+
     include_screenshots = request.form.get('include_screenshots', 'true') in ['true', 'True', '1', 'on']
     include_discovery = request.form.get('include_discovery', 'true') in ['true', 'True', '1', 'on']
     wcag_level = request.form.get('wcag_level', 'AA')
@@ -926,10 +1180,15 @@ def generate_static_html_report() -> tuple[Response, int] | Response:
 
 
 @reports_bp.route('/generate/deduplicated', methods=['POST'])
+@login_required
 def generate_deduplicated_report() -> Response:
     """Generate deduplicated offline HTML report (background job)"""
     project_id = request.form.get('project_id')
     website_id = request.form.get('website_id')
+
+    # Scope ids come from the form body, not a URL param. Authorize in-handler;
+    # an "all projects" roll-up (neither id) requires superadmin.
+    _authorize_body_scope(project_id, website_id)
 
     # Build display name
     display_name = 'Deduplicated Report'
@@ -982,9 +1241,10 @@ def generate_deduplicated_report() -> Response:
 
 
 @reports_bp.route('/generate/recordings/<project_id>', methods=['POST'])
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def generate_recordings_report(project_id: str) -> tuple[Response, int] | Response:
     """Generate report for recordings in a project (background job)"""
-    format = request.form.get('format', request.json.get('format', 'html') if request.is_json else 'html')
+    format = _body_format()
     include_summary = request.form.get('include_summary', 'true') in ['true', 'True', '1', 'on']
     include_timecodes = request.form.get('include_timecodes', 'true') in ['true', 'True', '1', 'on']
     include_wcag = request.form.get('include_wcag', 'true') in ['true', 'True', '1', 'on']

@@ -8,12 +8,15 @@ from pathlib import Path
 from typing import Any
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session
+from flask_login import login_required, current_user
 from werkzeug.wrappers import Response
 from auto_a11y.web.api.deprecation import deprecated
 from auto_a11y.web.fluent import ftl
 from auto_a11y.web.typed_app import get_db, get_app_config, get_pdf_runner
 from auto_a11y.models import Page, PageStatus
+from auto_a11y.models.app_user import UserRole
 from auto_a11y.models.pdf_document import PdfDocumentStatus
+from auto_a11y.web.routes.auth import project_role_required
 from auto_a11y.pdf.issue_map_counts import PdfIssueCounts, count_issues
 from auto_a11y.pdf.storage import PdfStorage
 import logging
@@ -23,11 +26,27 @@ websites_bp = Blueprint('websites', __name__)
 
 
 @websites_bp.route('/api/list')
+@login_required
 @deprecated(sunset="2026-09-01")  # successor TBD — pending #54 (/api/v1/websites?project_id=)
 def api_list_websites() -> Response | tuple[Response, int]:
-    """API endpoint to list all websites"""
+    """API endpoint to list websites the current user can access.
+
+    Scoped to the projects the current user is a member of (superadmins see
+    all) to avoid leaking other tenants' websites. The response shape is
+    unchanged from the legacy all-websites listing.
+    """
     try:
         websites = get_db().get_all_websites()
+        if not getattr(current_user, 'is_superadmin', False):
+            accessible_project_ids = {
+                p.id
+                for p in get_db().get_projects_for_user(
+                    str(current_user.get_id())
+                )
+            }
+            websites = [
+                w for w in websites if w.project_id in accessible_project_ids
+            ]
         return jsonify({
             'success': True,
             'websites': [
@@ -45,6 +64,7 @@ def api_list_websites() -> Response | tuple[Response, int]:
 
 
 @websites_bp.route('/<website_id>')
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def view_website(website_id: str) -> str | Response:
     """View website details"""
     website = get_db().get_website(website_id)
@@ -180,6 +200,7 @@ def view_website(website_id: str) -> str | Response:
 
 
 @websites_bp.route('/<website_id>/edit', methods=['GET', 'POST'])
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def edit_website(website_id: str) -> str | Response:
     """Edit website configuration"""
     website = get_db().get_website(website_id)
@@ -216,6 +237,7 @@ def edit_website(website_id: str) -> str | Response:
 
 
 @websites_bp.route('/<website_id>/delete', methods=['POST'])
+@project_role_required(UserRole.ADMIN)
 def delete_website(website_id: str) -> Response:
     """Delete website"""
     website = get_db().get_website(website_id)
@@ -234,6 +256,7 @@ def delete_website(website_id: str) -> Response:
 
 
 @websites_bp.route('/<website_id>/clear-test-results', methods=['POST'])
+@project_role_required(UserRole.ADMIN)
 def clear_test_results(website_id: str) -> Response:
     """Delete all test results and reset page counters for this website."""
     website = get_db().get_website(website_id)
@@ -271,6 +294,7 @@ def clear_test_results(website_id: str) -> Response:
 
 
 @websites_bp.route('/<website_id>/discover', methods=['POST'])
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def discover_pages(website_id: str) -> Response | tuple[Response, int]:
     """Start page discovery for a website (with optional max-pages cap)."""
     from auto_a11y.core.test_run_service import (
@@ -359,6 +383,7 @@ def discover_pages(website_id: str) -> Response | tuple[Response, int]:
 
 
 @websites_bp.route('/<website_id>/discovery-status')
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def discovery_status(website_id: str) -> Response:
     """Check discovery job status with enhanced progress tracking"""
     from auto_a11y.core.website_manager import WebsiteManager
@@ -447,6 +472,7 @@ def discovery_status(website_id: str) -> Response:
 
 
 @websites_bp.route('/<website_id>/cancel-discovery', methods=['POST'])
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def cancel_discovery(website_id: str) -> Response | tuple[Response, int]:
     """Cancel an active discovery job"""
     from auto_a11y.core.website_manager import WebsiteManager
@@ -515,6 +541,7 @@ def cancel_discovery(website_id: str) -> Response | tuple[Response, int]:
 
 
 @websites_bp.route('/<website_id>/add-page', methods=['POST'])
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def add_page(website_id: str) -> Response | tuple[Response, int]:
     """Manually add a page to website"""
     website = get_db().get_website(website_id)
@@ -543,6 +570,7 @@ def add_page(website_id: str) -> Response | tuple[Response, int]:
 
 
 @websites_bp.route('/<website_id>/test-all', methods=['POST'])
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def test_all_pages(website_id: str) -> Response | tuple[Response, int]:
     """Start testing all pages in website using database-backed job management."""
     from auto_a11y.core.test_run_service import (
@@ -620,6 +648,7 @@ def test_all_pages(website_id: str) -> Response | tuple[Response, int]:
 
 
 @websites_bp.route('/<website_id>/cancel-testing', methods=['POST'])
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def cancel_testing(website_id: str) -> Response | tuple[Response, int]:
     """Cancel an active testing job"""
     from auto_a11y.core.website_manager import WebsiteManager
@@ -676,6 +705,7 @@ def cancel_testing(website_id: str) -> Response | tuple[Response, int]:
 
 
 @websites_bp.route('/<website_id>/manual/start', methods=['POST'])
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def manual_session_start(
     website_id: str,
 ) -> Response | tuple[Response, int]:
@@ -729,6 +759,7 @@ def manual_session_start(
 
 
 @websites_bp.route('/<website_id>/manual/status')
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def manual_session_status(
     website_id: str,
 ) -> Response | tuple[Response, int]:
@@ -758,6 +789,7 @@ def manual_session_status(
 
 
 @websites_bp.route('/<website_id>/manual/capture', methods=['POST'])
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def manual_session_capture(
     website_id: str,
 ) -> Response | tuple[Response, int]:
@@ -812,6 +844,7 @@ def manual_session_capture(
 
 
 @websites_bp.route('/<website_id>/manual/test', methods=['POST'])
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def manual_session_test(
     website_id: str,
 ) -> Response | tuple[Response, int]:
@@ -898,6 +931,7 @@ def manual_session_test(
 
 
 @websites_bp.route('/<website_id>/manual/stop', methods=['POST'])
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def manual_session_stop(
     website_id: str,
 ) -> Response | tuple[Response, int]:
@@ -920,6 +954,7 @@ def manual_session_stop(
 
 
 @websites_bp.route('/<website_id>/documents')
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def view_documents(website_id: str) -> str | Response:
     """View document references for a website"""
     website = get_db().get_website(website_id)
@@ -945,6 +980,7 @@ def view_documents(website_id: str) -> str | Response:
 
 
 @websites_bp.route('/<website_id>/test-status')
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def test_status(website_id: str) -> Response | tuple[Response, int]:
     """Check testing status using database-backed job management"""
     from auto_a11y.core.website_manager import WebsiteManager
@@ -1043,6 +1079,7 @@ def test_status(website_id: str) -> Response | tuple[Response, int]:
 
 
 @websites_bp.route('/<website_id>/discovery-history')
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def view_discovery_history(website_id: str) -> str | Response:
     """View discovery history for a website"""
     website = get_db().get_website(website_id)
@@ -1062,6 +1099,7 @@ def view_discovery_history(website_id: str) -> str | Response:
 
 
 @websites_bp.route('/<website_id>/discovery/<discovery_run_id>')
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def view_discovery_run(website_id: str, discovery_run_id: str) -> str | Response:
     """View details of a specific discovery run"""
     website = get_db().get_website(website_id)

@@ -33,6 +33,22 @@ class CurrentUserProtocol(Protocol):
     def update_timestamp(self) -> None: ...
 
 
+class UserMixin:
+    """Default implementations of the user-object methods Flask-Login needs.
+
+    Subclasses provide an ``id`` attribute; ``get_id`` returns ``str(id)``.
+    The authentication-state properties default to the values appropriate
+    for a concrete, active user.
+    """
+    @property
+    def is_authenticated(self) -> bool: ...
+    @property
+    def is_active(self) -> bool: ...
+    @property
+    def is_anonymous(self) -> bool: ...
+    def get_id(self) -> str: ...
+
+
 class LoginManager:
     login_view: str | None
     login_message: str | object  # can be a lazy string

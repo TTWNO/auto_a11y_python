@@ -9,7 +9,9 @@ from flask import Blueprint, render_template, request, jsonify, redirect, url_fo
 from werkzeug.wrappers import Response
 from auto_a11y.web.fluent import ftl
 from auto_a11y.web.typed_app import get_db, get_app_config
+from auto_a11y.web.routes.auth import project_role_required
 from auto_a11y.models import PageSetupScript, ScriptStep, ActionType, ScriptScope, ExecutionTrigger
+from auto_a11y.models.app_user import UserRole
 from auto_a11y.core.browser_manager import BrowserManager
 from auto_a11y.testing.script_executor import ScriptExecutor
 from datetime import datetime
@@ -20,6 +22,7 @@ scripts_bp = Blueprint('scripts', __name__)
 
 
 @scripts_bp.route('/page/<page_id>/scripts')
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def list_page_scripts(page_id: str) -> str | Response:
     """List all scripts for a page"""
     page = get_db().get_page(page_id)
@@ -50,6 +53,7 @@ def list_page_scripts(page_id: str) -> str | Response:
 
 
 @scripts_bp.route('/page/<page_id>/scripts/create', methods=['GET', 'POST'])
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def create_page_script(page_id: str) -> str | Response:
     """Create a new page setup script"""
     page = get_db().get_page(page_id)
@@ -152,6 +156,7 @@ def create_page_script(page_id: str) -> str | Response:
 
 
 @scripts_bp.route('/website/<website_id>/scripts/create', methods=['GET', 'POST'])
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def create_website_script(website_id: str) -> str | Response:
     """Create a new website-level setup script"""
     website = get_db().get_website(website_id)
@@ -259,6 +264,7 @@ def create_website_script(website_id: str) -> str | Response:
 
 
 @scripts_bp.route('/website/<website_id>/scripts')
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def list_website_scripts(website_id: str) -> str | Response:
     """List all scripts for a website"""
     website = get_db().get_website(website_id)
@@ -285,6 +291,7 @@ def list_website_scripts(website_id: str) -> str | Response:
 
 
 @scripts_bp.route('/<script_id>')
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR, UserRole.CLIENT)
 def view_script(script_id: str) -> str | Response:
     """View script details"""
     script = get_db().get_page_setup_script(script_id)
@@ -305,6 +312,7 @@ def view_script(script_id: str) -> str | Response:
 
 
 @scripts_bp.route('/<script_id>/edit', methods=['GET', 'POST'])
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def edit_script(script_id: str) -> str | Response:
     """Edit an existing script"""
     script = get_db().get_page_setup_script(script_id)
@@ -423,6 +431,7 @@ def edit_script(script_id: str) -> str | Response:
 
 
 @scripts_bp.route('/<script_id>/delete', methods=['POST'])
+@project_role_required(UserRole.ADMIN)
 def delete_script(script_id: str) -> Response | tuple[Response, int]:
     """Delete a script"""
     script = get_db().get_page_setup_script(script_id)
@@ -450,6 +459,7 @@ def delete_script(script_id: str) -> Response | tuple[Response, int]:
 
 
 @scripts_bp.route('/<script_id>/toggle', methods=['POST'])
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def toggle_script(script_id: str) -> Response | tuple[Response, int]:
     """Enable/disable a script"""
     logger.warning(f"{'='*60}")
@@ -492,6 +502,7 @@ def toggle_script(script_id: str) -> Response | tuple[Response, int]:
 
 
 @scripts_bp.route('/<script_id>/test', methods=['POST'])
+@project_role_required(UserRole.ADMIN, UserRole.AUDITOR)
 def test_script(script_id: str) -> Response | tuple[Response, int]:
     """Test a script without recording any test results.
 

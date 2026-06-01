@@ -78,6 +78,126 @@ class TestWebsiteMembers:
 
 
 from unittest.mock import MagicMock, patch
+import types
+import pytest
+
+
+class _Obj(types.SimpleNamespace):
+    """Trivial attribute holder for seeding the fake db."""
+
+
+class _FakeDb:
+    """Minimal in-memory db exposing the accessors used by _resolve_project_id."""
+
+    def __init__(
+        self,
+        project_users: dict[str, _Obj] | None = None,
+        scripts: dict[str, _Obj] | None = None,
+        results: dict[str, _Obj] | None = None,
+        pages: dict[str, _Obj] | None = None,
+        websites: dict[str, _Obj] | None = None,
+        recording_issues: dict[str, _Obj] | None = None,
+        recordings: dict[str, _Obj] | None = None,
+        recordings_by_recording_id: dict[str, _Obj] | None = None,
+    ) -> None:
+        self._project_users = project_users or {}
+        self._scripts = scripts or {}
+        self._results = results or {}
+        self._pages = pages or {}
+        self._websites = websites or {}
+        self._recording_issues = recording_issues or {}
+        self._recordings = recordings or {}
+        self._recordings_by_recording_id = recordings_by_recording_id or {}
+
+    def get_project_user(self, user_id: str) -> _Obj | None:
+        return self._project_users.get(user_id)
+
+    def get_page_setup_script(self, script_id: str) -> _Obj | None:
+        return self._scripts.get(script_id)
+
+    def get_test_result(self, result_id: str) -> _Obj | None:
+        return self._results.get(result_id)
+
+    def get_page(self, page_id: str) -> _Obj | None:
+        return self._pages.get(page_id)
+
+    def get_website(self, website_id: str) -> _Obj | None:
+        return self._websites.get(website_id)
+
+    def get_recording_issue(self, issue_id: str) -> _Obj | None:
+        return self._recording_issues.get(issue_id)
+
+    def get_recording(self, recording_id: str) -> _Obj | None:
+        return self._recordings.get(recording_id)
+
+    def get_recording_by_recording_id(self, recording_id: str) -> _Obj | None:
+        return self._recordings_by_recording_id.get(recording_id)
+
+
+def test_resolve_project_id_from_user_id(monkeypatch: pytest.MonkeyPatch) -> None:
+    db = _FakeDb(project_users={"u1": _Obj(project_id="p1")})
+    monkeypatch.setattr("auto_a11y.core.permissions._get_db", lambda: db)
+    from auto_a11y.core.permissions import resolve_project_id as _resolve_project_id
+    assert _resolve_project_id(user_id="u1") == "p1"
+
+
+def test_resolve_project_id_from_script_id(monkeypatch: pytest.MonkeyPatch) -> None:
+    db = _FakeDb(scripts={"s1": _Obj(page_id="pg1")},
+                 pages={"pg1": _Obj(website_id="w1")},
+                 websites={"w1": _Obj(project_id="p1")})
+    monkeypatch.setattr("auto_a11y.core.permissions._get_db", lambda: db)
+    from auto_a11y.core.permissions import resolve_project_id as _resolve_project_id
+    assert _resolve_project_id(script_id="s1") == "p1"
+
+
+def test_resolve_project_id_from_result_id(monkeypatch: pytest.MonkeyPatch) -> None:
+    db = _FakeDb(results={"r1": _Obj(page_id="pg1")},
+                 pages={"pg1": _Obj(website_id="w1")},
+                 websites={"w1": _Obj(project_id="p1")})
+    monkeypatch.setattr("auto_a11y.core.permissions._get_db", lambda: db)
+    from auto_a11y.core.permissions import resolve_project_id as _resolve_project_id
+    assert _resolve_project_id(result_id="r1") == "p1"
+
+
+def test_resolve_project_id_from_issue_id_direct_project(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A recording issue carrying ``project_id`` resolves to it directly."""
+    db = _FakeDb(recording_issues={"i1": _Obj(project_id="p1", recording_id="REC-A")})
+    monkeypatch.setattr("auto_a11y.core.permissions._get_db", lambda: db)
+    from auto_a11y.core.permissions import resolve_project_id as _resolve_project_id
+    assert _resolve_project_id(issue_id="i1") == "p1"
+
+
+def test_resolve_project_id_from_issue_id_via_recording(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An issue lacking ``project_id`` resolves via its recording.
+
+    ``RecordingIssue.recording_id`` holds the *human* recording id
+    (``Recording.recording_id``, e.g. 'NED-A'), so the fallback must look it
+    up via ``get_recording_by_recording_id`` (the ``recording_id`` field),
+    not ``get_recording`` (the Mongo ``_id``). Seed only the by-recording-id
+    map so this test fails if the resolver uses ``get_recording``.
+    """
+    db = _FakeDb(
+        recording_issues={"i1": _Obj(project_id=None, recording_id="NED-A")},
+        recordings_by_recording_id={"NED-A": _Obj(project_id="p1")},
+    )
+    monkeypatch.setattr("auto_a11y.core.permissions._get_db", lambda: db)
+    from auto_a11y.core.permissions import resolve_project_id as _resolve_project_id
+    assert _resolve_project_id(issue_id="i1") == "p1"
+
+
+def test_resolve_project_id_unknown_returns_none(monkeypatch: pytest.MonkeyPatch) -> None:
+    db = _FakeDb()
+    monkeypatch.setattr("auto_a11y.core.permissions._get_db", lambda: db)
+    from auto_a11y.core.permissions import resolve_project_id as _resolve_project_id
+    assert _resolve_project_id(user_id="missing") is None
+    assert _resolve_project_id(script_id="missing") is None
+    assert _resolve_project_id(result_id="missing") is None
+    assert _resolve_project_id(issue_id="missing") is None
+    assert _resolve_project_id() is None
 
 
 def _make_user(role: UserRole = UserRole.AUDITOR, user_id: str = "user1") -> MagicMock:

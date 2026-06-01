@@ -241,16 +241,26 @@ class PageSetupScript:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> PageSetupScript:
         """Create from MongoDB document"""
+        # Guard enums against legacy/unknown values
+        try:
+            scope = ScriptScope(data.get('scope', 'page'))
+        except ValueError:
+            scope = ScriptScope.PAGE
+        try:
+            trigger = ExecutionTrigger(data.get('trigger', 'once_per_page'))
+        except ValueError:
+            trigger = ExecutionTrigger.ONCE_PER_PAGE
+
         return cls(
             name=data['name'],
             description=data['description'],
             # Scope configuration (with backward compatibility)
-            scope=ScriptScope(data.get('scope', 'page')),
+            scope=scope,
             website_id=data.get('website_id'),
             page_id=data.get('page_id'),
             test_run_id=data.get('test_run_id'),
             # Execution configuration (with backward compatibility)
-            trigger=ExecutionTrigger(data.get('trigger', 'once_per_page')),
+            trigger=trigger,
             condition_selector=data.get('condition_selector'),
             # Violation detection (default False for backward compatibility)
             report_violation_if_condition_met=data.get('report_violation_if_condition_met', False),

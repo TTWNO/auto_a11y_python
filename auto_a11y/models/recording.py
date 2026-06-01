@@ -315,7 +315,13 @@ class Recording:
 
         # Parse recording_type enum (with backward compatibility for old audit_type field)
         recording_type_value = data.get('recording_type') or data.get('audit_type', 'audit')
-        recording_type = RecordingType(recording_type_value) if recording_type_value else RecordingType.AUDIT
+        if recording_type_value:
+            try:
+                recording_type = RecordingType(recording_type_value)
+            except ValueError:
+                recording_type = RecordingType.AUDIT
+        else:
+            recording_type = RecordingType.AUDIT
 
         # Narrow audio-pipeline Literal-typed fields from their Mongo-
         # stored ``str`` form. Missing fields fall back to dataclass
@@ -362,6 +368,12 @@ class Recording:
             else None
         )
 
+        # Guard Drupal sync status against legacy/unknown values
+        try:
+            drupal_sync_status = DrupalSyncStatus(data.get('drupal_sync_status', 'not_synced'))
+        except ValueError:
+            drupal_sync_status = DrupalSyncStatus.NOT_SYNCED
+
         return cls(
             recording_id=data['recording_id'],
             title=data['title'],
@@ -395,7 +407,7 @@ class Recording:
             notes=data.get('notes'),
             drupal_video_uuid=data.get('drupal_video_uuid'),
             drupal_video_nid=data.get('drupal_video_nid'),
-            drupal_sync_status=DrupalSyncStatus(data.get('drupal_sync_status', 'not_synced')),
+            drupal_sync_status=drupal_sync_status,
             drupal_last_synced=data.get('drupal_last_synced'),
             drupal_error_message=data.get('drupal_error_message'),
             # === Audio pipeline state ===

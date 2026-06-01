@@ -556,6 +556,7 @@ common-site-structure = Site Structure
 common-skip-to-main-content = Skip to main content
 common-skipped = Skipped
 common-something-went-wrong-on-our-end = Something went wrong on our end.
+common-unexpected-error = An unexpected error occurred. Please try again.
 common-source = Source
 common-sso = Sso
 common-standard-level-most-common-target = Standard level (most common target)

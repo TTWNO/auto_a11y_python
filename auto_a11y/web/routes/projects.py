@@ -70,8 +70,8 @@ def api_list_projects() -> Response | tuple[Response, int]:
             ]
         })
     except Exception as e:
-        logger.error(f"Error listing projects: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        logger.exception(f"Error listing projects: {e}")
+        return jsonify({'success': False, 'error': ftl('common-unexpected-error')}), 500
 
 
 @projects_bp.route('/api/<project_id>/websites')
@@ -93,8 +93,8 @@ def api_project_websites(project_id: str) -> Response | tuple[Response, int]:
             ]
         })
     except Exception as e:
-        logger.error(f"Error listing project websites: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        logger.exception(f"Error listing project websites: {e}")
+        return jsonify({'success': False, 'error': ftl('common-unexpected-error')}), 500
 
 
 @projects_bp.route('/api/test-details/<test_id>')
@@ -151,10 +151,10 @@ def api_test_details(test_id: str) -> Response | tuple[Response, int]:
             'test': response_data
         })
     except Exception as e:
-        logger.error(f"Error getting test details for {test_id}: {e}")
+        logger.exception(f"Error getting test details for {test_id}: {e}")
         return jsonify({
             'success': False,
-            'error': str(e)
+            'error': ftl('common-unexpected-error')
         }), 500
 
 
@@ -197,10 +197,10 @@ def api_set_test_production_ready(test_id: str) -> Response | tuple[Response, in
             }), 500
 
     except Exception as e:
-        logger.error(f"Error setting production ready for {test_id}: {e}")
+        logger.exception(f"Error setting production ready for {test_id}: {e}")
         return jsonify({
             'success': False,
-            'error': str(e)
+            'error': ftl('common-unexpected-error')
         }), 500
 
 
@@ -239,10 +239,10 @@ def api_issue_documentation_stats() -> Response | tuple[Response, int]:
         })
 
     except Exception as e:
-        logger.error(f"Error getting documentation stats: {e}")
+        logger.exception(f"Error getting documentation stats: {e}")
         return jsonify({
             'success': False,
-            'error': str(e)
+            'error': ftl('common-unexpected-error')
         }), 500
 
 
@@ -885,8 +885,8 @@ def test_project(project_id: str) -> Response:
             flash(ftl('projects-no-websites-found-to-test-in-this-project'), 'warning')
         
     except Exception as e:
-        logger.error(f"Failed to start project testing: {e}")
-        flash(ftl('projects-failed-to-start-testing-error', error=str(e)), 'error')
+        logger.exception(f"Failed to start project testing: {e}")
+        flash(ftl('common-unexpected-error'), 'error')
     
     return redirect(url_for('projects.view_project', project_id=project_id))
 
@@ -966,8 +966,8 @@ def api_get_project_users(project_id: str) -> Response | tuple[Response, int]:
             ]
         })
     except Exception as e:
-        logger.error(f"Error fetching project users: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        logger.exception(f"Error fetching project users: {e}")
+        return jsonify({'success': False, 'error': ftl('common-unexpected-error')}), 500
 
 
 @projects_bp.route('/api/<project_id>/details')
@@ -993,8 +993,8 @@ def api_get_project(project_id: str) -> Response | tuple[Response, int]:
             }
         })
     except Exception as e:
-        logger.error(f"Error fetching project: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        logger.exception(f"Error fetching project: {e}")
+        return jsonify({'success': False, 'error': ftl('common-unexpected-error')}), 500
 
 
 @projects_bp.route('/api/<project_id>/discovered-pages')
@@ -1025,5 +1025,5 @@ def api_get_discovered_pages(project_id: str) -> Response | tuple[Response, int]
             'discovered_pages': pages
         })
     except Exception as e:
-        logger.error(f"Error fetching discovered pages: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        logger.exception(f"Error fetching discovered pages: {e}")
+        return jsonify({'success': False, 'error': ftl('common-unexpected-error')}), 500

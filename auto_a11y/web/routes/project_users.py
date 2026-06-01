@@ -93,8 +93,8 @@ def create_user(project_id: str) -> str | Response | WerkzeugResponse:
             return redirect(url_for('project_users.list_users', project_id=project_id))
 
         except Exception as e:
-            logger.error(f"Error creating user: {e}")
-            flash(ftl('common-error-creating-user-error', error=str(e)), 'error')
+            logger.exception(f"Error creating user: {e}")
+            flash(ftl('common-unexpected-error'), 'error')
 
     # Get existing roles for autocomplete
     existing_roles = get_db().get_user_roles_for_project(project_id)
@@ -172,8 +172,8 @@ def edit_user(user_id: str) -> str | Response | WerkzeugResponse:
             return redirect(url_for('project_users.list_users', project_id=user.project_id))
 
         except Exception as e:
-            logger.error(f"Error updating user: {e}")
-            flash(ftl('common-error-updating-user-error', error=str(e)), 'error')
+            logger.exception(f"Error updating user: {e}")
+            flash(ftl('common-unexpected-error'), 'error')
 
     # Get existing roles for autocomplete
     existing_roles = get_db().get_user_roles_for_project(user.project_id)
@@ -202,8 +202,8 @@ def delete_user(user_id: str) -> Response | tuple[Response, int]:
             'redirect': url_for('project_users.list_users', project_id=project_id)
         })
     except Exception as e:
-        logger.error(f"Error deleting user: {e}")
-        return jsonify({'error': str(e)}), 500
+        logger.exception(f"Error deleting user: {e}")
+        return jsonify({'error': ftl('common-unexpected-error')}), 500
 
 
 @project_users_bp.route('/projects/users/<user_id>/test-login', methods=['POST'])
@@ -267,10 +267,10 @@ def test_login(user_id: str) -> Response | tuple[Response, int]:
         })
 
     except Exception as e:
-        logger.error(f"Test login error for project user {user_id}: {e}")
+        logger.exception(f"Test login error for project user {user_id}: {e}")
         return jsonify({
             'success': False,
-            'error': str(e)
+            'error': ftl('common-unexpected-error')
         }), 500
 
 
@@ -292,8 +292,8 @@ def toggle_user(user_id: str) -> Response | tuple[Response, int]:
             'message': ftl('common-user-enabled') if user.enabled else ftl('common-user-disabled')
         })
     except Exception as e:
-        logger.error(f"Error toggling user: {e}")
-        return jsonify({'error': str(e)}), 500
+        logger.exception(f"Error toggling user: {e}")
+        return jsonify({'error': ftl('common-unexpected-error')}), 500
 
 
 @project_users_bp.route('/projects/users/<user_id>/clear-cache', methods=['POST'])

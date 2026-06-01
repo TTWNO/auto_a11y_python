@@ -59,8 +59,8 @@ def api_list_websites() -> Response | tuple[Response, int]:
             ]
         })
     except Exception as e:
-        logger.error(f"Error listing websites: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        logger.exception(f"Error listing websites: {e}")
+        return jsonify({'success': False, 'error': ftl('common-unexpected-error')}), 500
 
 
 @websites_bp.route('/<website_id>')
@@ -340,10 +340,9 @@ def discover_pages(website_id: str) -> Response | tuple[Response, int]:
     except WebsiteNotFoundError:
         return jsonify({'error': ftl('common-website-not-found')}), 404
     except Exception as e:
-        logger.error(f"Failed to start discovery: {e}")
+        logger.exception(f"Failed to start discovery: {e}")
         return jsonify({
             'success': False,
-            'error': str(e),
             'message': ftl('common-failed-to-start-page-discovery'),
         }), 500
 
@@ -535,7 +534,6 @@ def cancel_discovery(website_id: str) -> Response | tuple[Response, int]:
         logger.error(f"Error cancelling discovery job: {e}", exc_info=True)
         return jsonify({
             'success': False,
-            'error': str(e),
             'message': ftl('common-failed-to-cancel-discovery')
         }), 500
 
@@ -699,7 +697,6 @@ def cancel_testing(website_id: str) -> Response | tuple[Response, int]:
         logger.error(f"Error cancelling testing job: {e}", exc_info=True)
         return jsonify({
             'success': False,
-            'error': str(e),
             'message': ftl('websites-failed-to-cancel-testing')
         }), 500
 
@@ -753,7 +750,6 @@ def manual_session_start(
         )
         return jsonify({
             'success': False,
-            'error': str(e),
             'message': ftl('websites-manual-session-start-failed'),
         }), 500
 
@@ -925,7 +921,6 @@ def manual_session_test(
         )
         return jsonify({
             'success': False,
-            'error': str(e),
             'message': ftl('websites-manual-test-failed'),
         }), 500
 

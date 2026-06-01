@@ -72,8 +72,8 @@ def view_discovered_page(page_id: str) -> str | Response | WerkzeugResponse:
         )
 
     except Exception as e:
-        logger.error(f"Error viewing discovered page: {e}")
-        flash(ftl('pages-error-loading-page-error', error=str(e)), 'error')
+        logger.exception(f"Error viewing discovered page: {e}")
+        flash(ftl('common-unexpected-error'), 'error')
         return redirect(url_for('projects.list_projects'))
 
 
@@ -143,11 +143,11 @@ def edit_discovered_page(page_id: str) -> Response | WerkzeugResponse | tuple[Re
             return redirect(url_for('discovered_pages.view_discovered_page', page_id=page_id))
 
     except Exception as e:
-        logger.error(f"Error updating discovered page: {e}")
+        logger.exception(f"Error updating discovered page: {e}")
         if request.is_json:
-            return jsonify({'success': False, 'error': str(e)}), 500
+            return jsonify({'success': False, 'error': ftl('common-unexpected-error')}), 500
         else:
-            flash(ftl('pages-error-updating-page-error', error=str(e)), 'error')
+            flash(ftl('common-unexpected-error'), 'error')
             return redirect(url_for('discovered_pages.view_discovered_page', page_id=page_id))
 
 
@@ -182,9 +182,9 @@ def delete_discovered_page(page_id: str) -> Response | WerkzeugResponse | tuple[
                 return redirect(url_for('projects.list_projects'))
 
     except Exception as e:
-        logger.error(f"Error deleting discovered page: {e}")
+        logger.exception(f"Error deleting discovered page: {e}")
         if request.is_json:
-            return jsonify({'success': False, 'error': str(e)}), 500
+            return jsonify({'success': False, 'error': ftl('common-unexpected-error')}), 500
         else:
-            flash(ftl('pages-error-deleting-page-error', error=str(e)), 'error')
+            flash(ftl('common-unexpected-error'), 'error')
             return redirect(url_for('projects.list_projects'))

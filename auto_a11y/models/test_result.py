@@ -4,6 +4,7 @@ Test result models for accessibility testing
 
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
@@ -43,8 +44,9 @@ class Violation:
     touchpoint: str  # Accessibility category (e.g., "Images", "Forms")
     description: str
 
-    # Unique identifier for this specific violation instance
-    unique_id: str | None = None  # UUID for this specific instance (generated if not provided)
+    # Unique identifier for this specific violation instance.
+    # Generated at construction so to_dict() stays pure (no lazy mutation).
+    unique_id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
     # Source tracking (NEW)
     source_type: str = "automated"  # "automated", "manual", "hybrid"
@@ -75,12 +77,7 @@ class Violation:
     discovered_page_id: str | None = None  # Local MongoDB discovered_page ID
 
     def to_dict(self) -> dict[str, Any]:
-        """Convert to dictionary"""
-        import uuid
-        # Generate unique_id if not set
-        if not self.unique_id:
-            self.unique_id = str(uuid.uuid4())
-
+        """Convert to dictionary (pure: does not mutate the instance)."""
         return {
             'id': self.id,
             'unique_id': self.unique_id,
@@ -125,11 +122,9 @@ class Violation:
         # Handle both old 'category' and new 'touchpoint' field names
         touchpoint = data.get('touchpoint', data.get('category', ''))
 
-        import uuid
-        # Generate unique_id if not present (for backward compatibility with old data)
-        unique_id = data.get('unique_id')
-        if not unique_id:
-            unique_id = str(uuid.uuid4())
+        # Preserve an existing unique_id; generate one for old records that
+        # predate the field (backward compatibility).
+        unique_id = data.get('unique_id') or str(uuid.uuid4())
 
         return cls(
             id=data['id'],
@@ -352,6 +347,15 @@ class TestResult:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> TestResult:
         """Create from MongoDB document"""
+        # Guard against unrecognised target_type values in stored records:
+        # default to PAGE rather than letting TargetType(...) raise ValueError.
+        target_type = TargetType.PAGE
+        if 'target_type' in data:
+            try:
+                target_type = TargetType(data['target_type'])
+            except ValueError:
+                target_type = TargetType.PAGE
+
         return cls(
             page_id=data.get('page_id'),
             website_id=data.get('website_id'),
@@ -374,7 +378,7 @@ class TestResult:
             session_id=data.get('session_id'),
             related_result_ids=data.get('related_result_ids', []),
             # Polymorphic target fields (back-compat: infer from page_id)
-            target_type=TargetType(data['target_type']) if 'target_type' in data else TargetType.PAGE,
+            target_type=target_type,
             target_id=data.get('target_id', data.get('page_id', '')),
             _id=data.get('_id')
         )

@@ -205,6 +205,26 @@ class ResultProcessor:
                         # Default to warnings if pattern not recognized
                         warnings.append(processed)
             
+            # Process dedicated discovery/info arrays (separate from errors/warnings).
+            # Tests emit discovery items (e.g. DiscoResponsiveBreakpoints from
+            # test_page.py) and info items into their own arrays; route each
+            # through the same _process_violation path as errors/warnings and
+            # append to the matching result list. Discovery and info items do
+            # not count toward pass/fail statistics.
+            if 'discovery' in test_result and test_result['discovery']:
+                discovery_input: list[dict[str, Any]] = test_result['discovery']
+                for disco_item in discovery_input:
+                    processed_disco = self._process_violation(disco_item, test_name, 'unknown')
+                    if processed_disco:
+                        discovery.append(processed_disco)
+
+            if 'info' in test_result and test_result['info']:
+                info_input: list[dict[str, Any]] = test_result['info']
+                for info_item in info_input:
+                    processed_info = self._process_violation(info_item, test_name, 'unknown')
+                    if processed_info:
+                        info.append(processed_info)
+
             # Process passes
             if 'passes' in test_result and test_result['passes']:
                 pass_list: list[dict[str, Any]] = test_result['passes']
@@ -288,50 +308,53 @@ class ResultProcessor:
                     'failed': stats['failed']
                 })
             
-            # If AI analysis ran but found no issues, add a passing check
-            if ai_analysis_results and not ai_findings:
-                for analysis_type in ai_analysis_results.keys():
-                    # Map AI analysis types directly to touchpoint IDs
-                    from auto_a11y.core.touchpoints import TouchpointID
-                    ai_to_touchpoint_map = {
-                        'headings': TouchpointID.HEADINGS,
-                        'reading_order': TouchpointID.FOCUS_MANAGEMENT,
-                        'modals': TouchpointID.DIALOGS,
-                        'language': TouchpointID.LANGUAGE,
-                        'animations': TouchpointID.ANIMATION,
-                        'interactive': TouchpointID.EVENT_HANDLING
-                    }
-                    
-                    # Get the touchpoint for this AI analysis
-                    touchpoint_id = ai_to_touchpoint_map.get(analysis_type)
-                    
-                    if touchpoint_id:
-                        from auto_a11y.core.touchpoints import get_touchpoint
-                        touchpoint = get_touchpoint(touchpoint_id)
-                        test_name = touchpoint.name if touchpoint else analysis_type.title()
-                    else:
-                        test_name = analysis_type.title()
-                    
-                    check_descriptions = {
-                        'headings': 'Visual heading structure analysis',
-                        'reading_order': 'Reading order consistency check',
-                        'modals': 'Modal dialog accessibility check',
-                        'language': 'Language declaration check',
-                        'animations': 'Animation and motion check',
-                        'interactive': 'Interactive element keyboard accessibility'
-                    }
-                    
-                    checks.append({
-                        'test_name': test_name,
-                        'description': check_descriptions.get(analysis_type, f'{analysis_type} analysis'),
-                        'wcag': self._get_ai_wcag_criteria(analysis_type),
-                        'total': 1,
-                        'passed': 1,
-                        'failed': 0
-                    })
-                    total_passed_checks += 1
-                    total_applicable_checks += 1
-        
+        # If AI analysis ran but found no issues, add a passing check.
+        # This is a SIBLING of `if ai_findings:` above (previously it was nested
+        # inside it, where `not ai_findings` could never be true, so the branch
+        # was dead code and AI-clean pages were under-counted in the score).
+        elif ai_analysis_results:
+            for analysis_type in ai_analysis_results.keys():
+                # Map AI analysis types directly to touchpoint IDs
+                from auto_a11y.core.touchpoints import TouchpointID
+                ai_to_touchpoint_map = {
+                    'headings': TouchpointID.HEADINGS,
+                    'reading_order': TouchpointID.FOCUS_MANAGEMENT,
+                    'modals': TouchpointID.DIALOGS,
+                    'language': TouchpointID.LANGUAGE,
+                    'animations': TouchpointID.ANIMATION,
+                    'interactive': TouchpointID.EVENT_HANDLING
+                }
+
+                # Get the touchpoint for this AI analysis
+                touchpoint_id = ai_to_touchpoint_map.get(analysis_type)
+
+                if touchpoint_id:
+                    from auto_a11y.core.touchpoints import get_touchpoint
+                    touchpoint = get_touchpoint(touchpoint_id)
+                    test_name = touchpoint.name if touchpoint else analysis_type.title()
+                else:
+                    test_name = analysis_type.title()
+
+                check_descriptions = {
+                    'headings': 'Visual heading structure analysis',
+                    'reading_order': 'Reading order consistency check',
+                    'modals': 'Modal dialog accessibility check',
+                    'language': 'Language declaration check',
+                    'animations': 'Animation and motion check',
+                    'interactive': 'Interactive element keyboard accessibility'
+                }
+
+                checks.append({
+                    'test_name': test_name,
+                    'description': check_descriptions.get(analysis_type, f'{analysis_type} analysis'),
+                    'wcag': self._get_ai_wcag_criteria(analysis_type),
+                    'total': 1,
+                    'passed': 1,
+                    'failed': 0
+                })
+                total_passed_checks += 1
+                total_applicable_checks += 1
+
         # Sort all issue lists by touchpoint first, then by ID/title
         sorted_violations = sorted(violations, key=lambda x: (x.touchpoint, x.id))
         sorted_warnings = sorted(warnings, key=lambda x: (x.touchpoint, x.id))

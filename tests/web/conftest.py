@@ -184,6 +184,29 @@ def app(
     )
     flask_app.register_blueprint(projects_stub)
 
+    # The recordings routes are protected by @login_required /
+    # @project_role_required, so the app needs a Flask-Login manager. These
+    # tests exercise upload/progress behaviour, not authorization (that lives
+    # in tests/web/test_route_authz.py), so a request_loader returns an
+    # authenticated superadmin for every request: @login_required passes and
+    # @project_role_required / _can_edit_project take the superadmin bypass.
+    from flask_login import LoginManager, UserMixin
+
+    class _SuperadminStub(UserMixin):
+        # UserMixin supplies is_authenticated/get_id (from self.id); we pin
+        # is_superadmin=True so the authz decorators take the bypass.
+        def __init__(self) -> None:
+            self.id = 'test-superadmin'
+            self.is_superadmin = True
+
+    login_manager = LoginManager()
+    login_manager.init_app(flask_app)
+
+    def _load_from_request(_request: object) -> _SuperadminStub:
+        return _SuperadminStub()
+
+    login_manager.request_loader(_load_from_request)
+
     from auto_a11y.web.routes.recordings import recordings_bp
     flask_app.register_blueprint(recordings_bp, url_prefix='/recordings')
 

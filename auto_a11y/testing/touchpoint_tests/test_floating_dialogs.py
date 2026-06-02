@@ -24,13 +24,18 @@ def aggregate_breakpoint_results(
     counts would be multiplied by N.
 
     Deduplication rules:
-    - errors, warnings and passes are deduped by ``(code, xpath)`` signature.
+    - errors, warnings and passes are deduped by ``(err, xpath)`` signature.
     - ``ErrContentObscuring`` errors are intentionally NOT deduped: a dialog can
       obscure different content at different breakpoints, so each instance is
       kept.
-    - element tested/passed/failed counts are taken from a single representative
-      breakpoint (the one reporting the most tested elements) rather than summed,
-      so a dialog seen at 3 breakpoints still counts as one tested element.
+    - element tested/passed/failed counts are derived from the DEDUPED finding
+      sets by counting distinct dialog xpaths across ALL breakpoints, NOT from a
+      ``max(...)`` of a per-breakpoint scalar. This counts a dialog once no
+      matter how many breakpoints it appears at, while still counting dialogs
+      that are distinct ACROSS breakpoints (e.g. one only visible at 320px and
+      another only at 1200px) as separate elements. A dialog with any error is
+      counted as failed; a dialog that only passes (no error) is counted as
+      passed; ``tested`` is the union, so ``tested == passed + failed``.
 
     The returned check summary's ``total`` is derived from ``passed + failed`` so
     it always reconciles (Bug B).
@@ -49,14 +54,6 @@ def aggregate_breakpoint_results(
     all_passes: list[dict[str, Any]] = []
     test_applicable = False
     not_applicable_reason = ''
-
-    # Element counts are deduped, not summed: take the breakpoint that observed
-    # the most tested elements as the representative count. (Different
-    # breakpoints can show/hide dialogs via media queries, so the max captures
-    # the full set of distinct dialogs without multiplying by breakpoint count.)
-    elements_tested = 0
-    elements_passed = 0
-    elements_failed = 0
 
     def _signature(issue: dict[str, Any]) -> str:
         return f"{issue.get('err')}:{issue.get('xpath')}"
@@ -86,16 +83,23 @@ def aggregate_breakpoint_results(
         _dedup_into(all_warnings, results.get('warnings', []), keep_obscuring=False)
         _dedup_into(all_passes, results.get('passes', []), keep_obscuring=False)
 
-        # Use the representative (max) breakpoint for element counts so the
-        # totals are not multiplied by the number of breakpoints tested.
-        bp_tested = results.get('elements_tested', 0)
-        if bp_tested > elements_tested:
-            elements_tested = bp_tested
-            elements_passed = results.get('elements_passed', 0)
-            elements_failed = results.get('elements_failed', 0)
-
         if not results.get('applicable') and not not_applicable_reason:
             not_applicable_reason = results.get('not_applicable_reason', '')
+
+    # Derive element counts from the DEDUPED finding sets by distinct dialog
+    # xpath. A dialog with any error counts as failed; a dialog that only passes
+    # (and has no error) counts as passed; tested is their union. This counts a
+    # dialog once regardless of how many breakpoints it appeared at, AND counts
+    # dialogs that are distinct across breakpoints as separate elements.
+    failed_xpaths: set[str] = {
+        str(issue.get('xpath')) for issue in all_errors
+    }
+    passing_xpaths: set[str] = {
+        str(issue.get('xpath')) for issue in all_passes
+    } - failed_xpaths
+    elements_failed = len(failed_xpaths)
+    elements_passed = len(passing_xpaths)
+    elements_tested = elements_failed + elements_passed
 
     final_results: dict[str, Any] = {
         'applicable': test_applicable,

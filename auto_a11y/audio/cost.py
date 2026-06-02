@@ -6,12 +6,20 @@ and Deepgram rate sheets — see ``AS_OF`` below. The cost panel renders a
 """
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from datetime import date
 from typing import Literal
 
 
+logger = logging.getLogger(__name__)
+
 AS_OF: date = date(2026, 5, 19)
+
+# Model whose rates the constants below capture. Unknown models fall back
+# to these rates (with a logged warning) rather than failing the analysis —
+# cost bookkeeping must NEVER lose a paid result.
+DEFAULT_PRICING_MODEL = "claude-opus-4-7"
 
 
 # === Anthropic Opus 4.7 (per million tokens) ===
@@ -71,12 +79,19 @@ def cost_for_anthropic_call(
 ) -> float:
     """Compute USD cost of one Anthropic call.
 
-    Only ``claude-opus-4-7`` is implemented. Adding another model means
-    adding its constants above and a branch here.
+    Pricing constants are defined for ``claude-opus-4-7`` (see
+    ``DEFAULT_PRICING_MODEL``). For any other model we fall back to those
+    rates and log a warning rather than raising: this function is called
+    *after* a paid Claude response, so a hard failure here would discard a
+    real (billed) result purely over cost bookkeeping. Adding first-class
+    pricing for another model means adding its constants above and a branch
+    here.
     """
-    if model != "claude-opus-4-7":
-        raise NotImplementedError(
-            f"pricing constants only defined for claude-opus-4-7; got {model!r}"
+    if model != DEFAULT_PRICING_MODEL:
+        logger.warning(
+            "No pricing constants for model %r; pricing at fallback rate (%s).",
+            model,
+            DEFAULT_PRICING_MODEL,
         )
 
     if extended_context:

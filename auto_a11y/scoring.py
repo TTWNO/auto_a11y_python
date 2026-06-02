@@ -240,8 +240,11 @@ class ManualAccessibilityScorer:
         if not criterion_str:
             return None
 
-        # Look for pattern like X.X.X where X is a digit
-        match = re.search(r'\b(\d+\.\d+\.\d+)\b', criterion_str)
+        # Look for pattern like X.X.X where X is a digit. Use digit lookarounds
+        # rather than \b so a trailing 4th segment (e.g. "2.1.1.1") still yields
+        # the leading 3-part criterion instead of being dropped, and so we never
+        # start matching partway through a longer number.
+        match = re.search(r'(?<!\d)(\d+\.\d+\.\d+)(?!\d)', criterion_str)
         if match:
             return match.group(1)
 
@@ -287,37 +290,48 @@ def calculate_project_manual_scores(
         all_scores.append(scores)
 
     # Aggregate scores
-    # Accessibility score: average across recordings
+    # Accessibility score: unweighted mean of the per-recording scores.
+    #
+    # Design choice (documented intentionally): each recording is already clamped
+    # to the 0-100 range by calculate_accessibility_score, so this averages
+    # already-clamped values rather than re-running the deductive model over the
+    # pooled issue list. Recordings are weighted equally regardless of how many
+    # issues each contains. This treats each recording/audit session as an equal
+    # unit of observation, which matches how manual audits are reported. If a
+    # pooled deductive score is ever desired, recompute over the combined issue
+    # list instead of averaging here.
     avg_accessibility = sum(s.accessibility_score for s in all_scores) / len(all_scores)
 
     # Compliance score: aggregate criteria
     total_applicable_set: set[str] = set()
     failed_criteria_set: set[str] = set()
 
+    # First pass: build the full applicable set across all in-scope recordings.
+    # This must be complete before we evaluate failures, otherwise a criterion
+    # that is applicable only in a later recording would be excluded when
+    # intersecting failures (and vice versa).
     for recording in recordings:
         if recording.testing_scope:
-            issues = all_issues.get(recording.recording_id, [])
-            scorer.calculate_compliance_score(
-                recording.testing_scope,
-                issues,
-                target_level
-            )
-
-            # Get applicable criteria for this recording
             applicable: list[SuccessCriterion] = scorer.scope_mapper.get_applicable_criteria(
                 recording.testing_scope,
                 target_level
             )
             total_applicable_set.update(c.id for c in applicable)
 
-            # Get failed criteria
+    # Second pass: collect failed criteria, but only count those that are within
+    # the applicable scope (mirror calculate_compliance_score). Without this
+    # intersection, passed = total_applicable - failed can undercount or even go
+    # negative when an issue references a criterion outside the tested scope.
+    for recording in recordings:
+        if recording.testing_scope:
+            issues = all_issues.get(recording.recording_id, [])
             for issue in issues:
                 if issue.wcag:
                     for wcag_ref in issue.wcag:
                         criterion_num = scorer.extract_criterion_number(wcag_ref.criteria)
                         if criterion_num:
                             criterion = scorer.wcag_parser.get_criterion_by_num(criterion_num)
-                            if criterion:
+                            if criterion and criterion.id in total_applicable_set:
                                 failed_criteria_set.add(criterion.id)
 
     total_applicable = len(total_applicable_set)

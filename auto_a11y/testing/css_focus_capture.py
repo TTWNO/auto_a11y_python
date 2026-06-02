@@ -13,6 +13,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
+import weakref
 from typing import Any, Callable
 from dataclasses import dataclass, field
 
@@ -291,23 +292,39 @@ class CSSFocusCapture:
         }
 
 
-_page_css_cache: dict[int, CSSFocusCapture] = {}
+# Keyed by the page object itself via a weak reference. This avoids the
+# ``id(page)`` aliasing hazard (CPython reuses ``id()`` values after an object
+# is garbage collected, so a new ``Page`` could read a closed page's stale
+# capture) and the associated leak when a page is dropped without an explicit
+# ``clear_css_capture_for_page`` call: WeakKeyDictionary entries auto-evict once
+# the page is garbage collected. Playwright's ``Page`` is a pure-Python class
+# that is weak-referenceable, so it is a valid key.
+_page_css_cache: weakref.WeakKeyDictionary[Page, CSSFocusCapture] = (
+    weakref.WeakKeyDictionary()
+)
 
 
 def get_css_capture_for_page(page: Page) -> CSSFocusCapture | None:
     """Get the CSS capture instance for a page"""
-    page_id = id(page)
-    return _page_css_cache.get(page_id)
+    return _page_css_cache.get(page)
 
 
 def set_css_capture_for_page(page: Page, capture: CSSFocusCapture) -> None:
     """Store CSS capture instance for a page"""
-    page_id = id(page)
-    _page_css_cache[page_id] = capture
+    _page_css_cache[page] = capture
 
 
 def clear_css_capture_for_page(page: Page) -> None:
     """Remove CSS capture instance for a page"""
-    page_id = id(page)
-    if page_id in _page_css_cache:
-        del _page_css_cache[page_id]
+    if page in _page_css_cache:
+        del _page_css_cache[page]
+
+
+def css_capture_cache_size() -> int:
+    """Return the number of live entries in the per-page CSS-focus cache.
+
+    Useful for diagnostics and tests: because the cache is a
+    ``WeakKeyDictionary``, this reflects only pages that are still alive (entries
+    auto-evict once their page is garbage collected).
+    """
+    return len(_page_css_cache)

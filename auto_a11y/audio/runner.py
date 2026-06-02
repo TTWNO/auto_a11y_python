@@ -194,7 +194,17 @@ class VideoRunner:
             # handle).
             import_pipeline_output(self._db, slot, rec)
 
-            rec.status = "complete"
+            # Honour a cancel that landed after the last progress heartbeat:
+            # the web layer's only out-of-band write to a recording during
+            # processing is `status` (-> "cancelling"), and a heartbeat may
+            # not have observed it before the pipeline finished. Persisting
+            # `rec` here is a full replace, so re-check the live status and
+            # don't overwrite a pending cancel with "complete".
+            live = self._db.get_recording_by_recording_id(recording_id)
+            if live is not None and live.status == "cancelling":
+                rec.status = "cancelled"
+            else:
+                rec.status = "complete"
             rec.finished_at = datetime.now()
             self._db.update_recording(rec)
         except _Cancelled:

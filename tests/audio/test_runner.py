@@ -142,6 +142,44 @@ def test_runner_cancellation_sets_status_cancelled(slot: AllocatedSlot, tmp_path
     import_mock.assert_not_called()
 
 
+def test_runner_late_cancel_during_complete_marks_cancelled(
+    slot: AllocatedSlot, tmp_path: Path
+) -> None:
+    """A cancel that lands after the last heartbeat isn't overwritten.
+
+    The pipeline completes (no heartbeat observed the cancel), but the
+    live recording shows status='cancelling' at the terminal write. The
+    runner re-checks and persists 'cancelled' rather than clobbering the
+    pending cancel with 'complete'.
+    """
+    recording_id = slot.recording_id
+    rec = _make_recording(recording_id)
+    live_cancelling = _make_recording(recording_id)
+    live_cancelling.status = "cancelling"
+
+    db = MagicMock()
+    # Call 1: runner load (-> rec). Call 2: terminal live re-check (-> cancelling).
+    # Pipeline is mocked to do nothing, so there are no heartbeat fetches.
+    db.get_recording_by_recording_id.side_effect = [rec, live_cancelling]
+    db.update_recording.return_value = True
+
+    storage = MagicMock()
+    storage.get.return_value = slot
+
+    config = _make_audio_config(tmp_path)
+    runner = VideoRunner(db=db, storage=storage, config=config)
+
+    with patch("auto_a11y.audio.runner._make_anthropic_client", return_value=object()), \
+         patch("auto_a11y.audio.runner._make_deepgram_client", return_value=object()), \
+         patch("auto_a11y.audio.runner.run_pipeline", return_value=None), \
+         patch("auto_a11y.audio.runner.import_pipeline_output", return_value=[]):
+        asyncio.run(runner.run(recording_id))
+
+    # Completed work, but the late cancel wins the terminal write.
+    assert rec.status == "cancelled"
+    assert rec.finished_at is not None
+
+
 def test_runner_failure_sets_status_failed_with_message(slot: AllocatedSlot, tmp_path: Path) -> None:
     """A generic pipeline exception → status='failed' + error_message + reraise."""
     recording_id = slot.recording_id

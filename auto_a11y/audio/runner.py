@@ -124,22 +124,30 @@ class VideoRunner:
 
             We re-fetch the Recording (rather than trusting ``rec`` in
             scope) because the cancel flag is set out-of-band by the
-            web layer.
+            web layer. We then mutate and persist that freshly-fetched
+            record — NOT the stale ``rec`` snapshot taken at run start —
+            so other fields the web layer changed out-of-band (titles,
+            tags, etc.) survive the heartbeat instead of being clobbered
+            (lost-update race).
             """
             fresh = self._db.get_recording_by_recording_id(recording_id)
-            if fresh is not None and fresh.status == "cancelling":
+            if fresh is None:
+                # Record vanished mid-run (deleted out-of-band); nothing to
+                # persist. Don't fall back to the stale snapshot.
+                return
+            if fresh.status == "cancelling":
                 raise _Cancelled()
             elapsed_ms = int(
                 (datetime.now() - started_at).total_seconds() * 1000
             )
-            rec.progress = {
+            fresh.progress = {
                 "stage": stage,
                 "current": current,
                 "total": total,
                 "started_at": started_at,
                 "elapsed_ms": elapsed_ms,
             }
-            self._db.update_recording(rec)
+            self._db.update_recording(fresh)
 
         try:
             try:

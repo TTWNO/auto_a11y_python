@@ -223,8 +223,14 @@ def ftl_enum(value: object) -> Markup | str:
     the FTL message.  Falls back to title-cased original if no FTL message
     is found.
     """
-    if not value:
-        return str(value) if value is not None else ''
+    if value is None:
+        return ''
+    # Guard only on values that have no meaningful enum spelling: None
+    # (handled above) and the empty string.  Falsy-but-valid values such as
+    # the integer 0 (a common first IntEnum member) must still reach the
+    # enum- lookup below.
+    if isinstance(value, str) and value == '':
+        return ''
     # Normalize: lowercase, replace underscores/spaces with hyphens
     normalized = str(value).lower().replace('_', '-').replace(' ', '-')
     msg_id = f'enum-{normalized}'
@@ -400,18 +406,41 @@ def _resolve(locale: str, message_id: str, args: dict[str, object]) -> tuple[str
         return None
     try:
         value, errors = bundle.format(message_id, args or None)
-        return (value, errors or [])
-    except (KeyError, Exception):
+    except KeyError:
+        # fluent_compiler raises KeyError when the message id (or attribute)
+        # is genuinely absent from this bundle.  That — and ONLY that — means
+        # "missing"; return None so the caller can fall back.  Any other
+        # exception is a real format-time / programming error and must
+        # propagate (surfaced to strict mode or the caller), not be hidden
+        # behind a misleading "message not found".
         return None
+    return (value, errors or [])
 
 
-def _datetimeformat_filter(value: Any, format: str = 'medium') -> str:
-    """Jinja2 filter: format a datetime using Babel's locale-aware formatting."""
+def _datetimeformat_filter(value: object, format: str = 'medium') -> str:
+    """Jinja2 filter: format a datetime using Babel's locale-aware formatting.
+
+    Degrades gracefully on unexpected input: ``None`` -> empty string, and
+    any non-datetime value (string, int, etc.) -> its ``str()``.  Babel's
+    ``format_datetime`` raises (or silently misinterprets ints as Unix
+    timestamps) on non-datetime input, which would otherwise 500 a template
+    render.  A datetime is required for locale-aware formatting; everything
+    else is returned verbatim so the page still renders.
+    """
+    import datetime as _datetime
+
     if value is None:
         return ''
+    # bool is an int subclass but never a datetime; datetime is a subclass of
+    # date, so checking date covers both date and datetime instances.
+    if not isinstance(value, _datetime.date):
+        return str(value)
     from babel.dates import format_datetime
     locale = _get_current_locale()
-    return str(format_datetime(value, format, locale=locale))
+    try:
+        return str(format_datetime(value, format, locale=locale))
+    except (ValueError, TypeError):
+        return str(value)
 
 
 # ---------------------------------------------------------------------------

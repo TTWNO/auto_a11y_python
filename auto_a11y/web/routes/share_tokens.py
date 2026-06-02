@@ -56,7 +56,7 @@ def create_website_token(website_id: str) -> Response | tuple[Response, int]:
 
 def _create_token(scope: TokenScope, scope_id: str) -> Response:
     """Shared logic for creating a token"""
-    from datetime import datetime, timedelta
+    from datetime import datetime, timedelta, timezone
 
     label = request.form.get('label', '').strip()
     if not label:
@@ -69,7 +69,7 @@ def _create_token(scope: TokenScope, scope_id: str) -> Response:
         try:
             days = int(expires_days)
             if days > 0:
-                expires_at = datetime.now() + timedelta(days=days)
+                expires_at = datetime.now(timezone.utc) + timedelta(days=days)
         except ValueError:
             pass
 

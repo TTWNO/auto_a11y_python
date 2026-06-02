@@ -9,7 +9,7 @@ from pymongo import MongoClient
 from pymongo.database import Database as MongoDatabase
 from pymongo.collection import Collection
 from bson import ObjectId
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 import re
 import certifi
@@ -3422,7 +3422,7 @@ class Database:
         """Revoke a share token"""
         result = self.share_tokens.update_one(
             {"_id": ObjectId(token_id)},
-            {"$set": {"revoked": True, "revoked_at": datetime.now()}}
+            {"$set": {"revoked": True, "revoked_at": datetime.now(timezone.utc)}}
         )
         if result.modified_count > 0:
             logger.info(f"Revoked share token: {token_id}")
@@ -3433,5 +3433,5 @@ class Database:
         """Record that a token was used"""
         self.share_tokens.update_one(
             {"token_hash": token_hash},
-            {"$set": {"last_used": datetime.now()}, "$inc": {"use_count": 1}}
+            {"$set": {"last_used": datetime.now(timezone.utc)}, "$inc": {"use_count": 1}}
         )

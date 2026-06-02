@@ -142,6 +142,9 @@ class Config:
     SMTP_USERNAME: str = os.getenv('SMTP_USERNAME', '')
     SMTP_PASSWORD: str = os.getenv('SMTP_PASSWORD', '')
     SMTP_USE_TLS: bool = os.getenv('SMTP_USE_TLS', 'True').lower() == 'true'
+    # Implicit TLS (SMTP over SSL, typically port 465). Mutually exclusive with
+    # SMTP_USE_TLS (STARTTLS). Port 465 also implies implicit SSL automatically.
+    SMTP_USE_SSL: bool = os.getenv('SMTP_USE_SSL', 'False').lower() == 'true'
     SMTP_FROM_EMAIL: str = os.getenv('SMTP_FROM_EMAIL', '')
     SMTP_FROM_NAME: str = os.getenv('SMTP_FROM_NAME', 'CNIB Access Labs | AutoA11y')
 

@@ -61,6 +61,16 @@ class ClaudeAnalyzer:
             use_thinking = True
             logger.warning(f"Could not get Claude config, using defaults: {resolved_model}")
 
+        # The Anthropic extended-thinking API requires budget_tokens strictly
+        # less than max_tokens. Clamp to preserve that invariant regardless of
+        # how the two values were configured (avoids a runtime request error).
+        if budget_tokens >= max_tokens:
+            clamped = max(1, max_tokens - 1)
+            logger.warning(
+                f"CLAUDE_BUDGET_TOKENS ({budget_tokens}) must be less than CLAUDE_MAX_TOKENS ({max_tokens}); clamping budget to {clamped}"
+            )
+            budget_tokens = clamped
+
         # Initialize client with extended thinking support
         config = ClaudeConfig(
             api_key=api_key,
@@ -414,10 +424,19 @@ class ClaudeAnalyzer:
         }
 
     def _count_by_type(self, findings: list[Violation]) -> dict[str, int]:
-        """Count findings by type"""
+        """Count findings by AI analysis type (e.g. 'reading_order', 'modals').
+
+        Groups on ``metadata['ai_analysis_type']`` — the analyzer that produced
+        the finding — rather than the mapped touchpoint, so distinct analysis
+        types that share a touchpoint (e.g. reading_order and modals both under
+        focus-management) are counted separately. Falls back to the touchpoint
+        when no analysis type was recorded (e.g. manually constructed findings).
+        """
         counts: dict[str, int] = {}
         for finding in findings:
-            base_type = finding.touchpoint  # Get analyzer name
+            base_type = str(
+                finding.metadata.get('ai_analysis_type') or finding.touchpoint
+            )
             counts[base_type] = counts.get(base_type, 0) + 1
         return counts
 

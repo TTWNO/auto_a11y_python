@@ -38,6 +38,55 @@ class JobStatus(Enum):
     CANCELLING = "cancelling"  # Transitional state
 
 
+def build_status_update(
+    status: JobStatus,
+    progress: dict[str, Any] | None = None,
+    error: str | None = None,
+    result: Any | None = None,
+) -> dict[str, Any]:
+    """Build the MongoDB update document for a job status change.
+
+    Extracted as a pure helper so the field-construction logic can be unit
+    tested without a live database.
+
+    ``started_at`` is written via ``$set`` on the first RUNNING transition
+    regardless of whether a progress payload is supplied. (A previous version
+    used ``$setOnInsert`` for the no-progress branch, but ``update_one`` is not
+    an upsert, so that value was silently dropped and ``started_at`` stayed
+    null — breaking duration math in ``get_job_statistics``.)
+    """
+    set_fields: dict[str, Any] = {
+        'status': status.value,
+        'updated_at': datetime.now()
+    }
+    update_doc: dict[str, Any] = {
+        '$set': set_fields
+    }
+
+    if status == JobStatus.RUNNING:
+        set_fields['started_at'] = datetime.now()
+
+    if status in [JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED]:
+        set_fields['completed_at'] = datetime.now()
+
+    if progress:
+        set_fields['progress'] = progress
+
+    if error:
+        set_fields['error'] = error
+
+    if result is not None:
+        # Convert result to JSON-serializable format
+        try:
+            serialized_result: Any = result.__dict__ if hasattr(result, '__dict__') else result
+            set_fields['result'] = serialized_result
+        except Exception as e:
+            logger.error(f"Error serializing result: {e}")
+            set_fields['result'] = str(result)
+
+    return update_doc
+
+
 class JobManager:
     """
     Database-backed job manager for handling concurrent operations
@@ -223,36 +272,7 @@ class JobManager:
         Returns:
             True if updated successfully
         """
-        set_fields: dict[str, Any] = {
-            'status': status.value,
-            'updated_at': datetime.now()
-        }
-        update_doc: dict[str, Any] = {
-            '$set': set_fields
-        }
-        
-        if status == JobStatus.RUNNING and not progress:
-            update_doc['$setOnInsert'] = {'started_at': datetime.now()}
-        elif status == JobStatus.RUNNING:
-            update_doc['$set']['started_at'] = datetime.now()
-        
-        if status in [JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED]:
-            update_doc['$set']['completed_at'] = datetime.now()
-        
-        if progress:
-            update_doc['$set']['progress'] = progress
-        
-        if error:
-            update_doc['$set']['error'] = error
-        
-        if result is not None:
-            # Convert result to JSON-serializable format
-            try:
-                serialized_result: Any = result.__dict__ if hasattr(result, '__dict__') else result
-                update_doc['$set']['result'] = serialized_result
-            except Exception as e:
-                logger.error(f"Error serializing result: {e}")
-                update_doc['$set']['result'] = str(result)
+        update_doc = build_status_update(status, progress, error, result)
 
         update_result = self.collection.update_one(
             {'job_id': job_id},
@@ -331,22 +351,15 @@ class JobManager:
         Returns:
             True if cancellation requested successfully
         """
-        # First check current job status
-        job = self.collection.find_one({'job_id': job_id})
-        if not job:
-            logger.error(f"Job {job_id} not found for cancellation")
-            return False
-        
-        current_status = job.get('status')
-        logger.info(f"Attempting to cancel job {job_id} with current status: {current_status}")
-        
-        # Only cancel if job is pending or running
-        if current_status not in [JobStatus.PENDING.value, JobStatus.RUNNING.value]:
-            logger.warning(f"Cannot cancel job {job_id} with status {current_status}")
-            return False
-        
+        # Fold the PENDING/RUNNING status guard into the update filter so the
+        # check-and-set is atomic. A separate read-then-write would race with
+        # concurrent cancellations or a status transition landing between the
+        # read and the write.
         result = self.collection.update_one(
-            {'job_id': job_id},
+            {
+                'job_id': job_id,
+                'status': {'$in': [JobStatus.PENDING.value, JobStatus.RUNNING.value]}
+            },
             {
                 '$set': {
                     'cancellation_requested': True,
@@ -357,12 +370,14 @@ class JobManager:
                 }
             }
         )
-        
+
         if result.modified_count > 0:
             logger.info(f"Cancellation requested for job {job_id} by {requested_by}")
             return True
         else:
-            logger.error(f"Failed to update job {job_id} for cancellation")
+            logger.warning(
+                f"Cannot cancel job {job_id}: not found or not in a cancellable (pending/running) state"
+            )
             return False
     
     def is_cancellation_requested(self, job_id: str) -> bool:

@@ -7,10 +7,109 @@ from __future__ import annotations
 
 from typing import Any
 import logging
+import re
 
 from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
+
+# Common CSS named colors used in focus-indicator styling. Anything not listed
+# (and not rgb()/rgba()/hex) falls back to opaque black -- see _parse_color.
+_NAMED_COLORS: dict[str, tuple[int, int, int]] = {
+    'black': (0, 0, 0),
+    'white': (255, 255, 255),
+    'red': (255, 0, 0),
+    'green': (0, 128, 0),
+    'lime': (0, 255, 0),
+    'blue': (0, 0, 255),
+    'yellow': (255, 255, 0),
+    'cyan': (0, 255, 255),
+    'aqua': (0, 255, 255),
+    'magenta': (255, 0, 255),
+    'fuchsia': (255, 0, 255),
+    'silver': (192, 192, 192),
+    'gray': (128, 128, 128),
+    'grey': (128, 128, 128),
+    'maroon': (128, 0, 0),
+    'olive': (128, 128, 0),
+    'purple': (128, 0, 128),
+    'teal': (0, 128, 128),
+    'navy': (0, 0, 128),
+    'orange': (255, 165, 0),
+}
+
+# CSS length: leading number (int/float, optional sign) followed by an optional
+# unit (px/em/rem/etc.). We only need the numeric magnitude for width/offset
+# comparisons, so the unit itself is discarded.
+_LENGTH_RE = re.compile(r'^\s*([+-]?\d*\.?\d+)')
+
+
+def _parse_px(value: str | None) -> float:
+    """Parse the leading numeric magnitude from a CSS length string.
+
+    Handles px/em/rem and bare numbers. The unit is intentionally ignored --
+    callers compare relative widths/offsets, not absolute pixels. Returns 0 for
+    empty/None/unparseable input.
+    """
+    if not value:
+        return 0
+    match = _LENGTH_RE.match(value)
+    if not match:
+        return 0
+    try:
+        return float(match.group(1))
+    except ValueError:
+        return 0
+
+
+def _parse_color(color_str: str | None) -> dict[str, float]:
+    """Parse a CSS color string to an RGBA dict.
+
+    Supports rgb()/rgba(), 6-digit and 3-digit hex, and a set of common named
+    colors. ``transparent``/``initial`` map to fully transparent black. Truly
+    unknown input falls back to opaque black ({r:0,g:0,b:0,a:1}).
+    """
+    if not color_str or color_str == 'transparent' or color_str == 'initial':
+        return {'r': 0, 'g': 0, 'b': 0, 'a': 0}
+
+    color_str = color_str.strip()
+
+    match = re.match(r'rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)', color_str)
+    if match:
+        return {
+            'r': int(match.group(1)),
+            'g': int(match.group(2)),
+            'b': int(match.group(3)),
+            'a': float(match.group(4)) if match.group(4) else 1.0
+        }
+
+    match = re.match(r'#([0-9a-fA-F]{6})$', color_str)
+    if match:
+        hex_val = match.group(1)
+        return {
+            'r': int(hex_val[0:2], 16),
+            'g': int(hex_val[2:4], 16),
+            'b': int(hex_val[4:6], 16),
+            'a': 1.0
+        }
+
+    # 3-digit shorthand hex: #abc -> #aabbcc
+    match = re.match(r'#([0-9a-fA-F]{3})$', color_str)
+    if match:
+        hex_val = match.group(1)
+        return {
+            'r': int(hex_val[0] * 2, 16),
+            'g': int(hex_val[1] * 2, 16),
+            'b': int(hex_val[2] * 2, 16),
+            'a': 1.0
+        }
+
+    named = _NAMED_COLORS.get(color_str.lower())
+    if named is not None:
+        return {'r': named[0], 'g': named[1], 'b': named[2], 'a': 1.0}
+
+    # Unknown color: fall back to opaque black.
+    return {'r': 0, 'g': 0, 'b': 0, 'a': 1}
 
 TEST_DOCUMENTATION = {
     "testName": "Event Handler Accessibility Tests",
@@ -873,39 +972,9 @@ async def test_event_handlers(page: Page) -> dict[str, Any]:
 
         # Process focus indicator data in Python
         if focus_elements:
-            import re
-
-            def parse_px(value: str | None) -> float:
-                """Parse pixel value from CSS string"""
-                if not value:
-                    return 0
-                try:
-                    return float(value.replace('px', '').replace('em', '').replace('rem', '').strip())
-                except:
-                    return 0
-
-            def parse_color(color_str: str | None) -> dict[str, float]:
-                """Parse CSS color to RGBA dict"""
-                if not color_str or color_str == 'transparent' or color_str == 'initial':
-                    return {'r': 0, 'g': 0, 'b': 0, 'a': 0}
-                match = re.match(r'rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)', color_str)
-                if match:
-                    return {
-                        'r': int(match.group(1)),
-                        'g': int(match.group(2)),
-                        'b': int(match.group(3)),
-                        'a': float(match.group(4)) if match.group(4) else 1.0
-                    }
-                match = re.match(r'#([0-9a-fA-F]{6})', color_str)
-                if match:
-                    hex_val = match.group(1)
-                    return {
-                        'r': int(hex_val[0:2], 16),
-                        'g': int(hex_val[2:4], 16),
-                        'b': int(hex_val[4:6], 16),
-                        'a': 1.0
-                    }
-                return {'r': 0, 'g': 0, 'b': 0, 'a': 1}
+            # Module-level helpers (tested directly); aliased for readability.
+            parse_px = _parse_px
+            parse_color = _parse_color
 
             def get_luminance(color: dict[str, float]) -> float:
                 """Calculate relative luminance"""

@@ -7,6 +7,7 @@ from __future__ import annotations
 import logging
 import base64
 import json
+import re
 from typing import Any, ClassVar, Literal, cast
 from dataclasses import dataclass
 import asyncio
@@ -64,13 +65,18 @@ class ClaudeClient:
         self.config: ClaudeConfig = config
         # Initialize clients with beta headers for extended thinking, long context, and prompt caching
         beta_features = "interleaved-thinking-2025-05-14,output-128k-2025-02-19,prompt-caching-2024-07-31"
+        # Let the SDK transparently retry transient failures (429/5xx/timeouts)
+        # with exponential backoff so a single blip does not abort an analysis.
+        max_retries: int = getattr(config, "max_retries", 3)
         self.async_client: AsyncAnthropic = AsyncAnthropic(
             api_key=config.api_key,
-            default_headers={"anthropic-beta": beta_features}
+            default_headers={"anthropic-beta": beta_features},
+            max_retries=max_retries,
         )
         self.sync_client: Anthropic = Anthropic(
             api_key=config.api_key,
-            default_headers={"anthropic-beta": beta_features}
+            default_headers={"anthropic-beta": beta_features},
+            max_retries=max_retries,
         )
         self.system_prompt: str = self._get_system_prompt()
 
@@ -116,6 +122,7 @@ class ClaudeClient:
                 model=self.config.model,
                 max_tokens=self.config.max_tokens,
                 messages=messages,
+                system=self.system_prompt,
                 thinking={
                     "type": "enabled",
                     "budget_tokens": self.config.budget_tokens,
@@ -151,25 +158,92 @@ class ClaudeClient:
         return response_text, thinking_text
 
     @staticmethod
-    def _extract_json(response_text: str) -> dict[str, Any]:
-        """Extract the first JSON object from *response_text*.
+    def _scan_balanced_objects(text: str) -> list[str]:
+        """Return every top-level ``{...}`` substring in *text*.
 
-        Falls back to ``{'raw_response': response_text}`` when no valid
-        JSON object can be found.
+        Performs a single left-to-right pass tracking brace depth while
+        respecting JSON string literals (so braces inside strings, and
+        escaped quotes, are ignored). Each complete top-level object is
+        captured in source order; unterminated trailing objects are skipped.
         """
-        try:
-            json_start = response_text.find('{')
-            json_end = response_text.rfind('}')
+        objects: list[str] = []
+        depth = 0
+        start = -1
+        in_string = False
+        escaped = False
 
-            if json_start != -1 and json_end != -1:
-                json_str = response_text[json_start:json_end + 1]
-                result: dict[str, Any] = json.loads(json_str)
+        for index, char in enumerate(text):
+            if in_string:
+                if escaped:
+                    escaped = False
+                elif char == '\\':
+                    escaped = True
+                elif char == '"':
+                    in_string = False
+                continue
+
+            if char == '"':
+                in_string = True
+            elif char == '{':
+                if depth == 0:
+                    start = index
+                depth += 1
+            elif char == '}':
+                if depth > 0:
+                    depth -= 1
+                    if depth == 0 and start != -1:
+                        objects.append(text[start:index + 1])
+                        start = -1
+
+        return objects
+
+    @staticmethod
+    def _extract_json(response_text: str) -> dict[str, Any]:
+        """Extract the first usable JSON object from *response_text*.
+
+        Strategy (in order):
+
+        1. Look for a fenced ```json ... ``` (or bare ``` ... ```) code block
+           and parse its contents.
+        2. Otherwise, scan for the first complete top-level ``{...}`` object
+           using a balanced-brace scanner that respects string literals, and
+           parse the first one that decodes to a JSON object.
+
+        Falls back to ``{'raw_response': response_text}`` when no valid JSON
+        object can be found, preserving the original return contract.
+        """
+        candidates: list[str] = []
+
+        # (1) Fenced code blocks first -- the model is instructed to emit JSON,
+        # and a fence is the strongest signal of where it lives.
+        fence_pattern = re.compile(
+            r"```(?:json)?\s*(.*?)```",
+            re.IGNORECASE | re.DOTALL,
+        )
+        for fenced in fence_pattern.findall(response_text):
+            candidates.extend(ClaudeClient._scan_balanced_objects(fenced))
+
+        # (2) Balanced-brace scan over the whole response (covers the no-fence
+        # case and any objects outside fences).
+        candidates.extend(ClaudeClient._scan_balanced_objects(response_text))
+
+        for candidate in candidates:
+            try:
+                parsed: object = json.loads(candidate)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(parsed, dict):
+                # ``json.loads`` returns an object with unknown key/value types;
+                # JSON object keys are always strings, so rebuild as the
+                # ``dict[str, Any]`` the contract promises.
+                result: dict[str, Any] = {
+                    str(key): value
+                    for key, value in cast("dict[object, object]", parsed).items()
+                }
                 return result
-            else:
-                return {'raw_response': response_text}
-        except json.JSONDecodeError:
-            logger.warning("Failed to parse JSON from Claude response")
-            return {'raw_response': response_text}
+
+        logger.warning("Failed to parse JSON from Claude response")
+        return {'raw_response': response_text}
 
     @staticmethod
     def _detect_image_format(image_data: bytes, fallback: str) -> _ImageMediaType:

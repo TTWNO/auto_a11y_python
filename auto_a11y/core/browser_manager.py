@@ -404,6 +404,60 @@ class BrowserManager:
 
         await context.add_init_script(stealth_script)
 
+    @staticmethod
+    def _is_target_closed_error(exc: BaseException) -> bool:
+        """True when an exception means the page/context/browser died mid-operation."""
+        msg = str(exc).lower()
+        return any(marker in msg for marker in (
+            "has been closed",
+            "target closed",
+            "target crashed",
+            "browser has been closed",
+            "connection closed",
+            "page crashed",
+        ))
+
+    async def _acquire_default_context(self) -> BrowserContext:
+        """Return a live default context, recycling it once the per-context page cap is hit."""
+        if (self._default_context is not None and
+                self._default_context_page_count >= self._default_context_max_pages):
+            logger.info(
+                f"Recycling default context after {self._default_context_page_count} pages"
+            )
+            await self.close_context(self._default_context)
+            self._default_context = None
+            self._default_context_page_count = 0
+        if self._default_context is None:
+            self._default_context = await self.create_context()
+            self._default_context_page_count = 0
+        return self._default_context
+
+    async def _open_managed_page(self, context: BrowserContext | None) -> Page:
+        """Open a new page, relaunching the browser and rebuilding the default context if a
+        previous page crashed them. A single resource-heavy page (e.g. runaway animation or
+        timer) can take down the shared browser; without this recovery every later page in the
+        run would fail with "Target ... has been closed". Recovery only applies to the default
+        context (a caller-supplied context cannot be recreated here)."""
+        using_default = context is None
+        last_exc: Exception | None = None
+        for attempt in range(2):
+            await self.ensure_running()
+            target_context = context if context is not None else await self._acquire_default_context()
+            try:
+                page = await target_context.new_page()
+            except Exception as exc:
+                last_exc = exc
+                if attempt == 0 and using_default and self._is_target_closed_error(exc):
+                    logger.warning(f"Browser/context closed mid-run; relaunching and retrying: {exc}")
+                    await self.stop()  # nulls the dead browser and default context
+                    continue
+                raise
+            if using_default:
+                self._default_context_page_count += 1
+            return page
+        assert last_exc is not None  # loop only falls through after a caught, recoverable error
+        raise last_exc
+
     @asynccontextmanager
     async def get_page(self, context: BrowserContext | None = None) -> AsyncGenerator[Page]:
         """
@@ -416,32 +470,10 @@ class BrowserManager:
             Page instance
         """
         async with self._semaphore:
-            if not self._browser:
-                await self.start()
-
-            using_default = context is None
-            # Use provided context or create/use default
-            if context is None:
-                # Recycle default context periodically
-                if (self._default_context is not None and
-                        self._default_context_page_count >= self._default_context_max_pages):
-                    logger.info(
-                        f"Recycling default context after {self._default_context_page_count} pages"
-                    )
-                    await self.close_context(self._default_context)
-                    self._default_context = None
-                    self._default_context_page_count = 0
-                if self._default_context is None:
-                    self._default_context = await self.create_context()
-                    self._default_context_page_count = 0
-                context = self._default_context
-
             page: Page | None = None
             try:
-                page = await context.new_page()
+                page = await self._open_managed_page(context)
                 self._pages.append(page)
-                if using_default:
-                    self._default_context_page_count += 1
                 yield page
 
             finally:
@@ -463,33 +495,8 @@ class BrowserManager:
         Returns:
             Page instance
         """
-        if not self._browser:
-            await self.start()
-
-        using_default = context is None
-        # Use provided context or create/use default
-        if context is None:
-            # Recycle default context periodically to free accumulated cache/cookies/storage
-            if (self._default_context is not None and
-                    self._default_context_page_count >= self._default_context_max_pages):
-                logger.info(
-                    f"Recycling default context after {self._default_context_page_count} pages "
-                    + f"to free accumulated browser memory"
-                )
-                await self.close_context(self._default_context)
-                self._default_context = None
-                self._default_context_page_count = 0
-            if self._default_context is None:
-                self._default_context = await self.create_context()
-                self._default_context_page_count = 0
-            context = self._default_context
-
-        page = await context.new_page()
+        page = await self._open_managed_page(context)
         self._pages.append(page)
-
-        if using_default:
-            self._default_context_page_count += 1
-
         return page
 
     async def close_page(self, page: Page) -> None:

@@ -45,7 +45,13 @@ class FixtureTestRunner:
         # Create browser config and apply headless setting
         browser_config = self.config.__dict__.copy()
         browser_config['BROWSER_HEADLESS'] = headless
-        browser_config['max_concurrent_pages'] = 10  # Higher concurrency for fixture testing
+        # Modest concurrency for fixture testing. Too high (e.g. 10) lets resource-heavy
+        # fixtures (infinite animations/timers) exhaust and crash the shared browser (the
+        # browser manager now relaunches on such a crash, but low concurrency avoids tripping
+        # it in the first place). Must stay >= the run gate below so a running fixture can
+        # always acquire a browser page.
+        self.max_concurrent_fixtures = 4
+        browser_config['max_concurrent_pages'] = self.max_concurrent_fixtures
 
         self.db = Database(self.config.MONGODB_URI, self.config.DATABASE_NAME)
         self.website_manager = WebsiteManager(self.db, browser_config)
@@ -486,13 +492,23 @@ class FixtureTestRunner:
         success_count = 0
         failure_count = 0
 
-        # Run all fixtures in parallel (browser semaphore controls concurrency)
+        # Bound concurrency with a run gate. The per-fixture 30s timeout lives *inside*
+        # test_fixture, so gating the call here means queued fixtures wait WITHOUT their
+        # timer running. (Previously every task was created up front, so fixtures still
+        # waiting for a free browser page burned their 30s timeout in the queue and failed
+        # en masse.)
         fixture_num = 0
+        run_gate = asyncio.Semaphore(self.max_concurrent_fixtures)
+
+        async def run_gated(fp: Path, code: str, num: int, total: int) -> dict[str, Any]:
+            async with run_gate:
+                return await self.test_fixture(fp, code, num, total)
+
         async with asyncio.TaskGroup() as tg:
             futs: list[asyncio.Task[dict[str, Any]]] = []
             for fixture_path, expected_code in fixtures:
                 fixture_num += 1
-                fut = tg.create_task(self.test_fixture(fixture_path, expected_code, fixture_num, len(fixtures)))
+                fut = tg.create_task(run_gated(fixture_path, expected_code, fixture_num, len(fixtures)))
                 futs.append(fut)
 
         for completed_fut in futs:

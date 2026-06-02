@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, TYPE_CHECKING
 from zoneinfo import ZoneInfo
 
@@ -456,9 +456,11 @@ class SchedulerService:
         for _ in range(count):
             fire_time = trigger.get_next_fire_time(None, next_time)
             if fire_time:
-                run_times.append(next_time)
-                # Move slightly forward to get the next one
-                next_time = next_time.replace(second=next_time.second + 1)
+                run_times.append(fire_time)
+                # Advance just past this fire time to get the next one.
+                # Use timedelta (not datetime.replace) so we never overflow
+                # the second/minute/hour fields.
+                next_time = fire_time + timedelta(seconds=1)
             else:
                 break
 

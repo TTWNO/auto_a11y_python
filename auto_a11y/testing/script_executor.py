@@ -91,7 +91,23 @@ class ScriptExecutor:
                     logger.info(f"Navigating back to test page: {page_url}")
                     await page.goto(page_url, wait_until='networkidle', timeout=30000)
             else:
-                logger.error(f"Re-authentication failed: {login_result.get('error')}")
+                # Re-authentication failed after browser state was deliberately
+                # cleared. Continuing would run the script against an
+                # unauthenticated session and produce misleading results, so we
+                # surface the failure instead of silently proceeding. We return a
+                # failure result (matching how callers consume execute_script's
+                # return value) rather than raising, so unwrapped callers still
+                # see the failure.
+                reauth_error = login_result.get('error')
+                logger.error(f"Re-authentication failed: {reauth_error}")
+                duration_ms = int((time.time() - start_time) * 1000)
+                return {
+                    'success': False,
+                    'duration_ms': duration_ms,
+                    'steps_executed': 0,
+                    'execution_log': [],
+                    'error': f'Re-authentication failed after clearing browser state: {reauth_error}'
+                }
 
         env_vars = environment_vars or {}
         execution_log: list[dict[str, object]] = []
@@ -292,7 +308,7 @@ class ScriptExecutor:
             # Scroll to element - use Playwright locator
             pw_selector = f"xpath={selector}" if selector.startswith('/') else selector
             try:
-                await page.locator(selector).scroll_into_view_if_needed()
+                await page.locator(pw_selector).scroll_into_view_if_needed()
             except Exception as e:
                 raise ScriptExecutionError(f"Scroll failed: {e}")
 

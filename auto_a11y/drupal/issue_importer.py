@@ -16,6 +16,33 @@ from auto_a11y.models.page import DrupalSyncStatus
 logger = logging.getLogger(__name__)
 
 
+def _parse_drupal_datetime(value: str | None) -> datetime | None:
+    """
+    Parse a Drupal JSON:API timestamp into a datetime.
+
+    Drupal JSON:API returns ``created`` / ``changed`` as ISO-8601 strings
+    (e.g. ``"2024-01-15T10:30:00+00:00"``), not numeric POSIX timestamps.
+
+    Args:
+        value: ISO-8601 datetime string, or None.
+
+    Returns:
+        Parsed datetime, or None if the value is empty/unparseable.
+    """
+    if not value:
+        return None
+
+    # Normalize a trailing 'Z' (UTC) to an explicit offset. Python 3.11+
+    # accepts 'Z' in fromisoformat, but older versions do not — so be safe.
+    normalized = value[:-1] + '+00:00' if value.endswith('Z') else value
+
+    try:
+        return datetime.fromisoformat(normalized)
+    except ValueError:
+        logger.warning(f"Could not parse Drupal timestamp: {value!r}")
+        return None
+
+
 class IssueImporter:
     """
     Import issues from Drupal.
@@ -23,6 +50,11 @@ class IssueImporter:
     Handles fetching issue nodes from Drupal and converting them
     to Auto A11y Issue objects.
     """
+
+    # Safety backstop for pagination: a non-conforming endpoint that ignores
+    # page[offset] would otherwise loop forever, re-fetching the first page.
+    # 50 pages * 50 items = 2500 issues, well above any realistic audit.
+    MAX_PAGES = 50
 
     def __init__(self, client: Any) -> None:
         """
@@ -49,7 +81,11 @@ class IssueImporter:
         page_limit = 50
         offset = 0
 
-        while True:
+        # Hard cap on the number of fetches as a backstop: if the server
+        # ignores page[offset] and keeps returning a full page, the
+        # empty/short-page termination conditions below never fire, so without
+        # this bound the loop would run forever (and accumulate duplicates).
+        for page_index in range(self.MAX_PAGES):
             # Fetch issues with parent_audit filter
             response = self.client.get(
                 'node/issue',
@@ -79,6 +115,11 @@ class IssueImporter:
             # If we got fewer than page_limit, we're done
             if len(issues) < page_limit:
                 break
+
+            if page_index == self.MAX_PAGES - 1:
+                logger.warning(
+                    f"Pagination hit safety cap of {self.MAX_PAGES} pages for audit {audit_uuid}; the endpoint may be ignoring page[offset]. Stopping to avoid an unbounded loop."
+                )
 
         logger.info(f"Fetched {len(all_issues)} issues for audit {audit_uuid}")
         return all_issues
@@ -276,9 +317,10 @@ class IssueImporter:
         Returns:
             Issue model instance
         """
-        # Convert timestamp to datetime
-        created_at = datetime.fromtimestamp(drupal_issue['created_timestamp']) if drupal_issue.get('created_timestamp') else datetime.now()
-        updated_at = datetime.fromtimestamp(drupal_issue['changed_timestamp']) if drupal_issue.get('changed_timestamp') else datetime.now()
+        # Convert timestamp to datetime. Drupal JSON:API returns these as
+        # ISO-8601 strings (see _parse_issue_node), not POSIX timestamps.
+        created_at = _parse_drupal_datetime(drupal_issue.get('created_timestamp')) or datetime.now()
+        updated_at = _parse_drupal_datetime(drupal_issue.get('changed_timestamp')) or datetime.now()
 
         # Map impact
         impact_str: str = drupal_issue['impact']

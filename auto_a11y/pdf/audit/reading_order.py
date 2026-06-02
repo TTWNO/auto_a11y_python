@@ -263,12 +263,22 @@ _COLUMN_GAP_FRACTION: float = 0.15
 def detect_columns(blocks: list[VisualBlock], page_width: float) -> list[Column]:
     """Cluster blocks by horizontal x-center to detect a column layout.
 
-    Algorithm (mirrors pdfMax):
+    Algorithm (mirrors pdfMax, but applied **per page**):
 
-    1. Take the unique sorted x-centers of all blocks (rounded to int).
-    2. Find consecutive-x-center gaps larger than ``page_width *
-       0.15`` — those are column boundaries.
-    3. Build column ranges from ``[0, gap1, gap2, ..., page_width]``.
+    1. Group blocks by their ``page`` attribute.
+    2. For each page, take the unique sorted x-centers of *that page's*
+       blocks (rounded to int).
+    3. Find consecutive-x-center gaps larger than ``page_width *
+       0.15`` — those are that page's column boundaries.
+    4. Build that page's column ranges from
+       ``[0, gap1, gap2, ..., page_width]``.
+
+    Per-page boundary derivation is essential: a document whose page 1 is
+    single-column and page 2 is two-column has very different x-center
+    distributions per page. Computing one global boundary set from the
+    merged distribution would split page 1 into spurious columns and could
+    mis-bracket page 2 — scrambling the visual reading order and producing
+    false WCAG 1.3.2 mismatches.
 
     Deviations from pdfMax:
 
@@ -282,17 +292,46 @@ def detect_columns(blocks: list[VisualBlock], page_width: float) -> list[Column]
       in a :class:`Column` and additionally record which block indices
       fell inside that column — extra information that pdfMax's caller
       had to recompute on the fly.
+
+    The returned columns are emitted in page order; within a page they
+    are ordered left to right.
     """
     if not blocks or page_width <= 0:
         return []
 
+    # Group blocks by page, preserving each block's global index into the
+    # flat ``blocks`` list so the emitted ``Column.block_indices`` stay
+    # consistent with the input.
+    by_page: dict[int, list[tuple[int, VisualBlock]]] = {}
+    for idx, b in enumerate(blocks):
+        by_page.setdefault(b.page, []).append((idx, b))
+
+    columns: list[Column] = []
+    for page_num in sorted(by_page.keys()):
+        page_blocks = by_page[page_num]
+        boundaries = _column_boundaries_for_page(page_blocks, page_width)
+        columns.extend(
+            _build_columns_from_boundaries(page_num, page_blocks, boundaries)
+        )
+    return columns
+
+
+def _column_boundaries_for_page(
+    page_blocks: list[tuple[int, VisualBlock]], page_width: float
+) -> list[float]:
+    """Derive column-boundary x values from a single page's blocks.
+
+    Returns ``[0.0, page_width]`` (a single full-width column) when the
+    page has fewer than two distinct x-centers; otherwise inserts a
+    boundary at each consecutive-x-center gap wider than
+    ``page_width * 0.15``.
+    """
     # Unique sorted x-centers. ``round`` returns an ``int`` here because
     # the second arg defaults to None — that matches pdfMax's
     # ``round(b["x_center"])`` exactly.
-    x_centers = sorted({round(b.x_center) for b in blocks})
+    x_centers = sorted({round(b.x_center) for _idx, b in page_blocks})
     if len(x_centers) < 2:
-        # Single column spanning the whole page width.
-        return _build_columns_from_boundaries(blocks, [0.0, page_width])
+        return [0.0, page_width]
 
     gaps: list[float] = []
     for i in range(1, len(x_centers)):
@@ -300,46 +339,37 @@ def detect_columns(blocks: list[VisualBlock], page_width: float) -> list[Column]
         if gap > page_width * _COLUMN_GAP_FRACTION:
             gaps.append((x_centers[i - 1] + x_centers[i]) / 2.0)
 
-    boundaries: list[float] = [0.0] + gaps + [page_width]
-    return _build_columns_from_boundaries(blocks, boundaries)
+    return [0.0] + gaps + [page_width]
 
 
 def _build_columns_from_boundaries(
-    blocks: list[VisualBlock], boundaries: list[float]
+    page_num: int,
+    page_blocks: list[tuple[int, VisualBlock]],
+    boundaries: list[float],
 ) -> list[Column]:
-    """Materialise :class:`Column`s from a list of column-boundary x values.
+    """Materialise one page's :class:`Column`s from its boundary x values.
 
     Each block is assigned to the (single) column whose ``[x0, x1]``
-    contains its ``x_center``. Blocks that miss every range — should
-    not happen given boundaries cover ``[0, page_width]`` — fall into
-    the first column.
+    contains its ``x_center``. ``page_blocks`` carry their global index
+    into the flat ``list[VisualBlock]`` so the recorded
+    ``block_indices`` reference the original input.
     """
     columns: list[Column] = []
-    # Group blocks by page (boundaries are global per-page concept; we
-    # always emit columns per-page so multi-page docs don't smear
-    # left/right-column membership across page boundaries).
-    by_page: dict[int, list[tuple[int, VisualBlock]]] = {}
-    for idx, b in enumerate(blocks):
-        by_page.setdefault(b.page, []).append((idx, b))
-
-    for page_num in sorted(by_page.keys()):
-        page_blocks = by_page[page_num]
-        for i in range(len(boundaries) - 1):
-            x_min = boundaries[i]
-            x_max = boundaries[i + 1]
-            indices: list[int] = []
-            for global_idx, block in page_blocks:
-                if x_min <= block.x_center <= x_max:
-                    indices.append(global_idx)
-            columns.append(
-                Column(
-                    page=page_num,
-                    x0=x_min,
-                    x1=x_max,
-                    block_indices=indices,
-                )
+    for i in range(len(boundaries) - 1):
+        x_min = boundaries[i]
+        x_max = boundaries[i + 1]
+        indices: list[int] = []
+        for global_idx, block in page_blocks:
+            if x_min <= block.x_center <= x_max:
+                indices.append(global_idx)
+        columns.append(
+            Column(
+                page=page_num,
+                x0=x_min,
+                x1=x_max,
+                block_indices=indices,
             )
-
+        )
     return columns
 
 
@@ -695,7 +725,13 @@ def compare_reading_orders(
     # window itself shrinks and the divisor becomes n*(n-1)/2-like.
     max_inversions = n * min(n, _NEARBY_WINDOW) / 2.0
     if max_inversions > 0:
-        correlation = 1.0 - (inversions / max_inversions)
+        raw_correlation = 1.0 - (inversions / max_inversions)
+        # Clamp into [0.0, 1.0]: when the nearby-pair inversion count
+        # exceeds ``max_inversions`` the raw ratio goes negative, which
+        # would surface as a nonsensical negative percentage downstream
+        # (``{correlation:.0%}``). The verdict thresholds (>= 0.9 / >= 0.7)
+        # are unaffected by the clamp.
+        correlation = max(0.0, min(1.0, raw_correlation))
     else:
         correlation = 1.0
 

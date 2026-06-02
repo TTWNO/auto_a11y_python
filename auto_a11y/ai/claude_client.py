@@ -223,9 +223,13 @@ class ClaudeClient:
         for fenced in fence_pattern.findall(response_text):
             candidates.extend(ClaudeClient._scan_balanced_objects(fenced))
 
-        # (2) Balanced-brace scan over the whole response (covers the no-fence
-        # case and any objects outside fences).
-        candidates.extend(ClaudeClient._scan_balanced_objects(response_text))
+        # (2) Balanced-brace scan over the response with fenced regions removed.
+        # De-fencing first means a malformed fence body (unbalanced or junk
+        # braces) can no longer leave the scanner stuck at depth > 0 and
+        # swallow a valid object that appears after the fence. This covers the
+        # no-fence case and any objects in the prose outside fences.
+        defenced = fence_pattern.sub(" ", response_text)
+        candidates.extend(ClaudeClient._scan_balanced_objects(defenced))
 
         for candidate in candidates:
             try:

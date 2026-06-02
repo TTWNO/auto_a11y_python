@@ -133,6 +133,24 @@ async def test_streaming_path_sends_system_prompt() -> None:
             'prose {"msg": "a } brace { in a string", "n": 1} tail',
             {"msg": "a } brace { in a string", "n": 1},
         ),
+        # (iv) a MALFORMED fenced block (unbalanced/junk braces) must not
+        # poison the phase-2 balanced scan of the prose that follows. Phase 1
+        # parses each fence's contents (this one fails), phase 2 should scan
+        # only the de-fenced text and still find the valid object after it.
+        (
+            "```json\n"
+            + "not valid {{{\n"
+            + "```\n"
+            + 'actual answer: {"answer": 42}',
+            {"answer": 42},
+        ),
+        # an escaped backslash before a quote inside a string value must be
+        # handled by the scanner: ``\\`` is a literal backslash, so the quote
+        # that follows it really does close the string.
+        (
+            'prefix {"path": "C:\\\\"} suffix',
+            {"path": "C:\\"},
+        ),
     ],
 )
 def test_extract_json_returns_correct_object(text: str, expected: dict[str, Any]) -> None:

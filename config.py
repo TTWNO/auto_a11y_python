@@ -47,6 +47,11 @@ class Config:
     
     # Flask
     SECRET_KEY: str = os.getenv('SECRET_KEY', '')
+    # Fernet key (urlsafe-base64, from `Fernet.generate_key()`) used to encrypt
+    # test-user credentials at rest. Separate from SECRET_KEY so it can be
+    # rotated/access-controlled independently. Unset = credentials stored
+    # plaintext (backward compatible). See auto_a11y/utils/crypto.py.
+    CREDENTIAL_ENCRYPTION_KEY: str = os.getenv('CREDENTIAL_ENCRYPTION_KEY', '')
     DEBUG: bool = os.getenv('DEBUG', 'False').lower() == 'true'
     HOST: str = os.getenv('HOST', '127.0.0.1')
     PORT: int = int(os.getenv('PORT', 5001))  # Changed from 5000 to avoid macOS AirPlay Receiver conflict

@@ -297,9 +297,14 @@ class UserAssertionsParser(RecordingContentHTMLParser):
             # Remove surrounding quotes if present
             text = text.strip('"\'')
             self.current_item['text_spoken'] = text
-        elif 'start time' in label_lower or ('start' in label_lower and 'time' not in label_lower):
+        # Expected labels from the Dictaphone / Claude h5 output are
+        # "Start Time" / "End Time" (sometimes bare "Start" / "End", or
+        # variants like "Start timestamp"). Route on the leading keyword so a
+        # combined/ambiguous label such as "Start/End time" resolves
+        # deterministically to start rather than misrouting to end.
+        elif label_lower.startswith('start'):
             self.current_item['start_time'] = text.strip()
-        elif 'end time' in label_lower or ('end' in label_lower and 'time' not in label_lower):
+        elif label_lower.startswith('end'):
             self.current_item['end_time'] = text.strip()
         elif 'duration' in label_lower:
             self.current_item['duration'] = text.strip()

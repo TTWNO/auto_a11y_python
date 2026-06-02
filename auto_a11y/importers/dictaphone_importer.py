@@ -174,15 +174,14 @@ class DictaphoneImporter:
             logger.warning(f"Invalid recording_type '{recording_type}', defaulting to 'audit'")
             recording_type_enum = RecordingType.AUDIT
 
-        # Count issues by impact
-        high_count = sum(1 for issue in issues_data if issue.get('impact', '').lower() in ['high', 'critical'])
-        medium_count = sum(1 for issue in issues_data if issue.get('impact', '').lower() in ['medium', 'moderate'])
-        low_count = sum(1 for issue in issues_data if issue.get('impact', '').lower() == 'low')
-
         # Calculate total duration if we can extract it from timecodes
         total_duration = self._calculate_total_duration(issues_data)
 
-        # Create Recording object
+        # Create Recording object. Impact tallies and total_issues are filled in
+        # after the parse loop below, derived from the successfully-parsed
+        # RecordingIssue.impact values, so they stay consistent with the
+        # per-issue impacts (including 'serious' -> HIGH, 'minor' -> LOW) and
+        # exclude any issues that fail to parse.
         recording = Recording(
             recording_id=recording_id,
             title=auditor_info.get('title', f"Recording {recording_id}"),
@@ -206,10 +205,10 @@ class DictaphoneImporter:
             key_takeaways=auditor_info.get('key_takeaways', {}),
             user_painpoints=auditor_info.get('user_painpoints', {}),
             user_assertions=auditor_info.get('user_assertions', {}),
-            total_issues=len(issues_data),
-            high_impact_count=high_count,
-            medium_impact_count=medium_count,
-            low_impact_count=low_count,
+            total_issues=0,
+            high_impact_count=0,
+            medium_impact_count=0,
+            low_impact_count=0,
             tags=auditor_info.get('tags', []),
             notes=auditor_info.get('notes')
         )
@@ -231,6 +230,11 @@ class DictaphoneImporter:
                 parsed_issue.device_sections = device_sections
                 parsed_issue.task_description = task_description
 
+                # Normalise the impact using the importer's complete Dictaphone
+                # mapping (which covers 'serious' -> HIGH and 'minor' -> LOW),
+                # so the per-issue impact and the recording tallies agree.
+                parsed_issue.impact = self.map_dictaphone_impact(issue_data.get('impact', ''))
+
                 # Infer touchpoint from WCAG criteria if not present
                 if not parsed_issue.touchpoint:
                     parsed_issue.touchpoint = self._infer_touchpoint(issue_data)
@@ -239,6 +243,14 @@ class DictaphoneImporter:
             except Exception as e:
                 logger.error(f"Error parsing issue '{issue_data.get('title', 'unknown')}': {e}")
                 # Continue with other issues
+
+        # Derive counts from the successfully-parsed issues so total_issues and
+        # the impact tallies reflect what was actually stored (mirrors
+        # import_pipeline_output's recount). Failed parses are excluded.
+        recording.total_issues = len(issues)
+        recording.high_impact_count = sum(1 for i in issues if i.impact == ImpactLevel.HIGH)
+        recording.medium_impact_count = sum(1 for i in issues if i.impact == ImpactLevel.MEDIUM)
+        recording.low_impact_count = sum(1 for i in issues if i.impact == ImpactLevel.LOW)
 
         return recording, issues
 

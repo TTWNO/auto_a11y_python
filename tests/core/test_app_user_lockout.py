@@ -4,8 +4,12 @@ from __future__ import annotations
 import os
 os.environ.setdefault('RUN_AI_ANALYSIS', 'false')
 
+from collections.abc import Iterator
 from datetime import datetime, timedelta
 
+import pytest
+
+from config import Config
 from auto_a11y.models.app_user import AppUser, UserRole
 
 
@@ -15,6 +19,15 @@ def _make_user() -> AppUser:
         password_hash="x",
         role=UserRole.CLIENT,
     )
+
+
+@pytest.fixture(autouse=True)
+def enable_lockout(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
+    """Force lockout ON regardless of the ambient ``DISABLE_ACCOUNT_LOCKOUT``
+    env/.env value, so these tests deterministically exercise the lockout
+    logic (the deployment .env may set the flag to disable lockout)."""
+    monkeypatch.setattr(Config, "DISABLE_ACCOUNT_LOCKOUT", False, raising=False)
+    yield
 
 
 class TestAppUserLockout:

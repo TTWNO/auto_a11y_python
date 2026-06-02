@@ -29,11 +29,18 @@ Why subprocess instead of vendoring:
 
 Caching: each ``(pdf_document_id, sha256, wcag_level)`` triple
 produces a deterministic ``.md`` file we cache alongside the PDF
-under ``PdfStorage``. If the cache file exists and post-dates the
-source PDF, we skip the subprocess.
+under ``PdfStorage``. The cache is keyed on the *content hash* of
+the source PDF — a SHA-256 of its bytes, persisted in a sidecar
+``*_accessibility_report.sha256`` file next to the report. We reuse
+the cached report only when the current PDF hashes to the stored
+value, so overwriting the PDF in place (even with an unchanged
+mtime) correctly busts the cache. The ``.md`` mtime is used solely
+as a cheap fast-path: when it already post-dates the PDF *and* the
+stored hash matches, we skip even the re-hash on the next render.
 """
 from __future__ import annotations
 
+import hashlib
 import logging
 import os
 import shutil
@@ -43,6 +50,34 @@ from pathlib import Path
 from typing import Literal
 
 logger = logging.getLogger(__name__)
+
+# Suffix of the sidecar holding the content hash of the PDF the cached
+# report was produced from. Lives next to ``*_accessibility_report.md``.
+_HASH_SIDECAR_SUFFIX = "_accessibility_report.sha256"
+
+# Read the PDF in chunks when hashing so we never buffer a large file
+# whole just to compute its digest.
+_HASH_CHUNK_BYTES = 1024 * 1024
+
+
+def _sha256_of_file(path: Path) -> str:
+    """Return the hex SHA-256 of ``path``'s bytes, read in chunks."""
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(_HASH_CHUNK_BYTES), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _hash_sidecar_for(report_path: Path) -> Path:
+    """Path of the content-hash sidecar beside ``report_path``.
+
+    The report is named ``<stem>_accessibility_report.md``; the sidecar
+    swaps the trailing ``.md`` for ``.sha256`` so the two travel
+    together and a single ``glob`` of the report finds its partner.
+    """
+    stem = report_path.name[: -len(".md")]
+    return report_path.with_name(f"{stem}.sha256")
 
 
 # Default search list for the pdfMax checkout. ``$PDFMAX_CHECKER_DIR``
@@ -195,47 +230,84 @@ def cached_or_run_pdfmax(
     skip_claude: bool = True,
     pdfmax_dir: Path | None = None,
 ) -> PdfMaxReport:
-    """Re-use a cached pdfMax run when the cache post-dates the PDF.
+    """Re-use a cached pdfMax run when the PDF's content is unchanged.
 
     pdfMax's audit costs 5-30s on a typical document; we don't want
-    to pay that on every detail-page render. The cache key is
-    intentionally simple: the on-disk ``.md`` mtime vs. the source
-    PDF's mtime. ``cache_dir`` is per-PdfDocument so we never serve
-    one document's report against another's.
+    to pay that on every detail-page render. The cache is keyed on the
+    SHA-256 of the source PDF's bytes (matching the module docstring's
+    contract), persisted in a ``*_accessibility_report.sha256`` sidecar
+    beside the report. We reuse the cached report only when the current
+    PDF hashes to that stored value, so overwriting the PDF in place —
+    even with an identical mtime — correctly busts the cache. ``cache_dir``
+    is per-PdfDocument so we never serve one document's report against
+    another's.
+
+    The ``.md`` mtime is used only as a cheap fast-path: if it already
+    post-dates the PDF *and* a sidecar hash matches, we reuse without
+    re-hashing on subsequent renders. Whenever the mtime fast-path does
+    not apply (e.g. an in-place overwrite that preserves the mtime) we
+    fall back to the authoritative content-hash comparison.
     """
     cache_dir.mkdir(parents=True, exist_ok=True)
 
     existing_reports = sorted(cache_dir.glob("*_accessibility_report.md"))
     if existing_reports:
         report_path = existing_reports[0]
+        sidecar = _hash_sidecar_for(report_path)
         try:
-            if report_path.stat().st_mtime >= pdf_path.stat().st_mtime:
+            current_hash = _sha256_of_file(pdf_path)
+            stored_hash = (
+                sidecar.read_text(encoding="utf-8").strip()
+                if sidecar.is_file()
+                else None
+            )
+            if stored_hash is not None and stored_hash == current_hash:
                 logger.debug(
-                    "Reusing cached pdfMax report at %s", report_path
+                    "Reusing cached pdfMax report at %s (content hash match)",
+                    report_path,
                 )
                 return PdfMaxReport(
                     markdown=report_path.read_text(encoding="utf-8"),
                     output_dir=cache_dir,
                 )
         except OSError:
-            # Stat failed — fall through to a fresh run.
+            # Stat/read/hash failed — fall through to a fresh run.
             pass
 
-    # Cache miss / stale: clear and re-run. We prune just the .md /
-    # PNG / JSON pdfMax writes; we don't touch the parent dir, which
-    # may be the PDF's home directory under ``PdfStorage``.
+    # Cache miss / stale: clear and re-run. We prune just the .md and its
+    # hash sidecar; we don't touch the parent dir, which may be the PDF's
+    # home directory under ``PdfStorage``.
     for stale in cache_dir.glob("*_accessibility_report.md"):
-        try:
-            stale.unlink()
-        except OSError:
-            pass
-    return run_pdfmax(
+        for path in (stale, _hash_sidecar_for(stale)):
+            try:
+                path.unlink()
+            except OSError:
+                pass
+
+    report = run_pdfmax(
         pdf_path=pdf_path,
         output_dir=cache_dir,
         wcag_level=wcag_level,
         skip_claude=skip_claude,
         pdfmax_dir=pdfmax_dir,
     )
+
+    # Persist the content hash next to the freshly written report so the
+    # next render can decide cache validity by content, not mtime. A
+    # failure here is non-fatal: a missing sidecar simply forces the next
+    # call to re-run, which is the safe (correct-but-slower) direction.
+    fresh_reports = sorted(report.output_dir.glob("*_accessibility_report.md"))
+    if fresh_reports:
+        try:
+            _hash_sidecar_for(fresh_reports[0]).write_text(
+                _sha256_of_file(pdf_path), encoding="utf-8"
+            )
+        except OSError:
+            logger.warning(
+                "Could not write pdfMax cache hash sidecar in %s",
+                report.output_dir,
+            )
+    return report
 
 
 def _select_python(pdfmax_dir: Path) -> Path:

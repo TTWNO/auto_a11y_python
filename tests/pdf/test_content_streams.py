@@ -222,15 +222,12 @@ def test_corrupt_content_stream_is_graceful() -> None:
 def test_nested_bdc_emc_attribution() -> None:
     """Nested BDC inside another BDC: stack-tracked attribution.
 
-    pdfMax's stack handling has a documented quirk: when an outer BDC
-    fires its EMC, the inner ``current_text_parts`` was already flushed
-    to ``page_mcids`` (at the inner EMC). The outer mcid only ever gets
-    text drawn between the inner EMC and the outer EMC — pdfMax wipes
-    ``current_text_parts`` to ``[]`` on every BDC that introduces a new
-    MCID. So "Outer" (drawn before the inner BDC) is *never* recorded:
-    it's wiped when the inner BDC pushes mcid 1.
-
-    This test pins that upstream behaviour so we don't drift from it.
+    Marked-content sequences nest legitimately (e.g. an /MCID paragraph
+    containing a nested /Span). The walker pushes the enclosing region's
+    accumulated text-parts onto its stack when a nested MCID opens and
+    restores them on the nested EMC, so the outer MCID keeps the text
+    drawn both *before* the nested region ("Outer") and *after* it
+    ("More"). The inner MCID captures only its own text.
     """
     cs = (
         b"/P <</MCID 0>> BDC\n"
@@ -245,9 +242,8 @@ def test_nested_bdc_emc_attribution() -> None:
     result = extract_mcid_text_map_from_content_streams(pdf)
     # Inner mcid captures its own text.
     assert result[0][1] == "Inner"
-    # Outer mcid only gets text drawn after the inner EMC; "Outer" is
-    # lost by the upstream wipe-on-BDC behaviour.
-    assert result[0][0] == "More"
+    # Outer mcid keeps both its pre-nesting and post-nesting text.
+    assert result[0][0] == "OuterMore"
 
 
 def test_text_outside_marked_content_is_ignored() -> None:
@@ -293,11 +289,11 @@ def test_tj_array_small_negative_no_space() -> None:
 def test_bmc_pushes_mcid_stack_without_changing_current() -> None:
     """A BMC (no /MCID) inside a BDC preserves the outer MCID.
 
-    pdfMax flushes ``current_text_parts`` on every EMC where
-    ``current_mcid is not None``, then *doesn't* clear the parts list
-    when the popped value equals the current mcid (the BMC case). The
-    result is that the same parts get flushed twice — at the inner EMC
-    and again at the outer EMC. We pin this exact upstream behaviour.
+    A property-less BMC introduces no MCID, so it does not switch the
+    active accumulator: text drawn inside it ("Art") belongs to the
+    enclosing MCID region. Its matching EMC neither flushes nor restores,
+    so the enclosing MCID's text is recorded exactly once — no double
+    counting.
     """
     cs = (
         b"/P <</MCID 0>> BDC\n"
@@ -310,10 +306,8 @@ def test_bmc_pushes_mcid_stack_without_changing_current() -> None:
     )
     pdf = _make_pdf_with_content(cs)
     result = extract_mcid_text_map_from_content_streams(pdf)
-    # Inner-EMC flush: page_mcids[0] = "OneArt".
-    # Then "Two" appended to the still-uncleared parts → ["One","Art","Two"].
-    # Outer-EMC flush: append "OneArtTwo" → "OneArt" + "OneArtTwo".
-    assert result == {0: {0: "OneArtOneArtTwo"}}
+    # All three shows belong to MCID 0, accumulated once in order.
+    assert result == {0: {0: "OneArtTwo"}}
 
 
 # ---------------------------------------------------------------------------

@@ -13,8 +13,11 @@ Four jobs in one wrapper:
    together to handlers that take file uploads alongside metadata.
 3. **Response serialization.** If the handler returns a BaseModel (or
    ``(BaseModel, int)``), dump it with ``model_dump(mode='json',
-   by_alias=True, exclude_none=True)`` and ``jsonify()``. If it returns a
-   Flask Response (or ``(Response, int)``), pass it through unchanged.
+   by_alias=True)`` and ``jsonify()``. ``exclude_none`` is intentionally
+   not used: null-valued fields stay on the wire as explicit ``null`` so
+   the response shape (e.g. cursor pagination's ``next_cursor``) is stable
+   — see ``_serialize``. If it returns a Flask Response (or
+   ``(Response, int)``), pass it through unchanged.
 4. **Documentation.** Attach an EndpointDoc to the wrapper; a separate
    ``register_documented_views(app)`` walk inserts it into the module-level
    registry once Flask has bound the rule.

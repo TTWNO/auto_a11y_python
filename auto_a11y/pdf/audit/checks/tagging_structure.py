@@ -1272,7 +1272,11 @@ def _correlation_from_mismatches(
     max_inversions = common_size * min(common_size, _READING_ORDER_NEARBY_WINDOW) / 2.0
     if max_inversions <= 0:
         return 1.0
-    return 1.0 - (mismatch_count / max_inversions)
+    # ``mismatch_count`` is derived from a different common set and can
+    # exceed ``max_inversions``, which would yield a negative ratio shown
+    # as e.g. "-40%". Clamp into [0, 1] so the printed percentage stays
+    # sensible (the >= 0.9 / >= 0.7 verdict is unaffected).
+    return max(0.0, 1.0 - (mismatch_count / max_inversions))
 
 
 def _reading_order_warn_no_data() -> CheckResult:

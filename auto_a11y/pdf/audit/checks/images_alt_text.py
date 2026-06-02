@@ -151,7 +151,7 @@ def check_alt_text_on_figure_art(ctx: AuditContext) -> list[CheckResult]:
         ]
 
     missing = "; ".join(
-        f"[{e.index}] {e.custom_tag}" for e in figures_without_alt
+        f"[{e.index + 1}] {e.custom_tag}" for e in figures_without_alt
     )
     detail = (
         f"{len(figures_without_alt)} Figure/Art elements missing alt"
@@ -234,20 +234,33 @@ def _find_interactive_descendants(
     elements: list[StructElement],
     index_map: dict[int, StructElement],
     results: list[StructElement],
+    visited: set[int] | None = None,
 ) -> None:
     """Recursively collect Link / Form / Annot descendants.
 
     Mirrors pdfMax's :func:`_find_interactive_descendants` at line 7852
     verbatim. Mutates ``results`` in place rather than returning, so
     repeated calls accumulate findings across siblings.
+
+    A ``visited`` set of node indices guards against malformed structure
+    trees (self-referential or duplicated ``children_indices``) that would
+    otherwise recurse unboundedly — mirroring the duplicate-protection in
+    the table/list BFS helpers (see ``_table_descendants`` in
+    :mod:`auto_a11y.pdf.audit.checks.tables`).
     """
+    if visited is None:
+        visited = set()
+    visited.add(elem.index)
     for ci in elem.children_indices:
-        if ci not in index_map:
+        if ci not in index_map or ci in visited:
             continue
+        visited.add(ci)
         child = index_map[ci]
         if child.resolved_tag in _INTERACTIVE_TAGS:
             results.append(child)
-        _find_interactive_descendants(child, elements, index_map, results)
+        _find_interactive_descendants(
+            child, elements, index_map, results, visited
+        )
 
 
 def check_alt_text_does_not_hide_interactive_elements(

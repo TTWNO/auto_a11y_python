@@ -70,6 +70,40 @@ def parse_color(color_str: str) -> dict[str, float]:
             'a': 1.0
         }
 
+    # 3-digit shorthand hex (e.g. #abc) expands by doubling each nibble
+    # (#abc -> #aabbcc). Without this it would fall through to opaque black.
+    short_hex_match = re.match(r'^#([0-9a-f]{3})$', color_str, re.IGNORECASE)
+    if short_hex_match:
+        hex_val = short_hex_match.group(1)
+        return {
+            'r': int(hex_val[0] * 2, 16),
+            'g': int(hex_val[1] * 2, 16),
+            'b': int(hex_val[2] * 2, 16),
+            'a': 1.0
+        }
+
+    # Common CSS named colours. Anything not matched here falls through to the
+    # opaque-black fallback below; black is a deliberate conservative default
+    # so an unknown colour does not silently read as transparent (alpha 0),
+    # which would skew the downstream contrast checks toward false passes.
+    named_colors = {
+        'black': (0, 0, 0),
+        'white': (255, 255, 255),
+        'red': (255, 0, 0),
+        'green': (0, 128, 0),
+        'blue': (0, 0, 255),
+        'yellow': (255, 255, 0),
+        'gray': (128, 128, 128),
+        'grey': (128, 128, 128),
+        'silver': (192, 192, 192),
+        'maroon': (128, 0, 0),
+        'navy': (0, 0, 128),
+    }
+    named = named_colors.get(color_str.strip().lower())
+    if named is not None:
+        return {'r': named[0], 'g': named[1], 'b': named[2], 'a': 1.0}
+
+    # Fallback: unrecognized colour string -> opaque black (see note above).
     return {'r': 0, 'g': 0, 'b': 0, 'a': 1.0}
 
 
@@ -107,21 +141,21 @@ def parse_px(value_str: str, font_size: float = 16, root_font_size: float = 16) 
     if 'px' in value_str:
         try:
             return float(value_str.replace('px', '').strip())
-        except:
+        except (ValueError, TypeError):
             return 0.0
 
     if 'em' in value_str and 'rem' not in value_str:
         try:
             em_value = float(value_str.replace('em', '').strip())
             return em_value * font_size
-        except:
+        except (ValueError, TypeError):
             return 0.0
 
     if 'rem' in value_str:
         try:
             rem_value = float(value_str.replace('rem', '').strip())
             return rem_value * root_font_size
-        except:
+        except (ValueError, TypeError):
             return 0.0
 
     if value_str == 'thin':
@@ -133,7 +167,7 @@ def parse_px(value_str: str, font_size: float = 16, root_font_size: float = 16) 
 
     try:
         return float(value_str)
-    except:
+    except (ValueError, TypeError):
         return 0.0
 
 
@@ -459,7 +493,11 @@ async def test_links(page: Page) -> dict[str, Any]:
         space_patterns = [
             r'keyCode\s*===?\s*32',
             r'which\s*===?\s*32',
-            r'key\s*===?\s*["\'] ["\']',
+            # Match a quoted single space: an opening quote, a literal space,
+            # then the SAME quote (backreference). This matches the common
+            # real-world forms e.key === ' ' and e.key === " ", which a pair
+            # of separate quote classes with a space between them would miss.
+            r'''key\s*===?\s*(['"]) \1''',
             r'charCode\s*===?\s*32'
         ]
 
@@ -520,6 +558,11 @@ async def test_links(page: Page) -> dict[str, Any]:
         font_size = link.get('fontSize', 16)
         root_font_size = link.get('rootFontSize', 16)
 
+        # Tracks whether this link already failed for opening a new window
+        # without warning. When set, the link must NOT also be counted as a
+        # passing element by the focus-indicator logic below.
+        new_window_violation = False
+
         target = link.get('target', '').lower()
         if target == '_blank':
             link_text = link.get('text', '').lower()
@@ -548,6 +591,10 @@ async def test_links(page: Page) -> dict[str, Any]:
                     'description': 'Link opens in new window (target="_blank") without warning users in link text, aria-label, or title',
                     'text': link.get('text', '')
                 })
+                # This link has failed; record it so the focus-indicator logic
+                # below does not also count it as a passing element.
+                new_window_violation = True
+                results['elements_failed'] += 1
 
         link_background = link.get('fullBackground', '') or link.get('normalBackgroundColor', '')
         link_bg_image = link.get('backgroundImage', '')
@@ -638,8 +685,11 @@ async def test_links(page: Page) -> dict[str, Any]:
                 'description': violation_reason,
                 'text': link.get('text', '')
             })
-            results['elements_failed'] += 1
-        else:
+            # Avoid double-counting a link that already failed the
+            # new-window check above.
+            if not new_window_violation:
+                results['elements_failed'] += 1
+        elif not new_window_violation:
             results['elements_passed'] += 1
 
         looks_like_button = False
@@ -663,7 +713,7 @@ async def test_links(page: Page) -> dict[str, Any]:
                 radius_val = float(border_radius.replace('px', '').strip())
                 if radius_val >= 3:
                     button_indicators.append('border-radius')
-            except:
+            except (ValueError, TypeError):
                 pass
 
         has_solid_background = False

@@ -79,11 +79,6 @@ class IssueExporter:
         Returns:
             Dict with 'success', 'uuid', 'nid', and optional 'error' keys
         """
-        # Log what export_issue receives
-        logger.warning(f"📥 EXPORT_ISSUE RECEIVED for '{title}':")
-        logger.warning(f"   description parameter length: {len(description)} chars")
-        logger.warning(f"   description parameter preview (first 200 chars): {description[:200]}")
-
         try:
             # Build the JSON:API payload
             payload = self._build_payload(
@@ -103,43 +98,26 @@ class IssueExporter:
                 discovered_page_uuid=discovered_page_uuid
             )
 
-            # Log the payload body field for debugging
-            body_in_payload = payload.get('data', {}).get('attributes', {}).get('body')
-            if body_in_payload:
-                body_value = body_in_payload.get('value', '')
-                logger.warning(f"🔍 PAYLOAD CHECK for '{title}': body field IS PRESENT in payload, value length={len(body_value)}, format={body_in_payload.get('format')}")
-                logger.warning(f"📄 PAYLOAD BODY PREVIEW (first 500 chars):\n{body_value[:500]}")
-            else:
-                logger.warning(f"🔍 PAYLOAD CHECK for '{title}': body field is MISSING from payload!")
-
             # Create or update
             if existing_uuid:
                 # Verify the entity exists before attempting PATCH
                 try:
                     logger.info(f"Checking if issue exists (UUID: {existing_uuid})")
                     self.client.get(f"node/issue/{existing_uuid}")
-                    logger.warning(f"🔧 Using PATCH to UPDATE issue '{title}' (UUID: {existing_uuid})")
+                    logger.info(f"Updating issue '{title}' (UUID: {existing_uuid})")
                     response = self.client.patch("node/issue", existing_uuid, payload)
                 except Exception as e:
                     # Entity doesn't exist, create new instead
                     logger.warning(f"issue UUID {existing_uuid} not found in Drupal, creating new: {e}")
-                    logger.warning(f"🔧 Using POST to CREATE issue '{title}' (fallback from failed PATCH)")
                     response = self.client.post("node/issue", payload)
             else:
-                logger.warning(f"🔧 Using POST to CREATE new issue '{title}'")
+                logger.info(f"Creating new issue '{title}'")
                 response = self.client.post("node/issue", payload)
 
             # Extract result
             data: dict[str, Any] = response.get('data', {})
             uuid: str | None = data.get('id')
             nid: int | None = data.get('attributes', {}).get('drupal_internal__nid')
-
-            # Check if body field came back in the response
-            response_body: dict[str, Any] | None = data.get('attributes', {}).get('body')
-            if response_body:
-                logger.warning(f"🔍 RESPONSE CHECK for '{title}': body field IS PRESENT in Drupal response, value length={len(response_body.get('value', ''))}")
-            else:
-                logger.warning(f"🔍 RESPONSE CHECK for '{title}': body field is MISSING from Drupal response!")
 
             logger.info(f"Successfully exported issue: UUID={uuid}, NID={nid}")
 
@@ -273,12 +251,6 @@ class IssueExporter:
         # These come from manual audits and lived experience testing with expert-crafted content
         description_parts: list[str] = []
 
-        logger.warning(f"🔍 RECORDING ISSUE '{recording_issue.title}': Checking fields...")
-        logger.warning(f"   what: {'✓ Present' if recording_issue.what else '✗ Missing'} ({len(recording_issue.what) if recording_issue.what else 0} chars)")
-        logger.warning(f"   why: {'✓ Present' if recording_issue.why else '✗ Missing'} ({len(recording_issue.why) if recording_issue.why else 0} chars)")
-        logger.warning(f"   who: {'✓ Present' if recording_issue.who else '✗ Missing'} ({len(recording_issue.who) if recording_issue.who else 0} chars)")
-        logger.warning(f"   remediation: {'✓ Present' if recording_issue.remediation else '✗ Missing'} ({len(recording_issue.remediation) if recording_issue.remediation else 0} chars)")
-
         if recording_issue.what:
             description_parts.append(f"<h3>What the issue is</h3>\n<p>{html.escape(recording_issue.what)}</p>")
         if recording_issue.why:
@@ -290,13 +262,8 @@ class IssueExporter:
 
         description: str = "\n".join(description_parts) if description_parts else recording_issue.what or ""
 
-        # Debug logging at WARNING level so it appears in Flask logs
-        logger.warning(f"📦 Built description_parts list with {len(description_parts)} parts")
-        if description:
-            logger.warning(f"✓ RecordingIssue '{recording_issue.title}': Final description has {len(description)} chars")
-            logger.warning(f"📄 DESCRIPTION CONTENT PREVIEW (first 500 chars):\n{description[:500]}")
-        else:
-            logger.warning(f"✗ RecordingIssue '{recording_issue.title}': Description is EMPTY!")
+        if not description:
+            logger.warning(f"RecordingIssue '{recording_issue.title}': description is empty")
 
         # Convert timecodes to video_timecode string
         video_timecode: str | None = None
@@ -310,11 +277,6 @@ class IssueExporter:
         # Recording issues no longer carry per-page URLs; the Drupal
         # ``url`` field is intentionally left empty here.
         url: str | None = None
-
-        # Log the exact value being passed to export_issue
-        logger.warning(f"🚀 CALLING export_issue() for '{recording_issue.title}':")
-        logger.warning(f"   description parameter length: {len(description)} chars")
-        logger.warning(f"   description parameter preview (first 200 chars): {description[:200]}")
 
         return self.export_issue(
             title=recording_issue.title,
@@ -396,9 +358,8 @@ class IssueExporter:
                 'value': description,
                 'format': 'formatted_text'
             }
-            logger.warning(f"✓ Issue '{title}': Setting body field with {len(description)} characters (format=formatted_text)")
         else:
-            logger.warning(f"✗ Issue '{title}': NO DESCRIPTION - body field will be omitted!")
+            logger.warning(f"Issue '{title}': no description; body field will be omitted")
 
         # Add issue type text field - "WCAG" if WCAG criteria present, "NOT WCAG" otherwise
         if wcag_criteria:

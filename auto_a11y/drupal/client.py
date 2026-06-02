@@ -174,7 +174,7 @@ class DrupalJSONAPIClient:
 
         except requests.exceptions.RequestException as e:
             logger.error(f"GET request failed: {e}")
-            if e.response is not None and hasattr(e.response, 'text'):
+            if hasattr(e, 'response') and e.response is not None and hasattr(e.response, 'text'):
                 logger.error(f"Response: {e.response.text}")
             raise DrupalJSONAPIError(f"GET request failed: {e}")
 

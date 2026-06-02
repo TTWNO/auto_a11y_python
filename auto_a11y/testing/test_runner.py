@@ -7,13 +7,14 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
-from typing import Any, Callable, Awaitable, Literal, TYPE_CHECKING
+from typing import Any, Callable, Awaitable, Literal, TYPE_CHECKING, cast
 from datetime import datetime
 from pathlib import Path
 import time
 
 from bson import ObjectId
-from auto_a11y.models import Page, PageStatus, TestResult
+from auto_a11y.models import Page, PageStatus, TestResult, Violation
+from auto_a11y.web.fluent import ftl
 from auto_a11y.core.async_compat import wait_for
 from auto_a11y.core.database import Database
 from auto_a11y.core.browser_manager import BrowserManager
@@ -72,6 +73,93 @@ def url_looks_like_pdf(url: str) -> bool:
     from urllib.parse import urlparse
     parsed = urlparse(url)
     return parsed.path.lower().endswith(".pdf")
+
+
+def merge_violations_into_checks(
+    metadata: dict[str, Any],
+    violations: list[Violation],
+) -> None:
+    """Fold extra violations into the per-touchpoint ``checks`` summary in-place.
+
+    ``ResultProcessor.process_test_results`` builds ``metadata['checks']`` --
+    the per-touchpoint breakdown shown in *Test Check Details* -- before the
+    test runner appends script-condition violations to the result. Without
+    this reconciliation those violations are counted in ``violation_count``
+    but missing from the touchpoint summary, so the breakdown disagrees with
+    the headline count.
+
+    For each violation this either increments the matching touchpoint row
+    (matched by its title-cased ``test_name``) or appends a new row, keeping
+    the same shape the processor emits (``violations``/``failed``/``total``
+    counters and a sorted, de-duplicated ``wcag`` list).
+    """
+    checks_obj: object = metadata.get('checks')
+    checks_list: list[dict[str, Any]] = []
+    if isinstance(checks_obj, list):
+        entries: list[object] = cast(list[object], checks_obj)
+        for entry in entries:
+            if isinstance(entry, dict):
+                checks_list.append(cast(dict[str, Any], entry))
+    metadata['checks'] = checks_list
+
+    # Index existing rows by their display name for O(1) lookup.
+    by_name: dict[str, dict[str, Any]] = {}
+    for existing_row in checks_list:
+        name = existing_row.get('test_name')
+        if isinstance(name, str):
+            by_name[name] = existing_row
+
+    def _as_int(value: object) -> int:
+        return value if isinstance(value, int) else 0
+
+    for violation in violations:
+        touchpoint = violation.touchpoint or ''
+        display_name = touchpoint.replace('_', ' ').title()
+        row: dict[str, Any] | None = by_name.get(display_name)
+        if row is None:
+            touchpoint_label = touchpoint.replace('_', ' ').lower()
+            description: str = str(
+                ftl(
+                    'common-accessibility-checks-for-touchpoint',
+                    touchpoint=touchpoint_label,
+                )
+            )
+            row = {
+                'test_name': display_name,
+                'description': description,
+                'wcag': [],
+                'total': 0,
+                'passed': 0,
+                'failed': 0,
+                'violations': 0,
+                'warnings': 0,
+                'info': 0,
+                'discovery': 0,
+            }
+            checks_list.append(row)
+            by_name[display_name] = row
+
+        row['violations'] = _as_int(row.get('violations')) + 1
+        row['failed'] = _as_int(row.get('failed')) + 1
+        row['total'] = _as_int(row.get('total')) + 1
+
+        if violation.wcag_criteria:
+            existing_wcag = row.get('wcag')
+            wcag_values: set[str] = set()
+            if isinstance(existing_wcag, list):
+                existing_criteria: list[object] = cast(list[object], existing_wcag)
+                for criterion in existing_criteria:
+                    if isinstance(criterion, str):
+                        wcag_values.add(criterion)
+            wcag_values.update(violation.wcag_criteria)
+            row['wcag'] = sorted(wcag_values)
+
+    # Keep the rows sorted the same way the processor does.
+    def _row_name(row: dict[str, Any]) -> str:
+        name = row.get('test_name', '')
+        return name if isinstance(name, str) else ''
+
+    checks_list.sort(key=_row_name)
 
 
 async def _audit_pdf_bytes(
@@ -433,7 +521,6 @@ class TestRunner:
                 )
 
                 # Execute scripts with session awareness
-                from auto_a11y.models import Violation
                 script_violations: list[Violation] = []
                 for script in scripts_to_execute:
                     logger.info(f"Processing script: {script.name} (scope={script.scope.value}, trigger={script.trigger.value})")
@@ -449,7 +536,7 @@ class TestRunner:
                         if 'violation' in result:
                             violation_item: Violation = result['violation']
                             script_violations.append(violation_item)
-                            logger.warning(f"Script reported violation: {result['violation'].message}")
+                            logger.warning(f"Script reported violation: {violation_item.description}")
 
                         # Log result
                         if result.get('skipped'):
@@ -552,7 +639,7 @@ class TestRunner:
                 except Exception as e:
                     logger.warning(f"Could not inject document metadata: {e}")
                     await browser_page.evaluate('''
-                        window.DOCUMENT_METADATA = {{}};
+                        window.DOCUMENT_METADATA = {};
                     ''')
                 
                 # Store original viewport before running tests
@@ -697,6 +784,11 @@ class TestRunner:
                     logger.info(f"Adding {len(script_violations)} script violations to test result")
                     test_result.violations.extend(script_violations)
                     # violation_count is a read-only property; violations already extended above
+                    # Keep the per-touchpoint checks summary consistent with the
+                    # headline violation_count: process_test_results built the
+                    # summary before these script violations existed, so fold
+                    # them into metadata['checks'] now.
+                    merge_violations_into_checks(test_result.metadata, script_violations)
 
                 # Add test user information to metadata (Guest or authenticated user)
                 if authenticated_user:

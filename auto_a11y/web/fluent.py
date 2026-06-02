@@ -50,6 +50,12 @@ _bundles: dict[str, FluentBundle] = {}
 _SUPPORTED_LOCALES: tuple[str, ...] = ('en', 'fr')
 _DEFAULT_LOCALE: str = 'en'
 
+#: Public alias of the supported-locale set. Routes that need to validate a
+#: requested locale (e.g. ``/set-language/<language>``) should import this
+#: rather than hard-coding ``['en', 'fr']`` so the supported set lives in one
+#: place.
+SUPPORTED_LOCALES: tuple[str, ...] = _SUPPORTED_LOCALES
+
 # Module-level strict-mode flag. Set by init_fluent() from app.debug.
 # When True, ftl() raises MissingTranslationError on any miss or format
 # error in any supported locale, instead of logging + falling back.

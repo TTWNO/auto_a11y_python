@@ -12,6 +12,119 @@ from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
 
+
+def aggregate_breakpoint_results(
+    per_breakpoint_results: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Combine the per-breakpoint JS results into a single result.
+
+    The in-browser script runs once per CSS breakpoint, so the SAME dialog is
+    reported at every breakpoint. Without deduplication the same issue would be
+    emitted N times (N = breakpoint count) and the element tested/passed/failed
+    counts would be multiplied by N.
+
+    Deduplication rules:
+    - errors, warnings and passes are deduped by ``(code, xpath)`` signature.
+    - ``ErrContentObscuring`` errors are intentionally NOT deduped: a dialog can
+      obscure different content at different breakpoints, so each instance is
+      kept.
+    - element tested/passed/failed counts are taken from a single representative
+      breakpoint (the one reporting the most tested elements) rather than summed,
+      so a dialog seen at 3 breakpoints still counts as one tested element.
+
+    The returned check summary's ``total`` is derived from ``passed + failed`` so
+    it always reconciles (Bug B).
+
+    Args:
+        per_breakpoint_results: one JS result dict per breakpoint. Each dict has
+            ``applicable``, ``errors``, ``warnings``, ``passes``,
+            ``elements_tested``, ``elements_passed``, ``elements_failed`` and an
+            optional ``not_applicable_reason``.
+
+    Returns:
+        Aggregated result dict matching the touchpoint result contract.
+    """
+    all_errors: list[dict[str, Any]] = []
+    all_warnings: list[dict[str, Any]] = []
+    all_passes: list[dict[str, Any]] = []
+    test_applicable = False
+    not_applicable_reason = ''
+
+    # Element counts are deduped, not summed: take the breakpoint that observed
+    # the most tested elements as the representative count. (Different
+    # breakpoints can show/hide dialogs via media queries, so the max captures
+    # the full set of distinct dialogs without multiplying by breakpoint count.)
+    elements_tested = 0
+    elements_passed = 0
+    elements_failed = 0
+
+    def _signature(issue: dict[str, Any]) -> str:
+        return f"{issue.get('err')}:{issue.get('xpath')}"
+
+    def _dedup_into(
+        bucket: list[dict[str, Any]],
+        incoming: list[dict[str, Any]],
+        *,
+        keep_obscuring: bool,
+    ) -> None:
+        for issue in incoming:
+            signature = _signature(issue)
+            existing = next(
+                (i for i in bucket if _signature(i) == signature), None
+            )
+            if existing is None:
+                bucket.append(issue)
+            elif keep_obscuring and issue.get('err') == 'ErrContentObscuring':
+                # Content obscuring is breakpoint-specific; keep every instance.
+                bucket.append(issue)
+
+    for results in per_breakpoint_results:
+        if results.get('applicable'):
+            test_applicable = True
+
+        _dedup_into(all_errors, results.get('errors', []), keep_obscuring=True)
+        _dedup_into(all_warnings, results.get('warnings', []), keep_obscuring=False)
+        _dedup_into(all_passes, results.get('passes', []), keep_obscuring=False)
+
+        # Use the representative (max) breakpoint for element counts so the
+        # totals are not multiplied by the number of breakpoints tested.
+        bp_tested = results.get('elements_tested', 0)
+        if bp_tested > elements_tested:
+            elements_tested = bp_tested
+            elements_passed = results.get('elements_passed', 0)
+            elements_failed = results.get('elements_failed', 0)
+
+        if not results.get('applicable') and not not_applicable_reason:
+            not_applicable_reason = results.get('not_applicable_reason', '')
+
+    final_results: dict[str, Any] = {
+        'applicable': test_applicable,
+        'not_applicable_reason': not_applicable_reason if not test_applicable else '',
+        'errors': all_errors,
+        'warnings': all_warnings,
+        'passes': all_passes,
+        'elements_tested': elements_tested,
+        'elements_passed': elements_passed,
+        'elements_failed': elements_failed,
+        'test_name': 'floating_dialogs',
+        'checks': [],
+    }
+
+    if test_applicable and elements_tested > 0:
+        # Bug B: derive total from the actual checks so passed + failed == total.
+        checks_list: list[dict[str, object]] = []
+        checks_list.append({
+            'description': 'Dialog accessibility',
+            'wcag': ['4.1.2', '2.4.6', '2.1.1', '2.1.2'],
+            'total': elements_passed + elements_failed,
+            'passed': elements_passed,
+            'failed': elements_failed,
+        })
+        final_results['checks'] = checks_list
+
+    return final_results
+
+
 TEST_DOCUMENTATION = {
     "testName": "Floating Dialog Accessibility Analysis",
     "touchpoint": "floating_dialogs",
@@ -104,15 +217,10 @@ async def test_floating_dialogs(page: Page) -> dict[str, Any]:
         # Store original viewport (Playwright uses viewport_size property)
         original_viewport = page.viewport_size
 
-        # Collect all errors/warnings/passes across all breakpoints
-        all_errors: list[dict[str, Any]] = []
-        all_warnings: list[dict[str, Any]] = []
-        all_passes: list[dict[str, Any]] = []
-        total_elements_tested = 0
-        total_elements_passed = 0
-        total_elements_failed = 0
-        test_applicable = False
-        not_applicable_reason = ''
+        # Collect the raw JS result for each breakpoint; aggregation (including
+        # deduplication of errors/warnings/passes and element counting) is done
+        # once afterwards by aggregate_breakpoint_results.
+        per_breakpoint_results: list[dict[str, Any]] = []
 
         # Test at each breakpoint
         for breakpoint_width in breakpoints:
@@ -642,62 +750,15 @@ async def test_floating_dialogs(page: Page) -> dict[str, Any]:
             '''
 
             results: dict[str, Any] = await page.evaluate(js_code)
-
-            # Aggregate results from this breakpoint
-            if results['applicable']:
-                test_applicable = True
-
-            # Deduplicate errors by signature (xpath + error type, but keep breakpoint-specific ones)
-            for error in results.get('errors', []):
-                # Check if we already have this error at a different breakpoint
-                signature = f"{error.get('err')}:{error.get('xpath')}"
-                existing = next((e for e in all_errors if f"{e.get('err')}:{e.get('xpath')}" == signature), None)
-
-                if not existing:
-                    all_errors.append(error)
-                elif error.get('err') == 'ErrContentObscuring':
-                    # For content obscuring, we want to keep all breakpoint-specific instances
-                    all_errors.append(error)
-
-            all_warnings.extend(results.get('warnings', []))
-            all_passes.extend(results.get('passes', []))
-            total_elements_tested += results.get('elements_tested', 0)
-            total_elements_passed += results.get('elements_passed', 0)
-            total_elements_failed += results.get('elements_failed', 0)
-
-            if not results['applicable'] and not not_applicable_reason:
-                not_applicable_reason = results.get('not_applicable_reason', '')
+            per_breakpoint_results.append(results)
 
         # Restore original viewport
         if original_viewport:
             await page.set_viewport_size(original_viewport)
 
-        # Return aggregated results
-        final_results: dict[str, Any] = {
-            'applicable': test_applicable,
-            'not_applicable_reason': not_applicable_reason if not test_applicable else '',
-            'errors': all_errors,
-            'warnings': all_warnings,
-            'passes': all_passes,
-            'elements_tested': total_elements_tested,
-            'elements_passed': total_elements_passed,
-            'elements_failed': total_elements_failed,
-            'test_name': 'floating_dialogs',
-            'checks': []
-        }
-
-        if test_applicable and total_elements_tested > 0:
-            checks_list: list[dict[str, object]] = final_results.get('checks', [])
-            checks_list.append({
-                'description': 'Dialog accessibility',
-                'wcag': ['4.1.2', '2.4.6', '2.1.1', '2.1.2'],
-                'total': total_elements_tested * 3,
-                'passed': total_elements_passed,
-                'failed': total_elements_failed
-            })
-            final_results['checks'] = checks_list
-
-        return final_results
+        # Aggregate across breakpoints (dedups errors/warnings/passes, counts
+        # elements once, and reconciles the check total with passed + failed).
+        return aggregate_breakpoint_results(per_breakpoint_results)
         
     except Exception as e:
         logger.error(f"Error in test_floating_dialogs: {e}")

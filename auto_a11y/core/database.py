@@ -35,6 +35,49 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def build_schedule_run_status_update(
+    job_id: str,
+    status: ScheduleRunStatus,
+    now: datetime,
+    next_run_at: datetime | None = None,
+) -> dict[str, dict[str, object]]:
+    """Build the MongoDB update document for a schedule run-status change.
+
+    The ``$inc`` operator is only included when the run is starting
+    (``RUNNING``). MongoDB rejects an empty ``$inc`` document, so for any
+    terminal status (``SUCCESS``, ``FAILED``, ``CANCELLED``) the returned
+    update contains only ``$set``.
+
+    Args:
+        job_id: Testing job ID for this run.
+        status: New run status.
+        now: Timestamp to record (``updated_at`` and, when starting, ``last_run_at``).
+        next_run_at: Next scheduled run time, if known.
+
+    Returns:
+        A Mongo update document with a ``$set`` operator and, only when
+        ``status`` is ``RUNNING``, a ``$inc`` operator.
+    """
+    update_fields: dict[str, object] = {
+        "last_run_job_id": job_id,
+        "last_run_status": status.value,
+        "updated_at": now,
+    }
+
+    if status == ScheduleRunStatus.RUNNING:
+        update_fields["last_run_at"] = now
+
+    if next_run_at:
+        update_fields["next_run_at"] = next_run_at
+
+    update: dict[str, dict[str, object]] = {"$set": update_fields}
+
+    if status == ScheduleRunStatus.RUNNING:
+        update["$inc"] = {"run_count": 1}
+
+    return update
+
+
 class Database:
     """MongoDB database connection and operations"""
     
@@ -3313,24 +3356,16 @@ class Database:
         Returns:
             True if updated successfully
         """
-        update_fields = {
-            "last_run_job_id": job_id,
-            "last_run_status": status.value,
-            "updated_at": datetime.now()
-        }
-
-        if status == ScheduleRunStatus.RUNNING:
-            update_fields["last_run_at"] = datetime.now()
-
-        if next_run_at:
-            update_fields["next_run_at"] = next_run_at
+        update = build_schedule_run_status_update(
+            job_id=job_id,
+            status=status,
+            now=datetime.now(),
+            next_run_at=next_run_at,
+        )
 
         result = self.test_schedules.update_one(
             {"_id": ObjectId(schedule_id)},
-            {
-                "$set": update_fields,
-                "$inc": {"run_count": 1} if status == ScheduleRunStatus.RUNNING else {}
-            }
+            update,
         )
 
         return result.modified_count > 0

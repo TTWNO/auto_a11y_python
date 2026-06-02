@@ -7,10 +7,119 @@ from __future__ import annotations
 
 from typing import Any
 import logging
+import re
 
 from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
+
+# Length value with a leading numeric portion and an optional unit suffix.
+_LENGTH_RE = re.compile(r'^\s*([+-]?\d*\.?\d+)\s*([a-z%]*)\s*$', re.IGNORECASE)
+
+# rgb()/rgba() with comma-separated channels (legacy syntax from getComputedStyle).
+_RGBA_RE = re.compile(
+    r'rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)', re.IGNORECASE
+)
+
+# Common CSS named colours (subset) -> RGB. Used as a fallback when
+# getComputedStyle does not normalise to rgb()/rgba().
+_NAMED_COLORS: dict[str, tuple[int, int, int]] = {
+    'black': (0, 0, 0),
+    'white': (255, 255, 255),
+    'red': (255, 0, 0),
+    'green': (0, 128, 0),
+    'lime': (0, 255, 0),
+    'blue': (0, 0, 255),
+    'yellow': (255, 255, 0),
+    'cyan': (0, 255, 255),
+    'aqua': (0, 255, 255),
+    'magenta': (255, 0, 255),
+    'fuchsia': (255, 0, 255),
+    'gray': (128, 128, 128),
+    'grey': (128, 128, 128),
+    'silver': (192, 192, 192),
+    'maroon': (128, 0, 0),
+    'olive': (128, 128, 0),
+    'navy': (0, 0, 128),
+    'teal': (0, 128, 128),
+    'purple': (128, 0, 128),
+    'orange': (255, 165, 0),
+}
+
+
+def parse_px(value: str | None) -> float:
+    """Parse a CSS length to pixels.
+
+    Handles px, em, rem (1em/1rem == 16px) and bare numeric values. Returns
+    0 for empty/``auto``/unparseable input.
+    """
+    if not value or value == 'auto':
+        return 0
+    match = _LENGTH_RE.match(value)
+    if not match:
+        return 0
+    try:
+        number = float(match.group(1))
+    except (ValueError, TypeError):
+        return 0
+    unit = match.group(2).lower()
+    # Both rem and em are treated as 16px relative to the default root size.
+    if unit in ('em', 'rem'):
+        return number * 16
+    return number
+
+
+def parse_color(color_str: str | None) -> dict[str, float]:
+    """Parse a CSS colour into an ``{r, g, b, a}`` dict.
+
+    Handles rgb()/rgba(), 6-digit and 3-digit hex (#rrggbb / #rgb), 8-digit
+    hex (#rrggbbaa), and a subset of CSS named colours. Truly unparseable
+    input falls back to opaque black (callers assume a dict is always
+    returned); the fallback is logged.
+    """
+    if not color_str:
+        return {'r': 0, 'g': 0, 'b': 0, 'a': 1}
+
+    color = color_str.strip()
+
+    rgba_match = _RGBA_RE.match(color)
+    if rgba_match:
+        return {
+            'r': int(rgba_match.group(1)),
+            'g': int(rgba_match.group(2)),
+            'b': int(rgba_match.group(3)),
+            'a': float(rgba_match.group(4)) if rgba_match.group(4) else 1.0,
+        }
+
+    if color.startswith('#'):
+        hex_digits = color[1:]
+        try:
+            if len(hex_digits) == 3:
+                # #abc -> #aabbcc
+                r = int(hex_digits[0] * 2, 16)
+                g = int(hex_digits[1] * 2, 16)
+                b = int(hex_digits[2] * 2, 16)
+                return {'r': r, 'g': g, 'b': b, 'a': 1.0}
+            if len(hex_digits) == 6:
+                r = int(hex_digits[0:2], 16)
+                g = int(hex_digits[2:4], 16)
+                b = int(hex_digits[4:6], 16)
+                return {'r': r, 'g': g, 'b': b, 'a': 1.0}
+            if len(hex_digits) == 8:
+                r = int(hex_digits[0:2], 16)
+                g = int(hex_digits[2:4], 16)
+                b = int(hex_digits[4:6], 16)
+                a = int(hex_digits[6:8], 16) / 255.0
+                return {'r': r, 'g': g, 'b': b, 'a': a}
+        except (ValueError, TypeError):
+            pass
+
+    named = _NAMED_COLORS.get(color.lower())
+    if named is not None:
+        return {'r': named[0], 'g': named[1], 'b': named[2], 'a': 1.0}
+
+    logger.debug("parse_color: unrecognised colour %r, defaulting to opaque black", color_str)
+    return {'r': 0, 'g': 0, 'b': 0, 'a': 1}
 
 TEST_DOCUMENTATION = {
     "testName": "Form Accessibility Analysis",
@@ -1062,24 +1171,6 @@ async def test_forms(page: Page) -> dict[str, Any]:
 
         # Process input focus indicators (Python logic)
         if input_styles:
-            import re
-
-            def parse_px(value: str | None) -> float:
-                if not value or value == 'auto': return 0
-                try:
-                    if 'em' in value:
-                        return float(value.replace('em', '').replace('rem', '')) * 16
-                    return float(value.replace('px', ''))
-                except Exception: return 0
-
-            def parse_color(color_str: str | None) -> dict[str, float]:
-                if not color_str: return {'r': 0, 'g': 0, 'b': 0, 'a': 1}
-                rgba_match = re.match(r'rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)', color_str)
-                if rgba_match:
-                    return {'r': int(rgba_match.group(1)), 'g': int(rgba_match.group(2)),
-                            'b': int(rgba_match.group(3)),
-                            'a': float(rgba_match.group(4)) if rgba_match.group(4) else 1.0}
-                return {'r': 0, 'g': 0, 'b': 0, 'a': 1}
 
             def get_contrast_ratio(color1: dict[str, float], color2: dict[str, float]) -> float:
                 def luminance(c: dict[str, float]) -> float:

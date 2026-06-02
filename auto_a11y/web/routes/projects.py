@@ -22,6 +22,17 @@ from auto_a11y.models.app_user import UserRole
 from auto_a11y.core.issue_aggregator import count_website_issues
 from auto_a11y.pdf.storage import PdfStorage
 
+# Allow-list for the project WCAG conformance target. Form input is normalised
+# against this so an out-of-range value can't be persisted into project config
+# (defence-in-depth; the value is also escaped on output in reports).
+_VALID_WCAG_LEVELS: tuple[str, ...] = ('A', 'AA', 'AAA')
+
+
+def _normalise_wcag_level(value: str | None) -> str:
+    """Return ``value`` if it is a valid WCAG level, else the 'AA' default."""
+    level = (value or 'AA').strip().upper()
+    return level if level in _VALID_WCAG_LEVELS else 'AA'
+
 
 def summarise_pdf_status(pdfs: list[PdfDocument]) -> dict[str, int]:
     """Bucket a list of PdfDocuments by audit status for the nav-card counter.
@@ -274,7 +285,7 @@ def create_project() -> str | Response:
     if request.method == 'POST':
         name = request.form.get('name')
         description = request.form.get('description', '')
-        wcag_level = request.form.get('wcag_level', 'AA')
+        wcag_level = _normalise_wcag_level(request.form.get('wcag_level'))
         project_type_value = request.form.get('project_type', 'website')
 
         # Parse project type
@@ -653,7 +664,7 @@ def edit_project(project_id: str) -> str | Response:
         project.drupal_audit_name = drupal_audit_name
 
         # Update WCAG level in config
-        wcag_level = request.form.get('wcag_level', 'AA')
+        wcag_level = _normalise_wcag_level(request.form.get('wcag_level'))
         if not project.config:
             project.config = {}
         project.config['wcag_level'] = wcag_level

@@ -115,6 +115,7 @@ def _find_atom(f: BinaryIO, target_type: bytes, search_end: int) -> tuple[int, i
         size = struct.unpack('>I', header[:4])[0]
         atom_type = header[4:8]
         header_size = 8
+        extends_to_end = False
 
         if size == 1:
             # Extended size
@@ -124,8 +125,10 @@ def _find_atom(f: BinaryIO, target_type: bytes, search_end: int) -> tuple[int, i
             size = struct.unpack('>Q', ext)[0]
             header_size = 16
         elif size == 0:
-            # Atom extends to end of search region
+            # Size 0 means "this atom extends to the end of the search region".
+            # Per ISO 14496-12 only the *last* atom may use size 0.
             size = search_end - atom_start
+            extends_to_end = True
 
         if size < header_size:
             return None
@@ -136,9 +139,16 @@ def _find_atom(f: BinaryIO, target_type: bytes, search_end: int) -> tuple[int, i
         if atom_type == target_type:
             return (payload_offset, payload_size)
 
-        # Skip to next atom
+        if extends_to_end:
+            # Non-matching size-0 atom is, by definition, the final atom in the
+            # region. The target is not here, so stop cleanly (not found).
+            return None
+
+        # Skip to the next atom. A non-target atom with an empty payload has
+        # next_atom == current position, which is a valid layout, not an error.
         next_atom = atom_start + size
-        if next_atom <= f.tell():
+        if next_atom < f.tell():
+            # Would seek backwards -> corrupt/overlapping atom sizes.
             return None
         f.seek(next_atom)
 

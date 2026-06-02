@@ -42,6 +42,12 @@ from auto_a11y.audio.ffmpeg import detect_ffmpeg
 
 logger = logging.getLogger(__name__)
 
+# Callouts re-encode the full video with libx264, so this is the slowest
+# ffmpeg pass in the pipeline. The timeout is generous, but a process that
+# blows past it is hung — abort with a CalloutsError rather than block the
+# job forever (Stage F never fails the whole job on a callouts error).
+RENDER_TIMEOUT_SECONDS = 3600
+
 
 def _is_str_obj_dict(val: object) -> TypeGuard[dict[str, object]]:
     """Narrow ``object`` to ``dict[str, object]`` for nested JSON values.
@@ -361,7 +367,13 @@ def render_callouts_video(
                 capture_output=True,
                 text=True,
                 check=False,
+                timeout=RENDER_TIMEOUT_SECONDS,
             )
+        except subprocess.TimeoutExpired as e:
+            raise CalloutsError(
+                f"ffmpeg timed out after {RENDER_TIMEOUT_SECONDS}s "
+                + "rendering callouts; source may be corrupt or the encode hung"
+            ) from e
         except OSError as e:
             raise CalloutsError(
                 f"ffmpeg invocation failed: {e}"

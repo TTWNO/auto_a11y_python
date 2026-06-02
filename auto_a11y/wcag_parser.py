@@ -116,7 +116,16 @@ class WCAGParser:
             List of all criteria at levels A, AA (if target is AA or AAA), and AAA (if target is AAA)
         """
         level_hierarchy = ['A', 'AA', 'AAA']
-        target_idx = level_hierarchy.index(target_level)
+        # Normalize defensively: callers may pass lowercase or padded values.
+        # An unrecognized level after normalization is a clear programming error,
+        # so raise a specific message instead of a bare ValueError from .index().
+        normalized_level = target_level.strip().upper()
+        if normalized_level not in level_hierarchy:
+            raise ValueError(
+                f"Invalid WCAG target level {target_level!r}; expected one of "
+                + f"{level_hierarchy} (case-insensitive)."
+            )
+        target_idx = level_hierarchy.index(normalized_level)
         included_levels = level_hierarchy[:target_idx + 1]
 
         criteria = [

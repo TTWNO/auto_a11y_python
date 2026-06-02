@@ -284,6 +284,11 @@ async def test_tabindex(page: Page) -> dict[str, Any]:
                                     href: a.getAttribute('href')
                                 }))
                             });
+                            // This in-page target was not part of the
+                            // [tabindex] set counted in elements_tested, so
+                            // count it here too — otherwise elements_failed
+                            // could exceed elements_tested.
+                            results.elements_tested++;
                             results.elements_failed++;
                         }
                     }

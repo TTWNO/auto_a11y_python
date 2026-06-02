@@ -66,8 +66,10 @@ async def test_page(page: Page) -> dict[str, Any]:
             config_limit = await page.evaluate('() => window.a11yConfig && window.a11yConfig.titleLengthLimit')
             if config_limit:
                 title_length_limit = config_limit
-        except:
-            pass
+        except Exception as config_error:
+            # Narrow to Exception so KeyboardInterrupt/SystemExit are not
+            # swallowed; fall back to the default title-length limit.
+            logger.debug(f"Could not read titleLengthLimit from page config: {config_error}")
 
         # Execute JavaScript to get page title info
         title_data = await page.evaluate('''
@@ -124,7 +126,17 @@ async def test_page(page: Page) -> dict[str, Any]:
                 'found': title_data['titleText'],
                 'length': len(title_data['titleText'])
             })
-            results['elements_failed'] += 1
+            # A present-but-short title is the same situation as a present-but-long
+            # title (Test 4): the element exists, so count it as passed for both
+            # branches to keep pass/fail accounting consistent.
+            results['elements_passed'] += 1
+            results['passes'].append({
+                'check': 'page_title',
+                'title': title_data['titleText'],
+                'xpath': '/html/head/title',
+                'wcag': ['2.4.2'],
+                'reason': 'Page has title (but too short)'
+            })
 
         # Test 4: WarnPageTitleTooLong - Title too long
         elif len(title_data['titleText']) > title_length_limit:

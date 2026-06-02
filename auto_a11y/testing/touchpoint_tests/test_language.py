@@ -129,11 +129,19 @@ def validate_language_code(lang_code: str) -> tuple[bool, bool, bool, bool, str,
     if not LANG_FORMAT_PATTERN.match(lang_code):
         return (False, False, False, False, '', '')
 
-    # If format matches, check case sensitivity
+    # If format matches, check case sensitivity. The format pattern is compiled
+    # with re.IGNORECASE, so an all-uppercase code (e.g. "EN") matches; we must
+    # still flag it as mis-formatted because the primary subtag should be
+    # lowercase.
     if '-' in lang_code:
         parts = lang_code.split('-')
         # Language code should be lowercase, region should be uppercase
         if parts[0] != parts[0].lower() or parts[1] != parts[1].upper():
+            is_correctly_formatted = False
+    else:
+        # No region subtag: the whole code is the primary language and must be
+        # lowercase (e.g. "EN" is mis-formatted, "en" is correct).
+        if lang_code != lang_code.lower():
             is_correctly_formatted = False
 
     # Extract primary language code and region code (normalized for validation)

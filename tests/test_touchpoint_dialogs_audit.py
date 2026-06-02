@@ -124,7 +124,12 @@ def test_same_dialog_across_breakpoints_dedups_passes() -> None:
 
 
 def test_element_counts_not_multiplied_by_breakpoints() -> None:
-    """One dialog tested at 3 breakpoints is still ONE tested element."""
+    """One dialog tested at 3 breakpoints is still ONE tested element.
+
+    Counts are derived from the deduped distinct-dialog xpath sets. The single
+    dialog has errors, so it counts as one failed element (not two, even though
+    it has two distinct error findings) and zero passed elements.
+    """
     per_bp: list[BreakpointResult] = [
         _single_dialog_breakpoint_result() for _ in range(3)
     ]
@@ -132,8 +137,8 @@ def test_element_counts_not_multiplied_by_breakpoints() -> None:
     agg = aggregate_breakpoint_results(per_bp)
 
     assert agg['elements_tested'] == 1, agg['elements_tested']
-    assert agg['elements_passed'] == 1, agg['elements_passed']
-    assert agg['elements_failed'] == 2, agg['elements_failed']
+    assert agg['elements_passed'] == 0, agg['elements_passed']
+    assert agg['elements_failed'] == 1, agg['elements_failed']
 
 
 def test_check_total_reconciles_with_passed_plus_failed() -> None:
@@ -199,6 +204,109 @@ def test_distinct_dialogs_counted_separately() -> None:
     errors: list[Any] = agg['errors']
     close_errors = [code for code in _err_codes(errors) if code == 'ErrMissingCloseButton']
     assert len(close_errors) == 2
+
+
+def test_cross_breakpoint_distinct_dialogs_counted() -> None:
+    """Dialogs that only appear at *different* breakpoints are each counted.
+
+    Dialog X (xpath A) is visible only at breakpoint 1; dialog Y (xpath B) is
+    visible only at breakpoint 2. Each breakpoint's JS reports a single dialog
+    (elements_tested == 1). A ``max(...)`` aggregation would report 1, but the
+    xpath-keyed dedup keeps BOTH dialogs' errors, so the true distinct-dialog
+    count is 2. The element counts must reflect that.
+    """
+    xpath_a = '/html[1]/body[1]/div[1]'
+    xpath_b = '/html[1]/body[1]/div[2]'
+
+    bp1: BreakpointResult = {
+        'applicable': True,
+        'errors': [
+            {'err': 'ErrMissingCloseButton', 'type': 'err', 'xpath': xpath_a},
+        ],
+        'warnings': [],
+        'passes': [],
+        'elements_tested': 1,
+        'elements_passed': 0,
+        'elements_failed': 1,
+    }
+    bp2: BreakpointResult = {
+        'applicable': True,
+        'errors': [
+            {'err': 'ErrModalNoHeading', 'type': 'err', 'xpath': xpath_b},
+        ],
+        'warnings': [],
+        'passes': [],
+        'elements_tested': 1,
+        'elements_passed': 0,
+        'elements_failed': 1,
+    }
+
+    agg = aggregate_breakpoint_results([bp1, bp2])
+
+    # Both distinct dialogs must be counted, not max(1, 1) == 1.
+    assert agg['elements_failed'] == 2, agg['elements_failed']
+    assert agg['elements_tested'] == 2, agg['elements_tested']
+    assert agg['elements_passed'] == 0, agg['elements_passed']
+
+    # Both dialogs' errors are present after dedup.
+    errors: list[Any] = agg['errors']
+    err_xpaths = {str(e['xpath']) for e in errors}
+    assert err_xpaths == {xpath_a, xpath_b}, err_xpaths
+    assert sorted(_err_codes(errors)) == ['ErrMissingCloseButton', 'ErrModalNoHeading']
+
+    # total reconciles with passed + failed.
+    check: dict[str, Any] = agg['checks'][0]
+    assert check['total'] == check['passed'] + check['failed']
+
+
+def test_passing_dialog_with_no_error_counted_as_passed() -> None:
+    """A dialog whose only finding is a pass is counted as one passed element."""
+    xpath_pass = '/html[1]/body[1]/div[1]'
+    xpath_fail = '/html[1]/body[1]/div[2]'
+
+    bp: BreakpointResult = {
+        'applicable': True,
+        'errors': [
+            {'err': 'ErrMissingCloseButton', 'type': 'err', 'xpath': xpath_fail},
+        ],
+        'warnings': [],
+        'passes': [
+            {'err': 'PassDialogHasHeading', 'type': 'pass', 'xpath': xpath_pass},
+        ],
+        'elements_tested': 2,
+        'elements_passed': 1,
+        'elements_failed': 1,
+    }
+
+    agg = aggregate_breakpoint_results([dict(bp), dict(bp), dict(bp)])
+
+    assert agg['elements_failed'] == 1, agg['elements_failed']
+    assert agg['elements_passed'] == 1, agg['elements_passed']
+    assert agg['elements_tested'] == 2, agg['elements_tested']
+
+
+def test_dialog_with_error_and_pass_counts_as_failed_only() -> None:
+    """A dialog with both an error and a pass finding is counted as failed, not double-counted."""
+    xpath = '/html[1]/body[1]/div[1]'
+    bp: BreakpointResult = {
+        'applicable': True,
+        'errors': [
+            {'err': 'ErrMissingCloseButton', 'type': 'err', 'xpath': xpath},
+        ],
+        'warnings': [],
+        'passes': [
+            {'err': 'PassDialogHasHeading', 'type': 'pass', 'xpath': xpath},
+        ],
+        'elements_tested': 1,
+        'elements_passed': 1,
+        'elements_failed': 1,
+    }
+
+    agg = aggregate_breakpoint_results([dict(bp), dict(bp)])
+
+    assert agg['elements_failed'] == 1, agg['elements_failed']
+    assert agg['elements_passed'] == 0, agg['elements_passed']
+    assert agg['elements_tested'] == 1, agg['elements_tested']
 
 
 def test_not_applicable_when_no_dialogs() -> None:

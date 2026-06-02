@@ -9,6 +9,9 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from auto_a11y.models.page import Page
+from auto_a11y.models.discovered_page import DiscoveredPage
+
 logger = logging.getLogger(__name__)
 
 
@@ -215,13 +218,17 @@ class DiscoveredPageExporter:
             logger.info(f"Exporting page {i+1}/{len(pages)}")
 
             try:
-                # Detect page type and export
-                if hasattr(page, 'discovery_reasons'):
-                    # Page model
+                # Detect page type by class, not attribute presence, so a model
+                # that happens to expose 'discovery_reasons' isn't misrouted.
+                if isinstance(page, Page):
                     result = self.export_from_page_model(page, '', audit_uuid)
-                else:
-                    # DiscoveredPage model
+                elif isinstance(page, DiscoveredPage):
                     result = self.export_from_discovered_page_model(page, audit_uuid)
+                else:
+                    raise TypeError(
+                        "batch_export expects Page or DiscoveredPage instances, "
+                        + f"got {type(page).__name__}"
+                    )
 
                 results.append(result)
 

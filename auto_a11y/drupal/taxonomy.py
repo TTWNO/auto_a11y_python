@@ -198,8 +198,11 @@ class TaxonomyCache:
             all_terms: list[dict[str, Any]] = []
             page_limit = 50
             offset = 0
+            # Hard backstop: a server that ignores page[offset] would otherwise
+            # loop forever returning full pages. Cap the total pages fetched.
+            max_pages = 1000
 
-            while True:
+            for _ in range(max_pages):
                 # Use client.get() which now properly handles bracket encoding
                 response = self.client.get(
                     f'taxonomy_term/{vocabulary}',
@@ -220,6 +223,11 @@ class TaxonomyCache:
                 # If we got fewer than page_limit, we're done
                 if len(terms) < page_limit:
                     break
+            else:
+                logger.warning(
+                    f"Pagination cap ({max_pages} pages) reached refreshing"
+                    + f" vocabulary '{vocabulary}'; results may be truncated."
+                )
 
             # Process terms into cache structure
             by_name: dict[str, str] = {}
@@ -535,8 +543,10 @@ class WCAGChapterCache:
             all_chapters: list[dict[str, Any]] = []
             page_limit = 50
             offset = 0
+            # Hard backstop against a server that ignores page[offset].
+            max_pages = 1000
 
-            while True:
+            for _ in range(max_pages):
                 # Use client.get() which now properly handles bracket encoding
                 response = self.client.get(
                     'node/wcag_chapter',
@@ -556,6 +566,11 @@ class WCAGChapterCache:
                 # If we got fewer than page_limit, we're done
                 if len(chapters) < page_limit:
                     break
+            else:
+                logger.warning(
+                    f"Pagination cap ({max_pages} pages) reached refreshing"
+                    + " WCAG chapters; results may be truncated."
+                )
 
             # Process chapters into cache structure
             by_number: dict[str, str] = {}

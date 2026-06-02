@@ -126,15 +126,24 @@ def register_default_checks() -> None:
         description="MongoDB connection (MONGODB_URI must accept admin ping).",
         run=run_mongo_check,
     ))
+    # Deepgram and Anthropic gate opt-in, paid features (audio transcription
+    # and AI analysis). A fresh install ships without keys, and the app
+    # degrades gracefully when they are absent (see config.py, which disables
+    # RUN_AI_ANALYSIS in desktop mode rather than raising). Mark them optional
+    # so their absence does NOT force the whole app into Settings Recovery
+    # mode — otherwise a first-launch DMG, which has no keys, can never reach
+    # the main UI. MongoDB stays required: the app cannot function without it.
     registry.register(Check(
         name="deepgram",
-        description="Deepgram API key (DEEPGRAM_API_KEY required for transcription).",
+        description="Deepgram API key (DEEPGRAM_API_KEY enables audio transcription).",
         run=run_deepgram_check,
+        required=False,
     ))
     registry.register(Check(
         name="anthropic",
-        description="Anthropic API key (ANTHROPIC_API_KEY required for analysis).",
+        description="Anthropic API key (ANTHROPIC_API_KEY enables AI analysis).",
         run=run_anthropic_check,
+        required=False,
     ))
 
 

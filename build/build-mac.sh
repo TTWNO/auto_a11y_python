@@ -177,6 +177,33 @@ for dylib in "$DYLIB_DIR"/*.dylib; do
     done
 done
 
+# Create alias symlinks under the exact leaf names WeasyPrint asks dlopen()
+# for on macOS. WeasyPrint resolves its native libraries by calling
+# ffi.dlopen(<leaf name>) over a fixed list (weasyprint/text/ffi.py). With
+# DYLD_LIBRARY_PATH pointed at weasyprint_libs/, dlopen("libpango-1.0.dylib")
+# searches that directory for a file of *exactly* that name. Homebrew ships
+# pango/pangoft2 with an extra version segment (libpango-1.0.0.dylib), so the
+# name WeasyPrint requests is absent, every candidate fails, and the import
+# dies — taking the whole PDF report job / Drupal-sync job down with it. The
+# other libs (gobject/harfbuzz/fontconfig) already match by filename. We
+# symlink rather than rename so the real versioned file stays in place for
+# the @loader_path references the sibling dylibs were rewritten to use above.
+echo "Creating WeasyPrint dlopen alias symlinks..."
+WEASYPRINT_ALIASES=(
+    "libpango-1.0.dylib:libpango-1.0.0.dylib"
+    "libpangoft2-1.0.dylib:libpangoft2-1.0.0.dylib"
+)
+for pair in "${WEASYPRINT_ALIASES[@]}"; do
+    alias_name="${pair%%:*}"
+    target_name="${pair##*:}"
+    if [ -f "$DYLIB_DIR/$target_name" ] && [ ! -e "$DYLIB_DIR/$alias_name" ]; then
+        ln -s "$target_name" "$DYLIB_DIR/$alias_name"
+        echo "  alias $alias_name -> $target_name"
+    elif [ ! -f "$DYLIB_DIR/$target_name" ]; then
+        echo "  WARNING: $target_name not bundled; cannot alias $alias_name" >&2
+    fi
+done
+
 echo "Bundled $(ls "$DYLIB_DIR"/*.dylib 2>/dev/null | wc -l | tr -d ' ') dylibs into $DYLIB_DIR"
 
 # Create a wrapper script that sets DYLD_LIBRARY_PATH before running Python.
@@ -462,6 +489,14 @@ missing_paths=()
 [ -d "$RESOURCES_IN_DMG/python/lib/weasyprint_libs" ] \
     && [ -n "$(ls -A "$RESOURCES_IN_DMG/python/lib/weasyprint_libs" 2>/dev/null)" ] \
     || missing_paths+=("python/lib/weasyprint_libs/ (missing or empty)")
+# WeasyPrint's macOS dlopen() names for pango/pangoft2 differ from the
+# Homebrew dylib filenames; build-mac.sh Step 3 adds alias symlinks. Verify
+# they survived into the DMG (use -e so a dangling symlink also fails here),
+# otherwise PDF report generation dies at import time on the user's machine.
+for _wp_alias in libpango-1.0.dylib libpangoft2-1.0.dylib; do
+    [ -e "$RESOURCES_IN_DMG/python/lib/weasyprint_libs/$_wp_alias" ] \
+        || missing_paths+=("python/lib/weasyprint_libs/$_wp_alias (WeasyPrint dlopen alias)")
+done
 
 hdiutil detach "$MOUNT_POINT" -force >/dev/null 2>&1 || true
 trap - EXIT

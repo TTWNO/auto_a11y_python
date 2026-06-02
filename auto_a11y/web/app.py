@@ -192,14 +192,29 @@ def create_app(config: Any) -> Flask:
     if _user_settings.mongodb_uri:
         config.MONGODB_URI = _user_settings.mongodb_uri
 
-    # Settings Recovery (Phase 10): if preflight detects any missing or
-    # broken configuration, register only the recovery blueprint and a
-    # 302-everything interceptor so the user can fix things via the web
-    # UI without having to edit env vars by hand. The full app finishes
-    # initialising only once preflight passes.
+    # Settings Recovery (Phase 10): if preflight detects a *required* piece
+    # of configuration missing or broken (e.g. MongoDB unreachable), register
+    # only the recovery blueprint and a 302-everything interceptor so the user
+    # can fix things via the web UI without editing env vars by hand. The full
+    # app finishes initialising only once every required check passes.
+    #
+    # Optional checks (Deepgram / Anthropic API keys) gate opt-in features and
+    # must NOT block startup — otherwise a first-launch DMG, which ships with
+    # no keys, could never reach the main UI. We log their absence so it's
+    # discoverable in the logs and continue building the full app; the user
+    # can add the keys later via the settings UI.
     preflight_result = get_registry().run_all()
-    if not preflight_result.all_passed:
-        return _build_recovery_only_app(app, config, preflight_result.failures)
+    if preflight_result.blocking_failures:
+        return _build_recovery_only_app(
+            app, config, preflight_result.blocking_failures
+        )
+    for failure in preflight_result.optional_failures:
+        logger.warning(
+            "Optional preflight check %r not satisfied; the related feature is"
+            + " disabled until configured. %s",
+            failure.name,
+            failure.remediation,
+        )
 
     # Initialize database connection (needed before Flask-Login)
     db = Database(config.MONGODB_URI, config.DATABASE_NAME)

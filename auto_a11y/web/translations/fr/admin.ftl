@@ -12,6 +12,31 @@ admin-settings-source-environment = Aucune valeur n'est enregistrée ici. La con
 admin-settings-source-unset = Cette intégration n'est pas configurée. Enregistrer des valeurs ci-dessous l'activera.
 admin-settings-source-default = Aucune valeur n'est enregistrée ici et aucune variable d'environnement n'est définie. L'application utilise les valeurs par défaut intégrées ; les enregistrer ci-dessous les remplacera.
 
+# Secrets de l'application — stockés dans le fichier de paramètres de
+# l'utilisateur (lu avant que la base de données ne soit disponible). URI
+# MongoDB, clés d'API facultatives, remplacements ffmpeg.
+admin-settings-user-secrets-heading = Secrets de l'application
+admin-settings-user-secrets-description = Valeurs de connexion et clés d'API utilisées au démarrage et par des fonctionnalités facultatives. Elles sont stockées dans le fichier de paramètres local de cet ordinateur, distinct des paramètres de base de données ci-dessus.
+admin-settings-user-secrets-restart-note = Les valeurs enregistrées s'appliquent immédiatement aux nouveaux traitements. Redémarrez l'application pour les appliquer partout.
+admin-settings-user-secrets-mongodb-uri = URI de connexion MongoDB
+admin-settings-user-secrets-mongodb-uri-help = Laissez vide pour utiliser la connexion à la base de données intégrée par défaut.
+admin-settings-user-secrets-anthropic = Clé d'API Anthropic
+admin-settings-user-secrets-anthropic-help = Active les fonctionnalités d'analyse par IA.
+admin-settings-user-secrets-deepgram = Clé d'API Deepgram
+admin-settings-user-secrets-deepgram-help = Active les fonctionnalités de transcription audio.
+admin-settings-user-secrets-huggingface = Jeton Hugging Face
+admin-settings-user-secrets-huggingface-help = Facultatif ; utilisé pour les modèles de diarisation des locuteurs.
+admin-settings-user-secrets-ffmpeg = Chemin ffmpeg (remplacement facultatif)
+admin-settings-user-secrets-ffmpeg-help = Laissez vide pour utiliser le ffmpeg intégré ou celui de votre PATH.
+admin-settings-user-secrets-ffprobe = Chemin ffprobe (remplacement facultatif)
+admin-settings-user-secrets-ffprobe-help = Laissez vide pour utiliser le ffprobe intégré ou celui de votre PATH.
+admin-settings-user-secrets-secret-set = Une valeur est déjà enregistrée — laissez vide pour la conserver.
+admin-settings-user-secrets-secret-unset = Aucune valeur n'est encore enregistrée.
+admin-settings-user-secrets-placeholder-set = •••••••• (enregistré)
+admin-settings-user-secrets-remove = Supprimer la valeur enregistrée
+admin-settings-user-secrets-saved = Secrets de l'application enregistrés.
+admin-settings-user-secrets-save-failed = Impossible d'écrire le fichier de paramètres : { $detail }
+
 # Aides communes partagées entre les sections de variables d'environnement.
 admin-settings-restart-note = La plupart des modifications prennent effet immédiatement. Quelques paramètres (par exemple l'adresse d'écoute du serveur, le démarrage du planificateur) ne s'appliquent qu'après un redémarrage de l'application.
 admin-settings-password-placeholder-set = (laisser vide pour conserver la valeur existante)

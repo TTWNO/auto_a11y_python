@@ -46,6 +46,14 @@ _locale_override: ContextVar[str | None] = ContextVar('_locale_override', defaul
 # Module-level bundle registry: locale -> FluentBundle
 _bundles: dict[str, FluentBundle] = {}
 
+# Compilation cache: keyed by the set of (.ftl path, mtime_ns) across all
+# loaded locales, so repeated init_fluent() calls in one process reuse the
+# already-compiled bundles instead of recompiling ~5000 messages (~17s) every
+# time. Editing/adding a .ftl changes an mtime -> new key -> recompile, so the
+# cache can't go stale. This makes building many app instances (e.g. one per
+# test) effectively free after the first.
+_bundle_cache: dict[tuple[tuple[str, int], ...], dict[str, FluentBundle]] = {}
+
 # Supported locales and default
 _SUPPORTED_LOCALES: tuple[str, ...] = ('en', 'fr')
 _DEFAULT_LOCALE: str = 'en'
@@ -371,13 +379,18 @@ def _load_bundles(translations_dir: str) -> None:
                 messages.ftl
     """
     global _bundles
-    _bundles = {}
 
     if not os.path.isdir(translations_dir):
+        _bundles = {}
         logger.warning("Translations directory not found: %s", translations_dir)
         return
 
-    for locale in os.listdir(translations_dir):
+    # Collect the .ftl files per locale and build a cache key from their
+    # paths + mtimes. Compilation is the expensive part (~17s); the cache
+    # lets repeated init_fluent() calls reuse it.
+    locale_files: dict[str, list[str]] = {}
+    key_parts: list[tuple[str, int]] = []
+    for locale in sorted(os.listdir(translations_dir)):
         locale_dir = os.path.join(translations_dir, locale)
         if not os.path.isdir(locale_dir):
             continue
@@ -392,9 +405,29 @@ def _load_bundles(translations_dir: str) -> None:
         if not ftl_files:
             continue
 
-        bundle = FluentBundle.from_files(locale, ftl_files, use_isolating=False)
-        _bundles[locale] = bundle
+        locale_files[locale] = ftl_files
+        for path in ftl_files:
+            try:
+                mtime = os.stat(path).st_mtime_ns
+            except OSError:
+                mtime = 0
+            key_parts.append((path, mtime))
+
+    cache_key = tuple(key_parts)
+    cached = _bundle_cache.get(cache_key)
+    if cached is not None:
+        _bundles = cached
+        return
+
+    compiled: dict[str, FluentBundle] = {}
+    for locale, ftl_files in locale_files.items():
+        compiled[locale] = FluentBundle.from_files(
+            locale, ftl_files, use_isolating=False
+        )
         logger.debug("Loaded Fluent bundle for '%s' from %d file(s)", locale, len(ftl_files))
+
+    _bundle_cache[cache_key] = compiled
+    _bundles = compiled
 
 
 def _resolve(locale: str, message_id: str, args: dict[str, object]) -> tuple[str, Sequence[object]] | None:

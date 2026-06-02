@@ -48,6 +48,7 @@ from auto_a11y.web.routes import (
 )
 from auto_a11y.web.routes.demo import demo_bp
 from auto_a11y.web.routes.recovery import recovery_bp
+from auto_a11y.web.fluent import SUPPORTED_LOCALES
 from auto_a11y.web.typed_app import redirect
 
 logger = logging.getLogger(__name__)
@@ -102,12 +103,26 @@ def _build_recovery_only_app(
 
     @app.before_request
     def force_recovery() -> Response | None:
-        """Send every URL except ``/recovery/...`` / ``/static/...`` to /recovery/."""
+        """Send every URL except ``/recovery``, ``/static`` and ``/health`` to /recovery/.
+
+        ``/health`` is answered directly with HTTP 503 rather than redirected:
+        a load balancer / uptime monitor must receive a clear unhealthy signal
+        (distinct from "healthy") instead of following a 302 into an HTML
+        recovery page. The recovery-only app does not register the normal
+        ``/health`` handler, so we serve the signal here.
+        """
         path = request.path
         if path.startswith("/recovery"):
             return None
         if path.startswith("/static"):
             return None
+        if path == "/health":
+            resp = jsonify({
+                'status': 'recovery',
+                'message': 'Settings Recovery mode: configuration must be fixed.',
+            })
+            resp.status_code = 503
+            return resp
         return redirect("/recovery/")
     _ = force_recovery  # registered by @app.before_request
 
@@ -324,9 +339,22 @@ def create_app(config: Any) -> Flask:
     # Language switching route
     @app.route('/set-language/<language>')
     def set_language(language: str) -> Response:
-        """Set the user's preferred language"""
-        if language in ['en', 'fr']:
-            session['language'] = language
+        """Set the user's preferred language.
+
+        Reject unsupported languages with HTTP 400 so the caller can tell
+        the request was ignored instead of receiving a misleading 200
+        ``success`` for a language that was never applied.
+        """
+        if language not in SUPPORTED_LOCALES:
+            resp = jsonify({
+                'status': 'error',
+                'language': language,
+                'message': 'Unsupported language',
+                'supported': list(SUPPORTED_LOCALES),
+            })
+            resp.status_code = 400
+            return resp
+        session['language'] = language
         return jsonify({'status': 'success', 'language': language})
 
     # Register blueprints

@@ -179,11 +179,18 @@ def words_to_vtt(words: list[Word], *, offset_s: float = 0.0) -> str:
 
 
 def _fmt_ts(seconds: float) -> str:
-    """Format a float second count as ``HH:MM:SS.mmm`` (WebVTT)."""
-    h = int(seconds // 3600)
-    m = int((seconds % 3600) // 60)
-    s = seconds % 60
-    return f"{h:02d}:{m:02d}:{s:06.3f}"
+    """Format a float second count as ``HH:MM:SS.mmm`` (WebVTT).
+
+    Rounds to whole milliseconds *first*, then derives h/m/s/ms from the
+    integer total, so the seconds field can never round up to ``60`` and
+    emit an invalid cue like ``00:01:60.000``.
+    """
+    total_ms = round(seconds * 1000)
+    h = total_ms // 3_600_000
+    m = (total_ms // 60_000) % 60
+    s = (total_ms // 1000) % 60
+    ms = total_ms % 1000
+    return f"{h:02d}:{m:02d}:{s:02d}.{ms:03d}"
 
 
 def write_words_json(words: list[Word], path: Path) -> None:

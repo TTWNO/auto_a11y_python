@@ -19,10 +19,15 @@ def _ts_to_seconds(ts: str) -> float:
 
 
 def _seconds_to_ts(seconds: float) -> str:
-    h = int(seconds // 3600)
-    m = int((seconds % 3600) // 60)
-    s = seconds % 60
-    return f"{h:02d}:{m:02d}:{s:06.3f}"
+    # Round to whole milliseconds first, then derive h/m/s/ms from the
+    # integer total so the seconds field can never round up to 60 and
+    # produce an invalid ``HH:MM:60.xxx`` timestamp.
+    total_ms = round(seconds * 1000)
+    h = total_ms // 3_600_000
+    m = (total_ms // 60_000) % 60
+    s = (total_ms // 1000) % 60
+    ms = total_ms % 1000
+    return f"{h:02d}:{m:02d}:{s:02d}.{ms:03d}"
 
 
 def merge_segment_vtts(

@@ -21,10 +21,19 @@ import subprocess
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
+from auto_a11y.audio.errors import AudioPipelineError
 from auto_a11y.audio.ffmpeg import detect_ffmpeg, detect_ffprobe
 from auto_a11y.audio.storage import AllocatedSlot
 
 logger = logging.getLogger(__name__)
+
+# ffprobe just reads the container header, so it should return near-instantly;
+# a hang past a minute means the binary or file is wedged. The ffmpeg passes
+# (silencedetect over the whole file, per-segment stream-copy) touch every
+# byte, so they get a far more generous budget before we treat the process as
+# hung and abort rather than block the pipeline forever.
+PROBE_TIMEOUT_SECONDS = 60
+FFMPEG_TIMEOUT_SECONDS = 600
 
 
 @dataclass(frozen=True)
@@ -154,18 +163,25 @@ def probe_duration(input_mp4: Path) -> float:
     """Use ffprobe to return the source's duration in seconds."""
     ffprobe = detect_ffprobe(raise_if_missing=True)
     assert ffprobe is not None  # raise_if_missing=True guarantees non-None
-    result: subprocess.CompletedProcess[str] = subprocess.run(
-        [
-            ffprobe,
-            "-v", "error",
-            "-show_entries", "format=duration",
-            "-of", "default=noprint_wrappers=1:nokey=1",
-            str(input_mp4),
-        ],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
+    try:
+        result: subprocess.CompletedProcess[str] = subprocess.run(
+            [
+                ffprobe,
+                "-v", "error",
+                "-show_entries", "format=duration",
+                "-of", "default=noprint_wrappers=1:nokey=1",
+                str(input_mp4),
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=PROBE_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired as e:
+        raise AudioPipelineError(
+            f"ffprobe timed out after {PROBE_TIMEOUT_SECONDS}s probing "
+            + f"{input_mp4.name}; source may be corrupt or truncated"
+        ) from e
     return float(result.stdout.strip())
 
 
@@ -178,18 +194,25 @@ def detect_silences(
     """Run ffmpeg with ``-af silencedetect`` and parse the stderr output."""
     ffmpeg = detect_ffmpeg(raise_if_missing=True)
     assert ffmpeg is not None  # raise_if_missing=True guarantees non-None
-    result: subprocess.CompletedProcess[str] = subprocess.run(
-        [
-            ffmpeg,
-            "-i", str(input_mp4),
-            "-af", f"silencedetect=noise={noise_db}dB:d={min_silence_s}",
-            "-f", "null",
-            "-",
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    try:
+        result: subprocess.CompletedProcess[str] = subprocess.run(
+            [
+                ffmpeg,
+                "-i", str(input_mp4),
+                "-af", f"silencedetect=noise={noise_db}dB:d={min_silence_s}",
+                "-f", "null",
+                "-",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=FFMPEG_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired as e:
+        raise AudioPipelineError(
+            f"ffmpeg silencedetect timed out after {FFMPEG_TIMEOUT_SECONDS}s "
+            + f"on {input_mp4.name}; source may be corrupt or truncated"
+        ) from e
     parsed = parse_silencedetect_output(result.stderr)
     if result.returncode != 0 and not parsed:
         # ffmpeg exited with error AND produced no silence detections —
@@ -213,23 +236,31 @@ def extract_segment(
     assert ffmpeg is not None  # raise_if_missing=True guarantees non-None
     out = slot.segment_m4a(segment.index)
     out.parent.mkdir(parents=True, exist_ok=True)
-    subprocess.run(
-        [
-            ffmpeg,
-            "-y",
-            "-i", str(input_mp4),
-            "-ss", f"{segment.start_s:.3f}",
-            "-to", f"{segment.end_s:.3f}",
-            # Stream-copy: no re-encode. Matches
-            # pythonAudioA11y/audio_processor.py and avoids generational
-            # lossy re-encode of source AAC; ~30-60x faster on a typical
-            # 1-hour audit recording.
-            "-vn", "-acodec", "copy", "-map", "0:a",
-            str(out),
-        ],
-        capture_output=True,
-        check=True,
-    )
+    try:
+        subprocess.run(
+            [
+                ffmpeg,
+                "-y",
+                "-i", str(input_mp4),
+                "-ss", f"{segment.start_s:.3f}",
+                "-to", f"{segment.end_s:.3f}",
+                # Stream-copy: no re-encode. Matches
+                # pythonAudioA11y/audio_processor.py and avoids generational
+                # lossy re-encode of source AAC; ~30-60x faster on a typical
+                # 1-hour audit recording.
+                "-vn", "-acodec", "copy", "-map", "0:a",
+                str(out),
+            ],
+            capture_output=True,
+            check=True,
+            timeout=FFMPEG_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired as e:
+        raise AudioPipelineError(
+            f"ffmpeg timed out after {FFMPEG_TIMEOUT_SECONDS}s extracting "
+            + f"segment {segment.index} from {input_mp4.name}; "
+            + "source may be corrupt or truncated"
+        ) from e
     return out
 
 

@@ -113,7 +113,6 @@ test_*.py
 !tests/api/openapi/test_*.py
 !tests/audio/test_*.py
 !tests/web/test_*.py
-!tests/core/test_*.py
 verify_*.py
 adapt_*.py
 

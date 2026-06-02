@@ -13,6 +13,45 @@ from auto_a11y.ai.claude_client import ClaudeClient
 logger = logging.getLogger(__name__)
 
 
+def _xpath_literal(value: str) -> str:
+    """
+    Return a valid XPath 1.0 string literal for an arbitrary value.
+
+    XPath has no escape mechanism inside string literals and does NOT interpret
+    XML entities such as ``&apos;``. The only ways to embed a quote are to wrap
+    the value in the *other* quote character, or — when both quote characters
+    are present — to build the value with ``concat(...)``.
+
+    Args:
+        value: The raw string to embed in an XPath predicate.
+
+    Returns:
+        A string that is a syntactically valid XPath string expression
+        evaluating to ``value`` (a quoted literal, or a ``concat(...)`` call).
+    """
+    if "'" not in value:
+        # No single quotes -> safe to wrap in single quotes.
+        return f"'{value}'"
+    if '"' not in value:
+        # Has single quotes but no double quotes -> wrap in double quotes.
+        return f'"{value}"'
+
+    # Both quote characters present: split into pieces around the single
+    # quotes and concat() them, inserting each apostrophe as a double-quoted
+    # "'" literal so no piece ever contains a single quote.
+    parts: list[str] = []
+    segments = value.split("'")
+    for index, segment in enumerate(segments):
+        if segment:
+            parts.append(f"'{segment}'")
+        if index < len(segments) - 1:
+            parts.append("\"'\"")
+    if not parts:
+        # value was only single quotes
+        parts = ["\"'\""] * value.count("'")
+    return f"concat({', '.join(parts)})"
+
+
 def find_element_xpath_by_text(html: str, text_sample: str) -> str | None:
     """
     Find an element in HTML by its text content and return a precise xpath.
@@ -72,7 +111,7 @@ def _build_xpath_for_element(element: Tag, soup: BeautifulSoup) -> str | None:
     # Priority 1: ID (most specific)
     element_id = element.get('id')
     if element_id and isinstance(element_id, str):
-        return f"//*[@id='{element_id}']"
+        return f"//*[@id={_xpath_literal(element_id)}]"
 
     # Priority 2: Unique class combination
     raw_classes = element.get('class')
@@ -83,33 +122,31 @@ def _build_xpath_for_element(element: Tag, soup: BeautifulSoup) -> str | None:
         matching = soup.find_all(tag, class_=classes)
         if len(matching) == 1:
             if len(classes) == 1:
-                return f"//{tag}[@class='{class_str}']"
+                return f"//{tag}[@class={_xpath_literal(class_str)}]"
             else:
-                conditions = " and ".join([f"contains(@class, '{c}')" for c in classes])
+                conditions = " and ".join([f"contains(@class, {_xpath_literal(c)})" for c in classes])
                 return f"//{tag}[{conditions}]"
         elif len(matching) > 1:
             # Find index among siblings with same class
             for idx, el in enumerate(matching, 1):
                 if el == element:
                     if len(classes) == 1:
-                        return f"(//{tag}[@class='{class_str}'])[{idx}]"
+                        return f"(//{tag}[@class={_xpath_literal(class_str)}])[{idx}]"
                     else:
-                        conditions = " and ".join([f"contains(@class, '{c}')" for c in classes])
+                        conditions = " and ".join([f"contains(@class, {_xpath_literal(c)})" for c in classes])
                         return f"(//{tag}[{conditions}])[{idx}]"
 
     # Priority 3: Text content (for short, unique text)
     element_text = element.get_text(strip=True)
     if element_text and len(element_text) <= 60:
-        # Escape quotes
-        escaped_text = element_text.replace("'", "&apos;")
         # Check uniqueness -- find all tags then filter by text content
         all_tags = soup.find_all(tag)
         text_matches = [t for t in all_tags if element_text in t.get_text()]
         if len(text_matches) <= 1:
             if len(element_text) <= 30:
-                return f"//{tag}[normalize-space()='{escaped_text}']"
+                return f"//{tag}[normalize-space()={_xpath_literal(element_text)}]"
             else:
-                return f"//{tag}[contains(normalize-space(), '{escaped_text[:40]}')]"
+                return f"//{tag}[contains(normalize-space(), {_xpath_literal(element_text[:40])})]"
 
     # Priority 4: Position among all same tags
     all_same_tags = soup.find_all(tag)
@@ -153,9 +190,7 @@ def generate_xpath(
 
     # Priority 1: ID (most specific and reliable)
     if element_id:
-        # Escape single quotes in ID
-        escaped_id = element_id.replace("'", "&apos;")
-        return f"//*[@id='{escaped_id}']"
+        return f"//*[@id={_xpath_literal(element_id)}]"
 
     # Priority 2: Class name (without text to avoid duplicates)
     elif element_class:
@@ -163,11 +198,10 @@ def generate_xpath(
         classes = element_class.split()
         if len(classes) == 1:
             # Single class - exact match
-            escaped_class = element_class.replace("'", "&apos;")
-            xpath = f"//{element_tag}[@class='{escaped_class}']"
+            xpath = f"//{element_tag}[@class={_xpath_literal(element_class)}]"
         else:
             # Multiple classes - use contains for each
-            class_conditions = " and ".join([f"contains(@class, '{cls.replace(chr(39), '&apos;')}')" for cls in classes])
+            class_conditions = " and ".join([f"contains(@class, {_xpath_literal(cls)})" for cls in classes])
             xpath = f"//{element_tag}[{class_conditions}]"
 
         # Add index if provided for more specificity
@@ -182,16 +216,15 @@ def generate_xpath(
 
     # Priority 4: Text content (only if explicitly requested and no other option)
     elif use_text and element_text:
-        # Clean and escape text
-        text_snippet = element_text[:50].replace("'", "&apos;").replace('"', "&quot;")
+        text_snippet = element_text[:50]
 
         # Special case for single character elements (like x for close buttons)
         if len(element_text) == 1:
-            return f"//{element_tag}[text()='{text_snippet}']"
+            return f"//{element_tag}[text()={_xpath_literal(text_snippet)}]"
         elif len(element_text) <= 30:
-            return f"//{element_tag}[normalize-space()='{text_snippet}']"
+            return f"//{element_tag}[normalize-space()={_xpath_literal(text_snippet)}]"
         else:
-            return f"//{element_tag}[contains(normalize-space(), '{text_snippet}')]"
+            return f"//{element_tag}[contains(normalize-space(), {_xpath_literal(text_snippet)})]"
 
     # Last resort: Tag with first position
     else:

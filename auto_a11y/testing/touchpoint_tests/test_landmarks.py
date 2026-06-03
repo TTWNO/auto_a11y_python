@@ -725,9 +725,13 @@ async def test_landmarks(page: Page) -> dict[str, Any]:
                             results.elements_failed++;
                         }
 
-                        // ERROR: landmark nested inside another landmark.
+                        // ERROR: landmark nested inside another landmark. Only flag the
+                        // types that are required to be top-level (banner, main, contentinfo,
+                        // complementary); nav/region/search may validly nest inside others,
+                        // and emitting Err{Nav,Region,Search}LandmarkMayNotBeChildOfAnotherLandmark
+                        // would be a false positive on an uncatalogued code.
                         const ancestor = nearestLandmarkAncestor(it.el);
-                        if (ancestor) {
+                        if (cfg.mustBeTopLevel && ancestor) {
                             results.errors.push({
                                 err: 'Err' + cfg.type + 'LandmarkMayNotBeChildOfAnotherLandmark',
                                 type: 'err',

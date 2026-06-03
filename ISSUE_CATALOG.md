@@ -2489,6 +2489,7 @@ Description: Modal cannot be closed using the Escape key
 Why it matters: Escape key is the expected keyboard shortcut for closing modals; without it, keyboard users may become trapped.
 Who it affects: Keyboard users who expect standard modal behavior, power users who rely on keyboard shortcuts.
 How to fix: Implement Escape key handler to close modals, ensure it works even when focus is within modal content.
+Detection limitation: Static DOM analysis flags a modal only when no Escape/keydown handler is in scope. A modal whose Escape behaviour is gated by runtime state — e.g. a single document-level keydown handler that closes only whichever modal is currently open — looks identical to a working handler at rest and is NOT flagged. The fixture Fixtures/DialogsAndModals/ErrModalWithoutEscape.html is a known un-analyzable case of this and is expected to fail static validation (the proper Modals/ErrModalWithoutEscape_001/_002 fixtures pass); reliable detection of this pattern requires behavioural/AI testing.
 
 ---
 
@@ -5277,11 +5278,12 @@ ID: ErrModalWithoutEscape
 Type: Error
 Impact: High
 WCAG: 2.1.2 No Keyboard Trap (Level A)
-Touchpoint: headings
+Touchpoint: dialogs
 Description: Modal cannot be closed using the Escape key
 Why it matters: Escape key is the expected keyboard shortcut for closing modals; without it, keyboard users may become trapped.
 Who it affects: Keyboard users who expect standard modal behavior, power users who rely on keyboard shortcuts.
 How to fix: Implement Escape key handler to close modals, ensure it works even when focus is within modal content.
+Detection limitation: Static DOM analysis cannot detect runtime-state-gated Escape handlers; see the alphabetical entry above. Fixtures/DialogsAndModals/ErrModalWithoutEscape.html is a known un-analyzable case and is expected to fail static validation.
 
 ID: ErrMouseOnlyHandler
 Type: Error

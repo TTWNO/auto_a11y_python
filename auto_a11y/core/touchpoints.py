@@ -391,7 +391,7 @@ class TouchpointMapper:
         'DiscoFooterFound': TouchpointID.LANDMARKS,  # Contentinfo is a landmark
         'DiscoSearchFound': TouchpointID.LANDMARKS,  # Search is a landmark
         'DiscoNoSubmitButton': TouchpointID.FORMS,
-        'WarnGenericButtonText': TouchpointID.FORMS,
+        'WarnButtonGenericText': TouchpointID.FORMS,
         'WarnRequiredNotIndicated': TouchpointID.FORMS,
 
         # Color/contrast errors
@@ -496,7 +496,6 @@ class TouchpointMapper:
         'ErrModalWithoutEscape': TouchpointID.DIALOGS,
         'WarnMissingAriaModal': TouchpointID.DIALOGS,
         'WarnModalMissingAriaLabelledby': TouchpointID.DIALOGS,
-        'WarnModalMissingAriaModal': TouchpointID.DIALOGS,
         'WarnModalNoFocusableElements': TouchpointID.DIALOGS,
         
         # Animation/Timer errors

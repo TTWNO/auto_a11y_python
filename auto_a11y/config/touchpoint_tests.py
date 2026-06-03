@@ -63,7 +63,7 @@ TOUCHPOINT_TEST_MAPPING: dict[str, list[str]] = {
         'WarnNoLegend',
         'ErrFormLandmarkMustHaveAccessibleName',
         'DiscoNoSubmitButton',
-        'WarnGenericButtonText',
+        'WarnButtonGenericText',
         'WarnRequiredNotIndicated',
     ],
     

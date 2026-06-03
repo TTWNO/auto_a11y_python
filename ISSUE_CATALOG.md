@@ -1844,18 +1844,6 @@ How to fix: Replace the filename with descriptive text that conveys the image's 
 
 ---
 
-ID: ErrImageWithNoAlt
-Type: Error
-Impact: High
-WCAG: 1.1.1 Non-text Content (Level A)
-Touchpoint: Images
-Description: Images are missing alternative text attributes, preventing assistive technologies from conveying their content or purpose to users
-Why it matters: Screen readers cannot describe image content to users who are blind or have low vision, creating information barriers that may prevent understanding of essential content, navigation, or task completion. This also affects users with cognitive disabilities who benefit from text alternatives and users on slow connections where images fail to load.
-Who it affects: Blind users using screen readers, users with low vision using screen readers with magnification, users with cognitive disabilities who rely on text alternatives, voice control users who need text labels to reference elements, and users on slow internet connections
-How to fix: Add descriptive alt attributes for informative images (alt="Sales chart showing 40% increase"), use empty alt attributes for decorative images (alt=""), describe the function for interactive images (alt="Search" not alt="magnifying glass icon"), and provide detailed descriptions via aria-describedby for complex images like charts or diagrams.
-
----
-
 ID: ErrImageWithURLAsAlt
 Type: Error
 Impact: High
@@ -4352,18 +4340,6 @@ How to fix: Add aria-labelledby pointing to the modal's heading element.
 
 ---
 
-ID: WarnModalMissingAriaModal
-Type: Warning
-Impact: Medium
-WCAG: 4.1.2 Name, Role, Value (Level A)
-Touchpoint: dialogs
-Description: Modal dialog missing aria-modal attribute
-Why it matters: aria-modal helps assistive technologies understand modal boundaries.
-Who it affects: Screen reader users navigating modal content.
-How to fix: Add aria-modal="true" to modal containers.
-
----
-
 ID: WarnModalNoFocusableElements
 Type: Warning
 Impact: High
@@ -5043,16 +5019,6 @@ Why it matters: Filenames rarely describe image content meaningfully and often c
 Who it affects: Blind and low vision users using screen readers who need meaningful descriptions to understand visual content, users with cognitive disabilities who rely on clear, descriptive text to process information, users in low-bandwidth situations where images don't load and only alt text is displayed, and search engine users who rely on descriptive alt text for finding relevant content
 How to fix: Replace the filename with descriptive text that conveys the image's information or purpose (change alt="hero-banner-2.jpg" to alt="Students collaborating in the campus library"), focus on what the image communicates rather than technical details, ensure the description makes sense when read in context with surrounding content, and avoid including file extensions or technical metadata in alt attributes
 
-ID: ErrImageWithNoAlt
-Type: Error
-Impact: High
-WCAG: 1.1.1 Non-text Content (Level A)
-Touchpoint: Images
-Description: Images are missing alternative text attributes, preventing assistive technologies from conveying their content or purpose to users
-Why it matters: Screen readers cannot describe image content to users who are blind or have low vision, creating information barriers that may prevent understanding of essential content, navigation, or task completion. This also affects users with cognitive disabilities who benefit from text alternatives and users on slow connections where images fail to load.
-Who it affects: Blind users using screen readers, users with low vision using screen readers with magnification, users with cognitive disabilities who rely on text alternatives, voice control users who need text labels to reference elements, and users on slow internet connections
-How to fix: Add descriptive alt attributes for informative images (alt="Sales chart showing 40% increase"), use empty alt attributes for decorative images (alt=""), describe the function for interactive images (alt="Search" not alt="magnifying glass icon"), and provide detailed descriptions via aria-describedby for complex images like charts or diagrams.
-
 ID: ErrImageWithURLAsAlt
 Type: Error
 Impact: High
@@ -5676,16 +5642,6 @@ Description: Modal lacks aria-labelledby pointing to its heading
 Why it matters: Screen readers need to announce the modal's title when it opens.
 Who it affects: Screen reader users who need modal context.
 How to fix: Add aria-labelledby pointing to the modal's heading element.
-
-ID: WarnModalMissingAriaModal
-Type: Warning
-Impact: Medium
-WCAG: 4.1.2 Name, Role, Value (Level A)
-Touchpoint: headings
-Description: Modal dialog missing aria-modal attribute
-Why it matters: aria-modal helps assistive technologies understand modal boundaries.
-Who it affects: Screen reader users navigating modal content.
-How to fix: Add aria-modal="true" to modal containers.
 
 ID: WarnModalNoFocusableElements
 Type: Warning

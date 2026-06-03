@@ -3333,15 +3333,6 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'wcag': ['4.1.2'],
             'remediation': "If a visible heading exists in the modal, add aria-labelledby pointing to that heading\'s ID: <div role=\"dialog\" aria-labelledby=\"modal-title\"><h2 id=\"modal-title\">Modal Title</h2>...</div>. This is preferred over aria-label because it ensures the programmatic name matches the visible label. If using aria-label, ensure the text exactly matches the visible heading to avoid confusion."
         },
-        'WarnModalMissingAriaModal': {
-            'title': "Modal dialog is missing the aria-modal=\"true\" attribute",
-            'what': "A modal dialog overlay is displayed, but its container does not carry aria-modal=\"true\". Without this attribute some assistive technologies may continue to expose the background page content as if it were still available.",
-            'why': "aria-modal=\"true\" tells assistive technology that content outside the dialog is inert while it is open, helping it define the modal's boundaries (relevant to WCAG 4.1.2 Name, Role, Value and to predictable focus order). Without it, a screen reader's virtual cursor may wander into background content, blurring where the dialog begins and ends and undermining the modal experience.",
-            'who': "Screen reader users navigating modal content, who may stray into background material when the dialog's modal boundary is not declared.",
-            'impact': ImpactScale.MEDIUM.value,
-            'wcag': ['4.1.2'],
-            'remediation': "Add aria-modal=\"true\" to the dialog container alongside role=\"dialog\" and an accessible name. Example: <div role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"dlg-title\"> ... </div>. Because aria-modal alone does not stop focus from leaving, also implement a focus trap and, ideally, mark the background inert."
-        },
         'WarnModalNoFocusableElements': {
             'title': "Open modal contains no focusable elements",
             'what': "A modal dialog is open but contains no focusable elements at all \u2014 no buttons, no links, and no form inputs. There is nothing inside the dialog that a keyboard user can move focus to.",
@@ -3733,15 +3724,6 @@ def get_detailed_issue_description(issue_code: str, metadata: dict[str, Any] | N
             'impact': ImpactScale.MEDIUM.value,
             'wcag': ['1.3.1', '4.1.2'],
             'remediation': "Remove empty <li> elements. If the item must exist, add accessible text with aria-label or visually hidden text. Never use empty list items for spacing - use CSS instead."
-        },
-        'WarnGenericButtonText': {
-            'title': "Button has generic text \"{text}\"",
-            'what': "A button's accessible name resolves to a generic value \"{text}\" (e.g., \"button\", \"action\"). The name should describe what the button does, not what it is.",
-            'why': "The button text \"{text}\" doesn\'t describe what the button does. When screen reader users navigate by buttons or hear buttons out of context, \"{text}\" provides no information about the button\'s purpose or action.",
-            'who': "Screen reader users navigating by buttons who hear \"{text}\" without context, users with cognitive disabilities who need clear action labels",
-            'impact': ImpactScale.LOW.value,
-            'wcag': ['2.4.6'],
-            'remediation': "Change \"{text}\" to describe the specific action, like \"Submit registration\", \"Save changes\", or \"Search products\" instead of just \"{text}\""
         },
         'WarnRequiredNotIndicated': {
             'title': "Required field not clearly indicated",

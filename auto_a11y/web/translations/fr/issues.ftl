@@ -2633,14 +2633,6 @@ WarnGenericAccessibleName =
     .remediation = Fournissez des noms accessibles descriptifs qui expliquent l'objectif spécifique de l'élément.
     .what-generic = L'élément a un nom accessible générique qui ne décrit pas son objectif
 
-WarnGenericButtonText =
-    .title = Le bouton a un texte générique « %(text)s »
-    .what = Le nom accessible d'un bouton se résout en une valeur générique « {"{"}text{"}"} » (par exemple, « bouton », « action »). Le nom doit décrire ce que fait le bouton, et non ce qu'il est.
-    .why = Le texte du bouton « %(text)s » ne décrit pas ce que fait le bouton. Lorsque les utilisateurs de lecteurs d'écran naviguent par boutons ou entendent des boutons hors contexte, « %(text)s » ne fournit aucune information sur l'objectif ou l'action du bouton.
-    .who = Utilisateurs de lecteurs d'écran naviguant par boutons qui entendent « %(text)s » sans contexte, utilisateurs avec des handicaps cognitifs qui ont besoin de libellés d'action clairs
-    .remediation = Changez « %(text)s » pour décrire l'action spécifique, comme « Soumettre l'inscription », « Enregistrer les modifications », ou « Rechercher des produits » au lieu de simplement « %(text)s »
-    .what-generic = Le bouton a un texte générique « %(text)s »
-
 WarnGenericDocumentLinkText =
     .title = Le lien de document utilise un texte générique comme \"PDF\" sans décrire le contenu
     .what = Un lien vers un document (par exemple, un PDF) utilise un texte générique tel que « PDF », « télécharger » ou « document » sans décrire le contenu du document.
@@ -2896,14 +2888,6 @@ WarnModalMissingAriaLabelledby =
     .who = Utilisateurs de lecteurs d'écran qui ont besoin du contexte de la boîte de dialogue modale, utilisateurs avec des handicaps cognitifs qui bénéficient d'un étiquetage cohérent, utilisateurs qui dépendent de la correspondance entre informations visuelles et auditives.
     .remediation = Si un titre visible existe dans la boîte de dialogue modale, ajoutez aria-labelledby pointant vers l'ID de ce titre : <div role=\"dialog\" aria-labelledby=\"modal-title\"><h2 id=\"modal-title\">Titre de la boîte de dialogue modale</h2>...</div>. Ceci est préférable à aria-label car cela assure que le nom accessible correspond à l'étiquette visible. Si vous utilisez aria-label, assurez-vous que le texte correspond exactement au titre visible pour éviter la confusion.
     .what-generic = La boîte de dialogue modale manque d'aria-labelledby pointant vers son titre. Bien qu'aria-label puisse être présent, la meilleure pratique est d'utiliser aria-labelledby pour référencer un élément de titre visible dans la boîte de dialogue modale.
-
-WarnModalMissingAriaModal =
-    .title = Boîte de dialogue modale manquant l'attribut aria-modal
-    .what = Une superposition de fenêtre modale est affichée, mais son conteneur ne possède pas aria-modal="true". Certaines technologies d'assistance peuvent continuer à exposer le contenu en arrière-plan.
-    .why = aria-modal aide les technologies d'assistance à comprendre les limites de la boîte modale.
-    .who = Utilisateurs de lecteurs d'écran naviguant le contenu modal.
-    .remediation = Ajoutez aria-modal=\"true\" aux conteneurs modaux.
-    .what-generic = Boîte de dialogue modale manquant l'attribut aria-modal
 
 WarnModalNoFocusableElements =
     .title = La modale n'a aucun élément focalisable

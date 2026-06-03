@@ -2324,13 +2324,6 @@ WarnGenericAccessibleName =
     .who = Screen reader users, voice control users.
     .remediation = Provide descriptive accessible names that explain the element's specific purpose.
 
-WarnGenericButtonText =
-    .title = Button has generic text "{"{"}text{"}"}"
-    .what = A button's accessible name resolves to a generic value "{"{"}text{"}"}" (e.g., "button", "action"). The name should describe what the button does, not what it is.
-    .why = The button text "{"{"}text{"}"}" doesn't describe what the button does. When screen reader users navigate by buttons or hear buttons out of context, "{"{"}text{"}"}" provides no information about the button's purpose or action.
-    .who = Screen reader users navigating by buttons who hear "{"{"}text{"}"}" without context, users with cognitive disabilities who need clear action labels
-    .remediation = Change "{"{"}text{"}"}" to describe the specific action, like "Submit registration", "Save changes", or "Search products" instead of just "{"{"}text{"}"}"
-
 WarnGenericDocumentLinkText =
     .title = Document link uses generic text like "PDF" without describing content
     .what = A link to a document (e.g., a PDF) uses generic text such as "PDF", "download", or "document" without describing the document's contents.
@@ -2560,13 +2553,6 @@ WarnModalMissingAriaLabelledby =
     .why = Using aria-labelledby to reference a visible heading ensures consistency between what screen reader users hear and what sighted users see. When aria-label is used instead, the modal title may differ from the visible heading, causing confusion. Additionally, aria-labelledby allows the heading text to be automatically updated without needing to sync multiple attributes, and it reinforces the semantic relationship between the modal container and its title.
     .who = Screen reader users who need modal context, users with cognitive disabilities who benefit from consistent labeling, users who rely on visual and auditory information matching.
     .remediation = If a visible heading exists in the modal, add aria-labelledby pointing to that heading's ID: <div role="dialog" aria-labelledby="modal-title"><h2 id="modal-title">Modal Title</h2>...</div>. This is preferred over aria-label because it ensures the programmatic name matches the visible label. If using aria-label, ensure the text exactly matches the visible heading to avoid confusion.
-
-WarnModalMissingAriaModal =
-    .title = Modal dialog missing aria-modal attribute
-    .what = A modal dialog overlay is showing but its container is missing aria-modal="true". Some assistive tech may continue to surface background content as a result.
-    .why = aria-modal helps assistive technologies understand modal boundaries.
-    .who = Screen reader users navigating modal content.
-    .remediation = Add aria-modal="true" to modal containers.
 
 WarnModalNoFocusableElements =
     .title = Modal has no focusable elements

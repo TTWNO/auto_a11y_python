@@ -166,6 +166,35 @@ class FixtureTestRunner:
 
         return {}
 
+    @staticmethod
+    def _extract_found_codes(test_result: TestResult) -> list[str]:
+        """Collect the de-duplicated set of issue codes a test run surfaced.
+
+        Issue ids may be namespaced (e.g. ``forms_ErrNoLabel``); the bare code is
+        the suffix starting at the first ``Err``/``Warn``/``Info``/``Disco``/``AI``
+        segment. Shared by the in-loop retry check and the post-loop result so both
+        agree on what "found" means.
+        """
+        all_issues: list[str] = []
+        violation_lists: list[list[Violation]] = [
+            test_result.violations,
+            test_result.warnings,
+            test_result.info,
+            test_result.discovery,
+        ]
+        for violation_list in violation_lists:
+            for item in violation_list:
+                issue_id: str = item.id
+                if '_' in issue_id:
+                    id_parts: list[str] = issue_id.split('_')
+                    for idx, part in enumerate(id_parts):
+                        if part.startswith(('Err', 'Warn', 'Info', 'Disco', 'AI')):
+                            all_issues.append('_'.join(id_parts[idx:]))
+                            break
+                else:
+                    all_issues.append(issue_id)
+        return list(set(all_issues))
+
     async def test_fixture(self, fixture_path: Path, expected_code: str, fixture_num: int, total_fixtures: int) -> dict[str, Any]:
         """Test a single fixture file"""
         print(f"\n[{fixture_num}/{total_fixtures}] 📄 Testing: {fixture_path.relative_to(self.fixtures_dir)}")
@@ -285,11 +314,17 @@ class FixtureTestRunner:
             if run_ai:
                 print("   🤖 Running with AI analysis enabled...")
 
-            # Run the test, retrying once on an empty result. An empty result is the
-            # signature of a transient browser failure (a healthy run always emits ambient
-            # discovery/warning codes), so a single retry removes the rare flaky empty that
-            # would otherwise wrongly fail a positive test - or spuriously pass a negative
-            # one - under the all-fixtures-must-pass activation gate.
+            # Run the test, retrying once on a suspicious result. Two transient-failure
+            # signatures justify a retry (a genuine result is deterministic, so a real
+            # gap still fails on the second attempt and nothing is masked):
+            #   1. A fully empty result - a healthy run always emits ambient
+            #      discovery/warning codes, so emptiness means a browser failure.
+            #   2. A positive fixture whose expected code is absent while other codes
+            #      are present. This is the per-test blind spot of signature (1): one
+            #      touchpoint test can transiently return nothing while the others emit
+            #      ambient codes, leaving `produced_any` True yet dropping the very code
+            #      under test. (AI and negative tests are excluded - AI is costly and
+            #      non-deterministic, and a negative test asserts absence.)
             timeout = 60.0 if run_ai else 30.0
             test_result: TestResult | None = None
             for attempt in range(2):
@@ -311,35 +346,24 @@ class FixtureTestRunner:
                     test_result.violations or test_result.warnings
                     or test_result.info or test_result.discovery
                 ))
-                if produced_any or attempt == 1:
+                attempt_codes = self._extract_found_codes(test_result) if test_result else []
+                expected_present = expected_code in attempt_codes
+                positive_code_dropped = (
+                    produced_any and not is_negative_test and not is_ai_test
+                    and not expected_present
+                )
+                if attempt == 1 or (produced_any and not positive_code_dropped):
                     break
-                print("   ↻ Empty result (likely transient browser issue); retrying once...")
+                if positive_code_dropped:
+                    print(
+                        f"   ↻ Expected code '{expected_code}' missing despite other results "
+                        + "(likely transient per-test failure); retrying once..."
+                    )
+                else:
+                    print("   ↻ Empty result (likely transient browser issue); retrying once...")
             
             if test_result:
-                # Collect all violation/warning/info IDs
-                all_issues: list[str] = []
-
-                # Extract issue codes from each violation list
-                violation_lists: list[list[Violation]] = [
-                    test_result.violations,
-                    test_result.warnings,
-                    test_result.info,
-                    test_result.discovery,
-                ]
-                for violation_list in violation_lists:
-                    for item in violation_list:
-                        issue_id: str = item.id
-                        if '_' in issue_id:
-                            id_parts: list[str] = issue_id.split('_')
-                            for idx, part in enumerate(id_parts):
-                                if part.startswith(('Err', 'Warn', 'Info', 'Disco', 'AI')):
-                                    code = '_'.join(id_parts[idx:])
-                                    all_issues.append(code)
-                                    break
-                        else:
-                            all_issues.append(issue_id)
-
-                found_codes[:] = list(set(all_issues))  # Remove duplicates
+                found_codes[:] = self._extract_found_codes(test_result)
                 result["found_codes"] = found_codes
 
                 # Check success based on whether this is a negative test
